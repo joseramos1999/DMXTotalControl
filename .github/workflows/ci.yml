@@ -21,20 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Los mismos paquetes que pide el README (MSYS2 MINGW64)
+      # Los paquetes del README, en el entorno UCRT64 de MSYS2: MINGW64 se está
+      # retirando y ya no tiene libusb ni libftdi
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
-          install: >-
-            unzip
-            mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-pkgconf
-            mingw-w64-x86_64-libusb mingw-w64-x86_64-libftdi mingw-w64-x86_64-libmad
-            mingw-w64-x86_64-libsndfile mingw-w64-x86_64-fftw mingw-w64-x86_64-tools-git
-            mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-3d
-            mingw-w64-x86_64-qt6-multimedia mingw-w64-x86_64-qt6-serialport mingw-w64-x86_64-qt6-websockets
-            mingw-w64-x86_64-qt6-imageformats mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-tools
-            mingw-w64-x86_64-qt6-shadertools
+          install: unzip
+          pacboy: >-
+            gcc:p cmake:p ninja:p pkgconf:p libusb:p libftdi:p libmad:p libsndfile:p fftw:p tools-git:p
+            qt6-base:p qt6-declarative:p qt6-3d:p qt6-multimedia:p qt6-serialport:p qt6-websockets:p
+            qt6-imageformats:p qt6-svg:p qt6-tools:p qt6-shadertools:p
 
       # Las interfaces DMX USB de FTDI: la biblioteca de importación del SDK D2XX
       - name: SDK D2XX de FTDI

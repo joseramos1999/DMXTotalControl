@@ -41,6 +41,8 @@ El programa avisa de las versiones nuevas y las instala él mismo después de co
    pacman -S --needed mingw-w64-x86_64-{gcc,cmake,ninja,pkgconf,libusb,libftdi,libmad,libsndfile,fftw} mingw-w64-x86_64-qt6-{base,declarative,3d,multimedia,serialport,websockets,imageformats,svg,tools,shadertools}
    ```
 
+   MSYS2 está retirando el entorno MINGW64 y ya no ofrece en él `libusb` ni `libftdi`: si instalas MSYS2 de cero, usa la shell **UCRT64** y los mismos paquetes con el prefijo `mingw-w64-ucrt-x86_64-` (como la CI de GitHub). Los scripts funcionan en los dos entornos.
+
 2. Prepara el SDK D2XX de FTDI, necesario para las interfaces DMX USB basadas en FTDI:
 
    ```bash

@@ -35,17 +35,19 @@ if not exist "%MSYS2%\usr\bin\bash.exe" (
     echo         Instalalo desde https://www.msys2.org/ y los paquetes del README.
     goto :fail
 )
-if not exist "%MSYS2%\mingw64\bin\qmake6.exe" (
+rem el entorno de MSYS2 con Qt: UCRT64 (el actual) o MINGW64 (el antiguo)
+set "MSYSTEM="
+if exist "%MSYS2%\ucrt64\bin\qmake6.exe" set "MSYSTEM=UCRT64"
+if not defined MSYSTEM if exist "%MSYS2%\mingw64\bin\qmake6.exe" set "MSYSTEM=MINGW64"
+if not defined MSYSTEM (
     echo [ERROR] Faltan Qt 6 u otros paquetes de MSYS2. Revisa el README.
     goto :fail
 )
-
-set "MSYSTEM=MINGW64"
 set "CHERE_INVOKING=1"
 
 if not exist "%D2XXLIB%" (
     echo [1/4] Preparando el SDK D2XX de FTDI ^(interfaces DMX USB^)...
-    "%MSYS2%\usr\bin\bash.exe" -lc "set -e; export PATH=/mingw64/bin:$PATH; mkdir -p /c/projects/D2XXSDK && cd /c/projects/D2XXSDK && curl -sSL -o cdm.zip https://qlcplus.org/misc/CDM-v2.12.36.20-WHQL-Certified.zip && unzip -o -q cdm.zip && cd amd64 && (command -v gendef >/dev/null || pacman -S --needed --noconfirm mingw-w64-x86_64-tools-git) && gendef - ftd2xx64.dll > ftd2xx.def && dlltool -k --input-def ftd2xx.def --dllname ftd2xx64.dll --output-lib libftd2xx.a"
+    "%MSYS2%\usr\bin\bash.exe" -lc "set -e; export PATH=$MINGW_PREFIX/bin:$PATH; mkdir -p /c/projects/D2XXSDK && cd /c/projects/D2XXSDK && curl -sSL -o cdm.zip https://qlcplus.org/misc/CDM-v2.12.36.20-WHQL-Certified.zip && unzip -o -q cdm.zip && cd amd64 && (command -v gendef >/dev/null || pacman -S --needed --noconfirm $MINGW_PACKAGE_PREFIX-tools-git) && gendef - ftd2xx64.dll > ftd2xx.def && dlltool -k --input-def ftd2xx.def --dllname ftd2xx64.dll --output-lib libftd2xx.a"
     if errorlevel 1 (
         echo [ERROR] No se pudo preparar el SDK D2XX.
         goto :fail

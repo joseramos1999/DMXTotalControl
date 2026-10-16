@@ -4,7 +4,8 @@ project(windows)
 if (DEFINED $ENV{MSYSTEM_CARCH} AND $ENV{MSYSTEM_CARCH} STREQUAL "i686")
     set(SYS_LIBS_PATH $ENV{SystemDrive}/msys64/mingw32/bin)
 else()
-    set(SYS_LIBS_PATH $ENV{SystemDrive}/msys64/mingw64/bin)
+    # DMX Total Control: next to the compiler, MINGW64 or UCRT64
+    get_filename_component(SYS_LIBS_PATH "${CMAKE_CXX_COMPILER}" DIRECTORY)
 endif()
 
 function(copy_system_library target libname)
