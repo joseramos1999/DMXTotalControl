@@ -35,13 +35,15 @@ copy_system_library(mmedia_files "libfftw3-3.dll")
 
 install(FILES ${mmedia_files} DESTINATION ${mmedia_path})
 
-# NullSoft installer files
+# NullSoft installer files (DMX Total Control has its own installer: dtc/installer)
 set(nsis_path "${INSTALLROOT}/${DATADIR}")
 if(qmlui)
     set(nsis_files qlcplus5Qt6.nsi)
 else()
     set(nsis_files qlcplus4Qt6.nsi)
 endif()
-install(FILES ${nsis_files} DESTINATION ${nsis_path})
+if(NOT dtcui)
+    install(FILES ${nsis_files} DESTINATION ${nsis_path})
+endif()
 
 # install(FILES ../Sample.qxw DESTINATION ${INSTALLROOT}/${DATADIR})

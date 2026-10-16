@@ -49,6 +49,13 @@ public:
     /** Load plugins from the given directory. */
     void load(const QDir& dir);
 
+    /** DMX Total Control: whether load() asks the machine for its audio
+     *  devices (on by default). The backend tests switch it off: the
+     *  devices of the machine aren't theirs, and on a busy machine the
+     *  question blocked a test for minutes */
+    static void setDevicesEnabled(bool enable);
+    static bool devicesEnabled();
+
     /** Get a list of the audio formats supported by the
      *  loaded plugins */
     QStringList getSupportedFormats();

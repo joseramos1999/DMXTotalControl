@@ -288,6 +288,32 @@ public:
     bool updateFixtureChannelCapabilities(quint32 id, QList<int>forcedHTP, QList<int>forcedLTP);
 
     /**
+     * DMX Total Control: set the channel capabilities, modifiers, dimmer
+     * options and swaps of every universe again from the fixtures. Needed
+     * when fixtures move or go away: their old channels are freed. The
+     * running faders follow the fixtures (new addresses, types).
+     */
+    void refreshChannelCapabilities();
+
+private:
+    /**
+     * DMX Total Control: give the universes (claimed) the capabilities,
+     * default values, modifiers, dimmer options and swaps of the channels of
+     * $fixture, each channel in the universe it belongs to ($crossUniverse:
+     * a fixture across two universes)
+     */
+    void applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &universes, bool crossUniverse);
+
+    /**
+     * DMX Total Control: the map of the addresses made again from all the
+     * fixtures. Where two fixtures overlap (a fixture moving one setting at a
+     * time), the first one keeps the channel and m_addressesOverlap is set
+     */
+    void rebuildAddresses();
+
+public:
+
+    /**
      * Get the fixture instance that has the given ID
      *
      * @param id The ID of the fixture to get
@@ -354,6 +380,11 @@ protected:
 
     /** Map of the addresses occupied by fixtures */
     QHash <quint32, quint32> m_addresses;
+
+    /** DMX Total Control: two fixtures overlapped the last time the map of
+     *  the addresses was made (rebuildAddresses): it is made again on every
+     *  change until they don't */
+    bool m_addressesOverlap;
 
     /** Latest assigned fixture ID */
     quint32 m_latestFixtureId;
@@ -526,6 +557,13 @@ public:
     bool deleteFunction(quint32 id);
 
     /**
+     * DMX Total Control: put $function in the place of the function $id,
+     * with its ID: what refers to it (groups, buttons, mappings) follows.
+     * The old one must not be running; it is deleted.
+     */
+    bool replaceFunction(quint32 id, Function *function);
+
+    /**
      * Get a function that has the given ID
      *
      * @param id The ID of the function to get
@@ -593,6 +631,9 @@ signals:
 
     /** Signal that a function has been changed */
     void functionChanged(quint32 function);
+
+    /** DMX Total Control: another function took the place of $function (same ID) */
+    void functionReplaced(quint32 function);
 
     /** Signal that a function has been changed */
     void functionNameChanged(quint32 function);

@@ -64,6 +64,11 @@ public:
     ChaserRunner(const Doc* doc, const Chaser* chaser, quint32 startTime = 0);
     ~ChaserRunner();
 
+    /** DMX Total Control: the function $fid is deleted, or replaced by
+     *  $current (same ID): the running steps of the old one stop and go.
+     *  Call it with the runner mutex of the chaser held */
+    void forgetFunction(quint32 fid, const Function *current);
+
 private slots:
     void slotChaserChanged();
 
@@ -160,6 +165,19 @@ private:
     quint32 m_lastFunctionID;               //! ID of the last Function ran (Scene only)
     QElapsedTimer *m_roundTime;             //! Counts the time between steps
     QVector<int> m_order;                   //! Array of step indices in a randomized order
+    int m_stepsDone;                        //! DMX Total Control: steps ended, to count the loops
+    bool m_held;                            //! DMX Total Control: the loops are over, the last step holds
+
+    /** DMX Total Control: a step ended, on its time or left for the next one:
+     *  count it for the loops */
+    Function::CycleResult stepDone();
+
+public:
+    /** DMX Total Control: the loops are over and the last step holds (BeatGO
+     *  and pulses don't move it any more) */
+    bool isHeld() const;
+
+private:
 
     /************************************************************************
      * Intensity
@@ -167,6 +185,9 @@ private:
 public:
     /** Adjust the intensities of chaser steps */
     void adjustStepIntensity(qreal fraction, int stepIndex = -1, int fadeControl = 0);
+
+    /** DMX Total Control: the running steps play with this priority */
+    void setStepsPriority(int priority);
 
     /************************************************************************
      * Running

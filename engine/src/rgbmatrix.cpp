@@ -76,6 +76,7 @@ RGBMatrix::RGBMatrix(Doc *doc)
     , m_stepsCount(0)
     , m_stepBeatDuration(0)
     , m_continuousPhase(0.0)
+    , m_stepsDone(0)
     , m_applyingStyleAttributes(false)
     , m_controlMode(RGBMatrix::ControlModeRgb)
 {
@@ -199,7 +200,13 @@ bool RGBMatrix::copyFrom(const Function* function)
         m_rgbColors.append(col);
 
     if (mtx->algorithm() != NULL)
-        setAlgorithm(mtx->algorithm()->clone());
+    {
+        // DMX Total Control: the clone keeps the Doc of the source, which may
+        // be another one (a temporary Doc of an import, deleted after it)
+        RGBAlgorithm *algo = mtx->algorithm()->clone();
+        algo->setDoc(doc());
+        setAlgorithm(algo);
+    }
     else
         setAlgorithm(NULL);
 
@@ -680,6 +687,8 @@ void RGBMatrix::preRun(MasterTimer *timer)
             // Copy direction from parent class direction
             m_stepHandler->initializeDirection(direction(), m_rgbColors[0], m_rgbColors[1], m_stepsCount, m_runAlgorithm);
 
+            m_stepsDone = 0;
+
             // Update continuous phase when starting playback
             if (m_stepsCount > 0)
                 m_continuousPhase = double(m_stepHandler->currentStepIndex()) / double(m_stepsCount);
@@ -735,7 +744,8 @@ void RGBMatrix::write(MasterTimer *timer, QList<Universe *> universes)
         if (isPaused() == false)
         {
             // Get a new map every time elapsed is reset to zero
-            if (elapsed() < MasterTimer::tick())
+            // (DMX Total Control: a frame may be longer than a tick at a higher live speed)
+            if (elapsed() < qMax(MasterTimer::tick(), frameTick()))
             {
                 if (tempoType() == Beats)
                     m_stepBeatDuration = beatsToTime(duration(), timer->beatTimeDuration());
@@ -750,6 +760,17 @@ void RGBMatrix::write(MasterTimer *timer, QList<Universe *> universes)
 
     if (isPaused() == false)
     {
+        // DMX Total Control: live speed, and BeatGO/pulses go to the next step
+        advanceFrameTick();
+        int jumps = takeDivisionJumps();
+        if (jumps > 0)
+        {
+            for (int i = 0; i < jumps && stopped() == false && isPaused() == false; i++)
+                roundCheck();
+            resetElapsed();
+            return;
+        }
+
         // Increment the ms elapsed time
         incrementElapsed();
 
@@ -830,6 +851,25 @@ void RGBMatrix::roundCheck()
     if (m_algorithm == NULL)
         return;
 
+    // DMX Total Control: count the loops, then hold the last step or stop
+    int cycleLength = m_stepsCount;
+    if (runOrder() == PingPong && cycleLength > 1)
+        cycleLength = 2 * (cycleLength - 1);
+    if (cycleLength > 0 && ++m_stepsDone % cycleLength == 0)
+    {
+        CycleResult result = cycleCompleted();
+        if (result == CycleStop)
+        {
+            stop(FunctionParent::master());
+            return;
+        }
+        if (result == CycleHold)
+        {
+            Function::setPause(true);
+            return;
+        }
+    }
+
     if (m_stepHandler->checkNextStep(runOrder(), m_rgbColors[0], m_rgbColors[1], m_stepsCount) == false)
         stop(FunctionParent::master());
 
@@ -855,7 +895,7 @@ QSharedPointer<GenericFader> RGBMatrix::getFader(Universe *universe)
     QSharedPointer<GenericFader> fader = m_fadersMap.value(universe->id(), QSharedPointer<GenericFader>());
     if (fader.isNull())
     {
-        fader = universe->requestFader();
+        fader = universe->requestFader(Universe::Auto, playbackPriority());
         fader->adjustIntensity(getAttributeValue(Intensity));
         fader->setBlendMode(blendMode());
         fader->setName(name());
@@ -1007,6 +1047,9 @@ void RGBMatrix::updateMapChannels(const RGBMap& map, const FixtureGroup *grp, QL
                 continue;
 
             quint32 universeIndex = floor((absAddress + channelList.at(i)) / 512);
+            // DMX Total Control: the universe may be gone (removed)
+            if (universeIndex >= quint32(universes.count()))
+                continue;
             Universe *universe = universes.at(universeIndex);
             QSharedPointer<GenericFader> fader = getFader(universe);
             if (fader.isNull())

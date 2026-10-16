@@ -103,7 +103,9 @@ bool InputOutputMap::setBlackout(bool blackout)
                 op->setBlackout(blackout);
         }
 
-        const QByteArray postGM = universe->postGMValues()->mid(0, universe->usedChannels());
+        // DMX Total Control: with the swapped channels (pan/tilt)
+        const QByteArray values = universe->outputValues(false);
+        const QByteArray postGM(values.constData(), values.size());
         universe->dumpOutput(postGM, true);
     }
 

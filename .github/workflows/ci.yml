@@ -1,0 +1,61 @@
+name: CI
+
+# Compila DMX Total Control en Windows y pasa sus pruebas en cada cambio de main
+# y en cada pull request. Se puede lanzar a mano desde la pestaña Actions.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-2025
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Los mismos paquetes que pide el README (MSYS2 MINGW64)
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            unzip
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-libusb mingw-w64-x86_64-libftdi mingw-w64-x86_64-libmad
+            mingw-w64-x86_64-libsndfile mingw-w64-x86_64-fftw mingw-w64-x86_64-tools-git
+            mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-3d
+            mingw-w64-x86_64-qt6-multimedia mingw-w64-x86_64-qt6-serialport mingw-w64-x86_64-qt6-websockets
+            mingw-w64-x86_64-qt6-imageformats mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-qt6-shadertools
+
+      # Las interfaces DMX USB de FTDI: la biblioteca de importación del SDK D2XX
+      - name: SDK D2XX de FTDI
+        run: |
+          mkdir -p /c/projects/D2XXSDK && cd /c/projects/D2XXSDK
+          curl -sSL -o cdm.zip https://qlcplus.org/misc/CDM-v2.12.36.20-WHQL-Certified.zip
+          unzip -o -q cdm.zip
+          cd amd64
+          gendef - ftd2xx64.dll > ftd2xx.def
+          dlltool -k --input-def ftd2xx.def --dllname ftd2xx64.dll --output-lib libftd2xx.a
+
+      - name: Compilar
+        run: BUILD_TYPE=Release bash ./build-windows.sh --no-deploy
+
+      - name: Pruebas
+        run: bash ./.github/run-tests.sh
+
+      # Si algo falla, la salida completa de las pruebas queda en el run
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pruebas
+          path: build/dtc/test/*.txt
+          if-no-files-found: ignore

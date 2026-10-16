@@ -56,6 +56,10 @@ public:
      */
     ChannelModifier* modifier(const QString& name) const;
 
+    /** DMX Total Control: the name of the modifier that maps 0-255 to
+     *  $from-$to (see modifier()) */
+    static QString rangeModifierName(int from, int to);
+
     /**
      * Get the default system channels modifiers directory that contains
      * installed modifiers templates. The location varies greatly between
@@ -85,7 +89,8 @@ public:
     bool load(const QDir& dir, bool systemTemplates = false);
 
 private:
-    QHash <QString, ChannelModifier*> m_modifiers;
+    // DMX Total Control: mutable, the range modifiers are made on demand
+    mutable QHash <QString, ChannelModifier*> m_modifiers;
 };
 
 /** @} */

@@ -39,6 +39,11 @@ FadeChannel::FadeChannel()
     , m_ready(false)
     , m_fadeTime(0)
     , m_elapsed(0)
+    , m_delay(0)
+    , m_modOffset(0)
+    , m_modOutput(0)
+    , m_modBelow(false)
+    , m_modFine(QLCChannel::invalid())
 {
 }
 
@@ -56,6 +61,11 @@ FadeChannel::FadeChannel(const FadeChannel& ch)
     , m_ready(ch.m_ready)
     , m_fadeTime(ch.m_fadeTime)
     , m_elapsed(ch.m_elapsed)
+    , m_delay(ch.m_delay)
+    , m_modOffset(ch.m_modOffset)
+    , m_modOutput(ch.m_modOutput)
+    , m_modBelow(ch.m_modBelow)
+    , m_modFine(ch.m_modFine)
 {
     //qDebug() << Q_FUNC_INFO;
 }
@@ -73,6 +83,11 @@ FadeChannel::FadeChannel(const Doc *doc, quint32 fxi, quint32 channel)
     , m_ready(false)
     , m_fadeTime(0)
     , m_elapsed(0)
+    , m_delay(0)
+    , m_modOffset(0)
+    , m_modOutput(0)
+    , m_modBelow(false)
+    , m_modFine(QLCChannel::invalid())
 {
     m_channels.append(channel);
     autoDetect(doc);
@@ -99,6 +114,11 @@ FadeChannel &FadeChannel::operator=(const FadeChannel &fc)
         m_ready = fc.m_ready;
         m_fadeTime = fc.m_fadeTime;
         m_elapsed = fc.m_elapsed;
+        m_delay = fc.m_delay;
+        m_modOffset = fc.m_modOffset;
+        m_modOutput = fc.m_modOutput;
+        m_modBelow = fc.m_modBelow;
+        m_modFine = fc.m_modFine;
     }
 
     return *this;
@@ -193,7 +213,30 @@ void FadeChannel::autoDetect(const Doc *doc)
             removeFlag(FadeChannel::HTP);
             addFlag(FadeChannel::LTP);
         }
+
+        // DMX Total Control: the master dimmers scale it, or not
+        if (fixture->channelFollowsDimmer(int(chIndex)))
+            addFlag(FadeChannel::Intensity);
+        else
+            removeFlag(FadeChannel::Intensity);
     }
+}
+
+bool FadeChannel::refreshFixture(const Doc *doc, quint32 universeID)
+{
+    // DMX Total Control: the fixture moved or changed (mode, options)
+    const Fixture *fixture = doc->fixture(m_fixture);
+    if (fixture == NULL || channel() >= fixture->channels())
+        return false;
+    const quint32 universe = (fixture->universeAddress() + channel()) / UNIVERSE_SIZE;
+    if (universe != universeID && fixture->universe() != universeID)
+        return false;
+
+    // what the functions set stays; the address and the type follow it
+    const int kept = m_flags & ~(HTP | LTP | Intensity | CanFade);
+    autoDetect(doc);
+    addFlag(kept);
+    return true;
 }
 
 quint32 FadeChannel::fixture() const
@@ -377,7 +420,60 @@ uchar FadeChannel::nextStep(uint ms)
     if (elapsed() < UINT_MAX)
         setElapsed(elapsed() + ms);
 
+    // DMX Total Control: a staggered channel keeps its start value until its turn
+    if (m_delay > 0 && m_ready == false)
+    {
+        if (elapsed() < m_delay)
+        {
+            m_current = m_start;
+            return uchar(m_current);
+        }
+        return calculateCurrent(fadeTime(), elapsed() - m_delay);
+    }
+
     return calculateCurrent(fadeTime(), elapsed());
+}
+
+void FadeChannel::setDelay(uint ms)
+{
+    m_delay = ms;
+}
+
+uint FadeChannel::delay() const
+{
+    return m_delay;
+}
+
+void FadeChannel::setModulation(qint32 offset, bool onBelow, quint32 fineAddress)
+{
+    m_modOffset = offset;
+    m_modBelow = onBelow;
+    m_modFine = fineAddress;
+}
+
+quint32 FadeChannel::modulationFine() const
+{
+    return m_modFine;
+}
+
+qint32 FadeChannel::modulationOffset() const
+{
+    return m_modOffset;
+}
+
+bool FadeChannel::modulatesBelow() const
+{
+    return m_modBelow;
+}
+
+void FadeChannel::setModulatedOutput(quint32 value)
+{
+    m_modOutput = value;
+}
+
+quint32 FadeChannel::modulatedOutput() const
+{
+    return m_modOutput;
 }
 
 uchar FadeChannel::calculateCurrent(uint fadeTime, uint elapsedTime)

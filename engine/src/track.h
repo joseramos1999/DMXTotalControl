@@ -22,6 +22,8 @@
 
 #include <QObject>
 #include <QHash>
+#include <QMap>
+#include <QList>
 
 #include "showfunction.h"
 #include "scene.h"
@@ -127,6 +129,38 @@ signals:
 private:
     /** Flag to mute/unmute this track */
     bool m_isMute;
+
+    /************************************************************************
+     * DMX Total Control: lock, hide, automation
+     ************************************************************************/
+public:
+    /** A locked track can't be edited; a hidden one is folded in the timeline */
+    void setLocked(bool locked);
+    bool isLocked() const;
+    void setHidden(bool hidden);
+    bool isHidden() const;
+
+    /** A point of an automation lane: a time of the show (ms), a value
+     *  (0-1) and how it goes to the next point (straight or a smooth curve) */
+    struct AutomationPoint
+    {
+        quint32 time;
+        qreal value;
+        bool smooth;
+    };
+
+    /** The lanes: "dimmer" (the intensity of the scenes of the track, the
+     *  volume of its audio) and "phase" (of its effects, 0-1 = 0-360 degrees) */
+    void setAutomation(const QString &lane, const QList<AutomationPoint> &points);
+    QList<AutomationPoint> automation(const QString &lane) const;
+    bool hasAutomation(const QString &lane) const;
+    /** The value of a lane at $time, $fallback when it has no points */
+    qreal automationValue(const QString &lane, quint32 time, qreal fallback) const;
+
+private:
+    bool m_locked;
+    bool m_hidden;
+    QMap<QString, QList<AutomationPoint>> m_automation;
 
     /*********************************************************************
      * Functions

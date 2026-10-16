@@ -1,0 +1,20 @@
+DMX Total Control
+Copyright (c) DMX Total Control contributors
+
+This product is a derivative work of Q Light Controller Plus (QLC+)
+https://github.com/mcallegari/qlcplus
+Copyright (c) Heikki Junnila
+Copyright (c) Massimo Callegari
+and the QLC+ contributors.
+
+QLC+ and DMX Total Control are licensed under the Apache License,
+Version 2.0 (see COPYING). The engine/, plugins/, resources/ and other
+directories inherited from QLC+ keep their original copyright notices.
+Files modified by DMX Total Control are listed in the git history.
+
+"Q Light Controller Plus" and "QLC+" are names of the QLC+ project.
+DMX Total Control is not affiliated with or endorsed by the QLC+ project.
+
+Bundled fonts:
+- Font Awesome Free (SIL Open Font License 1.1) - resources/fonts/OFL.txt
+- Roboto (Apache License 2.0)

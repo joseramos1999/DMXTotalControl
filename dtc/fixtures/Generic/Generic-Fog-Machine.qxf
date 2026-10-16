@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE FixtureDefinition>
+<FixtureDefinition xmlns="http://www.qlcplus.org/FixtureDefinition">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.1.0</Version>
+  <Author>DMX Total Control</Author>
+ </Creator>
+ <Manufacturer>Generic</Manufacturer>
+ <Model>Fog Machine</Model>
+ <Type>Smoke</Type>
+ <Channel Name="Fog">
+  <Group Byte="0">Effect</Group>
+  <Capability Min="0" Max="9">Off</Capability>
+  <Capability Min="10" Max="255">Fog output</Capability>
+ </Channel>
+ <Mode Name="1ch">
+  <Channel Number="0">Fog</Channel>
+ </Mode>
+</FixtureDefinition>

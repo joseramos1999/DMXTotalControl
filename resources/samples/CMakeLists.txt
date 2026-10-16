@@ -16,4 +16,7 @@ if(ANDROID)
     endforeach()
 endif()
 
-install(FILES ${SAMPLE_FILES} DESTINATION ${SAMPLESDIR})
+# (DMX Total Control has no sample show of its own yet)
+if(NOT dtcui)
+    install(FILES ${SAMPLE_FILES} DESTINATION ${SAMPLESDIR})
+endif()

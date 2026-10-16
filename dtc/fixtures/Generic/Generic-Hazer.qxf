@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE FixtureDefinition>
+<FixtureDefinition xmlns="http://www.qlcplus.org/FixtureDefinition">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.1.0</Version>
+  <Author>DMX Total Control</Author>
+ </Creator>
+ <Manufacturer>Generic</Manufacturer>
+ <Model>Hazer</Model>
+ <Type>Hazer</Type>
+ <Channel Name="Haze">
+  <Group Byte="0">Effect</Group>
+  <Capability Min="0" Max="9">Off</Capability>
+  <Capability Min="10" Max="255">Haze output</Capability>
+ </Channel>
+ <Channel Name="Fan">
+  <Group Byte="0">Speed</Group>
+  <Capability Min="0" Max="9">Off</Capability>
+  <Capability Min="10" Max="255">Fan speed</Capability>
+ </Channel>
+ <Mode Name="1ch">
+  <Channel Number="0">Haze</Channel>
+ </Mode>
+ <Mode Name="2ch Haze+Fan">
+  <Channel Number="0">Haze</Channel>
+  <Channel Number="1">Fan</Channel>
+ </Mode>
+</FixtureDefinition>

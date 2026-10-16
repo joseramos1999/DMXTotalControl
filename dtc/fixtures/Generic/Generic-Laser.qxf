@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE FixtureDefinition>
+<FixtureDefinition xmlns="http://www.qlcplus.org/FixtureDefinition">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.1.0</Version>
+  <Author>DMX Total Control</Author>
+ </Creator>
+ <Manufacturer>Generic</Manufacturer>
+ <Model>Laser</Model>
+ <Type>Laser</Type>
+ <Channel Name="Mode">
+  <Group Byte="0">Effect</Group>
+  <Capability Min="0" Max="49">Off</Capability>
+  <Capability Min="50" Max="99">Auto</Capability>
+  <Capability Min="100" Max="149">Sound active</Capability>
+  <Capability Min="150" Max="255">DMX</Capability>
+ </Channel>
+ <Channel Name="Pattern">
+  <Group Byte="0">Effect</Group>
+  <Capability Min="0" Max="255">Pattern selection</Capability>
+ </Channel>
+ <Channel Name="Colour">
+  <Group Byte="0">Colour</Group>
+  <Capability Min="0" Max="63">Red</Capability>
+  <Capability Min="64" Max="127">Green</Capability>
+  <Capability Min="128" Max="191">Yellow</Capability>
+  <Capability Min="192" Max="255">Colour change</Capability>
+ </Channel>
+ <Channel Name="Zoom" Preset="BeamZoomSmallBig"/>
+ <Channel Name="Rotation">
+  <Group Byte="0">Effect</Group>
+  <Capability Min="0" Max="127">Fixed angle</Capability>
+  <Capability Min="128" Max="255">Rotation slow to fast</Capability>
+ </Channel>
+ <Channel Name="Speed">
+  <Group Byte="0">Speed</Group>
+  <Capability Min="0" Max="255">Slow to fast</Capability>
+ </Channel>
+ <Mode Name="6ch">
+  <Channel Number="0">Mode</Channel>
+  <Channel Number="1">Pattern</Channel>
+  <Channel Number="2">Colour</Channel>
+  <Channel Number="3">Zoom</Channel>
+  <Channel Number="4">Rotation</Channel>
+  <Channel Number="5">Speed</Channel>
+ </Mode>
+</FixtureDefinition>

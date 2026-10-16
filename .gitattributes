@@ -1,0 +1,6 @@
+# Windows batch files need CRLF line endings
+*.bat text eol=crlf
+# Shell and Perl scripts need LF line endings: bash fails on CRLF (also on
+# the Windows machines of GitHub Actions, which check out with CRLF)
+*.sh text eol=lf
+*.pl text eol=lf

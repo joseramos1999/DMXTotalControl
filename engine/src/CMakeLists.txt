@@ -16,6 +16,9 @@ add_library(${module_name} SHARED
     collection.cpp collection.h
     cue.cpp cue.h
     cuestack.cpp cuestack.h
+    curvefx.cpp curvefx.h
+    fxscene.cpp fxscene.h
+    cuelist.cpp cuelist.h
     dmxdumpfactoryproperties.cpp dmxdumpfactoryproperties.h
     dmxsource.h
     doc.cpp doc.h

@@ -30,6 +30,10 @@
 #define KXMLShowFunctionDuration QStringLiteral("Duration")
 #define KXMLShowFunctionColor QStringLiteral("Color")
 #define KXMLShowFunctionLocked QStringLiteral("Locked")
+// DMX Total Control
+#define KXMLShowFunctionFadeIn QStringLiteral("FadeIn")
+#define KXMLShowFunctionFadeOut QStringLiteral("FadeOut")
+#define KXMLShowFunctionStretch QStringLiteral("Stretch")
 
 ShowFunction::ShowFunction(quint32 id, QObject *parent)
     : QObject(parent)
@@ -40,6 +44,9 @@ ShowFunction::ShowFunction(quint32 id, QObject *parent)
     , m_color(QColor())
     , m_locked(false)
     , m_intensityOverrideId(-1)
+    , m_fadeIn(0)
+    , m_fadeOut(0)
+    , m_stretch(false)
 {
 }
 
@@ -156,6 +163,36 @@ void ShowFunction::setIntensityOverrideId(int id)
     m_intensityOverrideId = id;
 }
 
+void ShowFunction::setFadeIn(quint32 ms)
+{
+    m_fadeIn = ms;
+}
+
+quint32 ShowFunction::fadeIn() const
+{
+    return m_fadeIn;
+}
+
+void ShowFunction::setFadeOut(quint32 ms)
+{
+    m_fadeOut = ms;
+}
+
+quint32 ShowFunction::fadeOut() const
+{
+    return m_fadeOut;
+}
+
+void ShowFunction::setStretch(bool stretch)
+{
+    m_stretch = stretch;
+}
+
+bool ShowFunction::stretch() const
+{
+    return m_stretch;
+}
+
 /************************************************************************
  * Load & Save
  ***********************************************************************/
@@ -180,6 +217,13 @@ bool ShowFunction::loadXML(QXmlStreamReader &root)
         setColor(QColor(attrs.value(KXMLShowFunctionColor).toString()));
     if (attrs.hasAttribute(KXMLShowFunctionLocked))
         setLocked(true);
+    // DMX Total Control
+    if (attrs.hasAttribute(KXMLShowFunctionFadeIn))
+        setFadeIn(attrs.value(KXMLShowFunctionFadeIn).toString().toUInt());
+    if (attrs.hasAttribute(KXMLShowFunctionFadeOut))
+        setFadeOut(attrs.value(KXMLShowFunctionFadeOut).toString().toUInt());
+    if (attrs.hasAttribute(KXMLShowFunctionStretch))
+        setStretch(attrs.value(KXMLShowFunctionStretch).toString() == "1");
 
     root.skipCurrentElement();
 
@@ -207,6 +251,13 @@ bool ShowFunction::saveXML(QXmlStreamWriter *doc, quint32 trackId) const
         doc->writeAttribute(KXMLShowFunctionColor, color().name());
     if (isLocked())
         doc->writeAttribute(KXMLShowFunctionLocked, QString::number(m_locked));
+    // DMX Total Control
+    if (m_fadeIn > 0)
+        doc->writeAttribute(KXMLShowFunctionFadeIn, QString::number(m_fadeIn));
+    if (m_fadeOut > 0)
+        doc->writeAttribute(KXMLShowFunctionFadeOut, QString::number(m_fadeOut));
+    if (m_stretch)
+        doc->writeAttribute(KXMLShowFunctionStretch, "1");
 
     doc->writeEndElement();
 

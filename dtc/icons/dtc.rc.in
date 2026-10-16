@@ -1,0 +1,35 @@
+// DMX Total Control - Windows resources: the icon of the executable and
+// what Explorer and the Task Manager show about it. CMake fills it in.
+// Licensed under the Apache License, Version 2.0
+
+#include <winver.h>
+
+IDI_ICON1 ICON "@DTC_ICON_FILE@"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @DTC_VERSION_MAJOR@,@DTC_VERSION_MINOR@,@DTC_VERSION_PATCH@,0
+PRODUCTVERSION  @DTC_VERSION_MAJOR@,@DTC_VERSION_MINOR@,@DTC_VERSION_PATCH@,0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "@APPNAME@"
+            VALUE "FileVersion", "@APPVERSION@"
+            VALUE "InternalName", "@APPBINARY@"
+            VALUE "LegalCopyright", "DMX Total Control contributors. Apache License 2.0"
+            VALUE "OriginalFilename", "@APPBINARY@.exe"
+            VALUE "ProductName", "@APPNAME@"
+            VALUE "ProductVersion", "@APPVERSION@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

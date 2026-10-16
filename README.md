@@ -1,183 +1,97 @@
-<p align="center">
-  <a href="https://www.qlcplus.org/">
-    <img src="resources/icons/png/qlcplus.png" alt="QLC+ Logo" height="60" />
-  </a>
-</p>
+# DMX Total Control
 
-<h1 align="center">Q Light Controller+</h1>
-<p align="center"><em>(Often abbreviated as "QLC+")</em></p>
-<p align="center">
-  <strong>Open-source lighting control for DMX, Art-Net, sACN and more.</strong><br/>
-  Designed for live shows, theatre, architectural installations, and venues.
-</p>
+Software de control de iluminación DMX, libre y de código abierto, con una interfaz moderna pensada para el directo.
 
-<p align="center">
-  <a href="https://github.com/mcallegari/qlcplus/releases/latest">
-    <img src="https://img.shields.io/github/v/release/mcallegari/qlcplus" alt="Latest release version badge" /></a>
-  <a href="https://github.com/mcallegari/qlcplus/releases/latest">
-    <img src="https://img.shields.io/github/release-date/mcallegari/qlcplus" alt="Release date badge" /></a>
-  <a href="https://github.com/mcallegari/qlcplus/commits/master/">
-    <img src="https://img.shields.io/github/commits-since/mcallegari/qlcplus/latest/master" alt="Commits since latest release badge" /></a>
-  <a href="https://github.com/mcallegari/qlcplus/commits/master/">
-    <img src="https://img.shields.io/github/commit-activity/w/mcallegari/qlcplus" alt="Weekly commit activity badge" /></a>
-  <a href="https://github.com/mcallegari/qlcplus/actions">
-    <img src="https://github.com/mcallegari/qlcplus/actions/workflows/build.yml/badge.svg" alt="Build status badge" /></a>
-  <a href="https://coveralls.io/github/mcallegari/qlcplus?branch=master">
-    <img src="https://coveralls.io/repos/github/mcallegari/qlcplus/badge.svg?branch=master" alt="Test coverage badge" /></a>
-</p>
+- **Directo por grupos**: las escenas se agrupan en grupos que funcionan en paralelo. En un grupo *exclusivo* solo suena una escena a la vez, y al pulsar otra hace crossfade. Cada grupo tiene su propio master y su tiempo de fundido.
+- **Programador**: seleccionas fixtures, ajustas dimmer, color, posición y cualquier canal en vivo, con paletas por referencia, línea de comandos con teclado en pantalla y FX por parámetro (cada luminaria puede tener su forma, tamaño y sentido sobre el mismo reloj). El programador tiene prioridad sobre todo hasta que lo limpias.
+- **Escenas**: estáticas, pasos, FX, super escenas con línea de tiempo y audio, y cuelists con tracking.
+- **Playbacks**: páginas de faders con GO, pausa y flash para cuelists y escenas, también desde una Akai APC mini, APC mini mk2 o APC40 mkII.
+- **Show y remoto**: una pantalla táctil que montas a tu medida con botones, faders y paneles, también en el móvil o la tablet por wifi.
+- **Hardware**: interfaces **DMX USB** (Enttec Open/Pro, Eurolite, DMXKing, uDMX, Peperoni, Velleman…), Art-Net, sACN/E1.31, MIDI y OSC, y una biblioteca de miles de fixtures, más la Open Fixture Library y la importación de GDTF.
 
----
+Los shows se guardan en formato `.qxw`, compatible con QLC+: puedes abrir shows de QLC+, y QLC+ puede leer la parte del motor de los nuestros.
 
-<p align="center">
-  <a href="https://www.qlcplus.org/download">
-    <img src="https://custom-icon-badges.demolab.com/badge/-Download_QLC+-blue?style=for-the-badge&logo=download&logoColor=white" alt="Download QLC+ badge" /></a>
-  <a href="https://qlcplus.org/discover/raspberry-pi">
-    <img src="https://custom-icon-badges.demolab.com/badge/-Raspberry_Pi-red?style=for-the-badge&logo=cpu&logoColor=white" alt="Raspberry Pi badge" /></a>
-  <a href="https://merch.qlcplus.org">
-    <img src="https://custom-icon-badges.demolab.com/badge/-Store-green?style=for-the-badge&logo=home&logoColor=white" alt="Official store badge" /></a>
-</p>
+> Estado: **en desarrollo**. Consulta la [hoja de ruta](ROADMAP.md).
 
-## Introduction
+## Descargar
 
-**QLC+** is powerful and user-friendly software to control lighting. QLC+ supports a [huge amount of hardware,](https://qlcplus.org/discover/compatibility) runs on Linux, Windows (10+), macOS (10.12+), and Raspberry Pi. Whether you're an experienced lighting professional or just getting started, QLC+ empowers you to take control of your lighting fixtures with ease. The primary goal of this project is to bring QLC+ to the level of available commercial software.
+**Windows 10/11 (64 bits)**: descarga el instalador `DMXTotalControl-Setup-….exe` de la [última versión](https://github.com/joseramos1999/DMXTotalControl/releases/latest) y ejecútalo. Se instala para tu usuario, sin pedir permisos de administrador. Como el instalador no está firmado, Windows SmartScreen puede avisar: **Más información** → **Ejecutar de todas formas**.
 
-### Supported protocols
+El programa avisa de las versiones nuevas y las instala él mismo después de comprobar la huella SHA-256 que GitHub publica del instalador (Opciones › Actualizaciones, donde también se puede desactivar).
 
-[![MIDI](https://img.shields.io/badge/MIDI-%23323330.svg?style=for-the-badge&logo=midi&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/midi)
-[![OSC](https://img.shields.io/badge/OSC-%23323330.svg?style=for-the-badge&logo=aiohttp&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/osc)
-[![HID](https://img.shields.io/badge/HID-%23323330.svg?style=for-the-badge&logo=applearcade&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/hid)
-[![DMX](https://img.shields.io/badge/DMX-%23323330.svg?style=for-the-badge&logo=amazonec2&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/dmx-usb)
-[![ArtNet](https://img.shields.io/badge/ArtNet-%23323330.svg?style=for-the-badge&logo=aiohttp&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/art-net)
-[![E1.31/S.ACN](https://img.shields.io/badge/E1.31%20S.ACN-%23323330.svg?style=for-the-badge&logo=aiohttp&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/e1-31-sacn)
-[![OS2L](https://img.shields.io/badge/OS2L-%23323330.svg?style=for-the-badge&logo=aiohttp&logoColor=%23F7DF1E)](https://docs.qlcplus.org/v4/plugins/os2l)
+![Página Directo](docs/screenshots/live.png)
 
-### QLC+ on social media
+## Estructura
 
-[![Instagram](https://img.shields.io/badge/Instagram-%23E4405F.svg?style=flat-square&logo=Instagram)](https://www.instagram.com/qlcplus/) 
-[![YouTube (v4)](https://img.shields.io/badge/YouTube%20(v4)-%23FF0000.svg?style=flat-square&logo=YouTube)](https://www.youtube.com/playlist?list=PLHT-wIriuitDiW4A9oKSDr__Z_jcmMVdi) 
-[![YouTube (v5)](https://img.shields.io/badge/YouTube%20(v5)-%23FF0000.svg?style=flat-square&logo=YouTube)](https://www.youtube.com/playlist?list=PLHT-wIriuitBQo0DKX9YgWVmS6LsEErE_) 
-[![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?style=flat-square&logo=Facebook)](https://www.facebook.com/qlcplus)
+| Carpeta | Contenido |
+|---|---|
+| `dtc/` | **La aplicación DMX Total Control**: backend C++ (`dtc/src`), interfaz QML (`dtc/qml`), remoto (`dtc/remote`), icono (`dtc/icons`) y pruebas (`dtc/test`) |
+| `engine/` | Motor DMX (universos, fixtures, escenas, chasers, efectos, matrices RGB, cuelists…) |
+| `plugins/` | Plugins de entrada/salida (DMX USB, Art-Net, E1.31, MIDI, OSC…) |
+| `resources/` | Biblioteca de fixtures, perfiles de entrada, scripts RGB, fuentes |
+| `qmlui/`, `ui/` | Interfaces originales del proyecto del que parte el motor. No se compilan por defecto; se conservan para facilitar los merges con upstream |
 
-## Support & bug reports
+## Compilar en Windows
 
-We have a dedicated page to help you find support, please check out [SUPPORT.md](SUPPORT.md). To learn about a specific feature of QLC+, take a look at the [official documentation](https://docs.qlcplus.org/). To give feedback, submit new fixtures and get new ideas, go to the [forum](https://www.qlcplus.org/forum/index.php)
+**Lo más rápido:** con MSYS2 y sus paquetes instalados (paso 1) y [Inno Setup 6](https://jrsoftware.org/isinfo.php), haz doble clic en `compilar-e-instalar.bat`. Compila en Release, crea el instalador y lo ejecuta: instala en `%LOCALAPPDATA%\Programs\DMXTotalControl`, con accesos directos en el escritorio y el menú Inicio, igual que el instalador publicado. Con `compilar-e-instalar.bat debug` compila en modo depuración.
 
-### Help wanted
-Click the badge below to see the currently confirmed issues with QLC+. Perhaps you can find a solution?
+1. Instala [MSYS2](https://www.msys2.org/) y, desde la shell **MINGW64**, los paquetes:
 
-[![Help Wanted](https://img.shields.io/github/issues/mcallegari/qlcplus/issue%20confirmed?logo=github&color=red)](https://github.com/mcallegari/qlcplus/issues?q=is%3Aopen+is%3Aissue+label%3A%22issue+confirmed%22)
+   ```bash
+   pacman -S --needed mingw-w64-x86_64-{gcc,cmake,ninja,pkgconf,libusb,libftdi,libmad,libsndfile,fftw} mingw-w64-x86_64-qt6-{base,declarative,3d,multimedia,serialport,websockets,imageformats,svg,tools,shadertools}
+   ```
 
+2. Prepara el SDK D2XX de FTDI, necesario para las interfaces DMX USB basadas en FTDI:
 
-## Building QLC+
+   ```bash
+   mkdir -p /c/projects/D2XXSDK && cd /c/projects/D2XXSDK
+   curl -LO https://qlcplus.org/misc/CDM-v2.12.36.20-WHQL-Certified.zip && unzip CDM-*.zip
+   cd amd64 && gendef - ftd2xx64.dll > ftd2xx.def && dlltool -k --input-def ftd2xx.def --dllname ftd2xx64.dll --output-lib libftd2xx.a
+   ```
 
-Compilation guides and platform-specific instructions are available in our [GitHub Wiki](https://github.com/mcallegari/qlcplus/wiki).
+3. Compila e instala en `dist/`:
 
-#### Developers at work
+   ```bash
+   ./build-windows.sh
+   ```
 
-If you're regularly updating QLC+ sources with git pull, you may encounter compiler warnings, errors, or unresolved symbols. We strive to keep the `master` branch free of critical errors; however, dependencies between objects can sometimes cause issues, requiring a full package recompilation rather than just updating recent changes.
+4. Ejecuta `dist\dmxtotalcontrol.exe`. Opciones: `--locale en_US` para la interfaz en inglés, o un archivo `.qxw` para abrirlo al arrancar.
 
-## Contributing
-### Software development
+5. El instalador (necesita Inno Setup 6): `./build-installer.sh` deja una instalación limpia en `dist/` y crea `build/installer/DMXTotalControl-Setup-<versión>.exe` a partir de `dtc/installer/DMXTotalControl.iss`.
 
-We welcome contributions from the community to help make QLC+ even better. If you're working on something major, start a thread in the [Development Forum](https://www.qlcplus.org/forum/viewforum.php?f=12) first. Make sure you read the [CONTRIBUTING.md](CONTRIBUTING.md) document for more.
+Pruebas: después de compilar, `./.github/run-tests.sh` pasa las de los grupos (`dtc_zone_test`) y las del backend (`dtc_backend_test`), las mismas que la CI de GitHub en cada cambio.
 
-### Financially
+El icono sale de `dtc/icons/dtc-icon.svg` (y `dtc-icon-small.svg` para 16 y 20 px): si cambias los SVG, `dtc/icons/make-icons.sh` rehace los PNG y el `.ico` (necesita `rsvg-convert` y `perl`).
 
-If you're reading this we already appreciate you. If you're just getting started with lighting you have absolutely no obligation to give us money. When QLC+ opens up revenue opportunities for you, we'd be very thankful for your support. GitHub sponsors is the preferred option.
+## Compilar en Linux / macOS
 
-<img src="https://img.shields.io/github/sponsors/mcallegari" alt="GitHub Sponsors"> <a href="https://github.com/sponsors/mcallegari"><img src="https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#white" /></a>
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+sudo cmake --install build
+```
 
-If you're interested, QLC+ also has an [official store](https://qlcplus-merch.myshopify.com) where you can purchase [clothing](https://qlcplus-merch.myshopify.com/collections/clothing), [themes](https://qlcplus-merch.myshopify.com/collections/themes), the [Raspberry Pi image](https://qlcplus-merch.myshopify.com/products/qlc-raspberry-pi-image) or [one-on-one consultation](https://qlcplus-merch.myshopify.com/collections/training-and-support) with an expert. 
+Necesitas Qt 6 (base, declarative, 3d, multimedia, serialport, websockets, svg, tools), libusb, libftdi, libsndfile, libmad y fftw.
 
+## Publicar una versión
 
+1. Sube la versión en `variables.cmake` (`APPVERSION`, la de DMX Total Control) y anota la versión en el [ROADMAP](ROADMAP.md).
+2. Crea y sube la etiqueta: `git tag v0.14.0 && git push origin v0.14.0`. Con guion (`v0.14.0-beta.1`) es una versión de prueba.
+3. GitHub Actions (`.github/workflows/release.yml`) compila sin la marca «GIT», pasa las pruebas, crea el instalador y lo publica en una Release. Los programas instalados la encuentran solos.
 
-## Thank you!
+## Sincronizar con upstream
 
-QLC+ owes its success to the dedication and expertise of numerous individuals who have generously contributed their time and skills. The following list recognizes those whose remarkable contributions have played a pivotal role in building QLC+.
+El repositorio conserva el proyecto original del motor como remoto `upstream`:
 
-![GitHub contributors](https://img.shields.io/github/contributors/mcallegari/qlcplus)
+```bash
+git fetch upstream
+git merge upstream/master
+```
 
-<details>
-<summary>QLC+ 5</summary>
-    
-*   Eric Arnebäck (3D preview features)
-*   Santiago Benejam Torres (Catalan translation)
-*   Luis García Tornel (Spanish translation)
-*   Nils Van Zuijlen, Jérôme Lebleu (French translation)
-*   Felix Edelmann, Florian Edelmann (fixture definitions, German translation)
-*   Jannis Achstetter (German translation)
-*   Dai Suetake (Japanese translation)
-*   Hannes Bossuyt (Dutch translation)
-*   Aleksandr Gusarov (Russian translation)
-*   Vadim Syniuhin (Ukrainian translation)
-*   Mateusz Kędzierski + smaks6 (Polish translation)
+Para que los merges sigan siendo sencillos, el código nuevo va en `dtc/`. Los cambios en `engine/` y `plugins/` se limitan a lo imprescindible.
 
-</details>
+## Licencia y créditos
 
-<details>
-<summary>QLC+ 4</summary>
+Apache License 2.0. Consulta [COPYING](COPYING) y [NOTICE](NOTICE).
 
-*   Jano Svitok (bugfix, new features and improvements)
-*   David Garyga (bugfix, new features and improvements)
-*   Lukas Jähn (bugfix, new features)
-*   Robert Box (fixtures review)
-*   Thomas Achtner (ENTTEC wing improvements)
-*   Joep Admiraal (MIDI SysEx init messages, Dutch translation)
-*   Florian Euchner (FX5 USB DMX support)
-*   Stefan Riemens (new features)
-*   Bartosz Grabias (new features)
-*   Simon Newton, Peter Newman (OLA plugin)
-*   Janosch Frank (webaccess improvements)
-*   Karri Kaksonen (DMX USB Eurolite USB DMX512 Pro support)
-*   Stefan Krupop (HID DMXControl Projects e.V. Nodle U1 support)
-*   Nathan Durnan (RGB scripts, new features)
-*   Giorgio Rebecchi (new features)
-*   Florian Edelmann (code cleanup, German translation)
-*   Heiko Fanieng, Jannis Achstetter (German translation)
-*   NiKoyes, Jérôme Lebleu, Olivier Humbert, Nils Van Zuijlen (French translation)
-*   Raymond Van Laake (Dutch translation)
-*   Luis García Tornel (Spanish translation)
-*   Jan Lachman (Czech translation)
-*   Nuno Almeida, Carlos Eduardo Porto de Oliveira (Portuguese translation)
-*   Santiago Benejam Torres (Catalan translation)
-*   Koichiro Saito, Dai Suetake (Japanese translation)
-</details>
-
-<details>
-<summary>Q Light Controller</summary>
-
-*   Stefan Krumm (Bugfixes, new features)
-*   Christian Suehs (Bugfixes, new features)
-*   Christopher Staite (Bugfixes)
-*   Klaus Weidenbach (Bugfixes, German translation)
-*   Lutz Hillebrand (uDMX plugin)
-*   Matthew Jaggard (Velleman plugin)
-*   Ptit Vachon (French translation)
-</details>
-
----
-
-<p align="center">
-<a href="https://github.com/mcallegari/qlcplus/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=mcallegari/qlcplus" />
-</a>
-</p>
-
----
-
-
-## License
-<a href="https://github.com/mcallegari/qlcplus/blob/master/COPYING">
-  <img alt="GitHub License badge" src="https://img.shields.io/github/license/mcallegari/qlcplus?style=flat-square" />
-</a>
-
-Licensed under the **Apache 2.0** License.  See [COPYING](COPYING) for details.
-
----
-<p align="center">Copyright © Heikki Junnila, Massimo Callegari</p>
-<p align="center">
-  <img src="https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++ badge" />
-  <img src="https://img.shields.io/badge/Qt-%23217346.svg?style=for-the-badge&logo=Qt&logoColor=white" alt="Qt badge" />
-  <img src="https://img.shields.io/badge/CMake-%23008FBA.svg?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake badge" />
-  <img src="https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E" alt="JavaScript badge" />
-</p>
+DMX Total Control parte del motor y los plugins de [Q Light Controller Plus (QLC+)](https://github.com/mcallegari/qlcplus), de Massimo Callegari, Heikki Junnila y los colaboradores de QLC+, que conservan sus avisos de copyright. Fixtures adicionales de la [Open Fixture Library](https://open-fixture-library.org). DMX Total Control no está afiliado ni respaldado por el proyecto QLC+.

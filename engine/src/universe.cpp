@@ -22,6 +22,8 @@
 #include <QElapsedTimer>
 #include <QDebug>
 #include <math.h>
+#include <cmath>
+#include <QColor>
 
 #include "channelmodifier.h"
 #include "inputoutputmap.h"
@@ -37,8 +39,7 @@
 #include "qlcfile.h"
 #include "utils.h"
 
-#define RELATIVE_ZERO_8BIT   0x7F
-#define RELATIVE_ZERO_16BIT  0x7F00
+// (DMX Total Control: RELATIVE_ZERO_8BIT and RELATIVE_ZERO_16BIT in universe.h)
 
 #define KXMLUniverseNormalBlend      QStringLiteral("Normal")
 #define KXMLUniverseMaskBlend        QStringLiteral("Mask")
@@ -52,6 +53,8 @@ Universe::Universe(quint32 id, GrandMaster *gm, QObject *parent)
     , m_grandMaster(gm)
     , m_passthrough(false)
     , m_monitor(false)
+    , m_currentFaderPriority(INT_MIN)
+    , m_htpPriority(UNIVERSE_SIZE, -1)
     , m_inputPatch(NULL)
     , m_fbPatch(NULL)
     , m_channelsMask(new QByteArray(UNIVERSE_SIZE, char(0)))
@@ -68,9 +71,14 @@ Universe::Universe(quint32 id, GrandMaster *gm, QObject *parent)
     , m_postGMValues(new QByteArray(UNIVERSE_SIZE, char(0)))
     , m_lastPostGMValues(new QByteArray(UNIVERSE_SIZE, char(0)))
     , m_blackoutValues(new QByteArray(UNIVERSE_SIZE, char(0)))
+    , m_restValues(new QByteArray(UNIVERSE_SIZE, char(0)))
+    , m_restMask(new QByteArray(UNIVERSE_SIZE, char(0)))
+    , m_writtenChannels(new QByteArray(UNIVERSE_SIZE, char(0)))
     , m_passthroughValues()
 {
     m_modifiers.fill(NULL, UNIVERSE_SIZE);
+    m_outputSource.fill(-1, UNIVERSE_SIZE);
+    m_outputSourceCount = 0;
 
     connect(m_grandMaster, SIGNAL(valueChanged(uchar)),
             this, SLOT(slotGMValueChanged()));
@@ -214,11 +222,17 @@ void Universe::slotGMValueChanged()
  * Faders
  ************************************************************************/
 
-QSharedPointer<GenericFader> Universe::requestFader(Universe::FaderPriority priority)
+int Universe::faderSortPriority(Universe::FaderPriority priority, int functionPriority, bool afterEqualPriority)
+{
+    return int(priority) * 100 + qBound(0, functionPriority, 49) * 2 + (afterEqualPriority ? 1 : 0);
+}
+
+QSharedPointer<GenericFader> Universe::requestFader(Universe::FaderPriority priority, int functionPriority,
+                                                    bool afterEqualPriority)
 {
     int insertPos = 0;
     QSharedPointer<GenericFader> fader = QSharedPointer<GenericFader>(new GenericFader());
-    fader->setPriority(priority);
+    fader->setPriority(faderSortPriority(priority, functionPriority, afterEqualPriority));
 
     {
         QMutexLocker fadersLocker(&m_fadersMutex);
@@ -256,34 +270,61 @@ void Universe::dismissFader(QSharedPointer<GenericFader> fader)
 void Universe::requestFaderPriority(QSharedPointer<GenericFader> fader, Universe::FaderPriority priority)
 {
     QMutexLocker fadersLocker(&m_fadersMutex);
-    int pos = m_faders.indexOf(fader);
-    int newPos = 0;
-
-    if (pos == -1)
+    if (m_faders.contains(fader) == false)
         return;
 
+    // keep the function priority part of the fader priority
+    moveFaderLocked(fader, int(priority) * 100 + fader->priority() % 100);
+}
+
+void Universe::setFaderFunctionPriority(QSharedPointer<GenericFader> fader, int functionPriority)
+{
+    QMutexLocker fadersLocker(&m_fadersMutex);
+    if (m_faders.contains(fader) == false)
+        return;
+
+    // keep the FaderPriority and the place among equal priorities
+    int sortPriority = faderSortPriority(FaderPriority(fader->priority() / 100), functionPriority,
+                                         fader->priority() % 2 == 1);
+    if (sortPriority != fader->priority())
+        moveFaderLocked(fader, sortPriority);
+}
+
+void Universe::moveFaderLocked(QSharedPointer<GenericFader> fader, int sortPriority)
+{
+    m_faders.removeAll(fader);
+    fader->setPriority(sortPriority);
+
+    int insertPos = 0;
     for (int i = m_faders.count() - 1; i >= 0; i--)
     {
-        QSharedPointer<GenericFader> f = m_faders.at(i);
-        if (!f.isNull() && f->priority() <= priority)
+        const QSharedPointer<GenericFader> &f = m_faders.at(i);
+        if (!f.isNull() && f->priority() <= sortPriority)
         {
-            newPos = i;
-            fader->setPriority(priority);
+            insertPos = i + 1;
             break;
         }
     }
+    m_faders.insert(insertPos, fader);
 
-    if (newPos != pos)
-    {
-        m_faders.move(pos, newPos);
-        qDebug() << "[Universe]" << id() << ": Generic fader moved from" << pos
-                 << "to" << m_faders.indexOf(fader) << ". Count:" << m_faders.count();
-    }
+    qDebug() << "[Universe]" << id() << ": Generic fader moved to priority" << sortPriority
+             << "at pos" << insertPos << ". Count:" << m_faders.count();
 }
 
 QList<QSharedPointer<GenericFader> > Universe::faders()
 {
     return m_faders;
+}
+
+void Universe::refreshFaderFixtures(const Doc *doc)
+{
+    // DMX Total Control
+    QMutexLocker fadersLocker(&m_fadersMutex);
+    for (const QSharedPointer<GenericFader> &fader : std::as_const(m_faders))
+    {
+        if (fader.isNull() == false)
+            fader->refreshFixtures(doc, id());
+    }
 }
 
 void Universe::setFaderPause(quint32 functionID, bool enable)
@@ -350,11 +391,31 @@ void Universe::processFaders(uint elapsedMs)
         }
     }
 
+    // faders are sorted by priority: let the higher ones replace HTP values
+    m_htpPriority.fill(-1);
+    m_writtenChannels->fill(0);
     foreach (const QSharedPointer<GenericFader> &fader, activeFaders)
+    {
+        m_currentFaderPriority = fader->priority();
         fader->write(this, elapsedMs);
+    }
+    // writes coming from outside the faders keep the plain HTP behaviour
+    m_currentFaderPriority = INT_MIN;
+
+    restUnwrittenChannels();
+
+    // DMX Total Control: the live mixer, on top of everything
+    QSharedPointer<const MixerLayer> mixer;
+    {
+        QMutexLocker mixerLocker(&m_mixerMutex);
+        mixer = m_mixerLayer;
+    }
+    if (mixer.isNull() == false)
+        applyMixerLayer(*mixer);
 
     bool dataChanged = hasChanged();
-    const QByteArray postGM = QByteArray::fromRawData(m_postGMValues->constData(), m_usedChannels);
+    // DMX Total Control: swapped channels (pan/tilt) send each other's value
+    QByteArray postGM = outputValues(false);
     dumpOutput(postGM, dataChanged);
 
     if (dataChanged)
@@ -399,6 +460,26 @@ void Universe::run()
 
 void Universe::reset()
 {
+    // DMX Total Control: the faders of the functions of the show that is
+    // gone (a cuelist releasing, a scene fading out) go with them: their
+    // channels lose their rest values below, so a fade out to "what's below"
+    // would stop where it is and the channel would keep that value for good.
+    // The DMX sources (the programmer...) keep their faders
+    {
+        QMutexLocker fadersLocker(&m_fadersMutex);
+        QMutableListIterator<QSharedPointer<GenericFader> > it(m_faders);
+        while (it.hasNext())
+        {
+            QSharedPointer<GenericFader> fader = it.next();
+            if (fader.isNull() || fader->parentFunctionID() != Function::invalidId())
+                it.remove();
+        }
+    }
+
+    // DMX Total Control: no fixture owns the channels any more (File > New):
+    // no rest values (they would be written back every frame), no swaps
+    resetChannelCapabilities();
+
     m_preGMValues->fill(0);
     m_blackoutValues->fill(0);
 
@@ -450,6 +531,25 @@ void Universe::zeroIntensityChannels()
         short size = channels[i] & 0xffff;
 
         reset(channel, size);
+    }
+}
+
+void Universe::restUnwrittenChannels()
+{
+    const char *written = m_writtenChannels->constData();
+    const char *mask = m_restMask->constData();
+    for (int ch = 0; ch < m_usedChannels; ch++)
+    {
+        if (mask[ch] == 0 || written[ch] || (m_channelsMask->at(ch) & HTP))
+            continue;
+
+        char rest = m_restValues->at(ch);
+        if (m_preGMValues->at(ch) == rest)
+            continue;
+
+        (*m_preGMValues)[ch] = rest;
+        (*m_blackoutValues)[ch] = rest;
+        updatePostGMValue(ch);
     }
 }
 
@@ -520,6 +620,18 @@ uchar Universe::preGMValue(int address) const
 {
     if (address < 0 || address >= m_preGMValues->size())
         return 0U;
+
+    return static_cast<uchar>(m_preGMValues->at(address));
+}
+
+uchar Universe::valueBelow(int address) const
+{
+    if (address < 0 || address >= m_preGMValues->size())
+        return 0U;
+
+    if (m_restMask->at(address) && m_writtenChannels->at(address) == 0 &&
+        (m_channelsMask->at(address) & HTP) == 0)
+        return static_cast<uchar>(m_restValues->at(address));
 
     return static_cast<uchar>(m_preGMValues->at(address));
 }
@@ -724,17 +836,61 @@ void Universe::dumpOutput(const QByteArray &data, bool dataChanged)
     if (m_outputPatchList.count() == 0)
         return;
 
+    QByteArray blackout;
     foreach (OutputPatch *op, m_outputPatchList)
     {
         if (m_totalChannelsChanged == true)
             op->setPluginParameter(PLUGIN_UNIVERSECHANNELS, m_totalChannels);
 
         if (op->blackout())
-            op->dump(m_id, *m_blackoutValues, dataChanged);
+        {
+            // DMX Total Control: with the modifiers and swaps of the channels
+            if (blackout.isNull())
+                blackout = outputValues(true);
+            op->dump(m_id, blackout, dataChanged);
+        }
         else
             op->dump(m_id, data, dataChanged);
     }
     m_totalChannelsChanged = false;
+}
+
+QByteArray Universe::outputValues(bool blackout) const
+{
+    // DMX Total Control: what the outputs get
+    if (blackout == false && m_outputSourceCount == 0)
+        return QByteArray::fromRawData(m_postGMValues->constData(), m_usedChannels);
+
+    QByteArray values;
+    if (blackout)
+    {
+        // without light, the other channels stay: through their modifiers
+        // (limits, invert) as when the light is on
+        values = QByteArray(m_blackoutValues->constData(), m_blackoutValues->size());
+        for (int ch = 0; ch < m_usedChannels && ch < values.size(); ch++)
+        {
+            ChannelModifier *modifier = m_modifiers.at(ch);
+            if (modifier != NULL && (m_channelsMask->at(ch) & HTP) == 0)
+                values[ch] = char(modifier->getValue(uchar(m_blackoutValues->at(ch))));
+        }
+    }
+    else
+    {
+        values = QByteArray(m_postGMValues->constData(), m_usedChannels);
+    }
+
+    // swapped channels (pan/tilt) send each other's value
+    if (m_outputSourceCount > 0)
+    {
+        const QByteArray own(values);
+        for (int ch = 0; ch < m_usedChannels && ch < values.size(); ch++)
+        {
+            const int source = m_outputSource.at(ch);
+            if (source >= 0 && source < m_usedChannels && source < own.size())
+                values[ch] = own.at(source);
+        }
+    }
+    return values;
 }
 
 void Universe::flushInput()
@@ -871,6 +1027,13 @@ void Universe::setChannelDefaultValue(ushort channel, uchar value)
 
     (*m_preGMValues)[channel] = value;
     updatePostGMValue(channel);
+
+    // DMX Total Control: where the channel goes back when no fader writes it
+    if (channel < UNIVERSE_SIZE)
+    {
+        (*m_restValues)[channel] = char(value);
+        (*m_restMask)[channel] = 1;
+    }
 }
 
 void Universe::setChannelModifier(ushort channel, ChannelModifier *modifier)
@@ -903,6 +1066,46 @@ ChannelModifier *Universe::channelModifier(ushort channel)
         return NULL;
 
     return m_modifiers.at(channel);
+}
+
+void Universe::setChannelFollowsDimmer(ushort channel, bool follows)
+{
+    if (channel >= (ushort)m_channelsMask->length())
+        return;
+
+    char mask = m_channelsMask->at(channel);
+    (*m_channelsMask)[channel] = follows ? char(mask | Intensity) : char(mask & ~Intensity);
+    updatePostGMValue(channel);
+}
+
+void Universe::setOutputSource(ushort channel, int source)
+{
+    if (channel >= UNIVERSE_SIZE || source >= UNIVERSE_SIZE)
+        return;
+
+    source = source == int(channel) ? -1 : source;
+    if (m_outputSource.at(channel) == source)
+        return;
+
+    m_outputSourceCount += (source >= 0 ? 1 : 0) - (m_outputSource.at(channel) >= 0 ? 1 : 0);
+    m_outputSource[channel] = source;
+    if (channel >= m_usedChannels)
+        m_usedChannels = channel + 1;
+}
+
+void Universe::resetChannelCapabilities()
+{
+    for (int ch = 0; ch < m_totalChannels; ch++)
+    {
+        setChannelCapability(ushort(ch), QLCChannel::NoGroup);
+        setChannelModifier(ushort(ch), NULL);
+        (*m_modifiedZeroValues)[ch] = 0;
+        setOutputSource(ushort(ch), -1);
+        (*m_preGMValues)[ch] = 0;
+        (*m_restMask)[ch] = 0;
+        (*m_restValues)[ch] = 0;
+        updatePostGMValue(ch);
+    }
 }
 
 void Universe::updateIntensityChannelsRanges()
@@ -939,6 +1142,19 @@ void Universe::updateIntensityChannelsRanges()
  * Writing
  ****************************************************************************/
 
+bool Universe::htpWins(int address, quint32 value, quint32 currentValue)
+{
+    // a higher priority fader replaces the value set by lower ones;
+    // equal priorities merge as usual (highest takes precedence)
+    int &channelPriority = m_htpPriority[address];
+    if (m_currentFaderPriority > channelPriority)
+    {
+        channelPriority = m_currentFaderPriority;
+        return true;
+    }
+    return value >= currentValue;
+}
+
 bool Universe::write(int address, uchar value, bool forceLTP)
 {
     Q_ASSERT(address < UNIVERSE_SIZE);
@@ -950,10 +1166,14 @@ bool Universe::write(int address, uchar value, bool forceLTP)
 
     if (m_channelsMask->at(address) & HTP)
     {
-        if (forceLTP == false && value < (uchar)m_preGMValues->at(address))
+        if (forceLTP == false && htpWins(address, value, (uchar)m_preGMValues->at(address)) == false)
         {
             return false;
         }
+        // DMX Total Control: a forced value (live edits) still yields to the
+        // faders of a higher priority that come after it
+        if (forceLTP && m_currentFaderPriority != INT_MIN && m_currentFaderPriority > m_htpPriority[address])
+            m_htpPriority[address] = m_currentFaderPriority;
     }
     else
     {
@@ -962,6 +1182,7 @@ bool Universe::write(int address, uchar value, bool forceLTP)
     }
 
     (*m_preGMValues)[address] = char(value);
+    (*m_writtenChannels)[address] = 1;
 
     updatePostGMValue(address);
 
@@ -979,6 +1200,7 @@ bool Universe::writeMultiple(int address, quint32 value, int channelCount)
             (*m_blackoutValues)[address + i] = ((uchar *)&value)[channelCount - 1 - i];
 
         (*m_preGMValues)[address + i] = ((uchar *)&value)[channelCount - 1 - i];
+        (*m_writtenChannels)[address + i] = 1;
 
         updatePostGMValue(address + i);
     }
@@ -995,19 +1217,22 @@ bool Universe::writeRelative(int address, quint32 value, int channelCount)
     if (address + channelCount >= m_usedChannels)
         m_usedChannels = address + channelCount;
 
+    // DMX Total Control: relative to what the faders below send now (or the
+    // rest value): never to its own value of the previous tick
     if (channelCount == 1)
     {
-        short newVal = uchar((*m_preGMValues)[address]);
+        short newVal = valueBelow(address);
         newVal += short(value) - RELATIVE_ZERO_8BIT;
         (*m_preGMValues)[address] = char(CLAMP(newVal, 0, UCHAR_MAX));
         (*m_blackoutValues)[address] = char(CLAMP(newVal, 0, UCHAR_MAX));
+        (*m_writtenChannels)[address] = 1;
         updatePostGMValue(address);
     }
     else
     {
         quint32 currentValue = 0;
         for (int i = 0; i < channelCount; i++)
-            currentValue = (currentValue << 8) + uchar(m_preGMValues->at(address + i));
+            currentValue = (currentValue << 8) + valueBelow(address + i);
 
         currentValue = qint32(CLAMP((qint32)currentValue + (qint32)value - RELATIVE_ZERO_16BIT, 0, 0xFFFF));
 
@@ -1015,6 +1240,7 @@ bool Universe::writeRelative(int address, quint32 value, int channelCount)
         {
             (*m_preGMValues)[address + i] = ((uchar *)&currentValue)[channelCount - 1 - i];
             (*m_blackoutValues)[address + i] = ((uchar *)&currentValue)[channelCount - 1 - i];
+            (*m_writtenChannels)[address + i] = 1;
             updatePostGMValue(address + i);
         }
     }
@@ -1035,7 +1261,7 @@ bool Universe::writeBlended(int address, quint32 value, int channelCount, Univer
     {
         case NormalBlend:
         {
-            if ((m_channelsMask->at(address) & HTP) && value < currentValue)
+            if ((m_channelsMask->at(address) & HTP) && htpWins(address, value, currentValue) == false)
             {
                 return false;
             }
@@ -1351,4 +1577,124 @@ bool Universe::savePluginParametersXML(QXmlStreamWriter *doc,
     doc->writeEndElement();
 
     return true;
+}
+
+/*****************************************************************************
+ * Offline rendering (DMX Total Control)
+ *****************************************************************************/
+
+void Universe::renderFrame(uint elapsedMs)
+{
+    processFaders(elapsedMs);
+}
+
+/*****************************************************************************
+ * Live mixer (DMX Total Control)
+ *****************************************************************************/
+
+void Universe::setMixerLayer(const QSharedPointer<const MixerLayer> &layer)
+{
+    QMutexLocker mixerLocker(&m_mixerMutex);
+    if (m_mixerClock.isValid() == false)
+        m_mixerClock.start();
+    m_mixerLayer = layer;
+}
+
+void Universe::applyMixerLayer(const MixerLayer &layer)
+{
+    const qint64 now = m_mixerClock.isValid() ? m_mixerClock.elapsed() : 0;
+
+    auto get = [this](int address) -> int
+    {
+        return address >= 0 && address < UNIVERSE_SIZE ? uchar(m_preGMValues->at(address)) : 0;
+    };
+    auto put = [this](int address, int value)
+    {
+        if (address < 0 || address >= UNIVERSE_SIZE)
+            return;
+        (*m_preGMValues)[address] = char(qBound(0, value, 255));
+        if (address >= m_usedChannels)
+            m_usedChannels = address + 1;
+        updatePostGMValue(address);
+    };
+    // the light of a head, from its colour channels
+    auto brightness = [&](const MixerUnit::Head &h) -> int
+    {
+        int v = qMax(qMax(get(h.r), get(h.g)), qMax(get(h.b), get(h.w)));
+        if (h.c >= 0 || h.m >= 0 || h.y >= 0)
+            v = qMax(v, 255 - qMin(qMin(h.c >= 0 ? get(h.c) : 255, h.m >= 0 ? get(h.m) : 255),
+                                   h.y >= 0 ? get(h.y) : 255));
+        return v;
+    };
+    auto scaleHead = [&](const MixerUnit::Head &h, qreal f)
+    {
+        for (int a : { h.r, h.g, h.b, h.w })
+            if (a >= 0)
+                put(a, qRound(get(a) * f));
+        for (int a : { h.c, h.m, h.y })
+            if (a >= 0)
+                put(a, 255 - qRound((255 - get(a)) * f));
+    };
+
+    for (const MixerUnit &unit : layer)
+    {
+        const bool hasDimmer = unit.dimmers.isEmpty() == false;
+
+        // 1. colour: the hue of the mixer, or white for a flash, keeping the light of the scene
+        if (unit.colour || unit.flash)
+        {
+            for (const MixerUnit::Head &h : unit.heads)
+            {
+                int v = brightness(h);
+                if (v == 0 && (hasDimmer || unit.flash || unit.full))
+                    v = 255;
+                QColor c = unit.flash ? QColor(v, v, v)
+                                      : QColor::fromHsvF(float(unit.hue), float(unit.saturation), float(v) / 255.0f);
+                put(h.r, c.red());
+                put(h.g, c.green());
+                put(h.b, c.blue());
+                put(h.w, unit.flash ? v : qRound((1.0 - unit.saturation) * v));
+                put(h.c, 255 - c.red());
+                put(h.m, 255 - c.green());
+                put(h.y, 255 - c.blue());
+            }
+        }
+
+        // 2. light: blackout, full (or flash), or the mixer dimmer; then the strobe
+        const bool off = unit.strobeHz > 0.0 && std::fmod(double(now) * unit.strobeHz / 1000.0, 1.0) >= 0.5;
+        if (hasDimmer)
+        {
+            for (int d : unit.dimmers)
+            {
+                int value = unit.blackout ? 0 : (unit.full || unit.flash) ? 255 : qRound(get(d) * unit.dimmer);
+                put(d, off ? 0 : value);
+            }
+        }
+        else
+        {
+            for (const MixerUnit::Head &h : unit.heads)
+            {
+                qreal f = unit.dimmer;
+                if (unit.blackout)
+                {
+                    f = 0.0;
+                }
+                else if (unit.full || unit.flash)
+                {
+                    int v = brightness(h);
+                    if (v == 0)
+                    {
+                        // nothing lit: full is white
+                        for (int a : { h.r, h.g, h.b, h.w })
+                            put(a, 255);
+                        for (int a : { h.c, h.m, h.y })
+                            put(a, 0);
+                        v = 255;
+                    }
+                    f = 255.0 / v;
+                }
+                scaleHead(h, off ? 0.0 : f);
+            }
+        }
+    }
 }

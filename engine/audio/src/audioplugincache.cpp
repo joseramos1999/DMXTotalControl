@@ -18,6 +18,7 @@
 */
 
 #include <QPluginLoader>
+#include <atomic>
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QMediaDevices>
 #endif
@@ -41,9 +42,22 @@
  #include "audiorenderer_qt6.h"
 #endif
 
+// DMX Total Control: see setDevicesEnabled()
+static std::atomic<bool> s_devicesEnabled(true);
+
 AudioPluginCache::AudioPluginCache(QObject *parent)
     : QObject(parent)
 {
+}
+
+void AudioPluginCache::setDevicesEnabled(bool enable)
+{
+    s_devicesEnabled = enable;
+}
+
+bool AudioPluginCache::devicesEnabled()
+{
+    return s_devicesEnabled;
 }
 
 AudioPluginCache::~AudioPluginCache()
@@ -54,23 +68,28 @@ void AudioPluginCache::load(const QDir &dir)
 {
     qDebug() << Q_FUNC_INFO << dir.path();
 
+    // DMX Total Control: the devices of the machine, unless they are
+    // switched off (the backend tests, see setDevicesEnabled())
+    if (s_devicesEnabled)
+    {
 #if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #if defined(__APPLE__) || defined(Q_OS_MAC)
-    m_audioDevicesList = AudioRendererPortAudio::getDevicesInfo();
+        m_audioDevicesList = AudioRendererPortAudio::getDevicesInfo();
 #elif defined(WIN32) || defined(Q_OS_WIN)
-    m_audioDevicesList = AudioRendererWaveOut::getDevicesInfo();
+        m_audioDevicesList = AudioRendererWaveOut::getDevicesInfo();
 #else
-    m_audioDevicesList = AudioRendererAlsa::getDevicesInfo();
+        m_audioDevicesList = AudioRendererAlsa::getDevicesInfo();
 #endif
 #else
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    m_audioDevicesList = AudioRendererQt5::getDevicesInfo();
-    m_outputDevicesList = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
+        m_audioDevicesList = AudioRendererQt5::getDevicesInfo();
+        m_outputDevicesList = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
 #else
-    m_audioDevicesList = AudioRendererQt6::getDevicesInfo();
-    m_outputDevicesList = QMediaDevices::audioOutputs();
+        m_audioDevicesList = AudioRendererQt6::getDevicesInfo();
+        m_outputDevicesList = QMediaDevices::audioOutputs();
 #endif
 #endif
+    }
 
     /* Check that we can access the directory */
     if (dir.exists() == false || dir.isReadable() == false)

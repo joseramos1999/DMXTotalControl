@@ -24,6 +24,7 @@
 #include <QMutex>
 #include <QList>
 #include <QSet>
+#include <QHash>
 
 #include "function.h"
 
@@ -106,8 +107,10 @@ protected:
     /** The list of Function IDs added to this Collection */
     QList <quint32> m_functions;
     /** A list of intesity attribute override IDs populated when this Collection is
-     *  started and cleaned when it's stopped */
-    QList <int> m_intensityOverrideIds;
+     *  started and cleaned when it's stopped.
+     *  DMX Total Control: by member ID (members can be added or removed while
+     *  the collection plays: an index would go past the end, or shift) */
+    QHash <quint32, int> m_intensityOverrideIds;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     mutable QMutex m_functionListMutex;
@@ -153,6 +156,10 @@ public:
 
     /** @reimpl */
     void postRun(MasterTimer* timer, QList<Universe *> universes) override;
+
+protected:
+    /** @reimpl DMX Total Control: the running children get the new priority */
+    void updateFadersPriority() override;
 
 protected slots:
     /** Called whenever one of this function's child functions stops */

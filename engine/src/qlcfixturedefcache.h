@@ -99,6 +99,10 @@ public:
      */
     bool addFixtureDef(QLCFixtureDef *fixtureDef);
 
+    /** All the definitions in the cache. Definitions coming from the
+     *  fixtures map may not be loaded yet (DMX Total Control) */
+    const QList <QLCFixtureDef*> &defs() const { return m_defs; }
+
     /**
      * Store a fixture in the fixtures user data folder
      * if a fixture with the same name already exists, it
@@ -127,6 +131,20 @@ public:
      * @return always true
      */
     bool reloadOrAddFixtureDef(QLCFixtureDef *fixtureDef);
+
+    /**
+     * DMX Total Control: put $fixtureDef in the place of the definition with
+     * the same manufacturer and model, or add it when there is none. The cache
+     * takes $fixtureDef. Unlike reloadOrAddFixtureDef, the definition replaced
+     * is not changed nor deleted: patched fixtures point to its modes and
+     * channels until they are given the new one (Fixture::setFixtureDefinition),
+     * and what plays may still read them. The cache keeps it until it is
+     * deleted itself.
+     *
+     * @param fixtureDef The new definition
+     * @return the definition replaced, or NULL if there was none
+     */
+    QLCFixtureDef *replaceFixtureDef(QLCFixtureDef *fixtureDef);
 
     /**
      * Load fixture definitions from the given path. Ignores duplicates.
@@ -189,6 +207,8 @@ public:
 private:
     QString m_mapAbsolutePath;
     QList <QLCFixtureDef*> m_defs;
+    /** DMX Total Control: the definitions replaced (replaceFixtureDef) */
+    QList <QLCFixtureDef*> m_replacedDefs;
 };
 
 /** @} */

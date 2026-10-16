@@ -45,6 +45,10 @@ QLCFixtureDefCache::QLCFixtureDefCache()
 QLCFixtureDefCache::~QLCFixtureDefCache()
 {
     clear();
+
+    // DMX Total Control: the fixtures that used them are gone by now
+    qDeleteAll(m_replacedDefs);
+    m_replacedDefs.clear();
 }
 
 QLCFixtureDef* QLCFixtureDefCache::fixtureDef(
@@ -233,6 +237,30 @@ bool QLCFixtureDefCache::reloadOrAddFixtureDef(QLCFixtureDef *fixtureDef)
     }
 
     return true;
+}
+
+QLCFixtureDef *QLCFixtureDefCache::replaceFixtureDef(QLCFixtureDef *fixtureDef)
+{
+    // DMX Total Control: the new one takes the place of the old one, which
+    // stays as it is (fixtures and what plays may still point into it)
+    if (fixtureDef == NULL)
+        return NULL;
+
+    for (int i = 0; i < m_defs.size(); i++)
+    {
+        QLCFixtureDef *def = m_defs.at(i);
+        if (def->manufacturer() != fixtureDef->manufacturer() || def->model() != fixtureDef->model())
+            continue;
+        if (def == fixtureDef)
+            return NULL;
+
+        m_defs[i] = fixtureDef;
+        m_replacedDefs.append(def);
+        return def;
+    }
+
+    m_defs << fixtureDef;
+    return NULL;
 }
 
 bool QLCFixtureDefCache::load(const QDir& dir)

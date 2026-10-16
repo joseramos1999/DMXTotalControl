@@ -254,6 +254,14 @@ bool Collection::contains(quint32 functionId) const
     Doc* doc = qobject_cast <Doc*> (parent());
     Q_ASSERT(doc != NULL);
 
+    // DMX Total Control: collections in a cycle (A in B in A, from a file)
+    // end the search instead of recursing forever
+    static thread_local QSet<const Collection *> visiting;
+    if (visiting.contains(this))
+        return false;
+    visiting.insert(this);
+
+    bool found = false;
     foreach (quint32 fid, m_functions)
     {
         Function* function = doc->function(fid);
@@ -261,13 +269,15 @@ bool Collection::contains(quint32 functionId) const
         if (function == NULL)
             continue;
 
-        if (function->id() == functionId)
-            return true;
-        if (function->contains(functionId))
-            return true;
+        if (function->id() == functionId || function->contains(functionId))
+        {
+            found = true;
+            break;
+        }
     }
 
-    return false;
+    visiting.remove(this);
+    return found;
 }
 
 QList<quint32> Collection::components() const
@@ -296,7 +306,8 @@ void Collection::preRun(MasterTimer *timer)
             Function *function = doc->function(fid);
             Q_ASSERT(function != NULL);
 
-            m_intensityOverrideIds << function->requestAttributeOverride(Function::Intensity, getAttributeValue(Function::Intensity));
+            // DMX Total Control: by member ID
+            m_intensityOverrideIds.insert(fid, function->requestAttributeOverride(Function::Intensity, getAttributeValue(Function::Intensity)));
 
             // Append the IDs of all functions started by this collection
             // to a set so that we can track which of them are still controlled
@@ -314,11 +325,24 @@ void Collection::preRun(MasterTimer *timer)
                     this, SLOT(slotChildStarted(quint32)));
 
             //function->adjustAttribute(getAttributeValue(Function::Intensity), Function::Intensity);
+            // DMX Total Control: the children play with the priority of the rack
+            function->setParentPriority(playbackPriority());
             function->start(timer, functionParent(), 0, overrideFadeInSpeed(), overrideFadeOutSpeed(), overrideDuration());
         }
         m_tick = 1;
     }
     Function::preRun(timer);
+}
+
+void Collection::updateFadersPriority()
+{
+    QMutexLocker locker(&m_functionListMutex);
+    foreach (quint32 fid, m_runningChildren)
+    {
+        Function *function = doc()->function(fid);
+        if (function != NULL)
+            function->setParentPriority(playbackPriority());
+    }
 }
 
 void Collection::setPause(bool enable)
@@ -416,6 +440,12 @@ void Collection::postRun(MasterTimer* timer, QList<Universe *> universes)
 
 void Collection::slotChildStopped(quint32 fid)
 {
+    // DMX Total Control: the signal of a run before, arriving after the child
+    // was started again (an edit that restarts it): it is still this one's
+    Function *function = doc()->function(fid);
+    if (function != NULL && function->stopped() == false)
+        return;
+
     QMutexLocker locker(&m_functionListMutex);
     m_runningChildren.remove(fid);
 }
@@ -437,11 +467,16 @@ int Collection::adjustAttribute(qreal fraction, int attributeId)
 
         QMutexLocker locker(&m_functionListMutex);
 
+        // DMX Total Control: the members this collection started, each with
+        // its own override (members added since then have none, removed ones
+        // are not driven any more)
         for (int i = 0; i < m_functions.count(); i++)
         {
             Function* function = document->function(m_functions.at(i));
-            Q_ASSERT(function != NULL);
-            function->adjustAttribute(getAttributeValue(Function::Intensity), m_intensityOverrideIds.at(i));
+            auto overrideId = m_intensityOverrideIds.constFind(m_functions.at(i));
+            if (function == NULL || overrideId == m_intensityOverrideIds.cend())
+                continue;
+            function->adjustAttribute(getAttributeValue(Function::Intensity), overrideId.value());
         }
     }
 

@@ -20,6 +20,8 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 #include <QDebug>
+#include <qmath.h>
+#include <algorithm>
 
 #include "sequence.h"
 #include "track.h"
@@ -32,6 +34,10 @@
 #define KXMLQLCTrackIsMute    QStringLiteral("isMute")
 
 #define KXMLQLCTrackFunctions QStringLiteral("Functions")
+// DMX Total Control
+#define KXMLDTCTrackLocked     QStringLiteral("Locked")
+#define KXMLDTCTrackHidden     QStringLiteral("Hidden")
+#define KXMLDTCTrackAutomation QStringLiteral("Automation")
 
 Track::Track(quint32 sceneID, QObject *parent)
     : QObject(parent)
@@ -39,6 +45,8 @@ Track::Track(quint32 sceneID, QObject *parent)
     , m_showId(Function::invalidId())
     , m_sceneID(sceneID)
     , m_isMute(false)
+    , m_locked(false)
+    , m_hidden(false)
 {
     setName(tr("New Track"));
 }
@@ -46,6 +54,14 @@ Track::Track(quint32 sceneID, QObject *parent)
 Track::~Track()
 {
 
+}
+
+/** DMX Total Control: the runner mutex of the show of $track (null without
+ *  a show): the running show reads the tracks and holds their blocks */
+static QRecursiveMutex *runnerMutexOf(const Track *track)
+{
+    Show *show = qobject_cast<Show *>(track->parent());
+    return show != NULL ? show->runnerMutex() : NULL;
 }
 
 /****************************************************************************
@@ -124,6 +140,82 @@ bool Track::isMute() const
 }
 
 /*********************************************************************
+ * DMX Total Control: lock, hide, automation
+ *********************************************************************/
+
+void Track::setLocked(bool locked)
+{
+    m_locked = locked;
+}
+
+bool Track::isLocked() const
+{
+    return m_locked;
+}
+
+void Track::setHidden(bool hidden)
+{
+    m_hidden = hidden;
+}
+
+bool Track::isHidden() const
+{
+    return m_hidden;
+}
+
+void Track::setAutomation(const QString &lane, const QList<AutomationPoint> &points)
+{
+    QList<AutomationPoint> sorted = points;
+    std::sort(sorted.begin(), sorted.end(), [](const AutomationPoint &a, const AutomationPoint &b) {
+        return a.time < b.time;
+    });
+    {
+        // DMX Total Control: not while a running show reads it
+        QMutexLocker locker(runnerMutexOf(this));
+        if (sorted.isEmpty())
+            m_automation.remove(lane);
+        else
+            m_automation.insert(lane, sorted);
+    }
+    emit changed(id());
+}
+
+QList<Track::AutomationPoint> Track::automation(const QString &lane) const
+{
+    return m_automation.value(lane);
+}
+
+bool Track::hasAutomation(const QString &lane) const
+{
+    return m_automation.value(lane).isEmpty() == false;
+}
+
+qreal Track::automationValue(const QString &lane, quint32 time, qreal fallback) const
+{
+    const QList<AutomationPoint> points = m_automation.value(lane);
+    if (points.isEmpty())
+        return fallback;
+    if (time <= points.first().time)
+        return points.first().value;
+    if (time >= points.last().time)
+        return points.last().value;
+
+    for (int i = 0; i < points.count() - 1; i++)
+    {
+        const AutomationPoint &a = points.at(i);
+        const AutomationPoint &b = points.at(i + 1);
+        if (time >= b.time)
+            continue;
+        qreal f = b.time > a.time ? qreal(time - a.time) / qreal(b.time - a.time) : 1.0;
+        // a smooth point eases in and out to the next one
+        if (a.smooth)
+            f = (1.0 - qCos(f * M_PI)) / 2.0;
+        return a.value + (b.value - a.value) * f;
+    }
+    return points.last().value;
+}
+
+/*********************************************************************
  * Sequences
  *********************************************************************/
 
@@ -133,6 +225,8 @@ ShowFunction *Track::createShowFunction(quint32 functionID)
     quint32 uId = show == NULL ? 0 : show->getLatestShowFunctionId();
     ShowFunction *func = new ShowFunction(uId);
     func->setFunctionID(functionID);
+    // DMX Total Control: not while a running show reads the blocks
+    QMutexLocker locker(runnerMutexOf(this));
     m_functions.append(func);
 
     return func;
@@ -143,6 +237,8 @@ bool Track::addShowFunction(ShowFunction *func)
     if (func == NULL || func->functionID() == Function::invalidId())
         return false;
 
+    // DMX Total Control: not while a running show reads the blocks
+    QMutexLocker locker(runnerMutexOf(this));
     m_functions.append(func);
 
     return true;
@@ -159,12 +255,19 @@ ShowFunction *Track::showFunction(quint32 id) const
 
 bool Track::removeShowFunction(ShowFunction *function, bool performDelete)
 {
+    // DMX Total Control: not while a running show reads the blocks; a block
+    // deleted is forgotten first (what it plays stops)
+    QMutexLocker locker(runnerMutexOf(this));
     if (m_functions.contains(function) == false)
         return false;
 
     ShowFunction *func = m_functions.takeAt(m_functions.indexOf(function));
     if (performDelete && func)
+    {
+        if (Show *show = qobject_cast<Show *>(parent()))
+            show->forgetBlock(func);
         delete func;
+    }
 
     return true;
 }
@@ -188,6 +291,26 @@ bool Track::saveXML(QXmlStreamWriter *doc) const
     if (m_sceneID != Scene::invalidId())
         doc->writeAttribute(KXMLQLCTrackSceneID, QString::number(m_sceneID));
     doc->writeAttribute(KXMLQLCTrackIsMute, QString::number(m_isMute));
+    // DMX Total Control
+    if (m_locked)
+        doc->writeAttribute(KXMLDTCTrackLocked, "1");
+    if (m_hidden)
+        doc->writeAttribute(KXMLDTCTrackHidden, "1");
+    for (auto it = m_automation.cbegin(); it != m_automation.cend(); ++it)
+    {
+        doc->writeStartElement(KXMLDTCTrackAutomation);
+        doc->writeAttribute("Lane", it.key());
+        for (const AutomationPoint &point : it.value())
+        {
+            doc->writeStartElement("Point");
+            doc->writeAttribute("Time", QString::number(point.time));
+            doc->writeAttribute("Value", QString::number(point.value));
+            if (point.smooth)
+                doc->writeAttribute("Smooth", "1");
+            doc->writeEndElement();
+        }
+        doc->writeEndElement();
+    }
 
     /* Save the list of Functions if any is present */
     if (m_functions.isEmpty() == false)
@@ -243,10 +366,30 @@ bool Track::loadXML(QXmlStreamReader &root)
         return false;
     }
     m_isMute = mute;
+    // DMX Total Control
+    m_locked = attrs.value(KXMLDTCTrackLocked).toString() == "1";
+    m_hidden = attrs.value(KXMLDTCTrackHidden).toString() == "1";
 
     /* look for show functions */
     while (root.readNextStartElement())
     {
+        if (root.name() == KXMLDTCTrackAutomation)
+        {
+            QString lane = root.attributes().value("Lane").toString();
+            QList<AutomationPoint> points;
+            while (root.readNextStartElement())
+            {
+                if (root.name() == QLatin1String("Point"))
+                {
+                    QXmlStreamAttributes p = root.attributes();
+                    points.append({ p.value("Time").toString().toUInt(), p.value("Value").toString().toDouble(),
+                                    p.value("Smooth").toString() == "1" });
+                }
+                root.skipCurrentElement();
+            }
+            m_automation.insert(lane, points);
+            continue;
+        }
         if (root.name() == KXMLShowFunction)
         {
             Show *show = qobject_cast<Show *>(parent());
@@ -298,8 +441,12 @@ bool Track::postLoad(Doc* doc)
 
         //if (showFunction->duration() == 0)
         //    showFunction->setDuration(function->totalDuration());
-        if (showFunction->color().isValid() == false)
-            showFunction->setColor(ShowFunction::defaultColor(function->type()));
+        // DMX Total Control: a block without a colour keeps none: the timeline
+        // colours it by the type of its function, as before it was saved (a
+        // QLC+ default here changed its colour, and the file, on every open).
+        // The default QLC+ gave it (shows saved before) is no colour either
+        if (showFunction->color() == ShowFunction::defaultColor(function->type()))
+            showFunction->setColor(QColor());
 
         if (function->type() == Function::SequenceType)
         {

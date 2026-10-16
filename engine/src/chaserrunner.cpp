@@ -43,6 +43,8 @@ ChaserRunner::ChaserRunner(const Doc *doc, const Chaser *chaser, quint32 startTi
     , m_lastFunctionID(Function::invalidId())
     , m_roundTime(new QElapsedTimer())
     , m_order()
+    , m_stepsDone(0)
+    , m_held(false)
 {
     Q_ASSERT(chaser != NULL);
 
@@ -471,9 +473,54 @@ void ChaserRunner::adjustStepIntensity(qreal fraction, int requestedStepIndex, i
     startNewStep(stepIndex, m_doc->masterTimer(), m_pendingAction.m_masterIntensity, fraction, fadeControl);
 }
 
+void ChaserRunner::setStepsPriority(int priority)
+{
+    foreach (ChaserRunnerStep *step, m_runnerSteps)
+    {
+        if (step->m_function != NULL)
+            step->m_function->setParentPriority(priority);
+    }
+}
+
 /****************************************************************************
  * Running
  ****************************************************************************/
+
+Function::CycleResult ChaserRunner::stepDone()
+{
+    // DMX Total Control: a cycle is every step once (there and back for a
+    // ping pong)
+    int cycleLength = m_chaser->stepsCount();
+    if (m_chaser->runOrder() == Function::PingPong && cycleLength > 1)
+        cycleLength = 2 * (cycleLength - 1);
+    if (cycleLength <= 0 || ++m_stepsDone % cycleLength != 0)
+        return Function::CycleContinue;
+
+    Function::CycleResult result = const_cast<Chaser *>(m_chaser)->cycleCompleted();
+    if (result == Function::CycleHold)
+        m_held = true;
+    return result;
+}
+
+bool ChaserRunner::isHeld() const
+{
+    return m_held;
+}
+
+void ChaserRunner::forgetFunction(quint32 fid, const Function *current)
+{
+    // DMX Total Control: the steps of a function deleted or replaced
+    QMutableListIterator<ChaserRunnerStep *> it(m_runnerSteps);
+    while (it.hasNext())
+    {
+        ChaserRunnerStep *step = it.next();
+        if (step->m_function == NULL || step->m_function == current || step->m_function->id() != fid)
+            continue;
+        step->m_function->stop(functionParent());
+        it.remove();
+        delete step;
+    }
+}
 
 void ChaserRunner::clearRunningList()
 {
@@ -557,6 +604,15 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
         break;
     }
 
+    // DMX Total Control: the live speed stretches or shortens the fades too
+    if (m_chaser->speedFactor() != 1.0 && m_chaser->tempoType() == Function::Time)
+    {
+        if (newStep->m_fadeIn != Function::defaultSpeed() && newStep->m_fadeIn != Function::infiniteSpeed())
+            newStep->m_fadeIn = uint(qreal(newStep->m_fadeIn) / m_chaser->speedFactor());
+        if (newStep->m_fadeOut != Function::defaultSpeed() && newStep->m_fadeOut != Function::infiniteSpeed())
+            newStep->m_fadeOut = uint(qreal(newStep->m_fadeOut) / m_chaser->speedFactor());
+    }
+
     newStep->m_duration = stepDuration(index);
 
     if (m_startOffset != 0)
@@ -572,7 +628,8 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
         Scene *s = qobject_cast<Scene*>(func);
         // blind == true is a workaround to reuse the same scene
         // without messing up the previous values
-        for (int i = 0; i < step.values.count(); i++)
+        // DMX Total Control: the bound scene may be another type of function now
+        for (int i = 0; s != NULL && i < step.values.count(); i++)
             s->setValue(step.values.at(i), true);
     }
 
@@ -593,6 +650,9 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
     {
         newStep->m_intensityOverrideId = func->requestAttributeOverride(Function::Intensity, mIntensity * sIntensity);
     }
+
+    // DMX Total Control: the steps play with the priority of the chaser
+    func->setParentPriority(m_chaser->playbackPriority());
 
     // Start the fire up!
     func->start(timer, functionParent(), 0, newStep->m_fadeIn, newStep->m_fadeOut,
@@ -756,6 +816,27 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
     switch (m_pendingAction.m_action)
     {
         case ChaserNextStep:
+            // DMX Total Control: a step left for the next one (BeatGO, a
+            // pulse, Next) counts for the loops too
+            if (m_runnerSteps.isEmpty() == false)
+            {
+                Function::CycleResult result = stepDone();
+                if (result == Function::CycleStop)
+                {
+                    m_pendingAction.m_action = ChaserNoAction;
+                    return false;
+                }
+                if (result == Function::CycleHold)
+                {
+                    // the step stays, as when it ends on its own time
+                    for (ChaserRunnerStep *step : std::as_const(m_runnerSteps))
+                        step->m_duration = Function::infiniteSpeed();
+                    m_pendingAction.m_action = ChaserNoAction;
+                    break;
+                }
+            }
+            clearRunningList();
+        break;
         case ChaserPreviousStep:
             clearRunningList();
             // the actual action will be performed below, on startNewStep
@@ -796,6 +877,16 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
             ((m_chaser->tempoType() == Function::Time && step->m_elapsed >= step->m_duration) ||
              (m_chaser->tempoType() == Function::Beats && step->m_elapsedBeats >= step->m_duration)))
         {
+            // DMX Total Control: count the loops, then hold the last step or stop
+            Function::CycleResult result = stepDone();
+            if (result == Function::CycleHold)
+            {
+                step->m_duration = Function::infiniteSpeed();
+                continue;
+            }
+            if (result == Function::CycleStop)
+                return false;
+
             if (step->m_duration != 0)
                 prevStepRoundElapsed = step->m_elapsed % step->m_duration;
 
@@ -807,7 +898,7 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
         else
         {
             if (step->m_elapsed < UINT_MAX)
-                step->m_elapsed += MasterTimer::tick();
+                step->m_elapsed += m_chaser->frameTick(); // DMX Total Control: live speed
 
             // When the speeds of the chaser change, they need to be updated to the lower
             // level (only current function) as well. Otherwise the new speeds would take

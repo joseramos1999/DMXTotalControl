@@ -94,6 +94,38 @@ private:
     int m_timeDivisionBPM;
 
     /*********************************************************************
+     * DMX Total Control: timeline settings
+     *********************************************************************/
+public:
+    /** The end of the show (ms); 0: the end of its last block */
+    void setEndTime(quint32 ms);
+    quint32 endTime() const;
+
+    /** At the end, back to the start */
+    void setLoop(bool loop);
+    bool loop() const;
+
+    /** Where the first bar starts (ms), for a grid in bars */
+    void setGridOffset(quint32 ms);
+    quint32 gridOffset() const;
+
+    /** Blocks are placed in milliseconds whatever the tempo of their
+     *  functions (the shows made in DMX Total Control) */
+    void setMsTimeline(bool ms);
+    bool msTimeline() const;
+
+    /** A hidden scene with the static values of the show, played with it */
+    void setStaticScene(quint32 id);
+    quint32 staticScene() const;
+
+private:
+    quint32 m_endTime;
+    bool m_loop;
+    quint32 m_gridOffset;
+    bool m_msTimeline;
+    quint32 m_staticScene;
+
+    /*********************************************************************
      * Tracks
      *********************************************************************/
 public:
@@ -198,12 +230,29 @@ protected slots:
     /** Called whenever one of this function's child functions stops */
     void slotChildStopped(quint32 fid);
 
+    /** DMX Total Control: Doc::functionRemoved and Doc::functionReplaced,
+     *  before the Doc deletes the function: the running blocks let it go (a
+     *  replaced one plays the new function) */
+    void slotFunctionRemoved(quint32 fid);
+    void slotFunctionReplaced(quint32 fid);
+
 signals:
     void timeChanged(quint32);
     void showFinished();
 
+public:
+    /** DMX Total Control: held while the runner plays (timer thread) and
+     *  while the tracks or their blocks change (tracks, blocks, automation):
+     *  the runner holds the blocks and reads the tracks */
+    QRecursiveMutex *runnerMutex();
+
+    /** DMX Total Control: a block of a track is about to be deleted, or a
+     *  whole track: a running show forgets them (what they play stops) */
+    void forgetBlock(ShowFunction *sf);
+
 protected:
     ShowRunner *m_runner;
+    QRecursiveMutex m_runnerMutex;
     /** Number of currently running children */
     QSet <quint32> m_runningChildren;
 

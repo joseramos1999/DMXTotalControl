@@ -63,6 +63,10 @@ public:
     Doc * doc() const { return m_doc; }
     Doc * doc() { return m_doc; }
 
+    // DMX Total Control: a clone for a function of another Doc (an import)
+    // works with that Doc (component paths, audio input), not the source one
+    void setDoc(Doc * doc) { m_doc = doc; }
+
 private:
 
     Doc * m_doc;

@@ -53,7 +53,8 @@ public:
         SetTarget   = (1 << 8),     /** Set target to current universe value */
         AutoRemove  = (1 << 9),     /** Automatically remove the channel once target is reached */
         CrossFade   = (1 << 10),    /** Channel subject to crossfade */
-        ForceLTP    = (1 << 11)     /** Force LTP for flashing scenes */
+        ForceLTP    = (1 << 11),    /** Force LTP for flashing scenes */
+        Modulated   = (1 << 12)     /** DMX Total Control: an FX adds an offset to the value */
     };
 
     /** Create a new FadeChannel with empty/invalid values */
@@ -109,6 +110,12 @@ public:
 
     /** Get the absolute address in its universe for this channel. */
     quint32 addressInUniverse() const;
+
+    /** DMX Total Control: its fixture moved or changed: the address and the
+     *  type follow it (the flags set by the functions stay). False when the
+     *  channel has no place in a fader of $universeID any more (the fixture
+     *  is gone, has no such channel or is in another universe) */
+    bool refreshFixture(const Doc *doc, quint32 universeID);
 
 protected:
     void autoDetect(const Doc *doc);
@@ -201,6 +208,22 @@ public:
      */
     uchar calculateCurrent(uint fadeTime, uint elapsedTime);
 
+    /** DMX Total Control: wait $ms before fading (staggered fades, one fixture after the other) */
+    void setDelay(uint ms);
+    uint delay() const;
+
+    /** DMX Total Control: FX. A Modulated channel sends its value (or, when
+     *  $onBelow, what the faders below send) plus $offset. With the address
+     *  in the universe of its fine channel, the values are 16 bit and it
+     *  sends the fine channel too (fixtures with the fine channels apart) */
+    void setModulation(qint32 offset, bool onBelow, quint32 fineAddress = UINT_MAX);
+    qint32 modulationOffset() const;
+    bool modulatesBelow() const;
+    quint32 modulationFine() const;
+    /** The last value a Modulated channel sent (where its fade out starts) */
+    void setModulatedOutput(quint32 value);
+    quint32 modulatedOutput() const;
+
 private:
     quint32 m_start;
     quint32 m_target;
@@ -209,6 +232,12 @@ private:
 
     uint m_fadeTime;
     uint m_elapsed;
+    uint m_delay;
+
+    qint32 m_modOffset;
+    quint32 m_modOutput;
+    bool m_modBelow;
+    quint32 m_modFine;
 };
 
 /** @} */

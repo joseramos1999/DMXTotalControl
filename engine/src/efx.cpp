@@ -41,6 +41,8 @@ EFX::EFX(Doc* doc)
     : Function(doc, Function::EFXType)
     , m_algorithm(EFX::Circle)
     , m_dimmerControl(false)
+    , m_symmetric(false)
+    , m_phaseSpread(-1)
     , m_isRelative(false)
     , m_xFrequency(2)
     , m_yFrequency(3)
@@ -49,6 +51,8 @@ EFX::EFX(Doc* doc)
     , m_propagationMode(Parallel)
     , m_legacyFadeBus(Bus::invalid())
     , m_legacyHoldBus(Bus::invalid())
+    , m_cycleElapsed(0)
+    , m_beatLoopDuration(0)
 {
     updateRotationCache();
     setName(tr("New EFX"));
@@ -129,6 +133,8 @@ bool EFX::copyFrom(const Function* function)
 
     m_algorithm = efx->m_algorithm;
     m_dimmerControl = efx->m_dimmerControl;
+    m_symmetric = efx->m_symmetric;
+    m_phaseSpread = efx->m_phaseSpread;
 
     return Function::copyFrom(function);
 }
@@ -145,6 +151,10 @@ void EFX::setDuration(uint ms)
 
 uint EFX::loopDuration() const
 {
+    // DMX Total Control: following the BPM, the duration is in beats
+    if (tempoType() == Beats && m_beatLoopDuration > 0)
+        return m_beatLoopDuration;
+
     uint fadeIn = overrideFadeInSpeed() == defaultSpeed() ? fadeInSpeed() : overrideFadeInSpeed();
 
     return duration() - fadeIn;
@@ -250,6 +260,62 @@ void EFX::setDimmerControlEnabled(bool enable)
     m_dimmerControl = enable;
 }
 
+bool EFX::isSymmetric() const
+{
+    return m_symmetric;
+}
+
+void EFX::setSymmetric(bool enable)
+{
+    if (enable == m_symmetric)
+        return;
+    m_symmetric = enable;
+    emit changed(id());
+}
+
+int EFX::phaseSpread() const
+{
+    return m_phaseSpread;
+}
+
+void EFX::setPhaseSpread(int degrees)
+{
+    degrees = degrees < 0 ? -1 : qMin(degrees, 1440);
+    if (degrees == m_phaseSpread)
+        return;
+    m_phaseSpread = degrees;
+    emit changed(id());
+}
+
+uint EFX::fixtureTimeOffset(int index) const
+{
+    if (m_propagationMode == Parallel || loopDuration() == 0)
+        return 0;
+
+    // symmetric: the fixtures go in pairs from the outside, one phase per pair
+    int count = m_fixtures.size();
+    if (m_symmetric)
+    {
+        index = qMin(index, count - 1 - index);
+        count = (count + 1) / 2;
+    }
+
+    if (m_phaseSpread >= 0 && m_propagationMode == Asymmetric)
+    {
+        // the first and the last one $phaseSpread degrees apart
+        qint64 span = qint64(loopDuration()) * m_phaseSpread / 360;
+        qint64 offset = count > 1 ? span * index / (count - 1) : 0;
+        return uint(offset % qMax<qint64>(1, loopDuration()));
+    }
+    return loopDuration() / (count + 1) * uint(qMax(0, index));
+}
+
+bool EFX::fixtureMirrored(int index) const
+{
+    // the second half mirrors the first one (the middle one doesn't)
+    return m_symmetric && index * 2 > m_fixtures.size() - 1;
+}
+
 void EFX::preview(QPolygonF &polygon) const
 {
     preview(polygon, Function::Forward, 0);
@@ -260,13 +326,19 @@ void EFX::previewFixtures(QVector <QPolygonF>& polygons) const
     polygons.resize(m_fixtures.size());
     for (int i = 0; i < m_fixtures.size(); ++i)
     {
-        int propagationOffset =
-            (m_propagationMode == EFX::Asymmetric || m_propagationMode == EFX::Serial)
-                ? 360 / m_fixtures.size() * i
-                : 0;
+        // DMX Total Control: the same offset as when it plays, and the mirror
+        int propagationOffset = loopDuration() > 0
+                ? int(qint64(fixtureTimeOffset(i)) * 360 / loopDuration()) : 0;
 
         preview(polygons[i], m_fixtures[i]->m_direction,
                 m_fixtures[i]->m_startOffset + propagationOffset);
+
+        if (fixtureMirrored(i))
+        {
+            float centre = float(getAttributeValue(XOffset));
+            for (QPointF &point : polygons[i])
+                point.setX(2.0 * centre - point.x());
+        }
     }
 }
 
@@ -909,6 +981,11 @@ bool EFX::saveXML(QXmlStreamWriter *doc) const
     doc->writeTextElement(KXMLQLCEFXIsRelative, QString::number(isRelative() ? 1 : 0));
     /* DimmerControl */
     doc->writeTextElement(KXMLQLCEFXDimmerControl, QString::number(dimmerControlEnabled() ? 1 : 0));
+    // DMX Total Control
+    if (m_symmetric)
+        doc->writeTextElement(KXMLDTCEFXSymmetric, "1");
+    if (m_phaseSpread >= 0)
+        doc->writeTextElement(KXMLDTCEFXPhaseSpread, QString::number(m_phaseSpread));
 
     /********************************************
      * X-Axis
@@ -1040,6 +1117,14 @@ bool EFX::loadXML(QXmlStreamReader &root)
             /* DimmerControl */
             setDimmerControlEnabled(root.readElementText().toInt() != 0);
         }
+        else if (root.name() == KXMLDTCEFXSymmetric)
+        {
+            setSymmetric(root.readElementText().toInt() != 0);
+        }
+        else if (root.name() == KXMLDTCEFXPhaseSpread)
+        {
+            setPhaseSpread(root.readElementText().toInt());
+        }
         else if (root.name() == QStringLiteral("DimmerWidth") ||
                  root.name() == QStringLiteral("DimmerAttack") ||
                  root.name() == QStringLiteral("DimmerDecay") ||
@@ -1139,11 +1224,16 @@ void EFX::postLoad()
  *****************************************************************************/
 QSharedPointer<GenericFader> EFX::getFader(QList<Universe *> universes, quint32 universeID)
 {
+    // DMX Total Control: the universe of a fixture may be gone (removed):
+    // nothing to write to (the fixtures write nothing without a fader)
+    if (universeID >= quint32(universes.count()))
+        return QSharedPointer<GenericFader>();
+
     // get the universe Fader first. If doesn't exist, create it
     QSharedPointer<GenericFader> fader = m_fadersMap.value(universeID, QSharedPointer<GenericFader>());
     if (fader.isNull())
     {
-        fader = universes[universeID]->requestFader(isRelative() ? Universe::Override : Universe::Auto);
+        fader = universes[universeID]->requestFader(isRelative() ? Universe::Override : Universe::Auto, playbackPriority());
         fader->adjustIntensity(getAttributeValue(Intensity));
         fader->setBlendMode(blendMode());
         fader->setName(name());
@@ -1167,15 +1257,52 @@ void EFX::preRun(MasterTimer* timer)
         ef->setSerialNumber(serialNumber++);
     }
 
+    m_cycleElapsed = 0;
+    m_beatLoopDuration = 0;
+
     Function::preRun(timer);
 }
 
 void EFX::write(MasterTimer *timer, QList<Universe*> universes)
 {
-    Q_UNUSED(timer);
-
     if (isPaused())
         return;
+
+    // DMX Total Control: BPM, live speed, loops and division jumps
+    if (tempoType() == Beats)
+        m_beatLoopDuration = qMax(uint(1), beatsToTime(duration(), timer->beatTimeDuration()));
+    advanceFrameTick();
+
+    const uint loop = loopDuration();
+    if (loop > 0)
+    {
+        int jumps = takeDivisionJumps();
+        if (jumps > 0)
+        {
+            uint division = qMax(uint(1), loop / uint(divisions()));
+            for (EFXFixture *ef : std::as_const(m_fixtures))
+                ef->m_elapsed = ((ef->m_elapsed / division + uint(jumps)) * division) % loop;
+            m_cycleElapsed = ((m_cycleElapsed / division + uint(jumps)) * division) % loop;
+        }
+
+        m_cycleElapsed += frameTick();
+        if (m_cycleElapsed >= loop)
+        {
+            m_cycleElapsed -= loop;
+            CycleResult result = cycleCompleted();
+            if (result == CycleStop)
+            {
+                stop(FunctionParent::master());
+                return;
+            }
+            if (result == CycleHold)
+            {
+                // the heads stay on the last point of the shape
+                setPause(true);
+                return;
+            }
+        }
+    }
 
     int done = 0;
 
@@ -1215,7 +1342,24 @@ void EFX::postRun(MasterTimer *timer, QList<Universe *> universes)
         ef->reset();
     }
 
-    dismissAllFaders();
+    // DMX Total Control: with a fade out, the heads glide back to what's
+    // below (or their rest position) instead of jumping
+    uint fadeout = overrideFadeOutSpeed() == defaultSpeed() ? fadeOutSpeed() : overrideFadeOutSpeed();
+    if (fadeout == 0 || isRelative())
+    {
+        dismissAllFaders();
+    }
+    else
+    {
+        if (tempoType() == Beats)
+            fadeout = beatsToTime(fadeout, timer->beatTimeDuration());
+        foreach (QSharedPointer<GenericFader> fader, m_fadersMap)
+        {
+            if (!fader.isNull())
+                fader->setFadeOut(true, fadeout);
+        }
+        m_fadersMap.clear();
+    }
 
     Function::postRun(timer, universes);
 }

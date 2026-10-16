@@ -26,6 +26,10 @@
 #include "show.h"
 #include "doc.h"
 #include "inputoutputmap.h"
+#include "showfunction.h"
+#include "curvefx.h"
+#include "fxscene.h"
+#include "efx.h"
 
 #define TIMER_INTERVAL 50
 
@@ -48,6 +52,7 @@ ShowRunner::ShowRunner(const Doc* doc, quint32 showID, quint32 startTime)
     , m_syncBeatsTime(0)
     , m_totalRunTime(0)
     , m_totalRunBeats(0)
+    , m_endTime(0)
 {
     Q_ASSERT(m_doc != NULL);
     Q_ASSERT(showID != Show::invalidId());
@@ -85,33 +90,50 @@ ShowRunner::ShowRunner(const Doc* doc, quint32 showID, quint32 startTime)
         // get all the functions of the track and append them to the runner queue
         foreach (ShowFunction *sfunc, track->showFunctions())
         {
-            if (sfunc->startTime() + sfunc->duration(m_doc) <= startTime)
-                continue;
-
             Function *f = m_doc->function(sfunc->functionID());
             if (f == NULL)
                 continue;
 
-            if (f->tempoType() == Function::Time)
+            // DMX Total Control: on a timeline in ms every block is in ms
+            const bool inTime = f->tempoType() == Function::Time || m_show->msTimeline();
+            const quint32 end = sfunc->startTime() + sfunc->duration(m_doc);
+
+            // DMX Total Control: every block, for a show that loops (of QLC+
+            // too), and the whole length even when it starts later
+            if (inTime)
             {
-                m_timeFunctions.append(sfunc);
-                if (sfunc->startTime() + sfunc->duration(m_doc) > m_totalRunTime)
-                    m_totalRunTime = sfunc->startTime() + sfunc->duration(m_doc);
+                m_allTimeFunctions.append(sfunc);
+                m_totalRunTime = qMax(m_totalRunTime, end);
             }
             else
             {
-                m_beatFunctions.append(sfunc);
-                if (sfunc->startTime() + sfunc->duration(m_doc) > m_totalRunBeats)
-                    m_totalRunBeats = sfunc->startTime() + sfunc->duration(m_doc);
+                m_allBeatFunctions.append(sfunc);
+                m_totalRunBeats = qMax(m_totalRunBeats, end);
             }
+
+            if (end <= startTime)
+                continue;
+
+            if (inTime)
+                m_timeFunctions.append(sfunc);
+            else
+                m_beatFunctions.append(sfunc);
         }
 
         // Initialize the intensity map
         m_intensityMap[track->id()] = 1.0;
     }
 
+    // DMX Total Control: the end marker cuts the show there (a show of QLC+
+    // edited here too)
+    m_endTime = m_show->endTime();
+    if (m_endTime > 0)
+        m_totalRunTime = m_endTime;
+
     std::sort(m_timeFunctions.begin(), m_timeFunctions.end(), compareShowFunctions);
+    std::sort(m_allTimeFunctions.begin(), m_allTimeFunctions.end(), compareShowFunctions);
     std::sort(m_beatFunctions.begin(), m_beatFunctions.end(), compareShowFunctions);
+    std::sort(m_allBeatFunctions.begin(), m_allBeatFunctions.end(), compareShowFunctions);
 
 #if 1
     qDebug() << "Ordered list of ShowFunctions (time):";
@@ -122,7 +144,7 @@ ShowRunner::ShowRunner(const Doc* doc, quint32 showID, quint32 startTime)
     foreach (ShowFunction *sfunc, m_beatFunctions)
         qDebug() << "[Show] Function ID:" << sfunc->functionID() << "start time:" << sfunc->startTime() << "duration:" << sfunc->duration(m_doc);
 #endif
-    m_runningQueue.clear();
+    m_running.clear();
 
     qDebug() << "ShowRunner created";
 }
@@ -138,10 +160,13 @@ void ShowRunner::start()
 
 void ShowRunner::setPause(bool enable)
 {
-    for (int i = 0; i < m_runningQueue.count(); i++)
+    for (const RunningBlock &rb : std::as_const(m_running))
     {
-        Function *f = m_runningQueue.at(i).first;
-        f->setPause(enable);
+        // DMX Total Control: (not the function that replaced it: a playback
+        // may be playing that one)
+        Function *f = blockFunction(rb);
+        if (f != NULL)
+            f->setPause(enable);
     }
 }
 
@@ -152,14 +177,249 @@ void ShowRunner::stop()
     m_currentTimeFunctionIndex = 0;
     m_currentBeatFunctionIndex = 0;
 
-    for (int i = 0; i < m_runningQueue.count(); i++)
+    // DMX Total Control: the functions of the running blocks
+    for (const RunningBlock &rb : std::as_const(m_running))
     {
-        Function *f = m_runningQueue.at(i).first;
+        Function *f = blockFunction(rb);
+        if (f == NULL)
+            continue;
         f->stop(functionParent());
+        if (rb.stretched)
+            f->setSpeedFactor(1.0);
+    }
+    m_running.clear();
+    m_replacedBlocks.clear();
+    qDebug() << "ShowRunner stopped";
+}
+
+/*****************************************************************************
+ * DMX Total Control: blocks with fades and stretch, automation, loop
+ *****************************************************************************/
+
+/** The attribute of the phase of an effect, -1 when it has none */
+static int phaseAttribute(Function *f)
+{
+    if (f->type() == Function::EFXType)
+        return EFX::StartOffset;
+    if (f->type() == Function::FXSceneType)
+        return FXScene::Phase;
+    if (f->type() == Function::CurveFXType)
+        return CurveFX::Phase;
+    return -1;
+}
+
+void ShowRunner::startBlock(ShowFunction *sf, Function *f, quint32 offset)
+{
+    RunningBlock rb;
+    rb.block = sf;
+    rb.functionId = f->id();
+    rb.function = f;
+    rb.intensityOverride = Function::invalidAttributeId();
+    rb.phaseOverride = Function::invalidAttributeId();
+    rb.stretched = false;
+
+    // the track the block is on now (it may have moved)
+    Track *track = m_show->getTrackFromShowFunctionID(sf->id());
+    if (track != NULL)
+    {
+        // the intensity of the track, and its automation
+        qreal level = m_intensityMap.value(track->id(), 1.0) * track->automationValue("dimmer", m_elapsedTime, 1.0);
+        rb.intensityOverride = f->requestAttributeOverride(Function::Intensity, level);
+        sf->setIntensityOverrideId(rb.intensityOverride);
+
+        int phase = phaseAttribute(f);
+        if (phase >= 0 && track->hasAutomation("phase"))
+            rb.phaseOverride = f->requestAttributeOverride(phase, track->automationValue("phase", m_elapsedTime, 0.0) * 359.0);
     }
 
-    m_runningQueue.clear();
-    qDebug() << "ShowRunner stopped";
+    // stretched: one cycle of the function lasts the whole block
+    quint32 duration = sf->duration(m_doc);
+    if (sf->stretch() && f->type() != Function::SceneType && f->type() != Function::AudioType)
+    {
+        quint32 natural = f->totalDuration();
+        if (natural > 0 && natural != Function::infiniteSpeed() && duration > 0)
+        {
+            f->setSpeedFactor(qreal(natural) / qreal(duration));
+            rb.stretched = true;
+        }
+    }
+
+    uint fadeIn = sf->fadeIn() > 0 ? sf->fadeIn() : Function::defaultSpeed();
+    uint fadeOut = sf->fadeOut() > 0 ? sf->fadeOut() : Function::defaultSpeed();
+    f->start(m_doc->masterTimer(), functionParent(), offset, fadeIn, fadeOut);
+
+    // with a fade out, the block ends faded out
+    rb.stopTime = sf->startTime() + duration;
+    if (sf->fadeOut() > 0 && sf->fadeOut() < duration)
+        rb.stopTime -= sf->fadeOut();
+    m_running.append(rb);
+}
+
+void ShowRunner::endBlock(const RunningBlock &block)
+{
+    Function *f = blockFunction(block);
+    if (f == NULL)
+        return;
+
+    // another block plays the function on (a block and its duplicate, back
+    // to back, or two tracks): it goes on, without the levels of this one
+    bool stretchedElsewhere = false;
+    bool playedElsewhere = false;
+    // (a Single attribute, as the intensity, has one override they share)
+    bool intensityShared = false;
+    bool phaseShared = false;
+    for (const RunningBlock &rb : std::as_const(m_running))
+    {
+        if (rb.functionId != block.functionId)
+            continue;
+        playedElsewhere = true;
+        stretchedElsewhere |= rb.stretched;
+        intensityShared |= rb.intensityOverride == block.intensityOverride;
+        phaseShared |= rb.phaseOverride == block.phaseOverride;
+    }
+
+    if (playedElsewhere)
+    {
+        if (intensityShared == false)
+            f->releaseAttributeOverride(block.intensityOverride);
+        if (phaseShared == false)
+            f->releaseAttributeOverride(block.phaseOverride);
+    }
+    else
+    {
+        f->stop(functionParent());
+    }
+    if (block.stretched && stretchedElsewhere == false)
+        f->setSpeedFactor(1.0);
+}
+
+void ShowRunner::applyAutomation()
+{
+    for (const RunningBlock &rb : std::as_const(m_running))
+    {
+        Function *f = blockFunction(rb);
+        Track *track = m_show->getTrackFromShowFunctionID(rb.block->id());
+        if (f == NULL || track == NULL)
+            continue;
+
+        if (track->hasAutomation("dimmer"))
+            f->adjustAttribute(m_intensityMap.value(track->id(), 1.0) *
+                               track->automationValue("dimmer", m_elapsedTime, 1.0), rb.intensityOverride);
+        if (rb.phaseOverride != Function::invalidAttributeId())
+            f->adjustAttribute(track->automationValue("phase", m_elapsedTime, 0.0) * 359.0, rb.phaseOverride);
+    }
+}
+
+void ShowRunner::restart()
+{
+    // what plays stops, and the show plays again from the start
+    for (const RunningBlock &rb : std::as_const(m_running))
+    {
+        Function *f = blockFunction(rb);
+        if (f == NULL)
+            continue;
+        f->stop(functionParent());
+        if (rb.stretched)
+            f->setSpeedFactor(1.0);
+    }
+    m_running.clear();
+    m_replacedBlocks.clear();
+
+    m_timeFunctions = m_allTimeFunctions;
+    m_beatFunctions = m_allBeatFunctions;
+    m_currentTimeFunctionIndex = 0;
+    m_currentBeatFunctionIndex = 0;
+    m_elapsedTime = 0;
+    m_elapsedBeats = 0;
+    // the beats start again at the next beat
+    beatSynced = false;
+    emit timeChanged(0);
+}
+
+void ShowRunner::forgetBlock(ShowFunction *sf)
+{
+    int index = m_timeFunctions.indexOf(sf);
+    if (index >= 0)
+    {
+        m_timeFunctions.removeAt(index);
+        if (index < m_currentTimeFunctionIndex)
+            m_currentTimeFunctionIndex--;
+    }
+    index = m_beatFunctions.indexOf(sf);
+    if (index >= 0)
+    {
+        m_beatFunctions.removeAt(index);
+        if (index < m_currentBeatFunctionIndex)
+            m_currentBeatFunctionIndex--;
+    }
+    m_allTimeFunctions.removeAll(sf);
+    m_allBeatFunctions.removeAll(sf);
+    m_replacedBlocks.removeAll(sf);
+
+    for (int i = m_running.count() - 1; i >= 0; i--)
+    {
+        if (m_running.at(i).block == sf)
+            endBlock(m_running.takeAt(i));
+    }
+}
+
+void ShowRunner::forgetTrack(Track *track)
+{
+    if (track == NULL)
+        return;
+    for (ShowFunction *sf : track->showFunctions())
+        forgetBlock(sf);
+}
+
+Function *ShowRunner::blockFunction(const RunningBlock &rb) const
+{
+    // DMX Total Control: compared, never read, unless the Doc has it
+    Function *f = m_doc->function(rb.functionId);
+    return f == rb.function ? f : NULL;
+}
+
+void ShowRunner::forgetFunction(quint32 fid, Function *current)
+{
+    // DMX Total Control: the old function is still there (the Doc deletes it
+    // after telling): it stops here, with nothing else of the block (its
+    // overrides and speed go with it)
+    for (int i = m_running.count() - 1; i >= 0; i--)
+    {
+        const RunningBlock rb = m_running.at(i);
+        if (rb.functionId != fid || rb.function == current)
+            continue;
+        m_running.removeAt(i);
+        rb.function->stop(functionParent());
+        if (current != NULL && m_replacedBlocks.contains(rb.block) == false)
+            m_replacedBlocks.append(rb.block);
+    }
+}
+
+void ShowRunner::restartReplaced()
+{
+    // DMX Total Control: a block whose function was replaced while it played
+    // plays the new one for the rest of its time, as a chaser plays the new
+    // function of its step
+    const QList<ShowFunction *> blocks = m_replacedBlocks;
+    m_replacedBlocks.clear();
+    for (ShowFunction *sf : blocks)
+    {
+        Function *f = m_doc->function(sf->functionID());
+        if (f == NULL)
+            continue;
+        // where the show is, as the end of the block is checked (write())
+        const bool inTime = f->tempoType() == Function::Time || m_show->msTimeline();
+        if (inTime == false && beatSynced == false)
+            continue;
+        const quint32 now = inTime ? m_elapsedTime : m_elapsedBeats;
+        const quint32 duration = sf->duration(m_doc);
+        quint32 end = sf->startTime() + duration;
+        if (sf->fadeOut() > 0 && sf->fadeOut() < duration)
+            end -= sf->fadeOut();
+        if (now < sf->startTime() || now >= end)
+            continue;
+        startBlock(sf, f, now - sf->startTime());
+    }
 }
 
 FunctionParent ShowRunner::functionParent() const
@@ -199,6 +459,10 @@ void ShowRunner::write(MasterTimer *timer)
         }
     }
 
+    // DMX Total Control: blocks whose function was replaced meanwhile
+    if (m_replacedBlocks.isEmpty() == false)
+        restartReplaced();
+
     // check if there are time-based functions to start
     while (startFunctionsDone == false)
     {
@@ -223,19 +487,8 @@ void ShowRunner::write(MasterTimer *timer)
         }
         if (m_elapsedTime >= funcStartTime)
         {
-            foreach (Track *track, m_show->tracks())
-            {
-                if (track->showFunctions().contains(sf))
-                {
-                    int intOverrideId = f->requestAttributeOverride(Function::Intensity, m_intensityMap[track->id()]);
-                    //f->adjustAttribute(m_intensityMap[track->id()], Function::Intensity);
-                    sf->setIntensityOverrideId(intOverrideId);
-                    break;
-                }
-            }
-
-            f->start(m_doc->masterTimer(), functionParent(), functionTimeOffset);
-            m_runningQueue.append(QPair<Function *, quint32>(f, sf->startTime() + sf->duration(m_doc)));
+            // DMX Total Control: fades, stretch and automation of the block
+            startBlock(sf, f, functionTimeOffset);
             m_currentTimeFunctionIndex++;
         }
         else
@@ -270,19 +523,7 @@ void ShowRunner::write(MasterTimer *timer)
         }
         if (m_elapsedBeats >= funcStartTime)
         {
-            foreach (Track *track, m_show->tracks())
-            {
-                if (track->showFunctions().contains(sf))
-                {
-                    int intOverrideId = f->requestAttributeOverride(Function::Intensity, m_intensityMap[track->id()]);
-                    //f->adjustAttribute(m_intensityMap[track->id()], Function::Intensity);
-                    sf->setIntensityOverrideId(intOverrideId);
-                    break;
-                }
-            }
-
-            f->start(m_doc->masterTimer(), functionParent(), functionTimeOffset);
-            m_runningQueue.append(QPair<Function *, quint32>(f, sf->startTime() + sf->duration(m_doc)));
+            startBlock(sf, f, functionTimeOffset);
             m_currentBeatFunctionIndex++;
         }
         else
@@ -293,21 +534,36 @@ void ShowRunner::write(MasterTimer *timer)
     // It is done in reverse order for two reasons:
     // 1- m_runningQueue is not ordered by stop time
     // 2- to avoid messing up with indices when an entry is removed
-    for (int i = m_runningQueue.count() - 1; i >= 0; i--)
+    for (int i = m_running.count() - 1; i >= 0; i--)
     {
-        Function *func = m_runningQueue.at(i).first;
-        quint32 stopTime = m_runningQueue.at(i).second;
+        // DMX Total Control: a function deleted meanwhile is forgotten; one
+        // replaced is left to forgetFunction (the show is told before the
+        // Doc deletes the old one), which plays the new one
+        Function *func = blockFunction(m_running.at(i));
+        if (func == NULL)
+        {
+            if (m_doc->function(m_running.at(i).functionId) == NULL)
+                m_running.removeAt(i);
+            continue;
+        }
+        quint32 stopTime = m_running.at(i).stopTime;
         quint32 currTime = func->tempoType() == Function::Time ? m_elapsedTime : m_elapsedBeats;
+
+        // DMX Total Control: blocks on a timeline in ms
+        if (m_show->msTimeline())
+            currTime = m_elapsedTime;
 
         // if we passed the function stop time
         if (currTime >= stopTime)
         {
-            // stop the function
-            func->stop(functionParent());
-            // remove it from the running queue
-            m_runningQueue.removeAt(i);
+            // DMX Total Control: the function stops, unless another block
+            // plays it on
+            endBlock(m_running.takeAt(i));
         }
     }
+
+    // DMX Total Control: dimmer, volume and phase follow the tracks
+    applyAutomation();
 
     // Phase 3. Check if this is the end of the Show. A Show can mix
     // time-based and beat-based tracks, so it is only really over once
@@ -317,9 +573,17 @@ void ShowRunner::write(MasterTimer *timer)
     bool timeDone = m_elapsedTime >= m_totalRunTime;
     bool beatsDone = m_beatFunctions.isEmpty() ||
                       (beatSynced && m_elapsedBeats >= m_totalRunBeats);
+    // DMX Total Control: the end marker cuts the beats too
+    bool cut = m_endTime > 0 && m_elapsedTime >= m_endTime;
 
-    if (timeDone && beatsDone)
+    if ((timeDone && beatsDone) || cut)
     {
+        // DMX Total Control: a looping show starts again
+        if (m_show != NULL && m_show->loop() && (m_totalRunTime > 0 || m_totalRunBeats > 0))
+        {
+            restart();
+            return;
+        }
         if (m_show != NULL)
             m_show->stop(functionParent());
         emit showFinished();
@@ -366,18 +630,15 @@ void ShowRunner::adjustIntensity(qreal fraction, const Track *track)
     qDebug() << Q_FUNC_INFO << "Track ID: " << track->id() << ", val:" << fraction;
     m_intensityMap[track->id()] = fraction;
 
-    foreach (ShowFunction *sf, track->showFunctions())
+    // DMX Total Control: the running blocks of the track, with its automation
+    const QList<ShowFunction *> blocks = track->showFunctions();
+    for (const RunningBlock &rb : std::as_const(m_running))
     {
-        Function *f = m_doc->function(sf->functionID());
-        if (f == NULL)
+        if (blocks.contains(rb.block) == false)
             continue;
-
-        for (int i = 0; i < m_runningQueue.count(); i++)
-        {
-            Function *rf = m_runningQueue.at(i).first;
-            if (f == rf)
-                f->adjustAttribute(fraction, sf->intensityOverrideId());
-        }
+        Function *f = blockFunction(rb);
+        if (f != NULL)
+            f->adjustAttribute(fraction * track->automationValue("dimmer", m_elapsedTime, 1.0), rb.intensityOverride);
     }
 }
 

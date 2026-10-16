@@ -57,6 +57,9 @@ class Doc;
 #define KXMLFixtureExcludeFade      QStringLiteral("ExcludeFade")
 #define KXMLFixtureForcedHTP        QStringLiteral("ForcedHTP")
 #define KXMLFixtureForcedLTP        QStringLiteral("ForcedLTP")
+// DMX Total Control
+#define KXMLFixtureDimmerExceptions QStringLiteral("DimmerExceptions")
+#define KXMLFixtureSwapPanTilt      QStringLiteral("SwapPanTilt")
 
 #define KXMLFixtureChannelModifier  QStringLiteral("Modifier")
 #define KXMLFixtureChannelIndex     QStringLiteral("Channel")
@@ -327,6 +330,21 @@ public:
      *  Returns NULL if no modifier has been assigned */
     ChannelModifier *channelModifier(quint32 idx);
 
+    /** DMX Total Control: whether the master dimmers (grand master, group
+     *  masters, scene dimmer) scale the channel $idx. By default the
+     *  intensity channels (dimmer, colours) follow them, the others don't */
+    void setChannelFollowsDimmer(int idx, bool follows);
+    bool channelFollowsDimmer(int idx) const;
+
+    /** DMX Total Control: swap pan and tilt at the output (a fixture hung
+     *  turned by 90 degrees) */
+    void setSwapPanTilt(bool swap);
+    bool swapPanTilt() const;
+
+    /** DMX Total Control: the channel that gets the value of channel $idx
+     *  at the output: the same channel, or its pan/tilt pair when swapped */
+    quint32 outputChannel(quint32 idx) const;
+
 protected:
     /** Find and store channel numbers (pan, tilt, intensity) */
     void findChannels() const;
@@ -354,6 +372,11 @@ protected:
      *  This is basically the place to store them to be saved/loaded
      *  on the project XML file */
     QMap<quint32, ChannelModifier*> m_channelModifiers;
+
+    /** DMX Total Control: the channels whose dimmer behaviour isn't the
+     *  default one, and the pan/tilt swap */
+    QList<int> m_dimmerSwappedIndices;
+    bool m_swapPanTilt;
 
     /*********************************************************************
      * Channel info

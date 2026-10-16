@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
-project(qlcplus VERSION 4.14.4 LANGUAGES C CXX)
+project(dmxtotalcontrol VERSION 0.1.0 LANGUAGES C CXX)
 
+option(dtcui "Build the DMX Total Control UI (dtc/)" ON)
+
+# dtc/ uses QZipReader, from the Qt private modules
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
 option(qmlui "Build for QLC+ 5 QML UI" OFF)
+
+# DMX Total Control uses the engine in its QML flavour, but replaces the
+# QLC+ user interfaces with its own (see dtc/)
+if(dtcui)
+    set(qmlui ON)
+endif()
 
 # Note: the default CMAKE_BUILD_TYPE is set in variables.cmake, together
 # with the DEVEL flag it follows
@@ -42,6 +52,9 @@ find_package(QT NAMES Qt5 Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Gui Multimedia MultimediaWidgets Network PrintSupport Qml Quick Svg Test Widgets LinguistTools)
 if(qmlui)
     find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS 3DCore 3DInput 3DLogic 3DQuick 3DQuickExtras 3DRender WebSockets)
+    if(dtcui)
+        find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS QuickControls2 CorePrivate GuiPrivate)
+    endif()
     if(ANDROID)
         find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Concurrent OpenGL)
     endif()
@@ -73,7 +86,10 @@ add_subdirectory(engine)
 add_subdirectory(resources)
 add_subdirectory(plugins)
 add_subdirectory(webaccess)
-if(qmlui)
+if(dtcui)
+    message("Building DMX Total Control UI")
+    add_subdirectory(dtc)
+elseif(qmlui)
     message("Building QLC+ 5 QML UI")
     add_subdirectory(qmlui)
 else()
@@ -82,7 +98,7 @@ else()
     add_subdirectory(main)
     add_subdirectory(fixtureeditor)
 endif()
-if(APPLE AND NOT qmlui)
+if(APPLE AND NOT qmlui AND NOT dtcui)
     add_subdirectory(launcher)
 endif()
 
@@ -142,7 +158,9 @@ add_custom_target(lcov
 )
 
 # Translations
-if (qmlui)
+if (dtcui)
+  # dtc/ handles its own translations
+elseif (qmlui)
   add_custom_target(translations ALL
     COMMAND ./translate.sh release qmlui
     COMMENT "Translating qmlui translations..."

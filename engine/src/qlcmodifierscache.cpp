@@ -18,6 +18,7 @@
 */
 
 #include <QDebug>
+#include <QStringList>
 
 #include "qlcmodifierscache.h"
 #include "channelmodifier.h"
@@ -50,7 +51,35 @@ QList<QString> QLCModifiersCache::templateNames() const
 
 ChannelModifier *QLCModifiersCache::modifier(const QString& name) const
 {
-    return m_modifiers.value(name, NULL);
+    ChannelModifier *mod = m_modifiers.value(name, NULL);
+    if (mod != NULL)
+        return mod;
+
+    // DMX Total Control: "DTC Range <from> <to>" maps 0-255 to from-to
+    // (the limits of a fixture, inverted when from > to). Made on demand,
+    // so the show needs no template file
+    QStringList parts = name.split(" ");
+    if (parts.count() == 4 && parts.at(0) == "DTC" && parts.at(1) == "Range")
+    {
+        bool okFrom = false, okTo = false;
+        int from = parts.at(2).toInt(&okFrom);
+        int to = parts.at(3).toInt(&okTo);
+        if (okFrom && okTo && from >= 0 && from <= 255 && to >= 0 && to <= 255)
+        {
+            mod = new ChannelModifier();
+            mod->setName(rangeModifierName(from, to));
+            mod->setType(ChannelModifier::SystemTemplate);
+            mod->setModifierMap(QList<QPair<uchar, uchar>>() << qMakePair(uchar(0), uchar(from))
+                                                             << qMakePair(uchar(255), uchar(to)));
+            m_modifiers.insert(mod->name(), mod);
+        }
+    }
+    return mod;
+}
+
+QString QLCModifiersCache::rangeModifierName(int from, int to)
+{
+    return QString("DTC Range %1 %2").arg(from).arg(to);
 }
 
 QDir QLCModifiersCache::systemTemplateDirectory()

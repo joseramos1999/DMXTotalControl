@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+  DMX Total Control - remote control: the SHOW screen on a
+  phone or a tablet. Licensed under the Apache License, Version 2.0.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0e1014">
+  <title>DMX Total Control</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icon-16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="remote.css">
+</head>
+<body>
+  <header id="bar">
+    <img id="logo" src="icon-64.png" alt="">
+    <div id="title">DMX Total Control</div>
+    <nav id="pages"></nav>
+    <div id="tools">
+      <span id="status" class="dot" title=""></span>
+      <button id="blackout" class="tool">BO</button>
+      <button id="fullscreen" class="tool icon">&#xf065;</button>
+    </div>
+  </header>
+  <main id="surface"></main>
+
+  <div id="pin" class="overlay hidden">
+    <form id="pinForm" class="box">
+      <div class="boxTitle">PIN</div>
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="off">
+      <button type="submit">OK</button>
+      <div id="pinError" class="error hidden"></div>
+    </form>
+  </div>
+  <div id="offline" class="overlay hidden"><div class="box" id="offlineText"></div></div>
+
+  <script src="remote.js"></script>
+</body>
+</html>

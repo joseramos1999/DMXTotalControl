@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DMX Total Control: the application icon (32 px and up). The letters are
+     strokes, not text, so it looks the same everywhere. Apache License 2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3d8bfd"/>
+      <stop offset="1" stop-color="#ae3ec9"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#brand)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22">
+    <path d="M44,81 H49 A35,35 0 0 1 49,151 H44 Z" stroke-linejoin="miter"/>
+    <path d="M103,81 H159 M131,81 V162" stroke-linecap="butt"/>
+    <path d="M223,81 H213 A35,35 0 0 0 213,151 H223" stroke-linecap="butt"/>
+  </g>
+  <rect x="58" y="176" width="140" height="12" rx="6" fill="#ffffff" fill-opacity="0.7"/>
+</svg>

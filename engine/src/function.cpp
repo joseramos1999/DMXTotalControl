@@ -40,6 +40,11 @@
 #include "scene.h"
 #include "show.h"
 #include "efx.h"
+#include "curvefx.h"
+#include "fxscene.h"
+#include "cuelist.h" // DMX Total Control
+#include "inputoutputmap.h"
+#include "genericfader.h"
 #include "doc.h"
 
 #define OVERRIDE_ATTRIBUTE_START_ID     128
@@ -54,6 +59,9 @@ const QString KShowString       (       "Show" );
 const QString KSequenceString   (   "Sequence" );
 const QString KAudioString      (      "Audio" );
 const QString KVideoString      (      "Video" );
+const QString KCurveFXString    (    "CurveFX" ); // DMX Total Control
+const QString KFXSceneString    (    "FXScene" ); // DMX Total Control
+const QString KCuelistString    (    "Cuelist" ); // DMX Total Control
 const QString KUndefinedString  (  "Undefined" );
 
 const QString KLoopString       (       "Loop" );
@@ -97,6 +105,20 @@ Function::Function(QObject *parent)
     , m_lastOverrideAttributeId(OVERRIDE_ATTRIBUTE_START_ID)
     , m_preserveAttributes(false)
     , m_blendMode(Universe::NormalBlend)
+    , m_priority(Function::defaultPriority())
+    , m_parentPriority(-1)
+    , m_priorityChanged(0)
+    , m_loopCount(0)
+    , m_endAction(EndRelease)
+    , m_jumpTo(jumpNone())
+    , m_driveMode(DriveOff)
+    , m_divisions(4)
+    , m_startMode(StartPlaying)
+    , m_stagger(0)
+    , m_speedFactor(1.0)
+    , m_tickRemainder(0)
+    , m_frameTick(MasterTimer::tick())
+    , m_cyclesDone(0)
 {
 }
 
@@ -126,6 +148,20 @@ Function::Function(Doc* doc, Type t)
     , m_lastOverrideAttributeId(OVERRIDE_ATTRIBUTE_START_ID)
     , m_preserveAttributes(false)
     , m_blendMode(Universe::NormalBlend)
+    , m_priority(Function::defaultPriority())
+    , m_parentPriority(-1)
+    , m_priorityChanged(0)
+    , m_loopCount(0)
+    , m_endAction(EndRelease)
+    , m_jumpTo(jumpNone())
+    , m_driveMode(DriveOff)
+    , m_divisions(4)
+    , m_startMode(StartPlaying)
+    , m_stagger(0)
+    , m_speedFactor(1.0)
+    , m_tickRemainder(0)
+    , m_frameTick(MasterTimer::tick())
+    , m_cyclesDone(0)
 {
     Q_ASSERT(doc != NULL);
     registerAttribute(tr("Intensity"), Multiply | Single);
@@ -177,6 +213,14 @@ bool Function::copyFrom(const Function* function)
     m_path = function->path(true);
     m_visible = function->isVisible();
     m_blendMode = function->blendMode();
+    m_priority = function->priority();
+    m_loopCount = function->loopCount();
+    m_endAction = function->endAction();
+    m_jumpTo = function->jumpTo();
+    m_driveMode = function->driveMode();
+    m_divisions = function->divisions();
+    m_startMode = function->startMode();
+    m_stagger = function->stagger();
     m_uiState = function->uiStateMap();
 
     emit changed(m_id);
@@ -252,6 +296,9 @@ QString Function::typeToString(Type type)
         case SequenceType:   return KSequenceString;
         case AudioType:      return KAudioString;
         case VideoType:      return KVideoString;
+        case CurveFXType:    return KCurveFXString;
+        case FXSceneType:    return KFXSceneString;
+        case CuelistType:    return KCuelistString;
         case Undefined:
         default:
             return KUndefinedString;
@@ -262,6 +309,12 @@ Function::Type Function::stringToType(const QString& string)
 {
     if (string == KSceneString)
         return SceneType;
+    else if (string == KFXSceneString)
+        return FXSceneType;
+    else if (string == KCurveFXString)
+        return CurveFXType;
+    else if (string == KCuelistString)
+        return CuelistType;
     else if (string == KChaserString)
         return ChaserType;
     else if (string == KEFXString)
@@ -282,6 +335,12 @@ Function::Type Function::stringToType(const QString& string)
         return VideoType;
     else
         return Undefined;
+}
+
+// DMX Total Control
+bool Function::isDtcType(Function::Type type)
+{
+    return type == CurveFXType || type == FXSceneType || type == CuelistType;
 }
 
 QIcon Function::getIcon() const
@@ -339,6 +398,9 @@ bool Function::saveXMLCommon(QXmlStreamWriter *doc) const
         doc->writeAttribute(KXMLQLCFunctionPath, path(true));
     if (blendMode() != Universe::NormalBlend)
         doc->writeAttribute(KXMLQLCFunctionBlendMode, Universe::blendModeToString(blendMode()));
+    if (priority() != defaultPriority())
+        doc->writeAttribute(KXMLQLCFunctionPriority, QString::number(priority()));
+    saveXMLPlayback(doc);
 
     return true;
 }
@@ -917,11 +979,19 @@ bool Function::loader(QXmlStreamReader &root, Doc* doc)
         visible = false;
     if (attrs.hasAttribute(KXMLQLCFunctionBlendMode))
         blendMode = Universe::stringToBlendMode(attrs.value(KXMLQLCFunctionBlendMode).toString());
+    // DMX Total Control: a priority that isn't a number keeps the default
+    bool priorityOk = false;
+    int priority = attrs.value(KXMLQLCFunctionPriority).toInt(&priorityOk);
+    if (priorityOk == false)
+        priority = defaultPriority();
 
     /* Check for ID validity before creating the function */
     if (id == Function::invalidId())
     {
         qWarning() << Q_FUNC_INFO << "Function ID" << id << "is not allowed.";
+        // DMX Total Control: consume it, or the caller reads its children
+        // as siblings and stops at its end tag
+        root.skipCurrentElement();
         return false;
     }
 
@@ -947,13 +1017,27 @@ bool Function::loader(QXmlStreamReader &root, Doc* doc)
         function = new class Audio(doc);
     else if (type == Function::VideoType)
         function = new class Video(doc);
+    else if (type == Function::FXSceneType)
+        function = new class FXScene(doc);
+    else if (type == Function::CurveFXType)
+        function = new class CurveFX(doc);
+    else if (type == Function::CuelistType) // DMX Total Control: tracking cuelist
+        function = new class Cuelist(doc);
     else
+    {
+        // DMX Total Control: a type we don't know (a newer version): skip it
+        // whole, so the functions after it still load
+        qWarning() << Q_FUNC_INFO << "Unknown function type" << attrs.value(KXMLQLCFunctionType);
+        root.skipCurrentElement();
         return false;
+    }
 
     function->setName(name);
     function->setPath(path);
     function->setVisible(visible);
     function->setBlendMode(blendMode);
+    function->setPriority(priority);
+    function->loadXMLPlayback(attrs);
     if (function->loadXML(root) == true)
     {
         if (doc->addFunction(function, id) == true)
@@ -1036,6 +1120,12 @@ void Function::preRun(MasterTimer *timer)
     qDebug() << "Function preRun. Name:" << m_name << "ID:" << m_id << "type:" << typeToString(type());
     m_running = true;
 
+    // DMX Total Control: loops and jumps count from the start
+    m_cyclesDone = 0;
+    m_tickRemainder = 0;
+    m_frameTick = MasterTimer::tick();
+    m_pendingJumps.storeRelaxed(0);
+
     emit running(m_id);
 }
 
@@ -1115,8 +1205,9 @@ void Function::resetElapsed()
 void Function::incrementElapsed()
 {
     // Don't wrap around. UINT_MAX is the maximum fade/hold time.
-    if (m_elapsed < UINT_MAX - MasterTimer::tick())
-        m_elapsed += MasterTimer::tick();
+    // DMX Total Control: a frame lasts frameTick() at the live speed (a tick by default)
+    if (m_elapsed < UINT_MAX - m_frameTick)
+        m_elapsed += m_frameTick;
     else
         m_elapsed = UINT_MAX;
 }
@@ -1154,12 +1245,23 @@ void Function::start(MasterTimer* timer, FunctionParent source, quint32 startTim
             return;
     }
 
+    // DMX Total Control: played on its own, a function has its own priority
+    if (source.type() != FunctionParent::Function)
+        m_parentPriority = -1;
+
     /** If we're in a paused state, then just return to the running state
      *  to let subclasses resuming what they were doing. */
     if (m_paused == true)
     {
-        m_paused = false;
-        return;
+        // DMX Total Control: paused, then stopped (its postRun is not done
+        // yet): it starts again. Only taking the pause off, it would still
+        // stop with the next tick, and its new parent would hold nothing
+        if (m_stop == false)
+        {
+            m_paused = false;
+            return;
+        }
+        setPause(false);
     }
 
     m_elapsed = startTime;
@@ -1221,6 +1323,13 @@ bool Function::startedAsChild() const
     return false;
 }
 
+bool Function::isStartedBy(const FunctionParent &source) const
+{
+    // DMX Total Control
+    QMutexLocker sourcesLocker(const_cast<QMutex*>(&m_sourcesMutex));
+    return m_sources.contains(source);
+}
+
 int Function::invalidAttributeId()
 {
     return -1;
@@ -1246,6 +1355,36 @@ bool Function::stopAndWait()
     }
 
     return true;
+}
+
+QList<FunctionParent> Function::interruptAndWait()
+{
+    // DMX Total Control
+    if (isRunning() == false)
+        return QList<FunctionParent>();
+
+    QList<FunctionParent> parents;
+    {
+        QMutexLocker sourcesLocker(&m_sourcesMutex);
+        parents = m_sources;
+    }
+
+    QMutexLocker locker(&m_stopMutex);
+    stop(FunctionParent::master(), true);
+
+    QElapsedTimer watchdog;
+    watchdog.restart();
+    while (m_running == true && watchdog.elapsed() <= 2000)
+        m_functionStopped.wait(&m_stopMutex, 100);
+
+    return parents;
+}
+
+void Function::resume(MasterTimer *timer, const QList<FunctionParent> &parents)
+{
+    // DMX Total Control: the first one starts it, the others join
+    for (const FunctionParent &parent : parents)
+        start(timer, parent);
 }
 
 /*****************************************************************************
@@ -1497,4 +1636,252 @@ void Function::setBlendMode(Universe::BlendMode mode)
 Universe::BlendMode Function::blendMode() const
 {
     return m_blendMode;
+}
+
+/*****************************************************************************
+ * Priority (DMX Total Control)
+ *****************************************************************************/
+
+void Function::setPriority(int priority)
+{
+    priority = qBound(0, priority, maxPriority());
+    if (priority == m_priority)
+        return;
+
+    m_priority = priority;
+    if (m_parentPriority < 0 && isRunning())
+        m_priorityChanged = 1;
+    emit changed(m_id);
+}
+
+int Function::priority() const
+{
+    return m_priority;
+}
+
+int Function::playbackPriority() const
+{
+    return m_parentPriority >= 0 ? m_parentPriority : m_priority;
+}
+
+void Function::setParentPriority(int priority)
+{
+    priority = priority < 0 ? -1 : qMin(priority, maxPriority());
+    if (priority == m_parentPriority)
+        return;
+
+    int before = playbackPriority();
+    m_parentPriority = priority;
+    if (playbackPriority() != before && isRunning())
+        m_priorityChanged = 1;
+}
+
+void Function::applyPriorityChange()
+{
+    if (m_priorityChanged.testAndSetOrdered(1, 0))
+        updateFadersPriority();
+}
+
+void Function::updateFadersPriority()
+{
+    InputOutputMap *io = doc()->inputOutputMap();
+    for (auto it = m_fadersMap.cbegin(); it != m_fadersMap.cend(); ++it)
+    {
+        Universe *universe = io->universe(it.key());
+        if (universe != nullptr && it.value().isNull() == false)
+            universe->setFaderFunctionPriority(it.value(), playbackPriority());
+    }
+}
+
+/*****************************************************************************
+ * Playback settings and live controls (DMX Total Control)
+ *****************************************************************************/
+
+#define KXMLDTCLoops     QStringLiteral("Loops")
+#define KXMLDTCEnd       QStringLiteral("EndAction")
+#define KXMLDTCJump      QStringLiteral("JumpTo")
+#define KXMLDTCDrive     QStringLiteral("Drive")
+#define KXMLDTCDivisions QStringLiteral("Divisions")
+#define KXMLDTCStart     QStringLiteral("StartMode")
+#define KXMLDTCStagger   QStringLiteral("Stagger")
+
+void Function::setLoopCount(int count)
+{
+    count = qMax(0, count);
+    if (count == m_loopCount)
+        return;
+    m_loopCount = count;
+    emit changed(m_id);
+}
+
+int Function::loopCount() const
+{
+    return m_loopCount;
+}
+
+void Function::setEndAction(EndAction action)
+{
+    if (action == m_endAction)
+        return;
+    m_endAction = action;
+    emit changed(m_id);
+}
+
+Function::EndAction Function::endAction() const
+{
+    return m_endAction;
+}
+
+void Function::setJumpTo(int target)
+{
+    if (target < jumpPrevious())
+        target = jumpNone();
+    if (target == m_jumpTo)
+        return;
+    m_jumpTo = target;
+    emit changed(m_id);
+}
+
+int Function::jumpTo() const
+{
+    return m_jumpTo;
+}
+
+void Function::setDriveMode(DriveMode mode)
+{
+    if (mode == m_driveMode)
+        return;
+    m_driveMode = mode;
+    emit changed(m_id);
+}
+
+Function::DriveMode Function::driveMode() const
+{
+    return m_driveMode;
+}
+
+void Function::setDivisions(int divisions)
+{
+    divisions = qBound(1, divisions, 64);
+    if (divisions == m_divisions)
+        return;
+    m_divisions = divisions;
+    emit changed(m_id);
+}
+
+int Function::divisions() const
+{
+    return m_divisions;
+}
+
+void Function::setStartMode(StartMode mode)
+{
+    if (mode == m_startMode)
+        return;
+    m_startMode = mode;
+    emit changed(m_id);
+}
+
+Function::StartMode Function::startMode() const
+{
+    return m_startMode;
+}
+
+void Function::setStagger(uint ms)
+{
+    if (ms == m_stagger)
+        return;
+    m_stagger = ms;
+    emit changed(m_id);
+}
+
+uint Function::stagger() const
+{
+    return m_stagger;
+}
+
+void Function::setSpeedFactor(qreal factor)
+{
+    m_speedFactor = qBound(0.05, factor, 20.0);
+}
+
+qreal Function::speedFactor() const
+{
+    return m_speedFactor;
+}
+
+void Function::requestDivisionJump()
+{
+    m_pendingJumps.fetchAndAddOrdered(1);
+}
+
+uint Function::frameTick() const
+{
+    return m_frameTick;
+}
+
+void Function::advanceFrameTick()
+{
+    // keep the fractions of a tick, so that slow speeds stay smooth
+    qreal tick = qreal(MasterTimer::tick()) * m_speedFactor + m_tickRemainder;
+    m_frameTick = uint(tick);
+    m_tickRemainder = tick - qreal(m_frameTick);
+}
+
+int Function::takeDivisionJumps()
+{
+    return m_pendingJumps.fetchAndStoreOrdered(0);
+}
+
+Function::CycleResult Function::cycleCompleted()
+{
+    m_cyclesDone++;
+    if (m_loopCount <= 0 || m_cyclesDone < m_loopCount)
+        return CycleContinue;
+
+    m_cyclesDone = 0;
+    emit loopsFinished(m_id);
+    return m_endAction == EndPause ? CycleHold : CycleStop;
+}
+
+bool Function::saveXMLPlayback(QXmlStreamWriter *doc) const
+{
+    if (m_loopCount > 0)
+        doc->writeAttribute(KXMLDTCLoops, QString::number(m_loopCount));
+    if (m_endAction != EndRelease)
+        doc->writeAttribute(KXMLDTCEnd, "Pause");
+    if (m_jumpTo != jumpNone())
+        doc->writeAttribute(KXMLDTCJump, QString::number(m_jumpTo));
+    if (m_driveMode != DriveOff)
+        doc->writeAttribute(KXMLDTCDrive, m_driveMode == DriveBeatGO ? "BeatGO" : "Pulse");
+    if (m_divisions != 4)
+        doc->writeAttribute(KXMLDTCDivisions, QString::number(m_divisions));
+    if (m_startMode != StartPlaying)
+        doc->writeAttribute(KXMLDTCStart, "Paused");
+    if (m_stagger > 0)
+        doc->writeAttribute(KXMLDTCStagger, QString::number(m_stagger));
+    return true;
+}
+
+void Function::loadXMLPlayback(const QXmlStreamAttributes &attrs)
+{
+    if (attrs.hasAttribute(KXMLDTCLoops))
+        m_loopCount = qMax(0, attrs.value(KXMLDTCLoops).toInt());
+    if (attrs.hasAttribute(KXMLDTCEnd))
+        m_endAction = attrs.value(KXMLDTCEnd) == QLatin1String("Pause") ? EndPause : EndRelease;
+    // DMX Total Control: a jump or divisions that aren't a number (a damaged
+    // file) keep the default: "abc" is no jump to function 0
+    bool jumpOk = false, divisionsOk = false;
+    const int jump = attrs.value(KXMLDTCJump).toInt(&jumpOk);
+    if (jumpOk && jump >= jumpPrevious())
+        m_jumpTo = jump;
+    if (attrs.hasAttribute(KXMLDTCDrive))
+        m_driveMode = attrs.value(KXMLDTCDrive) == QLatin1String("BeatGO") ? DriveBeatGO : DrivePulse;
+    const int divisions = attrs.value(KXMLDTCDivisions).toInt(&divisionsOk);
+    if (divisionsOk)
+        m_divisions = qBound(1, divisions, 64);
+    if (attrs.hasAttribute(KXMLDTCStart))
+        m_startMode = attrs.value(KXMLDTCStart) == QLatin1String("Paused") ? StartPaused : StartPlaying;
+    if (attrs.hasAttribute(KXMLDTCStagger))
+        m_stagger = attrs.value(KXMLDTCStagger).toUInt();
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DMX Total Control: the application icon under 32 px, where the three
+     letters can't be read: the D alone. Apache License 2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3d8bfd"/>
+      <stop offset="1" stop-color="#ae3ec9"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#brand)"/>
+  <path d="M81,68 H115 A60,60 0 0 1 115,188 H81 Z" fill="none" stroke="#ffffff" stroke-width="36" stroke-linejoin="miter"/>
+</svg>

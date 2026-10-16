@@ -21,6 +21,7 @@
 #include <QDebug>
 #include <QSettings>
 #include <QMutexLocker>
+#include <QThread>
 
 #if defined(WIN32) || defined(Q_OS_WIN)
 #   include "mastertimer-win32.h"
@@ -58,6 +59,7 @@ MasterTimer::MasterTimer(Doc* doc)
     : QObject(doc)
     , d_ptr(new MasterTimerPrivate(this))
     , m_stopAllFunctions(false)
+    , m_ticksDone(0)
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     , m_dmxSourceListMutex(QMutex::Recursive)
 #endif
@@ -156,6 +158,9 @@ void MasterTimer::timerTick()
 
     m_beatRequested = false;
 
+    // DMX Total Control: the functions of this tick are out of its hands
+    m_ticksDone++;
+
     //qDebug() << ">>>>>>>> MASTERTIMER TICK";
     emit tickReady();
 }
@@ -186,10 +191,28 @@ void MasterTimer::startFunction(Function* function)
 
 void MasterTimer::stopAllFunctions()
 {
+    // DMX Total Control: what was started since the last tick stops too, or
+    // the next tick would start it once this returned (a GO and a stop all
+    // in the same frame). While this waits, the tick runs no frame of it:
+    // preRun, then postRun with the others. Nothing ticks (the timer is
+    // stopped): it never ran, it only leaves the queue
+    const bool ticking = d_ptr != NULL && d_ptr->isRunning();
+    {
+        QMutexLocker locker(&m_functionListMutex);
+        for (Function *function : std::as_const(m_startQueue))
+            function->stop(FunctionParent::master());
+        if (ticking == false)
+            m_startQueue.clear();
+    }
+    auto queued = [this]() {
+        QMutexLocker locker(&m_functionListMutex);
+        return m_startQueue.isEmpty() == false;
+    };
+
     m_stopAllFunctions = true;
 
     /* Wait until all functions have been stopped */
-    while (runningFunctions() > 0)
+    while (runningFunctions() > 0 || (ticking && queued()))
     {
 #if defined(WIN32) || defined(Q_OS_WIN)
         Sleep(10);
@@ -224,6 +247,59 @@ int MasterTimer::runningFunctions() const
     return m_functionList.size();
 }
 
+void MasterTimer::releaseFunction(Function *function)
+{
+    if (function == NULL)
+        return;
+
+    // DMX Total Control: nothing ticks: it only leaves the lists
+    if (d_ptr == NULL || d_ptr->isRunning() == false)
+    {
+        bool wasRunning;
+        {
+            QMutexLocker locker(&m_functionListMutex);
+            m_startQueue.removeAll(function);
+            wasRunning = m_functionList.removeAll(function) > 0;
+        }
+        if (wasRunning)
+        {
+            Doc *doc = qobject_cast<Doc*> (parent());
+            QList<Universe *> universes = doc->inputOutputMap()->claimUniverses();
+            function->postRun(this, universes);
+            doc->inputOutputMap()->releaseUniverses();
+        }
+        return;
+    }
+
+    auto queued = [this, function]() {
+        QMutexLocker locker(&m_functionListMutex);
+        return m_startQueue.contains(function);
+    };
+
+    QElapsedTimer watchdog;
+    watchdog.start();
+    while (watchdog.elapsed() < 2000 && d_ptr->isRunning())
+    {
+        function->stop(FunctionParent::master());
+        if (function->isRunning() || queued())
+        {
+            QThread::msleep(1);
+            continue;
+        }
+
+        // it may have just stopped (its postRun may not be over yet), or the
+        // tick in progress may be about to start it (a show block): once that
+        // tick is over the timer holds it no more, unless it queued it again
+        const quint64 seen = m_ticksDone;
+        while (m_ticksDone == seen && watchdog.elapsed() < 2000 && d_ptr->isRunning())
+            QThread::msleep(1);
+        if (function->isRunning() == false && queued() == false)
+            return;
+    }
+    if (d_ptr->isRunning())
+        qWarning() << Q_FUNC_INFO << "the timer still holds" << function->name();
+}
+
 void MasterTimer::timerTickFunctions(QList<Universe *> universes)
 {
     // List of m_functionList indices that should be removed at the end of this
@@ -249,7 +325,11 @@ void MasterTimer::timerTickFunctions(QList<Universe *> universes)
                 if (function->stopped() == false && m_stopAllFunctions == false)
                 {
                     if (firstIteration)
+                    {
+                        // DMX Total Control: a new priority, in this thread
+                        function->applyPriorityChange();
                         function->write(this, universes);
+                    }
                 }
                 else
                 {
@@ -303,7 +383,10 @@ void MasterTimer::timerTickFunctions(QList<Universe *> universes)
                     functionListHasChanged = true;
                 }
                 f->preRun(this);
-                f->write(this, universes);
+                // DMX Total Control: a stop all waits for it: no frame, it
+                // stops with the next tick
+                if (m_stopAllFunctions == false)
+                    f->write(this, universes);
                 emit functionStarted(f->id());
             }
 
@@ -431,4 +514,13 @@ void MasterTimer::requestBeat()
     // forceful request of a beat, processed at
     // the next timerTick call
     m_beatRequested = true;
+}
+
+/*****************************************************************************
+ * Offline rendering (DMX Total Control)
+ *****************************************************************************/
+
+void MasterTimer::renderTick()
+{
+    timerTick();
 }

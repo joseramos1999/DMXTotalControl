@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/remote">
+        <file>index.html</file>
+        <file>remote.css</file>
+        <file>remote.js</file>
+        <file>manifest.webmanifest</file>
+    </qresource>
+</RCC>

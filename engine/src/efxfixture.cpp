@@ -379,15 +379,8 @@ bool EFXFixture::isDone() const
 
 uint EFXFixture::timeOffset() const
 {
-    if (m_parent->propagationMode() == EFX::Asymmetric ||
-        m_parent->propagationMode() == EFX::Serial)
-    {
-        return m_parent->loopDuration() / (m_parent->fixtures().size() + 1) * serialNumber();
-    }
-    else
-    {
-        return 0;
-    }
+    // DMX Total Control: the offset depends on the phase spread and the symmetry
+    return m_parent->fixtureTimeOffset(serialNumber());
 }
 
 /*****************************************************************************
@@ -470,9 +463,11 @@ void EFXFixture::nextStep(QList<Universe *> universes, QSharedPointer<GenericFad
     if (m_done == true || isValid() == false)
         return;
 
-    m_elapsed += MasterTimer::tick();
+    m_elapsed += m_parent->frameTick(); // DMX Total Control: live speed
 
     // Check time wrapping
+    // DMX Total Control: past the end of the loop, what went past it is kept
+    // (a loop lasts its duration, as EFX counts the loops: they stay in step)
     if (m_elapsed > m_parent->loopDuration())
     {
         if (m_parent->runOrder() == Function::PingPong)
@@ -490,7 +485,7 @@ void EFXFixture::nextStep(QList<Universe *> universes, QSharedPointer<GenericFad
             stop();
         }
 
-        m_elapsed = 0;
+        m_elapsed %= m_parent->loopDuration();
     }
 
     // Bail out without doing anything if this fixture is waiting for its turn.
@@ -511,6 +506,10 @@ void EFXFixture::nextStep(QList<Universe *> universes, QSharedPointer<GenericFad
     float valY = 0;
 
     m_parent->calculatePoint(m_runTimeDirection, m_startOffset, m_currentAngle, &valX, &valY);
+
+    // DMX Total Control: symmetric movement, this half mirrors the other on pan
+    if (m_parent->fixtureMirrored(serialNumber()))
+        valX = 2.0f * float(m_parent->getAttributeValue(EFX::XOffset)) - valX;
 
     /* Set target values on faders/universes */
     switch (m_mode)

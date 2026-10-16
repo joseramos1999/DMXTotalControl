@@ -67,13 +67,22 @@ public:
     /** Return the currently set values as a list of SceneValue */
     QList<SceneValue> channels();
 
+    /** DMX Total Control: the priority of these values against the scenes (0-10):
+     *  they beat the scenes of this priority and below. -1 beats everything */
+    void setPriority(int priority);
+    int priority() const;
+
     /** @reimp */
     void writeDMX(MasterTimer* timer, QList<Universe*> ua) override;
 
 private:
     Doc *m_doc;
+    int m_priority;
+    bool m_priorityChanged;
     QMutex m_mutex;
     QMap <QPair<quint32,quint32>,uchar> m_values;
+    /** Channels unset since the last writeDMX, to drop from the faders */
+    QList <QPair<quint32,quint32>> m_removed;
     bool m_outputEnabled;
     bool m_clearRequest;
     bool m_changed;

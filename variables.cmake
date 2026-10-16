@@ -10,7 +10,11 @@ set(CMAKE_AUTORCC ON)
 
 add_definitions(-DUNICODE)
 
-set(APPNAME "Q Light Controller Plus")
+if(dtcui)
+    set(APPNAME "DMX Total Control")
+else()
+    set(APPNAME "Q Light Controller Plus")
+endif()
 set(FXEDNAME "Fixture Definition Editor")
 
 if(ANDROID OR IOS)
@@ -44,7 +48,13 @@ endif()
 # dependent sources (libraries, executables, I/O plugins) gets a "5" suffix
 # when building qmlui. Resources (fixtures, rgbscripts, gobos, ...) are
 # deliberately left unsuffixed, since they are shared between the two.
-if(qmlui)
+if(dtcui)
+    # DMX Total Control builds the engine in its QML (QLC+ 5) flavour
+    add_definitions(-DQMLUI)
+    set(APPVERSION "0.13.0")
+    set(APPBINARY "dmxtotalcontrol")
+    set(PLUGINSUBDIR "dmxtotalcontrol")
+elseif(qmlui)
     add_definitions(-DQMLUI)
     set(APPVERSION "5.3.1")
     set(APPBINARY "qlcplus5")
@@ -85,7 +95,12 @@ endif()
 # endif()
 
 # Installation paths
-if (WIN32)
+if (WIN32 AND DEFINED WIN_INSTALLROOT)
+    # Developer override, e.g. -DWIN_INSTALLROOT=D:/dev/dist
+    set(INSTALLROOT "${WIN_INSTALLROOT}")
+elseif (WIN32 AND dtcui)
+    set(INSTALLROOT "$ENV{SystemDrive}/DMXTotalControl")
+elseif (WIN32)
     set(INSTALLROOT "$ENV{SystemDrive}/qlcplus")
 elseif (APPLE)
     set(INSTALLROOT "$ENV{HOME}/QLC+.app/Contents")
@@ -174,7 +189,13 @@ elseif (appimage)
 endif ()
 
 # User Data
-if (WIN32)
+if (dtcui AND WIN32)
+    set(USERDATADIR "DMXTotalControl")
+elseif (dtcui AND APPLE)
+    set(USERDATADIR "Library/Application Support/DMXTotalControl")
+elseif (dtcui AND UNIX AND NOT ANDROID AND NOT IOS)
+    set(USERDATADIR ".dmxtotalcontrol")
+elseif (WIN32)
     set(USERDATADIR "QLC+")
 elseif (APPLE)
     set(USERDATADIR "Library/Application Support/QLC+")

@@ -22,6 +22,7 @@
 #include <QString>
 #include <QDebug>
 #include <QFile>
+#include <QHash>
 #include <QList>
 
 #include "showrunner.h"
@@ -32,6 +33,8 @@
 #define KXMLQLCShowTimeDivision QStringLiteral("TimeDivision")
 #define KXMLQLCShowTimeType     QStringLiteral("Type")
 #define KXMLQLCShowTimeBPM      QStringLiteral("BPM")
+// DMX Total Control
+#define KXMLDTCShowTimeline     QStringLiteral("DMXTotalControl")
 
 /*****************************************************************************
  * Initialization
@@ -40,6 +43,11 @@
 Show::Show(Doc* doc) : Function(doc, Function::ShowType)
     , m_timeDivisionType(Time)
     , m_timeDivisionBPM(120)
+    , m_endTime(0)
+    , m_loop(false)
+    , m_gridOffset(0)
+    , m_msTimeline(false)
+    , m_staticScene(Function::invalidId())
     , m_latestTrackId(0)
     , m_latestShowFunctionID(0)
     , m_runner(NULL)
@@ -49,6 +57,13 @@ Show::Show(Doc* doc) : Function(doc, Function::ShowType)
     // Clear attributes here. I want attributes to be mapped
     // exactly like the Show tracks
     unregisterAttribute(tr("Intensity"));
+
+    // DMX Total Control: the functions of the running blocks deleted or
+    // replaced (the runner must not keep them)
+    connect(doc, SIGNAL(functionRemoved(quint32)),
+            this, SLOT(slotFunctionRemoved(quint32)));
+    connect(doc, SIGNAL(functionReplaced(quint32)),
+            this, SLOT(slotFunctionReplaced(quint32)));
 }
 
 Show::~Show()
@@ -63,6 +78,10 @@ QIcon Show::getIcon() const
 
 quint32 Show::totalDuration()
 {
+    // DMX Total Control: the end marker
+    if (m_endTime > 0)
+        return m_endTime;
+
     quint32 totalDuration = 0;
 
     foreach (Track *track, m_tracks)
@@ -108,8 +127,21 @@ bool Show::copyFrom(const Function* function)
 
     m_timeDivisionType = show->m_timeDivisionType;
     m_timeDivisionBPM = show->m_timeDivisionBPM;
+    // DMX Total Control
+    m_endTime = show->m_endTime;
+    m_loop = show->m_loop;
+    m_gridOffset = show->m_gridOffset;
+    m_msTimeline = show->m_msTimeline;
+    if (Function *values = doc()->function(show->m_staticScene))
+    {
+        Function *copy = values->createCopy(doc());
+        m_staticScene = copy != NULL ? copy->id() : Function::invalidId();
+    }
     m_latestTrackId = show->m_latestTrackId;
     m_latestShowFunctionID = show->m_latestShowFunctionID;
+
+    // DMX Total Control: the functions copied for the blocks
+    QHash<quint32, quint32> copies;
 
     // create a copy of each track
     foreach (Track *track, show->tracks())
@@ -118,6 +150,11 @@ bool Show::copyFrom(const Function* function)
         Track* newTrack = new Track(sceneID, this);
         newTrack->setName(track->name());
         addTrack(newTrack);
+        // DMX Total Control
+        newTrack->setLocked(track->isLocked());
+        newTrack->setHidden(track->isHidden());
+        for (const QString &lane : { QString("dimmer"), QString("phase") })
+            newTrack->setAutomation(lane, track->automation(lane));
 
         // create a copy of each sequence/audio in a track
         foreach (ShowFunction *sfunc, track->showFunctions())
@@ -126,17 +163,38 @@ bool Show::copyFrom(const Function* function)
             if (function == NULL)
                 continue;
 
-            /* Attempt to create a copy of the function to Doc */
-            Function* copy = function->createCopy(doc());
-            if (copy != NULL)
+            // DMX Total Control: the blocks of a super scene play the scenes
+            // of the user: the copy plays the same ones. Only what belongs to
+            // the show (hidden: its audio) is copied, once
+            quint32 fid = Function::invalidId();
+            if (m_msTimeline && function->isVisible())
             {
-                copy->setName(tr("Copy of %1").arg(function->name()));
-                ShowFunction *showFunc = newTrack->createShowFunction(copy->id());
-                showFunc->setStartTime(sfunc->startTime());
-                showFunc->setDuration(sfunc->duration());
-                showFunc->setColor(sfunc->color());
-                showFunc->setLocked(sfunc->isLocked());
+                fid = function->id();
             }
+            else if (m_msTimeline && copies.contains(function->id()))
+            {
+                fid = copies.value(function->id());
+            }
+            else
+            {
+                /* Attempt to create a copy of the function to Doc */
+                Function* copy = function->createCopy(doc());
+                if (copy == NULL)
+                    continue;
+                if (m_msTimeline == false)
+                    copy->setName(tr("Copy of %1").arg(function->name()));
+                copies.insert(function->id(), copy->id());
+                fid = copy->id();
+            }
+
+            ShowFunction *showFunc = newTrack->createShowFunction(fid);
+            showFunc->setStartTime(sfunc->startTime());
+            showFunc->setDuration(sfunc->duration());
+            showFunc->setColor(sfunc->color());
+            showFunc->setLocked(sfunc->isLocked());
+            showFunc->setFadeIn(sfunc->fadeIn());
+            showFunc->setFadeOut(sfunc->fadeOut());
+            showFunc->setStretch(sfunc->stretch());
         }
     }
 
@@ -185,6 +243,64 @@ void Show::setTimeDivisionBPM(int BPM)
     m_timeDivisionBPM = BPM;
 }
 
+/*****************************************************************************
+ * DMX Total Control: timeline settings
+ *****************************************************************************/
+
+void Show::setEndTime(quint32 ms)
+{
+    m_endTime = ms;
+    emit changed(id());
+}
+
+quint32 Show::endTime() const
+{
+    return m_endTime;
+}
+
+void Show::setLoop(bool loop)
+{
+    m_loop = loop;
+    emit changed(id());
+}
+
+bool Show::loop() const
+{
+    return m_loop;
+}
+
+void Show::setGridOffset(quint32 ms)
+{
+    m_gridOffset = ms;
+    emit changed(id());
+}
+
+quint32 Show::gridOffset() const
+{
+    return m_gridOffset;
+}
+
+void Show::setMsTimeline(bool ms)
+{
+    m_msTimeline = ms;
+}
+
+bool Show::msTimeline() const
+{
+    return m_msTimeline;
+}
+
+void Show::setStaticScene(quint32 id)
+{
+    m_staticScene = id;
+    emit changed(this->id());
+}
+
+quint32 Show::staticScene() const
+{
+    return m_staticScene;
+}
+
 QString Show::tempoToString(Show::TimeDivision type)
 {
     switch(type)
@@ -221,6 +337,8 @@ Show::TimeDivision Show::stringToTempo(const QString& tempo)
 bool Show::addTrack(Track *track, quint32 id)
 {
     Q_ASSERT(track != NULL);
+    // DMX Total Control: not while the runner reads the tracks
+    QMutexLocker locker(&m_runnerMutex);
 
     // No ID given, this method can assign one
     if (id == Track::invalidId())
@@ -237,14 +355,22 @@ bool Show::addTrack(Track *track, quint32 id)
 
 bool Show::removeTrack(quint32 id)
 {
+    // DMX Total Control: a running show forgets the track and its blocks
+    // (what they play stops) before they are deleted
+    QMutexLocker locker(&m_runnerMutex);
     if (m_tracks.contains(id) == true)
     {
         Track* track = m_tracks.take(id);
         Q_ASSERT(track != NULL);
 
+        if (m_runner != NULL)
+            m_runner->forgetTrack(track);
+
         unregisterAttribute(QString("%1-%2").arg(track->name()).arg(track->id()));
 
         //emit trackRemoved(id);
+        // DMX Total Control: its blocks go with it (they were leaked)
+        qDeleteAll(track->showFunctions());
         delete track;
 
         return true;
@@ -289,6 +415,8 @@ void Show::moveTrack(Track *track, int direction)
 {
     if (track == NULL)
         return;
+    // DMX Total Control: not while the runner reads the tracks
+    QMutexLocker locker(&m_runnerMutex);
 
     qint32 trkID = track->id();
     if (trkID == 0 && direction == -1)
@@ -375,6 +503,24 @@ bool Show::saveXML(QXmlStreamWriter *doc) const
     doc->writeAttribute(KXMLQLCShowTimeBPM, QString::number(m_timeDivisionBPM));
     doc->writeEndElement();
 
+    // DMX Total Control: the timeline settings (blocks in ms, unless Ms="0":
+    // a show of QLC+ edited here keeps its end, loop and static values too)
+    if (m_msTimeline || m_endTime > 0 || m_loop || m_gridOffset > 0 || m_staticScene != Function::invalidId())
+    {
+        doc->writeStartElement(KXMLDTCShowTimeline);
+        if (m_msTimeline == false)
+            doc->writeAttribute("Ms", "0");
+        if (m_endTime > 0)
+            doc->writeAttribute("End", QString::number(m_endTime));
+        if (m_loop)
+            doc->writeAttribute("Loop", "1");
+        if (m_gridOffset > 0)
+            doc->writeAttribute("GridOffset", QString::number(m_gridOffset));
+        if (m_staticScene != Function::invalidId())
+            doc->writeAttribute("Static", QString::number(m_staticScene));
+        doc->writeEndElement();
+    }
+
     foreach (Track *track, m_tracks)
         track->saveXML(doc);
 
@@ -414,6 +560,18 @@ bool Show::loadXML(QXmlStreamReader &root)
             if (trk->loadXML(root) == true)
                 addTrack(trk, trk->id());
         }
+        else if (root.name() == KXMLDTCShowTimeline)
+        {
+            // DMX Total Control
+            QXmlStreamAttributes attrs = root.attributes();
+            m_msTimeline = attrs.value("Ms").toString() != "0";
+            m_endTime = attrs.value("End").toString().toUInt();
+            m_loop = attrs.value("Loop").toString() == "1";
+            m_gridOffset = attrs.value("GridOffset").toString().toUInt();
+            if (attrs.hasAttribute("Static"))
+                m_staticScene = attrs.value("Static").toString().toUInt();
+            root.skipCurrentElement();
+        }
         else
         {
             qWarning() << Q_FUNC_INFO << "Unknown Show tag:" << root.name();
@@ -440,6 +598,8 @@ bool Show::contains(quint32 functionId) const
 
     if (functionId == id())
         return true;
+    if (functionId == m_staticScene)
+        return true;
 
     foreach (Track* track, m_tracks)
     {
@@ -456,6 +616,8 @@ QList<quint32> Show::components() const
 
     foreach (Track* track, m_tracks)
         ids.append(track->components());
+    if (m_staticScene != Function::invalidId())
+        ids.append(m_staticScene);
 
     return ids;
 }
@@ -468,26 +630,37 @@ void Show::preRun(MasterTimer* timer)
 {
     Function::preRun(timer);
     m_runningChildren.clear();
-    if (m_runner != NULL)
     {
-        m_runner->stop();
-        delete m_runner;
+        // DMX Total Control: the tracks and blocks don't change meanwhile
+        QMutexLocker locker(&m_runnerMutex);
+        if (m_runner != NULL)
+        {
+            m_runner->stop();
+            delete m_runner;
+        }
+
+        m_runner = new ShowRunner(doc(), this->id(), elapsed());
+        int i = 0;
+        foreach (Track *track, m_tracks)
+            m_runner->adjustIntensity(getAttributeValue(i++), track);
+
+        connect(m_runner, SIGNAL(timeChanged(quint32)), this, SIGNAL(timeChanged(quint32)));
+        connect(m_runner, SIGNAL(showFinished()), this, SIGNAL(showFinished()));
+        m_runner->start();
     }
 
-    m_runner = new ShowRunner(doc(), this->id(), elapsed());
-    int i = 0;
-    foreach (Track *track, m_tracks)
-        m_runner->adjustIntensity(getAttributeValue(i++), track);
-
-    connect(m_runner, SIGNAL(timeChanged(quint32)), this, SIGNAL(timeChanged(quint32)));
-    connect(m_runner, SIGNAL(showFinished()), this, SIGNAL(showFinished()));
-    m_runner->start();
+    // DMX Total Control: the static values of the show play with it
+    if (Function *values = doc()->function(m_staticScene))
+        values->start(timer, FunctionParent(FunctionParent::Function, id()));
 }
 
 void Show::setPause(bool enable)
 {
-    if (m_runner != NULL)
-        m_runner->setPause(enable);
+    {
+        QMutexLocker locker(&m_runnerMutex);
+        if (m_runner != NULL)
+            m_runner->setPause(enable);
+    }
     Function::setPause(enable);
 }
 
@@ -498,23 +671,61 @@ void Show::write(MasterTimer* timer, QList<Universe *> universes)
     if (isPaused())
         return;
 
-    m_runner->write(timer);
+    // DMX Total Control: the blocks and tracks it plays stay meanwhile
+    QMutexLocker locker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->write(timer);
 }
 
 void Show::postRun(MasterTimer* timer, QList<Universe *> universes)
 {
-    if (m_runner != NULL)
     {
-        m_runner->stop();
-        delete m_runner;
-        m_runner = NULL;
+        QMutexLocker locker(&m_runnerMutex);
+        if (m_runner != NULL)
+        {
+            m_runner->stop();
+            delete m_runner;
+            m_runner = NULL;
+        }
     }
+    // DMX Total Control
+    if (Function *values = doc()->function(m_staticScene))
+        values->stop(FunctionParent(FunctionParent::Function, id()));
     Function::postRun(timer, universes);
+}
+
+QRecursiveMutex *Show::runnerMutex()
+{
+    return &m_runnerMutex;
+}
+
+void Show::forgetBlock(ShowFunction *sf)
+{
+    // DMX Total Control
+    QMutexLocker locker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->forgetBlock(sf);
 }
 
 void Show::slotChildStopped(quint32 fid)
 {
     Q_UNUSED(fid);
+}
+
+void Show::slotFunctionRemoved(quint32 fid)
+{
+    // DMX Total Control
+    QMutexLocker locker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->forgetFunction(fid, NULL);
+}
+
+void Show::slotFunctionReplaced(quint32 fid)
+{
+    // DMX Total Control: the Doc already has the new one
+    QMutexLocker locker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->forgetFunction(fid, doc()->function(fid));
 }
 
 /*****************************************************************************
@@ -525,6 +736,8 @@ int Show::adjustAttribute(qreal fraction, int attributeId)
 {
     int attrIndex = Function::adjustAttribute(fraction, attributeId);
 
+    // DMX Total Control: the runner may be going away in the timer thread
+    QMutexLocker locker(&m_runnerMutex);
     if (m_runner != NULL)
     {
         QList<Track*> trkList = m_tracks.values();

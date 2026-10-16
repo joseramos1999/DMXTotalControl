@@ -811,7 +811,7 @@ void Scene_Test::writeHTPTwoTicks()
     ua = doc->inputOutputMap()->claimUniverses();
     ua[0]->processFaders(MasterTimer::tick());
     QCOMPARE(ua[0]->preGMValues()[5], (char) 90); // HTP fades out
-    QCOMPARE(ua[0]->preGMValues()[0], (char) 100);  // LTP doesn't
+    QCOMPARE(ua[0]->preGMValues()[0], (char) 50);  // DMX Total Control: LTP fades back to rest too
     doc->inputOutputMap()->releaseUniverses(false);
 
     // Now, the channels are inside MasterTimer's GenericFader to be zeroed out
@@ -819,7 +819,7 @@ void Scene_Test::writeHTPTwoTicks()
     ua = doc->inputOutputMap()->claimUniverses();
     ua[0]->processFaders(MasterTimer::tick());
     QVERIFY(ua[0]->preGMValues()[5] == (char) 0);  // HTP fades out
-    QVERIFY(ua[0]->preGMValues()[0] == (char) 100); // LTP doesn't
+    QVERIFY(ua[0]->preGMValues()[0] == (char) 0); // DMX Total Control: LTP back to rest (default)
     doc->inputOutputMap()->releaseUniverses(false);
 }
 
@@ -913,7 +913,7 @@ void Scene_Test::writeHTPTwoTicksIntensity()
     ua = doc->inputOutputMap()->claimUniverses();
     ua[0]->processFaders(MasterTimer::tick());
     QVERIFY(ua[0]->preGMValues()[5] == (char) floor((qreal(125) * qreal(0.2)) + 0.5)); // HTP fades out
-    QVERIFY(ua[0]->preGMValues()[0] == (char) 100);  // LTP doesn't
+    QVERIFY(ua[0]->preGMValues()[0] == (char) 50);  // DMX Total Control: LTP fades back to rest too
     doc->inputOutputMap()->releaseUniverses(false);
 
     // Now, the channels are inside MasterTimer's GenericFader to be zeroed out
@@ -921,7 +921,7 @@ void Scene_Test::writeHTPTwoTicksIntensity()
     ua = doc->inputOutputMap()->claimUniverses();
     ua[0]->processFaders(MasterTimer::tick());
     QVERIFY(ua[0]->preGMValues()[5] == (char) 0);  // HTP fades out
-    QVERIFY(ua[0]->preGMValues()[0] == (char) 100); // LTP doesn't
+    QVERIFY(ua[0]->preGMValues()[0] == (char) 0); // DMX Total Control: LTP back to rest (default)
     doc->inputOutputMap()->releaseUniverses(false);
 }
 

@@ -66,10 +66,13 @@ void ShowRunner_Test::stopRunner()
 {
     ShowRunner runner(m_doc, m_show->id());
     runner.m_elapsedTime = 500;
-    runner.m_runningQueue.append(QPair<Function*,quint32>(m_scene,1000));
+    // DMX Total Control: the running blocks (in place of the running queue)
+    ShowRunner::RunningBlock block = { m_track->showFunctions().first(), m_scene->id(), m_scene, 1000,
+                                       Function::invalidAttributeId(), Function::invalidAttributeId(), false };
+    runner.m_running.append(block);
     runner.stop();
     QCOMPARE(runner.m_elapsedTime, quint32(0));
-    QCOMPARE(runner.m_runningQueue.count(), 0);
+    QCOMPARE(runner.m_running.count(), 0);
 }
 
 QTEST_APPLESS_MAIN(ShowRunner_Test)

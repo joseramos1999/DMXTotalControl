@@ -686,13 +686,14 @@ void Scene::writeDMX(MasterTimer *timer, QList<Universe *> ua)
 
                 FadeChannel fc(doc(), sv.fxi, sv.channel);
                 quint32 universe = fc.universe();
-                if (universe == Universe::invalid())
+                // DMX Total Control: nor a universe that is gone (removed)
+                if (universe == Universe::invalid() || universe >= quint32(ua.count()))
                     continue;
 
                 QSharedPointer<GenericFader> fader = m_fadersMap.value(universe, QSharedPointer<GenericFader>());
                 if (fader.isNull())
                 {
-                    fader = ua[universe]->requestFader(m_flashOverrides ? Universe::Flashing : Universe::Auto);
+                    fader = ua[universe]->requestFader(m_flashOverrides ? Universe::Flashing : Universe::Auto, playbackPriority());
 
                     fader->adjustIntensity(getAttributeValue(Intensity));
                     fader->setBlendMode(blendMode());
@@ -736,7 +737,7 @@ void Scene::processValue(MasterTimer *timer, QList<Universe*> ua, uint fadeIn, c
     QSharedPointer<GenericFader> fader = m_fadersMap.value(universe->id(), QSharedPointer<GenericFader>());
     if (fader.isNull())
     {
-        fader = universe->requestFader();
+        fader = universe->requestFader(Universe::Auto, playbackPriority());
         fader->adjustIntensity(getAttributeValue(Intensity));
         fader->setBlendMode(blendMode());
         fader->setName(name());
@@ -766,6 +767,10 @@ void Scene::processValue(MasterTimer *timer, QList<Universe*> ua, uint fadeIn, c
 
         fc.setStart(fc.current(chIndex), chIndex);
         fc.setTarget(scv.value, chIndex);
+
+        // DMX Total Control: staggered fade, one fixture after the other
+        if (stagger() > 0)
+            fc.setDelay(stagger() * uint(qMax(0, int(fixtures().indexOf(scv.fxi)))));
 
         if (fc.canFade() == false)
         {
@@ -798,7 +803,7 @@ void Scene::handleFadersEnd(MasterTimer *timer)
     /* If no fade out is needed, dismiss all the requested faders.
      * Otherwise, set all the faders to fade out and let Universe dismiss them
      * when done */
-    if (fadeout == 0)
+    if (fadeout == 0 && stagger() == 0)
     {
         dismissAllFaders();
     }
@@ -807,10 +812,19 @@ void Scene::handleFadersEnd(MasterTimer *timer)
         if (tempoType() == Beats)
             fadeout = beatsToTime(fadeout, timer->beatTimeDuration());
 
+        // DMX Total Control: staggered fade out, in the same order as the fade in
+        QHash<quint32, uint> delays;
+        if (stagger() > 0)
+        {
+            QList<quint32> order = fixtures();
+            for (int i = 0; i < order.count(); i++)
+                delays.insert(order.at(i), stagger() * uint(i));
+        }
+
         foreach (QSharedPointer<GenericFader> fader, m_fadersMap)
         {
             if (!fader.isNull())
-                fader->setFadeOut(true, fadeout);
+                fader->setFadeOut(true, fadeout, delays);
         }
     }
 
@@ -866,6 +880,15 @@ void Scene::write(MasterTimer *timer, QList<Universe*> ua)
 
 void Scene::postRun(MasterTimer* timer, QList<Universe *> ua)
 {
+    // DMX Total Control: released while paused, the faders go on first: a
+    // paused fader doesn't fade, so its fade out would hold the channels
+    // where the pause left them, for good
+    foreach (QSharedPointer<GenericFader> fader, m_fadersMap)
+    {
+        if (!fader.isNull())
+            fader->setPaused(false);
+    }
+
     handleFadersEnd(timer);
 
     Function::postRun(timer, ua);

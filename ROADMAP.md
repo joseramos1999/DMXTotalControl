@@ -1,0 +1,294 @@
+# Hoja de ruta
+
+Objetivo: un software DMX libre, sencillo para el directo, con una programación rápida y operación por playbacks, que funcione con las interfaces DMX habituales (DMX USB, Art-Net, sACN).
+
+Entre corchetes va la pieza del motor que se aprovecha, cuando la hay.
+
+## Páginas del programa
+
+| Página | Para qué |
+|---|---|
+| Patch, Fixtures, Salidas | Montar el equipo: fixtures, sus definiciones y las interfaces DMX |
+| Programar | Dar valores, color, posición y FX a las fixtures seleccionadas, y grabarlos |
+| Escenas | Editar escenas estáticas, pasos, FX, super escenas y cuelists |
+| Directo | Lanzar las escenas por grupos |
+| Playbacks | Faders con GO, pausa y flash para cuelists y escenas |
+| Show | La pantalla que monta el técnico con botones, faders, paneles de grupo y textos |
+| Mapeos | Controladores MIDI, OSC y teclado |
+
+## v0.1 — Base (hecho)
+
+- [x] Base: el motor y los plugins de entrada/salida de QLC+ (ver los créditos del README), con `upstream` para merges, marca propia y compilación en Windows (MSYS2 + Qt 6).
+- [x] Nueva interfaz QML desde cero (`dtc/`): tema oscuro, navegación lateral y atajos de teclado.
+- [x] **Directo**: grupos de escenas exclusivos o en mezcla, crossfade y master por grupo, escenas como botones grandes.
+- [x] **Programador**: selección de fixtures, dimmer, color (muestras y tono/saturación), faders por canal con presets de capacidades, grabar como escena en un grupo y editar escenas existentes.
+- [x] **Patch**: biblioteca de fixtures incluida con buscador, dimmers genéricos, cantidad, separación y siguiente dirección libre.
+- [x] **Salidas**: universos y salidas DMX USB, Art-Net y sACN mediante los plugins de entrada/salida.
+- [x] Shows `.qxw` compatibles con QLC+, con sección propia para los grupos.
+- [x] Interfaz en español.
+- [ ] Instalador para Windows: pasa a la v0.13.
+
+## v0.2 — Recomendaciones de la primera prueba (hecho)
+
+- [x] Las zonas pasan a llamarse **Grupos**.
+- [x] **Prioridad de escenas 0–10**: gana la mayor en los canales LTP; con la misma prioridad gana la última lanzada. El programador tiene prioridad sobre todo.
+- [x] **Show**: modo operador con botones grandes, reloj, pantalla completa (F11) y bloqueo que se quita manteniendo pulsado.
+- [x] **Patch**: editar nombre, modo, universo y dirección; selección múltiple; seleccionar o deseleccionar todo; agrupar por fixture; redireccionar y eliminar en bloque.
+- [x] **Grupos de fixtures**: crear, renombrar, sustituir y eliminar. Seleccionan fixtures en Patch y en Programar.
+- [x] **Plano 2D** en Patch (colocar fixtures) y en Programar (seleccionar con clic o recuadro).
+- [x] **Librería genérica** de 16 fixtures básicos.
+- [x] **Biblioteca ampliada**: Open Fixture Library e importación de `.qxf`/`.zip` y de los fixtures de QLC+.
+- [x] **Creador de fixtures** con canales, presets, rangos y modos.
+- [x] **Autoguardado** con copia `.bak` y recuperación tras un cierre inesperado.
+- [x] **Opciones**, aviso al cerrar con cambios sin guardar y shows recientes.
+
+## v0.3 — Directo y programación
+
+- [x] **Modo de liberación** por escena: la del grupo, ninguna, el grupo, todas o los demás grupos.
+- [x] **Protección de liberación** por escena: ninguna, todas, el grupo o los demás grupos.
+- [x] **Modo flash** por escena: suena mientras se mantiene pulsada.
+- [x] **Propiedades de escena**: fundido de entrada y salida, prioridad, liberación, protección y flash.
+- [x] **Escena anterior / siguiente** por grupo y para todos, y **pausar todo**.
+- [x] **Beam On / Beam Off / Centrar** en el programador.
+- [x] **Abanico lineal** desde el inicio o desde el centro, según el índice de selección.
+- [x] **Índice de selección** visible en el plano 2D y herramientas de selección: invertir, ½, ⅓, ¼ y desplazar.
+- [x] **Modo ciego**: el programador edita sin sacar DMX.
+- [x] **BPM y tap tempo** en la barra superior [beat generator del motor].
+- [x] **Niveles DMX**: monitor en vivo de cada universo.
+- [x] **La prioridad también manda en los canales HTP** (dimmer, RGB): una escena con más prioridad puede bajar la intensidad de otra. Con la misma prioridad se mezclan como siempre (gana el valor más alto).
+- [x] **El programador manda sobre todo**, intensidades incluidas.
+
+## v0.4 — Escenas dinámicas (hecho)
+
+Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con el editor de cada tipo. Los efectos nuevos toman los fixtures seleccionados en Programar, y los pasos, los valores del programador.
+
+- [x] **Steps**: pasos grabados desde el programador, con fundido de entrada, espera y fundido de salida por paso; editar los tiempos de varios pasos a la vez, cargar un paso en el programador, guardar en un paso, duplicar, reordenar y eliminar [`Sequence`].
+- [x] **Move FX**: 10 formas (círculo, ocho, línea, rombo, cuadrado, hoja, Lissajous…) con vista previa; ancho, alto, rotación, posición, fase, frecuencias, reparto entre fixtures (a la vez, uno tras otro o desfasados), modo relativo y control del dimmer [`EFX`].
+- [x] **Colour FX / Value FX**: más de 60 efectos de píxel (degradado, fuego, meteoro, estrobo, ondas…) con sus parámetros y hasta 5 colores; actúa sobre el color, el blanco, el ámbar, el UV, el dimmer o el shutter, a lo largo de la selección en su orden [`RGBMatrix` y scripts RGB].
+- [x] **Mappings de texto**: texto que recorre los fixtures [`RGBText`].
+- [x] **Rack de efectos**: varias escenas y efectos que suenan como una sola [`Collection`].
+- [x] **Seguir el BPM**: los tiempos pasan a beats y siguen el tempo del proyecto [`TempoType`].
+- [x] **Una sola vez** o en bucle.
+- [x] **Dimmer en vivo por escena**, encima del master del grupo, desde las propiedades de la escena.
+- [x] **Probar** una escena fuera de los grupos, duplicar, eliminar (con su escena de canales o su grupo FX) y añadir a un grupo.
+- [x] Abrir una escena del Directo en la página Escenas.
+- [x] Arreglos del programador: «Liberar» suelta de verdad el canal, y cargar una escena justo después de limpiar ya no pierde los valores.
+- [x] **Curve FX**: formas de onda (seno, triángulo, rampas, cuadrada, aleatoria) sobre cualquier canal, con mínimo, máximo, fase, desfase entre fixtures y modo relativo (nuevo en el motor) [`CurveFX`].
+- [x] **Mappings** sobre el plano 2D: cualquier efecto de color o una imagen (fija, desplazándose o GIF animado) colocados donde están los fixtures [`RGBMatrix`, `RGBImage`]. El vídeo pasa a «Más adelante».
+- [x] Diales en vivo de **velocidad, fase y tamaño** (y velocidad de fundido), por escena en su grupo.
+- [x] Modos de conducción **BeatGO** (botón y tecla G) y **Pulse** (picos de la entrada de audio, con umbral), con divisiones (/2, ×2). También arreglado: un Move FX ahora sigue de verdad el BPM.
+- [x] **Bucle N veces**, saltar a la siguiente/anterior escena del grupo o a cualquier otra al terminar, liberar o mantener el último fotograma al final, e inicio en pausa.
+- [x] **Fundido escalonado** (entrada y salida gradual) por orden de selección, y velocidad de fundido.
+- [x] Exportar e importar escenas y racks (`.dtcfx`, con sus fixtures emparejados al importar), y convertir un rack o un efecto en pasos.
+- [x] Reordenar escenas y grupos arrastrando, y mover escenas entre grupos (con sus opciones).
+
+## v0.4.1 — Correcciones de la segunda prueba (hecho)
+
+- [x] Faders de Programar: se arrastran bien (ya no se reconstruyen al moverlos).
+- [x] Todos los sliders: tras hacer clic, las flechas arriba/abajo suben o bajan de uno en uno (Re Pág/Av Pág de diez); doble clic los pone a 0.
+- [x] Move FX y Colour FX: «Probar» libera los canales del programador que tapaban el efecto y avisa si las cabezas están apagadas.
+- [x] Los menús tienen el ancho de su texto más largo (el menú «Nueva» de Escenas ya no corta los textos).
+- [x] **Patch**: invertir pan y tilt por fixture (modificador de canal que se guarda en el show) e **identificar** fixtures, que parpadean en blanco.
+- [x] **Show rehecho**: pantalla libre por páginas en la que el técnico arrastra botones (escena en alternar o flash, siguiente/anterior, liberar grupo, blackout, parar todo, tap), faders (gran master, master de grupo, intensidad de escena, BPM), paneles de grupo, BPM con tap, textos y marcos. Rejilla, cambio de tamaño, propiedades, una tecla por botón y «Partir de mis grupos». Se guarda en el show.
+
+## v0.4.2 — Correcciones de la tercera prueba (hecho)
+
+- [x] **Salida DMX**: al abrir un show no se arrancaban los universos que crea el archivo, así que no salía DMX (ni a interfaces ni a Capture por Art-Net/sACN) y Niveles DMX quedaba a cero. Arreglado, con un test que lo comprueba.
+- [x] **Ver los efectos al probarlos**: el dibujo del Move FX muestra las cabezas moviéndose, numeradas en el orden del efecto; el Colour FX enseña el color real de cada cabeza (en fila o en el plano 2D) y el Curve FX el nivel de cada fixture. Sale de lo que realmente se envía.
+- [x] **SHOW por secciones**: cada página son secciones que se dividen en mitades (lado a lado o una encima de otra), con el separador ajustable. Cada sección es una tabla de botones o de faders (columnas × filas, los controles llenan las celdas), un grupo, todos los grupos o una utilidad: reloj, temporizador (cronómetro o cuenta atrás), BPM con tap y BeatGO, notas, escenas sonando y niveles DMX. Escenas arrastrables a las celdas, llenar con las escenas de un grupo y «Partir de mis grupos». Las pantallas de la versión anterior se convierten solas.
+
+## v0.5 — Mezclador en vivo y edición en vivo (hecho)
+
+- [x] **Mezclador por grupo de fixtures** y general: dimmer, tono, saturación, restablecer color, estrobo y su frecuencia, Full, Full exclusivo, Blackout, Flash y Flash exclusivo (Ctrl+clic deja el flash puesto). Actúa en la salida, por encima de todo (capa nueva en el motor). En Directo (botón Mezclador) y como sección del SHOW.
+- [x] **Prioridad de la edición en vivo** frente a la prioridad de escena (Opciones), y qué pasa al lanzar una escena: le devuelve sus canales, se mantienen o se restablecen todas.
+- [x] Restablecer las ediciones en vivo de todos los haces o de los seleccionados.
+- [x] **Snapshots**: guardar las ediciones en una escena, todo lo que sale en una escena nueva, o solo las ediciones en una escena nueva.
+- [x] **Features por pestañas** (Dimmer, Color, Posición, Gobo, Haz, Foco, Otros) con botones de preset (con su color o su gobo si el perfil los trae), **rejilla XY** para pan/tilt de 16 bits y **colores favoritos**.
+
+## v0.6 — Mapeos y control externo (hecho)
+
+- [x] **Modo Mapear** (botón con la diana de la barra superior o Aprender en Mapeos): los controles que se pueden mapear se marcan en morado con el número de mapeos que ya tienen. Clic en uno y luego mueve un control MIDI, OSC o de entrada DMX, o pulsa una tecla. Mayús+clic sigue usando el control y Esc cancela. Funciona en escenas, masters de grupo, anterior/siguiente/liberar, pausa, mezclador, gran master, blackout, parar todo, tap, BeatGO, BPM y los botones y faders del SHOW.
+- [x] Destino por escena, por índice en el grupo («escena N de un grupo») o por grupo entero (o todos los grupos).
+- [x] Botón alternar, flash, solo encender o solo apagar. Fader absoluto, incremental o relativo (encoders sin fin), con rango, inversión, paso y bucle.
+- [x] **Retorno MIDI** para los LEDs de controladores como el Akai APC mini, con valores (colores) para encendido, apagado y en pausa, y fader motorizado para los faders. Solo se envía lo que cambia.
+- [x] Varios mapeos por control y **página Mapeos** (F8) con la lista editable: control, dispositivo, CC/nota y canal MIDI, ruta OSC, canal DMX o tecla, «aprender el control», duplicar y eliminar. Se guardan con el show.
+- [x] **Dispositivos**: activar la entrada de cada uno y su retorno (se activa solo si el dispositivo tiene salida). Un mapeo de un dispositivo desconectado se conserva.
+- [x] **Monitor** de mensajes de entrada y salida, y un LED en el botón Mapear que parpadea con cada mensaje.
+- [x] Teclas mapeadas en cualquier página (no se escriben en los campos de texto ni usan Ctrl/Alt).
+- [ ] Falta: destino «la escena seleccionada», y color de retorno propio para el fundido (ahora usa el de encendido).
+- [ ] Sin probar con hardware real: controladores MIDI (APC mini), OSC desde otra aplicación y entrada DMX. Las pruebas automáticas simulan los mensajes.
+
+## v0.6.1 — Prioridades (hecho)
+
+- [x] **Una prioridad mayor manda en todos los canales que toca, ceros incluidos**: una escena roja (R255 G0 B0) de prioridad 8 sobre una azul de prioridad 5 da rojo, no magenta. Antes el motor descartaba los canales de intensidad a 0 y se veía lo de debajo.
+- [x] **El cambio de prioridad se aplica al momento** a las escenas que ya suenan, sin relanzarlas.
+- [x] **Secuencias (pasos), chasers y racks** reparten su prioridad a sus pasos y efectos. Lanzada sola, cada escena vuelve a su propia prioridad.
+- [x] Al soltar una escena de prioridad mayor con fundido, hace un fundido cruzado hacia lo que hay debajo, sin caer a negro ni saltar.
+
+## v0.7 — Setup avanzado (hecho)
+
+- [x] **Límites** por fixture (Patch › Límites): dimmer mínimo/máximo, rango de pan y de tilt, invertir pan/tilt sin perder el rango e intercambiar pan y tilt. Actúan en la salida, así que valen para escenas, efectos y edición en vivo. Se guardan en el show (QLC+ los ignora sin romper nada).
+- [x] Por canal: si sigue los fundidos y si le afectan los dimmers (gran master, masters de grupo y dimmer de escena). Un cambio se nota en las escenas que se lancen después.
+- [x] **Matrices y tiras LED** de una vez: ancho × alto en píxeles, orden de colores (RGB, GRB, BGR, RGBW…), cableado por filas o columnas, normal o en zigzag, y la esquina del píxel 1, con vista previa. Crea un fixture por línea de píxeles, un grupo para los efectos de color y su sitio en el plano.
+- [x] Plano 2D: formas (línea, línea de delante a atrás, círculo y rejilla por filas, columnas o en zigzag, en el orden de la selección y con la separación que elijas), alinear, repartir, girar (15° y 90°), zoom con la rueda, desplazamiento con el botón derecho y selección con lazo.
+- [x] **Selecciones**: partes ordenadas de un grupo (botón + del grupo o su menú), que se eligen con un clic en Patch y en Programar. Patrones en el menú del grupo: impares, pares, al revés, primera o segunda mitad, de los extremos al centro y al revés.
+- [x] Patch en **rejilla por universo** (vista Canales): los 512 canales con sus fixtures; arrastra uno para cambiarle la dirección (verde si cabe, rojo si no). Al patchear varios fixtures, se ofrece crear un grupo con ellos.
+- [x] El plano 2D muestra **en vivo** el color (RGB, CMY o rueda de color), el dimmer, el estrobo (parpadea) y el gobo de cada fixture, y cada píxel de las tiras y matrices. En Programar está siempre en vivo; en Patch, con el botón En vivo.
+- [x] **Importar** (Patch › Importar) solo el patch, solo las escenas o las dos cosas de otro show (de DMX Total Control o de QLC+). El patch va a sus direcciones si están libres, si no a las siguientes; las escenas se asignan a los fixtures de este show que coinciden (dirección y modelo, nombre, modelo) y entran en grupos con el mismo nombre.
+- [x] Arreglo de un fallo heredado del motor: al mover o borrar fixtures, sus canales antiguos se liberan (antes se quedaban con su modificador, por ejemplo un pan invertido en la dirección vieja).
+- [ ] Sin probar con hardware real: los límites y el intercambio pan/tilt sobre fixtures reales, y matrices LED reales.
+
+## v0.7.1 — Correcciones de la cuarta prueba (hecho)
+
+- [x] **Faders del SHOW con varios elementos**: un fader puede llevar a la vez escenas, masters de grupo, gran master, dimmer de fixtures (por grupo), velocidad de movimiento de las cabezas móviles, velocidad de una escena y BPM. Se añaden y quitan en sus propiedades.
+- [x] **Velocidad de movimiento**: el fader mueve el canal de velocidad pan/tilt de todas las cabezas móviles o de un grupo (arriba = más rápido).
+- [x] **Botón Flash** debajo de cada fader: al máximo mientras se pulsa y vuelve a donde estaba. Se puede quitar en las propiedades.
+- [x] **Faders que lanzan escenas**: al subir desde 0 la escena arranca (en su grupo, respetando la exclusividad) y al bajar a 0 se para; entre medias es su intensidad.
+- [x] Un controlador MIDI puede mover el fader del SHOW entero (modo Mapear sobre el fader).
+- [x] **Akai APC mini y APC mini mk2**: los colores de los LEDs se eligen con muestras (y en la mk2 también tenue, pleno, pulsando o parpadeo), sin escribir números. Al aprender un botón de una APC ya trae verde al sonar.
+- [x] **Mapear todo** (Dispositivos): una columna de pads por grupo con sus escenas (verde sonando, amarillo lista, apagado si no hay escena), los faders en los masters y el último en el gran master, los botones de abajo liberan los grupos y los de la derecha hacen blackout, parar todo, pausa, tap, BeatGO, anterior, siguiente y flash.
+- [x] Plano 2D: herramientas **Seleccionar** y **Mover** (se mueve toda la selección), **cuadrícula** de 10 cm a 1 m a la que se ajustan los fixtures, y **aspecto** de cada fixture: redondo, cuadrado o rectángulo.
+- [x] Efectos: **velocidad** (deslizador y ×½ / ×2), **movimiento simétrico** en Move FX (la segunda mitad refleja a la primera, por parejas desde fuera), **fase entre fixtures** de hasta 1440° en Move FX y Curve FX, y **efecto Estrobo** (destellos cortos, todos a la vez o aleatorio) con la duración del destello.
+- [ ] Sin probar con hardware real: la APC mini y la mk2 (colores, brillo por canal MIDI y plantilla), y el canal de velocidad pan/tilt en cabezas reales.
+
+## v0.8 — Super escenas: línea de tiempo (hecho) [`Show`, `Audio`]
+
+- [x] **Super escena** (Escenas › Nueva › Super escena, y el filtro Super escenas): el editor ocupa toda la página, con la lista de escenas a la izquierda. Se lanza como cualquier escena (grupos, SHOW, mapeos).
+- [x] **Pistas** con bloques de escena: arrastra una escena de la lista a una pista, o doble clic en la lista para ponerla en el cursor de la pista seleccionada. Mover, redimensionar por los bordes, duplicar, eliminar (Supr) y doble clic para abrir la escena. Los bloques se pueden solapar.
+- [x] **Bloques de audio** (+ Audio: wav, flac, ogg, aiff y mp3 si lo admite libsndfile) con su **forma de onda**, que se calcula en segundo plano.
+- [x] Al redimensionar, el bloque **repite la escena en bucle** (con marcas de cada vuelta) o la **estira** para que un ciclo dure todo el bloque (menú del bloque o barra inferior).
+- [x] **Fundidos de entrada y de salida** por bloque, con tiradores en las esquinas superiores.
+- [x] **Automatización por pista** de dimmer (en una pista de audio, el volumen) y de fase de sus efectos (Move FX y Curve FX). Clic añade un punto, arrastrar lo mueve, doble clic lo borra y clic derecho alterna entre recta y curva suave.
+- [x] **Rejilla** en tiempo o en compases (BPM, 4/4 · 3/4 · 2/4 y «Compás 1 aquí» para cuadrar con la música), ajuste a rejilla, **marcador de fin** («Fin aquí») y **bucle**.
+- [x] Pistas: silenciar, **bloquear** (sus bloques y puntos no se mueven), **ocultar** (se pliega), renombrar (doble clic), subir, bajar, borrar su automatización y eliminar.
+- [x] **Valores estáticos** propios de la super escena: se toman del programador y suenan mientras la super escena está en marcha.
+- [x] Reproducir y parar (Espacio, o doble clic en la regla) desde el cursor, con la línea de reproducción. Ctrl+rueda hace zoom y Mayús+rueda desplaza.
+- [x] Se guardan en el show.
+- [ ] Falta: seleccionar varios bloques a la vez, copiar y pegar, y deshacer.
+- [ ] Sin probar con salida de audio real (las pruebas automáticas leen el audio y su forma de onda, pero no se ha escuchado, ni la automatización de volumen), mp3 en el paquete de Windows, y fixtures reales.
+
+## v0.8.1 — Correcciones (hecho)
+
+- [x] **Al soltar un Move FX las cabezas vuelven a su sitio**: a lo que haya debajo (otra escena con posición) o, si no hay nada, a su posición de reposo (el valor por defecto del perfil, normalmente pan 0 / tilt 0). Con fundido de salida, vuelven deslizándose. Vale para cualquier canal no de intensidad (posición, rueda de color, gobo…) que deje de controlar una escena; antes se quedaba con el último valor.
+- [x] **Carpetas de escenas**: crear, renombrar y eliminar carpetas (las escenas se quedan), meter escenas arrastrándolas a una carpeta o con clic derecho, varias a la vez (Ctrl+clic y Mayús+clic en la página Escenas). Se pliegan y se guardan con el show (son las carpetas de QLC+, que también las ve).
+- [x] La misma lista en Escenas, en el SHOW (siempre a la vista bajo las propiedades), en la super escena, en el rack y al añadir escenas a un grupo: buscador (también por nombre de carpeta), vista por **carpetas** o por **grupos**, plegar/desplegar todo y filtro por tipo en Escenas.
+- [x] **Los LEDs del controlador (APC mini) se apagan al cerrar el programa**, y también al borrar un mapeo, moverlo a otro control, abrir otro show o desactivar el dispositivo o su retorno. Los faders motorizados se quedan donde están.
+- [ ] Sin probar con cabezas móviles reales la vuelta al reposo, ni con la APC mini real el apagado (la prueba automática lo comprueba con un dispositivo OSC), ni a mano el arrastre a carpetas y los menús.
+
+## v0.8.2 — FX por parámetro (hecho)
+
+- [x] **Motor de FX nuevo**: un FX es una capa sobre un parámetro (dimmer, rojo, zoom, pan y tilt juntos…) que lo mueve alrededor de su valor base o, sin base, alrededor de lo que mandan las escenas de debajo. Tipo de escena nuevo «FX» con valores base y varias capas.
+- [x] **FX**: amplitud (swing, 0-250 %), velocidad en BPM o al BPM del show, multiplicador, **22 modos** y, para pan/tilt, **12 figuras** (círculo, ocho, cuadrado, triángulo, diamante, líneas, trébol, lissajous, ballyhoo, cruz) con amplitud de pan y de tilt, girar, invertir pan/tilt y al revés. Pan y tilt en 16 bits aunque el canal fino esté separado.
+- [x] **Timing del FX**: ola por X y paso por X (también «todas»), agrupar (cada X, bloques de X, dividir en X, espejo, por grupo de fixtures), orden (selección, invertido, aleatorio, por número), espera y fase.
+- [x] **En el programador** (Programar › FX): el parámetro tocado por último, el FX suena al momento sobre la selección, FX en marcha, parar uno o todos, **enlazar** (comparten velocidad y timing, y se paran juntos). «Grabar escena» guarda los valores y los FX; «Editar en el programador» los carga de nuevo. Ciego y «Parar todo» los respetan.
+- [x] **Macros FX** de fábrica (posición, intensidad, color, haz) y las tuyas, guardadas para todos los shows (carpeta de usuario).
+- [x] Editor de escenas FX en Escenas, con vista previa animada; diales de tamaño y fase en vivo y la línea de fase de las super escenas.
+- [x] Los Move FX y Curve FX antiguos siguen sonando igual; **Convertir a FX** los cambia conservando grupos, botones del SHOW y mapeos. Ya no se crean desde Escenas › Nueva. Los Colour FX siguen como estaban.
+- [x] Arreglo del motor: el modo relativo (Move FX y Curve FX relativos) ya no se va desplazando cuando no hay nada debajo.
+- [ ] Falta: Delay/Shift por fixture a mano, FX sobre un dimmer virtual (fixtures solo RGB) y macros por fixture (ahora guardan las bases de la última seleccionada).
+- [ ] Sin probar con fixtures reales: los modos 13-14 y 21-22 son una interpretación propia.
+
+## v0.9 — Touch y control remoto (hecho)
+
+- [x] **Páginas personalizadas** (v0.4.1): textos, marcos, botones (alternar o pulsar), faders y paneles de grupo.
+- [x] **Controles nuevos en el SHOW**: diales y **ruedas incrementales** (giran sin fin, cada muesca suma o resta un paso), **rueda de color** y **rejilla XY** (pan y tilt) sobre un grupo o sobre todas las fixtures, como una edición en vivo hasta que se liberan, y secciones de **imagen** (entera o llenando la sección).
+- [x] Botones con **icono** o **imagen** de fondo, y botones que hacen cualquier acción mapeable (blackout, parar todo, tap, pausa, mezclador…).
+- [x] **Alt+clic en cualquier control** (escenas, grupos, mezclador, faders, botones del directo…) lo lleva a la página del SHOW que esté abierta.
+- [x] **Control remoto** desde el navegador de un móvil o una tablet en la misma red, sin instalar nada: las páginas del SHOW con sus botones, faders, diales, grupos, rueda de color y XY, en los dos sentidos. Se activa en Opciones › Control remoto (puerto, PIN opcional y direcciones para copiar).
+- [x] **Abrir el SHOW a pantalla completa al arrancar** y modo quiosco (solo el SHOW; se sale manteniendo pulsado el candado).
+- [x] **Bloqueo de pantallas** (Setup, Programación, edición del SHOW) con contraseña opcional, desde Opciones o el candado de la barra superior.
+- [ ] Sin probar con móviles y tablets reales por wifi (la prueba automática y el navegador del ordenador sí) ni el aviso del cortafuegos de Windows la primera vez. Falta un código QR y que el móvil encuentre el programa solo. En el remoto, los temporizadores, monitores y el mezclador salen como «solo en el ordenador».
+
+## v0.10 — Programación: paletas y línea de comandos (hecho)
+
+- [x] Grupos de fixtures y selección por grupo (v0.2).
+- [x] **Atributos por función**, no por nombre de canal: «Red», «R» o «Rojo» de fixtures distintas son el mismo fader, y lo mismo con dimmer, pan/tilt y sus finos, CMY, rueda de color, gobo, shutter, iris, zoom, foco, prisma… Cada cabeza de una barra conserva sus canales y dos ruedas de gobo son dos atributos. Los FX y sus macros también van por función; los shows de antes siguen encontrando sus canales por nombre.
+- [x] **Paletas** de intensidad, posición, color y haz, **por referencia**: se graban desde el programador con el valor de cada fixture, y las escenas grabadas con ellas cambian solas cuando se actualiza la paleta (las ediciones en vivo también). En una fixture que no se grabó, usan los valores de otra del mismo tipo o sus atributos (un color se mezcla en RGB/CMY o va al hueco más parecido de la rueda). Actualizar, grabar encima, cargar sus fixtures, renombrar, cambiar el número y borrar (las escenas se quedan con los valores). Van en el show y QLC+ sigue leyendo las escenas.
+- [x] Paletas en el **SHOW**, el **control remoto** y los **mapeos**: botones que ponen una paleta en sus fixtures o en un grupo como edición en vivo (alternar o flash). Alt+clic en una paleta la lleva al SHOW.
+- [x] **Línea de comandos** de consola en Programar: `1 THRU 8 @ FULL`, `1 + 3 - 2`, `GROUP 2 COL 3`, `@ 5` (= 50 %), `@ 0 THRU 100`, `@ + 10`, `POS 1`, `LOCATE`, `NEXT`… También en español (HASTA, GRUPO, LLENO, HAZ…), con historial (↑ ↓) y **teclado en pantalla** para pantallas táctiles.
+- [x] **Números de fixture** editables en Patch (y «Numerar» en bloque), visibles en las fichas de Programar.
+- [x] **Resaltar** (highlight: la selección a tope en blanco abierto, sin grabarse), **Localizar** (locate) y **de una en una** (NEXT / PREV / ALL).
+- [ ] Falta: paletas por referencia dentro de los pasos (Steps), donde se aplican por valor; paletas con abanico y paletas «de todo» (con todos los atributos).
+- [ ] Sin probar con fixtures reales. Reconocer la función de un canal depende de que su definición traiga el grupo o el preset.
+
+## v0.10.1 — Fixtures GDTF (hecho)
+
+- [x] **Importar GDTF** (DIN SPEC 15800), el formato abierto que publican los fabricantes en GDTF-Share: archivos `.gdtf`, carpetas con ellos o el `.zip` de la descarga múltiple de GDTF-Share, en Opciones › Biblioteca de fixtures. Se convierten en segundo plano, con progreso, y se pueden parar.
+- [x] Se convierten a definiciones de QLC+ (`.qxf`), así que los shows siguen abriéndose en QLC+: canales de 16 y 24 bits, funciones y *channel sets* como capacidades, ruedas de color con sus colores (CIE) y de gobos con sus imágenes, las celdas de barras y matrices (*geometry references*) como cabezas, y tamaño, ángulo, potencia y recorrido de pan/tilt.
+- [x] Los atributos GDTF (Dimmer, Pan, ColorAdd_R, Gobo1, Shutter1…) pasan a los grupos, colores y presets del formato `.qxf`: el programador, los FX y las paletas los reconocen por función.
+- [x] Si la misma fixture ya está en otra biblioteca, la GDTF se añade como «(GDTF)» y se pueden usar las dos. Volver a importarla la actualiza.
+- [x] Corregido: el programa se cerraba al pulsar **Nuevo show** con fixtures en el patch. Era un fallo heredado del motor (al vaciar el show, la lista de fixtures seguía dando las ya borradas). Al empezar un show nuevo también se apagan Resaltar y el mensaje del último comando.
+- [x] Las bibliotecas de otros programas en formatos cifrados no se importan (además, su licencia no permite usarlas fuera de esos programas).
+- [ ] Solo se usa el primer *DMX break* de cada modo; los canales virtuales (sin DMX) se omiten. Las funciones que dependen de otro canal (*mode master*) se quedan con las del primer modo.
+- [ ] Sin probar con archivos reales de GDTF-Share (la prueba automática usa un GDTF hecho a mano con todos los casos). Falta descargar directamente de GDTF-Share desde el programa (su web pide cuenta y no tiene una API pública documentada).
+
+## v0.11 — Playbacks y cuelists (hecho) [`Cuelist`, nuevo en el motor]
+
+- [x] **Cuelists con tracking** (tipo de escena nuevo «Cuelist»): cada cue guarda solo lo que cambia y el resto sigue de las cues anteriores. **GO**, **BACK**, ir a una cue y elegir la siguiente; disparo **GO / Seguir / Esperar** con tiempo; **retardo**, **fundido** y **bajada** (los dimmers que bajan) por cue; números con decimales (2.5 entre 2 y 3). Un GO solo cambia los canales que cambian: sin bajones y sin retomar lo que no toca.
+- [x] Cues con valores **[RELEASE]** (vuelven a lo que hay debajo), **Saltar** (solo esta cue: no pasa a las siguientes) y **Bloqueo** (todos los valores), **paletas por referencia** dentro de cada cue y **capas FX** que se siguen de cue en cue. Opciones de la cuelist: tracking, al final (bucle, liberar o quedarse), tiempo de liberación, «Al liberar, volver a la cue 1», «Se libera con el GO de otra cuelist», tiempos de BACK, prioridad y GO al ritmo (BeatGO o Pulso).
+- [x] **Editor en Escenas**: tabla de cues (número, nombre, disparo, tiempos, cambios, S/B, nota) con selección múltiple para cambiar tiempos a la vez, **Grabar cue** tras la seleccionada, **Actualizar** (sigue en las siguientes o solo esta cue), **Cargar** en el programador (lo que muestra el escenario o solo sus cambios), **Sacar** o **[Liberar]** los canales del programador, copiar, renumerar y eliminar **manteniendo el aspecto de las cues siguientes**. **Hoja de tracking** canal a canal (cambia, heredado y de qué cue, bloqueo, liberado). «Ya existe la cue»: fusionar, sustituir o insertar detrás. **Convertir en cuelist** una escena de pasos.
+- [x] **Grabar…** en Programar: en una escena nueva, en una cuelist nueva (y ponerla en el primer playback libre) o como cue de una cuelist; aviso «Editando la cue 3 de "Canción 1"» con Actualizar. «Limpiar el programador después de grabar» se recuerda.
+- [x] **Página Playbacks** (F10): páginas de 8 a 20 playbacks (10 por defecto) con nombre, cada uno con una cuelist o cualquier escena: **GO**, **Pausa/Atrás**, **Flash** y un **fader de intensidad** que lo arranca al subir; botones configurables (GO, atrás, pausa, liberar, flash, flash + GO, encender/apagar, seleccionar), etiqueta y color. **Main GO** y **Main Back** del playback seleccionado (Espacio y Mayús+Espacio), RePág/AvPág cambian de página, **Liberar todo**, y panel de la **cuelist seleccionada** con sus cues («Siguiente» e «Ir»). Asignar arrastrando escenas, o **Grabar + clic en un playback** (uno vacío crea una cuelist, una cuelist recibe su cue siguiente) y **Actualizar**.
+- [x] Las cuelists también suenan desde los **grupos** (la ficha muestra «Q 3 · Verso» y su menú tiene GO / Atrás), el **SHOW** (sección «Playbacks» que sigue la página actual o una fija, y botones GO de cuelist, Atrás, Ir a una cue… y Liberar) y el **control remoto** (barra de playbacks en el móvil).
+- [x] **Mapeos** de playbacks: GO, atrás, pausa/atrás, flash, liberar, seleccionar, ir a una cue y fader (de la página actual, de una página fija o de una cuelist concreta), GO y Atrás del seleccionado, páginas y liberar todo. **Recoger el fader** (sin motor) y modo **relativo en complemento a 2**.
+- [x] **Mapear todo → Playbacks** para **Akai APC mini, APC mini mk2 y APC40 mkII** (y → Grupos para las dos mini): cada columna o pista es un playback 1-8 de la página actual con su fader, GO, Pausa/Atrás, Flash y sus 5 primeras cues en los pads, LEDs con el estado; en la APC40 mkII los mandos de device son los faders 9-16. Mapear todo deja la APC40 mkII en modo Ableton (mensaje de inicio del plugin MIDI) y en v1 sus pads usan colores fijos.
+- [x] **Línea de comandos**: `GO`, `BACK`, `GO CUE 3`, `CUE 3` (carga la cue en el programador), `REC`, `REC CUE 2.5`, `UPD`, `DELETE CUE 4` y `PB 3` (elige el playback), también en español (IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR) y en el teclado en pantalla.
+- [x] Arreglos del motor: un show con FX o Curve FX ya no se corta al abrirlo en QLC+ (los tipos nuevos se guardan después de los de QLC+, y al leer se salta los que no conoce), y los fundidos de salida ya no reescalan canales con su propio destino.
+- [x] Decisiones por defecto (se pueden cambiar): el fader arranca el playback por encima del 5 % y a cero libera las escenas pero no las cuelists (se quedan en su cue); GO con el fader abajo suena a tope; BACK desarma las cadenas de Seguir; eliminar una cue mantiene el aspecto de las siguientes; al final la cuelist vuelve a empezar y al liberarla vuelve a la cue 1; liberar un playback también libera esa escena en su grupo; en los grupos una cuelist sigue siendo un botón que se enciende y apaga.
+- [ ] Falta: LTP por canal «el último cambio gana» entre cuelists de la misma prioridad, tiempos por atributo o por fixture, abanicos y curvas de fundido, enlaces con repeticiones y macros de cue, cuelists de tipo Override/Submaster/Timecode/Chase, Move in Black, flash con ataque/caída y crossfade AB, velocidad global y Live Time, deshacer las ediciones de cues, exportar una cuelist como Sequence de QLC+ e importar cue lists de QLC+. En los controladores: parpadeo y pulso en la APC40 mkII, el modo Session de la mk2 por SysEx y faders motorizados.
+- [ ] Sin probar con hardware real: los perfiles de la APC mini, la APC mini mk2 y la APC40 mkII (apagado de LEDs, parpadeo de la mk1, nombres de puerto de la mk2, modo Ableton de la APC40 tras reiniciarla, sus anillos y mandos, el sentido del mando de tempo) y la recogida de los faders al cambiar de página. Tampoco se ha abierto un show con cuelists en QLC+ real.
+
+## v0.11.1 — Revisión completa del código (hecho)
+
+- [x] **Análisis completo** del motor (cambios propios), el backend, el QML y el remoto: 201 problemas distintos encontrados, cada uno verificado por dos revisores independientes; **176 confirmados** (25 graves, 59 importantes, 92 menores) y corregidos casi todos con una prueba que los detecta.
+- [x] Lo más grave que se ha corregido: **cierres** al borrar bloques, pistas o la escena estática de una super escena mientras suena, al convertir o borrar escenas que otra función estaba usando, al quitar un universo con el programador activo y al cerrar el programa con FX del programador pendientes; el programador que seguía mandando valores de una fixture borrada; tras **Nuevo show** quedaban valores por defecto y fundidos del show anterior; flashes que se quedaban pegados; «Parar todo» que no paraba lo lanzado en el mismo instante.
+- [x] **Guardado y carga más robustos**: el mismo show se guarda siempre igual (sin cambios aleatorios entre guardados), los archivos dañados o incompletos ya no vacían el show abierto ni rompen la carga, los valores absurdos («abc», negativos, enormes) se ignoran y las referencias a cosas borradas (paletas, funciones, grupos) se limpian para que no se «reengancharan» a otras nuevas.
+- [x] **Testing profundo**: pruebas aleatorias de cuelists contra un modelo de referencia y de playbacks con el motor real, pruebas de guardado/carga de shows completos y de archivos dañados, recorrido de la interfaz real (todas las páginas con todos los shows de demo, 0 avisos de QML) y búsqueda de pruebas inestables. Encontraron otros 39 fallos, ya corregidos. De 96 a **201 pruebas** del backend, todas en verde.
+- [x] Textos que no cabían en español (Directo, Programar, Patch, editores de FX, reloj del SHOW) y las pruebas ya no tocan la biblioteca de fixtures ni los ajustes reales del usuario.
+- [ ] Quedan anotados y sin cambiar a propósito: el nivel de intensidad compartido entre grupo, SHOW y playback (gana el último), carreras heredadas del motor, muy poco probables y la ausencia de pruebas automáticas del QML (se comprueba a mano y con capturas).
+
+## v0.11.2 — FX con parámetros por luminaria (hecho)
+
+- [x] **Un FX sigue siendo uno** al cambiarlo en parte de sus luminarias: antes las seleccionadas pasaban a un FX nuevo que empezaba de cero y se desincronizaba. Ahora la forma (figura o modo), el tamaño, el sentido («Al revés»), las inversiones, el giro y la fase pueden ser **propios de cada luminaria**, sobre el mismo reloj; la velocidad y el timing son de todo el FX. Ejemplo: 6 beams en círculo y las 3 últimas «Al revés» = espejo sincronizado.
+- [x] Con todas sus luminarias seleccionadas, el cambio es del FX entero. Las seleccionadas que no estaban en el FX se le unen; dos FX del mismo parámetro seleccionados juntos se funden en uno (cada luminaria conserva lo que hacía). Botón **«Como el resto»** para quitar lo propio. Avisos en el panel FX y en el editor de escenas FX; la vista previa dibuja a cada luminaria como se mueve (espejo, giro, tamaño).
+- [x] Se guarda en escenas FX y cues (`<Own Fixture=… />` dentro de `<Layer>`; las versiones anteriores lo ignoran) y se traduce al importar efectos de otro show. Las macros FX no lo guardan (son para cualquier selección).
+- [x] **Espejo con ola**: si las luminarias que van al revés (o con pan/tilt invertido propio) están todas en una mitad del FX, cada una sigue la ola de su pareja del otro lado (las 3 últimas de 6 van con la 3.ª, la 2.ª y la 1.ª), así que la ola también sale en espejo. Alternas (2, 4, 6 al revés) no son espejo: cada una conserva su sitio en la ola. Aviso «Espejo» en el panel FX.
+- [x] Cada capa de FX sigue su onda aunque se quite o se añada otra (antes saltaba a la posición de la capa anterior), y una capa que se enlaza arranca donde están las demás enlazadas.
+
+## v0.12 — Identidad propia (hecho)
+
+- [x] **Icono DTC**: el monograma «DTC» sobre el degradado azul–morado de la app; a 16 y 20 px, solo la «D», porque las tres letras no se leen. Las letras son trazos y no texto, así que se ve igual en cualquier equipo. Lo llevan el ejecutable (un `.ico` con 10 tamaños, más el nombre «DMX Total Control» y la versión que muestran el Explorador y el Administrador de tareas), la ventana y la barra de tareas, la cabecera de la app, Opciones › Acerca de y el remoto del móvil (pestaña, icono de la pantalla de inicio y manifiesto). Los SVG están en `dtc/icons/`; `make-icons.sh` rehace los PNG y el `.ico`. Falta usarlo en el instalador y en GitHub (v0.13).
+- [x] **Sin referencias a otros programas de iluminación** en la interfaz, la documentación (README y esta hoja de ruta) ni los comentarios del código: unos 200 comentarios en más de 80 archivos, revisados uno a uno y sin tocar código ni textos. De QLC+ solo quedan los créditos que pide la licencia (Opciones › Acerca de, README, `NOTICE` y los avisos de copyright de los archivos heredados) y lo que es compatibilidad: abrir sus shows, el formato `.qxf`, importar tus fixtures de QLC+ y sus plugins de entrada/salida. Los nombres «BeatGO», «Pulso» y «Super escena» se quedan (decisión del usuario).
+- [x] Capturas del README al día con el icono nuevo.
+
+## v0.13 — Instalador y publicación (pendiente)
+
+- [ ] **Instalador para Windows**: asistente con el icono, accesos directos en el menú Inicio y el escritorio, asociación de los archivos `.qxw`, desinstalador y comprobación de los drivers que necesitan las interfaces USB (NSIS a partir de `platforms/windows`, o Inno Setup). Sustituye a `compilar-e-instalar.bat`, que solo copia `dist/` en la carpeta del usuario. Firmar el instalador evita el aviso de SmartScreen (hace falta un certificado de firma de código).
+- [ ] **Subir y desplegar en GitHub**: repositorio propio (ahora solo existe el remoto `upstream`, el del proyecto original), con README, licencia y `NOTICE`. Adaptar el flujo de CI heredado (`.github/workflows/build.yml`) para que compile y pase las pruebas en cada cambio y publique el instalador en cada versión (GitHub Releases) con sus notas. Antes: poner la versión real del programa (ahora dice 0.1.0) y revisar que capturas y shows de ejemplo no lleven datos personales (direcciones IP, rutas, nombres de dispositivos).
+- [ ] **Actualizaciones automáticas desde GitHub**: al arrancar, o desde Opciones, consultar la última versión publicada en GitHub Releases, avisar con sus notas, descargar el instalador, comprobar su suma SHA-256 (y su firma) e instalarlo al cerrar el programa. Se puede desactivar, con un canal de pruebas (beta) opcional; sin internet no molesta.
+
+## v0.14 — Interfaz, temas, idiomas y tutorial (pendiente)
+
+- [ ] **Rediseño de la interfaz**: revisar página a página el aspecto, la jerarquía y los tamaños con un sistema de diseño común, también en pantallas táctiles y portátiles pequeños.
+- [ ] **Temas**: el oscuro actual, uno claro, uno de alto contraste y uno atenuado para cabinas a oscuras, elegibles en Opciones y aplicados también al remoto.
+- [ ] **Más idiomas**: revisar el inglés (los textos originales) y añadir otros (portugués, francés, italiano, alemán…) al selector de idioma, con una guía para que colaboren traductores (Qt Linguist).
+- [ ] **Tutorial completo del software**: primeros pasos guiados dentro del programa (patch → programar → grabar → directo y playbacks), manual completo página a página con capturas (hay algunas en `docs/screenshots`), shows de ejemplo y ayuda contextual (F1) en cada página.
+
+## v0.15 — Hardware y bibliotecas (pendiente)
+
+- [ ] **Conexión con hardware**: probar y ajustar con equipos reales todo lo que las etapas anteriores dejan «sin probar con hardware real»: interfaces DMX USB (Enttec, FTDI/Open DMX), nodos Art-Net y sACN, entrada DMX, las controladoras APC mini, mini mk2 y APC40 mkII y otros controladores MIDI, OSC, móviles por wifi y fixtures reales. Con un asistente que detecte las interfaces conectadas y una prueba de salida.
+- [ ] **Descarga automática de bibliotecas**: descargar y mantener al día desde el programa la Open Fixture Library (publicada en GitHub) y avisar de las definiciones nuevas, sin tocar las fixtures propias. GDTF-Share pide cuenta y no tiene una API pública documentada: hay que estudiar cómo acceder con la cuenta del usuario o seguir importando su descarga múltiple.
+
+## Más adelante
+
+- [ ] Visualizador 3D [la vista 3D de la interfaz original, `qmlui/`].
+- [ ] Mappings de **vídeo** sobre el plano 2D (el motor solo reproduce vídeo en pantalla, no lo lleva a los fixtures).
+- [ ] Elegir la entrada de audio de Pulse en Opciones (ahora usa la entrada por defecto del sistema).
+- [ ] Comprobar archivos que faltan (audio, imágenes) al abrir un show.
+- [ ] Indicador de carga de CPU.
+
+## Fuera de alcance
+
+- **Reproducción autónoma** (sin ordenador) y disparos por calendario en interfaces stand-alone: dependen de hardware y firmware propietarios.
+- **Bibliotecas en la nube y formatos cerrados** de otros fabricantes: usamos la Open Fixture Library, GDTF y el creador de fixtures.
+- **Aplicaciones auxiliares** de otros fabricantes (gestores de hardware, visualizadores propios).

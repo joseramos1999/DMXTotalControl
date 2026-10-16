@@ -1,0 +1,100 @@
+name: Release
+
+# Publica DMX Total Control para Windows al empujar una etiqueta v* (p. ej. v0.13.0):
+# compila sin la marca "GIT" de las compilaciones de desarrollo, pasa las pruebas,
+# crea el instalador y lo adjunta a una Release.
+#
+# Lo que se adjunta a una Release se descarga con un enlace directo, sin cuenta de
+# GitHub. GitHub publica además la huella SHA-256 de cada archivo: el programa la
+# comprueba antes de instalar una actualización (Opciones › Actualizaciones).
+# Una etiqueta con guion (v0.14.0-beta.1) es una versión de prueba.
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows
+    runs-on: windows-2025
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            unzip
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-libusb mingw-w64-x86_64-libftdi mingw-w64-x86_64-libmad
+            mingw-w64-x86_64-libsndfile mingw-w64-x86_64-fftw mingw-w64-x86_64-tools-git
+            mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-declarative mingw-w64-x86_64-qt6-3d
+            mingw-w64-x86_64-qt6-multimedia mingw-w64-x86_64-qt6-serialport mingw-w64-x86_64-qt6-websockets
+            mingw-w64-x86_64-qt6-imageformats mingw-w64-x86_64-qt6-svg mingw-w64-x86_64-qt6-tools
+            mingw-w64-x86_64-qt6-shadertools
+
+      # La etiqueta tiene que ser la versión del programa (variables.cmake):
+      # si no, las actualizaciones no la reconocerían
+      - name: Comprobar la versión
+        run: |
+          VERSION=$(sed -n 's/^ *set(APPVERSION "\([0-9.]*\)")\r\?$/\1/p' variables.cmake | head -1)
+          TAG="${GITHUB_REF_NAME%%-*}"
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::La etiqueta $GITHUB_REF_NAME no es la versión del programa (v$VERSION, en variables.cmake)"
+            exit 1
+          fi
+
+      - name: SDK D2XX de FTDI
+        run: |
+          mkdir -p /c/projects/D2XXSDK && cd /c/projects/D2XXSDK
+          curl -sSL -o cdm.zip https://qlcplus.org/misc/CDM-v2.12.36.20-WHQL-Certified.zip
+          unzip -o -q cdm.zip
+          cd amd64
+          gendef - ftd2xx64.dll > ftd2xx.def
+          dlltool -k --input-def ftd2xx.def --dllname ftd2xx64.dll --output-lib libftd2xx.a
+
+      # Una compilación oficial (DEVEL=OFF) en una carpeta limpia y su instalador
+      - name: Compilar y crear el instalador
+        run: DEVEL=OFF BUILD_TYPE=Release bash ./build-installer.sh
+
+      - name: Pruebas
+        run: bash ./.github/run-tests.sh
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: pruebas
+          path: build/dtc/test/*.txt
+          if-no-files-found: ignore
+
+      - name: Crear la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/installer/DMXTotalControl-Setup-*.exe
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          body: |
+            ## Descarga
+
+            **Windows 10/11 (64 bits)**: descarga el instalador `DMXTotalControl-Setup-….exe` de la lista
+            de abajo y ejecútalo. Se instala para tu usuario sin pedir permisos de administrador; el
+            asistente deja elegir instalarlo para todos.
+
+            Si ya tienes DMX Total Control, el programa avisa de esta versión y la instala él mismo
+            (Opciones › Actualizaciones): comprueba antes la huella SHA-256 que GitHub publica del instalador.
+
+            ### Primera vez
+
+            El instalador no está firmado, así que Windows SmartScreen puede avisar de que es una
+            aplicación desconocida: **Más información** → **Ejecutar de todas formas**.
+
+            Las interfaces DMX USB de FTDI (Enttec Open DMX, USB Pro…) necesitan su driver; Windows
+            suele instalarlo solo al conectarlas, y si no, el instalador ofrece la página de FTDI.

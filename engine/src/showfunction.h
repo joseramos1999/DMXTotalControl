@@ -83,6 +83,17 @@ public:
     int intensityOverrideId() const;
     void setIntensityOverrideId(int id);
 
+    /** DMX Total Control: the fades of the block (ms, 0: the function's own) */
+    void setFadeIn(quint32 ms);
+    quint32 fadeIn() const;
+    void setFadeOut(quint32 ms);
+    quint32 fadeOut() const;
+
+    /** DMX Total Control: stretched, one cycle of the function lasts the
+     *  whole block; otherwise the function loops in it */
+    void setStretch(bool stretch);
+    bool stretch() const;
+
 signals:
     void functionIDChanged();
     void startTimeChanged();
@@ -112,6 +123,11 @@ private:
 
     /** Intensity attribute override ID */
     int m_intensityOverrideId;
+
+    /** DMX Total Control: fades and stretch of the block */
+    quint32 m_fadeIn;
+    quint32 m_fadeOut;
+    bool m_stretch;
 
     /************************************************************************
      * Load & Save

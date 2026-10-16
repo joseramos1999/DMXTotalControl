@@ -1,0 +1,16 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>dtc-16.png</file>
+        <file>dtc-20.png</file>
+        <file>dtc-24.png</file>
+        <file>dtc-32.png</file>
+        <file>dtc-40.png</file>
+        <file>dtc-48.png</file>
+        <file>dtc-64.png</file>
+        <file>dtc-128.png</file>
+        <file>dtc-180.png</file>
+        <file>dtc-192.png</file>
+        <file>dtc-256.png</file>
+        <file>dtc-512.png</file>
+    </qresource>
+</RCC>

@@ -97,6 +97,15 @@ public:
     /** Remove all channels */
     void removeAll();
 
+    /** DMX Total Control: remove the channel $channel of the fixture
+     *  $fixtureID (it doesn't need the fixture: it may be deleted) */
+    void removeChannel(quint32 fixtureID, quint32 channel);
+
+    /** DMX Total Control: the fixtures moved or changed (mode, options):
+     *  the channels follow them (address, type), those of the fixtures gone
+     *  or now in another universe than $universeID leave the fader */
+    void refreshFixtures(const Doc *doc, quint32 universeID);
+
     /** Get/Set a request of deletion of this fader */
     bool deleteRequested();
     void requestDelete();
@@ -154,7 +163,8 @@ public:
 
     /** Set this fader to fade out. If $fadeTime is non-zero,
       * all the intensity channels will be updated */
-    void setFadeOut(bool enable, uint fadeTime);
+    /** DMX Total Control: $delays per fixture ID, for staggered fade outs */
+    void setFadeOut(bool enable, uint fadeTime, const QHash<quint32, uint> &delays = QHash<quint32, uint>());
 
     /**
      * Set the blend mode to be applied in the write method

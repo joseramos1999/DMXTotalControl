@@ -155,6 +155,10 @@ public slots:
      */
     void slotFunctionRemoved(quint32 fid);
 
+    /** DMX Total Control: Doc::functionReplaced: the runner forgets the old
+     *  function of the running steps before it is deleted */
+    void slotFunctionReplaced(quint32 fid);
+
 signals:
     void stepChanged(int index);
     void stepsListChanged(quint32 fid);
@@ -278,6 +282,10 @@ public:
 
     /** @reimp */
     void postRun(MasterTimer* timer, QList<Universe *> universes) override;
+
+protected:
+    /** @reimp DMX Total Control: the running steps get the new priority */
+    void updateFadersPriority() override;
 
 signals:
     /** Tells that the current step number has changed. */

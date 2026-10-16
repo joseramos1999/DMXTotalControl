@@ -1,32 +1,26 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Fallo
+about: Algo no funciona como debería
 title: ''
-labels: ''
+labels: fallo
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Qué pasa**
+Una descripción corta del fallo.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Cómo reproducirlo**
+1. Abre…
+2. Pulsa…
+3. Ves…
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Qué esperabas que pasara**
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Versión y equipo**
+- Versión de DMX Total Control (Opciones › Acerca de):
+- Windows:
+- Interfaz DMX o controlador, si tiene que ver (modelo):
 
-**Desktop (please complete the following information):**
- - OS: [e.g. Windows]
- - QLC+ Version [e.g. 4.12.4]
-- hardware setup (mandatory for audio/video issues)
-
-**Additional context**
-Add any other context about the problem here.
+**Show de ejemplo**
+Si puedes, adjunta un `.qxw` (en un `.zip`) donde se vea el fallo.

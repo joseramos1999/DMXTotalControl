@@ -25,6 +25,8 @@
 #include <QObject>
 #include <QString>
 #include <QMutex>
+#include <QAtomicInt>
+#include <QXmlStreamAttributes>
 #include <QList>
 #include <QIcon>
 #include <QMap>
@@ -53,6 +55,7 @@ class FunctionUiState;
 #define KXMLQLCFunctionPath      QStringLiteral("Path")
 #define KXMLQLCFunctionHidden    QStringLiteral("Hidden")
 #define KXMLQLCFunctionBlendMode QStringLiteral("BlendMode")
+#define KXMLQLCFunctionPriority  QStringLiteral("Priority")
 
 #define KXMLQLCFunctionValue     QStringLiteral("Value")
 #define KXMLQLCFunctionValueType QStringLiteral("Type")
@@ -119,7 +122,10 @@ public:
         ShowType       = 1 << 6,
         SequenceType   = 1 << 7,
         AudioType      = 1 << 8,
-        VideoType      = 1 << 9
+        VideoType      = 1 << 9,
+        CurveFXType    = 1 << 10, // DMX Total Control
+        FXSceneType    = 1 << 11, // DMX Total Control: scene with FX layers
+        CuelistType    = 1 << 12  // DMX Total Control: tracking cuelist
     };
     Q_ENUM(Type)
 
@@ -260,6 +266,13 @@ public:
      * @param str The string to convert
      */
     static Type stringToType(const QString& str);
+
+    /**
+     * DMX Total Control: true for the types QLC+ doesn't know. They are
+     * saved after everything else (QLC+ stops reading the engine at the
+     * first function type it doesn't know)
+     */
+    static bool isDtcType(Function::Type type);
 
     /** Virtual method to retrieve a QIcon based on a Function type.
       * Subclasses should reimplement this */
@@ -828,6 +841,19 @@ public:
     bool stopAndWait();
 
     /**
+     * DMX Total Control: stop a running function for an edit the timer thread
+     * must not see (the fixtures it goes through change), keeping its
+     * attributes (the intensity of its groups...).
+     *
+     * @return the parents that started it (none if it wasn't running), to
+     *         start it again from them with resume()
+     */
+    QList<FunctionParent> interruptAndWait();
+
+    /** DMX Total Control: start again from the parents interruptAndWait() gave */
+    void resume(MasterTimer *timer, const QList<FunctionParent> &parents);
+
+    /**
      * Check, whether the function is currently running (preRun() has been run)
      * or not (postRun() has been completed). This should be used only from MasterTimer.
      *
@@ -843,6 +869,11 @@ public:
     bool isPaused() const;
 
     bool startedAsChild() const;
+
+    /** DMX Total Control: whether $source started the run it plays (a stop
+     *  by a Master or a ManualVCWidget drops every source, even when it is
+     *  started again in the same frame) */
+    bool isStartedBy(const FunctionParent &source) const;
 
 private:
     /** Running state flags. The rules are:
@@ -1010,6 +1041,133 @@ public:
 
 private:
     Universe::BlendMode m_blendMode;
+
+    /*************************************************************************
+     * Priority (DMX Total Control)
+     *************************************************************************/
+public:
+    /**
+     * Playback priority, from 0 to 10. When two running functions write
+     * the same LTP channel, the one with the higher priority wins.
+     * Functions with the same priority behave as in QLC+ (latest wins).
+     */
+    void setPriority(int priority);
+    int priority() const;
+
+    static int defaultPriority() { return 5; }
+    static int maxPriority() { return 10; }
+
+    /**
+     * The priority the function plays with: the one of the parent that
+     * started it (the steps of a sequence, the effects of a rack), or its own
+     */
+    int playbackPriority() const;
+
+    /** Set by a parent function before it starts this one (-1: none) */
+    void setParentPriority(int priority);
+
+    /**
+     * Called by MasterTimer, in its thread, before write(): when the playback
+     * priority changed while running, move the faders to the new priority
+     */
+    void applyPriorityChange();
+
+protected:
+    /** Move the running faders to the playback priority. Functions that
+     *  run other functions pass the priority on to them */
+    virtual void updateFadersPriority();
+
+private:
+    int m_priority;
+    int m_parentPriority;
+    QAtomicInt m_priorityChanged;
+
+    /*************************************************************************
+     * Playback settings and live controls (DMX Total Control)
+     *************************************************************************/
+public:
+    /** What a function does when its loops are over */
+    enum EndAction { EndRelease = 0, EndPause };
+    /** How a function is driven: by its duration (BPM is the tempo type),
+     *  or by jumps to the next division (BeatGO button, audio pulses) */
+    enum DriveMode { DriveOff = 0, DriveBeatGO, DrivePulse };
+    /** Start from the beginning, or paused on its first frame */
+    enum StartMode { StartPlaying = 0, StartPaused };
+    /** jumpTo() values that are not function IDs */
+    static int jumpNone() { return -1; }
+    static int jumpNext() { return -2; }
+    static int jumpPrevious() { return -3; }
+
+    /** Cycles to play before the end action, 0 = always loop */
+    void setLoopCount(int count);
+    int loopCount() const;
+
+    void setEndAction(EndAction action);
+    EndAction endAction() const;
+
+    /** What plays when the loops are over (run by the UI): jumpNone(),
+     *  jumpNext(), jumpPrevious() or a function ID */
+    void setJumpTo(int target);
+    int jumpTo() const;
+
+    void setDriveMode(DriveMode mode);
+    DriveMode driveMode() const;
+
+    /** Divisions of a cycle for BeatGO and pulses */
+    void setDivisions(int divisions);
+    int divisions() const;
+
+    void setStartMode(StartMode mode);
+    StartMode startMode() const;
+
+    /** Delay between fixtures, in their order, when a scene fades in or out */
+    void setStagger(uint ms);
+    uint stagger() const;
+
+    /** Live speed: 2 plays twice as fast, 0.5 half as fast. Not saved */
+    void setSpeedFactor(qreal factor);
+    qreal speedFactor() const;
+
+    /** Jump to the next division of the cycle at the next frame (BeatGO, pulse) */
+    void requestDivisionJump();
+
+    /** The tick of the current frame, scaled by the speed factor */
+    uint frameTick() const;
+
+signals:
+    /** The loops set with setLoopCount are over (emitted from the timer thread) */
+    void loopsFinished(quint32 id);
+
+public:
+    enum CycleResult { CycleContinue, CycleStop, CycleHold };
+
+    /** For the subclasses and their runners: a cycle is over. Tells whether
+     *  to go on, stop or hold the last frame */
+    CycleResult cycleCompleted();
+
+protected:
+    /** Call once per write(): computes frameTick() */
+    void advanceFrameTick();
+    /** Pending division jumps, cleared */
+    int takeDivisionJumps();
+
+    bool saveXMLPlayback(QXmlStreamWriter *doc) const;
+    void loadXMLPlayback(const QXmlStreamAttributes &attrs);
+
+private:
+    int m_loopCount;
+    EndAction m_endAction;
+    int m_jumpTo;
+    DriveMode m_driveMode;
+    int m_divisions;
+    StartMode m_startMode;
+    uint m_stagger;
+
+    qreal m_speedFactor;
+    qreal m_tickRemainder;
+    uint m_frameTick;
+    int m_cyclesDone;
+    QAtomicInt m_pendingJumps;
 };
 
 /** @} */

@@ -74,6 +74,10 @@ public:
     /** Get the length of one timer tick in milliseconds */
     static uint tick();
 
+    /** DMX Total Control: run one tick now, without the timer thread
+     *  (offline rendering, e.g. turning effects into steps) */
+    void renderTick();
+
 signals:
     void tickReady();
 
@@ -108,6 +112,17 @@ public:
     /** Get the number of currently running functions */
     int runningFunctions() const;
 
+    /** DMX Total Control: a cuelist tells it went to a cue (from its write
+     *  method, in the timer thread): emits cueStarted */
+    void notifyCueStarted(quint32 functionId, quint32 cueUid) { emit cueStarted(functionId, cueUid); }
+
+    /** DMX Total Control: call it before $function is deleted (and after it
+     *  left the Doc). It stops, and this returns once the timer thread holds
+     *  it no more: not running, not waiting to start, and the tick that might
+     *  have had it in hand (a show starting a block) is over. Without the
+     *  timer thread, it only leaves the lists of the timer */
+    void releaseFunction(Function *function);
+
 signals:
     /** Tells that the list of running functions has changed */
     void functionListChanged();
@@ -117,6 +132,10 @@ signals:
 
     /** Emitted when a Function has just been stopped */
     void functionStopped(quint32 id);
+
+    /** DMX Total Control: a cuelist went to a cue (GO, BACK, jump, follow).
+     *  Emitted in the timer thread (receivers in the GUI thread get it queued) */
+    void cueStarted(quint32 functionId, quint32 cueUid);
 
 private:
     /** Execute one timer tick for each registered Function */
@@ -132,6 +151,9 @@ private:
 
     /** Flag for stopping all functions */
     std::atomic<bool> m_stopAllFunctions;
+
+    /** DMX Total Control: the ticks done (see releaseFunction) */
+    std::atomic<quint64> m_ticksDone;
 
     /*************************************************************************
      * DMX Sources

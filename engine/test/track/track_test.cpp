@@ -175,8 +175,9 @@ void Track_Test::functions()
 
     // invalid ShowFunction has been removed
     QVERIFY(t.showFunctions().count() == 2);
-    // invalid color has been fixed
-    QVERIFY(sf2->color() == QColor(100, 100, 100));
+    // DMX Total Control: a block without a colour keeps none (the timeline
+    // colours it by type)
+    QVERIFY(sf2->color() == QColor());
     // check SceneID set from sequence
     //QVERIFY(t.getSceneID() == 890);
 

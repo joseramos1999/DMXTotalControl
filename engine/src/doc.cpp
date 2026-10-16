@@ -39,6 +39,7 @@
 #include "channelsgroup.h"
 #include "scriptwrapper.h"
 #include "collection.h"
+#include "rgbmatrix.h"
 #include "function.h"
 #include "universe.h"
 #include "sequence.h"
@@ -72,6 +73,7 @@ Doc::Doc(QObject* parent, int universes)
     , m_loadStatus(Cleared)
     , m_clipboard(new QLCClipboard(this))
     , m_fixturesListCacheUpToDate(false)
+    , m_addressesOverlap(false)
     , m_latestFixtureId(0)
     , m_latestFixtureGroupId(0)
     , m_latestChannelsGroupId(0)
@@ -175,6 +177,9 @@ void Doc::clearContents()
     {
         Fixture* fxi = m_fixtures.take(fxit.next());
         quint32 fxID = fxi->id();
+        // the cached list must not hand the deleted fixture to the ones
+        // that hear of its removal (DMX Total Control: crash on File > New)
+        m_fixturesListCacheUpToDate = false;
         delete fxi;
         emit fixtureRemoved(fxID);
     }
@@ -189,6 +194,7 @@ void Doc::clearContents()
     m_latestChannelsGroupId = 0;
     m_latestPaletteId = 0;
     m_addresses.clear();
+    m_addressesOverlap = false;
     m_loadStatus = Cleared;
 
     emit cleared();
@@ -458,37 +464,9 @@ bool Doc::addFixture(Fixture* fixture, quint32 id, bool crossUniverse)
 
     // Add the fixture channels capabilities to the universe they belong
     QList<Universe *> universes = inputOutputMap()->claimUniverses();
-
-    QList<int> forcedHTP = fixture->forcedHTPChannels();
-    QList<int> forcedLTP = fixture->forcedLTPChannels();
-    quint32 fxAddress = fixture->address();
-
-    for (i = 0; i < fixture->channels(); i++)
-    {
-        const QLCChannel *channel(fixture->channel(i));
-        quint32 addr = fxAddress + i;
-
-        if (crossUniverse)
-        {
-            uni = floor((fixture->universeAddress() + i) / 512);
-            addr = (fixture->universeAddress() + i) - (uni * 512);
-        }
-
-        // Inform Universe of any HTP/LTP forcing
-        if (forcedHTP.contains(int(i)))
-            universes.at(uni)->setChannelCapability(addr, channel->group(), Universe::HTP);
-        else if (forcedLTP.contains(int(i)))
-            universes.at(uni)->setChannelCapability(addr, channel->group(), Universe::LTP);
-        else
-            universes.at(uni)->setChannelCapability(addr, channel->group());
-
-        // Apply the default value BEFORE modifiers
-        universes.at(uni)->setChannelDefaultValue(addr, channel->defaultValue());
-
-        // Apply a channel modifier, if defined
-        ChannelModifier *mod = fixture->channelModifier(i);
-        universes.at(uni)->setChannelModifier(addr, mod);
-    }
+    // DMX Total Control: shared with the updates (a fixture across two
+    // universes too)
+    applyChannelCapabilities(fixture, universes, crossUniverse);
     inputOutputMap()->releaseUniverses(true);
 
     emit fixtureAdded(id);
@@ -513,6 +491,9 @@ bool Doc::deleteFixture(quint32 id)
             if (it.value() == id)
                 it.remove();
         }
+        // DMX Total Control: it may have kept channels another fixture shares
+        if (m_addressesOverlap)
+            rebuildAddresses();
         if (m_monitorProps != NULL)
             m_monitorProps->removeFixture(id);
 
@@ -546,6 +527,7 @@ bool Doc::replaceFixtures(QList<Fixture*> newFixturesList)
     }
     m_latestFixtureId = 0;
     m_addresses.clear();
+    m_addressesOverlap = false;
 
     foreach (Fixture *fixture, newFixturesList)
     {
@@ -622,10 +604,6 @@ bool Doc::updateFixtureChannelCapabilities(quint32 id, QList<int> forcedHTP, QLi
         return false;
 
     Fixture* fixture = m_fixtures[id];
-    // get exclusive access to the universes list
-    QList<Universe *> universes = inputOutputMap()->claimUniverses();
-    Universe *universe = universes.at(fixture->universe());
-    quint32 fxAddress = fixture->address();
 
     // Set forced HTP channels
     fixture->setForcedHTPChannels(forcedHTP);
@@ -633,30 +611,83 @@ bool Doc::updateFixtureChannelCapabilities(quint32 id, QList<int> forcedHTP, QLi
     // Set forced LTP channels
     fixture->setForcedLTPChannels(forcedLTP);
 
+    // get exclusive access to the universes list
+    QList<Universe *> universes = inputOutputMap()->claimUniverses();
+
     // Update the Fixture Universe with the current channel states
-    for (quint32 i = 0 ; i < fixture->channels(); i++)
-    {
-        const QLCChannel *channel(fixture->channel(i));
-
-        // Inform Universe of any HTP/LTP forcing
-        if (forcedHTP.contains(int(i)))
-            universe->setChannelCapability(fxAddress + i, channel->group(), Universe::HTP);
-        else if (forcedLTP.contains(int(i)))
-            universe->setChannelCapability(fxAddress + i, channel->group(), Universe::LTP);
-        else
-            universe->setChannelCapability(fxAddress + i, channel->group());
-
-        // Apply the default value BEFORE modifiers
-        universe->setChannelDefaultValue(fxAddress + i, channel->defaultValue());
-
-        // Apply a channel modifier, if defined
-        ChannelModifier *mod = fixture->channelModifier(i);
-        universe->setChannelModifier(fxAddress + i, mod);
-    }
+    // DMX Total Control: each channel in its universe (a fixture across two
+    // universes wrote past the end of the first one)
+    applyChannelCapabilities(fixture, universes, fixture->crossUniverse());
 
     inputOutputMap()->releaseUniverses(true);
 
     return true;
+}
+
+void Doc::applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &universes, bool crossUniverse)
+{
+    // DMX Total Control: the loop of addFixture, shared with the updates
+    QList<int> forcedHTP = fixture->forcedHTPChannels();
+    QList<int> forcedLTP = fixture->forcedLTPChannels();
+    quint32 fxAddress = fixture->address();
+
+    for (quint32 i = 0; i < fixture->channels(); i++)
+    {
+        const QLCChannel *channel(fixture->channel(i));
+        quint32 uni = fixture->universe();
+        quint32 addr = fxAddress + i;
+
+        if (crossUniverse)
+        {
+            uni = floor((fixture->universeAddress() + i) / 512);
+            addr = (fixture->universeAddress() + i) - (uni * 512);
+        }
+        if (channel == NULL || int(uni) >= universes.count() || addr >= UNIVERSE_SIZE)
+            continue;
+        Universe *universe = universes.at(int(uni));
+
+        // Inform Universe of any HTP/LTP forcing
+        if (forcedHTP.contains(int(i)))
+            universe->setChannelCapability(addr, channel->group(), Universe::HTP);
+        else if (forcedLTP.contains(int(i)))
+            universe->setChannelCapability(addr, channel->group(), Universe::LTP);
+        else
+            universe->setChannelCapability(addr, channel->group());
+
+        // Apply the default value BEFORE modifiers
+        universe->setChannelDefaultValue(addr, channel->defaultValue());
+
+        // Apply a channel modifier, if defined
+        ChannelModifier *mod = fixture->channelModifier(i);
+        universe->setChannelModifier(addr, mod);
+
+        // DMX Total Control: dimmer follow and pan/tilt swap
+        universe->setChannelFollowsDimmer(addr, fixture->channelFollowsDimmer(int(i)));
+        if (crossUniverse == false)
+        {
+            quint32 out = fixture->outputChannel(i);
+            universe->setOutputSource(fxAddress + out, out != i ? int(fxAddress + i) : -1);
+        }
+    }
+}
+
+void Doc::refreshChannelCapabilities()
+{
+    // DMX Total Control: in one go, the timer doesn't tick in the middle;
+    // the fixtures across two universes are set again too
+    QList<Universe *> universes = inputOutputMap()->claimUniverses();
+    for (Universe *universe : universes)
+        universe->resetChannelCapabilities();
+
+    for (Fixture *fxi : fixtures())
+        applyChannelCapabilities(fxi, universes, fxi->crossUniverse());
+
+    // what plays follows the fixtures that moved or changed, and lets go of
+    // the ones gone
+    for (Universe *universe : universes)
+        universe->refreshFaderFixtures(this);
+
+    inputOutputMap()->releaseUniverses(true);
 }
 
 QList<Fixture*> const& Doc::fixtures() const
@@ -726,32 +757,58 @@ void Doc::slotFixtureChanged(quint32 id)
 {
     /* Keep track of fixture addresses */
     Fixture* fxi = fixture(id);
+    if (fxi == NULL)
+        return;
 
-    // remove it
-    QMutableHashIterator <uint,uint> it(m_addresses);
-    while (it.hasNext() == true)
+    // DMX Total Control: setting a new mode, universe and address calls this
+    // once for each, with a temporary wrong range in between that may overlap
+    // another fixture. Taking its channels left that one out of the map for
+    // good (the next setter removes them as this fixture's), and new fixtures
+    // could then be patched on it. On an overlap the map is made again from
+    // all the fixtures, and so on until nothing overlaps
+    bool overlap = m_addressesOverlap;
+    for (uint i = fxi->universeAddress(); overlap == false && i < fxi->universeAddress() + fxi->channels(); i++)
+        overlap = m_addresses.contains(i) && m_addresses.value(i) != id;
+
+    if (overlap)
     {
-        it.next();
-        if (it.value() == id)
-        {
-            qDebug() << Q_FUNC_INFO << " remove: " << it.key() << " val: " << it.value();
-            it.remove();
-        }
+        rebuildAddresses();
     }
-
-    for (uint i = fxi->universeAddress(); i < fxi->universeAddress() + fxi->channels(); i++)
+    else
     {
-        /*
-         * setting new universe and address calls this twice,
-         * with an tmp wrong address after the first call (old address() + new universe()).
-         * we only add if the channel is free, to prevent messing up things
-         */
-        Q_ASSERT(!m_addresses.contains(i));
-        m_addresses[i] = id;
+        // remove it
+        QMutableHashIterator <uint,uint> it(m_addresses);
+        while (it.hasNext() == true)
+        {
+            it.next();
+            if (it.value() == id)
+                it.remove();
+        }
+
+        for (uint i = fxi->universeAddress(); i < fxi->universeAddress() + fxi->channels(); i++)
+            m_addresses[i] = id;
     }
 
     setModified();
     emit fixtureChanged(id);
+}
+
+void Doc::rebuildAddresses()
+{
+    // DMX Total Control
+    m_addresses.clear();
+    m_addressesOverlap = false;
+
+    for (Fixture *fxi : fixtures())
+    {
+        for (quint32 i = fxi->universeAddress(); i < fxi->universeAddress() + fxi->channels(); i++)
+        {
+            if (m_addresses.contains(i))
+                m_addressesOverlap = true;
+            else
+                m_addresses[i] = fxi->id();
+        }
+    }
 }
 
 /*****************************************************************************
@@ -793,6 +850,15 @@ bool Doc::deleteFixtureGroup(quint32 id)
     {
         FixtureGroup* grp = m_fixtureGroups.take(id);
         Q_ASSERT(grp != NULL);
+
+        // DMX Total Control: the RGB matrices on it let it go first: a
+        // running one reads its group in the timer thread (it stops then)
+        for (Function *function : std::as_const(m_functions))
+        {
+            RGBMatrix *matrix = qobject_cast<RGBMatrix *>(function);
+            if (matrix != NULL && matrix->fixtureGroup() == id)
+                matrix->setFixtureGroup(FixtureGroup::invalidId());
+        }
 
         emit fixtureGroupRemoved(id);
         setModified();
@@ -1080,6 +1146,32 @@ Function *Doc::functionByName(QString name)
     return NULL;
 }
 
+bool Doc::replaceFunction(quint32 id, Function *func)
+{
+    Function *old = m_functions.value(id, NULL);
+    if (old == NULL || func == NULL || old == func || m_functions.values().contains(func))
+        return false;
+
+    disconnect(old, NULL, this, NULL);
+    disconnect(this, NULL, old, NULL);
+
+    connect(func, SIGNAL(changed(quint32)), this, SLOT(slotFunctionChanged(quint32)));
+    connect(func, SIGNAL(nameChanged(quint32)), this, SLOT(slotFunctionNameChanged(quint32)));
+    connect(this, SIGNAL(fixtureRemoved(quint32)), func, SLOT(slotFixtureRemoved(quint32)));
+
+    m_functions[id] = func;
+    func->setID(id);
+    emit functionReplaced(id);
+    emit functionChanged(id);
+    setModified();
+    // DMX Total Control: the timer (or a show playing it, that looked it up
+    // just before) may still hold the old one
+    masterTimer()->releaseFunction(old);
+    delete old;
+
+    return true;
+}
+
 bool Doc::deleteFunction(quint32 id)
 {
     if (m_functions.contains(id) == true)
@@ -1092,6 +1184,9 @@ bool Doc::deleteFunction(quint32 id)
 
         emit functionRemoved(id);
         setModified();
+        // DMX Total Control: a running function stops first, and the timer
+        // lets it go (it would keep writing a deleted function otherwise)
+        masterTimer()->releaseFunction(func);
         delete func;
 
         return true;
@@ -1369,16 +1464,25 @@ bool Doc::saveXML(QXmlStreamWriter *doc) const
     }
 
     /* Write functions into an XML document */
-    QListIterator <Function*> funcit(functions());
-    while (funcit.hasNext() == true)
+    // DMX Total Control: QLC+ stops reading <Engine> at the first function
+    // type it doesn't know: its own types first, then the monitor, then ours
+    // (our loadXML resolves references in postLoad, so the order is free)
+    const QList<Function *> funcs = functions();
+    for (Function *func : funcs)
     {
-        Function *func(funcit.next());
-        if (func != NULL)
+        if (func != NULL && Function::isDtcType(func->type()) == false)
             func->saveXML(doc);
     }
 
     if (m_monitorProps != NULL)
         m_monitorProps->saveXML(doc, this);
+
+    // DMX Total Control: the types QLC+ doesn't know, last
+    for (Function *func : funcs)
+    {
+        if (func != NULL && Function::isDtcType(func->type()))
+            func->saveXML(doc);
+    }
 
     /* End the <Engine> tag */
     doc->writeEndElement();

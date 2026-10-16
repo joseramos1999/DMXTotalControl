@@ -26,6 +26,10 @@
 #include <QByteArray>
 #include <QThread>
 #include <QSet>
+#include <QVector>
+#include <QSharedPointer>
+#include <QElapsedTimer>
+#include <QMutex>
 #include <atomic>
 
 #include "inputpatch.h"
@@ -48,6 +52,11 @@ class Doc;
 
 #define UNIVERSE_SIZE 512
 
+// DMX Total Control: the zero of a relative value (writeRelative), shared
+// with the faders
+#define RELATIVE_ZERO_8BIT   0x7F
+#define RELATIVE_ZERO_16BIT  0x7F00
+
 #define KXMLQLCUniverse             QStringLiteral("Universe")
 #define KXMLQLCUniverseName         QStringLiteral("Name")
 #define KXMLQLCUniverseID           QStringLiteral("ID")
@@ -63,6 +72,32 @@ class Doc;
 #define KXMLQLCUniverseLineUID          QStringLiteral("UID")
 #define KXMLQLCUniverseProfileName      QStringLiteral("Profile")
 #define KXMLQLCUniversePluginParameters QStringLiteral("PluginParameters")
+
+/**
+ * DMX Total Control: one fixture under the live mixer. The mixer works on
+ * what leaves the universe, frame by frame, on top of every scene and edit.
+ */
+struct MixerUnit
+{
+    struct Head
+    {
+        int r = -1, g = -1, b = -1, w = -1;
+        int c = -1, m = -1, y = -1;
+    };
+    /** Dimmer channels (universe addresses); without them the colour channels give the light */
+    QVector<int> dimmers;
+    QVector<Head> heads;
+
+    qreal dimmer = 1.0;      // scale of the light
+    bool colour = false;     // hue and saturation replace the colour
+    qreal hue = 0.0;         // 0..1
+    qreal saturation = 1.0;  // 0..1
+    bool full = false;       // light at full
+    bool blackout = false;   // no light
+    bool flash = false;      // light at full, in white
+    qreal strobeHz = 0.0;    // > 0: the light blinks
+};
+typedef QVector<MixerUnit> MixerLayer;
 
 /** Universe class contains input/output data for one DMX universe
  */
@@ -192,6 +227,14 @@ protected:
     /** Flag to monitor the universe changes */
     bool m_monitor;
 
+    /** Priority of the fader being written, and the priority that set the
+     *  current value of each HTP channel during this tick: a fader with a
+     *  higher priority replaces HTP values instead of merging with them
+     *  (DMX Total Control) */
+    int m_currentFaderPriority;
+    QVector<int> m_htpPriority;
+    bool htpWins(int address, quint32 value, quint32 currentValue);
+
     /************************************************************************
      * Patches
      ************************************************************************/
@@ -239,6 +282,11 @@ public:
      * A flag indicates if data has changed since previous iteration
      */
     void dumpOutput(const QByteArray& data, bool dataChanged);
+
+    /** DMX Total Control: the values the outputs get, with the swapped
+     *  channels (pan/tilt). $blackout: without light (the other channels
+     *  through their modifiers: limits, invert) */
+    QByteArray outputValues(bool blackout) const;
 
     void flushInput();
 
@@ -313,6 +361,24 @@ public:
       * or NULL if none or not valid */
     ChannelModifier *channelModifier(ushort channel);
 
+    /** DMX Total Control: whether the grand master scales the channel
+     *  (call it after setChannelCapability) */
+    void setChannelFollowsDimmer(ushort channel, bool follows);
+
+    /** DMX Total Control: the output $channel sends the value of $source
+     *  instead of its own (pan/tilt swap). -1: its own value */
+    void setOutputSource(ushort channel, int source);
+
+    /** DMX Total Control: forget the capabilities, modifiers and swaps of
+     *  every patched channel, before setting them again (after fixtures
+     *  move or go away) */
+    void resetChannelCapabilities();
+
+protected:
+    /** DMX Total Control: output channel -> source channel, -1 for none */
+    QVector<int> m_outputSource;
+    int m_outputSourceCount;
+
 protected:
     /** An array of each channel's capabilities. This helps to optimize HTP/LTP/Relative checks */
     QScopedPointer<QByteArray> m_channelsMask;
@@ -342,7 +408,15 @@ public:
      *  FadeChannels and eventually dismiss a fader when no longer needed.
      *  If a fade out transition is needed, this Universe
      *  is in charge of completing it and dismissing the fader. */
-    QSharedPointer<GenericFader> requestFader(FaderPriority priority = Auto);
+    QSharedPointer<GenericFader> requestFader(FaderPriority priority = Auto, int functionPriority = 0,
+                                              bool afterEqualPriority = false);
+
+    /** Combine a FaderPriority with a Function priority (0-10) into the
+     *  value faders are sorted by: the FaderPriority always prevails.
+     *  $afterEqualPriority places the fader after (above) the ones with the
+     *  same priority: live edits beat the scenes of their own priority
+     *  (DMX Total Control) */
+    static int faderSortPriority(FaderPriority priority, int functionPriority, bool afterEqualPriority = false);
 
     /** Dismiss a fader requested with requestFader, which is no longer needed */
     void dismissFader(QSharedPointer<GenericFader> fader);
@@ -350,8 +424,23 @@ public:
     /** Request a new priority for a fader with the provided intance */
     void requestFaderPriority(QSharedPointer<GenericFader> fader, FaderPriority priority);
 
+    /** Give a running fader a new function priority (0-10), keeping its
+     *  FaderPriority: it moves to its new place (DMX Total Control) */
+    void setFaderFunctionPriority(QSharedPointer<GenericFader> fader, int functionPriority);
+
+private:
+    /** Set the sort priority of a fader and move it after the faders of
+     *  the same or a lower priority. Call with m_fadersMutex locked */
+    void moveFaderLocked(QSharedPointer<GenericFader> fader, int sortPriority);
+
+public:
+
     /** Retrieve a modifiable list of the currently active faders */
     QList<QSharedPointer<GenericFader> > faders();
+
+    /** DMX Total Control: the fixtures moved or changed: the channels of the
+     *  faders follow them (see GenericFader::refreshFixtures) */
+    void refreshFaderFixtures(const Doc *doc);
 
     /** Set every running fader with $functionID as parent,
      *  to the requested pause state */
@@ -363,6 +452,22 @@ public:
 
 public slots:
     void tick();
+
+public:
+    /** DMX Total Control: process the faders now, without the universe thread (offline rendering) */
+    void renderFrame(uint elapsedMs);
+
+    /** DMX Total Control: the live mixer of this universe (null: none) */
+    void setMixerLayer(const QSharedPointer<const MixerLayer> &layer);
+
+private:
+    void applyMixerLayer(const MixerLayer &layer);
+
+    QSharedPointer<const MixerLayer> m_mixerLayer;
+    QMutex m_mixerMutex;
+    QElapsedTimer m_mixerClock;
+
+public:
 
 protected:
     void processFaders(uint elapsedMs);
@@ -443,8 +548,18 @@ public:
      */
     uchar preGMValue(int address) const;
 
+    /** DMX Total Control: the value under the fader that is writing now.
+     *  What the faders below wrote in this tick or, for a patched LTP
+     *  channel that none of them wrote, its rest (default) value */
+    uchar valueBelow(int address) const;
+
     /** Set all intensity channel values to zero */
     void zeroIntensityChannels();
+
+    /** DMX Total Control: patched LTP channels that no fader wrote in this
+     *  tick go back to their rest (default) value: a released
+     *  move effect or position scene doesn't leave the heads where it was */
+    void restUnwrittenChannels();
 
     /** Return a list with intensity channels and their values */
     QHash <int, uchar> intensityChannels();
@@ -493,6 +608,13 @@ protected:
     QScopedPointer<QByteArray> m_lastPostGMValues;
     /** Array of non-intensity only values */
     QScopedPointer<QByteArray> m_blackoutValues;
+
+    /** DMX Total Control: the rest value of each channel, whether it has
+     *  one (it belongs to a fixture) and whether a fader wrote it in the
+     *  current tick. Fixed size: the universe thread reads them unlocked */
+    QScopedPointer<QByteArray> m_restValues;
+    QScopedPointer<QByteArray> m_restMask;
+    QScopedPointer<QByteArray> m_writtenChannels;
 
     /** Array of values from input line, when passtrhough is enabled */
     QScopedPointer<QByteArray> m_passthroughValues;

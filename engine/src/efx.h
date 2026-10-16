@@ -48,6 +48,9 @@ class Fixture;
 #define KXMLQLCEFXStartOffset               QStringLiteral("StartOffset")
 #define KXMLQLCEFXIsRelative                QStringLiteral("IsRelative")
 #define KXMLQLCEFXDimmerControl             QStringLiteral("DimmerControl")
+// DMX Total Control
+#define KXMLDTCEFXSymmetric                 QStringLiteral("Symmetric")
+#define KXMLDTCEFXPhaseSpread               QStringLiteral("PhaseSpread")
 #define KXMLQLCEFXAxis                      QStringLiteral("Axis")
 #define KXMLQLCEFXOffset                    QStringLiteral("Offset")
 #define KXMLQLCEFXFrequency                 QStringLiteral("Frequency")
@@ -160,6 +163,22 @@ public:
     bool dimmerControlEnabled() const;
     void setDimmerControlEnabled(bool enable);
 
+    /** DMX Total Control: symmetric movement. The second half of
+     *  the fixtures mirrors the first one on pan, the outer ones in phase */
+    bool isSymmetric() const;
+    void setSymmetric(bool enable);
+
+    /** DMX Total Control: the phase between the first and the last fixture
+     *  when they move with an offset, in degrees (0-1440). -1: the classic
+     *  QLC+ spread, a cycle over the fixtures */
+    int phaseSpread() const;
+    void setPhaseSpread(int degrees);
+
+    /** DMX Total Control: the offset in time of fixture $index (ms), and
+     *  whether it mirrors the others (symmetric movement) */
+    uint fixtureTimeOffset(int index) const;
+    bool fixtureMirrored(int index) const;
+
     /**
      * Dimmer brightness (0.0 - 1.0) driven from the EFX cycle angle, phased per
      * fixture by its StartOffset. Over one cycle the first half [0, PI) fades from
@@ -243,6 +262,8 @@ private:
 
     /** Whether the EFX drives the contained fixtures' dimmer from their tilt */
     bool m_dimmerControl;
+    bool m_symmetric;
+    int m_phaseSpread;
 
     /*********************************************************************
      * Width
@@ -597,6 +618,10 @@ public:
 
 private:
     QSharedPointer<GenericFader> getFader(QList<Universe *> universes, quint32 universeID);
+
+    // DMX Total Control: position in the cycle (loops) and the cycle length following the BPM
+    uint m_cycleElapsed;
+    uint m_beatLoopDuration;
 
     /*********************************************************************
      * Intensity

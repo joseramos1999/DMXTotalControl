@@ -46,6 +46,7 @@ Fixture::Fixture(QObject* parent)
     , m_address(0)
     , m_crossUniverse(false)
     , m_channels(0)
+    , m_swapPanTilt(false)
     , m_fixtureDef(NULL)
     , m_fixtureMode(NULL)
 {
@@ -558,6 +559,58 @@ ChannelModifier *Fixture::channelModifier(quint32 idx)
     return m_channelModifiers.value(idx, NULL);
 }
 
+void Fixture::setChannelFollowsDimmer(int idx, bool follows)
+{
+    const QLCChannel *ch = channel(quint32(idx));
+    bool byDefault = ch != NULL && ch->group() == QLCChannel::Intensity;
+
+    m_dimmerSwappedIndices.removeAll(idx);
+    if (follows != byDefault)
+    {
+        m_dimmerSwappedIndices.append(idx);
+        std::sort(m_dimmerSwappedIndices.begin(), m_dimmerSwappedIndices.end());
+    }
+}
+
+bool Fixture::channelFollowsDimmer(int idx) const
+{
+    const QLCChannel *ch = channel(quint32(idx));
+    bool byDefault = ch != NULL && ch->group() == QLCChannel::Intensity;
+    return m_dimmerSwappedIndices.contains(idx) ? !byDefault : byDefault;
+}
+
+void Fixture::setSwapPanTilt(bool swap)
+{
+    m_swapPanTilt = swap;
+}
+
+bool Fixture::swapPanTilt() const
+{
+    return m_swapPanTilt;
+}
+
+quint32 Fixture::outputChannel(quint32 idx) const
+{
+    if (m_swapPanTilt == false)
+        return idx;
+
+    for (int h = 0; h < heads(); h++)
+    {
+        for (int byte = QLCChannel::MSB; byte <= QLCChannel::LSB; byte++)
+        {
+            quint32 pan = channelNumber(QLCChannel::Pan, byte, h);
+            quint32 tilt = channelNumber(QLCChannel::Tilt, byte, h);
+            if (pan == QLCChannel::invalid() || tilt == QLCChannel::invalid())
+                continue;
+            if (idx == pan)
+                return tilt;
+            if (idx == tilt)
+                return pan;
+        }
+    }
+    return idx;
+}
+
 /*********************************************************************
  * Channel info
  *********************************************************************/
@@ -661,6 +714,16 @@ void Fixture::setFixtureDefinition(QLCFixtureDef* fixtureDef,
         QByteArray prevValues;
         QByteArray newValues;
 
+        // DMX Total Control: the names of the channels of the previous mode
+        // (the options of the channels follow them to the new one)
+        const bool modeChanged = m_fixtureMode != NULL && m_fixtureMode != fixtureMode;
+        QStringList previousNames;
+        if (modeChanged)
+        {
+            for (const QLCChannel *ch : m_fixtureMode->channels())
+                previousNames.append(ch != NULL ? ch->name() : QString());
+        }
+
         if (m_fixtureDef != NULL && m_fixtureDef != fixtureDef &&
             m_fixtureDef->manufacturer() == KXMLFixtureGeneric &&
             m_fixtureDef->model() == KXMLFixtureGeneric)
@@ -671,6 +734,42 @@ void Fixture::setFixtureDefinition(QLCFixtureDef* fixtureDef,
         m_fixtureDef = fixtureDef;
         m_fixtureMode = fixtureMode;
         chNum = fixtureMode->channels().size();
+
+        // DMX Total Control: the options of the channels (dimmer exceptions,
+        // fades, forced HTP/LTP, modifiers: the limits) stay with the same
+        // channels, by name; they don't land on whatever channel now has
+        // their index. Those the new mode doesn't have go
+        if (modeChanged)
+        {
+            auto indexOf = [&](int previous) -> int {
+                const QString name = previousNames.value(previous);
+                QLCChannel *ch = name.isEmpty() ? NULL : fixtureMode->channel(name);
+                return ch == NULL ? -1 : int(fixtureMode->channelNumber(ch));
+            };
+            auto remap = [&](const QList<int> &list) {
+                QList<int> indices;
+                for (int previous : list)
+                {
+                    const int index = indexOf(previous);
+                    if (index >= 0 && index < chNum && indices.contains(index) == false)
+                        indices.append(index);
+                }
+                std::sort(indices.begin(), indices.end());
+                return indices;
+            };
+            m_dimmerSwappedIndices = remap(m_dimmerSwappedIndices);
+            m_excludeFadeIndices = remap(m_excludeFadeIndices);
+            m_forcedHTPIndices = remap(m_forcedHTPIndices);
+            m_forcedLTPIndices = remap(m_forcedLTPIndices);
+            QMap<quint32, ChannelModifier *> modifiers;
+            for (auto it = m_channelModifiers.cbegin(); it != m_channelModifiers.cend(); ++it)
+            {
+                const int index = indexOf(int(it.key()));
+                if (index >= 0 && index < chNum)
+                    modifiers.insert(quint32(index), it.value());
+            }
+            m_channelModifiers = modifiers;
+        }
         newValues.reserve(chNum);
 
         {
@@ -1150,6 +1249,8 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
     QList<int> forcedLTP;
     QList<quint32>modifierIndices;
     QList<ChannelModifier *>modifierPointers;
+    QList<int> dimmerExceptions;
+    bool swapPanTilt = false;
 
     if (xmlDoc.name() != KXMLFixture)
     {
@@ -1227,6 +1328,18 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
 
             for (int i = 0; i < values.count(); i++)
                 forcedLTP.append(values.at(i).toInt());
+        }
+        else if (xmlDoc.name() == KXMLFixtureDimmerExceptions)
+        {
+            // DMX Total Control
+            QStringList values = xmlDoc.readElementText().split(",", Qt::SkipEmptyParts);
+            for (int i = 0; i < values.count(); i++)
+                dimmerExceptions.append(values.at(i).toInt());
+        }
+        else if (xmlDoc.name() == KXMLFixtureSwapPanTilt)
+        {
+            // DMX Total Control
+            swapPanTilt = xmlDoc.readElementText() == KXMLQLCTrue;
         }
         else if (xmlDoc.name() == KXMLFixtureChannelModifier)
         {
@@ -1355,6 +1468,8 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
     setForcedLTPChannels(forcedLTP);
     for (int i = 0; i < modifierIndices.count(); i++)
         setChannelModifier(modifierIndices.at(i), modifierPointers.at(i));
+    m_dimmerSwappedIndices = dimmerExceptions;
+    m_swapPanTilt = swapPanTilt;
     setID(id);
 
     return true;
@@ -1443,6 +1558,17 @@ bool Fixture::saveXML(QXmlStreamWriter *doc) const
         }
         doc->writeTextElement(KXMLFixtureForcedLTP, list);
     }
+
+    // DMX Total Control
+    if (m_dimmerSwappedIndices.count() > 0)
+    {
+        QStringList list;
+        for (int idx : m_dimmerSwappedIndices)
+            list.append(QString::number(idx));
+        doc->writeTextElement(KXMLFixtureDimmerExceptions, list.join(","));
+    }
+    if (m_swapPanTilt)
+        doc->writeTextElement(KXMLFixtureSwapPanTilt, KXMLQLCTrue);
 
     {
         QMapIterator<quint32, ChannelModifier *> it(m_channelModifiers);

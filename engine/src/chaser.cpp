@@ -24,6 +24,7 @@
 #include <QDebug>
 #include <QColor>
 #include <QFile>
+#include <QSet>
 
 #include "chaserrunner.h"
 #include "mastertimer.h"
@@ -59,6 +60,9 @@ Chaser::Chaser(Doc *doc)
     // Listen to member Function removals
     connect(doc, SIGNAL(functionRemoved(quint32)),
             this, SLOT(slotFunctionRemoved(quint32)));
+    // DMX Total Control: and replacements
+    connect(doc, SIGNAL(functionReplaced(quint32)),
+            this, SLOT(slotFunctionReplaced(quint32)));
 
     m_startupAction.m_action = ChaserNoAction;
     m_startupAction.m_masterIntensity = 1.0;
@@ -261,6 +265,14 @@ quint32 Chaser::totalDuration()
 
 void Chaser::slotFunctionRemoved(quint32 fid)
 {
+    // DMX Total Control: the runner lets the deleted function go now, with
+    // its mutex (it runs in the timer thread)
+    {
+        QMutexLocker runnerLocker(&m_runnerMutex);
+        if (m_runner != NULL)
+            m_runner->forgetFunction(fid, NULL);
+    }
+
     int count;
     {
         QMutexLocker stepListLocker(&m_stepListMutex);
@@ -269,6 +281,14 @@ void Chaser::slotFunctionRemoved(quint32 fid)
 
     if (count > 0)
         emit changed(this->id());
+}
+
+void Chaser::slotFunctionReplaced(quint32 fid)
+{
+    // DMX Total Control: the old function is about to be deleted
+    QMutexLocker runnerLocker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->forgetFunction(fid, doc()->function(fid));
 }
 
 /*****************************************************************************
@@ -585,6 +605,14 @@ bool Chaser::contains(quint32 functionId) const
     Doc *doc = this->doc();
     Q_ASSERT(doc != NULL);
 
+    // DMX Total Control: chasers in a cycle (through racks, from a file) end
+    // the search instead of recursing forever
+    static thread_local QSet<const Chaser *> visiting;
+    if (visiting.contains(this))
+        return false;
+    visiting.insert(this);
+
+    bool found = false;
     foreach (ChaserStep step, m_steps)
     {
         Function *function = doc->function(step.fid);
@@ -592,13 +620,15 @@ bool Chaser::contains(quint32 functionId) const
         if (function == NULL)
             continue;
 
-        if (function->id() == functionId)
-            return true;
-        if (function->contains(functionId))
-            return true;
+        if (function->id() == functionId || function->contains(functionId))
+        {
+            found = true;
+            break;
+        }
     }
 
-    return false;
+    visiting.remove(this);
+    return found;
 }
 
 QList<quint32> Chaser::components() const
@@ -653,6 +683,13 @@ void Chaser::setPause(bool enable)
     Function::setPause(enable);
 }
 
+void Chaser::updateFadersPriority()
+{
+    QMutexLocker runnerLocker(&m_runnerMutex);
+    if (m_runner != NULL)
+        m_runner->setStepsPriority(playbackPriority());
+}
+
 void Chaser::write(MasterTimer* timer, QList<Universe *> universes)
 {
     if (isPaused() && m_startupAction.m_action != ChaserPauseRequest)
@@ -663,6 +700,24 @@ void Chaser::write(MasterTimer* timer, QList<Universe *> universes)
         qDebug() << "[Chaser] Request PAUSE" << m_startupAction.m_fadeMode;
         m_runner->setAction(m_startupAction);
         m_startupAction.m_action = ChaserNoAction;
+    }
+
+    // DMX Total Control: live speed, and BeatGO/pulses go to the next step
+    advanceFrameTick();
+    if (takeDivisionJumps() > 0)
+    {
+        QMutexLocker runnerLocker(&m_runnerMutex);
+        // (once its loops are over, the last step holds)
+        if (m_runner != NULL && m_runner->isHeld() == false)
+        {
+            ChaserAction action;
+            action.m_action = ChaserNextStep;
+            action.m_masterIntensity = getAttributeValue(Function::Intensity);
+            action.m_stepIntensity = 1.0;
+            action.m_fadeMode = Chaser::FromFunction;
+            action.m_stepIndex = -1;
+            m_runner->setAction(action);
+        }
     }
 
     {

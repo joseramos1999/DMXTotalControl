@@ -70,3 +70,9 @@ debian/qlcplus-data/
 debian/qlcplus-dbg/
 debian/qlcplus5-dbg/
 debian/tmp/
+
+# DMX Total Control developer build
+/build/
+/dist/
+!build-windows.sh
+!build-installer.sh

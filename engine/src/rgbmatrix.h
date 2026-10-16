@@ -324,6 +324,9 @@ private:
      *  Analogous to EFX's m_currentAngle, but for RGBMatrix step-based animations. */
     double m_continuousPhase;
 
+    /** DMX Total Control: steps played since the start, to count the loops */
+    int m_stepsDone;
+
     bool m_applyingStyleAttributes;
 
     /*********************************************************************

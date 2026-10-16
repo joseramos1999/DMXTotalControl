@@ -561,7 +561,9 @@ void EFXFixture_Test::nextStepLoop()
             QCOMPARE(ef->m_elapsed, i);
         }
 
-        i = 0; // m_elapsed is zeroed after a full pass
+        // DMX Total Control: after a full pass, what went past the end of
+        // the loop is kept (QLC+ zeroed it: a loop lasted one tick more)
+        i = MasterTimer::tick();
     }
 
     e.postRun(&mts, ua);

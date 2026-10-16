@@ -221,12 +221,16 @@ QDir QLCFile::userDirectory(QString path, QString fallBackPath, QStringList exte
     dir.setPath(QString("%1/%2").arg(getenv("HOME")).arg(path));
 #else
     /* User's input profile directory on Windows */
-    LPTSTR home = (LPTSTR) malloc(256 * sizeof(TCHAR));
-    GetEnvironmentVariable(TEXT("UserProfile"), home, 256);
-    dir.setPath(QString("%1/%2")
-                    .arg(QString::fromUtf16(reinterpret_cast<char16_t*>(home)))
-                    .arg(path));
-    free(home);
+    // DMX Total Control: GetEnvironmentVariable() leaves the buffer as it was
+    // when UserProfile is missing (a shell started without it) or longer than
+    // the buffer: the path was made of uninitialized memory, and mkpath()
+    // created directories with garbage names in the current directory.
+    // Read the variable at call time (tests move it) and fall back to the
+    // home of the user.
+    QString home = qEnvironmentVariable("UserProfile");
+    if (home.isEmpty())
+        home = QDir::homePath();
+    dir.setPath(QString("%1/%2").arg(QDir::fromNativeSeparators(home), path));
 #endif
 
     // Ensure the directory exists

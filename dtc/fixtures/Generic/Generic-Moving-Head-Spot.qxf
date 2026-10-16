@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE FixtureDefinition>
+<FixtureDefinition xmlns="http://www.qlcplus.org/FixtureDefinition">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.1.0</Version>
+  <Author>DMX Total Control</Author>
+ </Creator>
+ <Manufacturer>Generic</Manufacturer>
+ <Model>Moving Head Spot</Model>
+ <Type>Moving Head</Type>
+ <Channel Name="Pan" Preset="PositionPan"/>
+ <Channel Name="Tilt" Preset="PositionTilt"/>
+ <Channel Name="Pan/Tilt speed" Preset="SpeedPanTiltFastSlow"/>
+ <Channel Name="Dimmer" Preset="IntensityMasterDimmer"/>
+ <Channel Name="Shutter">
+  <Group Byte="0">Shutter</Group>
+  <Capability Min="0" Max="7">Closed</Capability>
+  <Capability Min="8" Max="15">Open</Capability>
+  <Capability Min="16" Max="131">Strobe slow to fast</Capability>
+  <Capability Min="132" Max="139">Open</Capability>
+  <Capability Min="140" Max="255">Random strobe</Capability>
+ </Channel>
+ <Channel Name="Colour wheel">
+  <Group Byte="0">Colour</Group>
+  <Capability Min="0" Max="9">White</Capability>
+  <Capability Min="10" Max="19">Red</Capability>
+  <Capability Min="20" Max="29">Orange</Capability>
+  <Capability Min="30" Max="39">Yellow</Capability>
+  <Capability Min="40" Max="49">Green</Capability>
+  <Capability Min="50" Max="59">Blue</Capability>
+  <Capability Min="60" Max="69">Cyan</Capability>
+  <Capability Min="70" Max="79">Magenta</Capability>
+  <Capability Min="80" Max="127">Split colours</Capability>
+  <Capability Min="128" Max="191">Rotation slow to fast</Capability>
+  <Capability Min="192" Max="255">Reverse rotation slow to fast</Capability>
+ </Channel>
+ <Channel Name="Gobo wheel">
+  <Group Byte="0">Gobo</Group>
+  <Capability Min="0" Max="7">Open</Capability>
+  <Capability Min="8" Max="15">Gobo 1</Capability>
+  <Capability Min="16" Max="23">Gobo 2</Capability>
+  <Capability Min="24" Max="31">Gobo 3</Capability>
+  <Capability Min="32" Max="39">Gobo 4</Capability>
+  <Capability Min="40" Max="47">Gobo 5</Capability>
+  <Capability Min="48" Max="55">Gobo 6</Capability>
+  <Capability Min="56" Max="63">Gobo 7</Capability>
+  <Capability Min="64" Max="127">Gobo shake slow to fast</Capability>
+  <Capability Min="128" Max="255">Wheel rotation slow to fast</Capability>
+ </Channel>
+ <Channel Name="Prism">
+  <Group Byte="0">Prism</Group>
+  <Capability Min="0" Max="127">Off</Capability>
+  <Capability Min="128" Max="255">On</Capability>
+ </Channel>
+ <Channel Name="Control">
+  <Group Byte="0">Maintenance</Group>
+  <Capability Min="0" Max="199">No function</Capability>
+  <Capability Min="200" Max="209">Lamp on</Capability>
+  <Capability Min="210" Max="249">No function</Capability>
+  <Capability Min="250" Max="255">Reset</Capability>
+ </Channel>
+ <Channel Name="Pan fine" Preset="PositionPanFine"/>
+ <Channel Name="Tilt fine" Preset="PositionTiltFine"/>
+ <Channel Name="Gobo rotation">
+  <Group Byte="0">Gobo</Group>
+  <Capability Min="0" Max="4">Stop</Capability>
+  <Capability Min="5" Max="129">Rotation slow to fast</Capability>
+  <Capability Min="130" Max="134">Stop</Capability>
+  <Capability Min="135" Max="255">Reverse rotation slow to fast</Capability>
+ </Channel>
+ <Channel Name="Prism rotation" Preset="PrismRotationSlowFast"/>
+ <Channel Name="Focus" Preset="BeamFocusNearFar"/>
+ <Mode Name="9ch Basic">
+  <Channel Number="0">Pan</Channel>
+  <Channel Number="1">Tilt</Channel>
+  <Channel Number="2">Pan/Tilt speed</Channel>
+  <Channel Number="3">Dimmer</Channel>
+  <Channel Number="4">Shutter</Channel>
+  <Channel Number="5">Colour wheel</Channel>
+  <Channel Number="6">Gobo wheel</Channel>
+  <Channel Number="7">Prism</Channel>
+  <Channel Number="8">Control</Channel>
+ </Mode>
+ <Mode Name="11ch Standard">
+  <Channel Number="0">Pan</Channel>
+  <Channel Number="1">Tilt</Channel>
+  <Channel Number="2">Pan fine</Channel>
+  <Channel Number="3">Tilt fine</Channel>
+  <Channel Number="4">Pan/Tilt speed</Channel>
+  <Channel Number="5">Dimmer</Channel>
+  <Channel Number="6">Shutter</Channel>
+  <Channel Number="7">Colour wheel</Channel>
+  <Channel Number="8">Gobo wheel</Channel>
+  <Channel Number="9">Prism</Channel>
+  <Channel Number="10">Control</Channel>
+ </Mode>
+ <Mode Name="14ch Extended">
+  <Channel Number="0">Pan</Channel>
+  <Channel Number="1">Pan fine</Channel>
+  <Channel Number="2">Tilt</Channel>
+  <Channel Number="3">Tilt fine</Channel>
+  <Channel Number="4">Pan/Tilt speed</Channel>
+  <Channel Number="5">Dimmer</Channel>
+  <Channel Number="6">Shutter</Channel>
+  <Channel Number="7">Colour wheel</Channel>
+  <Channel Number="8">Gobo wheel</Channel>
+  <Channel Number="9">Gobo rotation</Channel>
+  <Channel Number="10">Prism</Channel>
+  <Channel Number="11">Prism rotation</Channel>
+  <Channel Number="12">Focus</Channel>
+  <Channel Number="13">Control</Channel>
+ </Mode>
+</FixtureDefinition>
