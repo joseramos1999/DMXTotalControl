@@ -32,10 +32,10 @@ Item {
     id: view
 
     readonly property var types: [
-        { type: "intensity", name: qsTr("Intensity"), word: "INT", icon: Theme.iconSun, color: "#e7e9ef" },
+        { type: "intensity", name: qsTr("Intensity"), word: "INT", icon: Theme.iconSun, color: Theme.text },
         { type: "position", name: qsTr("Position"), word: "POS", icon: Theme.iconMove, color: Theme.functionColor("EFX") },
-        { type: "colour", name: qsTr("Colour"), word: "COL", icon: Theme.iconPalette, color: "#ff6a00" },
-        { type: "beam", name: qsTr("Beam"), word: "BEAM", icon: Theme.iconCircle, color: "#3d8bfd" }
+        { type: "colour", name: qsTr("Colour"), word: "COL", icon: Theme.iconPalette, color: Theme.category("#ff6a00") },
+        { type: "beam", name: qsTr("Beam"), word: "BEAM", icon: Theme.iconCircle, color: Theme.category("#3d8bfd") }
     ]
     readonly property bool hasSelection: Core.programmer.selection.length > 0
     property string notice: ""
@@ -138,7 +138,7 @@ Item {
                                         width: pool.modelData.type === "colour" ? 14 : 4
                                         radius: 3
                                         color: tile.swatch
-                                        border.color: "#00000060"
+                                        border.color: Theme.edgeFor(tile.swatch, tile.color)
                                     }
                                     Text {
                                         anchors { right: parent.right; top: parent.top; margins: 5 }
@@ -183,7 +183,7 @@ Item {
                                             } else if (!view.hasSelection) {
                                                 view.say(qsTr("Select fixtures first"))
                                             } else if (Core.palettes.apply(tile.modelData.id) === 0) {
-                                                view.say(qsTr("%1 doesn't go on the selected fixtures").arg(tile.modelData.name))
+                                                view.say(qsTr("%1 doesn't apply to the selected fixtures").arg(tile.modelData.name))
                                             }
                                         }
                                     }
@@ -230,7 +230,7 @@ Item {
         id: paletteMenu
         property var palette: ({})
         MenuItem {
-            text: qsTr("Put on the selection")
+            text: qsTr("Apply to the selection")
             enabled: view.hasSelection
             onTriggered: Core.palettes.apply(paletteMenu.palette.id)
         }

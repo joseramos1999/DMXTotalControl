@@ -80,7 +80,8 @@ Item {
         let h = 0
         for (let i = 0; i < key.length; i++)
             h = (h * 31 + key.charCodeAt(i)) % 360
-        return Qt.hsla(h / 360, 0.45, 0.32, 1)
+        // dark blocks on a dark theme, pale ones on a light theme
+        return Theme.isDark ? Theme.category(Qt.hsla(h / 360, 0.45, 0.32, 1)) : Qt.hsla(h / 360, 0.5, 0.82, 1)
     }
 
     ColumnLayout {
@@ -154,7 +155,7 @@ Item {
                             height: grid.cellHeight - 1
                             radius: 3
                             color: fixtureItem.selected ? Theme.accent : grid.tint(fixtureItem.modelData)
-                            border.color: fixtureItem.selected ? Qt.lighter(Theme.accent, 1.4) : Qt.lighter(color, 1.5)
+                            border.color: fixtureItem.selected ? Qt.lighter(Theme.accent, 1.4) : Theme.isDark ? Qt.lighter(color, 1.5) : Qt.darker(color, 1.3)
                             clip: true
                             Text {
                                 anchors { left: parent.left; verticalCenter: parent.verticalCenter; leftMargin: 4 }
@@ -162,7 +163,7 @@ Item {
                                 width: parent.width - 6
                                 elide: Text.ElideRight
                                 text: fixtureItem.modelData.address + " " + fixtureItem.modelData.name
-                                color: "white"
+                                color: Theme.textOn(parent.color)
                                 font.pixelSize: Math.min(11, grid.cellHeight * 0.45)
                                 font.weight: Font.DemiBold
                             }
@@ -188,7 +189,7 @@ Item {
                         anchors.centerIn: parent
                         visible: parent.modelData.first
                         text: grid.dragStart + 1
-                        color: "white"
+                        color: Theme.text
                         font.weight: Font.Bold
                     }
                 }

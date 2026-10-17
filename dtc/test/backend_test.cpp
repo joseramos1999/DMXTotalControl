@@ -141,6 +141,9 @@ private slots:
     void surfaceTouch();
     void appIcon();
     void updateChecker();
+    void lookSettings();
+    void manualPages();
+    void exampleShows();
     void remoteControl();
     void demoTouchShow();
     void fixtureSetup();
@@ -273,6 +276,10 @@ private slots:
     void zonesDeletedAfterTheyStop();
     void superSceneRestartKeepsPlayhead();
     void sceneFaderLevels();
+    void showFaderRanges();
+    void sceneDimmerFader();
+    void showFaderEdges();
+    void remoteFaderRanges();
     void moveSpeedFollowsPatchEdits();
     void pulseGoesOnWithNewShow();
     void pauseResumesOnlyWhatItPaused();
@@ -1938,6 +1945,401 @@ void Backend_Test::updateChecker()
     QTRY_COMPARE_WITH_TIMEOUT(offline.state(), int(UpdateChecker::Failed), 5000);
     QVERIFY(offline.error().isEmpty() == false);
 
+}
+
+/** The fixture ids whose name starts with $prefix, in patch order */
+static QList<quint32> fixturesNamed(Doc *doc, const QString &prefix)
+{
+    QList<quint32> list;
+    for (Fixture *fxi : doc->fixtures())
+        if (fxi->name().startsWith(prefix))
+            list << fxi->id();
+    std::sort(list.begin(), list.end());
+    return list;
+}
+
+static QVariantList idList(const QList<quint32> &list)
+{
+    QVariantList v;
+    for (quint32 id : list)
+        v << id;
+    return v;
+}
+
+void Backend_Test::exampleShows()
+{
+    // The example shows of the program (dtc/examples, installed in Examples):
+    // written by the program itself, so they are always in its current
+    // format. Runs only with DTC_EXAMPLES_DIR=<folder> (dtc/examples)
+    const QString dir = qEnvironmentVariable("DTC_EXAMPLES_DIR");
+    if (dir.isEmpty())
+        QSKIP("set DTC_EXAMPLES_DIR to write the example shows");
+    QVERIFY(QDir().mkpath(dir));
+    auto save = [&](DtcCore &core, const QString &name) {
+        const QString path = QDir(dir).filePath(name + ".qxw");
+        QFile::remove(path);
+        QVERIFY2(core.saveShow(QUrl::fromLocalFile(path)), qPrintable(path));
+    };
+
+    /* Primeros pasos: the practice show of the first steps guide. Fixtures
+       and their groups, and an empty group for the scenes the user records */
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "PAR", 0, 1, 4, 0, 1, "PARs"), 4);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Móvil", 0, 31, 2, 0, 1, "Móviles"), 2);
+        Zone *mine = core.zones()->addZone("Mis escenas");
+        QVERIFY(mine != nullptr);
+        mine->setExclusive(true);
+        save(core, "Primeros pasos");
+    }
+
+    /* Bolo pequeño: PARs in front and behind, strobes and a hazer. Colours,
+       effects and the generals in groups; a SHOW page made from them */
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Frontal", 0, 1, 4, 0, 1, "Frontales"), 4);
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Contra", 0, 21, 4, 0, 1, "Contras"), 4);
+        QCOMPARE(patch->addFixtures("Generic", "Strobe", "2ch Dimmer+Strobe", "Estrobo", 0, 41, 2, 0, 1, "Estrobos"), 2);
+        QCOMPARE(patch->addFixtures("Generic", "Hazer", "2ch Haze+Fan", "Máquina de humo", 0, 51, 1), 1);
+        const QList<quint32> front = fixturesNamed(core.doc(), "Frontal");
+        const QList<quint32> back = fixturesNamed(core.doc(), "Contra");
+        const QList<quint32> strobes = fixturesNamed(core.doc(), "Estrobo");
+        const QList<quint32> hazer = fixturesNamed(core.doc(), "Máquina");
+        Programmer *prog = core.programmer();
+
+        // colours: one at a time (an exclusive group with a crossfade)
+        Zone *colours = core.zones()->addZone("Colores");
+        colours->setExclusive(true);
+        colours->setFadeTime(1500);
+        colours->setColor(QColor("#3d8bfd"));
+        const QList<QPair<QString, QString>> looks = {
+            { "Azul", "#0030ff" }, { "Rojo", "#ff0000" }, { "Ámbar", "#ffaa00" }, { "Verde", "#00ff40" },
+            { "Magenta", "#ff00ff" }, { "Blanco cálido", "#ffd8a8" } };
+        for (const auto &look : looks)
+        {
+            prog->clear();
+            prog->selectFixtures(idList(front + back));
+            prog->setDimmer(255);
+            prog->setColor(QColor(look.second));
+            QVERIFY(prog->recordScene(look.first, 0) >= 0);
+        }
+        // the back in one colour, the front warm
+        prog->clear();
+        prog->selectFixtures(idList(back));
+        prog->setDimmer(255);
+        prog->setColor(QColor("#0030ff"));
+        prog->selectFixtures(idList(front));
+        prog->setDimmer(220);
+        prog->setColor(QColor("#ffd8a8"));
+        QVERIFY(prog->recordScene("Azul y cálido", 0) >= 0);
+
+        // effects, mixed over the colours
+        Zone *effects = core.zones()->addZone("Efectos");
+        effects->setExclusive(false);
+        effects->setColor(QColor("#ae3ec9"));
+        prog->clear();
+        prog->selectFixtures(idList(front + back));
+        prog->setDimmer(255);
+        QVERIFY(core.fxMacros()->apply("rainbow"));
+        QVERIFY(prog->recordScene("Arcoíris", 1) >= 0);
+        prog->clear();
+        prog->selectFixtures(idList(front + back));
+        QVERIFY(core.fxMacros()->apply("dimmer-wave"));
+        QVERIFY(prog->recordScene("Ola", 1) >= 0);
+        // a chase of the back, one PAR after the other
+        prog->clear();
+        prog->selectFixtures({ back.at(0) });
+        prog->setDimmer(255);
+        prog->setColor(QColor("#ffffff"));
+        const int chase = core.effects()->createSteps("Persecución", 1);
+        QVERIFY(chase >= 0);
+        for (int i = 1; i < back.count(); i++)
+        {
+            prog->clear();
+            prog->selectFixtures({ back.at(i) });
+            prog->setDimmer(255);
+            prog->setColor(QColor("#ffffff"));
+            QVERIFY(core.effects()->addStep(quint32(chase)));
+        }
+        // the strobes, while the button is held
+        prog->clear();
+        prog->selectFixtures(idList(strobes));
+        prog->setDimmer(255);
+        prog->setChannelValue("shutter", 200);
+        const int strobe = prog->recordScene("Estrobo", 1);
+        QVERIFY(strobe >= 0);
+        effects->setOption(quint32(strobe), "flash", true);
+
+        // generals: the audience, the haze
+        Zone *generals = core.zones()->addZone("Generales");
+        generals->setExclusive(false);
+        generals->setColor(QColor("#30a46c"));
+        prog->clear();
+        prog->selectFixtures(idList(front));
+        prog->setDimmer(255);
+        prog->setColor(QColor("#ffffff"));
+        QVERIFY(prog->recordScene("Luz de sala", 2) >= 0);
+        prog->clear();
+        prog->selectFixtures(idList(hazer));
+        prog->setDimmer(160);
+        prog->setChannelValue("fan", 128);
+        QVERIFY(prog->recordScene("Humo", 2) >= 0);
+        prog->clear();
+
+        // (the examples are in Spanish: the default names too, the test has no translator)
+        core.surface()->renamePage(core.surface()->buildFromGroups(), "Grupos");
+        save(core, "Bolo pequeño");
+    }
+
+    /* Concierto con cabezas móviles: palettes of colour and position, a
+       circle in a mirror, and a song as a cuelist on the playbacks */
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "PAR", 0, 1, 6, 0, 1, "PARs"), 6);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 101, 6, 0, 1, "Spots"), 6);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Wash RGBW", "14ch Extended", "Wash", 0, 201, 2, 0, 1, "Washes"), 2);
+        const QList<quint32> pars = fixturesNamed(core.doc(), "PAR");
+        const QList<quint32> spots = fixturesNamed(core.doc(), "Spot");
+        const QList<quint32> washes = fixturesNamed(core.doc(), "Wash");
+        Programmer *prog = core.programmer();
+        PaletteManager *palettes = core.palettes();
+
+        QMap<QString, int> colour;
+        const QList<QPair<QString, QString>> colours = {
+            { "Rojo", "#ff0000" }, { "Azul", "#0030ff" }, { "Ámbar", "#ffaa00" }, { "Magenta", "#ff00ff" },
+            { "Cian", "#00ffff" }, { "Blanco", "#ffffff" } };
+        for (const auto &c : colours)
+        {
+            prog->clear();
+            prog->selectFixtures(idList(pars + washes));
+            prog->setColor(QColor(c.second));
+            colour.insert(c.first, palettes->record("colour", c.first));
+        }
+        QMap<QString, int> position;
+        const QStringList positions = { "Cantante", "Público", "Batería" };
+        for (int p = 0; p < positions.count(); p++)
+        {
+            prog->clear();
+            for (int s = 0; s < spots.count(); s++)
+            {
+                prog->selectFixtures({ spots.at(s) });
+                prog->setPosition(0.25 + 0.1 * s - 0.1 * p, 0.4 + 0.15 * p);
+            }
+            prog->selectFixtures(idList(spots));
+            position.insert(positions.at(p), palettes->record("position", positions.at(p)));
+        }
+
+        // the song: a cuelist with tracking
+        Zone *songs = core.zones()->addZone("Canciones");
+        QVERIFY(songs != nullptr);
+        CuelistEditor *cuelists = core.cuelists();
+        prog->clear();
+        prog->selectFixtures(idList(pars + washes));
+        prog->setDimmer(255);
+        palettes->apply(colour.value("Azul"));
+        prog->selectFixtures(idList(spots));
+        prog->setDimmer(180);
+        palettes->apply(position.value("Cantante"));
+        const int song = cuelists->create("Canción", 0);
+        QVERIFY(song >= 0);
+        cuelists->setCueName(quint32(song), 0, "Intro");
+        cuelists->setCueTimes(quint32(song), { 0 }, 2000, -1, -1);
+        // verse: amber, the spots to the audience
+        prog->clear();
+        prog->selectFixtures(idList(pars + washes));
+        palettes->apply(colour.value("Ámbar"));
+        prog->selectFixtures(idList(spots));
+        palettes->apply(position.value("Público"));
+        QCOMPARE(cuelists->recordCue(quint32(song), "2", { { "name", "Verso" } }), 1);
+        // chorus: red, and the spots in a circle, the right half in a mirror
+        prog->clear();
+        prog->selectFixtures(idList(pars + washes));
+        palettes->apply(colour.value("Rojo"));
+        prog->selectFixtures(idList(spots));
+        prog->setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 25 }, { "swingTilt", 20 },
+                                 { "bpm", 40 }, { "wave", -1 } });
+        prog->selectFixtures(idList(spots.mid(3)));
+        prog->setFx("pantilt", { { "reverse", true } });
+        QCOMPARE(cuelists->recordCue(quint32(song), "3", { { "name", "Estribillo (círculo en espejo)" } }), 2);
+        cuelists->setCueTimes(quint32(song), { 2 }, 1500, -1, -1);
+        // the end: the stage down slowly
+        prog->clear();
+        prog->selectFixtures(idList(pars + washes + spots));
+        prog->setDimmer(0);
+        QCOMPARE(cuelists->recordCue(quint32(song), "4", { { "name", "Final" } }), 3);
+        cuelists->setCueTimes(quint32(song), { 3 }, 4000, -1, -1);
+        prog->clear();
+
+        // a scene of its own: the circle in a mirror, to play at any time
+        prog->selectFixtures(idList(spots));
+        prog->setDimmer(255);
+        palettes->apply(colour.value("Blanco"));
+        prog->setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 25 }, { "swingTilt", 20 },
+                                 { "bpm", 30 }, { "wave", -1 } });
+        prog->selectFixtures(idList(spots.mid(3)));
+        prog->setFx("pantilt", { { "reverse", true } });
+        const int mirror = prog->recordScene("Círculo en espejo", 0);
+        QVERIFY(mirror >= 0);
+        prog->clear();
+
+        PlaybackManager *pb = core.playbacks();
+        pb->assign(0, 0, song);
+        pb->assign(0, 1, mirror);
+        cuelists->setSelectedId(song);
+        pb->renamePage(0, "Página 1");
+        core.surface()->renamePage(core.surface()->buildFromGroups(), "Grupos");
+        save(core, "Concierto con cabezas móviles");
+    }
+
+    /* Sala con playbacks: a cuelist for each song on the first playback page
+       and the SHOW with the playbacks, for a venue with a fixed rig */
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "PAR", 0, 1, 8, 0, 1, "PARs"), 8);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Wash RGBW", "14ch Extended", "Wash", 0, 101, 4, 0, 1, "Washes"), 4);
+        QCOMPARE(patch->addFixtures("Generic", "Blinder 2 Lamps", "2ch Lamps", "Cegadora", 0, 201, 2, 0, 1, "Cegadoras"), 2);
+        const QList<quint32> pars = fixturesNamed(core.doc(), "PAR");
+        const QList<quint32> washes = fixturesNamed(core.doc(), "Wash");
+        const QList<quint32> blinders = fixturesNamed(core.doc(), "Cegadora");
+        Programmer *prog = core.programmer();
+        CuelistEditor *cuelists = core.cuelists();
+        PlaybackManager *pb = core.playbacks();
+        Zone *songs = core.zones()->addZone("Canciones");
+        QVERIFY(songs != nullptr);
+
+        // three songs, each its colours, one cue after the other with GO
+        const QList<QStringList> songLooks = {
+            { "Canción 1", "#0030ff", "#00ffff", "#ffffff" },
+            { "Canción 2", "#ff0000", "#ffaa00", "#ff00ff" },
+            { "Canción 3", "#00ff40", "#0030ff", "#ffd8a8" } };
+        QList<int> lists;
+        for (const QStringList &look : songLooks)
+        {
+            prog->clear();
+            prog->selectFixtures(idList(pars + washes));
+            prog->setDimmer(255);
+            prog->setColor(QColor(look.at(1)));
+            const int id = cuelists->create(look.at(0), 0);
+            QVERIFY(id >= 0);
+            cuelists->setCueName(quint32(id), 0, "Inicio");
+            cuelists->setCueTimes(quint32(id), { 0 }, 2000, -1, -1);
+            prog->clear();
+            prog->selectFixtures(idList(washes));
+            prog->setColor(QColor(look.at(2)));
+            QCOMPARE(cuelists->recordCue(quint32(id), "2", { { "name", "Estribillo" } }), 1);
+            prog->clear();
+            prog->selectFixtures(idList(pars));
+            prog->setColor(QColor(look.at(3)));
+            prog->selectFixtures(idList(blinders));
+            prog->setDimmer(255);
+            QCOMPARE(cuelists->recordCue(quint32(id), "3", { { "name", "Final" } }), 2);
+            cuelists->setCueTimes(quint32(id), { 2 }, 500, 3000, -1);
+            lists << id;
+        }
+        prog->clear();
+        // the audience light, on its own fader
+        prog->selectFixtures(idList(blinders));
+        prog->setDimmer(255);
+        const int audience = prog->recordScene("Público", 0);
+        QVERIFY(audience >= 0);
+        prog->clear();
+
+        for (int i = 0; i < lists.count(); i++)
+            pb->assign(0, i, lists.at(i));
+        pb->assign(0, 5, audience);
+        pb->renamePage(0, "Página 1");
+        cuelists->setSelectedId(lists.first());
+
+        // the SHOW: the playbacks that follow the playback page
+        ShowSurface *surface = core.surface();
+        const int show = surface->addPage("Playbacks", "playbacks");
+        const QString root = surface->pages().at(show).toMap().value("root").toMap().value("id").toString();
+        surface->updateSection(show, root, { { "cols", 6 } });
+        save(core, "Sala con playbacks");
+    }
+}
+
+void Backend_Test::lookSettings()
+{
+    // the theme (at once), the size of the interface (at the next start) and
+    // the first steps guide offered once
+    ScopedTestSettings settings;
+    AppSettings app;
+    QCOMPARE(app.theme(), QString("dark"));
+    QCOMPARE(AppSettings::themes(), QStringList({ "dark", "light", "contrast", "night" }));
+    QSignalSpy themeSpy(&app, SIGNAL(themeChanged()));
+    app.setTheme("light");
+    QCOMPARE(app.theme(), QString("light"));
+    QCOMPARE(themeSpy.count(), 1);
+    app.setTheme("purple");
+    QCOMPARE(app.theme(), QString("light"));
+    QCOMPARE(themeSpy.count(), 1);
+    QCOMPARE(AppSettings().theme(), QString("light"));
+    // a theme for this run only (the developer option): not saved
+    app.setThemeOverride("night");
+    QCOMPARE(app.theme(), QString("night"));
+    QCOMPARE(themeSpy.count(), 2);
+    QCOMPARE(AppSettings().theme(), QString("light"));
+    // choosing one in Options ends it
+    app.setTheme("contrast");
+    QCOMPARE(app.theme(), QString("contrast"));
+
+    QCOMPARE(app.uiScale(), 100);
+    app.setUiScale(130);
+    QCOMPARE(app.uiScale(), 130);
+    app.setUiScale(300);
+    QCOMPARE(app.uiScale(), 150);
+    app.setUiScale(10);
+    QCOMPARE(app.uiScale(), 80);
+
+    QVERIFY(app.guideShown() == false);
+    app.setGuideShown(true);
+    QVERIFY(AppSettings().guideShown());
+}
+
+void Backend_Test::manualPages()
+{
+    // the manual is built in: its pages by name, never a path; as HTML its
+    // pictures fit the help panel
+    DtcCore core;
+    const QString index = core.manualPage("index");
+    QVERIFY(index.isEmpty() == false);
+    QVERIFY(index.contains("programar.md"));
+    for (const QString &page : QStringList({ "primeros-pasos", "directo", "show", "playbacks", "programar", "escenas", "patch",
+                                 "fixtures", "salidas", "mapeos", "opciones", "remoto", "atajos" }))
+        QVERIFY2(core.manualPage(page).isEmpty() == false, qPrintable(page));
+    QVERIFY(core.manualPage("../README").isEmpty());
+    QVERIFY(core.manualPage(":/remote/index.html").isEmpty());
+    QVERIFY(core.manualPage("nada").isEmpty());
+
+    const QString html = core.manualHtml("directo", 420);
+    QVERIFY(html.contains("<html"));
+    QVERIFY(html.contains("<img src=\"img/directo.png\" width=\"420\" />"));
+    // the panel gives the font and the colour of the links
+    QVERIFY(html.contains("<body>"));
+    QVERIFY(html.contains("#0000ff", Qt::CaseInsensitive) == false);
+    QVERIFY(core.manualHtml("nada", 420).isEmpty());
+
+    // every picture of every page is built in
+    static const QRegularExpression image("<img src=\"([^\"]+)\"");
+    for (const QString &page : QDir(":/manual").entryList({ "*.md" }))
+    {
+        const QString name = page.chopped(3);
+        auto it = image.globalMatch(core.manualHtml(name, 420));
+        while (it.hasNext())
+        {
+            const QString src = it.next().captured(1);
+            QVERIFY2(QFile::exists(":/manual/" + src), qPrintable(name + ": " + src));
+        }
+    }
 }
 
 void Backend_Test::remoteControl()
@@ -11257,7 +11659,7 @@ void Backend_Test::commandLineCues()
     QVERIFY(cl->cueAt(2).values == Values({ { key(3), 128 } }));
     QVERIFY(cmd->history().contains("RECORD CUE 2.5"));
     QVERIFY(program("3 @ 70"));
-    QCOMPARE(errorOf("GRABAR CUE 2,5"), QString("Cue 2.5 exists: use UPDATE CUE 2.5"));
+    QCOMPARE(errorOf("GRABAR CUE 2,5"), QString("Cue 2.5 already exists: use UPDATE CUE 2.5"));
     QCOMPARE(cl->cueCount(), 3);
     QCOMPARE(int(cl->cueAt(2).values.value(key(3))), 128);
     QCOMPARE(cmd->normalize("grabar q 2,5"), QString("RECORD CUE 2.5"));
@@ -11757,7 +12159,7 @@ void Backend_Test::showAndRemotePlaybacks()
     // (nor once its cuelist is deleted)
     const QVariantMap deleted({ { "target", "playbackGo" }, { "functionId", 9999 }, { "cue", 0 } });
     QCOMPARE(surface->mapLabel(deleted), QString("Choose a cuelist"));
-    QCOMPARE(core.mapping()->describeTarget(deleted), QString("Playback: GO — deleted function"));
+    QCOMPARE(core.mapping()->describeTarget(deleted), QString("Playback: GO — deleted scene"));
     QVERIFY(surface->isActive(goButton) == false);
     surface->press(goButton);
     surface->release(goButton);
@@ -14785,6 +15187,879 @@ void Backend_Test::sceneFaderLevels()
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 0, 3000);
     m_doc->masterTimer()->stop();
 }
+
+// a level to a thousandth (the values of a range aren't exact in binary)
+#define QCOMPARE_LEVEL(actual, expected) \
+    QVERIFY2(qAbs(qreal(actual) - qreal(expected)) < 0.001, \
+             qPrintable(QString("%1 is %2, expected %3").arg(#actual).arg(qreal(actual)).arg(qreal(expected))))
+
+void Backend_Test::showFaderRanges()
+{
+    // a SHOW fader can cover a part of what it drives: "min" to "max" (0-100
+    // %), upside down from above or with "invert", as the faders of the
+    // mappings. Its position isn't its value (the value is its text)
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    auto newScene = [&](int channel) {
+        Scene *s = new Scene(doc);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    Scene *grouped = newScene(0);
+    Scene *loose = newScene(1);
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(grouped->id());
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Ranges", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 8 } });
+    const QVariantList master({ QVariantMap({ { "target", "group" }, { "zoneId", int(zone->id()) } }) });
+
+    /* the master of a group from 20 to 80 % */
+    surface->setItem(page, sid, 0, { { "targets", master }, { "min", 20 }, { "max", 80 } });
+    const QVariantMap ranged = surface->item(page, sid, 0);
+    QCOMPARE(ranged.value("min").toInt(), 20);
+    QCOMPARE(ranged.value("max").toInt(), 80);
+    surface->setLevel(ranged, 0.0);
+    QCOMPARE_LEVEL(zone->master(), 0.2);
+    QCOMPARE_LEVEL(surface->level(ranged), 0.0);
+    QCOMPARE_LEVEL(surface->value(ranged), 0.2);
+    surface->setLevel(ranged, 0.5);
+    QCOMPARE_LEVEL(zone->master(), 0.5);
+    QCOMPARE_LEVEL(surface->level(ranged), 0.5);
+    surface->setLevel(ranged, 1.0);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    QCOMPARE_LEVEL(surface->level(ranged), 1.0);
+    QCOMPARE_LEVEL(surface->value(ranged), 0.8);
+    // there and back: the same position
+    surface->setLevel(ranged, 0.25);
+    QCOMPARE_LEVEL(zone->master(), 0.35);
+    QCOMPARE_LEVEL(surface->level(ranged), 0.25);
+    QCOMPARE_LEVEL(surface->positionOf(ranged, 0.65), 0.75);
+    QCOMPARE_LEVEL(surface->positionOf(ranged, 0.1), 0.0);
+    // the master moved elsewhere, out of the range: the fader at an end of
+    // its travel, its text the value as it is
+    zone->setMaster(1.0);
+    QCOMPARE_LEVEL(surface->level(ranged), 1.0);
+    QCOMPARE_LEVEL(surface->value(ranged), 1.0);
+    zone->setMaster(0.05);
+    QCOMPARE_LEVEL(surface->level(ranged), 0.0);
+    QCOMPARE_LEVEL(surface->value(ranged), 0.05);
+    // (beyond the ends of the travel, or no number: within the range)
+    surface->setLevel(ranged, 7.0);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    surface->setLevel(ranged, -1.0);
+    QCOMPARE_LEVEL(zone->master(), 0.2);
+    surface->setLevel(ranged, 0.5);
+    surface->setLevel(ranged, qQNaN());
+    QCOMPARE_LEVEL(zone->master(), 0.2);
+    // no range, or one that is no number: the whole travel
+    QVariantMap whole = ranged;
+    whole.remove("min");
+    whole.remove("max");
+    surface->setLevel(whole, 0.0);
+    QCOMPARE_LEVEL(zone->master(), 0.0);
+    whole.insert("min", "abc");
+    whole.insert("max", QVariant());
+    surface->setLevel(whole, 1.0);
+    QCOMPARE_LEVEL(zone->master(), 1.0);
+    whole.insert("min", -50);
+    whole.insert("max", 300);
+    surface->setLevel(whole, 0.0);
+    QCOMPARE_LEVEL(zone->master(), 0.0);
+    QCOMPARE_LEVEL(surface->level(whole), 0.0);
+
+    /* upside down: from above, or with Invert (both: the right way up) */
+    surface->setItem(page, sid, 1, { { "targets", master }, { "min", 80 }, { "max", 20 } });
+    surface->setItem(page, sid, 2, { { "targets", master }, { "min", 20 }, { "max", 80 }, { "invert", true } });
+    for (int cell : { 1, 2 })
+    {
+        const QVariantMap inverted = surface->item(page, sid, cell);
+        surface->setLevel(inverted, 0.0);
+        QCOMPARE_LEVEL(zone->master(), 0.8);
+        surface->setLevel(inverted, 1.0);
+        QCOMPARE_LEVEL(zone->master(), 0.2);
+        surface->setLevel(inverted, 0.25);
+        QCOMPARE_LEVEL(zone->master(), 0.65);
+        QCOMPARE_LEVEL(surface->level(inverted), 0.25);
+        QCOMPARE_LEVEL(surface->value(inverted), 0.65);
+        // (a value above the range: the bottom of the travel)
+        zone->setMaster(1.0);
+        QCOMPARE_LEVEL(surface->level(inverted), 0.0);
+    }
+    surface->setItem(page, sid, 3, { { "targets", master }, { "min", 80 }, { "max", 20 }, { "invert", true } });
+    surface->setLevel(surface->item(page, sid, 3), 1.0);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+
+    /* the speed of a scene from 50 % (x1) to 100 % (x10) */
+    surface->setItem(page, sid, 4, { { "targets", QVariantList({ QVariantMap({ { "target", "sceneSpeed" },
+                                                                               { "functionId", int(grouped->id()) } }) }) },
+                                     { "min", 50 }, { "max", 100 } });
+    const QVariantMap speed = surface->item(page, sid, 4);
+    surface->setLevel(speed, 0.0);
+    QCOMPARE_LEVEL(zone->options(grouped->id()).value("speed").toDouble(), 1.0);
+    QCOMPARE_LEVEL(surface->value(speed), 0.5);
+    QCOMPARE_LEVEL(surface->level(speed), 0.0);
+    surface->setLevel(speed, 1.0);
+    QCOMPARE_LEVEL(zone->options(grouped->id()).value("speed").toDouble(), 10.0);
+    surface->setLevel(speed, 0.5);
+    QCOMPARE_LEVEL(zone->options(grouped->id()).value("speed").toDouble(), std::sqrt(10.0));
+    QCOMPARE_LEVEL(surface->level(speed), 0.5);
+    // slower than x1, from elsewhere: the bottom of this fader, and the
+    // controls are told
+    QSignalSpy told(surface, SIGNAL(revisionChanged()));
+    zone->setOption(grouped->id(), "speed", 0.5);
+    QVERIFY(told.count() > 0);
+    QCOMPARE_LEVEL(surface->level(speed), 0.0);
+    // a scene in no group: its live speed, from the SHOW and from a mapping
+    surface->setLevel(QVariantMap({ { "targets", QVariantList({ QVariantMap({ { "target", "sceneSpeed" }, { "functionId", int(loose->id()) } }) }) },
+                                    { "min", 50 } }), 1.0);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    ControlMapper *mapper = core.mapping();
+    QVERIFY(mapper->addMapping({ { "target", "sceneSpeed" }, { "functionId", int(loose->id()) },
+                                 { "source", "midi" }, { "channel", 9 } }) > 0);
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 0);
+    QCOMPARE_LEVEL(loose->speedFactor(), 0.1);
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 255);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    loose->setSpeedFactor(1.0);
+
+    /* a scene from 20 %: down it stops, whatever the minimum; just up from
+       there it starts at 20 % (in its group, and on its own) */
+    zone->setMaster(1.0);
+    for (Scene *s : { grouped, loose })
+    {
+        surface->setItem(page, sid, 5, { { "targets", QVariantList({ QVariantMap({ { "target", "scene" }, { "functionId", int(s->id()) } }) }) },
+                                         { "min", 20 } });
+        const QVariantMap fader = surface->item(page, sid, 5);
+        surface->setLevel(fader, 0.01);
+        QTRY_VERIFY_WITH_TIMEOUT(s->isRunning(), 3000);
+        QCOMPARE_LEVEL(surface->value(fader), 0.208);
+        QCOMPARE_LEVEL(surface->level(fader), 0.01);
+        surface->setLevel(fader, 0.0);
+        QTRY_VERIFY_WITH_TIMEOUT(s->isRunning() == false, 3000);
+        QCOMPARE_LEVEL(surface->value(fader), 0.0);
+        QCOMPARE_LEVEL(surface->level(fader), 0.0);
+    }
+
+    /* a playback fader from 20 to 80 %: at the bottom it is at 0 (and
+       releases its scene), just up from there it starts it at 20 % */
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, int(loose->id()));
+    surface->setItem(page, sid, 6, { { "targets", QVariantList({ QVariantMap({ { "target", "map" },
+                                         { "map", QVariantMap({ { "target", "playbackFader" }, { "pbPage", 0 }, { "slot", 0 } }) } }) }) },
+                                     { "min", 20 }, { "max", 80 } });
+    const QVariantMap playback = surface->item(page, sid, 6);
+    surface->setLevel(playback, 0.5);
+    QCOMPARE_LEVEL(pb->level(0, 0), 0.5);
+    surface->setLevel(playback, 1.0);
+    QCOMPARE_LEVEL(pb->level(0, 0), 0.8);
+    QCOMPARE_LEVEL(surface->level(playback), 1.0);
+    surface->setLevel(playback, 0.0);
+    QCOMPARE_LEVEL(pb->level(0, 0), 0.0);
+    surface->setLevel(playback, 0.01);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    QCOMPARE_LEVEL(pb->level(0, 0), 0.206);
+    surface->setLevel(playback, 0.0);
+    QCOMPARE_LEVEL(pb->level(0, 0), 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+
+    /* an encoder: steps of the value (10 %), within the range */
+    surface->setItem(page, sid, 7, { { "targets", master }, { "min", 20 }, { "max", 80 }, { "step", 10 } });
+    const QVariantMap encoder = surface->item(page, sid, 7);
+    surface->setLevel(encoder, 0.0);
+    surface->stepLevel(encoder, 3);
+    QCOMPARE_LEVEL(zone->master(), 0.5);
+    QCOMPARE_LEVEL(surface->level(encoder), 0.5);
+    surface->stepLevel(encoder, 10);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    surface->stepLevel(encoder, -1);
+    QCOMPARE_LEVEL(zone->master(), 0.7);
+    surface->stepLevel(encoder, -100);
+    QCOMPARE_LEVEL(zone->master(), 0.2);
+    // out of the range: a notch brings it in
+    zone->setMaster(1.0);
+    surface->stepLevel(encoder, -1);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    // upside down: a notch up is the value down
+    QVariantMap upsideDown = encoder;
+    upsideDown.insert("invert", true);
+    surface->stepLevel(upsideDown, 2);
+    QCOMPARE_LEVEL(zone->master(), 0.6);
+    QCOMPARE_LEVEL(surface->level(upsideDown), 1.0 / 3.0);
+    // the default step: 2 %
+    QVariantMap fine = encoder;
+    fine.remove("step");
+    surface->stepLevel(fine, 1);
+    QCOMPARE_LEVEL(zone->master(), 0.62);
+
+    /* Flash: the top of the travel while pressed, then back exactly to what
+       there was (also out of the range), each target to its own */
+    zone->setMaster(0.95);
+    doc->inputOutputMap()->setGrandMasterValue(200);
+    QVariantMap two = ranged;
+    two.insert("targets", master + QVariantList({ QVariantMap({ { "target", "grandMaster" } }) }));
+    const QVariantList held = surface->holdLevels(two);
+    QCOMPARE(held.count(), 2);
+    QCOMPARE_LEVEL(held.at(0).toDouble(), 0.95);
+    QCOMPARE_LEVEL(held.at(1).toDouble(), 200 / 255.0);
+    surface->setLevel(two, 1.0);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    QCOMPARE(int(doc->inputOutputMap()->grandMasterValue()), 204);
+    surface->restoreLevels(two, held);
+    QCOMPARE(zone->master(), 0.95);
+    QCOMPARE(int(doc->inputOutputMap()->grandMasterValue()), 200);
+    // what is no level changes nothing; a level beyond the end is at the end
+    surface->restoreLevels(two, QVariantList({ "abc", qQNaN() }));
+    QCOMPARE(zone->master(), 0.95);
+    QCOMPARE(int(doc->inputOutputMap()->grandMasterValue()), 200);
+    surface->restoreLevels(two, QVariantList({ 7.0 }));
+    QCOMPARE(zone->master(), 1.0);
+    QCOMPARE(int(doc->inputOutputMap()->grandMasterValue()), 200);
+    doc->inputOutputMap()->setGrandMasterValue(255);
+
+    /* a controller on the fader: the range of the mapping, then the one of
+       the fader */
+    QVERIFY(mapper->addMapping({ { "target", "surfaceFader" }, { "page", page }, { "section", sid }, { "cell", 0 },
+                                 { "source", "midi" }, { "channel", 7 } }) > 0);
+    mapper->handleInput("midi", "MIDI|Test", 7, QString(), 0);
+    QCOMPARE_LEVEL(zone->master(), 0.2);
+    mapper->handleInput("midi", "MIDI|Test", 7, QString(), 255);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+    QVERIFY(mapper->addMapping({ { "target", "surfaceFader" }, { "page", page }, { "section", sid }, { "cell", 0 },
+                                 { "source", "midi" }, { "channel", 8 }, { "min", 50 } }) > 0);
+    mapper->handleInput("midi", "MIDI|Test", 8, QString(), 0);
+    QCOMPARE_LEVEL(zone->master(), 0.5);
+    mapper->handleInput("midi", "MIDI|Test", 8, QString(), 255);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+
+    // Alt+click on the speed of a scene: a fader of that speed (not of the mapping)
+    const QVariantMap where = surface->addFromTarget({ { "target", "sceneSpeed" }, { "functionId", int(loose->id()) } });
+    QVERIFY(where.isEmpty() == false);
+    const QVariantList made = ShowSurface::faderTargets(surface->item(where.value("page").toInt(), where.value("section").toString(),
+                                                                      where.value("cell").toInt()));
+    QCOMPARE(made.count(), 1);
+    QCOMPARE(made.first().toMap().value("target").toString(), QString("sceneSpeed"));
+    QCOMPARE(made.first().toMap().value("functionId").toUInt(), loose->id());
+
+    /* saved with the show */
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    QVERIFY(surface->saveXML(&writer));
+    buffer.close();
+    surface->clear();
+    QVERIFY(surface->item(page, sid, 0).isEmpty());
+    {
+        QXmlStreamReader reader(buffer.data());
+        reader.readNextStartElement();
+        QVERIFY(surface->loadXML(reader));
+    }
+    QCOMPARE(surface->item(page, sid, 0).value("min"), QVariant(20));
+    QCOMPARE(surface->item(page, sid, 0).value("max"), QVariant(80));
+    QCOMPARE(surface->item(page, sid, 1).value("min"), QVariant(80));
+    QCOMPARE(surface->item(page, sid, 2).value("invert"), QVariant(true));
+    QCOMPARE(surface->item(page, sid, 7).value("step").toInt(), 10);
+    surface->setLevel(surface->item(page, sid, 0), 1.0);
+    QCOMPARE_LEVEL(zone->master(), 0.8);
+
+    // a damaged range: what is no number goes, the rest into 0-100 %
+    const QByteArray damaged = QString(
+        "<Surface Version=\"2\"><Page Name=\"P\"><Section ID=\"s1\" type=\"faders\" cols=\"4\">"
+        "<Item Cell=\"0\" min=\"abc\" max=\"1e400\"><Target target=\"group\" zoneId=\"%1\"/></Item>"
+        "<Item Cell=\"1\" min=\"-30\" max=\"150\"><Target target=\"group\" zoneId=\"%1\"/></Item>"
+        "<Item Cell=\"2\" min=\"12.7\" max=\"nan\" invert=\"true\"><Target target=\"group\" zoneId=\"%1\"/></Item>"
+        "</Section></Page></Surface>").arg(zone->id()).toUtf8();
+    {
+        QXmlStreamReader reader(damaged);
+        reader.readNextStartElement();
+        QVERIFY(surface->loadXML(reader));
+    }
+    QCOMPARE(surface->pageCount(), 1);
+    const QVariantMap noRange = surface->item(0, "s1", 0);
+    QVERIFY2(noRange.contains("min") == false && noRange.contains("max") == false,
+             qPrintable(noRange.value("min").toString() + " " + noRange.value("max").toString()));
+    QCOMPARE(ShowSurface::faderTargets(noRange).count(), 1);
+    surface->setLevel(noRange, 0.0);
+    QCOMPARE_LEVEL(zone->master(), 0.0);
+    const QVariantMap clamped = surface->item(0, "s1", 1);
+    QCOMPARE(clamped.value("min"), QVariant(0));
+    QCOMPARE(clamped.value("max"), QVariant(100));
+    const QVariantMap cut = surface->item(0, "s1", 2);
+    QCOMPARE(cut.value("min"), QVariant(12));
+    QVERIFY(cut.contains("max") == false);
+    surface->setLevel(cut, 0.0);
+    QCOMPARE_LEVEL(zone->master(), 1.0);
+    core.zones()->stopAll();
+}
+
+void Backend_Test::sceneDimmerFader()
+{
+    // the dimmer of a scene on a SHOW fader: it dims the scene whoever plays
+    // it (its group, a playback, a button, a super scene) on top of the
+    // levels they give it, and never starts or stops it. Saved with the
+    // show, gone with the function; a copy of the scene isn't dimmed
+    ScopedTestSettings settings;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 4), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Static", 0, 10, 1, 0, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 20, 1), 1);
+    quint32 dim = 0, statics = 0, spot = 0;
+    for (Fixture *fxi : doc->fixtures())
+    {
+        if (fxi->name().startsWith("Static"))
+            statics = fxi->id();
+        else if (fxi->name().startsWith("Spot"))
+            spot = fxi->id();
+        else
+            dim = fxi->id();
+    }
+    auto out = [&](int channel) { return core.io()->channelValues(0).at(channel).toInt(); };
+    auto newScene = [&](int channel) {
+        Scene *s = new Scene(doc);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    // the base of an intensity of a function (a track of a super scene)
+    auto base = [](const Function *f, int attribute) { return f->attributes().at(attribute).m_value; };
+    auto dimmerOf = [](quint32 fid) {
+        return QVariantMap({ { "targets", QVariantList({ QVariantMap({ { "target", "sceneDimmer" }, { "functionId", int(fid) } }) }) } });
+    };
+    Scene *grouped = newScene(0);
+    Scene *loose = newScene(1);
+    const quint32 groupedId = grouped->id();
+    const quint32 looseId = loose->id();
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(groupedId);
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Dimmers", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 4 } });
+    surface->setItem(page, sid, 0, dimmerOf(groupedId));
+    const QVariantMap groupedDimmer = surface->item(page, sid, 0);
+
+    /* on a scene that doesn't play: it stays stopped */
+    QCOMPARE_LEVEL(surface->level(groupedDimmer), 1.0);
+    core.doc()->resetModified();
+    surface->setLevel(groupedDimmer, 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 0.5);
+    QCOMPARE_LEVEL(surface->level(groupedDimmer), 0.5);
+    QCOMPARE_LEVEL(surface->value(groupedDimmer), 0.5);
+    QCOMPARE_LEVEL(base(grouped, Function::Intensity), 0.5);
+    QVERIFY(core.modified());
+    QTest::qWait(100);
+    QVERIFY(grouped->isRunning() == false);
+    QVERIFY(zone->isActive(groupedId) == false);
+    QCOMPARE(out(0), 0);
+
+    /* its group plays it: at half, with the master of the group */
+    zone->start(groupedId);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    zone->setMaster(0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    zone->setMaster(1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    // moved while it plays
+    surface->setLevel(groupedDimmer, 0.25);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    // down to 0: dark, still playing in its group
+    surface->setLevel(groupedDimmer, 0.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    QTest::qWait(100);
+    QVERIFY(grouped->isRunning());
+    QVERIFY(zone->isActive(groupedId));
+    surface->setLevel(groupedDimmer, 0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    // and a SHOW fader that plays it: both count, each fader shows its own
+    const QVariantMap player({ { "target", "scene" }, { "functionId", int(groupedId) } });
+    surface->setLevel(player, 0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    QCOMPARE_LEVEL(surface->level(player), 0.5);
+    QCOMPARE_LEVEL(surface->level(groupedDimmer), 0.5);
+    surface->setLevel(player, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    // stopped and started again: still dimmed
+    zone->stop(groupedId);
+    QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 0.5);
+    zone->start(groupedId);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    QTest::qWait(200);
+    QCOMPARE(out(0), 100);
+    zone->stop(groupedId);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+
+    /* on its own (a button), and by a playback: at half, times the level of
+       the playback */
+    surface->setItem(page, sid, 1, dimmerOf(looseId));
+    surface->setLevel(surface->item(page, sid, 1), 0.5);
+    QVERIFY(loose->stopped());
+    const QVariantMap button({ { "action", "scene" }, { "functionId", int(looseId) }, { "mode", "toggle" } });
+    surface->press(button);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
+    QTest::qWait(100);
+    surface->press(button);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, int(looseId));
+    pb->setLevel(0, 0, 0.5);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 50, 3000);
+    pb->setLevel(0, 0, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
+    // the dimmer moved while the playback plays it
+    surface->setLevel(surface->item(page, sid, 1), 0.25);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 50, 3000);
+    surface->setLevel(surface->item(page, sid, 1), 0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
+    pb->release(0, 0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+
+    /* a super scene: the level of each of its tracks and its static values;
+       a track added later gets it when it plays again */
+    Scene *inTrack = newScene(2);
+    TimelineEditor *timeline = core.timeline();
+    const int superId = core.effects()->createSuperScene("Super");
+    QVERIFY(superId >= 0);
+    Show *super = qobject_cast<Show *>(doc->function(quint32(superId)));
+    QVERIFY(super != nullptr);
+    const int track = timeline->show(quint32(superId)).value("tracks").toList().first().toMap().value("id").toInt();
+    const int block = timeline->addBlock(quint32(superId), track, inTrack->id(), 0);
+    timeline->resizeBlock(quint32(superId), block, 0, 60000);
+    timeline->setSettings(quint32(superId), { { "endTime", 60000 } });
+    Programmer *prog = core.programmer();
+    prog->selectFixtures({ statics });
+    prog->setDimmer(200);
+    QVERIFY(timeline->captureStatic(quint32(superId)) > 0);
+    prog->clear();
+    Function *values = doc->function(super->staticScene());
+    QVERIFY(values != nullptr);
+    QTRY_COMPARE_WITH_TIMEOUT(out(9), 0, 3000);
+    surface->setItem(page, sid, 2, dimmerOf(quint32(superId)));
+    surface->setLevel(surface->item(page, sid, 2), 0.5);
+    QVERIFY(super->attributes().count() > 0);
+    for (int i = 0; i < super->attributes().count(); i++)
+        QCOMPARE_LEVEL(base(super, i), 0.5);
+    QCOMPARE_LEVEL(base(values, Function::Intensity), 0.5);
+    QVERIFY(super->stopped());
+    super->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 100, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(9), 100, 3000);
+    surface->setLevel(surface->item(page, sid, 2), 0.25);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 50, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(9), 50, 3000);
+    surface->setLevel(surface->item(page, sid, 2), 0.5);
+    super->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(super->isRunning() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 0, 3000);
+    const int added = timeline->addTrack(quint32(superId));
+    QVERIFY(added >= 0);
+    Scene *later = newScene(3);
+    const int laterBlock = timeline->addBlock(quint32(superId), added, later->id(), 0);
+    timeline->resizeBlock(quint32(superId), laterBlock, 0, 60000);
+    // (dimmed at once, not from its first frame: the super scene changed)
+    QCOMPARE_LEVEL(base(super, int(super->attributes().count()) - 1), 0.5);
+    // by a playback at half: a quarter
+    pb->assign(0, 1, superId);
+    pb->setLevel(0, 1, 0.5);
+    pb->go(0, 1);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 50, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 50, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(9), 50, 3000);
+    for (int i = 0; i < super->attributes().count(); i++)
+        QCOMPARE_LEVEL(base(super, i), 0.5);
+    pb->release(0, 1);
+    QTRY_VERIFY_WITH_TIMEOUT(super->isRunning() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 0, 3000);
+    const int tracks = int(super->attributes().count());
+
+    /* an effect: a copy of it isn't dimmed; made an FX, it keeps its dimmer */
+    prog->selectFixtures({ spot });
+    const int moveId = core.effects()->createMoveFx("Move");
+    QVERIFY(moveId >= 0);
+    prog->clear();
+    surface->setItem(page, sid, 3, dimmerOf(quint32(moveId)));
+    surface->setLevel(surface->item(page, sid, 3), 0.4);
+    QCOMPARE_LEVEL(base(doc->function(quint32(moveId)), Function::Intensity), 0.4);
+    const quint32 duplicated = core.effects()->duplicate(quint32(moveId));
+    QVERIFY(doc->function(duplicated) != nullptr);
+    QCOMPARE_LEVEL(base(doc->function(duplicated), Function::Intensity), 1.0);
+    QCOMPARE_LEVEL(surface->sceneDimmer(duplicated), 1.0);
+    Function *copy = doc->function(quint32(moveId))->createCopy(doc);
+    QVERIFY(copy != nullptr);
+    QCOMPARE_LEVEL(base(copy, Function::Intensity), 1.0);
+    QCOMPARE_LEVEL(base(doc->function(quint32(moveId)), Function::Intensity), 0.4);
+    QVERIFY(core.effects()->convertToFx(quint32(moveId)));
+    QVERIFY(qobject_cast<FXScene *>(doc->function(quint32(moveId))) != nullptr);
+    QCOMPARE_LEVEL(surface->sceneDimmer(quint32(moveId)), 0.4);
+    QCOMPARE_LEVEL(base(doc->function(quint32(moveId)), Function::Intensity), 0.4);
+
+    /* saved with the show, and opened again */
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Dimmers.qxw");
+    core.stopAll();
+    QTRY_COMPARE_WITH_TIMEOUT(doc->masterTimer()->runningFunctions(), 0, 3000);
+    QVERIFY2(core.saveShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const QByteArray saved = file.readAll();
+    file.close();
+    QVERIFY(saved.contains(QString("<SceneDimmer Function=\"%1\" Value=\"0.5\"/>").arg(groupedId).toUtf8()));
+    QVERIFY(saved.contains(QString("<SceneDimmer Function=\"%1\" Value=\"0.4\"/>").arg(moveId).toUtf8()));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QVERIFY(core.modified() == false);
+    doc = core.doc();
+    grouped = qobject_cast<Scene *>(doc->function(groupedId));
+    super = qobject_cast<Show *>(doc->function(quint32(superId)));
+    QVERIFY(grouped != nullptr && super != nullptr);
+    values = doc->function(super->staticScene());
+    QVERIFY(values != nullptr);
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(looseId), 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(quint32(superId)), 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(quint32(moveId)), 0.4);
+    QCOMPARE_LEVEL(surface->sceneDimmer(duplicated), 1.0);
+    QCOMPARE_LEVEL(base(grouped, Function::Intensity), 0.5);
+    QCOMPARE_LEVEL(base(doc->function(looseId), Function::Intensity), 0.5);
+    QCOMPARE_LEVEL(base(doc->function(quint32(moveId)), Function::Intensity), 0.4);
+    QCOMPARE_LEVEL(base(doc->function(duplicated), Function::Intensity), 1.0);
+    QCOMPARE(int(super->attributes().count()), tracks);
+    for (int i = 0; i < super->attributes().count(); i++)
+        QCOMPARE_LEVEL(base(super, i), 0.5);
+    QCOMPARE_LEVEL(base(values, Function::Intensity), 0.5);
+    QCOMPARE_LEVEL(surface->level(surface->item(page, sid, 0)), 0.5);
+    zone = core.zones()->zone(0);
+    QVERIFY(zone != nullptr);
+    zone->start(groupedId);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    zone->stop(groupedId);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+
+    /* deleted: its dimmer goes, a function made later with its ID isn't dimmed */
+    QVERIFY(doc->deleteFunction(looseId));
+    QCOMPARE_LEVEL(surface->sceneDimmer(looseId), 1.0);
+    QCOMPARE(ShowSurface::faderTargets(surface->item(page, sid, 1)).first().toMap().value("functionId").toInt(), -1);
+    Scene *again = new Scene(doc);
+    QVERIFY(doc->addFunction(again, looseId));
+    QCOMPARE_LEVEL(base(again, Function::Intensity), 1.0);
+    QCOMPARE_LEVEL(surface->sceneDimmer(looseId), 1.0);
+
+    /* the SHOW cleared (another show): the scenes still there back to full */
+    surface->clear();
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 1.0);
+    QCOMPARE_LEVEL(base(grouped, Function::Intensity), 1.0);
+    for (int i = 0; i < super->attributes().count(); i++)
+        QCOMPARE_LEVEL(base(super, i), 1.0);
+    QCOMPARE_LEVEL(base(values, Function::Intensity), 1.0);
+    // File > New: nothing of it in the new show
+    surface->setSceneDimmer(groupedId, 0.3);
+    QCOMPARE_LEVEL(base(grouped, Function::Intensity), 0.3);
+    core.newShow();
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 1.0);
+    Scene *fresh = new Scene(doc);
+    QVERIFY(doc->addFunction(fresh, groupedId));
+    QCOMPARE_LEVEL(base(fresh, Function::Intensity), 1.0);
+    QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 1.0);
+    // (a dimmer on what isn't there: nothing)
+    surface->setSceneDimmer(9999, 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(9999), 1.0);
+}
+
+void Backend_Test::remoteFaderRanges()
+{
+    // the phone: the range of a fader is in the layout, the state has its
+    // position and its value (its text). A level is a position on it, an
+    // encoder steps the value within the range, a Flash gives back what
+    // there was
+    DtcCore core;
+    Doc *doc = core.doc();
+    Zone *zone = core.zones()->addZone("Group");
+    Scene *scene = new Scene(doc);
+    scene->setName("Wash");
+    doc->addFunction(scene);
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Faders", "faders");
+    const QString faders = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    const QString dials = surface->splitSection(page, faders, "h");
+    surface->updateSection(page, dials, { { "type", "dials" } });
+    const QVariantList master({ QVariantMap({ { "target", "group" }, { "zoneId", int(zone->id()) } }) });
+    surface->setItem(page, faders, 0, { { "targets", master }, { "min", 20 }, { "max", 80 } });
+    surface->setItem(page, faders, 1, { { "targets", QVariantList({ QVariantMap({ { "target", "sceneDimmer" },
+                                                                                  { "functionId", int(scene->id()) } }) }) } });
+    surface->setItem(page, dials, 0, { { "targets", master }, { "min", 20 }, { "max", 80 }, { "invert", true },
+                                       { "encoder", true }, { "step", 10 } });
+
+    RemoteServer *remote = core.remote();
+    remote->startOn(18887);
+    QVERIFY(remote->running());
+    QWebSocket phone;
+    QList<QVariantMap> received;
+    connect(&phone, &QWebSocket::textMessageReceived, this, [&received](const QString &text) {
+        received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+    });
+    auto sendJson = [&phone](const QVariantMap &m) {
+        phone.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+    };
+    auto lastOf = [&received](const QString &type) {
+        for (int i = received.count() - 1; i >= 0; i--)
+            if (received.at(i).value("type").toString() == type)
+                return received.at(i);
+        return QVariantMap();
+    };
+    std::function<QVariantMap(const QVariantMap &, const QString &)> sectionIn = [&](const QVariantMap &node, const QString &id) {
+        if (node.value("id").toString() == id)
+            return node;
+        for (const char *half : { "a", "b" })
+        {
+            const QVariantMap found = node.contains(half) ? sectionIn(node.value(half).toMap(), id) : QVariantMap();
+            if (found.isEmpty() == false)
+                return found;
+        }
+        return QVariantMap();
+    };
+    auto layoutItem = [&](const QString &section, int cell) {
+        for (const QVariant &p : lastOf("layout").value("pages").toList())
+        {
+            const QVariantMap found = sectionIn(p.toMap().value("root").toMap(), section);
+            if (found.isEmpty() == false)
+                return found.value("items").toMap().value(QString::number(cell)).toMap();
+        }
+        return QVariantMap();
+    };
+    auto stateItem = [&](const QString &section, int cell) {
+        return lastOf("state").value("items").toMap().value(QString("%1/%2/%3").arg(page).arg(section).arg(cell)).toMap();
+    };
+    auto command = [&](const QString &cmd, const QString &section, int cell, const QVariantMap &more) {
+        QVariantMap m = more;
+        m.insert("cmd", cmd);
+        m.insert("page", page);
+        m.insert("section", section);
+        m.insert("cell", cell);
+        sendJson(m);
+    };
+    phone.open(QUrl("ws://127.0.0.1:18887/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    sendJson({ { "cmd", "hello" }, { "pin", remote->pin() } });
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("layout").isEmpty() == false && lastOf("state").isEmpty() == false, 3000);
+
+    /* the layout: the range of each fader and dial, 0..1 */
+    const QVariantMap fader = layoutItem(faders, 0);
+    QCOMPARE_LEVEL(fader.value("min").toDouble(), 0.2);
+    QCOMPARE_LEVEL(fader.value("max").toDouble(), 0.8);
+    QCOMPARE(fader.value("invert").toBool(), false);
+    const QVariantMap dial = layoutItem(dials, 0);
+    QCOMPARE_LEVEL(dial.value("min").toDouble(), 0.2);
+    QCOMPARE_LEVEL(dial.value("max").toDouble(), 0.8);
+    QCOMPARE(dial.value("invert").toBool(), true);
+    QVERIFY(dial.value("encoder").toBool());
+    // no range: all of it; the dimmer of a scene says so
+    const QVariantMap dimmer = layoutItem(faders, 1);
+    QCOMPARE_LEVEL(dimmer.value("min").toDouble(), 0.0);
+    QCOMPARE_LEVEL(dimmer.value("max").toDouble(), 1.0);
+    QCOMPARE(dimmer.value("label").toString(), QString("Dimmer of Wash"));
+    // the state: the master at full, above the range (the top of the fader)
+    QCOMPARE_LEVEL(stateItem(faders, 0).value("level").toDouble(), 1.0);
+    QCOMPARE_LEVEL(stateItem(faders, 0).value("value").toDouble(), 1.0);
+
+    /* a level from the phone is a position on the fader */
+    command("level", faders, 0, { { "value", 0.5 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.5) < 0.001, 3000);
+    command("level", faders, 0, { { "value", 0.0 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.2) < 0.001, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(stateItem(faders, 0).value("value").toDouble() - 0.2) < 0.001, 3000);
+    QCOMPARE_LEVEL(stateItem(faders, 0).value("level").toDouble(), 0.0);
+    // the dial upside down on the same master: at the top
+    QCOMPARE_LEVEL(stateItem(dials, 0).value("level").toDouble(), 1.0);
+    QCOMPARE_LEVEL(stateItem(dials, 0).value("value").toDouble(), 0.2);
+    // the dimmer of the scene
+    command("level", faders, 1, { { "value", 0.25 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(surface->sceneDimmer(scene->id()) - 0.25) < 0.001, 3000);
+    QVERIFY(scene->stopped());
+
+    /* an encoder: notches of 10 % of the value, within the range (upside
+       down: a notch up is the value down) */
+    command("encoder", dials, 0, { { "notches", -3 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.5) < 0.001, 3000);
+    command("encoder", dials, 0, { { "notches", -10 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.8) < 0.001, 3000);
+    command("encoder", dials, 0, { { "notches", 1 } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.7) < 0.001, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(stateItem(dials, 0).value("value").toDouble() - 0.7) < 0.001, 3000);
+    QCOMPARE_LEVEL(stateItem(dials, 0).value("level").toDouble(), 1.0 / 6.0);
+
+    /* the Flash of the fader: the top of its travel, and back exactly to
+       what there was (out of its range) when let go, or when the phone goes */
+    zone->setMaster(0.95);
+    command("faderFlash", faders, 0, { { "down", true } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.8) < 0.001, 3000);
+    command("faderFlash", faders, 0, { { "down", false } });
+    QTRY_COMPARE_WITH_TIMEOUT(zone->master(), 0.95, 3000);
+    command("faderFlash", faders, 0, { { "down", true } });
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(zone->master() - 0.8) < 0.001, 3000);
+    phone.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(zone->master(), 0.95, 3000);
+
+    /* a Flash held while another show opens is let go of, not given back:
+       what it held (the dimmer of a scene) was of the show before */
+    phone.open(QUrl("ws://127.0.0.1:18887/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    sendJson({ { "cmd", "hello" }, { "pin", remote->pin() } });
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 1, 3000);
+    // (and a blackout flash held there goes off: it isn't of a show)
+    const QString buttons = surface->splitSection(page, dials, "h");
+    surface->updateSection(page, buttons, { { "type", "buttons" } });
+    surface->setItem(page, buttons, 0, { { "action", "blackout" }, { "mode", "flash" } });
+    command("faderFlash", faders, 1, { { "down", true } });
+    command("press", buttons, 0, {});
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(surface->sceneDimmer(scene->id()) - 1.0) < 0.001, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(core.blackout(), 3000);
+    const quint32 heldId = scene->id();
+    core.newShow();
+    QVERIFY(core.blackout() == false);
+    Scene *next = new Scene(doc);
+    QVERIFY(doc->addFunction(next, heldId));
+    command("faderFlash", faders, 1, { { "down", false } });
+    command("release", buttons, 0, {});
+    QTest::qWait(300);
+    QCOMPARE_LEVEL(surface->sceneDimmer(heldId), 1.0);
+    QCOMPARE_LEVEL(next->attributes().at(Function::Intensity).m_value, 1.0);
+    QVERIFY(core.blackout() == false);
+    phone.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 0, 3000);
+    remote->apply();
+    QVERIFY(remote->running() == false);
+}
+
+void Backend_Test::showFaderEdges()
+{
+    // the ends of the travel: an inverted scene fader stops where its value
+    // is lowest (its top) and shows it there; an encoder turned up starts a
+    // stopped scene at its minimum; the speed of a scene in no group from a
+    // mapping moves its faders; a dimmer lives while a control is on it
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    auto newScene = [&](int channel) {
+        Scene *s = new Scene(doc);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    Scene *a = newScene(0);
+    Scene *b = newScene(1);
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Edges", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 8 } });
+    auto targets = [](const QString &kind, quint32 fid) {
+        return QVariantList({ QVariantMap({ { "target", kind }, { "functionId", int(fid) } }) });
+    };
+
+    /* an inverted scene fader: stopped at the top, its lowest value; at the
+       bottom it plays at its maximum */
+    surface->setItem(page, sid, 0, { { "targets", targets("scene", a->id()) }, { "invert", true } });
+    QVariantMap fader = surface->item(page, sid, 0);
+    QCOMPARE_LEVEL(surface->level(fader), 1.0);
+    surface->setLevel(fader, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning(), 3000);
+    QCOMPARE_LEVEL(surface->value(fader), 1.0);
+    QCOMPARE_LEVEL(surface->level(fader), 0.0);
+    surface->setLevel(fader, 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+    QCOMPARE_LEVEL(surface->level(fader), 1.0);
+    // From 100 to 20: the top end is 20 %, and stops it at the very top
+    surface->setItem(page, sid, 0, { { "min", 100 }, { "max", 20 }, { "invert", false } });
+    fader = surface->item(page, sid, 0);
+    surface->setLevel(fader, 0.99);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning(), 3000);
+    QCOMPARE_LEVEL(surface->value(fader), 0.208);
+    surface->setLevel(fader, 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+    QCOMPARE_LEVEL(surface->level(fader), 1.0);
+
+    /* an encoder from 20 %: turned up, a stopped scene starts at 20 %;
+       turned down to 20 % (the bottom of its travel), it stops */
+    surface->setItem(page, sid, 1, { { "targets", targets("scene", b->id()) }, { "min", 20 }, { "step", 10 } });
+    const QVariantMap wheel = surface->item(page, sid, 1);
+    surface->stepLevel(wheel, 1);
+    QVERIFY(b->stopped() == false);
+    QCOMPARE_LEVEL(surface->value(wheel), 0.2);
+    surface->stepLevel(wheel, 2);
+    QCOMPARE_LEVEL(surface->value(wheel), 0.4);
+    surface->stepLevel(wheel, -1);
+    QCOMPARE_LEVEL(surface->value(wheel), 0.3);
+    QVERIFY(b->stopped() == false);
+    surface->stepLevel(wheel, -1);
+    QVERIFY(b->stopped());
+    QTRY_VERIFY_WITH_TIMEOUT(b->isRunning() == false, 3000);
+    // (the same upside down: a notch up the travel is down the value)
+    surface->setItem(page, sid, 1, { { "invert", true } });
+    surface->stepLevel(surface->item(page, sid, 1), 1);
+    QVERIFY(b->stopped());
+    surface->stepLevel(surface->item(page, sid, 1), -1);
+    QVERIFY(b->stopped() == false);
+    QCOMPARE_LEVEL(surface->value(surface->item(page, sid, 1)), 0.2);
+    surface->setLevel(surface->item(page, sid, 1), 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(b->isRunning() == false, 3000);
+    // From 50 to 50: up it starts at 50 %, down it stops
+    surface->setItem(page, sid, 1, { { "min", 50 }, { "max", 50 }, { "invert", false } });
+    surface->stepLevel(surface->item(page, sid, 1), 1);
+    QVERIFY(b->stopped() == false);
+    QCOMPARE_LEVEL(surface->value(surface->item(page, sid, 1)), 0.5);
+    surface->stepLevel(surface->item(page, sid, 1), -1);
+    QVERIFY(b->stopped());
+    QTRY_VERIFY_WITH_TIMEOUT(b->isRunning() == false, 3000);
+
+    /* the speed of a scene in no group from a mapping: its faders read it again */
+    surface->setItem(page, sid, 2, { { "targets", targets("sceneSpeed", a->id()) } });
+    ControlMapper *mapper = core.mapping();
+    QVERIFY(mapper->addMapping({ { "target", "sceneSpeed" }, { "functionId", int(a->id()) },
+                                 { "source", "midi" }, { "channel", 9 } }) > 0);
+    const int revision = surface->revision();
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 255);
+    QCOMPARE_LEVEL(a->speedFactor(), 10.0);
+    QVERIFY(surface->revision() > revision);
+    QCOMPARE_LEVEL(surface->level(surface->item(page, sid, 2)), 1.0);
+    a->setSpeedFactor(1.0);
+
+    /* a dimmer lives while a fader or dial is on it: deleted, or on another
+       scene, its scene is back to full (nothing would show why it is dim) */
+    surface->setItem(page, sid, 3, { { "targets", targets("sceneDimmer", a->id()) } });
+    surface->setItem(page, sid, 4, { { "targets", targets("sceneDimmer", a->id()) } });
+    surface->setLevel(surface->item(page, sid, 3), 0.5);
+    QCOMPARE_LEVEL(surface->sceneDimmer(a->id()), 0.5);
+    surface->clearItem(page, sid, 3);
+    // (the other one is still on it)
+    QCOMPARE_LEVEL(surface->sceneDimmer(a->id()), 0.5);
+    QCOMPARE_LEVEL(a->attributes().at(Function::Intensity).m_value, 0.5);
+    surface->setItem(page, sid, 4, { { "targets", targets("sceneDimmer", b->id()) } });
+    QCOMPARE_LEVEL(surface->sceneDimmer(a->id()), 1.0);
+    QCOMPARE_LEVEL(a->attributes().at(Function::Intensity).m_value, 1.0);
+    surface->setLevel(surface->item(page, sid, 4), 0.3);
+    QCOMPARE_LEVEL(surface->sceneDimmer(b->id()), 0.3);
+    // the section made buttons: no dimmer on it any more
+    surface->updateSection(page, sid, { { "type", "buttons" } });
+    QCOMPARE_LEVEL(surface->sceneDimmer(b->id()), 1.0);
+    QCOMPARE_LEVEL(b->attributes().at(Function::Intensity).m_value, 1.0);
+    // a dimmer set with no control on it lasts until the next edit
+    surface->setSceneDimmer(a->id(), 0.4);
+    surface->removePage(page);
+    QCOMPARE_LEVEL(surface->sceneDimmer(a->id()), 1.0);
+    QCOMPARE_LEVEL(a->attributes().at(Function::Intensity).m_value, 1.0);
+}
+
+#undef QCOMPARE_LEVEL
 
 void Backend_Test::moveSpeedFollowsPatchEdits()
 {
@@ -20686,6 +21961,13 @@ QStringList showSummary(DtcCore &core)
         out << QString("function %1 ").arg(id) + persistJson(core.effects()->info(id));
         out << QString("  info %1 ").arg(id) + persistJson(core.functionInfo(id));
         out << QString("  palettes ") + persistJson(core.palettes()->scenePalettes(id));
+        // the dimmer of the SHOW: the base of its intensity (of each track
+        // of a super scene)
+        QStringList bases;
+        const QList<Attribute> attributes = f->attributes();
+        for (int i = 0; i < attributes.count() && (i == 0 || f->type() == Function::ShowType); i++)
+            bases << QString::number(attributes.at(i).m_value);
+        out << QString("  dimmer %1 base %2").arg(core.surface()->sceneDimmer(id)).arg(bases.join(","));
         if (f->type() == Function::SequenceType || f->type() == Function::ChaserType)
             out << QString("  steps ") + persistJson(core.effects()->steps(id));
         if (f->type() == Function::ShowType)
@@ -20932,6 +22214,17 @@ QStringList showProblems(DtcCore &core)
         const QVariantMap items = props.value("items").toMap();
         for (auto it = items.cbegin(); it != items.cend(); ++it)
         {
+            // the range of a fader: whole percents
+            for (const char *key : { "min", "max" })
+            {
+                if (it.value().toMap().contains(key) == false)
+                    continue;
+                const QVariant v = it.value().toMap().value(key);
+                bool number = false;
+                const double d = v.toDouble(&number);
+                if (number == false || v.typeId() == QMetaType::QString || qIsNaN(d) || d < 0 || d > 100 || d != qRound(d))
+                    problems << QString("SHOW item %1/%2 %3 %4").arg(id, it.key(), key, v.toString());
+            }
             QVariantList targets = it.value().toMap().value("targets").toList();
             targets.prepend(it.value());
             for (const QVariant &t : targets)
@@ -20947,6 +22240,44 @@ QStringList showProblems(DtcCore &core)
     };
     for (const QVariant &page : core.surface()->pages())
         walk(page.toMap().value("root").toMap());
+
+    // the dimmers of the scenes, as the SHOW saves them: on functions that
+    // are there, below 1
+    QBuffer surfaceXml;
+    surfaceXml.open(QIODevice::WriteOnly);
+    QXmlStreamWriter surfaceWriter(&surfaceXml);
+    core.surface()->saveXML(&surfaceWriter);
+    surfaceXml.close();
+    QXmlStreamReader surfaceReader(surfaceXml.data());
+    while (surfaceReader.atEnd() == false)
+    {
+        if (surfaceReader.readNext() != QXmlStreamReader::StartElement || surfaceReader.name() != QLatin1String("SceneDimmer"))
+            continue;
+        const quint32 fid = surfaceReader.attributes().value("Function").toUInt();
+        const double value = surfaceReader.attributes().value("Value").toDouble();
+        if (doc->function(fid) == nullptr)
+            problems << QString("SHOW dimmer on missing function %1").arg(fid);
+        if (qIsNaN(value) || value < 0 || value >= 1)
+            problems << QString("SHOW dimmer of %1 at %2").arg(fid).arg(value);
+    }
+    // and the base of the intensity of each function is its dimmer (of each
+    // track of a super scene, and of its static values)
+    QHash<quint32, qreal> staticDimmers;
+    for (Function *f : doc->functionsByType(Function::ShowType))
+        staticDimmers.insert(qobject_cast<Show *>(f)->staticScene(), core.surface()->sceneDimmer(f->id()));
+    for (Function *f : doc->functions())
+    {
+        qreal dimmer = core.surface()->sceneDimmer(f->id());
+        if (dimmer < 0.0 || dimmer > 1.0 || qIsNaN(dimmer))
+            problems << QString("function %1 dimmer %2").arg(f->id()).arg(dimmer);
+        if (dimmer >= 1.0 && staticDimmers.contains(f->id()))
+            dimmer = staticDimmers.value(f->id());
+        const QList<Attribute> attributes = f->attributes();
+        for (int i = 0; i < attributes.count() && (i == 0 || f->type() == Function::ShowType); i++)
+            if (qAbs(attributes.at(i).m_value - dimmer) > 0.0001)
+                problems << QString("function %1 intensity %2 at %3, its dimmer %4").arg(f->id()).arg(i)
+                                .arg(attributes.at(i).m_value).arg(dimmer);
+    }
 
     // selections and fixture numbers
     QSet<int> selectionIds;
@@ -21317,10 +22648,18 @@ void buildRichShow(DtcCore &core)
     const QString faders = surface->splitSection(page, buttons, "h");
     surface->updateSection(page, faders, { { "type", "faders" }, { "cols", 3 }, { "title", "Masters" } });
     surface->setItem(page, faders, 0, { { "target", "grandMaster" } });
-    surface->setItem(page, faders, 1, { { "label", "Mezcla" }, { "targets", QVariantList({
+    surface->setItem(page, faders, 1, { { "label", "Mezcla" }, { "min", 10 }, { "max", 90 }, { "invert", true }, { "targets", QVariantList({
         QVariantMap({ { "target", "group" }, { "zoneId", int(fxZone->id()) } }),
         QVariantMap({ { "target", "scene" }, { "functionId", blue } }),
         QVariantMap({ { "target", "moveSpeed" }, { "groupId", -1 } }) }) } });
+    // the dimmers of a scene (from its fader, on 60 % of it) and of the super
+    // scene (on the same fader: a dimmer lives while a control is on it)
+    surface->setItem(page, faders, 2, { { "label", "Azul" }, { "min", 0 }, { "max", 60 }, { "targets", QVariantList({
+        QVariantMap({ { "target", "sceneDimmer" }, { "functionId", blue } }),
+        QVariantMap({ { "target", "sceneDimmer" }, { "functionId", super } }) }) } });
+    surface->setLevel(surface->item(page, faders, 2), 1.0);
+    QCOMPARE(surface->sceneDimmer(quint32(blue)), 0.6);
+    surface->setSceneDimmer(quint32(super), 0.5);
     const QString playbacks = surface->splitSection(page, faders, "v");
     surface->updateSection(page, playbacks, { { "type", "playbacks" }, { "playbackPage", 0 }, { "cols", 4 }, { "showFlash", false } });
     surface->setSplitRatio(page, rootSection(surface, page), 0.62);
@@ -21885,8 +23224,12 @@ void Backend_Test::persistenceBadReferences()
         "<Section ID=\"s2\" type=\"buttons\" cols=\"4\" rows=\"2\">"
         "<Item Cell=\"0\" action=\"scene\" functionId=\"55\"/><Item Cell=\"1\" action=\"scene\" functionId=\"0\"/>"
         "<Item Cell=\"2\" action=\"map\" map=\"{&quot;target&quot;:&quot;playbackGoTo&quot;,&quot;functionId&quot;:55,&quot;cue&quot;:1}\"/></Section>"
-        "<Section ID=\"s3\" type=\"faders\" cols=\"4\"><Item Cell=\"0\"><Target target=\"scene\" functionId=\"55\"/>"
-        "<Target target=\"scene\" functionId=\"0\"/></Item></Section></Split></Page></Surface>\n"
+        "<Section ID=\"s3\" type=\"faders\" cols=\"4\"><Item Cell=\"0\" min=\"abc\" max=\"150\"><Target target=\"scene\" functionId=\"55\"/>"
+        "<Target target=\"scene\" functionId=\"0\"/></Item><Item Cell=\"1\"><Target target=\"sceneDimmer\" functionId=\"0\"/>"
+        "<Target target=\"sceneDimmer\" functionId=\"2\"/><Target target=\"sceneDimmer\" functionId=\"3\"/>"
+        "<Target target=\"sceneDimmer\" functionId=\"55\"/></Item></Section></Split></Page>"
+        "<SceneDimmer Function=\"55\" Value=\"0.5\"/><SceneDimmer Function=\"0\" Value=\"0.4\"/><SceneDimmer Function=\"abc\" Value=\"0.3\"/>"
+        "<SceneDimmer Function=\"2\" Value=\"abc\"/><SceneDimmer Function=\"3\" Value=\"-2\"/></Surface>\n"
         "  <Mappings><Mapping id=\"1\" source=\"key\" key=\"a\" target=\"scene\" functionId=\"55\"/>"
         "<Mapping id=\"2\" source=\"key\" key=\"b\" target=\"scene\" functionId=\"0\"/>"
         "<Mapping id=\"2\" source=\"key\" key=\"c\" target=\"playbackGo\" functionId=\"55\" slot=\"3\"/>"
@@ -21967,6 +23310,20 @@ void Backend_Test::persistenceBadReferences()
     QVERIFY(core.patch()->fixtureNumber(1) > 0 && core.patch()->fixtureNumber(1) != 5);
     // mappings: four, each ID once; the ones on a function that isn't there drive nothing
     QCOMPARE(core.mapping()->mappings().count(), 4);
+    // the dimmers of the scenes that are there, in 0..1 (no number: none)
+    QCOMPARE(core.surface()->sceneDimmer(0), 0.4);
+    QCOMPARE(doc->function(0)->attributes().at(Function::Intensity).m_value, 0.4);
+    QCOMPARE(core.surface()->sceneDimmer(2), 1.0);
+    QCOMPARE(core.surface()->sceneDimmer(3), 0.0);
+    QCOMPARE(doc->function(3)->attributes().at(Function::Intensity).m_value, 0.0);
+    // (a dimmer no control is on goes: nothing would show why the scene is dim)
+    QCOMPARE(core.surface()->sceneDimmer(1), 1.0);
+    QCOMPARE(doc->function(1)->attributes().at(Function::Intensity).m_value, 1.0);
+    QCOMPARE(core.surface()->sceneDimmer(55), 1.0);
+    // the range of a fader: what is no number goes, the rest into 0-100 %
+    const QVariantMap ranged = core.surface()->item(0, "s3", 0);
+    QVERIFY(ranged.contains("min") == false);
+    QCOMPARE(ranged.value("max"), QVariant(100));
 
     // new fixtures, functions and palettes get the free IDs: nothing that
     // was saved goes onto them
@@ -21978,6 +23335,8 @@ void Backend_Test::persistenceBadReferences()
         QVERIFY(doc->addFunction(scene));
     }
     QVERIFY(core.zones()->zone(0)->functionIDs().contains(55) == false);
+    QCOMPARE(core.surface()->sceneDimmer(55), 1.0);
+    QCOMPARE(doc->function(55)->attributes().at(Function::Intensity).m_value, 1.0);
     QCOMPARE(core.playbacks()->functionAt(0, 1), -1);
     QCOMPARE(cuelist->cues().first().values.count(), 2);
     QCOMPARE(qobject_cast<FXScene *>(doc->function(2))->fixtures(), QList<quint32>({ 0 }));

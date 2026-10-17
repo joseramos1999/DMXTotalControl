@@ -270,12 +270,22 @@ Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con e
 - [ ] Publicar la primera versión (etiqueta `v0.13.0`) cuando la CI esté en verde en GitHub.
 - [ ] Firmar el instalador para que SmartScreen no avise (hace falta un certificado de firma de código).
 
-## v0.14 — Interfaz, temas, idiomas y tutorial (pendiente)
+## v0.14 — Interfaz, temas, idiomas y tutorial (hecho)
 
-- [ ] **Rediseño de la interfaz**: revisar página a página el aspecto, la jerarquía y los tamaños con un sistema de diseño común, también en pantallas táctiles y portátiles pequeños.
-- [ ] **Temas**: el oscuro actual, uno claro, uno de alto contraste y uno atenuado para cabinas a oscuras, elegibles en Opciones y aplicados también al remoto.
-- [ ] **Más idiomas**: revisar el inglés (los textos originales) y añadir otros (portugués, francés, italiano, alemán…) al selector de idioma, con una guía para que colaboren traductores (Qt Linguist).
-- [ ] **Tutorial completo del software**: primeros pasos guiados dentro del programa (patch → programar → grabar → directo y playbacks), manual completo página a página con capturas (hay algunas en `docs/screenshots`), shows de ejemplo y ayuda contextual (F1) en cada página.
+- [x] **Pulir la interfaz** (decisión del usuario: pulir el estilo actual, sin rediseño): los colores salen de los tokens del tema en todas las páginas, y se corrigió un fallo de colores con transparencia escritos al revés. Revisión página a página a 1366×768 y al ancho mínimo (1100 px): la barra superior se compacta (el nombre del show se recorta, «Guardar como…» queda en icono y gana Ctrl+Mayús+S, «N en marcha» se queda en el número y, en lo más estrecho, Blackout y Parar todo quedan en icono), las cabeceras de las páginas recortan su subtítulo para que los botones quepan siempre, y Patch compacta su barra y su lista. Los campos de nombre y nota de las cues muestran el principio del texto.
+- [x] **Temas**: Oscuro, Claro, Alto contraste y Noche (atenuado, en rojo para cabinas a oscuras), en Opciones › General; cambian al momento y el remoto del móvil los sigue. **Tamaño de la interfaz** de 80 % a 150 % (al arrancar).
+- [x] **Inglés revisado**: 49 textos originales reescritos para que sean claros y coherentes.
+- [x] **Más idiomas**: portugués (de Brasil), francés, italiano y alemán, completos (1980 textos cada uno, con un glosario común de términos de iluminación), en el selector de idioma, en el instalador (que ya no pregunta si el idioma de Windows es uno de los suyos) y en el remoto del móvil. Revisados en pantalla a 1366×768. El catálogo español pasa a `dtc_es.ts` para que lo usen también las variantes de América. Falta que los revise un hablante nativo de cada idioma.
+- [x] **Manual completo** (`docs/manual`, 14 páginas en español con capturas de los shows de ejemplo, sin datos personales), integrado en el programa: **F12** o el botón **«?»** lo abren en la página en la que estás (F1–F10 ya eran las páginas), con enlaces, historial e índice. En otros idiomas avisa de que está en español.
+- [x] **Guía de primeros pasos**: una tarjeta con cinco pasos (fixtures, un look, una escena, Directo y playbacks) que lleva a cada página y abre un show de prácticas. Sale la primera vez que se abre el programa y desde Opciones › Ayuda.
+- [x] **Shows de ejemplo** en el menú ▾ junto a Abrir: «Primeros pasos», «Bolo pequeño», «Concierto con cabezas móviles» y «Sala con playbacks». Los escribe el propio programa (prueba `exampleShows`), así que siempre están en su formato actual.
+- [x] Las capturas de pantalla de desarrollo (`--grab`) ya no tocan los ajustes del usuario.
+
+## v0.14.1 — Faders del SHOW (hecho)
+
+- [x] **Rango en cada fader y dial** («De» … «a», de 0 a 100 %, e «Invertir», como en los mapeos): el recorrido cubre solo esa parte de lo que mueve (la velocidad de una escena de 20 a 80 %, un dimmer de 0 a 60 %…), en todos sus elementos. El texto muestra el valor real; un valor que otro control deja fuera del rango se ve en el extremo. Un fader que lanza una escena (o un playback) la para en el extremo donde el valor es más bajo (abajo; arriba si está invertido), aunque «De» no sea 0. El Flash va arriba del todo de su recorrido y al soltar devuelve exactamente lo que había. Las ruedas incrementales avanzan en % del valor dentro del rango, y al girarlas hacia arriba arrancan la escena parada en «De». Lo siguen el remoto del móvil y los mapeos MIDI de faders del SHOW.
+- [x] **Dimmer de una escena (sin lanzarla)**: un nuevo destino de fader que atenúa la escena la lance quien la lance (su grupo, un playback, un botón, una super escena, un chase) y nunca la lanza ni la para; se multiplica con el master del grupo, el fader del playback o el que la lanza. Es el valor base de la intensidad de la escena (en las super escenas, de cada pista y de sus valores estáticos). Se guarda con el show y dura mientras haya un fader o dial de dimmer en esa escena. En el motor, cambiar el valor base de un atributo con overrides ya recalcula el valor final.
+- [x] De paso: la velocidad de una escena sin grupo se puede mover desde un mapeo MIDI (antes no hacía nada), y los faders del SHOW siguen los cambios de velocidad hechos desde otros sitios; Alt+clic sobre la velocidad de una escena crea un fader propio del SHOW; al abrir otro show, lo que el móvil tenía pulsado se suelta (un flash de blackout se apaga) sin escribir nada en el show nuevo.
 
 ## v0.15 — Hardware y bibliotecas (pendiente)
 
@@ -284,6 +294,7 @@ Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con e
 
 ## Más adelante
 
+- [ ] El manual en los otros idiomas del programa (ahora solo en español; el panel de ayuda lo avisa).
 - [ ] Visualizador 3D [la vista 3D de la interfaz original, `qmlui/`].
 - [ ] Mappings de **vídeo** sobre el plano 2D (el motor solo reproduce vídeo en pantalla, no lo lleva a los fixtures).
 - [ ] Elegir la entrada de audio de Pulse en Opciones (ahora usa la entrada por defecto del sistema).

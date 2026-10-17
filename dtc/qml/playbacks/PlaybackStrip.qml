@@ -80,7 +80,7 @@ Rectangle {
         return strip.info.isCuelist && strip.running ? Core.playbacks.functionStatus(strip.info.functionId).progress
                                                      : (strip.running ? 1 : 0)
     }
-    readonly property color tint: strip.info.color ? strip.info.color : Theme.functionColor(strip.info.type || "")
+    readonly property color tint: strip.info.color ? Theme.category(strip.info.color) : Theme.functionColor(strip.info.type || "")
     /** Lock of the programming screens: no recording or changing the playbacks */
     readonly property bool programLocked: Core.settings.lockedScreens.indexOf("program") >= 0
     readonly property bool hasProgrammer: Core.programmer.hasValues || Core.programmer.fxLayers.length > 0
@@ -323,7 +323,7 @@ Rectangle {
                         radius: 9
                         color: releaseButton.down ? Qt.darker(Theme.danger, 1.2) : releaseButton.hovered ? Theme.danger : Qt.rgba(0, 0, 0, 0.3)
                     }
-                    contentItem: IconLabel { icon: Theme.iconClose; size: 9; color: "white" }
+                    contentItem: IconLabel { icon: Theme.iconClose; size: 9; color: releaseButton.hovered ? Theme.textOn(Theme.danger) : Theme.textOnShade }
                     onClicked: Core.playbacks.release(strip.page, strip.slot)
                     ToolTip.text: qsTr("Release")
                     ToolTip.visible: hovered
@@ -581,7 +581,7 @@ Rectangle {
                 text: strip.empty ? qsTr("New cuelist")
                     : strip.info.isCuelist ? qsTr("Record cue %1").arg(Core.cuelists.nextNumber(strip.info.functionId, -1))
                     : qsTr("Holds a scene")
-                color: parent.parent.takes ? "white" : Theme.textDim
+                color: parent.parent.takes ? Theme.textOn(Theme.danger) : Theme.textDim
                 font.pixelSize: Theme.fontSmall
                 font.weight: Font.Bold
             }

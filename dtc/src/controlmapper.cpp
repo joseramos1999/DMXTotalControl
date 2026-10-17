@@ -89,12 +89,16 @@ static bool isFunctionTarget(const QString &target)
 #define ALL_GROUPS -1
 #define DELETED_GROUP -2
 
-/** The range of a fader mapping, 0..1. From above To is an inverted range,
- *  as with Invert (absolute faders, encoders and the feedback alike) */
-static void rangeOf(const QVariantMap &m, qreal &min, qreal &max, bool &invert)
+void ControlMapper::rangeOf(const QVariantMap &m, qreal &min, qreal &max, bool &invert)
 {
-    min = qBound(0, m.value("min").toInt(), 100) / 100.0;
-    max = qBound(0, m.value("max").toInt(), 100) / 100.0;
+    // (missing or not a number: the whole range)
+    auto percent = [&m](const char *key, int fallback) {
+        bool ok = false;
+        const int value = m.value(key).toInt(&ok);
+        return m.contains(key) && ok ? qBound(0, value, 100) : fallback;
+    };
+    min = percent("min", 0) / 100.0;
+    max = percent("max", 100) / 100.0;
     invert = m.value("invert").toBool();
     if (min > max)
     {
@@ -1175,7 +1179,7 @@ QString ControlMapper::describeTarget(const QVariantMap &m) const
             else if (fid >= 0)
             {
                 // (it drives that function only: nothing now)
-                detail = tr("deleted function");
+                detail = tr("deleted scene");
             }
             else if (slot < 0)
             {
@@ -1920,7 +1924,13 @@ qreal ControlMapper::faderValue(const QVariantMap &m) const
     {
         Zone *owner = zoneOwning(fid);
         if (owner == nullptr)
-            return target == "sceneDimmer" ? 1.0 : 0.5;
+        {
+            // a scene in no group: its live speed, as the SHOW faders give it
+            const Function *f = m_core->doc()->function(fid);
+            if (target == "sceneDimmer" || f == nullptr)
+                return target == "sceneDimmer" ? 1.0 : 0.5;
+            return qBound(0.0, (std::log10(f->speedFactor()) + 1.0) / 2.0, 1.0);
+        }
         QVariantMap opts = owner->options(fid);
         if (target == "sceneDimmer")
             return opts.value("dimmer", 1.0).toDouble();
@@ -1971,6 +1981,16 @@ void ControlMapper::applyFader(const QVariantMap &m, qreal value)
                 owner->setOption(fid, "dimmer", value);
             else
                 owner->setOption(fid, "speed", std::pow(10.0, value * 2.0 - 1.0));
+        }
+        // a scene in no group: its live speed (not saved, as from the SHOW)
+        else if (target == "sceneSpeed")
+        {
+            if (Function *f = m_core->doc()->function(fid))
+            {
+                f->setSpeedFactor(std::pow(10.0, value * 2.0 - 1.0));
+                // (the SHOW faders on it follow: a speed has no signal)
+                m_core->surface()->refresh();
+            }
         }
     }
     else if (target == "bpm")

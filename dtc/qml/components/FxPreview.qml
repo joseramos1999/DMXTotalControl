@@ -28,6 +28,9 @@ import DMXTotalControl.Backend
  */
 Canvas {
     id: preview
+    // the colours of the theme
+    readonly property string themeName: Theme.name
+    onThemeNameChanged: requestPaint()
 
     property var fx: ({})
     /** function(cyclePos) -> [{ value } or { x, y }] */
@@ -37,7 +40,7 @@ Canvas {
     property real cyclePos: 0
     property var items: []
 
-    readonly property var colours: ["#ae3ec9", "#3d8bfd", "#30a46c", "#f5a524", "#e5484d", "#17a2b8", "#d6336c", "#e7e9ef"]
+    readonly property var colours: ["#ae3ec9", "#3d8bfd", "#30a46c", "#f5a524", "#e5484d", "#17a2b8", "#d6336c", Theme.text]
 
     Timer {
         interval: 40

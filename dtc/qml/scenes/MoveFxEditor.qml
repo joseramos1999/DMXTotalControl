@@ -62,6 +62,9 @@ RowLayout {
 
         Canvas {
             id: preview
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             anchors { fill: parent; margins: 14 }
             onPaint: {
                 let ctx = getContext("2d")
@@ -103,14 +106,14 @@ RowLayout {
                     let px = running && it.pan >= 0 ? it.pan : it.startX
                     let py = running && it.tilt >= 0 ? it.tilt : it.startY
                     let cx = ox + px * size, cy = oy + py * size
-                    ctx.fillStyle = running ? (i === 0 ? "#ffffff" : Theme.functionColor("EFX")) : Theme.surfaceRaised
-                    ctx.strokeStyle = i === 0 ? Theme.functionColor("EFX") : "#ffffff"
+                    ctx.fillStyle = running ? (i === 0 ? Theme.text : Theme.functionColor("EFX")) : Theme.surfaceRaised
+                    ctx.strokeStyle = i === 0 ? Theme.functionColor("EFX") : Theme.text
                     ctx.lineWidth = 2
                     ctx.beginPath()
                     ctx.arc(cx, cy, 10, 0, 2 * Math.PI)
                     ctx.fill()
                     ctx.stroke()
-                    ctx.fillStyle = running && i === 0 ? "#111111" : "#ffffff"
+                    ctx.fillStyle = !running ? Theme.text : Theme.textOn(i === 0 ? Theme.text : Theme.functionColor("EFX"))
                     ctx.fillText(String(it.index), cx, cy)
                 }
             }

@@ -165,7 +165,7 @@ Item {
         Labeled {
             visible: options.showAll
             label: qsTr("GO on the beat")
-            tip: qsTr("BeatGO and Pulse give a GO on each division, like the button of a console")
+            tip: qsTr("BeatGO and Pulse give a GO on each division, like the GO button on a console")
             Row {
                 spacing: 0
                 Repeater {

@@ -36,6 +36,13 @@ Item {
     // "list", "grid" (channels of a universe) or "plan"
     property string view: "list"
     readonly property bool planView: view === "plan"
+    /** A narrow page (a small screen): the list without the fixture column
+        (the type is in the headers of the groups) */
+    readonly property bool compact: width < 1200
+    /** The toolbar with its labels needs this much (measured while it shows
+        them): when it doesn't fit (a small screen, a longer language), icons alone */
+    property real toolbarFullWidth: 0
+    readonly property bool toolbarCompact: compact || toolbarFullWidth > toolbarRow.width
 
     readonly property var fixtures: Core.patch.fixtures
 
@@ -133,20 +140,27 @@ Item {
             Layout.fillWidth: true
             spacing: 10
 
+            // the subtitle shortens: the buttons always fit
             Column {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 90
+                Layout.preferredWidth: 160
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Patch")
                     color: Theme.text
                     font.pixelSize: Theme.fontTitle
                     font.weight: Font.Bold
                 }
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("%n fixture(s) patched", "", Core.patch.fixturesCount)
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
                 }
             }
-            Item { Layout.fillWidth: true }
 
             // list / grid / plan
             Row {
@@ -210,8 +224,10 @@ Item {
             border.color: Theme.border
 
             RowLayout {
+                id: toolbarRow
                 anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                 spacing: 6
+                onImplicitWidthChanged: if (!page.toolbarCompact) page.toolbarFullWidth = implicitWidth
 
                 // short labels, as in Program: with "Stop identify" the bar
                 // didn't fit at 1440 px in Spanish
@@ -233,7 +249,7 @@ Item {
                     rightPadding: 6
                 }
                 AppButton {
-                    text: page.identifying ? qsTr("Stop identify") : qsTr("Identify")
+                    text: page.toolbarCompact ? "" : page.identifying ? qsTr("Stop identifying") : qsTr("Identify")
                     iconGlyph: Theme.iconLocate
                     highlighted: page.identifying
                     accentColor: Theme.warning
@@ -260,7 +276,7 @@ Item {
                     onClicked: page.invertSelection("tilt")
                 }
                 AppButton {
-                    text: qsTr("Limits")
+                    text: page.toolbarCompact ? "" : qsTr("Limits")
                     iconGlyph: Theme.iconRuler
                     enabled: page.selectedIds.length > 0
                     ToolTip.text: qsTr("Dimmer, pan and tilt limits, inverted or swapped axes, and the options of each channel")
@@ -270,8 +286,9 @@ Item {
                 }
                 Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 24; color: Theme.border }
                 AppButton {
-                    text: qsTr("Edit")
+                    text: page.toolbarCompact ? "" : qsTr("Edit")
                     iconGlyph: Theme.iconPen
+                    ToolTip.text: qsTr("Edit"); ToolTip.visible: page.toolbarCompact && hovered
                     enabled: page.selectedIds.length === 1
                     onClicked: editDialog.edit(page.selectedFixtures()[0])
                 }
@@ -302,16 +319,18 @@ Item {
                     }
                 }
                 AppButton {
-                    text: qsTr("Create group")
+                    text: page.toolbarCompact ? "" : qsTr("Create group")
                     iconGlyph: Theme.iconSelect
+                    ToolTip.text: qsTr("Create group"); ToolTip.visible: page.toolbarCompact && hovered
                     enabled: page.selectedIds.length > 0
                     onClicked: prompt.ask(qsTr("New fixture group"), "", (name) => Core.patch.createGroup(name, page.selectedIds))
                 }
                 AppButton {
-                    text: qsTr("Delete")
+                    text: page.toolbarCompact ? "" : qsTr("Delete")
                     iconGlyph: Theme.iconTrash
                     accentColor: Theme.danger
                     enabled: page.selectedIds.length > 0
+                    ToolTip.text: qsTr("Delete"); ToolTip.visible: page.toolbarCompact && hovered
                     onClicked: deleteConfirm.open()
                 }
             }
@@ -473,11 +492,11 @@ Item {
                             spacing: 12
                             Item { Layout.preferredWidth: 20 }
                             Text { Layout.preferredWidth: 34; text: "#"; color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
-                            Text { Layout.preferredWidth: 220; text: qsTr("NAME"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
+                            Text { Layout.preferredWidth: page.compact ? 140 : 220; text: qsTr("NAME"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
                             Text { Layout.preferredWidth: 90; text: qsTr("ADDRESS"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
                             Text { Layout.preferredWidth: 60; text: qsTr("CH"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
-                            Text { Layout.fillWidth: true; text: qsTr("FIXTURE"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
-                            Text { Layout.preferredWidth: 160; text: qsTr("MODE"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
+                            Text { Layout.fillWidth: true; visible: !page.compact; elide: Text.ElideRight; text: qsTr("FIXTURE"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
+                            Text { Layout.preferredWidth: page.compact ? 120 : 160; text: qsTr("MODE"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
                             Text { Layout.preferredWidth: 76; text: qsTr("INVERT"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
                             Item { Layout.preferredWidth: 32 }
                         }
@@ -565,7 +584,7 @@ Item {
                                             font.family: Theme.monoFamily
                                             font.weight: Font.Bold
                                         }
-                                        Text { Layout.preferredWidth: 220; text: parent.parent.fx.name; color: Theme.text; elide: Text.ElideRight }
+                                        Text { Layout.preferredWidth: page.compact ? 140 : 220; text: parent.parent.fx.name; color: Theme.text; elide: Text.ElideRight }
                                         Text {
                                             Layout.preferredWidth: 90
                                             text: (parent.parent.fx.universe + 1) + " . " + parent.parent.fx.address
@@ -575,11 +594,12 @@ Item {
                                         Text { Layout.preferredWidth: 60; text: parent.parent.fx.channels; color: Theme.textDim; font.family: Theme.monoFamily }
                                         Text {
                                             Layout.fillWidth: true
+                                            visible: !page.compact
                                             text: parent.parent.fx.manufacturer.length ? parent.parent.fx.manufacturer + " — " + parent.parent.fx.model : parent.parent.fx.type
                                             color: Theme.textDim
                                             elide: Text.ElideRight
                                         }
-                                        Text { Layout.preferredWidth: 160; text: parent.parent.fx.mode; color: Theme.textDim; elide: Text.ElideRight }
+                                        Text { Layout.preferredWidth: page.compact ? 120 : 160; text: parent.parent.fx.mode; color: Theme.textDim; elide: Text.ElideRight }
                                         Row {
                                             Layout.preferredWidth: 76
                                             spacing: 4
@@ -744,7 +764,7 @@ Item {
                             iconGlyph: Theme.iconCircle
                             implicitHeight: 28
                             enabled: page.selectedIds.length > 0
-                            ToolTip.text: qsTr("How the selected fixtures look in the plan")
+                            ToolTip.text: qsTr("How the selected fixtures look on the plan")
                             ToolTip.visible: hovered
                             ToolTip.delay: 500
                             onClicked: lookMenu.popup()

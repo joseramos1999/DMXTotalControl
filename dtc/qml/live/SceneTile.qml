@@ -103,7 +103,7 @@ Rectangle {
             text: "P" + tile.priority
             font.pixelSize: 10
             font.weight: Font.Bold
-            color: tile.priority > 5 ? "#111111" : Theme.textDim
+            color: tile.priority > 5 ? Theme.textOn(Theme.warning) : Theme.textDim
         }
     }
 

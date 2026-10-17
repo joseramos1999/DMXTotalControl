@@ -93,13 +93,15 @@ Popup {
             x: range.leftPadding + range.first.visualPosition * (range.availableWidth - width)
             y: range.topPadding + range.availableHeight / 2 - height / 2
             implicitWidth: 16; implicitHeight: 16; radius: 8
-            color: range.first.pressed ? Theme.accent : "#e7e9ef"
+            color: range.first.pressed ? Theme.accent : Theme.knob
+            border.color: Theme.knobEdge
         }
         second.handle: Rectangle {
             x: range.leftPadding + range.second.visualPosition * (range.availableWidth - width)
             y: range.topPadding + range.availableHeight / 2 - height / 2
             implicitWidth: 16; implicitHeight: 16; radius: 8
-            color: range.second.pressed ? Theme.accent : "#e7e9ef"
+            color: range.second.pressed ? Theme.accent : Theme.knob
+            border.color: Theme.knobEdge
         }
     }
     component Caption: Text {
@@ -202,7 +204,7 @@ Popup {
             Layout.fillWidth: true
             visible: !dialog.single
             wrapMode: Text.WordWrap
-            text: qsTr("The values shown are the ones of the first fixture that has each control. What you change applies to all the fixtures that have it.")
+            text: qsTr("The values shown are those of the first fixture that has each control. What you change applies to all the fixtures that have it.")
             color: Theme.textFaint
             font.pixelSize: Theme.fontSmall
         }

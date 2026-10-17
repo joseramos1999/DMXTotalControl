@@ -86,7 +86,7 @@ Popup {
         }
         if (firstUni === lastUni && firstUni === universeSpin.value)
             return qsTr("Uses addresses %1 to %2").arg(first + 1).arg(last + 1)
-        return qsTr("Uses universe %1, address %2, to universe %3, address %4")
+        return qsTr("Uses from universe %1, address %2, to universe %3, address %4")
                 .arg(firstUni).arg(first + 1).arg(lastUni).arg(last + 1)
     }
 

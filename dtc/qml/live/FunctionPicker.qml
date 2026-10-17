@@ -67,7 +67,7 @@ Popup {
             functions: picker.available
             toggleSelect: true
             emptyText: Core.functions.length === 0
-                       ? qsTr("There are no scenes yet. Create one in the Program page, or open a QLC+ show.")
+                       ? qsTr("There are no scenes yet. Create one on the Program page, or open a QLC+ show.")
                        : qsTr("Nothing left to add")
             onSceneDoubleClicked: (id) => picker.zoneObject.addFunction(id)
         }

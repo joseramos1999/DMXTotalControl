@@ -1,23 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="es_ES">
+<TS version="2.1" language="it_IT">
 <context>
     <name>AddFixtureDialog</name>
     <message>
+        <source>Uses addresses %1 to %2</source>
+        <translation>Usa gli indirizzi da %1 a %2</translation>
+    </message>
+    <message>
+        <source>Uses from universe %1, address %2, to universe %3, address %4</source>
+        <translation>Usa dall&apos;universo %1, indirizzo %2, all&apos;universo %3, indirizzo %4</translation>
+    </message>
+    <message>
         <source>Add fixtures</source>
-        <translation>Añadir fixtures</translation>
+        <translation>Aggiungi fixture</translation>
     </message>
     <message>
         <source>Search manufacturer…</source>
-        <translation>Buscar fabricante…</translation>
+        <translation>Cerca produttore…</translation>
     </message>
     <message>
         <source>Manufacturer</source>
-        <translation>Fabricante</translation>
+        <translation>Produttore</translation>
     </message>
     <message>
         <source>Model</source>
-        <translation>Modelo</translation>
+        <translation>Modello</translation>
     </message>
     <message>
         <source>Dimmer</source>
@@ -25,7 +33,7 @@
     </message>
     <message>
         <source>Choose a manufacturer</source>
-        <translation>Elige un fabricante</translation>
+        <translation>Scegli un produttore</translation>
     </message>
     <message>
         <source>Patch</source>
@@ -33,19 +41,19 @@
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>Mode</source>
-        <translation>Modo</translation>
+        <translation>Modalità</translation>
     </message>
     <message>
         <source>Channels</source>
-        <translation>Canales</translation>
+        <translation>Canali</translation>
     </message>
     <message>
         <source>Quantity</source>
-        <translation>Cantidad</translation>
+        <translation>Quantità</translation>
     </message>
     <message>
         <source>Universe</source>
@@ -53,127 +61,119 @@
     </message>
     <message>
         <source>Address</source>
-        <translation>Dirección</translation>
+        <translation>Indirizzo</translation>
     </message>
     <message>
         <source>Gap</source>
-        <translation>Separación</translation>
+        <translation>Spaziatura</translation>
     </message>
     <message>
         <source>Make a group with them</source>
-        <translation>Crear un grupo con ellos</translation>
+        <translation>Creane un gruppo</translation>
     </message>
     <message>
         <source>Group</source>
-        <translation>Grupo</translation>
+        <translation>Gruppo</translation>
     </message>
     <message>
         <source>Built-in fixture library</source>
-        <translation>Biblioteca de fixtures incluida</translation>
-    </message>
-    <message>
-        <source>Uses addresses %1 to %2</source>
-        <translation>Usa las direcciones %1 a %2</translation>
-    </message>
-    <message>
-        <source>Uses universe %1, address %2, to universe %3, address %4</source>
-        <translation>Usa del universo %1, dirección %2, al universo %3, dirección %4</translation>
+        <translation>Libreria di fixture integrata</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation>Chiudi</translation>
     </message>
     <message>
         <source>Patch %1 fixtures</source>
-        <translation>Patchear %1 fixtures</translation>
+        <translation>Patcha %1 fixture</translation>
     </message>
     <message>
         <source>Patch fixture</source>
-        <translation>Patchear fixture</translation>
+        <translation>Patcha fixture</translation>
     </message>
 </context>
 <context>
     <name>CapabilitiesDialog</name>
     <message>
         <source>Value ranges of %1</source>
-        <translation>Rangos de valores de %1</translation>
+        <translation>Intervalli di valori di %1</translation>
     </message>
     <message>
         <source>Describe what each DMX range does, e.g. 0-7 Closed, 8-255 Strobe. Ranges can&apos;t overlap.</source>
-        <translation>Describe qué hace cada rango DMX, p. ej. 0-7 Cerrado, 8-255 Estrobo. Los rangos no se pueden solapar.</translation>
+        <translation>Descrivi cosa fa ogni intervallo DMX, ad es. 0-7 Chiuso, 8-255 Strobo. Gli intervalli non possono sovrapporsi.</translation>
     </message>
     <message>
         <source>Description</source>
-        <translation>Descripción</translation>
+        <translation>Descrizione</translation>
     </message>
     <message>
         <source>Add range</source>
-        <translation>Añadir rango</translation>
+        <translation>Aggiungi intervallo</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>OK</source>
-        <translation>Aceptar</translation>
+        <translation>OK</translation>
     </message>
 </context>
 <context>
     <name>ChannelFader</name>
     <message>
         <source>Presets</source>
-        <translation>Presets</translation>
+        <translation>Preset</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
 </context>
 <context>
     <name>ColorField</name>
     <message>
         <source>Favourites</source>
-        <translation>Favoritos</translation>
+        <translation>Preferiti</translation>
     </message>
     <message>
         <source>Save the current colour (right click a favourite to remove it)</source>
-        <translation>Guardar el color actual (clic derecho en un favorito para quitarlo)</translation>
+        <translation>Salva il colore attuale (clic destro su un preferito per rimuoverlo)</translation>
     </message>
 </context>
 <context>
     <name>ColourFxEditor</name>
     <message>
-        <source>Colour effect</source>
-        <translation>Efecto de color</translation>
+        <source>Colour effect — live</source>
+        <translation>Effetto colore — dal vivo</translation>
     </message>
     <message>
-        <source>Colour effect — live</source>
-        <translation>Efecto de color — en vivo</translation>
+        <source>Colour effect</source>
+        <translation>Effetto colore</translation>
     </message>
     <message>
         <source>Press Try to see it</source>
-        <translation>Pulsa Probar para verlo</translation>
+        <translation>Premi Prova per vederlo</translation>
     </message>
     <message>
         <source>Effect</source>
-        <translation>Efecto</translation>
+        <translation>Effetto</translation>
     </message>
     <message>
         <source>Works on</source>
-        <translation>Actúa sobre</translation>
+        <translation>Agisce su</translation>
     </message>
     <message>
         <source>Colour (RGB)</source>
-        <translation>Color (RGB)</translation>
+        <translation>Colore (RGB)</translation>
     </message>
     <message>
         <source>White</source>
-        <translation>Blanco</translation>
+        <translation>Bianco</translation>
     </message>
     <message>
         <source>Amber</source>
-        <translation>Ámbar</translation>
+        <translation>Ambra</translation>
     </message>
     <message>
         <source>UV</source>
@@ -181,7 +181,7 @@
     </message>
     <message>
         <source>Dimmer (value)</source>
-        <translation>Dimmer (valor)</translation>
+        <translation>Dimmer (valore)</translation>
     </message>
     <message>
         <source>Shutter</source>
@@ -189,94 +189,94 @@
     </message>
     <message>
         <source>Colours</source>
-        <translation>Colores</translation>
+        <translation>Colori</translation>
     </message>
     <message>
         <source>Text</source>
-        <translation>Texto</translation>
+        <translation>Testo</translation>
     </message>
     <message>
         <source>Image</source>
-        <translation>Imagen</translation>
+        <translation>Immagine</translation>
     </message>
     <message>
         <source>No image</source>
-        <translation>Sin imagen</translation>
+        <translation>Nessuna immagine</translation>
     </message>
     <message>
         <source>Choose…</source>
-        <translation>Elegir…</translation>
+        <translation>Scegli…</translation>
     </message>
     <message>
         <source>Animation</source>
-        <translation>Animación</translation>
+        <translation>Animazione</translation>
     </message>
     <message>
         <source>Still</source>
-        <translation>Fija</translation>
+        <translation>Fissa</translation>
     </message>
     <message>
         <source>Scroll sideways</source>
-        <translation>Desplazar a los lados</translation>
+        <translation>Scorri di lato</translation>
     </message>
     <message>
         <source>Scroll up and down</source>
-        <translation>Desplazar arriba y abajo</translation>
+        <translation>Scorri su e giù</translation>
     </message>
     <message>
         <source>Animated (GIF)</source>
-        <translation>Animada (GIF)</translation>
+        <translation>Animata (GIF)</translation>
     </message>
     <message>
         <source>Layout</source>
-        <translation>Disposición</translation>
+        <translation>Disposizione</translation>
     </message>
     <message>
         <source>In a row</source>
-        <translation>En fila</translation>
+        <translation>In fila</translation>
     </message>
     <message>
         <source>On the 2D plan</source>
-        <translation>En el plano 2D</translation>
+        <translation>Sulla pianta 2D</translation>
     </message>
     <message>
         <source>Parameters</source>
-        <translation>Parámetros</translation>
+        <translation>Parametri</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s), in selection order</source>
         <translation>
-            <numerusform>%n fixture, en orden de selección</numerusform>
-            <numerusform>%n fixtures, en orden de selección</numerusform>
+            <numerusform>%n fixture, in ordine di selezione</numerusform>
+            <numerusform>%n fixture, in ordine di selezione</numerusform>
         </translation>
     </message>
     <message>
         <source>Use the programmer selection</source>
-        <translation>Usar la selección del programador</translation>
+        <translation>Usa la selezione del programmatore</translation>
     </message>
     <message>
         <source>Colour %1</source>
-        <translation>Color %1</translation>
+        <translation>Colore %1</translation>
     </message>
     <message>
         <source>Hue</source>
-        <translation>Tono</translation>
+        <translation>Tonalità</translation>
     </message>
     <message>
         <source>Use</source>
-        <translation>Usar</translation>
+        <translation>Usa</translation>
     </message>
     <message>
         <source>No colour</source>
-        <translation>Sin color</translation>
+        <translation>Nessun colore</translation>
     </message>
     <message>
         <source>Image for the effect</source>
-        <translation>Imagen para el efecto</translation>
+        <translation>Immagine per l&apos;effetto</translation>
     </message>
     <message>
         <source>Images (*.png *.jpg *.jpeg *.gif *.bmp)</source>
-        <translation>Imágenes (*.png *.jpg *.jpeg *.gif *.bmp)</translation>
+        <translation>Immagini (*.png *.jpg *.jpeg *.gif *.bmp)</translation>
     </message>
 </context>
 <context>
@@ -293,227 +293,230 @@ POS 1 · COL 2 · BEAM 3 · INT 4
 LOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR
 Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3
 ↑ ↓: the last commands</source>
-        <translation>Escribe un comando y pulsa Intro:
+        <translation>Scrivi un comando e premi Invio:
 1 THRU 8 · 1 + 3 - 2 · GROUP 2 · ALL
 @ 50 · @ 5 (= 50 %) · @ FULL · @ 0 THRU 100 · @ + 10
 POS 1 · COL 2 · BEAM 3 · INT 4
 LOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR
-Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3
-También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR…
-↑ ↓: los últimos comandos</translation>
+Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3
+↑ ↓: gli ultimi comandi</translation>
     </message>
     <message>
-        <source>Previous fixture of the selection, one at a time (PREV)</source>
-        <translation>Fixture anterior de la selección, de una en una (PREV)</translation>
+        <source>Previous fixture in the selection, one at a time (PREV)</source>
+        <translation>Fixture precedente della selezione, una alla volta (PREV)</translation>
     </message>
     <message>
-        <source>Next fixture of the selection, one at a time (NEXT)</source>
-        <translation>Siguiente fixture de la selección, de una en una (NEXT)</translation>
+        <source>Next fixture in the selection, one at a time (NEXT)</source>
+        <translation>Fixture successiva della selezione, una alla volta (NEXT)</translation>
     </message>
     <message>
         <source>All</source>
-        <translation>Todas</translation>
+        <translation>Tutte</translation>
     </message>
     <message>
         <source>Back to the whole selection (ALL)</source>
-        <translation>Volver a toda la selección (ALL)</translation>
+        <translation>Torna a tutta la selezione (ALL)</translation>
     </message>
     <message>
         <source>Highlight</source>
-        <translation>Resaltar</translation>
+        <translation>Evidenzia</translation>
     </message>
     <message>
         <source>The selection at full in open white, over everything, to see which fixtures they are. It isn&apos;t recorded</source>
-        <translation>La selección a tope en blanco abierto, por encima de todo, para ver qué fixtures son. No se graba</translation>
+        <translation>La selezione al massimo in bianco aperto, sopra tutto, per vedere quali fixture sono. Non viene registrata</translation>
     </message>
     <message>
         <source>Locate</source>
-        <translation>Localizar</translation>
+        <translation>Localizza</translation>
     </message>
     <message>
         <source>The selection at full, open white, centred and with an open beam, in the programmer</source>
-        <translation>La selección a tope, en blanco abierto, centrada y con el haz abierto, en el programador</translation>
+        <translation>La selezione al massimo, in bianco aperto, centrata e con il fascio aperto, nel programmatore</translation>
     </message>
     <message>
         <source>Keypad</source>
-        <translation>Teclado</translation>
+        <translation>Tastierino</translation>
     </message>
 </context>
 <context>
     <name>CommandLine</name>
     <message>
         <source>I don&apos;t understand “%1”</source>
-        <translation>No entiendo «%1»</translation>
-    </message>
-    <message>
-        <source>There is no fixture %1</source>
-        <translation>No hay ninguna fixture con el número %1</translation>
-    </message>
-    <message>
-        <source>There are no fixtures from %1 to %2</source>
-        <translation>No hay fixtures del %1 al %2</translation>
+        <translation>Non capisco «%1»</translation>
     </message>
     <message>
         <source>Which group? GROUP 1, GROUP 2…</source>
-        <translation>¿Qué grupo? GROUP 1, GROUP 2…</translation>
-    </message>
-    <message>
-        <source>There is no group %1</source>
-        <translation>No hay grupo %1</translation>
+        <translation>Quale gruppo? GROUP 1, GROUP 2…</translation>
     </message>
     <message>
         <source>A fixture number, GROUP or ALL after “%1”</source>
-        <translation>Después de «%1» va un número de fixture, GROUP o ALL</translation>
+        <translation>Dopo «%1» va un numero di fixture, GROUP o ALL</translation>
+    </message>
+    <message>
+        <source>How much? @ + 10, @ - 10</source>
+        <translation>Quanto? @ + 10, @ - 10</translation>
+    </message>
+    <message>
+        <source>A level from 0 to 100</source>
+        <translation>Un livello da 0 a 100</translation>
+    </message>
+    <message>
+        <source>@ what? A level from 0 to 100, FULL or OUT</source>
+        <translation>@ cosa? Un livello da 0 a 100, FULL o OUT</translation>
+    </message>
+    <message>
+        <source>Which palette? %1 1, %1 2…</source>
+        <translation>Quale palette? %1 1, %1 2…</translation>
+    </message>
+    <message>
+        <source>Which playback? PB 1, PB 2…</source>
+        <translation>Quale playback? PB 1, PB 2…</translation>
+    </message>
+    <message>
+        <source>BACK goes one cue back; to go to cue %1: GO CUE %1</source>
+        <translation>BACK torna indietro di una cue; per andare alla cue %1: GO CUE %1</translation>
+    </message>
+    <message>
+        <source>Which cue? %1 CUE %2</source>
+        <translation>Quale cue? %1 CUE %2</translation>
+    </message>
+    <message>
+        <source>Which cue? DELETE CUE 4</source>
+        <translation>Quale cue? DELETE CUE 4</translation>
+    </message>
+    <message>
+        <source>Which cue? CUE 1, CUE 2.5…</source>
+        <translation>Quale cue? CUE 1, CUE 2.5…</translation>
+    </message>
+    <message>
+        <source>%1 is not a cue number</source>
+        <translation>%1 non è un numero di cue</translation>
+    </message>
+    <message>
+        <source>I don&apos;t understand “%1” there</source>
+        <translation>Qui non capisco «%1»</translation>
+    </message>
+    <message>
+        <source>There is no fixture %1</source>
+        <translation>Non c&apos;è nessuna fixture %1</translation>
+    </message>
+    <message>
+        <source>There are no fixtures from %1 to %2</source>
+        <translation>Non ci sono fixture da %1 a %2</translation>
+    </message>
+    <message>
+        <source>There is no group %1</source>
+        <translation>Non c&apos;è il gruppo %1</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) selected</source>
         <translation>
-            <numerusform>%n fixture seleccionada</numerusform>
-            <numerusform>%n fixtures seleccionadas</numerusform>
+            <numerusform>%n fixture selezionata</numerusform>
+            <numerusform>%n fixture selezionate</numerusform>
         </translation>
     </message>
     <message>
         <source>Select fixtures first</source>
-        <translation>Selecciona fixtures primero</translation>
+        <translation>Seleziona prima delle fixture</translation>
+    </message>
+    <message>
+        <source>The selected fixtures have no dimmer</source>
+        <translation>Le fixture selezionate non hanno dimmer</translation>
     </message>
     <message numerus="yes">
         <source>Dimmer at %1 % on %n fixture(s)</source>
         <translation>
-            <numerusform>Dimmer al %1 % en %n fixture</numerusform>
-            <numerusform>Dimmer al %1 % en %n fixtures</numerusform>
+            <numerusform>Dimmer al %1 % su %n fixture</numerusform>
+            <numerusform>Dimmer al %1 % su %n fixture</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>How much? @ + 10, @ - 10</source>
-        <translation>¿Cuánto? @ + 10, @ - 10</translation>
     </message>
     <message numerus="yes">
         <source>Dimmer %1%2 % on %n fixture(s)</source>
         <translation>
-            <numerusform>Dimmer %1%2 % en %n fixture</numerusform>
-            <numerusform>Dimmer %1%2 % en %n fixtures</numerusform>
+            <numerusform>Dimmer %1%2 % su %n fixture</numerusform>
+            <numerusform>Dimmer %1%2 % su %n fixture</numerusform>
         </translation>
-    </message>
-    <message>
-        <source>A level from 0 to 100</source>
-        <translation>Un nivel de 0 a 100</translation>
     </message>
     <message numerus="yes">
         <source>Dimmer from %1 % to %2 % on %n fixture(s)</source>
         <translation>
-            <numerusform>Dimmer del %1 % al %2 % en %n fixture</numerusform>
-            <numerusform>Dimmer del %1 % al %2 % en %n fixtures</numerusform>
+            <numerusform>Dimmer dal %1 % al %2 % su %n fixture</numerusform>
+            <numerusform>Dimmer dal %1 % al %2 % su %n fixture</numerusform>
         </translation>
     </message>
     <message>
-        <source>@ what? A level from 0 to 100, FULL or OUT</source>
-        <translation>¿@ qué? Un nivel de 0 a 100, FULL u OUT</translation>
-    </message>
-    <message>
-        <source>Which palette? %1 1, %1 2…</source>
-        <translation>¿Qué paleta? %1 1, %1 2…</translation>
-    </message>
-    <message>
-        <source>Which playback? PB 1, PB 2…</source>
-        <translation>¿Qué playback? PB 1, PB 2…</translation>
-    </message>
-    <message>
-        <source>BACK goes one cue back; to go to cue %1: GO CUE %1</source>
-        <translation>BACK retrocede una cue; para ir a la cue %1: GO CUE %1</translation>
-    </message>
-    <message>
-        <source>Which cue? %1 CUE %2</source>
-        <translation>¿Qué cue? %1 CUE %2</translation>
-    </message>
-    <message>
-        <source>Which cue? DELETE CUE 4</source>
-        <translation>¿Qué cue? DELETE CUE 4</translation>
-    </message>
-    <message>
-        <source>Which cue? CUE 1, CUE 2.5…</source>
-        <translation>¿Qué cue? CUE 1, CUE 2.5…</translation>
-    </message>
-    <message>
-        <source>%1 is not a cue number</source>
-        <translation>%1 no es un número de cue</translation>
-    </message>
-    <message>
-        <source>The selected fixtures have no dimmer</source>
-        <translation>Los fixtures seleccionados no tienen dimmer</translation>
-    </message>
-    <message>
         <source>There is no palette %1 %2</source>
-        <translation>No hay paleta %1 %2</translation>
+        <translation>Non c&apos;è la palette %1 %2</translation>
     </message>
     <message>
-        <source>%1 doesn&apos;t go on the selected fixtures</source>
-        <translation>%1 no sirve para las fixtures seleccionadas</translation>
+        <source>%1 doesn&apos;t apply to the selected fixtures</source>
+        <translation>%1 non si applica alle fixture selezionate</translation>
     </message>
     <message numerus="yes">
         <source>%1 on %n fixture(s)</source>
         <translation>
-            <numerusform>%1 en %n fixture</numerusform>
-            <numerusform>%1 en %n fixtures</numerusform>
+            <numerusform>%1 su %n fixture</numerusform>
+            <numerusform>%1 su %n fixture</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) located</source>
         <translation>
-            <numerusform>%n fixture localizada</numerusform>
-            <numerusform>%n fixtures localizadas</numerusform>
+            <numerusform>%n fixture localizzata</numerusform>
+            <numerusform>%n fixture localizzate</numerusform>
         </translation>
     </message>
     <message>
         <source>Highlight on</source>
-        <translation>Resaltado activado</translation>
+        <translation>Evidenziazione attivata</translation>
     </message>
     <message>
         <source>Highlight off</source>
-        <translation>Resaltado desactivado</translation>
+        <translation>Evidenziazione disattivata</translation>
     </message>
     <message>
         <source>Fixture %1 of %2</source>
-        <translation>Fixture %1 de %2</translation>
+        <translation>Fixture %1 di %2</translation>
     </message>
     <message>
         <source>The edits of the selection are released</source>
-        <translation>Ediciones de la selección liberadas</translation>
+        <translation>Modifiche della selezione rilasciate</translation>
     </message>
     <message>
         <source>The programmer is clear</source>
-        <translation>Programador vacío</translation>
+        <translation>Programmatore vuoto</translation>
     </message>
     <message>
         <source>There is no playback %1 on this page</source>
-        <translation>No hay playback %1 en esta página</translation>
+        <translation>Non c&apos;è il playback %1 in questa pagina</translation>
     </message>
     <message>
         <source>Playback %1 is empty</source>
-        <translation>El playback %1 está vacío</translation>
+        <translation>Il playback %1 è vuoto</translation>
     </message>
     <message>
         <source>Playback %1 selected: %2</source>
-        <translation>Playback %1 seleccionado: %2</translation>
+        <translation>Playback %1 selezionato: %2</translation>
     </message>
     <message>
         <source>Select a cuelist first</source>
-        <translation>Selecciona primero una cuelist</translation>
+        <translation>Seleziona prima una cuelist</translation>
     </message>
     <message>
         <source>There is no cue %1 in %2</source>
-        <translation>No hay cue %1 en %2</translation>
+        <translation>Non c&apos;è la cue %1 in %2</translation>
     </message>
     <message>
         <source>%1 could not be changed</source>
-        <translation>No se ha podido cambiar %1</translation>
+        <translation>Impossibile cambiare %1</translation>
     </message>
     <message>
         <source>GO to cue %1 of %2</source>
-        <translation>GO a la cue %1 de %2</translation>
+        <translation>GO alla cue %1 di %2</translation>
     </message>
     <message>
         <source>%1 has no cues</source>
-        <translation>%1 no tiene cues</translation>
+        <translation>%1 non ha cue</translation>
     </message>
     <message>
         <source>GO %1</source>
@@ -521,7 +524,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>%1 is not playing</source>
-        <translation>%1 no está sonando</translation>
+        <translation>%1 non è in esecuzione</translation>
     </message>
     <message>
         <source>BACK %1</source>
@@ -529,54 +532,50 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Cue %1 of %2 in the programmer</source>
-        <translation>Cue %1 de %2 en el programador</translation>
+        <translation>Cue %1 di %2 nel programmatore</translation>
     </message>
     <message>
-        <source>Cue %1 exists: use UPDATE CUE %1</source>
-        <translation>La cue %1 ya existe: usa UPDATE CUE %1</translation>
+        <source>Cue %1 already exists: use UPDATE CUE %1</source>
+        <translation>La cue %1 esiste già: usa UPDATE CUE %1</translation>
     </message>
     <message>
         <source>Cue %1 recorded in %2</source>
-        <translation>Cue %1 grabada en %2</translation>
+        <translation>Cue %1 registrata in %2</translation>
     </message>
     <message>
         <source>Load a cue of %1 (CUE 3) or play it first</source>
-        <translation>Carga una cue de %1 (CUE 3) o ponla en marcha primero</translation>
+        <translation>Prima carica una cue di %1 (CUE 3) o avviala</translation>
     </message>
     <message>
         <source>Cue %1 updated in %2</source>
-        <translation>Cue %1 actualizada en %2</translation>
+        <translation>Cue %1 aggiornata in %2</translation>
     </message>
     <message>
         <source>Cue %1 deleted from %2</source>
-        <translation>Cue %1 eliminada de %2</translation>
-    </message>
-    <message>
-        <source>I don&apos;t understand “%1” there</source>
-        <translation>Ahí no entiendo «%1»</translation>
+        <translation>Cue %1 eliminata da %2</translation>
     </message>
 </context>
 <context>
     <name>ControlMapper</name>
     <message>
         <source>Play a scene</source>
-        <translation>Lanzar una escena</translation>
+        <translation>Avvia una scena</translation>
     </message>
     <message>
         <source>Scene N of a group</source>
-        <translation>Escena N de un grupo</translation>
+        <translation>Scena N di un gruppo</translation>
     </message>
     <message>
         <source>Release a group</source>
-        <translation>Liberar un grupo</translation>
+        <translation>Rilascia un gruppo</translation>
     </message>
     <message>
         <source>Next scene of a group</source>
-        <translation>Escena siguiente de un grupo</translation>
+        <translation>Scena successiva di un gruppo</translation>
     </message>
     <message>
         <source>Previous scene of a group</source>
-        <translation>Escena anterior de un grupo</translation>
+        <translation>Scena precedente di un gruppo</translation>
     </message>
     <message>
         <source>Blackout</source>
@@ -584,11 +583,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Stop all</source>
-        <translation>Parar todo</translation>
+        <translation>Ferma tutto</translation>
     </message>
     <message>
         <source>Pause all</source>
-        <translation>Pausar todo</translation>
+        <translation>Metti tutto in pausa</translation>
     </message>
     <message>
         <source>Tap tempo</source>
@@ -600,31 +599,31 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Palette</source>
-        <translation>Paleta</translation>
+        <translation>Palette</translation>
     </message>
     <message>
         <source>Mixer: full</source>
-        <translation>Mezclador: full</translation>
+        <translation>Mixer: full</translation>
     </message>
     <message>
         <source>Mixer: blackout</source>
-        <translation>Mezclador: blackout</translation>
+        <translation>Mixer: blackout</translation>
     </message>
     <message>
         <source>Mixer: flash</source>
-        <translation>Mezclador: flash</translation>
+        <translation>Mixer: flash</translation>
     </message>
     <message>
         <source>Mixer: exclusive flash</source>
-        <translation>Mezclador: flash exclusivo</translation>
+        <translation>Mixer: flash esclusivo</translation>
     </message>
     <message>
         <source>Mixer: exclusive full</source>
-        <translation>Mezclador: full exclusivo</translation>
+        <translation>Mixer: full esclusivo</translation>
     </message>
     <message>
         <source>Mixer: strobe</source>
-        <translation>Mezclador: estrobo</translation>
+        <translation>Mixer: strobo</translation>
     </message>
     <message>
         <source>Playback: GO</source>
@@ -632,11 +631,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Playback: back</source>
-        <translation>Playback: atrás</translation>
+        <translation>Playback: indietro</translation>
     </message>
     <message>
         <source>Playback: pause / back</source>
-        <translation>Playback: pausa / atrás</translation>
+        <translation>Playback: pausa / indietro</translation>
     </message>
     <message>
         <source>Playback: flash</source>
@@ -644,55 +643,55 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Playback: release</source>
-        <translation>Playback: liberar</translation>
+        <translation>Playback: rilascia</translation>
     </message>
     <message>
         <source>Playback: select</source>
-        <translation>Playback: seleccionar</translation>
+        <translation>Playback: seleziona</translation>
     </message>
     <message>
         <source>Playback: go to a cue</source>
-        <translation>Playback: ir a una cue</translation>
+        <translation>Playback: vai a una cue</translation>
     </message>
     <message>
         <source>GO of the selected playback</source>
-        <translation>GO del playback seleccionado</translation>
+        <translation>GO del playback selezionato</translation>
     </message>
     <message>
         <source>Back of the selected playback</source>
-        <translation>Atrás del playback seleccionado</translation>
+        <translation>Indietro del playback selezionato</translation>
     </message>
     <message>
         <source>Playback page N</source>
-        <translation>Página de playbacks N</translation>
+        <translation>Pagina di playback N</translation>
     </message>
     <message>
         <source>Next playback page</source>
-        <translation>Página de playbacks siguiente</translation>
+        <translation>Pagina di playback successiva</translation>
     </message>
     <message>
         <source>Previous playback page</source>
-        <translation>Página de playbacks anterior</translation>
+        <translation>Pagina di playback precedente</translation>
     </message>
     <message>
         <source>Release all playbacks</source>
-        <translation>Liberar todos los playbacks</translation>
+        <translation>Rilascia tutti i playback</translation>
     </message>
     <message>
         <source>Grand master</source>
-        <translation>Gran master</translation>
+        <translation>Grand master</translation>
     </message>
     <message>
         <source>Master of a group</source>
-        <translation>Master de un grupo</translation>
+        <translation>Master di un gruppo</translation>
     </message>
     <message>
         <source>Live dimmer of a scene</source>
-        <translation>Dimmer en vivo de una escena</translation>
+        <translation>Dimmer dal vivo di una scena</translation>
     </message>
     <message>
         <source>Live speed of a scene</source>
-        <translation>Velocidad en vivo de una escena</translation>
+        <translation>Velocità dal vivo di una scena</translation>
     </message>
     <message>
         <source>BPM</source>
@@ -700,23 +699,23 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Mixer: dimmer</source>
-        <translation>Mezclador: dimmer</translation>
+        <translation>Mixer: dimmer</translation>
     </message>
     <message>
         <source>Mixer: hue</source>
-        <translation>Mezclador: tono</translation>
+        <translation>Mixer: tonalità</translation>
     </message>
     <message>
         <source>Mixer: saturation</source>
-        <translation>Mezclador: saturación</translation>
+        <translation>Mixer: saturazione</translation>
     </message>
     <message>
         <source>Mixer: strobe speed</source>
-        <translation>Mezclador: velocidad del estrobo</translation>
+        <translation>Mixer: velocità strobo</translation>
     </message>
     <message>
         <source>Fader of the SHOW</source>
-        <translation>Fader del SHOW</translation>
+        <translation>Fader dello SHOW</translation>
     </message>
     <message>
         <source>Playback: fader</source>
@@ -736,11 +735,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Program %1</source>
-        <translation>Programa %1</translation>
+        <translation>Programma %1</translation>
     </message>
     <message>
         <source>Channel aftertouch</source>
-        <translation>Aftertouch de canal</translation>
+        <translation>Aftertouch di canale</translation>
     </message>
     <message>
         <source>Pitch wheel</source>
@@ -752,39 +751,39 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>any device</source>
-        <translation>cualquier dispositivo</translation>
+        <translation>qualsiasi dispositivo</translation>
     </message>
     <message>
         <source>Key %1</source>
-        <translation>Tecla %1</translation>
+        <translation>Tasto %1</translation>
     </message>
     <message>
         <source>no group</source>
-        <translation>sin grupo</translation>
+        <translation>nessun gruppo</translation>
     </message>
     <message>
         <source>all groups</source>
-        <translation>todos los grupos</translation>
+        <translation>tutti i gruppi</translation>
     </message>
     <message>
         <source>page %1, fader %2</source>
-        <translation>página %1, fader %2</translation>
+        <translation>pagina %1, fader %2</translation>
     </message>
     <message>
         <source>current page</source>
-        <translation>página actual</translation>
+        <translation>pagina attuale</translation>
     </message>
     <message>
         <source>page %1</source>
-        <translation>página %1</translation>
+        <translation>pagina %1</translation>
     </message>
     <message>
-        <source>deleted function</source>
-        <translation>escena eliminada</translation>
+        <source>deleted scene</source>
+        <translation>scena eliminata</translation>
     </message>
     <message>
         <source>no cuelist</source>
-        <translation>sin cuelist</translation>
+        <translation>nessuna cuelist</translation>
     </message>
     <message>
         <source>cue %1</source>
@@ -795,46 +794,46 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>CueExistsDialog</name>
     <message>
         <source>Cue %1 already exists</source>
-        <translation>La cue %1 ya existe</translation>
+        <translation>La cue %1 esiste già</translation>
     </message>
     <message>
         <source>What should the programmer do with it?</source>
-        <translation>¿Qué hace el programador con ella?</translation>
+        <translation>Cosa deve farne il programmatore?</translation>
     </message>
     <message>
         <source>Merge</source>
-        <translation>Fusionar</translation>
+        <translation>Unisci</translation>
     </message>
     <message>
         <source>The programmer goes into the cue; what it doesn&apos;t hold stays as it is</source>
-        <translation>El programador entra en la cue; lo que no tiene se queda como está</translation>
+        <translation>Il programmatore entra nella cue; ciò che non contiene resta com&apos;è</translation>
     </message>
     <message>
         <source>Replace</source>
-        <translation>Sustituir</translation>
+        <translation>Sostituisci</translation>
     </message>
     <message>
         <source>The cue holds only what the programmer changes; its name and times stay</source>
-        <translation>La cue guarda solo lo que cambia el programador; su nombre y sus tiempos se mantienen</translation>
+        <translation>La cue contiene solo ciò che cambia il programmatore; nome e tempi restano</translation>
     </message>
     <message>
         <source>Insert after</source>
-        <translation>Insertar detrás</translation>
+        <translation>Inserisci dopo</translation>
     </message>
     <message>
         <source>A new cue between this one and the next one</source>
-        <translation>Una cue nueva entre esta y la siguiente</translation>
+        <translation>Una nuova cue tra questa e la successiva</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
 </context>
 <context>
     <name>CuelistEditor</name>
     <message>
         <source>Set some values in the programmer first: they become cue 1</source>
-        <translation>Pon primero algunos valores en el programador: serán la cue 1</translation>
+        <translation>Prima imposta alcuni valori nel programmatore: diventeranno la cue 1</translation>
     </message>
     <message>
         <source>Cuelist %1</source>
@@ -842,63 +841,63 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>There is no cue number left after the last cue</source>
-        <translation>No quedan números de cue después de la última</translation>
+        <translation>Non ci sono più numeri di cue dopo l&apos;ultima</translation>
     </message>
     <message>
         <source>%1 is not a cue number</source>
-        <translation>%1 no es un número de cue</translation>
+        <translation>%1 non è un numero di cue</translation>
     </message>
     <message>
         <source>Cue %1 has no changes from the previous cue</source>
-        <translation>La cue %1 no cambia nada respecto a la anterior</translation>
+        <translation>La cue %1 non cambia nulla rispetto alla precedente</translation>
     </message>
     <message>
         <source>There is no free cue number after cue %1</source>
-        <translation>No hay ningún número de cue libre después de la cue %1</translation>
+        <translation>Non c&apos;è nessun numero di cue libero dopo la cue %1</translation>
     </message>
     <message>
         <source>Cue %1 could not be recorded</source>
-        <translation>No se ha podido grabar la cue %1</translation>
+        <translation>Impossibile registrare la cue %1</translation>
     </message>
     <message>
         <source>The programmer is empty: there is nothing to update</source>
-        <translation>El programador está vacío: no hay nada que actualizar</translation>
+        <translation>Il programmatore è vuoto: non c&apos;è niente da aggiornare</translation>
     </message>
     <message>
         <source>The programmer is empty: set the channels to take out of the cue first</source>
-        <translation>El programador está vacío: pon primero los canales que quieres sacar de la cue</translation>
+        <translation>Il programmatore è vuoto: prima imposta i canali da togliere dalla cue</translation>
     </message>
     <message>
         <source>Cue %1 doesn&apos;t hold any channel of the programmer</source>
-        <translation>La cue %1 no tiene ningún canal del programador</translation>
+        <translation>La cue %1 non contiene nessun canale del programmatore</translation>
     </message>
     <message>
         <source>The programmer is empty: set the channels to release in the cue first</source>
-        <translation>El programador está vacío: pon primero los canales que quieres liberar en la cue</translation>
+        <translation>Il programmatore è vuoto: prima imposta i canali da rilasciare nella cue</translation>
     </message>
     <message>
         <source>Cue %1 already exists</source>
-        <translation>La cue %1 ya existe</translation>
+        <translation>La cue %1 esiste già</translation>
     </message>
     <message>
         <source>There is no such cue</source>
-        <translation>Esa cue no existe</translation>
+        <translation>Questa cue non esiste</translation>
     </message>
     <message>
         <source>Cue %1 could not be renumbered</source>
-        <translation>No se ha podido renumerar la cue %1</translation>
+        <translation>Impossibile rinumerare la cue %1</translation>
     </message>
     <message>
         <source>Moving a cue changes what the cues after it track</source>
-        <translation>Mover una cue cambia lo que heredan las cues que van detrás</translation>
+        <translation>Spostare una cue cambia ciò che ereditano le cue successive</translation>
     </message>
     <message>
         <source>These steps are empty: there is nothing to convert</source>
-        <translation>Estos pasos están vacíos: no hay nada que convertir</translation>
+        <translation>Questi passi sono vuoti: non c&apos;è niente da convertire</translation>
     </message>
     <message>
         <source>These steps play too many times to become cues: lower the number of times first</source>
-        <translation>Estos pasos se reproducen demasiadas veces para convertirlos en cues: baja antes el número de veces</translation>
+        <translation>Questi passi si ripetono troppe volte per diventare cue: prima riduci il numero di ripetizioni</translation>
     </message>
 </context>
 <context>
@@ -909,95 +908,95 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>A cue holds only what it changes; the rest goes on from the cues before it. Off: each cue on its own</source>
-        <translation>Una cue guarda solo lo que cambia; el resto sigue de las cues anteriores. Apagado: cada cue va por su cuenta</translation>
+        <translation>Una cue contiene solo ciò che cambia; il resto prosegue dalle cue precedenti. Disattivato: ogni cue è indipendente</translation>
     </message>
     <message>
         <source>After the last cue</source>
-        <translation>Tras la última cue</translation>
+        <translation>Dopo l&apos;ultima cue</translation>
     </message>
     <message>
         <source>GO on the last cue goes back to the first cue (Loop), releases the cuelist (Release) or does nothing (Stay). With Follow or Wait on the first cue, Loop and Release go on by themselves</source>
-        <translation>GO en la última cue vuelve a la primera (Bucle), libera la cuelist (Liberar) o no hace nada (Quedarse). Con Seguir o Esperar en la primera cue, Bucle y Liberar siguen solos</translation>
+        <translation>GO sull&apos;ultima cue torna alla prima cue (Ciclo), rilascia la cuelist (Rilascia) o non fa nulla (Resta). Con Segui o Attendi sulla prima cue, Ciclo e Rilascia proseguono da soli</translation>
     </message>
     <message>
         <source>Loop</source>
-        <translation>Bucle</translation>
+        <translation>Ciclo</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Stay</source>
-        <translation>Quedarse</translation>
+        <translation>Resta</translation>
     </message>
     <message>
         <source>Release time</source>
-        <translation>Tiempo de liberación</translation>
+        <translation>Tempo di rilascio</translation>
     </message>
     <message>
         <source>The fade when the cuelist is released</source>
-        <translation>El fundido al liberar la cuelist</translation>
+        <translation>La dissolvenza quando si rilascia la cuelist</translation>
     </message>
     <message>
         <source>Fewer options</source>
-        <translation>Menos opciones</translation>
+        <translation>Meno opzioni</translation>
     </message>
     <message>
         <source>More options</source>
-        <translation>Más opciones</translation>
+        <translation>Più opzioni</translation>
     </message>
     <message>
         <source>Reset on release</source>
-        <translation>Al liberar, volver a la cue 1</translation>
+        <translation>Al rilascio, torna alla cue 1</translation>
     </message>
     <message>
         <source>On: after a release, GO starts again from the first cue. Off: it goes on from the cue it was on</source>
-        <translation>Encendido: tras liberarla, el GO empieza otra vez por la primera cue. Apagado: sigue desde la cue en la que estaba</translation>
+        <translation>Attivato: dopo il rilascio, GO riparte dalla prima cue. Disattivato: prosegue dalla cue in cui era</translation>
     </message>
     <message>
         <source>Released by another GO</source>
-        <translation>Se libera con el GO de otra cuelist</translation>
+        <translation>Rilasciata dal GO di un&apos;altra cuelist</translation>
     </message>
     <message>
         <source>A GO on another cuelist releases this one (a song that ends when the next one starts)</source>
-        <translation>Un GO en otra cuelist libera esta (una canción que acaba cuando empieza la siguiente)</translation>
+        <translation>Un GO su un&apos;altra cuelist rilascia questa (una canzone che finisce quando inizia la successiva)</translation>
     </message>
     <message>
         <source>New cue fade</source>
-        <translation>Fundido de las cues nuevas</translation>
+        <translation>Dissolvenza delle nuove cue</translation>
     </message>
     <message>
         <source>The fade of the first cue recorded; the next ones take the times of the cue before them</source>
-        <translation>El fundido de la primera cue grabada; las siguientes toman los tiempos de la cue anterior</translation>
+        <translation>La dissolvenza della prima cue registrata; le successive prendono i tempi della cue precedente</translation>
     </message>
     <message>
         <source>Back</source>
-        <translation>Atrás</translation>
+        <translation>Indietro</translation>
     </message>
     <message>
         <source>The times of BACK: those of the cue it goes back to, or a time of its own</source>
-        <translation>Los tiempos de BACK: los de la cue a la que vuelve, o un tiempo propio</translation>
+        <translation>I tempi di BACK: quelli della cue a cui torna, o un tempo proprio</translation>
     </message>
     <message>
         <source>Cue times</source>
-        <translation>Tiempos de la cue</translation>
+        <translation>Tempi della cue</translation>
     </message>
     <message>
         <source>Fixed time</source>
-        <translation>Tiempo fijo</translation>
+        <translation>Tempo fisso</translation>
     </message>
     <message>
         <source>Priority</source>
-        <translation>Prioridad</translation>
+        <translation>Priorità</translation>
     </message>
     <message>
         <source>GO on the beat</source>
-        <translation>GO al ritmo</translation>
+        <translation>GO a tempo</translation>
     </message>
     <message>
-        <source>BeatGO and Pulse give a GO on each division, like the button of a console</source>
-        <translation>BeatGO y Pulso dan un GO en cada división, como el botón de una mesa</translation>
+        <source>BeatGO and Pulse give a GO on each division, like the GO button on a console</source>
+        <translation>BeatGO e Impulso danno un GO a ogni divisione, come il tasto GO di una console</translation>
     </message>
     <message>
         <source>Off</source>
@@ -1009,30 +1008,30 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pulse</source>
-        <translation>Pulso</translation>
+        <translation>Impulso</translation>
     </message>
 </context>
 <context>
     <name>CuelistView</name>
     <message>
         <source>Cues (%1)</source>
-        <translation>Cues (%1)</translation>
+        <translation>Cue (%1)</translation>
     </message>
     <message>
         <source>Paused</source>
-        <translation>En pausa</translation>
+        <translation>In pausa</translation>
     </message>
     <message>
         <source>Released · GO plays %1</source>
-        <translation>Liberada · GO lanza la %1</translation>
+        <translation>Rilasciata · GO avvia la %1</translation>
     </message>
     <message>
         <source>Released</source>
-        <translation>Liberada</translation>
+        <translation>Rilasciata</translation>
     </message>
     <message>
         <source>Back: the cue before</source>
-        <translation>Atrás: la cue anterior</translation>
+        <translation>Indietro: la cue precedente</translation>
     </message>
     <message>
         <source>GO</source>
@@ -1040,103 +1039,103 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>The next cue (the same GO as its playback)</source>
-        <translation>La cue siguiente (el mismo GO que su playback)</translation>
+        <translation>La cue successiva (lo stesso GO del suo playback)</translation>
     </message>
     <message>
         <source>Release the cuelist</source>
-        <translation>Liberar la cuelist</translation>
+        <translation>Rilascia la cuelist</translation>
     </message>
     <message>
         <source>Record cue %1</source>
-        <translation>Grabar la cue %1</translation>
+        <translation>Registra la cue %1</translation>
     </message>
     <message>
         <source>Record cue</source>
-        <translation>Grabar cue</translation>
+        <translation>Registra cue</translation>
     </message>
     <message>
         <source>The programmer becomes a new cue after the selected one: only what changes from what it tracks</source>
-        <translation>El programador se convierte en una cue nueva tras la seleccionada: solo lo que cambia respecto a lo que hereda</translation>
+        <translation>Il programmatore diventa una nuova cue dopo quella selezionata: solo ciò che cambia rispetto a ciò che eredita</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Actualizar</translation>
+        <translation>Aggiorna</translation>
     </message>
     <message>
         <source>Merge the programmer into the selected cue</source>
-        <translation>Fusionar el programador con la cue seleccionada</translation>
+        <translation>Unisci il programmatore alla cue selezionata</translation>
     </message>
     <message>
         <source>Update cue %1 (the next cues follow)</source>
-        <translation>Actualizar la cue %1 (sigue en las siguientes)</translation>
+        <translation>Aggiorna la cue %1 (vale anche per le successive)</translation>
     </message>
     <message>
         <source>Only this cue (the next cues keep their look)</source>
-        <translation>Solo esta cue (las siguientes mantienen su aspecto)</translation>
+        <translation>Solo questa cue (le successive mantengono il loro aspetto)</translation>
     </message>
     <message>
         <source>Load</source>
-        <translation>Cargar</translation>
+        <translation>Carica</translation>
     </message>
     <message>
         <source>Put the selected cue in the programmer, to see and change it (double click a cue)</source>
-        <translation>Llevar la cue seleccionada al programador para verla y cambiarla (doble clic en una cue)</translation>
+        <translation>Porta la cue selezionata nel programmatore per vederla e modificarla (doppio clic su una cue)</translation>
     </message>
     <message>
         <source>What the stage shows on cue %1</source>
-        <translation>Lo que muestra el escenario en la cue %1</translation>
+        <translation>Ciò che mostra il palco nella cue %1</translation>
     </message>
     <message>
         <source>Only what cue %1 changes</source>
-        <translation>Solo lo que cambia la cue %1</translation>
+        <translation>Solo ciò che cambia la cue %1</translation>
     </message>
     <message>
         <source>Take out</source>
-        <translation>Sacar</translation>
+        <translation>Togli</translation>
     </message>
     <message>
         <source>The channels of the programmer in the selected cue: take them out, or release them</source>
-        <translation>Los canales del programador en la cue seleccionada: sacarlos o liberarlos</translation>
+        <translation>I canali del programmatore nella cue selezionata: toglierli o rilasciarli</translation>
     </message>
     <message>
         <source>Remove the programmer&apos;s channels from cue %1 (they track again)</source>
-        <translation>Quitar de la cue %1 los canales del programador (vuelven a heredar)</translation>
+        <translation>Togli dalla cue %1 i canali del programmatore (tornano a ereditare)</translation>
     </message>
     <message>
         <source>[Release] the programmer&apos;s channels in cue %1</source>
-        <translation>[Liberar] los canales del programador en la cue %1</translation>
+        <translation>[Rilascia] i canali del programmatore nella cue %1</translation>
     </message>
     <message>
         <source>Copy the selected cue to the end</source>
-        <translation>Copiar la cue seleccionada al final</translation>
+        <translation>Copia la cue selezionata alla fine</translation>
     </message>
     <message>
         <source>Copy what cue %1 changes</source>
-        <translation>Copiar lo que cambia la cue %1</translation>
+        <translation>Copia ciò che cambia la cue %1</translation>
     </message>
     <message>
         <source>Copy the whole look of cue %1 (block cue)</source>
-        <translation>Copiar todo el aspecto de la cue %1 (cue de bloqueo)</translation>
+        <translation>Copia tutto l&apos;aspetto della cue %1 (cue di blocco)</translation>
     </message>
     <message>
         <source>Number…</source>
-        <translation>Número…</translation>
+        <translation>Numero…</translation>
     </message>
     <message>
         <source>Give the selected cue another number (also a point cue: 2.5)</source>
-        <translation>Dar otro número a la cue seleccionada (también con decimales: 2.5)</translation>
+        <translation>Dai un altro numero alla cue selezionata (anche con decimali: 2.5)</translation>
     </message>
     <message>
         <source>Delete the selected cues</source>
-        <translation>Eliminar las cues seleccionadas</translation>
+        <translation>Elimina le cue selezionate</translation>
     </message>
     <message>
         <source>Tracking sheet</source>
-        <translation>Hoja de tracking</translation>
+        <translation>Foglio di tracking</translation>
     </message>
     <message>
         <source>What the stage shows on the selected cue, channel by channel</source>
-        <translation>Lo que muestra el escenario en la cue seleccionada, canal a canal</translation>
+        <translation>Ciò che mostra il palco nella cue selezionata, canale per canale</translation>
     </message>
     <message>
         <source>CUE</source>
@@ -1144,39 +1143,39 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>NAME</source>
-        <translation>NOMBRE</translation>
+        <translation>NOME</translation>
     </message>
     <message>
         <source>TRIGGER</source>
-        <translation>DISPARO</translation>
+        <translation>AVVIO</translation>
     </message>
     <message>
         <source>DELAY</source>
-        <translation>RETARDO</translation>
+        <translation>RITARDO</translation>
     </message>
     <message>
         <source>FADE</source>
-        <translation>FUNDIDO</translation>
+        <translation>FADE</translation>
     </message>
     <message>
         <source>DOWN</source>
-        <translation>BAJADA</translation>
+        <translation>DISCESA</translation>
     </message>
     <message>
         <source>Fade of the dimmers that go down; = is the same as the fade</source>
-        <translation>Fundido de los dimmers que bajan; = es igual que el fundido</translation>
+        <translation>Dissolvenza dei dimmer che scendono; = è uguale alla dissolvenza</translation>
     </message>
     <message>
         <source>CHANGES</source>
-        <translation>CAMBIOS</translation>
+        <translation>MODIFICHE</translation>
     </message>
     <message>
         <source>Skip (cue only): what the cue changes doesn&apos;t go on to the next cues</source>
-        <translation>Saltar (solo esta cue): lo que cambia la cue no pasa a las siguientes</translation>
+        <translation>Salta (solo questa cue): ciò che cambia la cue non passa alle successive</translation>
     </message>
     <message>
-        <source>Block: Record and Update keep the values equal to the ones it tracks</source>
-        <translation>Bloqueo: Grabar y Actualizar guardan también los valores iguales a los que hereda</translation>
+        <source>Block: Record and Update also store the values equal to the ones it tracks</source>
+        <translation>Blocco: Registra e Aggiorna salvano anche i valori uguali a quelli che eredita</translation>
     </message>
     <message>
         <source>NOTE</source>
@@ -1184,43 +1183,43 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>In the programmer: Update stores the changes</source>
-        <translation>En el programador: Actualizar guarda los cambios</translation>
+        <translation>Nel programmatore: Aggiorna salva le modifiche</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>Follow</source>
-        <translation>Seguir</translation>
+        <translation>Segui</translation>
     </message>
     <message>
         <source>Wait</source>
-        <translation>Esperar</translation>
+        <translation>Attendi</translation>
     </message>
     <message>
         <source>GO: waits for a GO</source>
-        <translation>GO: espera un GO</translation>
+        <translation>GO: attende un GO</translation>
     </message>
     <message>
         <source>Follow: when the cue before has finished, plus a time</source>
-        <translation>Seguir: cuando acaba la cue anterior, más un tiempo</translation>
+        <translation>Segui: quando la cue precedente è finita, più un tempo</translation>
     </message>
     <message>
         <source>Wait: a time after the GO of the cue before</source>
-        <translation>Esperar: un tiempo después del GO de la cue anterior</translation>
+        <translation>Attendi: un tempo dopo il GO della cue precedente</translation>
     </message>
     <message>
         <source>No cues yet: set a look in the programmer and record it as cue 1.</source>
-        <translation>Aún no hay cues: monta un aspecto en el programador y grábalo como cue 1.</translation>
+        <translation>Ancora nessuna cue: crea un look nel programmatore e registralo come cue 1.</translation>
     </message>
     <message>
         <source>Double click a cue to load it in the programmer, its number to change it. Ctrl/Shift+click selects several cues to change their times together. Wheel on a clicked time: ±0.1 s (Shift: 1 s).</source>
-        <translation>Doble clic en una cue para cargarla en el programador, en su número para cambiarlo. Ctrl/Mayús+clic selecciona varias cues para cambiar sus tiempos a la vez. Rueda sobre un tiempo pulsado: ±0.1 s (Mayús: 1 s).</translation>
+        <translation>Doppio clic su una cue per caricarla nel programmatore, sul suo numero per cambiarlo. Ctrl/Maiusc+clic seleziona più cue per cambiarne i tempi insieme. Rotellina su un tempo cliccato: ±0.1 s (Maiusc: 1 s).</translation>
     </message>
     <message>
         <source>Cue %1 on stage</source>
-        <translation>En escena: cue %1</translation>
+        <translation>In scena: cue %1</translation>
     </message>
     <message>
         <source>Tracking</source>
@@ -1228,105 +1227,105 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>New number for cue %1</source>
-        <translation>Nuevo número para la cue %1</translation>
+        <translation>Nuovo numero per la cue %1</translation>
     </message>
     <message>
         <source>Go to cue %1</source>
-        <translation>Ir a la cue %1</translation>
+        <translation>Vai alla cue %1</translation>
     </message>
     <message>
         <source>Load what the stage shows</source>
-        <translation>Cargar lo que muestra el escenario</translation>
+        <translation>Carica ciò che mostra il palco</translation>
     </message>
     <message>
         <source>Load only what it changes</source>
-        <translation>Cargar solo lo que cambia</translation>
+        <translation>Carica solo ciò che cambia</translation>
     </message>
     <message>
         <source>Update with the programmer</source>
-        <translation>Actualizar con el programador</translation>
+        <translation>Aggiorna con il programmatore</translation>
     </message>
     <message>
         <source>Delete…</source>
-        <translation>Eliminar…</translation>
+        <translation>Elimina…</translation>
     </message>
     <message numerus="yes">
         <source>Delete %n cues?</source>
         <translation>
-            <numerusform>¿Eliminar %n cue?</numerusform>
-            <numerusform>¿Eliminar %n cues?</numerusform>
+            <numerusform>Eliminare %n cue?</numerusform>
+            <numerusform>Eliminare %n cue?</numerusform>
         </translation>
     </message>
     <message>
         <source>Delete cue %1?</source>
-        <translation>¿Eliminar la cue %1?</translation>
+        <translation>Eliminare la cue %1?</translation>
     </message>
     <message>
         <source>Keep the look of the next cues</source>
-        <translation>Mantener el aspecto de las cues siguientes</translation>
+        <translation>Mantieni l&apos;aspetto delle cue successive</translation>
     </message>
     <message>
         <source>What it changes moves into the next cue, so the cues after it look the same.</source>
-        <translation>Lo que cambia pasa a la cue siguiente, así que las cues de detrás se ven igual.</translation>
+        <translation>Ciò che cambia passa alla cue successiva, quindi le cue seguenti restano uguali.</translation>
     </message>
     <message>
         <source>The next cues track from the cue before it, so they may look different.</source>
-        <translation>Las cues siguientes heredan de la cue anterior, así que pueden verse distintas.</translation>
+        <translation>Le cue successive ereditano dalla cue precedente, quindi potrebbero apparire diverse.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>CurveFxEditor</name>
     <message>
         <source>Sine</source>
-        <translation>Seno</translation>
+        <translation>Sinusoide</translation>
     </message>
     <message>
         <source>Triangle</source>
-        <translation>Triángulo</translation>
+        <translation>Triangolo</translation>
     </message>
     <message>
         <source>Ramp up</source>
-        <translation>Rampa de subida</translation>
+        <translation>Rampa in salita</translation>
     </message>
     <message>
         <source>Ramp down</source>
-        <translation>Rampa de bajada</translation>
+        <translation>Rampa in discesa</translation>
     </message>
     <message>
         <source>Square</source>
-        <translation>Cuadrada</translation>
+        <translation>Quadra</translation>
     </message>
     <message>
         <source>Random</source>
-        <translation>Aleatoria</translation>
+        <translation>Casuale</translation>
     </message>
     <message>
         <source>Strobe</source>
-        <translation>Estrobo</translation>
+        <translation>Strobo</translation>
     </message>
     <message>
         <source>Random strobe</source>
-        <translation>Estrobo aleatorio</translation>
+        <translation>Strobo casuale</translation>
+    </message>
+    <message>
+        <source>Wave — live</source>
+        <translation>Onda — dal vivo</translation>
     </message>
     <message>
         <source>Wave</source>
         <translation>Onda</translation>
     </message>
     <message>
-        <source>Wave — live</source>
-        <translation>Onda — en vivo</translation>
-    </message>
-    <message>
         <source>One cycle →   one line per fixture (first 8)</source>
-        <translation>Un ciclo →   una línea por fixture (los 8 primeros)</translation>
+        <translation>Un ciclo →   una riga per fixture (le prime 8)</translation>
     </message>
     <message>
         <source>Curve</source>
@@ -1334,15 +1333,15 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Low</source>
-        <translation>Mínimo</translation>
+        <translation>Minimo</translation>
     </message>
     <message>
         <source>High</source>
-        <translation>Máximo</translation>
+        <translation>Massimo</translation>
     </message>
     <message>
         <source>Flash length</source>
-        <translation>Duración del destello</translation>
+        <translation>Durata del lampo</translation>
     </message>
     <message>
         <source>Phase</source>
@@ -1350,7 +1349,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Offset between fixtures</source>
-        <translation>Desfase entre fixtures</translation>
+        <translation>Sfasamento tra fixture</translation>
     </message>
     <message>
         <source>Relative</source>
@@ -1358,22 +1357,22 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Moves the channels around the value other scenes give them</source>
-        <translation>Mueve los canales alrededor del valor que les dan otras escenas</translation>
+        <translation>Muove i canali attorno al valore dato da altre scene</translation>
     </message>
     <message>
         <source>Channels</source>
-        <translation>Canales</translation>
+        <translation>Canali</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) in the effect</source>
         <translation>
-            <numerusform>%n fixture en el efecto</numerusform>
-            <numerusform>%n fixtures en el efecto</numerusform>
+            <numerusform>%n fixture nell&apos;effetto</numerusform>
+            <numerusform>%n fixture nell&apos;effetto</numerusform>
         </translation>
     </message>
     <message>
         <source>Use the programmer selection</source>
-        <translation>Usar la selección del programador</translation>
+        <translation>Usa la selezione del programmatore</translation>
     </message>
 </context>
 <context>
@@ -1384,94 +1383,94 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Show as %</source>
-        <translation>Mostrar en %</translation>
+        <translation>Mostra in %</translation>
     </message>
     <message>
         <source>Hover a channel to see its fixture</source>
-        <translation>Pasa el ratón por un canal para ver su fixture</translation>
+        <translation>Passa il mouse su un canale per vederne la fixture</translation>
     </message>
     <message>
         <source>%1 — channel %2</source>
-        <translation>%1 — canal %2</translation>
+        <translation>%1 — canale %2</translation>
     </message>
 </context>
 <context>
     <name>DtcCore</name>
     <message>
         <source>Untitled show</source>
-        <translation>Show sin título</translation>
+        <translation>Show senza titolo</translation>
     </message>
     <message>
         <source>Unable to read %1</source>
-        <translation>No se puede leer %1</translation>
+        <translation>Impossibile leggere %1</translation>
     </message>
     <message>
         <source>%1 is not a show file</source>
-        <translation>%1 no es un archivo de show</translation>
+        <translation>%1 non è un file di show</translation>
     </message>
     <message>
         <source>line %1: %2</source>
-        <translation>línea %1: %2</translation>
+        <translation>riga %1: %2</translation>
     </message>
     <message>
         <source>Error while loading %1</source>
-        <translation>Error al cargar %1</translation>
+        <translation>Errore durante il caricamento di %1</translation>
     </message>
     <message>
         <source>%1 is damaged (%2): only part of it was loaded. Save it under another name to keep this part.</source>
-        <translation>%1 está dañado (%2): solo se ha cargado una parte. Guárdalo con otro nombre para conservar esta parte.</translation>
+        <translation>%1 è danneggiato (%2): ne è stata caricata solo una parte. Salvalo con un altro nome per conservare questa parte.</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n scene(s)</source>
         <translation>
-            <numerusform>%n escena</numerusform>
-            <numerusform>%n escenas</numerusform>
+            <numerusform>%n scena</numerusform>
+            <numerusform>%n scene</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) not found in this show</source>
         <translation>
-            <numerusform>%n fixture no encontrado en este show</numerusform>
-            <numerusform>%n fixtures no encontrados en este show</numerusform>
+            <numerusform>%n fixture non trovata in questo show</numerusform>
+            <numerusform>%n fixture non trovate in questo show</numerusform>
         </translation>
     </message>
     <message>
         <source>Imported: %1</source>
-        <translation>Importado: %1</translation>
+        <translation>Importato: %1</translation>
     </message>
     <message>
         <source>Unable to write %1 (%2)</source>
-        <translation>No se puede escribir %1 (%2)</translation>
+        <translation>Impossibile scrivere %1 (%2)</translation>
     </message>
     <message>
         <source>Unable to overwrite %1 (%2)</source>
-        <translation>No se puede sobrescribir %1 (%2)</translation>
+        <translation>Impossibile sovrascrivere %1 (%2)</translation>
     </message>
     <message>
         <source>No file name given</source>
-        <translation>Falta el nombre de archivo</translation>
+        <translation>Manca il nome del file</translation>
     </message>
 </context>
 <context>
     <name>EditFixtureDialog</name>
     <message>
         <source>Edit fixture</source>
-        <translation>Editar fixture</translation>
+        <translation>Modifica fixture</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>Mode</source>
-        <translation>Modo</translation>
+        <translation>Modalità</translation>
     </message>
     <message>
         <source>Universe</source>
@@ -1479,50 +1478,30 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Address</source>
-        <translation>Dirección</translation>
+        <translation>Indirizzo</translation>
     </message>
     <message>
         <source>Number</source>
-        <translation>Número</translation>
+        <translation>Numero</translation>
     </message>
     <message>
         <source>For the command line of Program: 1 THRU 8 @ FULL</source>
-        <translation>Para la línea de comandos de Programar: 1 THRU 8 @ FULL</translation>
+        <translation>Per la riga di comando di Programma: 1 THRU 8 @ FULL</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Aplicar</translation>
+        <translation>Applica</translation>
     </message>
 </context>
 <context>
     <name>EffectEditor</name>
     <message>
-        <source>The programmer released the channels of the effect, so you can see it</source>
-        <translation>El programador ha liberado los canales del efecto para que puedas verlo</translation>
-    </message>
-    <message>
-        <source>The effect is running, but the heads are dark: open their beam in Program to see it</source>
-        <translation>El efecto está en marcha, pero las cabezas están apagadas: abre su haz en Programar para verlo</translation>
-    </message>
-    <message>
-        <source>%1 (copy)</source>
-        <translation>%1 (copia)</translation>
-    </message>
-    <message>
-        <source>Set some values in the programmer first: they become the first step</source>
-        <translation>Pon primero algunos valores en el programador: serán el primer paso</translation>
-    </message>
-    <message>
-        <source>%1 (channels)</source>
-        <translation>%1 (canales)</translation>
-    </message>
-    <message>
         <source>Steps %1</source>
-        <translation>Pasos %1</translation>
+        <translation>Passi %1</translation>
     </message>
     <message>
         <source>Move FX %1</source>
@@ -1534,7 +1513,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Effect rack %1</source>
-        <translation>Rack de efectos %1</translation>
+        <translation>Rack di effetti %1</translation>
     </message>
     <message>
         <source>Curve FX %1</source>
@@ -1542,27 +1521,47 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Super scene %1</source>
-        <translation>Super escena %1</translation>
+        <translation>Super scena %1</translation>
     </message>
     <message>
         <source>Scene %1</source>
-        <translation>Escena %1</translation>
+        <translation>Scena %1</translation>
+    </message>
+    <message>
+        <source>The programmer released the channels of the effect, so you can see it</source>
+        <translation>Il programmatore ha rilasciato i canali dell&apos;effetto, così puoi vederlo</translation>
+    </message>
+    <message>
+        <source>The effect is running, but the heads are dark: open their beam in Program to see it</source>
+        <translation>L&apos;effetto è in esecuzione, ma le teste sono spente: apri il loro fascio in Programma per vederlo</translation>
+    </message>
+    <message>
+        <source>%1 (copy)</source>
+        <translation>%1 (copia)</translation>
+    </message>
+    <message>
+        <source>%1 (channels)</source>
+        <translation>%1 (canali)</translation>
+    </message>
+    <message>
+        <source>Set some values in the programmer first: they become the first step</source>
+        <translation>Prima imposta alcuni valori nel programmatore: diventeranno il primo passo</translation>
     </message>
     <message>
         <source>The programmer is empty: set the values of the new step first</source>
-        <translation>El programador está vacío: pon primero los valores del paso nuevo</translation>
+        <translation>Il programmatore è vuoto: prima imposta i valori del nuovo passo</translation>
     </message>
     <message>
         <source>These steps lost their channels: the step can&apos;t be added</source>
-        <translation>Estos pasos han perdido sus canales: no se puede añadir el paso</translation>
+        <translation>Questi passi hanno perso i loro canali: impossibile aggiungere il passo</translation>
     </message>
     <message>
         <source>Select moving heads or scanners in the programmer first</source>
-        <translation>Selecciona primero cabezas móviles o scanners en el programador</translation>
+        <translation>Prima seleziona teste mobili o scanner nel programmatore</translation>
     </message>
     <message>
         <source>Select the fixtures of the effect in the programmer first</source>
-        <translation>Selecciona primero en el programador los fixtures del efecto</translation>
+        <translation>Prima seleziona nel programmatore le fixture dell&apos;effetto</translation>
     </message>
     <message>
         <source>%1 (FX)</source>
@@ -1570,56 +1569,56 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>The selection has no fixtures with pan/tilt</source>
-        <translation>La selección no tiene fixtures con pan/tilt</translation>
+        <translation>La selezione non ha fixture con pan/tilt</translation>
     </message>
     <message>
         <source>“%1” plays this rack: it can&apos;t go into it</source>
-        <translation>“%1” reproduce este rack: no puede ir dentro de él</translation>
+        <translation>«%1» riproduce questo rack: non può andarci dentro</translation>
     </message>
     <message>
         <source>Mapping %1</source>
-        <translation>Mapeo %1</translation>
+        <translation>Mapping %1</translation>
     </message>
     <message>
         <source>Super scene</source>
-        <translation>Super escena</translation>
+        <translation>Super scena</translation>
     </message>
     <message>
         <source>Track %1</source>
-        <translation>Pista %1</translation>
+        <translation>Traccia %1</translation>
     </message>
     <message>
         <source>Strobe</source>
-        <translation>Estrobo</translation>
+        <translation>Strobo</translation>
     </message>
     <message>
         <source>Unable to export the effect</source>
-        <translation>No se ha podido exportar el efecto</translation>
+        <translation>Impossibile esportare l&apos;effetto</translation>
     </message>
     <message>
         <source>Saved to %1</source>
-        <translation>Guardado en %1</translation>
+        <translation>Salvato in %1</translation>
     </message>
     <message>
         <source>Unable to import the effect</source>
-        <translation>No se ha podido importar el efecto</translation>
+        <translation>Impossibile importare l&apos;effetto</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) of the file are not in this show: their part was left out</source>
         <translation>
-            <numerusform>%n fixture del archivo no está en este show: su parte se ha omitido</numerusform>
-            <numerusform>%n fixtures del archivo no están en este show: su parte se ha omitido</numerusform>
+            <numerusform>%n fixture del file non è in questo show: la sua parte è stata omessa</numerusform>
+            <numerusform>%n fixture del file non sono in questo show: la loro parte è stata omessa</numerusform>
         </translation>
     </message>
     <message>
         <source>Unable to convert the effect</source>
-        <translation>No se ha podido convertir el efecto</translation>
+        <translation>Impossibile convertire l&apos;effetto</translation>
     </message>
     <message numerus="yes">
         <source>The cycle of the effect is longer than %n minute(s): its first %n minute(s) were recorded</source>
         <translation>
-            <numerusform>El ciclo del efecto dura más de %n minuto: se ha grabado su primer minuto</numerusform>
-            <numerusform>El ciclo del efecto dura más de %n minutos: se han grabado sus primeros %n minutos</numerusform>
+            <numerusform>Il ciclo dell&apos;effetto dura più di %n minuto: ne è stato registrato il primo minuto</numerusform>
+            <numerusform>Il ciclo dell&apos;effetto dura più di %n minuti: ne sono stati registrati i primi %n minuti</numerusform>
         </translation>
     </message>
 </context>
@@ -1627,39 +1626,39 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>EffectExchange</name>
     <message>
         <source>This is not a DMX Total Control effects file</source>
-        <translation>Este no es un archivo de efectos de DMX Total Control</translation>
+        <translation>Questo non è un file di effetti di DMX Total Control</translation>
     </message>
     <message>
         <source>The file has no effect to load</source>
-        <translation>El archivo no tiene ningún efecto que cargar</translation>
+        <translation>Il file non contiene nessun effetto da caricare</translation>
     </message>
     <message>
         <source>Unable to write %1</source>
-        <translation>No se puede escribir %1</translation>
+        <translation>Impossibile scrivere %1</translation>
     </message>
     <message>
         <source>Unable to read %1</source>
-        <translation>No se puede leer %1</translation>
+        <translation>Impossibile leggere %1</translation>
     </message>
     <message>
         <source>%1 is not a show file</source>
-        <translation>%1 no es un archivo de show</translation>
+        <translation>%1 non è un file di show</translation>
     </message>
     <message>
         <source>Error while loading %1</source>
-        <translation>Error al cargar %1</translation>
+        <translation>Errore durante il caricamento di %1</translation>
     </message>
     <message>
         <source>The effect gives no output to record</source>
-        <translation>El efecto no da ninguna salida que grabar</translation>
+        <translation>L&apos;effetto non produce nessuna uscita da registrare</translation>
     </message>
     <message>
         <source>%1 (steps)</source>
-        <translation>%1 (pasos)</translation>
+        <translation>%1 (passi)</translation>
     </message>
     <message>
         <source>%1 (channels)</source>
-        <translation>%1 (canales)</translation>
+        <translation>%1 (canali)</translation>
     </message>
 </context>
 <context>
@@ -1669,12 +1668,12 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Dimmer</translation>
     </message>
     <message>
-        <source>Color</source>
-        <translation>Color</translation>
+        <source>Colour</source>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>Position</source>
-        <translation>Posición</translation>
+        <translation>Posizione</translation>
     </message>
     <message>
         <source>Gobo</source>
@@ -1682,78 +1681,165 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Beam</source>
-        <translation>Haz</translation>
+        <translation>Fascio</translation>
     </message>
     <message>
         <source>Focus</source>
-        <translation>Foco</translation>
+        <translation>Fuoco</translation>
     </message>
     <message>
         <source>Others</source>
-        <translation>Otros</translation>
+        <translation>Altro</translation>
     </message>
     <message>
         <source>Select one or more fixtures to see their features</source>
-        <translation>Selecciona uno o más fixtures para ver sus features</translation>
+        <translation>Seleziona una o più fixture per vederne le funzioni</translation>
     </message>
     <message>
         <source>The selected fixtures have nothing in this tab</source>
-        <translation>Los fixtures seleccionados no tienen nada en esta pestaña</translation>
+        <translation>Le fixture selezionate non hanno nulla in questa scheda</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
+    </message>
+</context>
+<context>
+    <name>FirstStepsGuide</name>
+    <message>
+        <source>First steps</source>
+        <translation>Primi passi</translation>
+    </message>
+    <message>
+        <source>Five steps to light a stage: the fixtures, a look, a scene, the live page and the playbacks. Open the practice show to follow them, or go on with your own show.</source>
+        <translation>Cinque passi per illuminare un palco: le fixture, un look, una scena, la pagina Live e i playback. Apri lo show di prova per seguirli, o continua con il tuo show.</translation>
+    </message>
+    <message>
+        <source>1. Your fixtures</source>
+        <translation>1. Le tue fixture</translation>
+    </message>
+    <message>
+        <source>Patch holds the fixtures of the show. The practice show has 4 PARs and 2 moving heads. Add more with «Add fixtures»: the model, its mode, the universe, the address and how many.</source>
+        <translation>Patch contiene le fixture dello show. Lo show di prova ha 4 PAR e 2 teste mobili. Aggiungine altre con «Aggiungi fixture»: il modello, la sua modalità, l&apos;universo, l&apos;indirizzo e quante.</translation>
+    </message>
+    <message>
+        <source>2. A look</source>
+        <translation>2. Un look</translation>
+    </message>
+    <message>
+        <source>In Program, select fixtures (click them, or a group like «PARs») and give them dimmer, colour or position. It goes out at once, over everything else, while you program.</source>
+        <translation>In Programma, seleziona le fixture (cliccale, o clicca un gruppo come «PARs») e dai loro dimmer, colore o posizione. L&apos;uscita è immediata, sopra tutto il resto, mentre programmi.</translation>
+    </message>
+    <message>
+        <source>3. A scene</source>
+        <translation>3. Una scena</translation>
+    </message>
+    <message>
+        <source>«Record…» keeps what the programmer holds as a scene, in a group: choose «Mis escenas». Then «Reset all» clears the programmer so the scenes can play.</source>
+        <translation>«Registra…» salva il contenuto del programmatore come scena, in un gruppo: scegli «Mis escenas». Poi «Azzera tutto» svuota il programmatore così le scene possono andare.</translation>
+    </message>
+    <message>
+        <source>4. Live</source>
+        <translation>4. Live</translation>
+    </message>
+    <message>
+        <source>Live shows a column for each group. Click a scene to play it; in an exclusive group the next one crossfades. The master of the group dims all of it.</source>
+        <translation>Live mostra una colonna per ogni gruppo. Clicca una scena per avviarla; in un gruppo esclusivo la successiva entra in dissolvenza incrociata. Il master del gruppo regola l&apos;intensità di tutto il gruppo.</translation>
+    </message>
+    <message>
+        <source>5. Playbacks</source>
+        <translation>5. Playback</translation>
+    </message>
+    <message>
+        <source>The playbacks are faders with GO for cuelists and scenes. Arm «Record» on this page and click a playback: the programmer becomes a cue. GO plays the next cue.</source>
+        <translation>I playback sono fader con GO per cuelist e scene. Attiva «Registra» in questa pagina e clicca un playback: il programmatore diventa una cue. GO avvia la cue successiva.</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation>Pronto</translation>
+    </message>
+    <message>
+        <source>That&apos;s the way of working. F12, or the «?» of the top bar, opens the manual on the page you are on. Save your show with Ctrl+S.</source>
+        <translation>Ecco come si lavora. F12, o il «?» della barra superiore, apre il manuale alla pagina in cui sei. Salva il tuo show con Ctrl+S.</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 di %2</translation>
+    </message>
+    <message>
+        <source>Close the guide (Options › Help opens it again)</source>
+        <translation>Chiudi la guida (Opzioni › Aiuto la riapre)</translation>
+    </message>
+    <message>
+        <source>Open the practice show</source>
+        <translation>Apri lo show di prova</translation>
+    </message>
+    <message>
+        <source>Open the manual</source>
+        <translation>Apri il manuale</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Indietro</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Fatto</translation>
+    </message>
+    <message>
+        <source>Next</source>
+        <translation>Avanti</translation>
     </message>
 </context>
 <context>
     <name>FixtureEditorPage</name>
     <message>
         <source>Custom</source>
-        <translation>Personalizado</translation>
+        <translation>Personalizzato</translation>
     </message>
     <message>
         <source>Channel %1</source>
-        <translation>Canal %1</translation>
+        <translation>Canale %1</translation>
     </message>
     <message>
         <source>Fixture saved. It is available in the Patch, under %1.</source>
-        <translation>Fixture guardado. Ya está disponible en el Patch, dentro de %1.</translation>
+        <translation>Fixture salvata. È disponibile nel Patch, in %1.</translation>
     </message>
     <message>
         <source>My fixtures</source>
-        <translation>Mis fixtures</translation>
+        <translation>Le mie fixture</translation>
     </message>
     <message>
         <source>New fixture</source>
-        <translation>Nuevo fixture</translation>
+        <translation>Nuova fixture</translation>
     </message>
     <message>
         <source>Start from the library…</source>
-        <translation>Partir de la biblioteca…</translation>
+        <translation>Parti dalla libreria…</translation>
     </message>
     <message>
         <source>The fixtures you create appear here</source>
-        <translation>Aquí aparecen los fixtures que crees</translation>
+        <translation>Qui compaiono le fixture che crei</translation>
     </message>
     <message>
         <source>Unsaved changes</source>
-        <translation>Cambios sin guardar</translation>
+        <translation>Modifiche non salvate</translation>
     </message>
     <message>
         <source>Saved in your fixtures</source>
-        <translation>Guardado en tus fixtures</translation>
+        <translation>Salvata nelle tue fixture</translation>
     </message>
     <message>
         <source>Not saved yet</source>
-        <translation>Sin guardar todavía</translation>
+        <translation>Non ancora salvata</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
     <message>
         <source>Save fixture</source>
-        <translation>Guardar fixture</translation>
+        <translation>Salva fixture</translation>
     </message>
     <message>
         <source>Fixture</source>
@@ -1761,19 +1847,19 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Manufacturer</source>
-        <translation>Fabricante</translation>
+        <translation>Produttore</translation>
     </message>
     <message>
         <source>e.g. Generic, or the brand</source>
-        <translation>p. ej. Generic, o la marca</translation>
+        <translation>ad es. Generic, o la marca</translation>
     </message>
     <message>
         <source>Model</source>
-        <translation>Modelo</translation>
+        <translation>Modello</translation>
     </message>
     <message>
         <source>e.g. PAR 18x10W RGBWA</source>
-        <translation>p. ej. PAR 18x10W RGBWA</translation>
+        <translation>ad es. PAR 18x10W RGBWA</translation>
     </message>
     <message>
         <source>Type</source>
@@ -1781,51 +1867,51 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Channels (%1)</source>
-        <translation>Canales (%1)</translation>
+        <translation>Canali (%1)</translation>
     </message>
     <message>
         <source>Add</source>
-        <translation>Añadir</translation>
+        <translation>Aggiungi</translation>
     </message>
     <message>
         <source>Group</source>
-        <translation>Grupo</translation>
+        <translation>Gruppo</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation>Nessuno</translation>
     </message>
     <message>
         <source>Fine</source>
-        <translation>Fino</translation>
+        <translation>Fine</translation>
     </message>
     <message>
         <source>Ranges (%1)</source>
-        <translation>Rangos (%1)</translation>
+        <translation>Intervalli (%1)</translation>
     </message>
     <message>
         <source>Modes</source>
-        <translation>Modos</translation>
+        <translation>Modalità</translation>
     </message>
     <message>
         <source>Mode %1</source>
-        <translation>Modo %1</translation>
+        <translation>Modalità %1</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>DMX order of this mode. Tick the channels it uses and move them to the right position.</source>
-        <translation>Orden DMX de este modo. Marca los canales que usa y muévelos a su posición.</translation>
+        <translation>Ordine DMX di questa modalità. Spunta i canali che usa e spostali nella posizione giusta.</translation>
     </message>
     <message>
         <source>Custom channel</source>
-        <translation>Canal personalizado</translation>
+        <translation>Canale personalizzato</translation>
     </message>
     <message>
         <source>(copy)</source>
@@ -1833,15 +1919,15 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>“%1” has changes that are not saved. Discard them?</source>
-        <translation>“%1” tiene cambios sin guardar. ¿Descartarlos?</translation>
+        <translation>«%1» ha modifiche non salvate. Scartarle?</translation>
     </message>
     <message>
         <source>Keep editing</source>
-        <translation>Seguir editando</translation>
+        <translation>Continua a modificare</translation>
     </message>
     <message>
         <source>Discard changes</source>
-        <translation>Descartar cambios</translation>
+        <translation>Scarta modifiche</translation>
     </message>
 </context>
 <context>
@@ -1849,164 +1935,164 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message numerus="yes">
         <source>%n patched fixture(s) keep the previous version until patched again: their new mode doesn&apos;t fit where they are</source>
         <translation>
-            <numerusform>%n fixture patcheado mantiene la versión anterior hasta que se vuelva a patchear: su nuevo modo no cabe donde está</numerusform>
-            <numerusform>%n fixtures patcheados mantienen la versión anterior hasta que se vuelvan a patchear: su nuevo modo no cabe donde están</numerusform>
+            <numerusform>%n fixture patchata mantiene la versione precedente finché non viene patchata di nuovo: la sua nuova modalità non entra dove si trova</numerusform>
+            <numerusform>%n fixture patchate mantengono la versione precedente finché non vengono patchate di nuovo: la loro nuova modalità non entra dove si trovano</numerusform>
         </translation>
     </message>
     <message>
         <source>%1 file(s) imported, %2 new fixture(s) in the library</source>
-        <translation>%1 archivo(s) importado(s), %2 fixture(s) nuevo(s) en la biblioteca</translation>
+        <translation>File importati: %1, fixture nuove nella libreria: %2</translation>
     </message>
     <message>
         <source>A GDTF import is already running</source>
-        <translation>Ya hay una importación GDTF en marcha</translation>
+        <translation>È già in corso un&apos;importazione GDTF</translation>
     </message>
     <message numerus="yes">
         <source>Converting %n GDTF file(s)…</source>
         <translation>
-            <numerusform>Convirtiendo %n archivo GDTF…</numerusform>
-            <numerusform>Convirtiendo %n archivos GDTF…</numerusform>
+            <numerusform>Conversione di %n file GDTF…</numerusform>
+            <numerusform>Conversione di %n file GDTF…</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>GDTF import stopped: %n fixture(s) converted</source>
         <translation>
-            <numerusform>Importación GDTF detenida: %n fixture convertida</numerusform>
-            <numerusform>Importación GDTF detenida: %n fixtures convertidas</numerusform>
+            <numerusform>Importazione GDTF interrotta: %n fixture convertita</numerusform>
+            <numerusform>Importazione GDTF interrotta: %n fixture convertite</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>GDTF: %n fixture(s) converted</source>
         <translation>
-            <numerusform>GDTF: %n fixture convertida</numerusform>
-            <numerusform>GDTF: %n fixtures convertidas</numerusform>
+            <numerusform>GDTF: %n fixture convertita</numerusform>
+            <numerusform>GDTF: %n fixture convertite</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n new in the library</source>
         <translation>
-            <numerusform>%n nueva en la biblioteca</numerusform>
-            <numerusform>%n nuevas en la biblioteca</numerusform>
+            <numerusform>%n nuova nella libreria</numerusform>
+            <numerusform>%n nuove nella libreria</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n .qxf file(s) imported</source>
         <translation>
-            <numerusform>%n archivo .qxf importado</numerusform>
-            <numerusform>%n archivos .qxf importados</numerusform>
+            <numerusform>%n file .qxf importato</numerusform>
+            <numerusform>%n file .qxf importati</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n couldn&apos;t be read</source>
         <translation>
-            <numerusform>%n no se pudo leer</numerusform>
-            <numerusform>%n no se pudieron leer</numerusform>
+            <numerusform>%n illeggibile</numerusform>
+            <numerusform>%n illeggibili</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n warning(s)</source>
         <translation>
-            <numerusform>%n aviso</numerusform>
-            <numerusform>%n avisos</numerusform>
+            <numerusform>%n avviso</numerusform>
+            <numerusform>%n avvisi</numerusform>
         </translation>
     </message>
     <message>
         <source>No QLC+ user fixtures found</source>
-        <translation>No se han encontrado fixtures de usuario de QLC+</translation>
+        <translation>Nessuna fixture utente di QLC+ trovata</translation>
     </message>
     <message>
         <source>Downloading the Open Fixture Library…</source>
-        <translation>Descargando la Open Fixture Library…</translation>
+        <translation>Download della Open Fixture Library…</translation>
     </message>
     <message>
         <source>Download cancelled</source>
-        <translation>Descarga cancelada</translation>
+        <translation>Download annullato</translation>
     </message>
     <message>
         <source>Download failed: %1</source>
-        <translation>Error en la descarga: %1</translation>
+        <translation>Download non riuscito: %1</translation>
     </message>
     <message>
         <source>Unable to write %1</source>
-        <translation>No se puede escribir %1</translation>
+        <translation>Impossibile scrivere %1</translation>
     </message>
     <message>
         <source>Open Fixture Library: %1 fixtures downloaded, %2 new in the library</source>
-        <translation>Open Fixture Library: %1 fixtures descargados, %2 nuevos en la biblioteca</translation>
+        <translation>Open Fixture Library: %1 fixture scaricate, %2 nuove nella libreria</translation>
     </message>
     <message>
         <source>Manufacturer and model are required</source>
-        <translation>El fabricante y el modelo son obligatorios</translation>
+        <translation>Produttore e modello sono obbligatori</translation>
     </message>
     <message>
         <source>The fixture needs at least one channel</source>
-        <translation>El fixture necesita al menos un canal</translation>
+        <translation>La fixture deve avere almeno un canale</translation>
     </message>
     <message>
         <source>The fixture needs at least one mode</source>
-        <translation>El fixture necesita al menos un modo</translation>
+        <translation>La fixture deve avere almeno una modalità</translation>
     </message>
     <message>
         <source>Every channel needs a name</source>
-        <translation>Todos los canales necesitan un nombre</translation>
+        <translation>Ogni canale deve avere un nome</translation>
     </message>
     <message>
         <source>There are two channels called %1</source>
-        <translation>Hay dos canales llamados %1</translation>
+        <translation>Ci sono due canali chiamati %1</translation>
     </message>
     <message>
         <source>Overlapping ranges in channel %1</source>
-        <translation>Rangos solapados en el canal %1</translation>
+        <translation>Intervalli sovrapposti nel canale %1</translation>
     </message>
     <message>
         <source>Every mode needs a name</source>
-        <translation>Todos los modos necesitan un nombre</translation>
+        <translation>Ogni modalità deve avere un nome</translation>
     </message>
     <message>
         <source>There are two modes called %1</source>
-        <translation>Hay dos modos llamados %1</translation>
+        <translation>Ci sono due modalità chiamate %1</translation>
     </message>
     <message>
         <source>Mode %1 has no channels</source>
-        <translation>El modo %1 no tiene canales</translation>
+        <translation>La modalità %1 non ha canali</translation>
     </message>
     <message>
         <source>Mode %1 uses an invalid or repeated channel</source>
-        <translation>El modo %1 usa un canal no válido o repetido</translation>
+        <translation>La modalità %1 usa un canale non valido o ripetuto</translation>
     </message>
     <message>
         <source>The saved definition can&apos;t be read back</source>
-        <translation>No se puede volver a leer la definición guardada</translation>
+        <translation>Impossibile rileggere la definizione salvata</translation>
     </message>
     <message>
         <source>%1 %2 saved</source>
-        <translation>%1 %2 guardado</translation>
+        <translation>%1 %2 salvata</translation>
     </message>
     <message>
-        <source>%1 %2 deleted. It disappears from the library at the next start</source>
-        <translation>%1 %2 eliminado. Desaparecerá de la biblioteca en el próximo arranque</translation>
+        <source>%1 %2 deleted. It will disappear from the library on the next start</source>
+        <translation>%1 %2 eliminata. Sparirà dalla libreria al prossimo avvio</translation>
     </message>
 </context>
 <context>
     <name>FixtureOptionsDialog</name>
     <message>
         <source>Limits</source>
-        <translation>Límites</translation>
+        <translation>Limiti</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message>
         <source>Reset</source>
-        <translation>Restablecer</translation>
+        <translation>Ripristina</translation>
     </message>
     <message>
         <source>No limits, no inverted or swapped axes</source>
-        <translation>Sin límites ni ejes invertidos o intercambiados</translation>
+        <translation>Nessun limite, nessun asse invertito o scambiato</translation>
     </message>
     <message>
         <source>Dimmer</source>
@@ -2022,157 +2108,157 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Invert pan</source>
-        <translation>Invertir pan</translation>
+        <translation>Inverti pan</translation>
     </message>
     <message>
         <source>Invert tilt</source>
-        <translation>Invertir tilt</translation>
+        <translation>Inverti tilt</translation>
     </message>
     <message>
         <source>Swap pan and tilt</source>
-        <translation>Intercambiar pan y tilt</translation>
+        <translation>Scambia pan e tilt</translation>
     </message>
     <message>
         <source>This fixture has no dimmer, pan or tilt to limit.</source>
-        <translation>Este fixture no tiene dimmer, pan ni tilt que limitar.</translation>
+        <translation>Questa fixture non ha dimmer, pan o tilt da limitare.</translation>
     </message>
     <message>
         <source>These fixtures have no dimmer, pan or tilt to limit.</source>
-        <translation>Estos fixtures no tienen dimmer, pan ni tilt que limitar.</translation>
+        <translation>Queste fixture non hanno dimmer, pan o tilt da limitare.</translation>
     </message>
     <message>
-        <source>The values shown are the ones of the first fixture that has each control. What you change applies to all the fixtures that have it.</source>
-        <translation>Los valores que se ven son los del primer fixture que tiene cada control. Lo que cambies se aplica a todos los fixtures que lo tienen.</translation>
+        <source>The values shown are those of the first fixture that has each control. What you change applies to all the fixtures that have it.</source>
+        <translation>I valori mostrati sono quelli della prima fixture che ha ciascun controllo. Ciò che cambi si applica a tutte le fixture che lo hanno.</translation>
     </message>
     <message>
         <source>Channels</source>
-        <translation>Canales</translation>
+        <translation>Canali</translation>
     </message>
     <message>
         <source>Fades</source>
-        <translation>Fundidos</translation>
+        <translation>Dissolvenze</translation>
     </message>
     <message>
         <source>Follows the fade times. Off: jumps straight to its value (colour and gobo wheels)</source>
-        <translation>Sigue los tiempos de fundido. Apagado: salta directamente a su valor (ruedas de color y gobos)</translation>
+        <translation>Segue i tempi di dissolvenza. Disattivato: salta subito al suo valore (ruote colori e gobo)</translation>
     </message>
     <message>
         <source>Scaled by the grand master, the group masters and the scene dimmers</source>
-        <translation>Lo escalan el gran master, los masters de grupo y los dimmers de escena</translation>
+        <translation>Scalato dal grand master, dai master di gruppo e dai dimmer di scena</translation>
     </message>
     <message>
         <source>Limits act on the output: scenes, effects and live edits keep their values.</source>
-        <translation>Los límites actúan en la salida: escenas, efectos y edición en vivo conservan sus valores.</translation>
+        <translation>I limiti agiscono sull&apos;uscita: scene, effetti e modifiche dal vivo mantengono i loro valori.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation>Chiudi</translation>
     </message>
 </context>
 <context>
     <name>FunctionPicker</name>
     <message>
         <source>Add scenes to %1</source>
-        <translation>Añadir escenas a %1</translation>
+        <translation>Aggiungi scene a %1</translation>
     </message>
     <message>
-        <source>There are no scenes yet. Create one in the Program page, or open a QLC+ show.</source>
-        <translation>Aún no hay escenas. Crea una en la página Programar o abre un show de QLC+.</translation>
+        <source>There are no scenes yet. Create one on the Program page, or open a QLC+ show.</source>
+        <translation>Non ci sono ancora scene. Creane una nella pagina Programma, o apri uno show di QLC+.</translation>
     </message>
     <message>
         <source>Nothing left to add</source>
-        <translation>No queda nada por añadir</translation>
+        <translation>Non resta niente da aggiungere</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Add %1</source>
-        <translation>Añadir %1</translation>
+        <translation>Aggiungi %1</translation>
     </message>
 </context>
 <context>
     <name>FxControls</name>
     <message>
         <source>Mode %1</source>
-        <translation>Modo %1</translation>
+        <translation>Modalità %1</translation>
     </message>
     <message>
         <source>Figure: click to choose another</source>
-        <translation>Figura: clic para elegir otra</translation>
+        <translation>Figura: clicca per sceglierne un&apos;altra</translation>
     </message>
     <message>
         <source>Mode: click to choose another</source>
-        <translation>Modo: clic para elegir otro</translation>
+        <translation>Modalità: clicca per sceglierne un&apos;altra</translation>
     </message>
     <message>
         <source>Swing pan</source>
-        <translation>Amplitud pan</translation>
+        <translation>Ampiezza pan</translation>
     </message>
     <message>
         <source>Swing</source>
-        <translation>Amplitud</translation>
+        <translation>Ampiezza</translation>
     </message>
     <message>
         <source>Swing tilt</source>
-        <translation>Amplitud tilt</translation>
+        <translation>Ampiezza tilt</translation>
     </message>
     <message>
         <source>Speed</source>
-        <translation>Velocidad</translation>
+        <translation>Velocità</translation>
     </message>
     <message>
         <source>show</source>
-        <translation>del show</translation>
+        <translation>dello show</translation>
     </message>
     <message>
         <source>stop</source>
-        <translation>parado</translation>
+        <translation>fermo</translation>
     </message>
     <message>
         <source>Half the speed</source>
-        <translation>La mitad de rápido</translation>
+        <translation>Metà velocità</translation>
     </message>
     <message>
         <source>Twice the speed</source>
-        <translation>El doble de rápido</translation>
+        <translation>Doppia velocità</translation>
     </message>
     <message>
         <source>BPM of the show</source>
-        <translation>BPM del show</translation>
+        <translation>BPM dello show</translation>
     </message>
     <message>
         <source>The speed follows the BPM (tap, BeatGO)</source>
-        <translation>La velocidad sigue al BPM (tap, BeatGO)</translation>
+        <translation>La velocità segue i BPM (tap, BeatGO)</translation>
     </message>
     <message>
         <source>Multiplier</source>
-        <translation>Multiplicador</translation>
+        <translation>Moltiplicatore</translation>
     </message>
     <message>
         <source>Invert pan</source>
-        <translation>Invertir pan</translation>
+        <translation>Inverti pan</translation>
     </message>
     <message>
         <source>Invert tilt</source>
-        <translation>Invertir tilt</translation>
+        <translation>Inverti tilt</translation>
     </message>
     <message>
         <source>Backwards</source>
-        <translation>Al revés</translation>
+        <translation>Al contrario</translation>
     </message>
     <message>
         <source>Rotate</source>
-        <translation>Girar</translation>
-    </message>
-    <message>
-        <source>FX timing</source>
-        <translation>Timing del FX</translation>
+        <translation>Ruota</translation>
     </message>
     <message>
         <source>FX timing: for the whole FX (except the phase)</source>
-        <translation>Timing del FX: para todo el FX (salvo la fase)</translation>
+        <translation>Timing FX: per tutto l&apos;FX (tranne la fase)</translation>
+    </message>
+    <message>
+        <source>FX timing</source>
+        <translation>Timing FX</translation>
     </message>
     <message>
         <source>Off</source>
@@ -2180,79 +2266,79 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>All (%1)</source>
-        <translation>Todas (%1)</translation>
+        <translation>Tutte (%1)</translation>
     </message>
     <message>
         <source>Wave per X</source>
-        <translation>Ola por X</translation>
+        <translation>Onda per X</translation>
     </message>
     <message>
         <source>The shape spreads over X fixtures (or sets): each one a bit later</source>
-        <translation>La forma se reparte entre X fixtures (o conjuntos): cada una un poco más tarde</translation>
+        <translation>La forma si distribuisce su X fixture (o insiemi): ognuna un po&apos; più tardi</translation>
     </message>
     <message>
         <source>Step per X</source>
-        <translation>Paso por X</translation>
+        <translation>Passo per X</translation>
     </message>
     <message>
         <source>One fixture (or set) after the other, X of them</source>
-        <translation>Una fixture (o conjunto) detrás de otra, de X en X</translation>
+        <translation>Una fixture (o insieme) dopo l&apos;altra, X alla volta</translation>
     </message>
     <message>
         <source>Grouping</source>
-        <translation>Agrupar</translation>
+        <translation>Raggruppamento</translation>
     </message>
     <message>
         <source>Every X</source>
-        <translation>Cada X</translation>
+        <translation>Ogni X</translation>
     </message>
     <message>
         <source>Blocks of X</source>
-        <translation>Bloques de X</translation>
+        <translation>Blocchi di X</translation>
     </message>
     <message>
         <source>Divide by X</source>
-        <translation>Dividir en X</translation>
+        <translation>Dividi in X</translation>
     </message>
     <message>
         <source>Mirror</source>
-        <translation>Espejo</translation>
+        <translation>Specchio</translation>
     </message>
     <message>
         <source>By group</source>
-        <translation>Por grupo</translation>
+        <translation>Per gruppo</translation>
     </message>
     <message>
         <source>Order</source>
-        <translation>Orden</translation>
+        <translation>Ordine</translation>
     </message>
     <message>
         <source>Selection</source>
-        <translation>Selección</translation>
+        <translation>Selezione</translation>
     </message>
     <message>
         <source>Reversed</source>
-        <translation>Invertido</translation>
+        <translation>Invertito</translation>
     </message>
     <message>
         <source>Random</source>
-        <translation>Aleatorio</translation>
+        <translation>Casuale</translation>
     </message>
     <message>
         <source>By number</source>
-        <translation>Por número</translation>
+        <translation>Per numero</translation>
     </message>
     <message>
         <source>Another random order</source>
-        <translation>Otro orden aleatorio</translation>
+        <translation>Un altro ordine casuale</translation>
     </message>
     <message>
         <source>Wait</source>
-        <translation>Espera</translation>
+        <translation>Attesa</translation>
     </message>
     <message>
         <source>Time at the base after each run</source>
-        <translation>Tiempo en la base después de cada pasada</translation>
+        <translation>Tempo alla base dopo ogni passata</translation>
     </message>
     <message>
         <source>Phase</source>
@@ -2263,15 +2349,15 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>FxMacros</name>
     <message>
         <source>Circle</source>
-        <translation>Círculo</translation>
+        <translation>Cerchio</translation>
     </message>
     <message>
         <source>Circle wave</source>
-        <translation>Círculo en ola</translation>
+        <translation>Cerchio a onda</translation>
     </message>
     <message>
         <source>Eight</source>
-        <translation>Ocho</translation>
+        <translation>Otto</translation>
     </message>
     <message>
         <source>Ballyhoo</source>
@@ -2279,7 +2365,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pan sweep</source>
-        <translation>Barrido de pan</translation>
+        <translation>Spazzata pan</translation>
     </message>
     <message>
         <source>Can-can</source>
@@ -2287,63 +2373,63 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pan in mirror</source>
-        <translation>Pan en espejo</translation>
+        <translation>Pan a specchio</translation>
     </message>
     <message>
         <source>Square</source>
-        <translation>Cuadrado</translation>
+        <translation>Quadrato</translation>
     </message>
     <message>
         <source>Triangle</source>
-        <translation>Triángulo</translation>
+        <translation>Triangolo</translation>
     </message>
     <message>
         <source>Leaf</source>
-        <translation>Trébol</translation>
+        <translation>Trifoglio</translation>
     </message>
     <message>
         <source>Dimmer wave</source>
-        <translation>Ola de dimmer</translation>
+        <translation>Onda di dimmer</translation>
     </message>
     <message>
         <source>Chase</source>
-        <translation>Persecución</translation>
+        <translation>Chase</translation>
     </message>
     <message>
         <source>Random</source>
-        <translation>Aleatorio</translation>
+        <translation>Casuale</translation>
     </message>
     <message>
         <source>Pulse</source>
-        <translation>Pulso</translation>
+        <translation>Impulso</translation>
     </message>
     <message>
         <source>Breathe</source>
-        <translation>Respiración</translation>
+        <translation>Respiro</translation>
     </message>
     <message>
         <source>Strobe</source>
-        <translation>Estrobo</translation>
+        <translation>Strobo</translation>
     </message>
     <message>
         <source>Outside in</source>
-        <translation>De fuera a dentro</translation>
+        <translation>Da fuori a dentro</translation>
     </message>
     <message>
         <source>Rainbow</source>
-        <translation>Arcoíris</translation>
+        <translation>Arcobaleno</translation>
     </message>
     <message>
         <source>Red / blue</source>
-        <translation>Rojo / azul</translation>
+        <translation>Rosso / blu</translation>
     </message>
     <message>
         <source>Fire</source>
-        <translation>Fuego</translation>
+        <translation>Fuoco</translation>
     </message>
     <message>
         <source>Cyan / magenta</source>
-        <translation>Cian / magenta</translation>
+        <translation>Ciano / magenta</translation>
     </message>
     <message>
         <source>Zoom</source>
@@ -2355,7 +2441,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Focus</source>
-        <translation>Foco</translation>
+        <translation>Fuoco</translation>
     </message>
     <message>
         <source>Macro %1</source>
@@ -2366,34 +2452,34 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>FxPanel</name>
     <message>
         <source>Parameter</source>
-        <translation>Parámetro</translation>
+        <translation>Parametro</translation>
     </message>
     <message>
         <source>Select fixtures</source>
-        <translation>Selecciona fixtures</translation>
+        <translation>Seleziona fixture</translation>
     </message>
     <message>
         <source>Running FX (%1)</source>
-        <translation>FX en marcha (%1)</translation>
+        <translation>FX attivi (%1)</translation>
     </message>
     <message numerus="yes">
         <source>%n own</source>
         <translation>
-            <numerusform>%n propia</numerusform>
-            <numerusform>%n propias</numerusform>
+            <numerusform>%n propria</numerusform>
+            <numerusform>%n proprie</numerusform>
         </translation>
     </message>
     <message>
         <source>Stop this FX</source>
-        <translation>Parar este FX</translation>
+        <translation>Ferma questo FX</translation>
     </message>
     <message>
         <source>Stop all the FX</source>
-        <translation>Parar todos los FX</translation>
+        <translation>Ferma tutti gli FX</translation>
     </message>
     <message>
         <source>FX on %1</source>
-        <translation>FX en %1</translation>
+        <translation>FX su %1</translation>
     </message>
     <message>
         <source>FX</source>
@@ -2403,107 +2489,107 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message>
         <source>Link</source>
-        <translation>Enlazar</translation>
+        <translation>Collega</translation>
     </message>
     <message>
         <source>Linked FX share the speed and the timing (and stop together)</source>
-        <translation>Los FX enlazados comparten la velocidad y el timing (y se paran juntos)</translation>
+        <translation>Gli FX collegati condividono la velocità e il timing (e si fermano insieme)</translation>
     </message>
     <message>
         <source>Start FX</source>
-        <translation>Empezar FX</translation>
+        <translation>Avvia FX</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation>Parar</translation>
+        <translation>Ferma</translation>
     </message>
     <message>
         <source>Select fixtures, then choose a parameter or a macro. The FX moves the parameter around its value in the programmer, or around what the scenes below send if it has none.</source>
-        <translation>Selecciona fixtures y elige un parámetro o una macro. El FX mueve el parámetro alrededor de su valor en el programador o, si no tiene, alrededor de lo que mandan las escenas de debajo.</translation>
+        <translation>Seleziona le fixture, poi scegli un parametro o una macro. L&apos;FX muove il parametro attorno al suo valore nel programmatore o, se non ne ha, attorno a ciò che inviano le scene sottostanti.</translation>
     </message>
     <message>
         <source>This FX is also on other fixtures. The shape, size, direction and phase change only on the selected ones; the speed and the timing on the whole FX, so they all stay in sync.</source>
-        <translation>Este FX también está en otras luminarias. La forma, el tamaño, el sentido y la fase cambian solo en las seleccionadas; la velocidad y el timing, en todo el FX, así que siguen sincronizadas.</translation>
+        <translation>Questo FX è anche su altre fixture. Forma, dimensione, direzione e fase cambiano solo su quelle selezionate; la velocità e il timing su tutto l&apos;FX, così restano tutte sincronizzate.</translation>
     </message>
     <message numerus="yes">
         <source>%n of the selected fixture(s) do this FX their own way.</source>
         <translation>
-            <numerusform>%n de las luminarias seleccionadas hace este FX a su manera.</numerusform>
-            <numerusform>%n de las luminarias seleccionadas hacen este FX a su manera.</numerusform>
+            <numerusform>%n delle fixture selezionate fa questo FX a modo suo.</numerusform>
+            <numerusform>%n delle fixture selezionate fanno questo FX a modo loro.</numerusform>
         </translation>
     </message>
     <message>
         <source>Like the rest</source>
-        <translation>Como el resto</translation>
+        <translation>Come le altre</translation>
     </message>
     <message>
-        <source>The selected fixtures do what the FX does again</source>
-        <translation>Las luminarias seleccionadas vuelven a hacer lo mismo que el FX</translation>
+        <source>The selected fixtures follow the FX again</source>
+        <translation>Le fixture selezionate tornano a seguire l&apos;FX</translation>
     </message>
     <message>
         <source>Mirror: the fixtures that go the other way round follow the wave of their twin on the other side.</source>
-        <translation>Espejo: las luminarias que van al revés siguen la ola de su pareja del otro lado.</translation>
+        <translation>Specchio: le fixture che vanno al contrario seguono l&apos;onda della loro gemella dall&apos;altro lato.</translation>
     </message>
     <message>
         <source>FX macros</source>
-        <translation>Macros FX</translation>
+        <translation>Macro FX</translation>
     </message>
     <message>
         <source>Position</source>
-        <translation>Posición</translation>
+        <translation>Posizione</translation>
     </message>
     <message>
         <source>Intensity</source>
-        <translation>Intensidad</translation>
+        <translation>Intensità</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>Beam</source>
-        <translation>Haz</translation>
+        <translation>Fascio</translation>
     </message>
     <message>
         <source>Mine</source>
-        <translation>Mías</translation>
+        <translation>Mie</translation>
     </message>
     <message>
         <source>Select fixtures first</source>
-        <translation>Selecciona fixtures primero</translation>
+        <translation>Seleziona prima delle fixture</translation>
     </message>
     <message>
         <source>None of the selected fixtures has what %1 moves</source>
-        <translation>Ninguna fixture seleccionada tiene lo que mueve %1</translation>
+        <translation>Nessuna fixture selezionata ha ciò che muove %1</translation>
     </message>
     <message>
         <source>%1 (right click: rename or delete)</source>
-        <translation>%1 (clic derecho: renombrar o eliminar)</translation>
+        <translation>%1 (clic destro: rinomina o elimina)</translation>
     </message>
     <message>
         <source>Save as a macro…</source>
-        <translation>Guardar como macro…</translation>
+        <translation>Salva come macro…</translation>
     </message>
     <message>
         <source>Name of the macro</source>
-        <translation>Nombre de la macro</translation>
+        <translation>Nome della macro</translation>
     </message>
     <message>
         <source>Saved in your macros</source>
-        <translation>Guardada en tus macros</translation>
+        <translation>Salvata nelle tue macro</translation>
     </message>
     <message>
         <source>Rename</source>
-        <translation>Renombrar</translation>
+        <translation>Rinomina</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
@@ -2516,40 +2602,40 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message>
         <source>BPM of the show</source>
-        <translation>BPM del show</translation>
+        <translation>BPM dello show</translation>
     </message>
     <message>
         <source>Remove this FX</source>
-        <translation>Quitar este FX</translation>
+        <translation>Rimuovi questo FX</translation>
     </message>
     <message>
         <source>No FX: only base values. Add FX in the programmer.</source>
-        <translation>Sin FX: solo valores base. Añade FX en el programador.</translation>
+        <translation>Nessun FX: solo valori base. Aggiungi FX nel programmatore.</translation>
     </message>
     <message>
         <source>%1 base values on %2 fixtures. Without a base value, an FX moves what the scenes below send.</source>
-        <translation>%1 valores base en %2 fixtures. Sin valor base, un FX mueve lo que mandan las escenas de debajo.</translation>
+        <translation>%1 valori base su %2 fixture. Senza valore base, un FX muove ciò che inviano le scene sottostanti.</translation>
     </message>
     <message>
         <source>Edit in the programmer</source>
-        <translation>Editar en el programador</translation>
+        <translation>Modifica nel programmatore</translation>
     </message>
     <message>
         <source>There, change base values or add FX, then save the programmer in this scene.</source>
-        <translation>Allí cambia valores base o añade FX, y luego guarda el programador en esta escena.</translation>
+        <translation>Lì cambia i valori base o aggiungi FX, poi salva il programmatore in questa scena.</translation>
     </message>
     <message>
         <source>Save the programmer in this scene</source>
-        <translation>Guardar el programador en esta escena</translation>
+        <translation>Salva il programmatore in questa scena</translation>
     </message>
     <message>
         <source>FX on %1</source>
-        <translation>FX en %1</translation>
+        <translation>FX su %1</translation>
     </message>
     <message>
         <source>FX</source>
@@ -2558,17 +2644,17 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message numerus="yes">
         <source>%n fixture(s) do this FX their own way. A change of the shape, size, direction or phase here makes them all do the same.</source>
         <translation>
-            <numerusform>%n luminaria hace este FX a su manera. Si cambias aquí la forma, el tamaño, el sentido o la fase, todas harán lo mismo.</numerusform>
-            <numerusform>%n luminarias hacen este FX a su manera. Si cambias aquí la forma, el tamaño, el sentido o la fase, todas harán lo mismo.</numerusform>
+            <numerusform>%n fixture fa questo FX a modo suo. Se qui cambi forma, dimensione, direzione o fase, tutte faranno lo stesso.</numerusform>
+            <numerusform>%n fixture fanno questo FX a modo loro. Se qui cambi forma, dimensione, direzione o fase, tutte faranno lo stesso.</numerusform>
         </translation>
     </message>
     <message>
         <source>Link</source>
-        <translation>Enlazar</translation>
+        <translation>Collega</translation>
     </message>
     <message>
         <source>Linked FX share the speed and the timing</source>
-        <translation>Los FX enlazados comparten la velocidad y el timing</translation>
+        <translation>Gli FX collegati condividono la velocità e il timing</translation>
     </message>
 </context>
 <context>
@@ -2579,11 +2665,34 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Mode</source>
-        <translation>Modo</translation>
+        <translation>Modalità</translation>
     </message>
     <message>
         <source>The dotted line is the base value: the wave goes above it, below it or both. Modes 9 to 12 are for chases, with a step.</source>
-        <translation>La línea de puntos es el valor base: la onda va por encima, por debajo o por los dos lados. Los modos 9 a 12 son para persecuciones, con paso.</translation>
+        <translation>La linea tratteggiata è il valore base: l&apos;onda va sopra, sotto o da entrambi i lati. Le modalità da 9 a 12 sono per i chase, a passi.</translation>
+    </message>
+</context>
+<context>
+    <name>HelpPanel</name>
+    <message>
+        <source>Back</source>
+        <translation>Indietro</translation>
+    </message>
+    <message>
+        <source>Contents</source>
+        <translation>Indice</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manuale</translation>
+    </message>
+    <message>
+        <source>Manual (in Spanish)</source>
+        <translation>Manuale (in spagnolo)</translation>
+    </message>
+    <message>
+        <source>Close (Esc)</source>
+        <translation>Chiudi (Esc)</translation>
     </message>
 </context>
 <context>
@@ -2597,53 +2706,53 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>LibraryPicker</name>
     <message>
         <source>Start from a library fixture</source>
-        <translation>Partir de un fixture de la biblioteca</translation>
+        <translation>Parti da una fixture della libreria</translation>
     </message>
     <message>
         <source>Search manufacturer…</source>
-        <translation>Buscar fabricante…</translation>
+        <translation>Cerca produttore…</translation>
     </message>
     <message>
         <source>Manufacturer</source>
-        <translation>Fabricante</translation>
+        <translation>Produttore</translation>
     </message>
     <message>
         <source>Model</source>
-        <translation>Modelo</translation>
+        <translation>Modello</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
 </context>
 <context>
     <name>LiveMixer</name>
     <message>
         <source>All fixtures</source>
-        <translation>Todos los fixtures</translation>
+        <translation>Tutte le fixture</translation>
     </message>
 </context>
 <context>
     <name>LivePage</name>
     <message>
         <source>Live</source>
-        <translation>Directo</translation>
+        <translation>Live</translation>
     </message>
     <message>
         <source>Groups run in parallel. In an exclusive group only one scene plays at a time.</source>
-        <translation>Los grupos funcionan en paralelo. En un grupo exclusivo solo suena una escena a la vez.</translation>
+        <translation>I gruppi funzionano in parallelo. In un gruppo esclusivo è attiva una sola scena alla volta.</translation>
     </message>
     <message>
         <source>Previous scene in every playing group</source>
-        <translation>Escena anterior en cada grupo que suena</translation>
+        <translation>Scena precedente in ogni gruppo attivo</translation>
     </message>
     <message>
         <source>Next scene in every playing group</source>
-        <translation>Escena siguiente en cada grupo que suena</translation>
+        <translation>Scena successiva in ogni gruppo attivo</translation>
     </message>
     <message>
         <source>Resume</source>
-        <translation>Reanudar</translation>
+        <translation>Riprendi</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -2651,43 +2760,43 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Release groups</source>
-        <translation>Liberar grupos</translation>
+        <translation>Rilascia gruppi</translation>
     </message>
     <message>
         <source>Mixer</source>
-        <translation>Mezclador</translation>
+        <translation>Mixer</translation>
     </message>
     <message>
         <source>The mixer is changing the output</source>
-        <translation>El mezclador está cambiando la salida</translation>
+        <translation>Il mixer sta modificando l&apos;uscita</translation>
     </message>
     <message>
         <source>Live mixer by fixture group</source>
-        <translation>Mezclador en vivo por grupo de fixtures</translation>
+        <translation>Mixer dal vivo per gruppo di fixture</translation>
     </message>
     <message>
         <source>New group</source>
-        <translation>Nuevo grupo</translation>
+        <translation>Nuovo gruppo</translation>
     </message>
     <message>
         <source>Create your first group</source>
-        <translation>Crea tu primer grupo</translation>
+        <translation>Crea il tuo primo gruppo</translation>
     </message>
     <message>
         <source>Add group</source>
-        <translation>Añadir grupo</translation>
+        <translation>Aggiungi gruppo</translation>
     </message>
     <message>
         <source>e.g. Wash, Spots, Strobes, Effects</source>
-        <translation>p. ej. Wash, Spots, Strobos, Efectos</translation>
+        <translation>ad es. Wash, Spot, Strobo, Effetti</translation>
     </message>
     <message>
         <source>Reset the mixer</source>
-        <translation>Restablecer el mezclador</translation>
+        <translation>Ripristina il mixer</translation>
     </message>
     <message>
         <source>The mixer works on what goes out, on top of every scene and live edit. Make fixture groups in Patch to get a mixer for each. Ctrl+click keeps a flash on.</source>
-        <translation>El mezclador actúa sobre lo que sale, por encima de cada escena y edición en vivo. Crea grupos de fixtures en Patch para tener un mezclador por grupo. Ctrl+clic deja un flash encendido.</translation>
+        <translation>Il mixer agisce su ciò che esce, sopra ogni scena e modifica dal vivo. Crea gruppi di fixture in Patch per avere un mixer per ciascuno. Ctrl+clic tiene acceso un flash.</translation>
     </message>
 </context>
 <context>
@@ -2698,122 +2807,130 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Patch, Fixtures, Outputs, Mappings and Options</source>
-        <translation>Patch, Fixtures, Salidas, Mapeos y Opciones</translation>
+        <translation>Patch, Fixture, Uscite, Mappature e Opzioni</translation>
     </message>
     <message>
         <source>Programming</source>
-        <translation>Programación</translation>
+        <translation>Programmazione</translation>
     </message>
     <message>
         <source>Program and Scenes</source>
-        <translation>Programar y Escenas</translation>
+        <translation>Programma e Scene</translation>
     </message>
     <message>
         <source>SHOW editing</source>
-        <translation>Edición del SHOW</translation>
+        <translation>Modifica dello SHOW</translation>
     </message>
     <message>
         <source>The SHOW pages are played, not changed</source>
-        <translation>Las páginas del SHOW se usan, no se cambian</translation>
+        <translation>Le pagine dello SHOW si usano, non si modificano</translation>
     </message>
     <message>
         <source>Lock</source>
-        <translation>Bloquear</translation>
+        <translation>Blocca</translation>
     </message>
     <message>
         <source>Unlock</source>
-        <translation>Desbloquear</translation>
+        <translation>Sblocca</translation>
     </message>
     <message>
         <source>So nothing changes by mistake during the show. Live and the SHOW keep working.</source>
-        <translation>Para que nada cambie por error durante el show. Directo y el SHOW siguen funcionando.</translation>
+        <translation>Così niente cambia per errore durante lo show. Live e lo SHOW continuano a funzionare.</translation>
     </message>
     <message>
         <source>Password</source>
-        <translation>Contraseña</translation>
+        <translation>Password</translation>
     </message>
     <message>
-        <source>New password (empty: keep the one there is)</source>
-        <translation>Contraseña nueva (vacía: se queda la que hay)</translation>
+        <source>New password (empty: keep the current one)</source>
+        <translation>Nuova password (vuota: resta quella attuale)</translation>
     </message>
     <message>
         <source>Password (optional)</source>
-        <translation>Contraseña (opcional)</translation>
+        <translation>Password (facoltativa)</translation>
     </message>
     <message>
         <source>Wrong password</source>
-        <translation>Contraseña incorrecta</translation>
+        <translation>Password errata</translation>
     </message>
     <message>
         <source>Remove the password</source>
-        <translation>Quitar la contraseña</translation>
+        <translation>Rimuovi la password</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
 </context>
 <context>
     <name>Main</name>
     <message>
         <source>Show saved</source>
-        <translation>Show guardado</translation>
-    </message>
-    <message>
-        <source>Open show</source>
-        <translation>Abrir show</translation>
-    </message>
-    <message>
-        <source>Show files (*.qxw)</source>
-        <translation>Archivos de show (*.qxw)</translation>
-    </message>
-    <message>
-        <source>All files (*)</source>
-        <translation>Todos los archivos (*)</translation>
+        <translation>Show salvato</translation>
     </message>
     <message>
         <source>Opened %1</source>
-        <translation>Abierto %1</translation>
+        <translation>Aperto %1</translation>
     </message>
     <message>
         <source>Mapped: %1</source>
-        <translation>Mapeado: %1</translation>
+        <translation>Mappato: %1</translation>
     </message>
     <message>
         <source>Autosave failed: %1</source>
-        <translation>Ha fallado el autoguardado: %1</translation>
+        <translation>Salvataggio automatico non riuscito: %1</translation>
     </message>
     <message>
         <source>Added to the SHOW, page “%1”</source>
-        <translation>Añadido al SHOW, página «%1»</translation>
+        <translation>Aggiunto allo SHOW, pagina «%1»</translation>
+    </message>
+    <message>
+        <source>Open show</source>
+        <translation>Apri show</translation>
+    </message>
+    <message>
+        <source>Show files (*.qxw)</source>
+        <translation>File di show (*.qxw)</translation>
+    </message>
+    <message>
+        <source>All files (*)</source>
+        <translation>Tutti i file (*)</translation>
     </message>
     <message>
         <source>Save show as</source>
-        <translation>Guardar show como</translation>
+        <translation>Salva show come</translation>
     </message>
     <message>
         <source>autosaved %1</source>
-        <translation>autoguardado %1</translation>
+        <translation>salvato automaticamente %1</translation>
     </message>
     <message>
         <source>New show (Ctrl+N)</source>
-        <translation>Nuevo show (Ctrl+N)</translation>
+        <translation>Nuovo show (Ctrl+N)</translation>
     </message>
     <message>
         <source>Open (Ctrl+O)</source>
-        <translation>Abrir (Ctrl+O)</translation>
+        <translation>Apri (Ctrl+O)</translation>
     </message>
     <message>
-        <source>Recent shows</source>
-        <translation>Shows recientes</translation>
+        <source>Recent shows and examples</source>
+        <translation>Show recenti ed esempi</translation>
+    </message>
+    <message>
+        <source>Examples</source>
+        <translation>Esempi</translation>
     </message>
     <message>
         <source>Save (Ctrl+S)</source>
-        <translation>Guardar (Ctrl+S)</translation>
+        <translation>Salva (Ctrl+S)</translation>
     </message>
     <message>
         <source>Save as…</source>
-        <translation>Guardar como…</translation>
+        <translation>Salva come…</translation>
+    </message>
+    <message>
+        <source>Save as… (Ctrl+Shift+S)</source>
+        <translation>Salva come… (Ctrl+Maiusc+S)</translation>
     </message>
     <message>
         <source>Tap</source>
@@ -2821,38 +2938,42 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Tap to the beat (T)</source>
-        <translation>Pulsa al ritmo (T)</translation>
+        <translation>Batti a tempo (T)</translation>
     </message>
     <message>
         <source>Next division of the scenes driven by BeatGO (G)</source>
-        <translation>Siguiente división de las escenas que van por BeatGO (G)</translation>
+        <translation>Divisione successiva delle scene guidate da BeatGO (G)</translation>
     </message>
     <message>
         <source>Pulse</source>
-        <translation>Pulso</translation>
+        <translation>Impulso</translation>
     </message>
     <message>
         <source>Listen to the audio input: each peak over the line moves the scenes driven by Pulse</source>
-        <translation>Escucha la entrada de audio: cada pico por encima de la línea mueve las escenas que van por Pulso</translation>
+        <translation>Ascolta l&apos;ingresso audio: ogni picco sopra la linea fa avanzare le scene guidate da Impulso</translation>
     </message>
     <message>
         <source>Locked screens: click to unlock</source>
-        <translation>Pantallas bloqueadas: clic para desbloquear</translation>
+        <translation>Schermate bloccate: clicca per sbloccare</translation>
     </message>
     <message>
         <source>Lock screens so nothing changes by mistake</source>
-        <translation>Bloquear pantallas para que nada cambie por error</translation>
+        <translation>Blocca le schermate così niente cambia per errore</translation>
     </message>
     <message>
         <source>Learn mode: click a control of the app, then move the control of your MIDI/OSC device or press a key</source>
-        <translation>Modo aprender: haz clic en un control del programa y luego mueve el control de tu dispositivo MIDI/OSC o pulsa una tecla</translation>
+        <translation>Modalità Apprendi: clicca un controllo del programma, poi muovi il controllo del tuo dispositivo MIDI/OSC o premi un tasto</translation>
     </message>
     <message numerus="yes">
         <source>%n running</source>
         <translation>
-            <numerusform>%n en marcha</numerusform>
-            <numerusform>%n en marcha</numerusform>
+            <numerusform>%n in esecuzione</numerusform>
+            <numerusform>%n in esecuzione</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Manual (F12)</source>
+        <translation>Manuale (F12)</translation>
     </message>
     <message>
         <source>Blackout</source>
@@ -2860,11 +2981,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Stop all</source>
-        <translation>Parar todo</translation>
+        <translation>Ferma tutto</translation>
     </message>
     <message>
         <source>Live</source>
-        <translation>Directo</translation>
+        <translation>Live</translation>
     </message>
     <message>
         <source>Show</source>
@@ -2872,15 +2993,15 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Playbacks</source>
-        <translation>Playbacks</translation>
+        <translation>Playback</translation>
     </message>
     <message>
         <source>Program</source>
-        <translation>Programar</translation>
+        <translation>Programma</translation>
     </message>
     <message>
         <source>Scenes</source>
-        <translation>Escenas</translation>
+        <translation>Scene</translation>
     </message>
     <message>
         <source>Patch</source>
@@ -2888,278 +3009,78 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Fixtures</source>
-        <translation>Fixtures</translation>
+        <translation>Fixture</translation>
     </message>
     <message>
         <source>Outputs</source>
-        <translation>Salidas</translation>
+        <translation>Uscite</translation>
     </message>
     <message>
         <source>Mappings</source>
-        <translation>Mapeos</translation>
+        <translation>Mappature</translation>
     </message>
     <message>
         <source>Options</source>
-        <translation>Opciones</translation>
+        <translation>Opzioni</translation>
     </message>
     <message>
         <source>Learn mode: click a purple control (Shift+click still uses it)</source>
-        <translation>Modo aprender: haz clic en un control morado (Mayús+clic sigue usándolo)</translation>
+        <translation>Modalità Apprendi: clicca un controllo viola (Maiusc+clic lo usa normalmente)</translation>
     </message>
     <message>
         <source>Move a control of your device or press a key for: %1  ·  Esc cancels</source>
-        <translation>Mueve un control de tu dispositivo o pulsa una tecla para: %1  ·  Esc cancela</translation>
+        <translation>Muovi un controllo del tuo dispositivo o premi un tasto per: %1  ·  Esc annulla</translation>
     </message>
     <message>
         <source>Done</source>
-        <translation>Hecho</translation>
+        <translation>Fatto</translation>
     </message>
     <message>
         <source>Save changes?</source>
-        <translation>¿Guardar los cambios?</translation>
+        <translation>Salvare le modifiche?</translation>
     </message>
     <message>
         <source>“%1” has unsaved changes.</source>
-        <translation>«%1» tiene cambios sin guardar.</translation>
+        <translation>«%1» ha modifiche non salvate.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Don&apos;t save</source>
-        <translation>No guardar</translation>
+        <translation>Non salvare</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Guardar</translation>
+        <translation>Salva</translation>
     </message>
     <message>
         <source>Recover the unsaved show?</source>
-        <translation>¿Recuperar el show sin guardar?</translation>
+        <translation>Recuperare lo show non salvato?</translation>
     </message>
     <message>
         <source>The application didn&apos;t close properly last time, and an autosaved copy of a show that was never saved is available.</source>
-        <translation>La aplicación no se cerró correctamente la última vez y hay una copia autoguardada de un show que nunca se llegó a guardar.</translation>
+        <translation>L&apos;ultima volta l&apos;applicazione non si è chiusa correttamente, ed è disponibile una copia salvata automaticamente di uno show mai salvato.</translation>
     </message>
     <message>
         <source>Discard</source>
-        <translation>Descartar</translation>
+        <translation>Scarta</translation>
     </message>
     <message>
         <source>Recover</source>
-        <translation>Recuperar</translation>
+        <translation>Recupera</translation>
     </message>
     <message>
         <source>Show recovered. Remember to save it.</source>
-        <translation>Show recuperado. Recuerda guardarlo.</translation>
+        <translation>Show recuperato. Ricordati di salvarlo.</translation>
     </message>
 </context>
 <context>
     <name>MappingEditor</name>
     <message>
-        <source>Any device</source>
-        <translation>Cualquier dispositivo</translation>
-    </message>
-    <message>
-        <source>%1 (not connected)</source>
-        <translation>%1 (no conectado)</translation>
-    </message>
-    <message>
-        <source>Select a mapping, or add one</source>
-        <translation>Selecciona un mapeo o añade uno</translation>
-    </message>
-    <message>
-        <source>Control</source>
-        <translation>Control</translation>
-    </message>
-    <message>
-        <source>DMX input</source>
-        <translation>Entrada DMX</translation>
-    </message>
-    <message>
-        <source>Keyboard</source>
-        <translation>Teclado</translation>
-    </message>
-    <message>
-        <source>Device</source>
-        <translation>Dispositivo</translation>
-    </message>
-    <message>
-        <source>Note</source>
-        <translation>Nota</translation>
-    </message>
-    <message>
-        <source>A key, e.g. Q or F9</source>
-        <translation>Una tecla, p. ej. Q o F9</translation>
-    </message>
-    <message>
-        <source>Channel</source>
-        <translation>Canal</translation>
-    </message>
-    <message>
-        <source>Move a control of your device…</source>
-        <translation>Mueve un control de tu dispositivo…</translation>
-    </message>
-    <message>
-        <source>Learn the control</source>
-        <translation>Aprender el control</translation>
-    </message>
-    <message>
-        <source>Drives</source>
-        <translation>Controla</translation>
-    </message>
-    <message>
-        <source>Choose a scene…</source>
-        <translation>Elige una escena…</translation>
-    </message>
-    <message>
-        <source>All groups</source>
-        <translation>Todos los grupos</translation>
-    </message>
-    <message>
-        <source>Choose a group…</source>
-        <translation>Elige un grupo…</translation>
-    </message>
-    <message>
-        <source>Scene number</source>
-        <translation>Número de escena</translation>
-    </message>
-    <message>
-        <source>Its own fixtures</source>
-        <translation>Sus propias fixtures</translation>
-    </message>
-    <message>
-        <source>Choose a palette…</source>
-        <translation>Elige una paleta…</translation>
-    </message>
-    <message>
-        <source>Playback</source>
-        <translation>Playback</translation>
-    </message>
-    <message>
-        <source>Or a cuelist or a scene, wherever it is</source>
-        <translation>O una cuelist o una escena, esté donde esté</translation>
-    </message>
-    <message>
-        <source>No: the playback above</source>
-        <translation>No: el playback de arriba</translation>
-    </message>
-    <message>
-        <source>Cue (1 is the first one of the list)</source>
-        <translation>Cue (1 es la primera de la lista)</translation>
-    </message>
-    <message>
-        <source>Behaviour</source>
-        <translation>Comportamiento</translation>
-    </message>
-    <message>
-        <source>Toggle: each press on / off</source>
-        <translation>Alternar: on / off</translation>
-    </message>
-    <message>
-        <source>Flash: while pressed</source>
-        <translation>Flash: mientras se pulsa</translation>
-    </message>
-    <message>
-        <source>Only on</source>
-        <translation>Solo encender</translation>
-    </message>
-    <message>
-        <source>Only off</source>
-        <translation>Solo apagar</translation>
-    </message>
-    <message>
-        <source>Absolute: follows the fader</source>
-        <translation>Absoluto: sigue al fader</translation>
-    </message>
-    <message>
-        <source>Incremental: each press one step</source>
-        <translation>Incremental: un paso por pulsación</translation>
-    </message>
-    <message>
-        <source>Relative: endless encoder</source>
-        <translation>Relativo: encoder sin fin</translation>
-    </message>
-    <message>
-        <source>Relative: encoder, 1 up and 127 down</source>
-        <translation>Relativo: encoder, 1 sube y 127 baja</translation>
-    </message>
-    <message>
-        <source>From</source>
-        <translation>De</translation>
-    </message>
-    <message>
-        <source>to</source>
-        <translation>a</translation>
-    </message>
-    <message>
-        <source>Invert</source>
-        <translation>Invertir</translation>
-    </message>
-    <message>
-        <source>Step %</source>
-        <translation>Paso %</translation>
-    </message>
-    <message>
-        <source>Loop</source>
-        <translation>En bucle</translation>
-    </message>
-    <message>
-        <source>Pick up the fader (no motor): it drives the level only after meeting it</source>
-        <translation>Recoger el fader (sin motor): mueve el nivel solo después de alcanzarlo</translation>
-    </message>
-    <message>
-        <source>Feedback</source>
-        <translation>Feedback</translation>
-    </message>
-    <message>
-        <source>Light the button of the device</source>
-        <translation>Encender el botón del dispositivo</translation>
-    </message>
-    <message>
-        <source>Move the motor fader of the device</source>
-        <translation>Mover el fader motorizado del dispositivo</translation>
-    </message>
-    <message>
-        <source>LEDs of</source>
-        <translation>LEDs de</translation>
-    </message>
-    <message>
-        <source>Any controller (numbers)</source>
-        <translation>Cualquier controlador (números)</translation>
-    </message>
-    <message>
-        <source>On</source>
-        <translation>Encendido</translation>
-    </message>
-    <message>
-        <source>Dim</source>
-        <translation>Tenue</translation>
-    </message>
-    <message>
-        <source>Sky</source>
-        <translation>Celeste</translation>
-    </message>
-    <message>
-        <source>Ocean</source>
-        <translation>Océano</translation>
-    </message>
-    <message>
-        <source>Full</source>
-        <translation>Pleno</translation>
-    </message>
-    <message>
-        <source>Pulsing</source>
-        <translation>Pulsando</translation>
-    </message>
-    <message>
-        <source>Blinking</source>
-        <translation>Parpadeo</translation>
-    </message>
-    <message>
         <source>Off</source>
-        <translation>Apagado</translation>
+        <translation>Spento</translation>
     </message>
     <message>
         <source>Green</source>
@@ -3167,47 +3088,55 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Green, blinking</source>
-        <translation>Verde, parpadeando</translation>
+        <translation>Verde, lampeggiante</translation>
     </message>
     <message>
         <source>Red</source>
-        <translation>Rojo</translation>
+        <translation>Rosso</translation>
     </message>
     <message>
         <source>Red, blinking</source>
-        <translation>Rojo, parpadeando</translation>
+        <translation>Rosso, lampeggiante</translation>
     </message>
     <message>
         <source>Yellow</source>
-        <translation>Amarillo</translation>
+        <translation>Giallo</translation>
     </message>
     <message>
         <source>Yellow, blinking</source>
-        <translation>Amarillo, parpadeando</translation>
+        <translation>Giallo, lampeggiante</translation>
     </message>
     <message>
         <source>White</source>
-        <translation>Blanco</translation>
+        <translation>Bianco</translation>
     </message>
     <message>
         <source>Orange</source>
-        <translation>Naranja</translation>
+        <translation>Arancione</translation>
     </message>
     <message>
         <source>Lime</source>
-        <translation>Lima</translation>
+        <translation>Lime</translation>
     </message>
     <message>
         <source>Turquoise</source>
-        <translation>Turquesa</translation>
+        <translation>Turchese</translation>
+    </message>
+    <message>
+        <source>Sky</source>
+        <translation>Cielo</translation>
+    </message>
+    <message>
+        <source>Ocean</source>
+        <translation>Oceano</translation>
     </message>
     <message>
         <source>Blue</source>
-        <translation>Azul</translation>
+        <translation>Blu</translation>
     </message>
     <message>
         <source>Purple</source>
-        <translation>Morado</translation>
+        <translation>Viola</translation>
     </message>
     <message>
         <source>Magenta</source>
@@ -3219,50 +3148,242 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Dim blue</source>
-        <translation>Azul tenue</translation>
+        <translation>Blu tenue</translation>
+    </message>
+    <message>
+        <source>Dim</source>
+        <translation>Tenue</translation>
+    </message>
+    <message>
+        <source>Full</source>
+        <translation>Pieno</translation>
+    </message>
+    <message>
+        <source>Pulsing</source>
+        <translation>Pulsante</translation>
+    </message>
+    <message>
+        <source>Blinking</source>
+        <translation>Lampeggiante</translation>
     </message>
     <message>
         <source>Solid</source>
-        <translation>Fijo</translation>
+        <translation>Fisso</translation>
     </message>
     <message>
         <source>Page %1</source>
-        <translation>Página %1</translation>
+        <translation>Pagina %1</translation>
     </message>
     <message>
         <source>Current page (follows)</source>
-        <translation>Página actual (sigue)</translation>
+        <translation>Pagina attuale (segue)</translation>
     </message>
     <message>
         <source>It is not a cuelist</source>
-        <translation>No es una cuelist</translation>
+        <translation>Non è una cuelist</translation>
     </message>
     <message>
         <source>Now: cue %1 of %2</source>
-        <translation>Ahora: cue %1 de %2</translation>
+        <translation>Ora: cue %1 di %2</translation>
     </message>
     <message>
         <source>%1 has no cue %2</source>
-        <translation>%1 no tiene la cue %2</translation>
+        <translation>%1 non ha la cue %2</translation>
+    </message>
+    <message>
+        <source>Any device</source>
+        <translation>Qualsiasi dispositivo</translation>
+    </message>
+    <message>
+        <source>%1 (not connected)</source>
+        <translation>%1 (non connesso)</translation>
+    </message>
+    <message>
+        <source>Select a mapping, or add one</source>
+        <translation>Seleziona una mappatura o aggiungine una</translation>
+    </message>
+    <message>
+        <source>Control</source>
+        <translation>Controllo</translation>
+    </message>
+    <message>
+        <source>DMX input</source>
+        <translation>Ingresso DMX</translation>
+    </message>
+    <message>
+        <source>Keyboard</source>
+        <translation>Tastiera</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Dispositivo</translation>
+    </message>
+    <message>
+        <source>Note</source>
+        <translation>Nota</translation>
+    </message>
+    <message>
+        <source>Channel</source>
+        <translation>Canale</translation>
+    </message>
+    <message>
+        <source>A key, e.g. Q or F9</source>
+        <translation>Un tasto, ad es. Q o F9</translation>
+    </message>
+    <message>
+        <source>Move a control of your device…</source>
+        <translation>Muovi un controllo del tuo dispositivo…</translation>
+    </message>
+    <message>
+        <source>Learn the control</source>
+        <translation>Apprendi il controllo</translation>
+    </message>
+    <message>
+        <source>Drives</source>
+        <translation>Controlla</translation>
+    </message>
+    <message>
+        <source>Choose a scene…</source>
+        <translation>Scegli una scena…</translation>
+    </message>
+    <message>
+        <source>All groups</source>
+        <translation>Tutti i gruppi</translation>
+    </message>
+    <message>
+        <source>Choose a group…</source>
+        <translation>Scegli un gruppo…</translation>
+    </message>
+    <message>
+        <source>Scene number</source>
+        <translation>Numero di scena</translation>
+    </message>
+    <message>
+        <source>Its own fixtures</source>
+        <translation>Le sue fixture</translation>
+    </message>
+    <message>
+        <source>Choose a palette…</source>
+        <translation>Scegli una palette…</translation>
+    </message>
+    <message>
+        <source>Playback</source>
+        <translation>Playback</translation>
+    </message>
+    <message>
+        <source>Or a cuelist or a scene, wherever it is</source>
+        <translation>O una cuelist o una scena, ovunque si trovi</translation>
+    </message>
+    <message>
+        <source>None: the playback above</source>
+        <translation>Nessuno: il playback sopra</translation>
+    </message>
+    <message>
+        <source>Cue (1 is the first one in the list)</source>
+        <translation>Cue (1 è la prima della lista)</translation>
+    </message>
+    <message>
+        <source>Behaviour</source>
+        <translation>Comportamento</translation>
+    </message>
+    <message>
+        <source>Toggle: each press on / off</source>
+        <translation>Commuta: ogni pressione on / off</translation>
+    </message>
+    <message>
+        <source>Flash: while pressed</source>
+        <translation>Flash: finché è premuto</translation>
+    </message>
+    <message>
+        <source>Only on</source>
+        <translation>Solo accensione</translation>
+    </message>
+    <message>
+        <source>Only off</source>
+        <translation>Solo spegnimento</translation>
+    </message>
+    <message>
+        <source>Absolute: follows the fader</source>
+        <translation>Assoluto: segue il fader</translation>
+    </message>
+    <message>
+        <source>Incremental: each press one step</source>
+        <translation>Incrementale: un passo per pressione</translation>
+    </message>
+    <message>
+        <source>Relative: endless encoder</source>
+        <translation>Relativo: encoder infinito</translation>
+    </message>
+    <message>
+        <source>Relative: encoder, 1 up and 127 down</source>
+        <translation>Relativo: encoder, 1 su e 127 giù</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Da</translation>
+    </message>
+    <message>
+        <source>to</source>
+        <translation>a</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <translation>Inverti</translation>
+    </message>
+    <message>
+        <source>Step %</source>
+        <translation>Passo %</translation>
+    </message>
+    <message>
+        <source>Loop</source>
+        <translation>In ciclo</translation>
+    </message>
+    <message>
+        <source>Pick up the fader (no motor): it drives the level only after meeting it</source>
+        <translation>Aggancia il fader (senza motore): controlla il livello solo dopo averlo raggiunto</translation>
+    </message>
+    <message>
+        <source>Feedback</source>
+        <translation>Feedback</translation>
+    </message>
+    <message>
+        <source>Light the button of the device</source>
+        <translation>Accendi il tasto del dispositivo</translation>
+    </message>
+    <message>
+        <source>Move the motor fader of the device</source>
+        <translation>Muovi il fader motorizzato del dispositivo</translation>
+    </message>
+    <message>
+        <source>LEDs of</source>
+        <translation>LED di</translation>
+    </message>
+    <message>
+        <source>Any controller (numbers)</source>
+        <translation>Qualsiasi controller (numeri)</translation>
+    </message>
+    <message>
+        <source>On</source>
+        <translation>Acceso</translation>
     </message>
     <message>
         <source>Paused</source>
-        <translation>En pausa</translation>
+        <translation>In pausa</translation>
     </message>
     <message>
         <source>Duplicate</source>
-        <translation>Duplicar</translation>
+        <translation>Duplica</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>MappingsPage</name>
     <message>
         <source>Toggle</source>
-        <translation>Alternar</translation>
+        <translation>Commuta</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -3270,19 +3391,19 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Only on</source>
-        <translation>Solo encender</translation>
+        <translation>Solo accensione</translation>
     </message>
     <message>
         <source>Only off</source>
-        <translation>Solo apagar</translation>
+        <translation>Solo spegnimento</translation>
     </message>
     <message>
         <source>Absolute</source>
-        <translation>Absoluto</translation>
+        <translation>Assoluto</translation>
     </message>
     <message>
         <source>Incremental</source>
-        <translation>Incremental</translation>
+        <translation>Incrementale</translation>
     </message>
     <message>
         <source>Relative</source>
@@ -3294,15 +3415,15 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Mappings</source>
-        <translation>Mapeos</translation>
+        <translation>Mappature</translation>
     </message>
     <message>
         <source>Drive the show from MIDI controllers, OSC, a DMX desk or the keyboard</source>
-        <translation>Controla el show desde controladores MIDI, OSC, una mesa DMX o el teclado</translation>
+        <translation>Controlla lo show da controller MIDI, OSC, una console DMX o la tastiera</translation>
     </message>
     <message>
         <source>Devices</source>
-        <translation>Dispositivos</translation>
+        <translation>Dispositivi</translation>
     </message>
     <message>
         <source>Monitor</source>
@@ -3310,39 +3431,39 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Learning…</source>
-        <translation>Aprendiendo…</translation>
+        <translation>Apprendimento…</translation>
     </message>
     <message>
         <source>Learn</source>
-        <translation>Aprender</translation>
+        <translation>Apprendi</translation>
     </message>
     <message>
         <source>Pick a control of the app, then move the control of your device</source>
-        <translation>Elige un control del programa y luego mueve el control de tu dispositivo</translation>
+        <translation>Scegli un controllo del programma, poi muovi il controllo del tuo dispositivo</translation>
     </message>
     <message>
         <source>Mappings (%1)</source>
-        <translation>Mapeos (%1)</translation>
+        <translation>Mappature (%1)</translation>
     </message>
     <message>
         <source>Add</source>
-        <translation>Añadir</translation>
+        <translation>Aggiungi</translation>
     </message>
     <message>
         <source>No mappings yet. Enable your devices, then press “Learn”, click a control of the app (a scene, a master, the mixer...) and move a control of your device.</source>
-        <translation>Aún no hay mapeos. Activa tus dispositivos, pulsa «Aprender», haz clic en un control del programa (una escena, un master, el mezclador...) y mueve un control de tu dispositivo.</translation>
+        <translation>Ancora nessuna mappatura. Attiva i tuoi dispositivi, poi premi «Apprendi», clicca un controllo del programma (una scena, un master, il mixer...) e muovi un controllo del tuo dispositivo.</translation>
     </message>
     <message>
         <source>Mapping</source>
-        <translation>Mapeo</translation>
+        <translation>Mappatura</translation>
     </message>
     <message>
         <source>Input devices</source>
-        <translation>Dispositivos de entrada</translation>
+        <translation>Dispositivi di ingresso</translation>
     </message>
     <message>
         <source>Search again</source>
-        <translation>Buscar de nuevo</translation>
+        <translation>Cerca di nuovo</translation>
     </message>
     <message>
         <source>universe %1</source>
@@ -3350,93 +3471,93 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Map it all</source>
-        <translation>Mapear todo</translation>
+        <translation>Mappa tutto</translation>
     </message>
     <message>
         <source>A whole controller in one go: the groups or the playbacks, on an Akai APC mini, APC mini mk2 or APC40 mkII</source>
-        <translation>Un controlador entero de una vez: los grupos o los playbacks, en una Akai APC mini, APC mini mk2 o APC40 mkII</translation>
+        <translation>Un controller intero in un colpo solo: i gruppi o i playback, su un Akai APC mini, APC mini mk2 o APC40 mkII</translation>
     </message>
     <message>
         <source>Akai APC mini → Groups</source>
-        <translation>Akai APC mini → Grupos</translation>
+        <translation>Akai APC mini → Gruppi</translation>
     </message>
     <message>
         <source>Akai APC mini → Playbacks</source>
-        <translation>Akai APC mini → Playbacks</translation>
+        <translation>Akai APC mini → Playback</translation>
     </message>
     <message>
         <source>Akai APC mini mk2 → Groups</source>
-        <translation>Akai APC mini mk2 → Grupos</translation>
+        <translation>Akai APC mini mk2 → Gruppi</translation>
     </message>
     <message>
         <source>Akai APC mini mk2 → Playbacks</source>
-        <translation>Akai APC mini mk2 → Playbacks</translation>
+        <translation>Akai APC mini mk2 → Playback</translation>
     </message>
     <message>
         <source>Akai APC40 mkII → Playbacks</source>
-        <translation>Akai APC40 mkII → Playbacks</translation>
+        <translation>Akai APC40 mkII → Playback</translation>
     </message>
     <message>
         <source>Input</source>
-        <translation>Entrada</translation>
+        <translation>Ingresso</translation>
     </message>
     <message>
         <source>Feedback (LEDs)</source>
-        <translation>Feedback (LEDs)</translation>
+        <translation>Feedback (LED)</translation>
     </message>
     <message>
         <source>No input devices found. Connect a MIDI controller (or a DMX interface with an input) and press “Search again”.</source>
-        <translation>No se encontraron dispositivos de entrada. Conecta un controlador MIDI (o una interfaz DMX con entrada) y pulsa «Buscar de nuevo».</translation>
+        <translation>Nessun dispositivo di ingresso trovato. Collega un controller MIDI (o un&apos;interfaccia DMX con ingresso) e premi «Cerca di nuovo».</translation>
     </message>
     <message>
         <source>Messages in and out</source>
-        <translation>Mensajes de entrada y salida</translation>
+        <translation>Messaggi in entrata e in uscita</translation>
     </message>
     <message>
         <source>Clear</source>
-        <translation>Limpiar</translation>
+        <translation>Pulisci</translation>
     </message>
     <message>
         <source>Keyboard</source>
-        <translation>Teclado</translation>
+        <translation>Tastiera</translation>
     </message>
     <message>
         <source>Move a control of an enabled device to see its messages</source>
-        <translation>Mueve un control de un dispositivo activado para ver sus mensajes</translation>
+        <translation>Muovi un controllo di un dispositivo attivato per vederne i messaggi</translation>
     </message>
     <message>
         <source>Each column of pads plays the scenes of a group (green: playing, yellow: ready), the faders are the masters of the groups and the last one the grand master. The buttons under the pads release the groups; the ones on the right are blackout, stop all, pause, tap, BeatGO, previous, next and flash. The mappings of this device are replaced.</source>
-        <translation>Cada columna de pads lanza las escenas de un grupo (verde: sonando, amarillo: lista), los faders son los masters de los grupos y el último el gran master. Los botones de debajo de los pads liberan los grupos; los de la derecha son blackout, parar todo, pausa, tap, BeatGO, anterior, siguiente y flash. Los mapeos de este dispositivo se sustituyen.</translation>
+        <translation>Ogni colonna di pad avvia le scene di un gruppo (verde: attiva, giallo: pronta), i fader sono i master dei gruppi e l&apos;ultimo è il grand master. I tasti sotto i pad rilasciano i gruppi; quelli a destra sono blackout, ferma tutto, pausa, tap, BeatGO, precedente, successiva e flash. Le mappature di questo dispositivo vengono sostituite.</translation>
     </message>
     <message>
         <source>Each track is a playback 1-8 of the current playback page: its fader, GO on the track button, Pause/Back on S, Flash on the record arm, select and release, and its first 5 cues on the clips. The scene buttons go to pages 1-5, the bank buttons change the page and the group, Play and Record are GO and Back of the selected playback. The device knobs are the faders of the playbacks 9-16, the track knobs the masters of the first groups. The mappings of this device are replaced.</source>
-        <translation>Cada pista es un playback 1-8 de la página de playbacks actual: su fader, GO en el botón de pista, Pausa/Atrás en S, Flash en el armado de grabación, seleccionar y liberar, y sus 5 primeras cues en los clips. Los botones de escena van a las páginas 1-5, los de banco cambian la página y el grupo, Play y Record son GO y Atrás del playback seleccionado. Los mandos de device son los faders de los playbacks 9-16 y los mandos de pista, los masters de los primeros grupos. Los mapeos de este dispositivo se sustituyen.</translation>
+        <translation>Ogni traccia è un playback 1-8 della pagina di playback attuale: il suo fader, GO sul tasto della traccia, Pausa/Indietro su S, Flash sull&apos;arm di registrazione, selezione e rilascio, e le sue prime 5 cue sulle clip. I tasti scena vanno alle pagine 1-5, i tasti bank cambiano pagina e gruppo, Play e Record sono GO e Indietro del playback selezionato. Le manopole device sono i fader dei playback 9-16, le manopole di traccia i master dei primi gruppi. Le mappature di questo dispositivo vengono sostituite.</translation>
     </message>
     <message>
         <source>Each column is a playback 1-8 of the current playback page: its fader (it picks up the level), from the bottom GO, Pause/Back, Flash and its first 5 cues (cue 1 at the top); the button under the pads releases it. The last fader is the grand master; the buttons on the right are previous and next page, GO and Back of the selected playback, blackout, tap, BeatGO and stop all. The mappings of this device are replaced.</source>
-        <translation>Cada columna es un playback 1-8 de la página de playbacks actual: su fader (recoge el nivel) y, desde abajo, GO, Pausa/Atrás, Flash y sus 5 primeras cues (la cue 1 arriba); el botón de debajo de los pads lo libera. El último fader es el gran master; los botones de la derecha son página anterior y siguiente, GO y Atrás del playback seleccionado, blackout, tap, BeatGO y parar todo. Los mapeos de este dispositivo se sustituyen.</translation>
+        <translation>Ogni colonna è un playback 1-8 della pagina di playback attuale: il suo fader (aggancia il livello) e, dal basso, GO, Pausa/Indietro, Flash e le sue prime 5 cue (la cue 1 in alto); il tasto sotto i pad lo rilascia. L&apos;ultimo fader è il grand master; i tasti a destra sono pagina precedente e successiva, GO e Indietro del playback selezionato, blackout, tap, BeatGO e ferma tutto. Le mappature di questo dispositivo vengono sostituite.</translation>
     </message>
     <message>
         <source>Map all of %1 to the groups?</source>
-        <translation>¿Mapear todo %1 a los grupos?</translation>
+        <translation>Mappare tutto %1 sui gruppi?</translation>
     </message>
     <message>
         <source>Map all of %1 to the playbacks?</source>
-        <translation>¿Mapear todo %1 a los playbacks?</translation>
+        <translation>Mappare tutto %1 sui playback?</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Map</source>
-        <translation>Mapear</translation>
+        <translation>Mappa</translation>
     </message>
     <message numerus="yes">
         <source>%n control(s) mapped</source>
         <translation>
-            <numerusform>%n control mapeado</numerusform>
-            <numerusform>%n controles mapeados</numerusform>
+            <numerusform>%n controllo mappato</numerusform>
+            <numerusform>%n controlli mappati</numerusform>
         </translation>
     </message>
 </context>
@@ -3444,71 +3565,71 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <name>MatrixDialog</name>
     <message>
         <source>LED matrix or strip</source>
-        <translation>Matriz o tira LED</translation>
+        <translation>Matrice o striscia LED</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>LED strip</source>
-        <translation>Tira LED</translation>
+        <translation>Striscia LED</translation>
     </message>
     <message>
         <source>LED matrix</source>
-        <translation>Matriz LED</translation>
+        <translation>Matrice LED</translation>
     </message>
     <message>
         <source>Width (pixels)</source>
-        <translation>Ancho (píxeles)</translation>
+        <translation>Larghezza (pixel)</translation>
     </message>
     <message>
         <source>Height (pixels)</source>
-        <translation>Alto (píxeles)</translation>
+        <translation>Altezza (pixel)</translation>
     </message>
     <message>
         <source>Colours</source>
-        <translation>Colores</translation>
+        <translation>Colori</translation>
     </message>
     <message>
         <source>Wiring</source>
-        <translation>Cableado</translation>
+        <translation>Cablaggio</translation>
     </message>
     <message>
         <source>Rows</source>
-        <translation>Filas</translation>
+        <translation>Righe</translation>
     </message>
     <message>
         <source>Rows, snake</source>
-        <translation>Filas, en zigzag</translation>
+        <translation>Righe, a zigzag</translation>
     </message>
     <message>
         <source>Columns</source>
-        <translation>Columnas</translation>
+        <translation>Colonne</translation>
     </message>
     <message>
         <source>Columns, snake</source>
-        <translation>Columnas, en zigzag</translation>
+        <translation>Colonne, a zigzag</translation>
     </message>
     <message>
         <source>Pixel 1</source>
-        <translation>Píxel 1</translation>
+        <translation>Pixel 1</translation>
     </message>
     <message>
         <source>Top left</source>
-        <translation>Arriba a la izquierda</translation>
+        <translation>In alto a sinistra</translation>
     </message>
     <message>
         <source>Top right</source>
-        <translation>Arriba a la derecha</translation>
+        <translation>In alto a destra</translation>
     </message>
     <message>
         <source>Bottom left</source>
-        <translation>Abajo a la izquierda</translation>
+        <translation>In basso a sinistra</translation>
     </message>
     <message>
         <source>Bottom right</source>
-        <translation>Abajo a la derecha</translation>
+        <translation>In basso a destra</translation>
     </message>
     <message>
         <source>Universe</source>
@@ -3516,43 +3637,43 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Address</source>
-        <translation>Dirección</translation>
+        <translation>Indirizzo</translation>
     </message>
     <message>
         <source>%1 pixels, %2 channels: %3 fixtures of %4 channels (one per line of pixels), and a group for the colour effects.</source>
-        <translation>%1 píxeles, %2 canales: %3 fixtures de %4 canales (uno por línea de píxeles) y un grupo para los efectos de color.</translation>
+        <translation>%1 pixel, %2 canali: %3 fixture da %4 canali (una per riga di pixel) e un gruppo per gli effetti colore.</translation>
     </message>
     <message>
-        <source>A line of pixels needs more than a universe: make it shorter or wire it the other way.</source>
-        <translation>Una línea de píxeles necesita más de un universo: hazla más corta o cablea en el otro sentido.</translation>
+        <source>A line of pixels needs more than one universe: make it shorter or wire it the other way.</source>
+        <translation>Una riga di pixel richiede più di un universo: accorciala o cablala nell&apos;altro senso.</translation>
     </message>
     <message>
         <source>Pixel order</source>
-        <translation>Orden de los píxeles</translation>
+        <translation>Ordine dei pixel</translation>
     </message>
     <message>
         <source>Showing the first 32 × 32</source>
-        <translation>Se muestran los primeros 32 × 32</translation>
+        <translation>Sono mostrati i primi 32 × 32</translation>
     </message>
     <message>
         <source>Strip</source>
-        <translation>Tira</translation>
+        <translation>Striscia</translation>
     </message>
     <message>
         <source>One line of pixels</source>
-        <translation>Una sola línea de píxeles</translation>
+        <translation>Una sola riga di pixel</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation>Chiudi</translation>
     </message>
     <message>
         <source>Patch</source>
-        <translation>Patchear</translation>
+        <translation>Patcha</translation>
     </message>
     <message>
         <source>Patched %1 × %2 pixels</source>
-        <translation>Patcheados %1 × %2 píxeles</translation>
+        <translation>Patchati %1 × %2 pixel</translation>
     </message>
 </context>
 <context>
@@ -3561,7 +3682,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message>
@@ -3574,19 +3695,19 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Hue</source>
-        <translation>Tono</translation>
+        <translation>Tonalità</translation>
     </message>
     <message>
         <source>Saturation</source>
-        <translation>Saturación</translation>
+        <translation>Saturazione</translation>
     </message>
     <message>
         <source>Reset colour</source>
-        <translation>Restablecer color</translation>
+        <translation>Ripristina colore</translation>
     </message>
     <message>
         <source>Strobe</source>
-        <translation>Estrobo</translation>
+        <translation>Strobo</translation>
     </message>
     <message>
         <source>%1 Hz</source>
@@ -3598,30 +3719,30 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Flash excl.</source>
-        <translation>Flash excl.</translation>
+        <translation>Flash escl.</translation>
     </message>
     <message>
         <source>Full excl.</source>
-        <translation>Full excl.</translation>
+        <translation>Full escl.</translation>
     </message>
 </context>
 <context>
     <name>MoveFxEditor</name>
     <message>
         <source>Circle</source>
-        <translation>Círculo</translation>
+        <translation>Cerchio</translation>
     </message>
     <message>
         <source>Eight</source>
-        <translation>Ocho</translation>
+        <translation>Otto</translation>
     </message>
     <message>
         <source>Line</source>
-        <translation>Línea</translation>
+        <translation>Linea</translation>
     </message>
     <message>
         <source>Line 2</source>
-        <translation>Línea 2</translation>
+        <translation>Linea 2</translation>
     </message>
     <message>
         <source>Diamond</source>
@@ -3629,31 +3750,31 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Square</source>
-        <translation>Cuadrado</translation>
+        <translation>Quadrato</translation>
     </message>
     <message>
         <source>Square (choppy)</source>
-        <translation>Cuadrado (a saltos)</translation>
+        <translation>Quadrato (a scatti)</translation>
     </message>
     <message>
         <source>Square (exact)</source>
-        <translation>Cuadrado (exacto)</translation>
+        <translation>Quadrato (esatto)</translation>
     </message>
     <message>
         <source>Leaf</source>
-        <translation>Hoja</translation>
+        <translation>Foglia</translation>
     </message>
     <message>
         <source>Lissajous</source>
         <translation>Lissajous</translation>
     </message>
     <message>
-        <source>Shape</source>
-        <translation>Forma</translation>
+        <source>Shape — live</source>
+        <translation>Forma — dal vivo</translation>
     </message>
     <message>
-        <source>Shape — live</source>
-        <translation>Forma — en vivo</translation>
+        <source>Shape</source>
+        <translation>Forma</translation>
     </message>
     <message>
         <source>Pan →   Tilt ↓</source>
@@ -3661,27 +3782,27 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Movement</source>
-        <translation>Movimiento</translation>
+        <translation>Movimento</translation>
     </message>
     <message>
         <source>Width</source>
-        <translation>Ancho</translation>
+        <translation>Larghezza</translation>
     </message>
     <message>
         <source>Height</source>
-        <translation>Alto</translation>
+        <translation>Altezza</translation>
     </message>
     <message>
         <source>Rotation</source>
-        <translation>Rotación</translation>
+        <translation>Rotazione</translation>
     </message>
     <message>
         <source>Pan position</source>
-        <translation>Posición pan</translation>
+        <translation>Posizione pan</translation>
     </message>
     <message>
         <source>Tilt position</source>
-        <translation>Posición tilt</translation>
+        <translation>Posizione tilt</translation>
     </message>
     <message>
         <source>Phase</source>
@@ -3689,39 +3810,39 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pan frequency</source>
-        <translation>Frecuencia pan</translation>
+        <translation>Frequenza pan</translation>
     </message>
     <message>
         <source>Tilt frequency</source>
-        <translation>Frecuencia tilt</translation>
+        <translation>Frequenza tilt</translation>
     </message>
     <message>
         <source>Fixtures</source>
-        <translation>Fixtures</translation>
+        <translation>Fixture</translation>
     </message>
     <message>
         <source>All together</source>
-        <translation>Todos a la vez</translation>
+        <translation>Tutte insieme</translation>
     </message>
     <message>
         <source>One after the other</source>
-        <translation>Uno tras otro</translation>
+        <translation>Una dopo l&apos;altra</translation>
     </message>
     <message>
         <source>Offset along the selection</source>
-        <translation>Desfasados según la selección</translation>
+        <translation>Sfasate lungo la selezione</translation>
     </message>
     <message>
         <source>Phase between fixtures</source>
-        <translation>Fase entre fixtures</translation>
+        <translation>Fase tra fixture</translation>
     </message>
     <message>
         <source>Symmetric</source>
-        <translation>Simétrico</translation>
+        <translation>Simmetrico</translation>
     </message>
     <message>
         <source>The second half of the fixtures mirrors the first one, from the outside in</source>
-        <translation>La segunda mitad de los fixtures refleja a la primera, de fuera hacia dentro</translation>
+        <translation>La seconda metà delle fixture rispecchia la prima, da fuori a dentro</translation>
     </message>
     <message>
         <source>Relative</source>
@@ -3729,201 +3850,233 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Moves around the position set by other scenes</source>
-        <translation>Se mueve alrededor de la posición que marcan otras escenas</translation>
+        <translation>Si muove attorno alla posizione data da altre scene</translation>
     </message>
     <message>
         <source>Control dimmer</source>
-        <translation>Controlar el dimmer</translation>
+        <translation>Controlla il dimmer</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) in the effect</source>
         <translation>
-            <numerusform>%n fixture en el efecto</numerusform>
-            <numerusform>%n fixtures en el efecto</numerusform>
+            <numerusform>%n fixture nell&apos;effetto</numerusform>
+            <numerusform>%n fixture nell&apos;effetto</numerusform>
         </translation>
     </message>
     <message>
         <source>Use the programmer selection</source>
-        <translation>Usar la selección del programador</translation>
+        <translation>Usa la selezione del programmatore</translation>
     </message>
 </context>
 <context>
     <name>OptionsPage</name>
     <message>
+        <source>Dark</source>
+        <translation>Scuro</translation>
+    </message>
+    <message>
+        <source>Light</source>
+        <translation>Chiaro</translation>
+    </message>
+    <message>
+        <source>High contrast</source>
+        <translation>Alto contrasto</translation>
+    </message>
+    <message>
+        <source>Night (dimmed)</source>
+        <translation>Notte (attenuato)</translation>
+    </message>
+    <message>
         <source>System language</source>
-        <translation>Idioma del sistema</translation>
+        <translation>Lingua del sistema</translation>
     </message>
     <message>
         <source>Import GDTF fixtures</source>
-        <translation>Importar fixtures GDTF</translation>
-    </message>
-    <message>
-        <source>Import fixture definitions</source>
-        <translation>Importar definiciones de fixtures</translation>
-    </message>
-    <message>
-        <source>All files (*)</source>
-        <translation>Todos los archivos (*)</translation>
+        <translation>Importa fixture GDTF</translation>
     </message>
     <message>
         <source>GDTF fixtures (*.gdtf *.zip)</source>
-        <translation>Fixtures GDTF (*.gdtf *.zip)</translation>
+        <translation>Fixture GDTF (*.gdtf *.zip)</translation>
+    </message>
+    <message>
+        <source>All files (*)</source>
+        <translation>Tutti i file (*)</translation>
+    </message>
+    <message>
+        <source>Import fixture definitions</source>
+        <translation>Importa definizioni di fixture</translation>
     </message>
     <message>
         <source>Fixture definitions (*.qxf *.gdtf *.zip)</source>
-        <translation>Definiciones de fixtures (*.qxf *.gdtf *.zip)</translation>
+        <translation>Definizioni di fixture (*.qxf *.gdtf *.zip)</translation>
     </message>
     <message>
         <source>Options</source>
-        <translation>Opciones</translation>
+        <translation>Opzioni</translation>
     </message>
     <message>
         <source>General</source>
-        <translation>General</translation>
+        <translation>Generale</translation>
     </message>
     <message>
         <source>Language</source>
-        <translation>Idioma</translation>
+        <translation>Lingua</translation>
     </message>
     <message>
         <source>Applied the next time the application starts</source>
-        <translation>Se aplica la próxima vez que arranque la aplicación</translation>
+        <translation>Si applica al prossimo avvio dell&apos;applicazione</translation>
+    </message>
+    <message>
+        <source>Theme</source>
+        <translation>Tema</translation>
+    </message>
+    <message>
+        <source>Light for bright rooms, high contrast to read from afar, night for a dark booth. The remote control follows it too</source>
+        <translation>Chiaro per sale luminose, alto contrasto per leggere da lontano, notte per una regia al buio. Anche il controllo remoto lo segue</translation>
+    </message>
+    <message>
+        <source>Size of the interface</source>
+        <translation>Dimensione dell&apos;interfaccia</translation>
+    </message>
+    <message>
+        <source>Smaller for small laptops, bigger for touch screens. Applied the next time the application starts</source>
+        <translation>Più piccola per i portatili piccoli, più grande per gli schermi touch. Si applica al prossimo avvio dell&apos;applicazione</translation>
     </message>
     <message>
         <source>Open the last show at startup</source>
-        <translation>Abrir el último show al arrancar</translation>
+        <translation>Apri l&apos;ultimo show all&apos;avvio</translation>
     </message>
     <message>
         <source>SHOW and lock</source>
-        <translation>SHOW y bloqueo</translation>
+        <translation>SHOW e blocco</translation>
     </message>
     <message>
         <source>Open the SHOW full screen at startup</source>
-        <translation>Abrir el SHOW a pantalla completa al arrancar</translation>
+        <translation>Apri lo SHOW a schermo intero all&apos;avvio</translation>
     </message>
     <message>
         <source>For installations and kiosks</source>
-        <translation>Para instalaciones y quioscos</translation>
+        <translation>Per installazioni e chioschi</translation>
     </message>
     <message>
         <source>…and locked</source>
-        <translation>…y bloqueado</translation>
+        <translation>…e bloccato</translation>
     </message>
     <message>
         <source>Only the SHOW, without navigation: hold the lock button to leave (with the password, if there is one)</source>
-        <translation>Solo el SHOW, sin navegación: mantén pulsado el botón del candado para salir (con la contraseña, si la hay)</translation>
+        <translation>Solo lo SHOW, senza navigazione: tieni premuto il tasto del lucchetto per uscire (con la password, se c&apos;è)</translation>
     </message>
     <message>
         <source>Lock screens</source>
-        <translation>Bloquear pantallas</translation>
+        <translation>Blocca schermate</translation>
     </message>
     <message>
-        <source>Locked now. Also with the padlock of the top bar</source>
-        <translation>Bloqueadas ahora. También con el candado de la barra superior</translation>
+        <source>Locked now. Also with the padlock in the top bar</source>
+        <translation>Bloccate ora. Anche con il lucchetto nella barra superiore</translation>
     </message>
     <message>
-        <source>Setup, programming or SHOW editing, with a password or without. Also with the padlock of the top bar</source>
-        <translation>Setup, programación o edición del SHOW, con contraseña o sin ella. También con el candado de la barra superior</translation>
+        <source>Setup, programming or SHOW editing, with a password or without. Also with the padlock in the top bar</source>
+        <translation>Setup, programmazione o modifica dello SHOW, con o senza password. Anche con il lucchetto nella barra superiore</translation>
     </message>
     <message>
         <source>Unlock…</source>
-        <translation>Desbloquear…</translation>
+        <translation>Sblocca…</translation>
     </message>
     <message>
         <source>Lock…</source>
-        <translation>Bloquear…</translation>
+        <translation>Blocca…</translation>
     </message>
     <message>
         <source>Autosave</source>
-        <translation>Autoguardado</translation>
+        <translation>Salvataggio automatico</translation>
     </message>
     <message>
         <source>Save automatically</source>
-        <translation>Guardar automáticamente</translation>
+        <translation>Salva automaticamente</translation>
     </message>
     <message>
         <source>Saved shows are overwritten (the previous version is kept as .bak). Untitled shows are kept apart and offered back after a crash.</source>
-        <translation>Los shows con nombre se sobrescriben (la versión anterior se guarda como .bak). Los shows sin título se guardan aparte y se ofrecen al reabrir tras un cierre inesperado.</translation>
+        <translation>Gli show salvati vengono sovrascritti (la versione precedente resta come .bak). Gli show senza titolo vengono conservati a parte e riproposti dopo un arresto anomalo.</translation>
     </message>
     <message>
         <source>Every (minutes)</source>
-        <translation>Cada (minutos)</translation>
+        <translation>Ogni (minuti)</translation>
     </message>
     <message>
         <source>Playback</source>
-        <translation>Reproducción</translation>
+        <translation>Riproduzione</translation>
     </message>
     <message>
         <source>Default priority of new scenes</source>
-        <translation>Prioridad por defecto de las escenas nuevas</translation>
+        <translation>Priorità predefinita delle nuove scene</translation>
     </message>
     <message>
         <source>0 to 10. When two scenes control the same channel, the higher priority wins.</source>
-        <translation>De 0 a 10. Si dos escenas controlan el mismo canal, gana la de mayor prioridad.</translation>
+        <translation>Da 0 a 10. Se due scene controllano lo stesso canale, vince la priorità più alta.</translation>
     </message>
     <message>
         <source>Priority of the live edits</source>
-        <translation>Prioridad de la edición en vivo</translation>
+        <translation>Priorità delle modifiche dal vivo</translation>
     </message>
     <message>
         <source>What you set in Program wins over the scenes of this priority and below. 10: over every scene.</source>
-        <translation>Lo que pongas en Programar gana a las escenas de esta prioridad o menor. 10: a todas las escenas.</translation>
+        <translation>Ciò che imposti in Programma prevale sulle scene di questa priorità e inferiori. 10: su tutte le scene.</translation>
     </message>
     <message>
         <source>When a scene starts, the live edits</source>
-        <translation>Al lanzar una escena, las ediciones en vivo</translation>
+        <translation>Quando parte una scena, le modifiche dal vivo</translation>
     </message>
     <message>
         <source>Give the scene its channels back</source>
-        <translation>Le devuelven sus canales a la escena</translation>
+        <translation>Restituiscono alla scena i suoi canali</translation>
     </message>
     <message>
         <source>Always stay</source>
-        <translation>Se mantienen siempre</translation>
+        <translation>Restano sempre</translation>
     </message>
     <message>
         <source>Are all reset</source>
-        <translation>Se restablecen todas</translation>
+        <translation>Vengono tutte azzerate</translation>
     </message>
     <message>
         <source>Grand master acts on</source>
-        <translation>El grand master actúa sobre</translation>
+        <translation>Il grand master agisce su</translation>
     </message>
     <message>
         <source>Intensity channels</source>
-        <translation>Canales de intensidad</translation>
+        <translation>Canali di intensità</translation>
     </message>
     <message>
         <source>All channels</source>
-        <translation>Todos los canales</translation>
+        <translation>Tutti i canali</translation>
     </message>
     <message>
         <source>Recent shows</source>
-        <translation>Shows recientes</translation>
+        <translation>Show recenti</translation>
     </message>
     <message>
         <source>Clear list</source>
-        <translation>Vaciar lista</translation>
+        <translation>Svuota elenco</translation>
     </message>
     <message>
         <source>Remote control</source>
-        <translation>Control remoto</translation>
+        <translation>Controllo remoto</translation>
     </message>
     <message>
         <source>Play the SHOW pages from a phone or a tablet on the same network (Wi-Fi): open the address below in its browser. Nothing to install.</source>
-        <translation>Usa las páginas del SHOW desde un móvil o una tablet en la misma red (wifi): abre la dirección de abajo en su navegador. No hay que instalar nada.</translation>
+        <translation>Usa le pagine dello SHOW da un telefono o un tablet sulla stessa rete (wifi): apri l&apos;indirizzo qui sotto nel suo browser. Niente da installare.</translation>
     </message>
     <message>
         <source>Remote control on</source>
-        <translation>Control remoto activado</translation>
+        <translation>Controllo remoto attivo</translation>
     </message>
     <message>
         <source>Port</source>
-        <translation>Puerto</translation>
+        <translation>Porta</translation>
     </message>
     <message>
         <source>Change it if another program uses it</source>
-        <translation>Cámbialo si otro programa lo usa</translation>
+        <translation>Cambiala se un altro programma la usa</translation>
     </message>
     <message>
         <source>PIN</source>
@@ -3931,30 +4084,30 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Asked once on each device. Empty: anyone on the network can use it</source>
-        <translation>Se pide una vez en cada dispositivo. Vacío: cualquiera en la red puede usarlo</translation>
+        <translation>Richiesto una volta su ogni dispositivo. Vuoto: chiunque sulla rete può usarlo</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation>Nessuno</translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation>Copia</translation>
     </message>
     <message numerus="yes">
         <source>%n device(s) connected</source>
         <translation>
-            <numerusform>%n dispositivo conectado</numerusform>
-            <numerusform>%n dispositivos conectados</numerusform>
+            <numerusform>%n dispositivo connesso</numerusform>
+            <numerusform>%n dispositivi connessi</numerusform>
         </translation>
     </message>
     <message>
         <source>Fixture library</source>
-        <translation>Biblioteca de fixtures</translation>
+        <translation>Libreria di fixture</translation>
     </message>
     <message>
         <source>%1 fixture definitions available: the built-in library, the generic fixtures and your own.</source>
-        <translation>%1 definiciones de fixtures disponibles: la biblioteca incluida, los genéricos y los tuyos.</translation>
+        <translation>%1 definizioni di fixture disponibili: la libreria integrata, le fixture generiche e le tue.</translation>
     </message>
     <message>
         <source>Open Fixture Library</source>
@@ -3962,48 +4115,41 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Installed. Download it again to update it.</source>
-        <translation>Instalada. Descárgala de nuevo para actualizarla.</translation>
+        <translation>Installata. Scaricala di nuovo per aggiornarla.</translation>
     </message>
     <message>
         <source>Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.</source>
-        <translation>Miles de fixtures adicionales de open-fixture-library.org (licencia MIT). Necesita internet.</translation>
+        <translation>Migliaia di fixture aggiuntive da open-fixture-library.org (licenza MIT). Richiede internet.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Download</source>
-        <translation>Descargar</translation>
+        <translation>Scarica</translation>
     </message>
     <message>
         <source>Import fixture files</source>
-        <translation>Importar archivos de fixtures</translation>
+        <translation>Importa file di fixture</translation>
     </message>
     <message>
         <source>.qxf definitions (QLC+ format), .gdtf files, or a .zip with them</source>
-        <translation>Definiciones .qxf (formato QLC+), archivos .gdtf o un .zip que los contenga</translation>
-    </message>
-    <message numerus="yes">
-        <source>…and %n more</source>
-        <translation>
-            <numerusform>…y %n más</numerusform>
-            <numerusform>…y %n más</numerusform>
-        </translation>
+        <translation>Definizioni .qxf (formato QLC+), file .gdtf o un .zip che li contenga</translation>
     </message>
     <message>
         <source>Import…</source>
-        <translation>Importar…</translation>
+        <translation>Importa…</translation>
     </message>
     <message>
         <source>GDTF fixtures</source>
-        <translation>Fixtures GDTF</translation>
+        <translation>Fixture GDTF</translation>
     </message>
     <message numerus="yes">
         <source>The open format the manufacturers publish on GDTF-Share (free account): import .gdtf files, folders of them or the .zip of its bulk download. %n GDTF fixture(s) in the library.</source>
         <translation>
-            <numerusform>El formato abierto que publican los fabricantes en GDTF-Share (cuenta gratuita): importa archivos .gdtf, carpetas con ellos o el .zip de su descarga múltiple. %n fixture GDTF en la biblioteca.</numerusform>
-            <numerusform>El formato abierto que publican los fabricantes en GDTF-Share (cuenta gratuita): importa archivos .gdtf, carpetas con ellos o el .zip de su descarga múltiple. %n fixtures GDTF en la biblioteca.</numerusform>
+            <numerusform>Il formato aperto che i produttori pubblicano su GDTF-Share (account gratuito): importa file .gdtf, cartelle che li contengono o lo .zip del suo download multiplo. %n fixture GDTF nella libreria.</numerusform>
+            <numerusform>Il formato aperto che i produttori pubblicano su GDTF-Share (account gratuito): importa file .gdtf, cartelle che li contengono o lo .zip del suo download multiplo. %n fixture GDTF nella libreria.</numerusform>
         </translation>
     </message>
     <message>
@@ -4012,368 +4158,411 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Stop</source>
-        <translation>Parar</translation>
+        <translation>Ferma</translation>
     </message>
     <message>
         <source>Import GDTF…</source>
-        <translation>Importar GDTF…</translation>
+        <translation>Importa GDTF…</translation>
     </message>
     <message>
         <source>Import my QLC+ fixtures</source>
-        <translation>Importar mis fixtures de QLC+</translation>
+        <translation>Importa le mie fixture di QLC+</translation>
     </message>
     <message>
         <source>Copies the fixtures you created in QLC+</source>
-        <translation>Copia los fixtures que creaste en QLC+</translation>
+        <translation>Copia le fixture che hai creato in QLC+</translation>
     </message>
     <message>
         <source>Import</source>
-        <translation>Importar</translation>
+        <translation>Importa</translation>
     </message>
     <message>
         <source>User fixtures folder</source>
-        <translation>Carpeta de fixtures de usuario</translation>
+        <translation>Cartella delle fixture utente</translation>
     </message>
     <message>
         <source>Open folder</source>
-        <translation>Abrir carpeta</translation>
+        <translation>Apri cartella</translation>
+    </message>
+    <message numerus="yes">
+        <source>…and %n more</source>
+        <translation>
+            <numerusform>…e %n in più</numerusform>
+            <numerusform>…e %n in più</numerusform>
+        </translation>
     </message>
     <message>
-        <source>Libraries of other programs in closed or encrypted formats can&apos;t be imported. Most fixtures exist in the Open Fixture Library or on GDTF-Share; missing ones can be made in the Fixtures page.</source>
-        <translation>Las bibliotecas de otros programas en formatos cerrados o cifrados no se pueden importar. La mayoría de las fixtures están en la Open Fixture Library o en GDTF-Share; las que falten puedes crearlas en la página Fixtures.</translation>
+        <source>Libraries of other programs in closed or encrypted formats can&apos;t be imported. Most fixtures exist in the Open Fixture Library or on GDTF-Share; missing ones can be made on the Fixtures page.</source>
+        <translation>Le librerie di altri programmi in formati chiusi o cifrati non si possono importare. La maggior parte delle fixture esiste nella Open Fixture Library o su GDTF-Share; quelle mancanti si possono creare nella pagina Fixture.</translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation>Aiuto</translation>
+    </message>
+    <message>
+        <source>Manual</source>
+        <translation>Manuale</translation>
+    </message>
+    <message>
+        <source>Every page of the program, with pictures. F12 or «?» open it on the page you are on</source>
+        <translation>Tutte le pagine del programma, con immagini. F12 o «?» lo aprono alla pagina in cui sei</translation>
+    </message>
+    <message>
+        <source>Open the manual</source>
+        <translation>Apri il manuale</translation>
+    </message>
+    <message>
+        <source>First steps guide</source>
+        <translation>Guida ai primi passi</translation>
+    </message>
+    <message>
+        <source>Five steps to light a stage, with a practice show</source>
+        <translation>Cinque passi per illuminare un palco, con uno show di prova</translation>
+    </message>
+    <message>
+        <source>Start the guide</source>
+        <translation>Avvia la guida</translation>
+    </message>
+    <message>
+        <source>Example shows</source>
+        <translation>Show di esempio</translation>
+    </message>
+    <message>
+        <source>Shows ready to open, in the ▾ menu next to Open: a small gig, a concert with moving heads, a venue with playbacks</source>
+        <translation>Show pronti da aprire, nel menu ▾ accanto ad Apri: una piccola serata, un concerto con teste mobili, un locale con playback</translation>
     </message>
     <message>
         <source>Updates</source>
-        <translation>Actualizaciones</translation>
+        <translation>Aggiornamenti</translation>
     </message>
     <message>
-        <source>Look for updates at startup</source>
-        <translation>Buscar actualizaciones al arrancar</translation>
+        <source>Check for updates at startup</source>
+        <translation>Cerca aggiornamenti all&apos;avvio</translation>
     </message>
     <message>
         <source>Once a day, on GitHub. Nothing is downloaded or installed without asking you.</source>
-        <translation>Una vez al día, en GitHub. No se descarga ni se instala nada sin preguntarte.</translation>
+        <translation>Una volta al giorno, su GitHub. Niente viene scaricato o installato senza chiedertelo.</translation>
     </message>
     <message>
         <source>Include test versions</source>
-        <translation>Incluir versiones de prueba</translation>
+        <translation>Includi versioni di prova</translation>
     </message>
     <message>
         <source>Pre-releases: the new features earlier, less tested</source>
-        <translation>Versiones previas: las novedades antes, menos probadas</translation>
+        <translation>Pre-release: le novità prima, meno collaudate</translation>
     </message>
     <message>
-        <source>Looking for updates…</source>
-        <translation>Buscando actualizaciones…</translation>
+        <source>Checking for updates…</source>
+        <translation>Ricerca aggiornamenti…</translation>
     </message>
     <message>
         <source>You have the latest version (%1).</source>
-        <translation>Tienes la última versión (%1).</translation>
+        <translation>Hai l&apos;ultima versione (%1).</translation>
     </message>
     <message>
         <source>Version %1 is out.</source>
-        <translation>Ya está disponible la versión %1.</translation>
+        <translation>È disponibile la versione %1.</translation>
     </message>
     <message>
         <source>Version %1 is out. Its installer has no SHA-256 digest to check it: download it from its page.</source>
-        <translation>Ya está disponible la versión %1. Su instalador no tiene huella SHA-256 para comprobarlo: descárgalo desde su página.</translation>
+        <translation>È disponibile la versione %1. Il suo programma di installazione non ha un&apos;impronta SHA-256 per verificarlo: scaricalo dalla sua pagina.</translation>
     </message>
     <message>
         <source>Downloading version %1… %2 %</source>
-        <translation>Descargando la versión %1… %2 %</translation>
+        <translation>Download della versione %1… %2 %</translation>
     </message>
     <message>
         <source>Version %1 will be installed when the program closes.</source>
-        <translation>La versión %1 se instalará al cerrar el programa.</translation>
+        <translation>La versione %1 verrà installata alla chiusura del programma.</translation>
     </message>
     <message>
         <source>Version %1 is downloaded and checked, ready to install.</source>
-        <translation>La versión %1 está descargada y comprobada, lista para instalar.</translation>
+        <translation>La versione %1 è scaricata e verificata, pronta da installare.</translation>
     </message>
     <message>
         <source>Version %1. Last check: %2.</source>
-        <translation>Versión %1. Última comprobación: %2.</translation>
+        <translation>Versione %1. Ultimo controllo: %2.</translation>
     </message>
     <message>
         <source>Version %1.</source>
-        <translation>Versión %1.</translation>
+        <translation>Versione %1.</translation>
     </message>
     <message>
-        <source>Look for updates</source>
-        <translation>Buscar actualizaciones</translation>
+        <source>Check for updates</source>
+        <translation>Cerca aggiornamenti</translation>
     </message>
     <message>
         <source>What&apos;s new</source>
-        <translation>Novedades</translation>
+        <translation>Novità</translation>
     </message>
     <message>
         <source>Download and install</source>
-        <translation>Descargar e instalar</translation>
+        <translation>Scarica e installa</translation>
     </message>
     <message>
         <source>Install now</source>
-        <translation>Instalar ahora</translation>
+        <translation>Installa ora</translation>
     </message>
     <message>
         <source>Not when closing</source>
-        <translation>Al cerrar no</translation>
+        <translation>Non alla chiusura</translation>
     </message>
     <message>
         <source>When closing</source>
-        <translation>Al cerrar</translation>
+        <translation>Alla chiusura</translation>
     </message>
     <message>
         <source>Open on GitHub</source>
-        <translation>Ver en GitHub</translation>
+        <translation>Apri su GitHub</translation>
     </message>
     <message>
         <source>About</source>
-        <translation>Acerca de</translation>
+        <translation>Informazioni</translation>
     </message>
     <message>
         <source>Free and open source software, under the Apache 2.0 license. Based on Q Light Controller Plus by Massimo Callegari, Heikki Junnila and the QLC+ contributors. Extra fixtures from the Open Fixture Library.</source>
-        <translation>Software libre y de código abierto, con licencia Apache 2.0. Basado en Q Light Controller Plus de Massimo Callegari, Heikki Junnila y los colaboradores de QLC+. Fixtures adicionales de la Open Fixture Library.</translation>
+        <translation>Software libero e open source, con licenza Apache 2.0. Basato su Q Light Controller Plus di Massimo Callegari, Heikki Junnila e dei collaboratori di QLC+. Fixture aggiuntive dalla Open Fixture Library.</translation>
     </message>
 </context>
 <context>
     <name>OutputsPage</name>
     <message>
         <source>Outputs</source>
-        <translation>Salidas</translation>
-    </message>
-    <message>
-        <source>DMX levels</source>
-        <translation>Niveles DMX</translation>
-    </message>
-    <message>
-        <source>Rescan</source>
-        <translation>Buscar de nuevo</translation>
-    </message>
-    <message>
-        <source>Remove universe</source>
-        <translation>Quitar universo</translation>
-    </message>
-    <message>
-        <source>Add universe</source>
-        <translation>Añadir universo</translation>
-    </message>
-    <message>
-        <source>Universe %1 has fixtures</source>
-        <translation>El universo %1 tiene fixtures</translation>
-    </message>
-    <message>
-        <source>Remove universe %1?</source>
-        <translation>¿Quitar el universo %1?</translation>
-    </message>
-    <message>
-        <source>Fixtures patched in it: %1. Move them to another universe or delete them in Patch first.</source>
-        <translation>Fixtures patcheados en él: %1. Muévelos a otro universo o elimínalos antes en Patch.</translation>
-    </message>
-    <message>
-        <source>It is the input of %1: that controller stops working until you enable it again in Mappings.</source>
-        <translation>Es la entrada de %1: ese controlador deja de funcionar hasta que lo vuelvas a activar en Mapeos.</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation>Aceptar</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Cancelar</translation>
-    </message>
-    <message>
-        <source>Remove</source>
-        <translation>Quitar</translation>
-    </message>
-    <message>
-        <source>Universes</source>
-        <translation>Universos</translation>
+        <translation>Uscite</translation>
     </message>
     <message>
         <source>Connect each universe to a DMX interface: DMX USB, Art-Net, sACN and more.</source>
-        <translation>Conecta cada universo a una interfaz DMX: DMX USB, Art-Net, sACN y más.</translation>
+        <translation>Collega ogni universo a un&apos;interfaccia DMX: DMX USB, Art-Net, sACN e altro.</translation>
+    </message>
+    <message>
+        <source>Universes</source>
+        <translation>Universi</translation>
+    </message>
+    <message>
+        <source>DMX levels</source>
+        <translation>Livelli DMX</translation>
+    </message>
+    <message>
+        <source>Rescan</source>
+        <translation>Cerca di nuovo</translation>
+    </message>
+    <message>
+        <source>Remove universe</source>
+        <translation>Rimuovi universo</translation>
+    </message>
+    <message>
+        <source>Add universe</source>
+        <translation>Aggiungi universo</translation>
     </message>
     <message>
         <source>Not connected</source>
-        <translation>Sin conectar</translation>
+        <translation>Non collegato</translation>
     </message>
     <message>
         <source>Detected outputs</source>
-        <translation>Salidas detectadas</translation>
+        <translation>Uscite rilevate</translation>
     </message>
     <message>
         <source>No outputs found. Plug in your DMX interface and press Rescan.</source>
-        <translation>No se han encontrado salidas. Conecta tu interfaz DMX y pulsa Buscar de nuevo.</translation>
+        <translation>Nessuna uscita trovata. Collega la tua interfaccia DMX e premi Cerca di nuovo.</translation>
+    </message>
+    <message>
+        <source>Universe %1 has fixtures</source>
+        <translation>L&apos;universo %1 ha delle fixture</translation>
+    </message>
+    <message>
+        <source>Remove universe %1?</source>
+        <translation>Rimuovere l&apos;universo %1?</translation>
+    </message>
+    <message>
+        <source>Fixtures patched in it: %1. Move them to another universe or delete them in Patch first.</source>
+        <translation>Fixture patchate al suo interno: %1. Prima spostale in un altro universo o eliminale in Patch.</translation>
+    </message>
+    <message>
+        <source>It is the input of %1: that controller stops working until you enable it again in Mappings.</source>
+        <translation>È l&apos;ingresso di %1: quel controller smette di funzionare finché non lo riattivi in Mappature.</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>OK</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <source>Remove</source>
+        <translation>Rimuovi</translation>
     </message>
 </context>
 <context>
     <name>PaletteManager</name>
     <message>
         <source>Intensity %1</source>
-        <translation>Intensidad %1</translation>
+        <translation>Intensità %1</translation>
     </message>
     <message>
         <source>Position %1</source>
-        <translation>Posición %1</translation>
+        <translation>Posizione %1</translation>
     </message>
     <message>
         <source>Colour %1</source>
-        <translation>Color %1</translation>
+        <translation>Colore %1</translation>
     </message>
     <message>
         <source>Beam %1</source>
-        <translation>Haz %1</translation>
+        <translation>Fascio %1</translation>
     </message>
     <message>
         <source>Palette not found</source>
-        <translation>No se encuentra la paleta</translation>
+        <translation>Palette non trovata</translation>
     </message>
     <message>
         <source>The number must be 1 or more</source>
-        <translation>El número tiene que ser 1 o más</translation>
+        <translation>Il numero deve essere 1 o più</translation>
     </message>
     <message>
         <source>Number %1 is taken by %2</source>
-        <translation>El número %1 ya lo tiene %2</translation>
+        <translation>Il numero %1 è già usato da %2</translation>
     </message>
 </context>
 <context>
     <name>PalettesView</name>
     <message>
         <source>Intensity</source>
-        <translation>Intensidad</translation>
+        <translation>Intensità</translation>
     </message>
     <message>
         <source>Position</source>
-        <translation>Posición</translation>
+        <translation>Posizione</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>Beam</source>
-        <translation>Haz</translation>
+        <translation>Fascio</translation>
     </message>
     <message>
         <source>Record</source>
-        <translation>Grabar</translation>
+        <translation>Registra</translation>
     </message>
     <message>
         <source>Record the %1 values of the selection as a new palette</source>
-        <translation>Grabar los valores de %1 de la selección como una paleta nueva</translation>
+        <translation>Registra i valori di %1 della selezione come nuova palette</translation>
     </message>
     <message>
         <source>Set some %1 values on the selection first</source>
-        <translation>Primero da valores de %1 a la selección</translation>
+        <translation>Prima dai valori di %1 alla selezione</translation>
     </message>
     <message>
         <source>Recorded %1: the scenes you record now follow it</source>
-        <translation>Grabada %1: las escenas que grabes ahora la seguirán</translation>
+        <translation>%1 registrata: le scene che registri ora la seguiranno</translation>
     </message>
     <message numerus="yes">
         <source>%1 — recorded on %n fixture(s)</source>
         <translation>
-            <numerusform>%1 — grabada en %n fixture</numerusform>
-            <numerusform>%1 — grabada en %n fixtures</numerusform>
+            <numerusform>%1 — registrata su %n fixture</numerusform>
+            <numerusform>%1 — registrata su %n fixture</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>Used by %n scene(s): they change with it</source>
         <translation>
-            <numerusform>La usa %n escena: cambia con ella</numerusform>
-            <numerusform>La usan %n escenas: cambian con ella</numerusform>
+            <numerusform>Usata da %n scena: cambia con essa</numerusform>
+            <numerusform>Usata da %n scene: cambiano con essa</numerusform>
         </translation>
     </message>
     <message>
         <source>Click: on the selection · Right click: update, load, rename…</source>
-        <translation>Clic: en la selección · Clic derecho: actualizar, cargar, renombrar…</translation>
+        <translation>Clic: sulla selezione · Clic destro: aggiorna, carica, rinomina…</translation>
     </message>
     <message>
         <source>Select fixtures first</source>
-        <translation>Selecciona fixtures primero</translation>
+        <translation>Seleziona prima delle fixture</translation>
     </message>
     <message>
-        <source>%1 doesn&apos;t go on the selected fixtures</source>
-        <translation>%1 no sirve para las fixtures seleccionadas</translation>
+        <source>%1 doesn&apos;t apply to the selected fixtures</source>
+        <translation>%1 non si applica alle fixture selezionate</translation>
     </message>
     <message>
         <source>Set the %1 of the selection and press Record</source>
-        <translation>Da valores de %1 a la selección y pulsa Grabar</translation>
+        <translation>Dai valori di %1 alla selezione e premi Registra</translation>
     </message>
     <message>
-        <source>Put on the selection</source>
-        <translation>Aplicar a la selección</translation>
+        <source>Apply to the selection</source>
+        <translation>Applica alla selezione</translation>
     </message>
     <message>
         <source>Load its fixtures in the programmer</source>
-        <translation>Cargar sus fixtures en el programador</translation>
+        <translation>Carica le sue fixture nel programmatore</translation>
     </message>
     <message>
         <source>Update with the programmer</source>
-        <translation>Actualizar con el programador</translation>
+        <translation>Aggiorna con il programmatore</translation>
     </message>
     <message>
         <source>%1 updated: the scenes that use it changed too</source>
-        <translation>%1 actualizada: las escenas que la usan también han cambiado</translation>
+        <translation>%1 aggiornata: sono cambiate anche le scene che la usano</translation>
     </message>
     <message>
         <source>Record over it</source>
-        <translation>Grabar encima</translation>
+        <translation>Registra sopra</translation>
     </message>
     <message>
         <source>%1 recorded again: the scenes that use it changed too</source>
-        <translation>%1 grabada de nuevo: las escenas que la usan también han cambiado</translation>
+        <translation>%1 registrata di nuovo: sono cambiate anche le scene che la usano</translation>
     </message>
     <message>
         <source>Rename…</source>
-        <translation>Renombrar…</translation>
+        <translation>Rinomina…</translation>
     </message>
     <message>
         <source>Rename palette</source>
-        <translation>Renombrar paleta</translation>
+        <translation>Rinomina palette</translation>
     </message>
     <message>
         <source>Change its number…</source>
-        <translation>Cambiar su número…</translation>
+        <translation>Cambia numero…</translation>
     </message>
     <message>
         <source>Number of the palette</source>
-        <translation>Número de la paleta</translation>
+        <translation>Numero della palette</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>PatchGrid</name>
     <message>
         <source>%1 of 512 channels used</source>
-        <translation>%1 de 512 canales usados</translation>
+        <translation>%1 di 512 canali usati</translation>
     </message>
     <message>
         <source>Channels %1 to %2 are not free</source>
-        <translation>Los canales %1 a %2 no están libres</translation>
+        <translation>I canali da %1 a %2 non sono liberi</translation>
     </message>
 </context>
 <context>
     <name>PatchManager</name>
     <message>
         <source>Dimmers</source>
-        <translation>Dimmers</translation>
+        <translation>Dimmer</translation>
     </message>
     <message>
         <source>Fixture %1 %2 not found in the library</source>
-        <translation>No se encontró el fixture %1 %2 en la biblioteca</translation>
+        <translation>Fixture %1 %2 non trovata nella libreria</translation>
     </message>
     <message>
         <source>A fixture of %1 channels doesn&apos;t fit in a universe</source>
-        <translation>Un fixture de %1 canales no cabe en un universo</translation>
+        <translation>Una fixture da %1 canali non entra in un universo</translation>
     </message>
     <message>
         <source>Addresses %1-%2 of universe %3 are used by another fixture</source>
-        <translation>Las direcciones %1-%2 del universo %3 las usa otro fixture</translation>
+        <translation>Gli indirizzi %1-%2 dell&apos;universo %3 sono usati da un&apos;altra fixture</translation>
     </message>
     <message>
         <source>Dimmer</source>
@@ -4381,63 +4570,63 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Fixture not found</source>
-        <translation>No se encuentra el fixture</translation>
+        <translation>Fixture non trovata</translation>
     </message>
     <message>
         <source>Mode %1 not found</source>
-        <translation>No se encuentra el modo %1</translation>
+        <translation>Modalità %1 non trovata</translation>
     </message>
     <message>
         <source>Universe %1 doesn&apos;t exist</source>
-        <translation>El universo %1 no existe</translation>
+        <translation>L&apos;universo %1 non esiste</translation>
     </message>
     <message>
         <source>The fixture doesn&apos;t fit in the universe at address %1</source>
-        <translation>El fixture no cabe en el universo en la dirección %1</translation>
+        <translation>La fixture non entra nell&apos;universo all&apos;indirizzo %1</translation>
     </message>
     <message>
         <source>Addresses %1-%2 are used by another fixture</source>
-        <translation>Las direcciones %1-%2 las usa otro fixture</translation>
+        <translation>Gli indirizzi %1-%2 sono usati da un&apos;altra fixture</translation>
     </message>
     <message>
         <source>Not enough free addresses from %1</source>
-        <translation>No hay suficientes direcciones libres desde la %1</translation>
+        <translation>Non ci sono abbastanza indirizzi liberi da %1</translation>
     </message>
     <message>
         <source>Group %1</source>
-        <translation>Grupo %1</translation>
+        <translation>Gruppo %1</translation>
     </message>
     <message>
         <source>The number must be 1 or more</source>
-        <translation>El número tiene que ser 1 o más</translation>
+        <translation>Il numero deve essere 1 o più</translation>
     </message>
     <message>
         <source>Number %1 is taken by %2</source>
-        <translation>El número %1 ya lo tiene %2</translation>
+        <translation>Il numero %1 è già usato da %2</translation>
     </message>
     <message>
         <source>Selection %1</source>
-        <translation>Selección %1</translation>
+        <translation>Selezione %1</translation>
     </message>
     <message>
         <source>Unknown colour order %1</source>
-        <translation>Orden de colores desconocido: %1</translation>
+        <translation>Ordine dei colori sconosciuto: %1</translation>
     </message>
     <message>
-        <source>A line of %1 pixels needs %2 channels: more than a universe</source>
-        <translation>Una línea de %1 píxeles necesita %2 canales: más de un universo</translation>
+        <source>A line of %1 pixels needs %2 channels: more than one universe</source>
+        <translation>Una riga di %1 pixel richiede %2 canali: più di un universo</translation>
     </message>
     <message>
         <source>LED strip</source>
-        <translation>Tira LED</translation>
+        <translation>Striscia LED</translation>
     </message>
     <message>
         <source>LED matrix</source>
-        <translation>Matriz LED</translation>
+        <translation>Matrice LED</translation>
     </message>
     <message>
         <source>Unable to create the group</source>
-        <translation>No se pudo crear el grupo</translation>
+        <translation>Impossibile creare il gruppo</translation>
     </message>
     <message>
         <source>%1 - %2</source>
@@ -4445,14 +4634,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Unable to patch line %1</source>
-        <translation>No se pudo patchear la línea %1</translation>
+        <translation>Impossibile patchare la riga %1</translation>
     </message>
 </context>
 <context>
     <name>PatchPage</name>
     <message>
         <source>New selection</source>
-        <translation>Nueva selección</translation>
+        <translation>Nuova selezione</translation>
     </message>
     <message>
         <source>Patch</source>
@@ -4461,177 +4650,177 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message numerus="yes">
         <source>%n fixture(s) patched</source>
         <translation>
-            <numerusform>%n fixture patcheado</numerusform>
-            <numerusform>%n fixtures patcheados</numerusform>
+            <numerusform>%n fixture patchata</numerusform>
+            <numerusform>%n fixture patchate</numerusform>
         </translation>
     </message>
     <message>
         <source>List</source>
-        <translation>Lista</translation>
+        <translation>Elenco</translation>
     </message>
     <message>
         <source>Channels</source>
-        <translation>Canales</translation>
+        <translation>Canali</translation>
     </message>
     <message>
         <source>The 512 channels of each universe: drag a fixture to change its address</source>
-        <translation>Los 512 canales de cada universo: arrastra un fixture para cambiar su dirección</translation>
+        <translation>I 512 canali di ogni universo: trascina una fixture per cambiarne l&apos;indirizzo</translation>
     </message>
     <message>
         <source>2D plan</source>
-        <translation>Plano 2D</translation>
+        <translation>Pianta 2D</translation>
     </message>
     <message>
         <source>Import</source>
-        <translation>Importar</translation>
+        <translation>Importa</translation>
     </message>
     <message>
         <source>Patch of another show…</source>
-        <translation>Patch de otro show…</translation>
+        <translation>Patch di un altro show…</translation>
     </message>
     <message>
         <source>Scenes of another show…</source>
-        <translation>Escenas de otro show…</translation>
+        <translation>Scene di un altro show…</translation>
     </message>
     <message>
         <source>Patch and scenes of another show…</source>
-        <translation>Patch y escenas de otro show…</translation>
+        <translation>Patch e scene di un altro show…</translation>
     </message>
     <message>
         <source>LED matrix</source>
-        <translation>Matriz LED</translation>
+        <translation>Matrice LED</translation>
     </message>
     <message>
         <source>Patch an LED matrix or strip in one go</source>
-        <translation>Patchear de una vez una matriz o tira LED</translation>
+        <translation>Patcha in un colpo solo una matrice o striscia LED</translation>
     </message>
     <message>
         <source>Add fixtures</source>
-        <translation>Añadir fixtures</translation>
+        <translation>Aggiungi fixture</translation>
     </message>
     <message>
         <source>All</source>
-        <translation>Todos</translation>
+        <translation>Tutte</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation>Nessuno</translation>
     </message>
     <message>
         <source>Group by fixture</source>
-        <translation>Agrupar por fixture</translation>
+        <translation>Raggruppa per fixture</translation>
     </message>
     <message numerus="yes">
         <source>%n selected</source>
         <translation>
-            <numerusform>%n seleccionado</numerusform>
-            <numerusform>%n seleccionados</numerusform>
+            <numerusform>%n selezionata</numerusform>
+            <numerusform>%n selezionate</numerusform>
         </translation>
     </message>
     <message>
-        <source>Stop identify</source>
-        <translation>Dejar de identificar</translation>
+        <source>Stop identifying</source>
+        <translation>Smetti di identificare</translation>
     </message>
     <message>
         <source>Identify</source>
-        <translation>Identificar</translation>
+        <translation>Identifica</translation>
     </message>
     <message>
         <source>Light up the selected fixtures in white, blinking, to find them on stage</source>
-        <translation>Enciende en blanco y parpadeando los fixtures seleccionados para encontrarlos en el escenario</translation>
+        <translation>Accende in bianco lampeggiante le fixture selezionate per trovarle sul palco</translation>
     </message>
     <message>
         <source>Invert pan</source>
-        <translation>Invertir pan</translation>
+        <translation>Inverti pan</translation>
     </message>
     <message>
         <source>Invert tilt</source>
-        <translation>Invertir tilt</translation>
+        <translation>Inverti tilt</translation>
     </message>
     <message>
         <source>Limits</source>
-        <translation>Límites</translation>
+        <translation>Limiti</translation>
     </message>
     <message>
         <source>Dimmer, pan and tilt limits, inverted or swapped axes, and the options of each channel</source>
-        <translation>Límites de dimmer, pan y tilt, ejes invertidos o intercambiados y las opciones de cada canal</translation>
+        <translation>Limiti di dimmer, pan e tilt, assi invertiti o scambiati e le opzioni di ogni canale</translation>
     </message>
     <message>
         <source>Edit</source>
-        <translation>Editar</translation>
+        <translation>Modifica</translation>
     </message>
     <message>
         <source>Re-address</source>
-        <translation>Redireccionar</translation>
+        <translation>Reindirizza</translation>
     </message>
     <message>
         <source>Renumber</source>
-        <translation>Numerar</translation>
+        <translation>Rinumera</translation>
     </message>
     <message>
         <source>Give the selected fixtures numbers one after the other, in address order (the command line of Program uses them)</source>
-        <translation>Da números seguidos a las fixtures seleccionadas, por orden de dirección (los usa la línea de comandos de Programar)</translation>
+        <translation>Dà numeri consecutivi alle fixture selezionate, in ordine di indirizzo (li usa la riga di comando di Programma)</translation>
     </message>
     <message>
         <source>First number</source>
-        <translation>Primer número</translation>
+        <translation>Primo numero</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) renumbered</source>
         <translation>
-            <numerusform>%n fixture numerada</numerusform>
-            <numerusform>%n fixtures numeradas</numerusform>
+            <numerusform>%n fixture rinumerata</numerusform>
+            <numerusform>%n fixture rinumerate</numerusform>
         </translation>
     </message>
     <message>
         <source>Create group</source>
-        <translation>Crear grupo</translation>
+        <translation>Crea gruppo</translation>
     </message>
     <message>
         <source>New fixture group</source>
-        <translation>Nuevo grupo de fixtures</translation>
+        <translation>Nuovo gruppo di fixture</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
     <message>
         <source>Fixture groups</source>
-        <translation>Grupos de fixtures</translation>
+        <translation>Gruppi di fixture</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s)</source>
         <translation>
             <numerusform>%n fixture</numerusform>
-            <numerusform>%n fixtures</numerusform>
+            <numerusform>%n fixture</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n selection(s)</source>
         <translation>
-            <numerusform>%n selección</numerusform>
-            <numerusform>%n selecciones</numerusform>
+            <numerusform>%n selezione</numerusform>
+            <numerusform>%n selezioni</numerusform>
         </translation>
     </message>
     <message>
         <source>Save the selection, in its order, as a selection of this group</source>
-        <translation>Guardar la selección, en su orden, como selección de este grupo</translation>
+        <translation>Salva la selezione, nel suo ordine, come selezione di questo gruppo</translation>
     </message>
     <message>
         <source>Select fixtures and press “Create group” to make groups like “Front wash” or “Spots”.</source>
-        <translation>Selecciona fixtures y pulsa «Crear grupo» para hacer grupos como «Wash frontal» o «Spots».</translation>
+        <translation>Seleziona le fixture e premi «Crea gruppo» per creare gruppi come «Wash frontale» o «Spot».</translation>
     </message>
     <message>
         <source>NAME</source>
-        <translation>NOMBRE</translation>
+        <translation>NOME</translation>
     </message>
     <message>
         <source>ADDRESS</source>
-        <translation>DIRECCIÓN</translation>
+        <translation>INDIRIZZO</translation>
     </message>
     <message>
         <source>CH</source>
-        <translation>CANALES</translation>
+        <translation>CAN</translation>
     </message>
     <message>
         <source>FIXTURE</source>
@@ -4639,39 +4828,43 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>MODE</source>
-        <translation>MODO</translation>
+        <translation>MODALITÀ</translation>
     </message>
     <message>
         <source>INVERT</source>
-        <translation>INVERTIR</translation>
+        <translation>INVERTI</translation>
     </message>
     <message>
         <source>Identify: blink this fixture in white</source>
-        <translation>Identificar: este fixture parpadea en blanco</translation>
+        <translation>Identifica: fa lampeggiare questa fixture in bianco</translation>
+    </message>
+    <message>
+        <source>Add the fixtures of your rig to start</source>
+        <translation>Aggiungi le fixture del tuo impianto per iniziare</translation>
     </message>
     <message>
         <source>Stage plan</source>
-        <translation>Plano del escenario</translation>
+        <translation>Pianta del palco</translation>
     </message>
     <message>
         <source>Width (m)</source>
-        <translation>Ancho (m)</translation>
+        <translation>Larghezza (m)</translation>
     </message>
     <message>
         <source>Depth (m)</source>
-        <translation>Fondo (m)</translation>
+        <translation>Profondità (m)</translation>
     </message>
     <message>
         <source>Auto arrange</source>
-        <translation>Colocar automáticamente</translation>
+        <translation>Disponi automaticamente</translation>
     </message>
     <message>
         <source>Live</source>
-        <translation>En vivo</translation>
+        <translation>Dal vivo</translation>
     </message>
     <message>
         <source>Show the colour, dimmer, strobe and gobo of each fixture</source>
-        <translation>Mostrar el color, dimmer, estrobo y gobo de cada fixture</translation>
+        <translation>Mostra colore, dimmer, strobo e gobo di ogni fixture</translation>
     </message>
     <message>
         <source>Lasso</source>
@@ -4679,99 +4872,99 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Draw around the fixtures to select them</source>
-        <translation>Dibuja alrededor de los fixtures para seleccionarlos</translation>
+        <translation>Disegna attorno alle fixture per selezionarle</translation>
     </message>
     <message>
         <source>Select</source>
-        <translation>Seleccionar</translation>
+        <translation>Seleziona</translation>
     </message>
     <message>
         <source>Click or draw around the fixtures to select them</source>
-        <translation>Haz clic o dibuja alrededor de los fixtures para seleccionarlos</translation>
+        <translation>Clicca o disegna attorno alle fixture per selezionarle</translation>
     </message>
     <message>
         <source>Move</source>
-        <translation>Mover</translation>
+        <translation>Sposta</translation>
     </message>
     <message>
         <source>Drag the fixtures (the whole selection) or the view</source>
-        <translation>Arrastra los fixtures (toda la selección) o la vista</translation>
+        <translation>Trascina le fixture (tutta la selezione) o la vista</translation>
     </message>
     <message>
         <source>Grid</source>
-        <translation>Cuadrícula</translation>
+        <translation>Griglia</translation>
     </message>
     <message>
         <source>Free</source>
-        <translation>Libre</translation>
+        <translation>Libero</translation>
     </message>
     <message>
         <source>Look</source>
-        <translation>Aspecto</translation>
+        <translation>Aspetto</translation>
     </message>
     <message>
-        <source>How the selected fixtures look in the plan</source>
-        <translation>Cómo se ven en el plano los fixtures seleccionados</translation>
+        <source>How the selected fixtures look on the plan</source>
+        <translation>Come appaiono sulla pianta le fixture selezionate</translation>
     </message>
     <message>
         <source>Round</source>
-        <translation>Redondo</translation>
+        <translation>Rotondo</translation>
     </message>
     <message>
         <source>Square</source>
-        <translation>Cuadrado</translation>
+        <translation>Quadrato</translation>
     </message>
     <message>
         <source>Rectangle</source>
-        <translation>Rectángulo</translation>
+        <translation>Rettangolo</translation>
     </message>
     <message>
         <source>Arrange</source>
-        <translation>Colocar</translation>
+        <translation>Disponi</translation>
     </message>
     <message>
         <source>Line</source>
-        <translation>Línea</translation>
+        <translation>Linea</translation>
     </message>
     <message>
         <source>Line, front to back</source>
-        <translation>Línea, de delante a atrás</translation>
+        <translation>Linea, da davanti a dietro</translation>
     </message>
     <message>
         <source>Circle</source>
-        <translation>Círculo</translation>
+        <translation>Cerchio</translation>
     </message>
     <message>
         <source>Grid, by rows</source>
-        <translation>Rejilla, por filas</translation>
+        <translation>Griglia, per righe</translation>
     </message>
     <message>
         <source>Grid, snake</source>
-        <translation>Rejilla, en zigzag</translation>
+        <translation>Griglia, a zigzag</translation>
     </message>
     <message>
         <source>Grid, by columns</source>
-        <translation>Rejilla, por columnas</translation>
+        <translation>Griglia, per colonne</translation>
     </message>
     <message>
         <source>Grid, snake by columns</source>
-        <translation>Rejilla, en zigzag por columnas</translation>
+        <translation>Griglia, a zigzag per colonne</translation>
     </message>
     <message>
         <source>Spacing (cm)</source>
-        <translation>Separación (cm)</translation>
+        <translation>Spaziatura (cm)</translation>
     </message>
     <message>
         <source>Columns</source>
-        <translation>Columnas</translation>
+        <translation>Colonne</translation>
     </message>
     <message>
         <source>Align</source>
-        <translation>Alinear</translation>
+        <translation>Allinea</translation>
     </message>
     <message>
         <source>Left</source>
-        <translation>Izquierda</translation>
+        <translation>Sinistra</translation>
     </message>
     <message>
         <source>Centre</source>
@@ -4779,7 +4972,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Right</source>
-        <translation>Derecha</translation>
+        <translation>Destra</translation>
     </message>
     <message>
         <source>Back</source>
@@ -4787,118 +4980,114 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Middle</source>
-        <translation>Medio</translation>
+        <translation>Mezzo</translation>
     </message>
     <message>
         <source>Front</source>
-        <translation>Frente</translation>
+        <translation>Davanti</translation>
     </message>
     <message>
         <source>Distribute across</source>
-        <translation>Repartir a lo ancho</translation>
+        <translation>Distribuisci in larghezza</translation>
     </message>
     <message>
         <source>Distribute front to back</source>
-        <translation>Repartir a lo hondo</translation>
+        <translation>Distribuisci in profondità</translation>
     </message>
     <message>
         <source>Turn the selection 15° (right click: the other way)</source>
-        <translation>Girar la selección 15° (clic derecho: hacia el otro lado)</translation>
+        <translation>Ruota la selezione di 15° (clic destro: nell&apos;altro senso)</translation>
     </message>
     <message>
         <source>Rename</source>
-        <translation>Renombrar</translation>
+        <translation>Rinomina</translation>
     </message>
     <message>
         <source>Rename group</source>
-        <translation>Renombrar grupo</translation>
+        <translation>Rinomina gruppo</translation>
     </message>
     <message>
         <source>Replace with selection</source>
-        <translation>Sustituir por la selección</translation>
+        <translation>Sostituisci con la selezione</translation>
     </message>
     <message>
         <source>Save the selection here…</source>
-        <translation>Guardar la selección aquí…</translation>
+        <translation>Salva qui la selezione…</translation>
     </message>
     <message>
         <source>Select odd</source>
-        <translation>Seleccionar los impares</translation>
+        <translation>Seleziona le dispari</translation>
     </message>
     <message>
         <source>Select even</source>
-        <translation>Seleccionar los pares</translation>
+        <translation>Seleziona le pari</translation>
     </message>
     <message>
         <source>Select in reverse order</source>
-        <translation>Seleccionar en orden inverso</translation>
+        <translation>Seleziona in ordine inverso</translation>
     </message>
     <message>
         <source>Select the first half</source>
-        <translation>Seleccionar la primera mitad</translation>
+        <translation>Seleziona la prima metà</translation>
     </message>
     <message>
         <source>Select the second half</source>
-        <translation>Seleccionar la segunda mitad</translation>
+        <translation>Seleziona la seconda metà</translation>
     </message>
     <message>
         <source>Select from the ends to the middle</source>
-        <translation>Seleccionar de los extremos al centro</translation>
+        <translation>Seleziona dagli estremi al centro</translation>
     </message>
     <message>
         <source>Select from the middle to the ends</source>
-        <translation>Seleccionar del centro a los extremos</translation>
+        <translation>Seleziona dal centro agli estremi</translation>
     </message>
     <message>
         <source>Delete group</source>
-        <translation>Eliminar grupo</translation>
+        <translation>Elimina gruppo</translation>
     </message>
     <message>
         <source>Rename selection</source>
-        <translation>Renombrar la selección</translation>
+        <translation>Rinomina selezione</translation>
     </message>
     <message>
         <source>Delete selection</source>
-        <translation>Eliminar la selección</translation>
+        <translation>Elimina selezione</translation>
     </message>
     <message numerus="yes">
         <source>Delete %n fixture(s)?</source>
         <translation>
-            <numerusform>¿Eliminar %n fixture?</numerusform>
-            <numerusform>¿Eliminar %n fixtures?</numerusform>
+            <numerusform>Eliminare %n fixture?</numerusform>
+            <numerusform>Eliminare %n fixture?</numerusform>
         </translation>
     </message>
     <message>
         <source>Their values are removed from every scene.</source>
-        <translation>Sus valores se eliminan de todas las escenas.</translation>
+        <translation>I loro valori vengono rimossi da tutte le scene.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Import the patch and the scenes of a show</source>
-        <translation>Importar el patch y las escenas de un show</translation>
+        <translation>Importa il patch e le scene di uno show</translation>
     </message>
     <message>
         <source>Import the patch of a show</source>
-        <translation>Importar el patch de un show</translation>
+        <translation>Importa il patch di uno show</translation>
     </message>
     <message>
         <source>Import the scenes of a show</source>
-        <translation>Importar las escenas de un show</translation>
+        <translation>Importa le scene di uno show</translation>
     </message>
     <message>
         <source>Show files (*.qxw)</source>
-        <translation>Archivos de show (*.qxw)</translation>
+        <translation>File di show (*.qxw)</translation>
     </message>
     <message>
         <source>All files (*)</source>
-        <translation>Todos los archivos (*)</translation>
-    </message>
-    <message>
-        <source>Add the fixtures of your rig to start</source>
-        <translation>Añade los fixtures de tu montaje para empezar</translation>
+        <translation>Tutti i file (*)</translation>
     </message>
 </context>
 <context>
@@ -4909,65 +5098,65 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Choose the cuelist or scene it plays (double click to put it there).</source>
-        <translation>Elige la cuelist o la escena que reproduce (doble clic para ponerla).</translation>
+        <translation>Scegli la cuelist o la scena che riproduce (doppio clic per metterla).</translation>
     </message>
     <message>
         <source>It plays “%1”: the one you choose takes its place.</source>
-        <translation>Reproduce «%1»: la que elijas ocupa su lugar.</translation>
+        <translation>Riproduce «%1»: quella che scegli prende il suo posto.</translation>
     </message>
     <message>
         <source>There are no scenes yet. Record a cuelist from the programmer, or create a scene in Scenes.</source>
-        <translation>Aún no hay escenas. Graba una cuelist desde el programador o crea una escena en Escenas.</translation>
+        <translation>Non ci sono ancora scene. Registra una cuelist dal programmatore o crea una scena in Scene.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Put it on playback %1</source>
-        <translation>Ponerla en el playback %1</translation>
+        <translation>Mettila sul playback %1</translation>
     </message>
 </context>
 <context>
     <name>PlaybackManager</name>
     <message>
         <source>Page %1</source>
-        <translation>Página %1</translation>
+        <translation>Pagina %1</translation>
     </message>
     <message>
         <source>Select a playback first</source>
-        <translation>Selecciona primero un playback</translation>
+        <translation>Seleziona prima un playback</translation>
     </message>
     <message>
         <source>New cuelist on playback %1 with cue 1</source>
-        <translation>Nueva cuelist en el playback %1 con la cue 1</translation>
+        <translation>Nuova cuelist sul playback %1 con la cue 1</translation>
     </message>
     <message>
         <source>This playback holds a scene: record on an empty playback or on a cuelist</source>
-        <translation>Este playback tiene una escena: graba en un playback vacío o en una cuelist</translation>
+        <translation>Questo playback contiene una scena: registra su un playback vuoto o su una cuelist</translation>
     </message>
     <message>
         <source>Cue %1 recorded in %2</source>
-        <translation>Cue %1 grabada en %2</translation>
+        <translation>Cue %1 registrata in %2</translation>
     </message>
     <message>
         <source>Select a cuelist playback first</source>
-        <translation>Selecciona primero un playback con una cuelist</translation>
+        <translation>Seleziona prima un playback con una cuelist</translation>
     </message>
     <message>
         <source>Load a cue of %1 or play it first</source>
-        <translation>Carga una cue de %1 o ponla en marcha primero</translation>
+        <translation>Prima carica una cue di %1 o avviala</translation>
     </message>
     <message>
         <source>Cue %1 updated in %2</source>
-        <translation>Cue %1 actualizada en %2</translation>
+        <translation>Cue %1 aggiornata in %2</translation>
     </message>
 </context>
 <context>
     <name>PlaybackPanel</name>
     <message>
         <source>Duration</source>
-        <translation>Duración</translation>
+        <translation>Durata</translation>
     </message>
     <message>
         <source>BPM</source>
@@ -4979,114 +5168,114 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pulse</source>
-        <translation>Pulso</translation>
+        <translation>Impulso</translation>
     </message>
     <message>
         <source>Nothing</source>
-        <translation>Nada</translation>
+        <translation>Niente</translation>
     </message>
     <message>
         <source>Next scene of the group</source>
-        <translation>La siguiente escena del grupo</translation>
+        <translation>La scena successiva del gruppo</translation>
     </message>
     <message>
         <source>Previous scene of the group</source>
-        <translation>La escena anterior del grupo</translation>
+        <translation>La scena precedente del gruppo</translation>
     </message>
     <message>
         <source>Fade in</source>
-        <translation>Fundido de entrada</translation>
+        <translation>Entrata</translation>
     </message>
     <message>
         <source>Fade out</source>
-        <translation>Fundido de salida</translation>
+        <translation>Uscita</translation>
     </message>
     <message>
         <source>Step time</source>
-        <translation>Tiempo por paso</translation>
+        <translation>Tempo per passo</translation>
     </message>
     <message>
         <source>Cycle time</source>
-        <translation>Tiempo de ciclo</translation>
-    </message>
-    <message>
-        <source>Speed</source>
-        <translation>Velocidad</translation>
-    </message>
-    <message>
-        <source>Speed of the effect (double click: one cycle a second)</source>
-        <translation>Velocidad del efecto (doble clic: un ciclo por segundo)</translation>
-    </message>
-    <message>
-        <source>Half as fast</source>
-        <translation>La mitad de rápido</translation>
-    </message>
-    <message>
-        <source>Twice as fast</source>
-        <translation>El doble de rápido</translation>
+        <translation>Tempo di ciclo</translation>
     </message>
     <message>
         <source>Staggered fade</source>
-        <translation>Entrada gradual</translation>
+        <translation>Entrata scaglionata</translation>
     </message>
     <message>
         <source>Each fixture starts its fade this long after the previous one, in selection order</source>
-        <translation>Cada fixture empieza su fundido este tiempo después del anterior, en orden de selección</translation>
+        <translation>Ogni fixture inizia la sua dissolvenza questo tempo dopo la precedente, in ordine di selezione</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Velocità</translation>
+    </message>
+    <message>
+        <source>Speed of the effect (double click: one cycle a second)</source>
+        <translation>Velocità dell&apos;effetto (doppio clic: un ciclo al secondo)</translation>
+    </message>
+    <message>
+        <source>Half as fast</source>
+        <translation>Metà velocità</translation>
+    </message>
+    <message>
+        <source>Twice as fast</source>
+        <translation>Doppia velocità</translation>
     </message>
     <message>
         <source>Driven by</source>
-        <translation>Modo de conducción</translation>
+        <translation>Guidata da</translation>
     </message>
     <message>
         <source>Divisions</source>
-        <translation>Divisiones</translation>
+        <translation>Divisioni</translation>
     </message>
     <message>
         <source>Start</source>
-        <translation>Inicio</translation>
+        <translation>Inizio</translation>
     </message>
     <message>
         <source>Playing</source>
-        <translation>Reproduciendo</translation>
+        <translation>In riproduzione</translation>
     </message>
     <message>
         <source>Paused, press again to play</source>
-        <translation>En pausa, pulsar otra vez para reproducir</translation>
+        <translation>In pausa, premi di nuovo per riprodurre</translation>
     </message>
     <message>
         <source>Plays</source>
-        <translation>Se reproduce</translation>
+        <translation>Si riproduce</translation>
     </message>
     <message>
         <source>Always</source>
-        <translation>Siempre</translation>
+        <translation>Sempre</translation>
     </message>
     <message>
         <source>N times</source>
-        <translation>N veces</translation>
+        <translation>N volte</translation>
     </message>
     <message>
         <source>then</source>
-        <translation>y luego</translation>
+        <translation>poi</translation>
     </message>
     <message>
         <source>Release it</source>
-        <translation>Liberarla</translation>
+        <translation>Rilasciala</translation>
     </message>
     <message>
         <source>Hold the last frame</source>
-        <translation>Mantener el último fotograma</translation>
+        <translation>Mantieni l&apos;ultimo fotogramma</translation>
     </message>
     <message>
         <source>and play</source>
-        <translation>y reproducir</translation>
+        <translation>e riproduci</translation>
     </message>
 </context>
 <context>
     <name>PlaybackSlotDialog</name>
     <message>
         <source>Nothing</source>
-        <translation>Nada</translation>
+        <translation>Niente</translation>
     </message>
     <message>
         <source>GO</source>
@@ -5094,7 +5283,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Back</source>
-        <translation>Atrás</translation>
+        <translation>Indietro</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -5102,11 +5291,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Pause / Back</source>
-        <translation>Pausa / Atrás</translation>
+        <translation>Pausa / Indietro</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -5118,11 +5307,11 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>On / off</source>
-        <translation>Encender / apagar</translation>
+        <translation>Acceso / spento</translation>
     </message>
     <message>
         <source>Select</source>
-        <translation>Seleccionar</translation>
+        <translation>Seleziona</translation>
     </message>
     <message>
         <source>Playback %1 · %2</source>
@@ -5130,70 +5319,70 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Label</source>
-        <translation>Etiqueta</translation>
+        <translation>Etichetta</translation>
     </message>
     <message>
         <source>The name of the scene</source>
-        <translation>El nombre de la escena</translation>
+        <translation>Il nome della scena</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>The colour of its type</source>
-        <translation>El color de su tipo</translation>
+        <translation>Il colore del suo tipo</translation>
     </message>
     <message>
         <source>Button 1</source>
-        <translation>Botón 1</translation>
+        <translation>Tasto 1</translation>
     </message>
     <message>
         <source>Button 2</source>
-        <translation>Botón 2</translation>
+        <translation>Tasto 2</translation>
     </message>
     <message>
         <source>Button 3</source>
-        <translation>Botón 3</translation>
+        <translation>Tasto 3</translation>
     </message>
     <message>
         <source>The fader starts it</source>
-        <translation>El fader lo arranca</translation>
+        <translation>Il fader lo avvia</translation>
     </message>
     <message>
         <source>The fader at zero releases it</source>
-        <translation>El fader a cero lo libera</translation>
+        <translation>Il fader a zero lo rilascia</translation>
     </message>
     <message>
         <source>Default (no: it keeps its cue)</source>
-        <translation>Por defecto (no: mantiene su cue)</translation>
+        <translation>Predefinito (no: mantiene la sua cue)</translation>
     </message>
     <message>
         <source>Default (yes)</source>
-        <translation>Por defecto (sí)</translation>
+        <translation>Predefinito (sì)</translation>
     </message>
     <message>
         <source>Yes</source>
-        <translation>Sí</translation>
+        <translation>Sì</translation>
     </message>
     <message>
         <source>No</source>
         <translation>No</translation>
     </message>
     <message>
-        <source>The fader is the intensity of what it plays. Up from zero it starts it; GO with the fader down plays it at full.</source>
-        <translation>El fader es la intensidad de lo que reproduce. Al subirlo desde cero lo arranca; un GO con el fader abajo lo reproduce a tope.</translation>
+        <source>The fader is the intensity of what it plays. Raising it from zero starts it; GO with the fader down plays it at full.</source>
+        <translation>Il fader è l&apos;intensità di ciò che riproduce. Alzarlo da zero lo avvia; GO con il fader abbassato lo riproduce al massimo.</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation>Chiudi</translation>
     </message>
 </context>
 <context>
     <name>PlaybackStrip</name>
     <message>
         <source>Back</source>
-        <translation>Atrás</translation>
+        <translation>Indietro</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -5201,7 +5390,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -5217,269 +5406,269 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Select</source>
-        <translation>Seleccionar</translation>
+        <translation>Seleziona</translation>
     </message>
     <message>
         <source>GO: the next cue (starts it when it is off)</source>
-        <translation>GO: la cue siguiente (lo arranca si está apagado)</translation>
+        <translation>GO: la cue successiva (lo avvia se è spento)</translation>
     </message>
     <message>
         <source>Back: the cue before</source>
-        <translation>Atrás: la cue anterior</translation>
+        <translation>Indietro: la cue precedente</translation>
     </message>
     <message>
         <source>Pause / Back: pauses a fade, else the cue before</source>
-        <translation>Pausa / Atrás: pausa un fundido; si no, la cue anterior</translation>
+        <translation>Pausa / Indietro: mette in pausa una dissolvenza, altrimenti la cue precedente</translation>
     </message>
     <message>
         <source>Flash: at full while pressed</source>
-        <translation>Flash: a tope mientras se pulsa</translation>
+        <translation>Flash: al massimo finché è premuto</translation>
     </message>
     <message>
         <source>Flash + GO: at full while pressed, and the next cue</source>
-        <translation>Flash + GO: a tope mientras se pulsa, y la cue siguiente</translation>
+        <translation>Flash + GO: al massimo finché è premuto, e la cue successiva</translation>
     </message>
     <message>
         <source>On / off</source>
-        <translation>Encender / apagar</translation>
+        <translation>Acceso / spento</translation>
     </message>
     <message>
         <source>Select it (Main GO, Record and Update work on it)</source>
-        <translation>Seleccionarlo (Main GO, Grabar y Actualizar actúan sobre él)</translation>
+        <translation>Selezionalo (Main GO, Registra e Aggiorna agiscono su di esso)</translation>
     </message>
     <message>
         <source>Released</source>
-        <translation>Liberada</translation>
+        <translation>Rilasciata</translation>
     </message>
     <message>
         <source>No cues</source>
-        <translation>Sin cues</translation>
+        <translation>Nessuna cue</translation>
     </message>
     <message>
         <source>Paused</source>
-        <translation>En pausa</translation>
+        <translation>In pausa</translation>
     </message>
     <message>
         <source>On</source>
-        <translation>Encendido</translation>
+        <translation>Acceso</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation>Apagado</translation>
-    </message>
-    <message>
-        <source>Empty</source>
-        <translation>Vacío</translation>
+        <translation>Spento</translation>
     </message>
     <message>
         <source>Page deleted</source>
-        <translation>Página eliminada</translation>
+        <translation>Pagina eliminata</translation>
+    </message>
+    <message>
+        <source>Empty</source>
+        <translation>Vuoto</translation>
     </message>
     <message>
         <source>Add</source>
-        <translation>Añadir</translation>
+        <translation>Aggiungi</translation>
     </message>
     <message>
         <source>A new cuelist from the programmer, or a scene</source>
-        <translation>Una cuelist nueva desde el programador, o una escena</translation>
+        <translation>Una nuova cuelist dal programmatore, o una scena</translation>
     </message>
     <message>
         <source>New cuelist from the programmer</source>
-        <translation>Nueva cuelist desde el programador</translation>
+        <translation>Nuova cuelist dal programmatore</translation>
     </message>
     <message>
         <source>Put a scene here…</source>
-        <translation>Poner aquí una escena…</translation>
+        <translation>Metti qui una scena…</translation>
     </message>
     <message>
         <source>New cuelist</source>
-        <translation>Nueva cuelist</translation>
+        <translation>Nuova cuelist</translation>
     </message>
     <message>
         <source>Record cue %1</source>
-        <translation>Grabar la cue&#xa0;%1</translation>
+        <translation>Registra la cue %1</translation>
     </message>
     <message>
         <source>Holds a scene</source>
-        <translation>Tiene una escena</translation>
+        <translation>Contiene una scena</translation>
     </message>
     <message>
         <source>Assign a scene…</source>
-        <translation>Asignar una escena…</translation>
+        <translation>Assegna una scena…</translation>
     </message>
     <message>
         <source>Edit in Scenes</source>
-        <translation>Editar en Escenas</translation>
+        <translation>Modifica in Scene</translation>
     </message>
     <message>
         <source>Record a new cuelist</source>
-        <translation>Grabar una cuelist nueva</translation>
+        <translation>Registra una nuova cuelist</translation>
     </message>
     <message>
         <source>Update the current cue (the next cues follow)</source>
-        <translation>Actualizar la cue actual (sigue en las siguientes)</translation>
+        <translation>Aggiorna la cue attuale (vale anche per le successive)</translation>
     </message>
     <message>
         <source>Update only the current cue</source>
-        <translation>Actualizar solo la cue actual</translation>
+        <translation>Aggiorna solo la cue attuale</translation>
     </message>
     <message>
         <source>Properties…</source>
-        <translation>Propiedades…</translation>
+        <translation>Proprietà…</translation>
     </message>
     <message>
         <source>Clear the playback</source>
-        <translation>Vaciar el playback</translation>
+        <translation>Svuota il playback</translation>
     </message>
 </context>
 <context>
     <name>PlaybacksPage</name>
     <message>
         <source>Previous page (PgUp)</source>
-        <translation>Página anterior (RePág)</translation>
+        <translation>Pagina precedente (PgUp)</translation>
     </message>
     <message>
-        <source>Next page (PgDown)</source>
-        <translation>Página siguiente (AvPág)</translation>
+        <source>Next page (PgDn)</source>
+        <translation>Pagina successiva (PgDn)</translation>
     </message>
     <message>
         <source>Page</source>
-        <translation>Página</translation>
+        <translation>Pagina</translation>
     </message>
     <message>
         <source>Faders per page</source>
-        <translation>Faders por página</translation>
+        <translation>Fader per pagina</translation>
     </message>
     <message>
         <source>Assign</source>
-        <translation>Asignar</translation>
+        <translation>Assegna</translation>
     </message>
     <message>
         <source>The scenes, to drag them onto the playbacks</source>
-        <translation>Las escenas, para arrastrarlas a los playbacks</translation>
+        <translation>Le scene, da trascinare sui playback</translation>
     </message>
     <message>
         <source>Record</source>
-        <translation>Grabar</translation>
+        <translation>Registra</translation>
     </message>
     <message>
         <source>The programming screens are locked</source>
-        <translation>Las pantallas de programación están bloqueadas</translation>
+        <translation>Le schermate di programmazione sono bloccate</translation>
     </message>
     <message>
         <source>Set some values in the programmer first</source>
-        <translation>Pon primero algunos valores en el programador</translation>
+        <translation>Prima imposta alcuni valori nel programmatore</translation>
     </message>
     <message>
         <source>Then click a playback: an empty one gets a new cuelist, a cuelist its next cue (Esc cancels)</source>
-        <translation>Luego haz clic en un playback: uno vacío recibe una cuelist nueva, y una cuelist, su cue siguiente (Esc cancela)</translation>
+        <translation>Poi clicca un playback: uno vuoto riceve una nuova cuelist, una cuelist la sua cue successiva (Esc annulla)</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Actualizar</translation>
+        <translation>Aggiorna</translation>
     </message>
     <message>
         <source>Select a cuelist playback first</source>
-        <translation>Selecciona primero un playback con una cuelist</translation>
+        <translation>Seleziona prima un playback con una cuelist</translation>
     </message>
     <message>
         <source>Merge the programmer into the cue of the selected cuelist</source>
-        <translation>Fusionar el programador con la cue de la cuelist seleccionada</translation>
+        <translation>Unisci il programmatore alla cue della cuelist selezionata</translation>
     </message>
     <message>
         <source>Update cue %1 (the next cues follow)</source>
-        <translation>Actualizar la cue %1 (sigue en las siguientes)</translation>
+        <translation>Aggiorna la cue %1 (vale anche per le successive)</translation>
     </message>
     <message>
         <source>Update the cue (the next cues follow)</source>
-        <translation>Actualizar la cue (sigue en las siguientes)</translation>
+        <translation>Aggiorna la cue (vale anche per le successive)</translation>
     </message>
     <message>
         <source>Only this cue (the next cues keep their look)</source>
-        <translation>Solo esta cue (las siguientes mantienen su aspecto)</translation>
+        <translation>Solo questa cue (le successive mantengono il loro aspetto)</translation>
     </message>
     <message>
         <source>Click a playback to record the programmer on it · Esc cancels</source>
-        <translation>Haz clic en un playback para grabar en él el programador · Esc cancela</translation>
+        <translation>Clicca un playback per registrarci il programmatore · Esc annulla</translation>
     </message>
     <message>
         <source>Drag a scene onto a playback (double click: the first free one)</source>
-        <translation>Arrastra una escena a un playback (doble clic: al primero libre)</translation>
+        <translation>Trascina una scena su un playback (doppio clic: il primo libero)</translation>
     </message>
     <message>
         <source>Release all</source>
-        <translation>Liberar todo</translation>
+        <translation>Rilascia tutto</translation>
     </message>
     <message>
-        <source>Release every playback and every cuelist that plays</source>
-        <translation>Liberar todos los playbacks y todas las cuelists que suenan</translation>
+        <source>Release every playback and every cuelist that is playing</source>
+        <translation>Rilascia tutti i playback e tutte le cuelist in riproduzione</translation>
     </message>
     <message>
         <source>Back</source>
-        <translation>Atrás</translation>
+        <translation>Indietro</translation>
     </message>
     <message>
         <source>The cue before, on the selected playback (Shift+Space)</source>
-        <translation>La cue anterior en el playback seleccionado (Mayús+Espacio)</translation>
+        <translation>La cue precedente sul playback selezionato (Maiusc+Spazio)</translation>
     </message>
     <message>
         <source>Select a playback</source>
-        <translation>Selecciona un playback</translation>
+        <translation>Seleziona un playback</translation>
     </message>
     <message>
         <source>The next cue of the selected playback (Space)</source>
-        <translation>La cue siguiente del playback seleccionado (Espacio)</translation>
+        <translation>La cue successiva del playback selezionato (Spazio)</translation>
     </message>
     <message>
         <source>Scenes</source>
-        <translation>Escenas</translation>
+        <translation>Scene</translation>
     </message>
     <message>
         <source>No scenes yet. Record a cuelist from the programmer with Record.</source>
-        <translation>Aún no hay escenas. Graba una cuelist desde el programador con Grabar.</translation>
+        <translation>Ancora nessuna scena. Registra una cuelist dal programmatore con Registra.</translation>
     </message>
     <message>
         <source>Page name</source>
-        <translation>Nombre de la página</translation>
+        <translation>Nome della pagina</translation>
     </message>
     <message>
         <source>Rename…</source>
-        <translation>Renombrar…</translation>
+        <translation>Rinomina…</translation>
     </message>
     <message>
         <source>Move left</source>
-        <translation>Mover a la izquierda</translation>
+        <translation>Sposta a sinistra</translation>
     </message>
     <message>
         <source>Move right</source>
-        <translation>Mover a la derecha</translation>
+        <translation>Sposta a destra</translation>
     </message>
     <message>
         <source>Delete page…</source>
-        <translation>Eliminar la página…</translation>
+        <translation>Elimina pagina…</translation>
     </message>
     <message>
         <source>Delete the page “%1”?</source>
-        <translation>¿Eliminar la página «%1»?</translation>
+        <translation>Eliminare la pagina «%1»?</translation>
     </message>
     <message>
         <source>Its playbacks are cleared; what they play keeps playing, and the cuelists and scenes stay in Scenes.</source>
-        <translation>Sus playbacks se vacían; lo que reproducen sigue sonando, y las cuelists y las escenas se quedan en Escenas.</translation>
+        <translation>I suoi playback vengono svuotati; ciò che riproducono continua, e le cuelist e le scene restano in Scene.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>Programmer</name>
     <message>
         <source>Programmer FX</source>
-        <translation>FX del programador</translation>
+        <translation>FX del programmatore</translation>
     </message>
     <message>
         <source>FX %1</source>
@@ -5487,7 +5676,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Scene %1</source>
-        <translation>Escena %1</translation>
+        <translation>Scena %1</translation>
     </message>
     <message>
         <source>Snapshot %1</source>
@@ -5497,18 +5686,22 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
 <context>
     <name>ProgrammerPage</name>
     <message>
+        <source>Cue %1 of %2 updated</source>
+        <translation>Cue %1 di %2 aggiornata</translation>
+    </message>
+    <message>
         <source>Program</source>
-        <translation>Programar</translation>
+        <translation>Programma</translation>
     </message>
     <message>
         <source>Blind: the lights don&apos;t show what you program</source>
-        <translation>Modo ciego: las luces no muestran lo que programas</translation>
+        <translation>Cieco: le luci non mostrano ciò che programmi</translation>
     </message>
     <message numerus="yes">
         <source>%n channel(s) in the programmer — they override the playbacks until you clear them</source>
         <translation>
-            <numerusform>%n canal en el programador: manda sobre los playbacks hasta limpiarlo</numerusform>
-            <numerusform>%n canales en el programador: mandan sobre los playbacks hasta limpiarlos</numerusform>
+            <numerusform>%n canale nel programmatore — prevale sui playback finché non lo togli</numerusform>
+            <numerusform>%n canali nel programmatore — prevalgono sui playback finché non li togli</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -5521,13 +5714,13 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message numerus="yes">
         <source>%n FX in the programmer — they play over the scenes until you clear them</source>
         <translation>
-            <numerusform>%n FX en el programador: suena sobre las escenas hasta que lo borres</numerusform>
-            <numerusform>%n FX en el programador: suenan sobre las escenas hasta que los borres</numerusform>
+            <numerusform>%n FX nel programmatore — va sopra le scene finché non lo togli</numerusform>
+            <numerusform>%n FX nel programmatore — vanno sopra le scene finché non li togli</numerusform>
         </translation>
     </message>
     <message>
         <source>Select fixtures, set their attributes, then record a scene</source>
-        <translation>Selecciona fixtures, ajusta sus atributos y graba una escena</translation>
+        <translation>Seleziona le fixture, imposta i loro attributi, poi registra una scena</translation>
     </message>
     <message>
         <source>Beam on</source>
@@ -5535,7 +5728,7 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Dimmer full and shutter open</source>
-        <translation>Dimmer al máximo y shutter abierto</translation>
+        <translation>Dimmer al massimo e shutter aperto</translation>
     </message>
     <message>
         <source>Beam off</source>
@@ -5543,35 +5736,35 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Centre</source>
-        <translation>Centrar</translation>
+        <translation>Centra</translation>
     </message>
     <message>
         <source>Pan and tilt to the centre</source>
-        <translation>Pan y tilt al centro</translation>
+        <translation>Pan e tilt al centro</translation>
     </message>
     <message>
         <source>Blind</source>
-        <translation>Ciego</translation>
+        <translation>Cieco</translation>
     </message>
     <message>
         <source>Edit without sending the programmer to the lights</source>
-        <translation>Editar sin enviar el programador a las luces</translation>
+        <translation>Modifica senza inviare il programmatore alle luci</translation>
     </message>
     <message>
         <source>Reset all</source>
-        <translation>Restablecer todo</translation>
+        <translation>Azzera tutto</translation>
     </message>
     <message>
         <source>Release every live edit: the scenes show again</source>
-        <translation>Libera todas las ediciones en vivo: vuelven a verse las escenas</translation>
+        <translation>Rilascia tutte le modifiche dal vivo: le scene tornano visibili</translation>
     </message>
     <message>
         <source>Reset selected</source>
-        <translation>Restablecer selección</translation>
+        <translation>Azzera selezione</translation>
     </message>
     <message>
         <source>Release the live edits of the selected fixtures</source>
-        <translation>Libera las ediciones en vivo de los fixtures seleccionados</translation>
+        <translation>Rilascia le modifiche dal vivo delle fixture selezionate</translation>
     </message>
     <message>
         <source>Snapshot</source>
@@ -5579,109 +5772,105 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
     <message>
         <source>Save the edits into a scene</source>
-        <translation>Guardar las ediciones en una escena</translation>
+        <translation>Salva le modifiche in una scena</translation>
     </message>
     <message>
         <source>Everything on stage into a new scene…</source>
-        <translation>Todo lo que sale, en una escena nueva…</translation>
+        <translation>Tutto ciò che è in scena, in una nuova scena…</translation>
     </message>
     <message>
         <source>Only the edits into a new scene…</source>
-        <translation>Solo las ediciones, en una escena nueva…</translation>
-    </message>
-    <message>
-        <source>Cue %1 of %2 updated</source>
-        <translation>Cue %1 de %2 actualizada</translation>
+        <translation>Solo le modifiche, in una nuova scena…</translation>
     </message>
     <message>
         <source>Record…</source>
-        <translation>Grabar…</translation>
+        <translation>Registra…</translation>
     </message>
     <message>
         <source>Record the programmer into a new scene, a new cuelist or a cue of a cuelist</source>
-        <translation>Grabar el programador en una escena nueva, una cuelist nueva o una cue de una cuelist</translation>
+        <translation>Registra il programmatore in una nuova scena, una nuova cuelist o una cue di una cuelist</translation>
     </message>
     <message>
         <source>Editing cue %1 of “%2”</source>
-        <translation>Editando la cue %1 de «%2»</translation>
+        <translation>Modifica della cue %1 di «%2»</translation>
     </message>
     <message>
         <source>loaded with what it tracks</source>
-        <translation>cargada con lo que hereda</translation>
+        <translation>caricata con ciò che eredita</translation>
     </message>
     <message>
         <source>loaded with its changes only</source>
-        <translation>cargada solo con sus cambios</translation>
+        <translation>caricata solo con le sue modifiche</translation>
     </message>
     <message>
         <source>Update</source>
-        <translation>Actualizar</translation>
+        <translation>Aggiorna</translation>
     </message>
     <message>
         <source>Update cue %1 (the next cues follow)</source>
-        <translation>Actualizar la cue %1 (sigue en las siguientes)</translation>
+        <translation>Aggiorna la cue %1 (vale anche per le successive)</translation>
     </message>
     <message>
         <source>Only this cue (the next cues keep their look)</source>
-        <translation>Solo esta cue (las siguientes mantienen su aspecto)</translation>
+        <translation>Solo questa cue (le successive mantengono il loro aspetto)</translation>
     </message>
     <message>
         <source>Stop editing the cue (the programmer keeps its values)</source>
-        <translation>Dejar de editar la cue (el programador mantiene sus valores)</translation>
+        <translation>Smetti di modificare la cue (il programmatore mantiene i suoi valori)</translation>
     </message>
     <message>
         <source>Fixtures (%1 selected)</source>
-        <translation>Fixtures (%1 sel.)</translation>
+        <translation>Fixture (%1 sel.)</translation>
     </message>
     <message>
         <source>2D plan</source>
-        <translation>Plano 2D</translation>
+        <translation>Pianta 2D</translation>
     </message>
     <message>
         <source>All</source>
-        <translation>Todos</translation>
+        <translation>Tutte</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation>Nessuno</translation>
     </message>
     <message>
         <source>Invert</source>
-        <translation>Invertir</translation>
+        <translation>Inverti</translation>
     </message>
     <message>
         <source>One of every two</source>
-        <translation>Uno de cada dos</translation>
+        <translation>Una ogni due</translation>
     </message>
     <message>
         <source>One of every three</source>
-        <translation>Uno de cada tres</translation>
+        <translation>Una ogni tre</translation>
     </message>
     <message>
         <source>One of every four</source>
-        <translation>Uno de cada cuatro</translation>
+        <translation>Una ogni quattro</translation>
     </message>
     <message>
         <source>Shift the selection left</source>
-        <translation>Desplazar la selección a la izquierda</translation>
+        <translation>Sposta la selezione a sinistra</translation>
     </message>
     <message>
         <source>Shift the selection right</source>
-        <translation>Desplazar la selección a la derecha</translation>
+        <translation>Sposta la selezione a destra</translation>
     </message>
     <message>
         <source>GROUP %1 in the command line</source>
-        <translation>GROUP %1 en la línea de comandos</translation>
+        <translation>GROUP %1 nella riga di comando</translation>
     </message>
     <message>
         <source>No fixtures patched yet.
-Add some in the Patch page.</source>
-        <translation>Aún no hay fixtures patcheados.
-Añádelos en la página Patch.</translation>
+Add some on the Patch page.</source>
+        <translation>Ancora nessuna fixture patchata.
+Aggiungine alcune nella pagina Patch.</translation>
     </message>
     <message>
         <source>Quick</source>
-        <translation>Rápido</translation>
+        <translation>Rapido</translation>
     </message>
     <message>
         <source>Dimmer</source>
@@ -5689,39 +5878,31 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>Hue</source>
-        <translation>Tono</translation>
+        <translation>Tonalità</translation>
     </message>
     <message>
         <source>Sat</source>
-        <translation>Sat.</translation>
+        <translation>Sat</translation>
     </message>
     <message>
         <source>Fan</source>
-        <translation>Abanico</translation>
+        <translation>Ventaglio</translation>
     </message>
     <message>
         <source>Channel to spread over the selection</source>
-        <translation>Canal que se reparte entre la selección</translation>
+        <translation>Canale da distribuire sulla selezione</translation>
     </message>
     <message>
         <source>From the start</source>
-        <translation>Desde el inicio</translation>
+        <translation>Dall&apos;inizio</translation>
     </message>
     <message>
         <source>From the centre</source>
-        <translation>Desde el centro</translation>
-    </message>
-    <message>
-        <source>Faders</source>
-        <translation>Faders</translation>
-    </message>
-    <message>
-        <source>Features</source>
-        <translation>Features</translation>
+        <translation>Dal centro</translation>
     </message>
     <message>
         <source>FX</source>
@@ -5729,77 +5910,85 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Palettes</source>
-        <translation>Paletas</translation>
+        <translation>Palette</translation>
+    </message>
+    <message>
+        <source>Faders</source>
+        <translation>Fader</translation>
+    </message>
+    <message>
+        <source>Features</source>
+        <translation>Funzioni</translation>
     </message>
     <message>
         <source>Position, colour, beam and intensity palettes: the scenes follow them when they change</source>
-        <translation>Paletas de posición, color, haz e intensidad: las escenas las siguen cuando cambian</translation>
+        <translation>Palette di posizione, colore, fascio e intensità: le scene le seguono quando cambiano</translation>
     </message>
     <message>
         <source>Effects on the parameters of the selection</source>
-        <translation>Efectos sobre los parámetros de la selección</translation>
+        <translation>Effetti sui parametri della selezione</translation>
     </message>
     <message>
         <source>Select one or more fixtures to see their channels</source>
-        <translation>Selecciona uno o más fixtures para ver sus canales</translation>
+        <translation>Seleziona una o più fixture per vederne i canali</translation>
     </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
         <source>description.xml can&apos;t be read: %1</source>
-        <translation>No se puede leer description.xml: %1</translation>
+        <translation>Impossibile leggere description.xml: %1</translation>
     </message>
     <message>
         <source>Not a GDTF file: there is no description.xml</source>
-        <translation>No es un archivo GDTF: no tiene description.xml</translation>
+        <translation>Non è un file GDTF: manca description.xml</translation>
     </message>
     <message>
         <source>Not a GDTF file: there is no fixture type</source>
-        <translation>No es un archivo GDTF: no tiene tipo de fixture</translation>
+        <translation>Non è un file GDTF: manca il tipo di fixture</translation>
     </message>
     <message>
         <source>The GDTF file has no manufacturer or name</source>
-        <translation>El archivo GDTF no tiene fabricante o nombre</translation>
+        <translation>Il file GDTF non ha produttore o nome</translation>
     </message>
     <message>
         <source>The GDTF file has no DMX modes</source>
-        <translation>El archivo GDTF no tiene modos DMX</translation>
+        <translation>Il file GDTF non ha modalità DMX</translation>
     </message>
     <message>
         <source>Mode %1: only the first DMX break is used</source>
-        <translation>Modo %1: solo se usa el primer DMX break</translation>
+        <translation>Modalità %1: si usa solo il primo DMX break</translation>
     </message>
     <message>
         <source>Mode %1 has no DMX channels</source>
-        <translation>El modo %1 no tiene canales DMX</translation>
+        <translation>La modalità %1 non ha canali DMX</translation>
     </message>
     <message>
         <source>Mode %1: two channels on the same address, the first one is used</source>
-        <translation>Modo %1: dos canales en la misma dirección, se usa el primero</translation>
+        <translation>Modalità %1: due canali sullo stesso indirizzo, si usa il primo</translation>
     </message>
     <message>
         <source>The GDTF file has no DMX mode that can be used</source>
-        <translation>El archivo GDTF no tiene ningún modo DMX utilizable</translation>
+        <translation>Il file GDTF non ha nessuna modalità DMX utilizzabile</translation>
     </message>
     <message>
         <source>Unable to write %1</source>
-        <translation>No se puede escribir %1</translation>
+        <translation>Impossibile scrivere %1</translation>
     </message>
 </context>
 <context>
     <name>RackEditor</name>
     <message>
         <source>In the rack (%1)</source>
-        <translation>En el rack (%1)</translation>
+        <translation>Nel rack (%1)</translation>
     </message>
     <message>
         <source>Add scenes and effects from the list: they play together, each on its own fixtures.</source>
-        <translation>Añade escenas y efectos de la lista: suenan juntos, cada uno en sus fixtures.</translation>
+        <translation>Aggiungi scene ed effetti dalla lista: vanno insieme, ognuno sulle sue fixture.</translation>
     </message>
     <message>
         <source>Add</source>
-        <translation>Añadir</translation>
+        <translation>Aggiungi</translation>
     </message>
 </context>
 <context>
@@ -5807,13 +5996,13 @@ Añádelos en la página Patch.</translation>
     <message numerus="yes">
         <source>Re-address %n fixture(s)</source>
         <translation>
-            <numerusform>Redireccionar %n fixture</numerusform>
-            <numerusform>Redireccionar %n fixtures</numerusform>
+            <numerusform>Reindirizza %n fixture</numerusform>
+            <numerusform>Reindirizza %n fixture</numerusform>
         </translation>
     </message>
     <message>
         <source>The fixtures get consecutive addresses, in the order of the list.</source>
-        <translation>Los fixtures reciben direcciones consecutivas, en el orden de la lista.</translation>
+        <translation>Le fixture ricevono indirizzi consecutivi, nell&apos;ordine della lista.</translation>
     </message>
     <message>
         <source>Universe</source>
@@ -5821,78 +6010,82 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Start address</source>
-        <translation>Dirección inicial</translation>
+        <translation>Indirizzo iniziale</translation>
     </message>
     <message>
         <source>Gap</source>
-        <translation>Separación</translation>
+        <translation>Spaziatura</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Aplicar</translation>
+        <translation>Applica</translation>
     </message>
 </context>
 <context>
     <name>RecordDialog</name>
     <message>
         <source>No group</source>
-        <translation>Sin grupo</translation>
+        <translation>Nessun gruppo</translation>
     </message>
     <message>
         <source>Cue %1 recorded in %2</source>
-        <translation>Cue %1 grabada en %2</translation>
+        <translation>Cue %1 registrata in %2</translation>
     </message>
     <message>
         <source>New cuelist with cue 1</source>
-        <translation>Nueva cuelist con la cue 1</translation>
+        <translation>Nuova cuelist con la cue 1</translation>
     </message>
     <message>
         <source>New cuelist on playback %1 with cue 1</source>
-        <translation>Nueva cuelist en el playback %1 con la cue 1</translation>
+        <translation>Nuova cuelist sul playback %1 con la cue 1</translation>
     </message>
     <message>
         <source>New cuelist with cue 1: the playback page is full</source>
-        <translation>Nueva cuelist con la cue 1: la página de playbacks está llena</translation>
+        <translation>Nuova cuelist con la cue 1: la pagina di playback è piena</translation>
     </message>
     <message>
         <source>New scene</source>
-        <translation>Escena nueva</translation>
+        <translation>Nuova scena</translation>
     </message>
     <message>
         <source>New cuelist</source>
-        <translation>Nueva cuelist</translation>
+        <translation>Nuova cuelist</translation>
     </message>
     <message>
         <source>Snapshot of the stage</source>
-        <translation>Snapshot del escenario</translation>
+        <translation>Snapshot del palco</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Registra</translation>
     </message>
     <message>
         <source>Everything the lights show now (scenes, live edits and the mixer, without the grand master) becomes a new static scene, on every fixture with light.</source>
-        <translation>Todo lo que muestran ahora las luces (escenas, ediciones en vivo y el mezclador, sin el gran master) pasa a ser una escena estática nueva, en cada fixture con luz.</translation>
+        <translation>Tutto ciò che le luci mostrano ora (scene, modifiche dal vivo e mixer, senza il grand master) diventa una nuova scena statica, su ogni fixture accesa.</translation>
     </message>
     <message>
         <source>Highlight is on: it isn&apos;t part of the look. Turn it off for the snapshot.</source>
-        <translation>El resaltado está activado: no forma parte del look. Desactívalo para el snapshot.</translation>
+        <translation>L&apos;evidenziazione è attiva: non fa parte del look. Disattivala per lo snapshot.</translation>
     </message>
     <message>
         <source>Highlight off</source>
-        <translation>Quitar resaltado</translation>
+        <translation>Disattiva evidenziazione</translation>
     </message>
     <message>
         <source>Record into</source>
-        <translation>Grabar en</translation>
+        <translation>Registra in</translation>
     </message>
     <message>
         <source>The cue holds what the programmer changes from what the cues before it leave on stage.</source>
-        <translation>La cue guarda lo que el programador cambia respecto a lo que dejan en el escenario las cues anteriores.</translation>
+        <translation>La cue contiene ciò che il programmatore cambia rispetto a ciò che le cue precedenti lasciano in scena.</translation>
     </message>
     <message>
         <source>The programmer becomes cue 1 of a new cuelist; record the next cues into it.</source>
-        <translation>El programador se convierte en la cue 1 de una cuelist nueva; graba en ella las cues siguientes.</translation>
+        <translation>Il programmatore diventa la cue 1 di una nuova cuelist; registraci le cue successive.</translation>
     </message>
     <message>
         <source>Cue</source>
@@ -5900,109 +6093,105 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Empty: the next number. 2.5 goes between 2 and 3</source>
-        <translation>Vacío: el número siguiente. 2.5 va entre 2 y 3</translation>
+        <translation>Vuoto: il numero successivo. 2.5 va tra 2 e 3</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>e.g. Chorus</source>
-        <translation>p. ej. Estribillo</translation>
+        <translation>ad es. Ritornello</translation>
     </message>
     <message>
         <source>e.g. Song 1</source>
-        <translation>p. ej. Canción 1</translation>
+        <translation>ad es. Canzone 1</translation>
     </message>
     <message>
         <source>e.g. Warm wash</source>
-        <translation>p. ej. Wash cálido</translation>
+        <translation>ad es. Wash caldo</translation>
     </message>
     <message>
         <source>Only this cue (what it changes doesn&apos;t go on to the next cues)</source>
-        <translation>Solo esta cue (lo que cambia no pasa a las siguientes)</translation>
+        <translation>Solo questa cue (ciò che cambia non passa alle successive)</translation>
     </message>
     <message>
         <source>All the values (block cue)</source>
-        <translation>Todos los valores (bloqueo)</translation>
+        <translation>Tutti i valori (cue di blocco)</translation>
     </message>
     <message>
         <source>Also the values equal to what the cue tracks: it looks the same whatever the cues before it do</source>
-        <translation>También los valores iguales a lo que hereda la cue: se ve igual hagan lo que hagan las cues anteriores</translation>
+        <translation>Anche i valori uguali a ciò che la cue eredita: appare uguale qualunque cosa facciano le cue precedenti</translation>
     </message>
     <message>
         <source>Add to group</source>
-        <translation>Añadir al grupo</translation>
+        <translation>Aggiungi al gruppo</translation>
     </message>
     <message>
         <source>Priority (0-10)</source>
-        <translation>Prioridad (0-10)</translation>
+        <translation>Priorità (0-10)</translation>
     </message>
     <message>
         <source>When two scenes control the same channel, the higher priority wins.</source>
-        <translation>Si dos escenas controlan el mismo canal, gana la de mayor prioridad.</translation>
+        <translation>Se due scene controllano lo stesso canale, vince la priorità più alta.</translation>
     </message>
     <message>
         <source>Put it on the first free playback</source>
-        <translation>Ponerla en el primer playback libre</translation>
+        <translation>Mettila sul primo playback libero</translation>
     </message>
     <message>
         <source>Clear the programmer after recording</source>
-        <translation>Limpiar el programador después de grabar</translation>
+        <translation>Svuota il programmatore dopo la registrazione</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Record cue %1</source>
-        <translation>Grabar la cue %1</translation>
-    </message>
-    <message>
-        <source>Record</source>
-        <translation>Grabar</translation>
+        <translation>Registra la cue %1</translation>
     </message>
 </context>
 <context>
     <name>ReleaseNotes</name>
     <message>
         <source>What&apos;s new in %1 (test version)</source>
-        <translation>Novedades de la %1 (versión de prueba)</translation>
+        <translation>Novità della %1 (versione di prova)</translation>
     </message>
     <message>
         <source>What&apos;s new in %1</source>
-        <translation>Novedades de la %1</translation>
+        <translation>Novità della %1</translation>
     </message>
     <message>
         <source>This version has no notes.</source>
-        <translation>Esta versión no tiene notas.</translation>
+        <translation>Questa versione non ha note.</translation>
     </message>
     <message>
         <source>Open on GitHub</source>
-        <translation>Ver en GitHub</translation>
+        <translation>Apri su GitHub</translation>
     </message>
     <message>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation>Chiudi</translation>
     </message>
 </context>
 <context>
     <name>RemoteServer</name>
     <message>
-        <source>The port %1 is in use: choose another one</source>
-        <translation>El puerto %1 está en uso: elige otro</translation>
+        <source>Port %1 is in use: choose another one</source>
+        <translation>La porta %1 è in uso: scegline un&apos;altra</translation>
     </message>
     <message>
         <source>Next</source>
-        <translation>Siguiente</translation>
+        <translation>Avanti</translation>
     </message>
     <message>
         <source>Previous</source>
-        <translation>Anterior</translation>
+        <translation>Precedente</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Blackout</source>
@@ -6010,7 +6199,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Stop all</source>
-        <translation>Parar todo</translation>
+        <translation>Ferma tutto</translation>
     </message>
     <message>
         <source>Tap</source>
@@ -6018,15 +6207,19 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Grand master</source>
-        <translation>Gran master</translation>
+        <translation>Grand master</translation>
     </message>
     <message>
         <source>BPM</source>
         <translation>BPM</translation>
     </message>
     <message>
+        <source>Dimmer of %1</source>
+        <translation>Dimmer di %1</translation>
+    </message>
+    <message>
         <source>Speed of %1</source>
-        <translation>Velocidad de %1</translation>
+        <translation>Velocità di %1</translation>
     </message>
     <message>
         <source>Dimmer</source>
@@ -6034,409 +6227,409 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Movement speed</source>
-        <translation>Velocidad de movimiento</translation>
+        <translation>Velocità di movimento</translation>
     </message>
     <message>
         <source>Playbacks</source>
-        <translation>Playbacks</translation>
+        <translation>Playback</translation>
     </message>
 </context>
 <context>
     <name>SceneBrowser</name>
     <message>
         <source>No scenes</source>
-        <translation>No hay escenas</translation>
+        <translation>Nessuna scena</translation>
     </message>
     <message>
         <source>All</source>
-        <translation>Todos</translation>
+        <translation>Tutte</translation>
     </message>
     <message>
         <source>Static</source>
-        <translation>Estática</translation>
+        <translation>Statica</translation>
     </message>
     <message>
         <source>Steps</source>
-        <translation>Pasos</translation>
+        <translation>Passi</translation>
     </message>
     <message>
-        <source>Colour FX</source>
-        <translation>Colour FX</translation>
+        <source>Cuelists</source>
+        <translation>Cuelist</translation>
     </message>
     <message>
         <source>FX</source>
         <translation>FX</translation>
     </message>
     <message>
-        <source>Cuelists</source>
-        <translation>Cuelists</translation>
+        <source>Colour FX</source>
+        <translation>Colour FX</translation>
     </message>
     <message>
         <source>Racks</source>
-        <translation>Racks</translation>
+        <translation>Rack</translation>
     </message>
     <message>
         <source>Super scenes</source>
-        <translation>Super escenas</translation>
+        <translation>Super scene</translation>
     </message>
     <message>
         <source>Not in a group</source>
-        <translation>Sin grupo</translation>
+        <translation>Senza gruppo</translation>
     </message>
     <message>
         <source>No folder</source>
-        <translation>Sin carpeta</translation>
+        <translation>Nessuna cartella</translation>
     </message>
     <message>
         <source>New folder</source>
-        <translation>Nueva carpeta</translation>
+        <translation>Nuova cartella</translation>
     </message>
     <message>
         <source>Search…</source>
-        <translation>Buscar…</translation>
+        <translation>Cerca…</translation>
     </message>
     <message>
         <source>Folders</source>
-        <translation>Carpetas</translation>
+        <translation>Cartelle</translation>
     </message>
     <message>
         <source>Groups</source>
-        <translation>Grupos</translation>
+        <translation>Gruppi</translation>
     </message>
     <message>
         <source>Fold all</source>
-        <translation>Plegar todo</translation>
+        <translation>Comprimi tutto</translation>
     </message>
     <message>
         <source>Unfold all</source>
-        <translation>Desplegar todo</translation>
+        <translation>Espandi tutto</translation>
     </message>
     <message numerus="yes">
         <source>%n scene(s)</source>
         <translation>
-            <numerusform>%n escena</numerusform>
-            <numerusform>%n escenas</numerusform>
+            <numerusform>%n scena</numerusform>
+            <numerusform>%n scene</numerusform>
         </translation>
     </message>
     <message>
         <source>No scene matches “%1”</source>
-        <translation>Ninguna escena coincide con «%1»</translation>
+        <translation>Nessuna scena corrisponde a «%1»</translation>
     </message>
     <message numerus="yes">
         <source>%n selected</source>
         <translation>
-            <numerusform>%n seleccionada</numerusform>
-            <numerusform>%n seleccionadas</numerusform>
+            <numerusform>%n selezionata</numerusform>
+            <numerusform>%n selezionate</numerusform>
         </translation>
     </message>
     <message>
         <source>To folder…</source>
-        <translation>A carpeta…</translation>
+        <translation>In cartella…</translation>
     </message>
     <message>
         <source>Clear the selection</source>
-        <translation>Quitar la selección</translation>
+        <translation>Annulla la selezione</translation>
     </message>
     <message>
         <source>Move to folder</source>
-        <translation>Mover a la carpeta</translation>
+        <translation>Sposta nella cartella</translation>
     </message>
     <message>
         <source>New folder…</source>
-        <translation>Nueva carpeta…</translation>
+        <translation>Nuova cartella…</translation>
     </message>
     <message>
-        <source>Out of its folder</source>
-        <translation>Sacar de su carpeta</translation>
+        <source>Remove from its folder</source>
+        <translation>Togli dalla sua cartella</translation>
     </message>
     <message>
         <source>Rename folder</source>
-        <translation>Renombrar la carpeta</translation>
+        <translation>Rinomina cartella</translation>
     </message>
     <message>
         <source>Delete folder (its scenes stay)</source>
-        <translation>Eliminar la carpeta (sus escenas se quedan)</translation>
+        <translation>Elimina cartella (le sue scene restano)</translation>
     </message>
 </context>
 <context>
     <name>SceneProperties</name>
     <message>
         <source>Group default</source>
-        <translation>La del grupo</translation>
+        <translation>Quella del gruppo</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation>Nessuno</translation>
     </message>
     <message>
         <source>Its group</source>
-        <translation>Su grupo</translation>
+        <translation>Il suo gruppo</translation>
     </message>
     <message>
         <source>All the scenes</source>
-        <translation>Todas las escenas</translation>
+        <translation>Tutte le scene</translation>
     </message>
     <message>
         <source>The other groups</source>
-        <translation>Los demás grupos</translation>
+        <translation>Gli altri gruppi</translation>
     </message>
     <message>
         <source>Everything (manual stop only)</source>
-        <translation>Todo (solo se para a mano)</translation>
+        <translation>Tutto (si ferma solo a mano)</translation>
     </message>
     <message>
         <source>Its own group</source>
-        <translation>Su propio grupo</translation>
+        <translation>Il proprio gruppo</translation>
     </message>
     <message>
         <source>Scene properties</source>
-        <translation>Propiedades de la escena</translation>
+        <translation>Proprietà della scena</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation>Nome</translation>
     </message>
     <message>
         <source>Fade in</source>
-        <translation>Fundido de entrada</translation>
+        <translation>Entrata</translation>
     </message>
     <message>
         <source>Fade out</source>
-        <translation>Fundido de salida</translation>
+        <translation>Uscita</translation>
     </message>
     <message>
         <source>Priority (0-10)</source>
-        <translation>Prioridad (0-10)</translation>
+        <translation>Priorità (0-10)</translation>
     </message>
     <message>
         <source>When it starts, release</source>
-        <translation>Al empezar, libera</translation>
+        <translation>All&apos;avvio, rilascia</translation>
     </message>
     <message>
         <source>Protected from releases by</source>
-        <translation>Protegida de liberaciones de</translation>
+        <translation>Protetta dai rilasci di</translation>
     </message>
     <message>
         <source>Flash (plays while pressed)</source>
-        <translation>Flash (suena mientras se pulsa)</translation>
+        <translation>Flash (attiva finché è premuto)</translation>
     </message>
     <message>
         <source>Live dimmer</source>
-        <translation>Dimmer en vivo</translation>
+        <translation>Dimmer dal vivo</translation>
     </message>
     <message>
         <source>Live speed</source>
-        <translation>Velocidad en vivo</translation>
+        <translation>Velocità dal vivo</translation>
     </message>
     <message>
         <source>Live phase</source>
-        <translation>Fase en vivo</translation>
+        <translation>Fase dal vivo</translation>
     </message>
     <message>
         <source>Live size</source>
-        <translation>Tamaño en vivo</translation>
+        <translation>Dimensione dal vivo</translation>
     </message>
     <message>
         <source>Fade speed</source>
-        <translation>Velocidad de fundido</translation>
+        <translation>Velocità di dissolvenza</translation>
     </message>
     <message>
         <source>The group fade time, when set, replaces the scene fades. Higher priority wins on shared channels.</source>
-        <translation>El tiempo de fundido del grupo, si está puesto, sustituye a los de la escena. En los canales compartidos gana la mayor prioridad.</translation>
+        <translation>Il tempo di dissolvenza del gruppo, se impostato, sostituisce quelli della scena. Sui canali condivisi vince la priorità più alta.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Apply</source>
-        <translation>Aplicar</translation>
+        <translation>Applica</translation>
     </message>
 </context>
 <context>
     <name>ScenesPage</name>
     <message>
-        <source>Effect rack</source>
-        <translation>Rack de efectos</translation>
-    </message>
-    <message>
         <source>Scenes (%1)</source>
-        <translation>Escenas (%1)</translation>
+        <translation>Scene (%1)</translation>
     </message>
     <message>
         <source>New</source>
-        <translation>Nueva</translation>
+        <translation>Nuova</translation>
     </message>
     <message>
         <source>No scenes. Select fixtures in Program and create one with “New”.</source>
-        <translation>No hay escenas. Selecciona fixtures en Programar y crea una con «Nueva».</translation>
+        <translation>Nessuna scena. Seleziona le fixture in Programma e creane una con «Nuova».</translation>
     </message>
     <message>
         <source>Back to the list of scenes</source>
-        <translation>Volver a la lista de escenas</translation>
+        <translation>Torna all&apos;elenco delle scene</translation>
     </message>
     <message>
         <source>No folder</source>
-        <translation>Sin carpeta</translation>
+        <translation>Nessuna cartella</translation>
     </message>
     <message>
         <source>Folder of the scene</source>
-        <translation>Carpeta de la escena</translation>
+        <translation>Cartella della scena</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation>Parar</translation>
+        <translation>Ferma</translation>
     </message>
     <message>
         <source>Try</source>
-        <translation>Probar</translation>
+        <translation>Prova</translation>
     </message>
     <message>
         <source>Play it now, outside of the groups</source>
-        <translation>Reproducirla ahora, fuera de los grupos</translation>
+        <translation>Riproducila ora, fuori dai gruppi</translation>
     </message>
     <message>
         <source>Add to group…</source>
-        <translation>Añadir al grupo…</translation>
+        <translation>Aggiungi al gruppo…</translation>
     </message>
     <message>
         <source>Added to %1</source>
-        <translation>Añadida a %1</translation>
+        <translation>Aggiunta a %1</translation>
     </message>
     <message>
         <source>Convert to steps: records one cycle into a new Steps scene</source>
-        <translation>Convertir a pasos: graba un ciclo en una escena de Pasos nueva</translation>
+        <translation>Converti in passi: registra un ciclo in una nuova scena Passi</translation>
     </message>
     <message>
         <source>Convert to a cuelist: each step becomes a cue that holds what changes</source>
-        <translation>Convertir en cuelist: cada paso se convierte en una cue que guarda lo que cambia</translation>
+        <translation>Converti in cuelist: ogni passo diventa una cue che contiene ciò che cambia</translation>
     </message>
     <message>
         <source>Export to a file, to load it in other shows</source>
-        <translation>Exportar a un archivo, para cargarlo en otros shows</translation>
+        <translation>Esporta in un file, per caricarlo in altri show</translation>
     </message>
     <message>
         <source>Duplicate</source>
-        <translation>Duplicar</translation>
+        <translation>Duplica</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
     <message>
-        <source>This effect is from the old effects module. It plays as before; converted to FX it gets the FX editor (in the programmer too). Groups, SHOW buttons and mappings keep it.</source>
-        <translation>Este efecto es del módulo de efectos antiguo. Suena como antes; convertido en FX se edita con el editor de FX (también en el programador). Los grupos, los botones del SHOW y los mapeos lo conservan.</translation>
-    </message>
-    <message>
-        <source>FX (in the programmer)</source>
-        <translation>FX (en el programador)</translation>
+        <source>This effect is from the old effects module. It plays as before; once converted to FX, it is edited with the FX editor (in the programmer too). Groups, SHOW buttons and mappings keep it.</source>
+        <translation>Questo effetto viene dal vecchio modulo effetti. Funziona come prima; una volta convertito in FX, si modifica con l&apos;editor FX (anche nel programmatore). Gruppi, tasti dello SHOW e mappature lo mantengono.</translation>
     </message>
     <message>
         <source>Convert to FX</source>
-        <translation>Convertir a FX</translation>
+        <translation>Converti in FX</translation>
     </message>
     <message>
         <source>Choose a scene, or create a new one</source>
-        <translation>Elige una escena o crea una nueva</translation>
+        <translation>Scegli una scena o creane una nuova</translation>
     </message>
     <message>
         <source>New effects use the fixtures selected in Program, and new steps the values of the programmer.</source>
-        <translation>Los efectos nuevos usan los fixtures seleccionados en Programar, y los pasos nuevos los valores del programador.</translation>
+        <translation>I nuovi effetti usano le fixture selezionate in Programma, e i nuovi passi i valori del programmatore.</translation>
     </message>
     <message>
         <source>The programmer was saved in “%1”</source>
-        <translation>El programador se guardó en “%1”</translation>
+        <translation>Il programmatore è stato salvato in «%1»</translation>
     </message>
     <message>
-        <source>This type is edited in its own page in a later version</source>
-        <translation>Este tipo se editará en su propia página en una versión posterior</translation>
+        <source>This type will get its own editing page in a later version</source>
+        <translation>Questo tipo avrà una sua pagina di modifica in una versione successiva</translation>
     </message>
     <message>
         <source>Static (from the programmer)</source>
-        <translation>Estática (desde el programador)</translation>
+        <translation>Statica (dal programmatore)</translation>
     </message>
     <message>
         <source>Set some values in the programmer first</source>
-        <translation>Pon primero algunos valores en el programador</translation>
+        <translation>Prima imposta alcuni valori nel programmatore</translation>
     </message>
     <message>
         <source>Steps (programmer = first step)</source>
-        <translation>Pasos (el programador es el primer paso)</translation>
+        <translation>Passi (programmatore = primo passo)</translation>
     </message>
     <message>
         <source>Cuelist (programmer = cue 1)</source>
-        <translation>Cuelist (el programador es la cue 1)</translation>
+        <translation>Cuelist (programmatore = cue 1)</translation>
+    </message>
+    <message>
+        <source>FX (in the programmer)</source>
+        <translation>FX (nel programmatore)</translation>
     </message>
     <message>
         <source>Colour FX (selected fixtures)</source>
-        <translation>Colour FX (fixtures seleccionados)</translation>
+        <translation>Colour FX (fixture selezionate)</translation>
     </message>
     <message>
         <source>Mapping on the 2D plan (selected fixtures)</source>
-        <translation>Mapping en el plano 2D (fixtures seleccionados)</translation>
+        <translation>Mapping sulla pianta 2D (fixture selezionate)</translation>
+    </message>
+    <message>
+        <source>Effect rack</source>
+        <translation>Rack di effetti</translation>
     </message>
     <message>
         <source>Super scene (timeline with audio)</source>
-        <translation>Super escena (línea de tiempo con audio)</translation>
+        <translation>Super scena (timeline con audio)</translation>
     </message>
     <message>
         <source>Import from a file…</source>
-        <translation>Importar desde un archivo…</translation>
+        <translation>Importa da un file…</translation>
     </message>
     <message>
         <source>Export the scene</source>
-        <translation>Exportar la escena</translation>
+        <translation>Esporta la scena</translation>
     </message>
     <message>
         <source>DMX Total Control effects (*.dtcfx)</source>
-        <translation>Efectos de DMX Total Control (*.dtcfx)</translation>
+        <translation>Effetti di DMX Total Control (*.dtcfx)</translation>
     </message>
     <message>
         <source>Import scenes and effects</source>
-        <translation>Importar escenas y efectos</translation>
+        <translation>Importa scene ed effetti</translation>
     </message>
     <message>
         <source>Delete “%1”?</source>
-        <translation>¿Eliminar «%1»?</translation>
+        <translation>Eliminare «%1»?</translation>
     </message>
     <message>
         <source>It is also removed from its groups and racks.</source>
-        <translation>También se quita de sus grupos y racks.</translation>
+        <translation>Viene rimossa anche dai suoi gruppi e rack.</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>Convert “%1” to a cuelist?</source>
-        <translation>¿Convertir «%1» en cuelist?</translation>
+        <translation>Convertire «%1» in cuelist?</translation>
     </message>
     <message>
         <source>Each step becomes a cue with what it changes from the step before; timed steps follow each other with Wait. Its groups, SHOW buttons and mappings play the cuelist. The steps are gone.</source>
-        <translation>Cada paso se convierte en una cue con lo que cambia respecto al paso anterior; los pasos con tiempo se encadenan con Esperar. Sus grupos, botones del SHOW y mapeos reproducen la cuelist. Los pasos desaparecen.</translation>
+        <translation>Ogni passo diventa una cue con ciò che cambia rispetto al passo precedente; i passi a tempo si concatenano con Attendi. I suoi gruppi, tasti dello SHOW e mappature riproducono la cuelist. I passi spariscono.</translation>
     </message>
     <message>
         <source>Convert</source>
-        <translation>Convertir</translation>
+        <translation>Converti</translation>
     </message>
 </context>
 <context>
     <name>SectionProperties</name>
     <message>
         <source>Play a scene</source>
-        <translation>Reproducir una escena</translation>
+        <translation>Riproduci una scena</translation>
     </message>
     <message>
         <source>Next scene of a group</source>
-        <translation>Siguiente escena de un grupo</translation>
+        <translation>Scena successiva di un gruppo</translation>
     </message>
     <message>
         <source>Previous scene of a group</source>
-        <translation>Escena anterior de un grupo</translation>
+        <translation>Scena precedente di un gruppo</translation>
     </message>
     <message>
         <source>Release a group</source>
-        <translation>Liberar un grupo</translation>
+        <translation>Rilascia un gruppo</translation>
     </message>
     <message>
         <source>Blackout</source>
@@ -6444,7 +6637,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Stop all</source>
-        <translation>Parar todo</translation>
+        <translation>Ferma tutto</translation>
     </message>
     <message>
         <source>Tap tempo</source>
@@ -6452,199 +6645,203 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>BeatGO (next division)</source>
-        <translation>BeatGO (siguiente división)</translation>
-    </message>
-    <message>
-        <source>Play a scene (its intensity)</source>
-        <translation>Lanzar una escena (su intensidad)</translation>
-    </message>
-    <message>
-        <source>Grand master</source>
-        <translation>Gran master</translation>
-    </message>
-    <message>
-        <source>Master of a group</source>
-        <translation>Master de un grupo</translation>
+        <translation>BeatGO (divisione successiva)</translation>
     </message>
     <message>
         <source>A palette</source>
-        <translation>Una paleta</translation>
+        <translation>Una palette</translation>
     </message>
     <message>
         <source>Cuelist GO</source>
-        <translation>GO de cuelist</translation>
+        <translation>GO della cuelist</translation>
     </message>
     <message>
         <source>Cuelist back</source>
-        <translation>Atrás de cuelist</translation>
+        <translation>Indietro della cuelist</translation>
     </message>
     <message>
         <source>Go to a cue…</source>
-        <translation>Ir a una cue…</translation>
+        <translation>Vai a una cue…</translation>
     </message>
     <message>
         <source>Release a cuelist</source>
-        <translation>Liberar una cuelist</translation>
+        <translation>Rilascia una cuelist</translation>
+    </message>
+    <message>
+        <source>Play a scene (its intensity)</source>
+        <translation>Avvia una scena (la sua intensità)</translation>
+    </message>
+    <message>
+        <source>Dimmer of a scene (does not play it)</source>
+        <translation>Dimmer di una scena (senza avviarla)</translation>
+    </message>
+    <message>
+        <source>Master of a group</source>
+        <translation>Master di un gruppo</translation>
+    </message>
+    <message>
+        <source>Grand master</source>
+        <translation>Grand master</translation>
     </message>
     <message>
         <source>Dimmer of fixtures</source>
-        <translation>Dimmer de fixtures</translation>
+        <translation>Dimmer di fixture</translation>
+    </message>
+    <message>
+        <source>Movement speed of moving heads</source>
+        <translation>Velocità di movimento delle teste mobili</translation>
+    </message>
+    <message>
+        <source>Speed of a scene</source>
+        <translation>Velocità di una scena</translation>
     </message>
     <message>
         <source>BPM</source>
         <translation>BPM</translation>
     </message>
     <message>
-        <source>Movement speed of moving heads</source>
-        <translation>Velocidad de movimiento de las cabezas móviles</translation>
-    </message>
-    <message>
-        <source>Speed of a scene</source>
-        <translation>Velocidad de una escena</translation>
-    </message>
-    <message>
         <source>All the moving heads</source>
-        <translation>Todas las cabezas móviles</translation>
+        <translation>Tutte le teste mobili</translation>
     </message>
     <message>
-        <source>Select a section to set it up. Split it in halves with the buttons of its title bar.</source>
-        <translation>Selecciona una sección para configurarla. Divídela en mitades con los botones de su barra de título.</translation>
+        <source>Select a section to set it up. Split it in half with the buttons in its title bar.</source>
+        <translation>Seleziona una sezione per configurarla. Dividila a metà con i tasti nella sua barra del titolo.</translation>
     </message>
     <message>
         <source>Section</source>
-        <translation>Sección</translation>
+        <translation>Sezione</translation>
     </message>
     <message>
         <source>Shows</source>
-        <translation>Muestra</translation>
+        <translation>Mostra</translation>
     </message>
     <message>
         <source>Title</source>
-        <translation>Título</translation>
+        <translation>Titolo</translation>
     </message>
     <message>
         <source>No title</source>
-        <translation>Sin título</translation>
-    </message>
-    <message>
-        <source>Columns</source>
-        <translation>Columnas</translation>
+        <translation>Senza titolo</translation>
     </message>
     <message>
         <source>Playbacks</source>
-        <translation>Playbacks</translation>
+        <translation>Playback</translation>
+    </message>
+    <message>
+        <source>Columns</source>
+        <translation>Colonne</translation>
     </message>
     <message>
         <source>Playback page</source>
-        <translation>Página de playbacks</translation>
+        <translation>Pagina di playback</translation>
     </message>
     <message>
         <source>Follow the current page</source>
-        <translation>Seguir la página actual</translation>
+        <translation>Segui la pagina attuale</translation>
     </message>
     <message>
         <source>Page %1 (deleted)</source>
-        <translation>Página %1 (eliminada)</translation>
+        <translation>Pagina %1 (eliminata)</translation>
     </message>
     <message>
         <source>First playback</source>
-        <translation>Primer playback</translation>
+        <translation>Primo playback</translation>
     </message>
     <message>
         <source>Second button (Pause / Back)</source>
-        <translation>Segundo botón (Pausa / Atrás)</translation>
+        <translation>Secondo tasto (Pausa / Indietro)</translation>
     </message>
     <message>
         <source>Third button (Flash)</source>
-        <translation>Tercer botón (Flash)</translation>
+        <translation>Terzo tasto (Flash)</translation>
     </message>
     <message>
         <source>The cue it plays and the next one</source>
-        <translation>La cue que suena y la siguiente</translation>
+        <translation>La cue in riproduzione e la successiva</translation>
     </message>
     <message>
         <source>The playbacks of the Playbacks page, with their GO, buttons and fader. Drop a scene on one to put it there.</source>
-        <translation>Los playbacks de la página Playbacks, con su GO, sus botones y su fader. Suelta una escena en uno para ponerla ahí.</translation>
+        <translation>I playback della pagina Playback, con il loro GO, i tasti e il fader. Rilascia una scena su uno per metterla lì.</translation>
     </message>
     <message>
         <source>Rows</source>
-        <translation>Filas</translation>
+        <translation>Righe</translation>
     </message>
     <message>
         <source>Fill with the scenes of a group</source>
-        <translation>Llenar con las escenas de un grupo</translation>
+        <translation>Riempi con le scene di un gruppo</translation>
     </message>
     <message>
         <source>Choose a group…</source>
-        <translation>Elige un grupo…</translation>
+        <translation>Scegli un gruppo…</translation>
     </message>
     <message>
         <source>Group</source>
-        <translation>Grupo</translation>
+        <translation>Gruppo</translation>
     </message>
     <message>
         <source>Choose…</source>
-        <translation>Elegir…</translation>
+        <translation>Scegli…</translation>
     </message>
     <message>
         <source>Fixtures</source>
-        <translation>Fixtures</translation>
+        <translation>Fixture</translation>
     </message>
     <message>
         <source>All the fixtures with colour</source>
-        <translation>Todas las fixtures con color</translation>
+        <translation>Tutte le fixture con colore</translation>
     </message>
     <message>
         <source>Like a live edit of the programmer: it goes over the scenes until you release it.</source>
-        <translation>Como una edición en vivo del programador: va por encima de las escenas hasta que lo liberes.</translation>
+        <translation>Come una modifica dal vivo del programmatore: va sopra le scene finché non lo rilasci.</translation>
     </message>
     <message>
         <source>Image</source>
-        <translation>Imagen</translation>
+        <translation>Immagine</translation>
     </message>
     <message>
         <source>Choose an image…</source>
-        <translation>Elegir una imagen…</translation>
+        <translation>Scegli un&apos;immagine…</translation>
     </message>
     <message>
         <source>Whole image</source>
-        <translation>Imagen entera</translation>
+        <translation>Immagine intera</translation>
     </message>
     <message>
         <source>Fill the section</source>
-        <translation>Llenar la sección</translation>
+        <translation>Riempi la sezione</translation>
     </message>
     <message>
         <source>Seconds</source>
-        <translation>Segundos</translation>
+        <translation>Secondi</translation>
     </message>
     <message>
         <source>Date</source>
-        <translation>Fecha</translation>
+        <translation>Data</translation>
     </message>
     <message>
         <source>Counts</source>
-        <translation>Cuenta</translation>
+        <translation>Conta</translation>
     </message>
     <message>
         <source>Up (stopwatch)</source>
-        <translation>Hacia arriba (cronómetro)</translation>
+        <translation>In avanti (cronometro)</translation>
     </message>
     <message>
         <source>Down (countdown)</source>
-        <translation>Hacia abajo (cuenta atrás)</translation>
+        <translation>All&apos;indietro (conto alla rovescia)</translation>
     </message>
     <message>
         <source>Minutes</source>
-        <translation>Minutos</translation>
+        <translation>Minuti</translation>
     </message>
     <message>
         <source>Text</source>
-        <translation>Texto</translation>
+        <translation>Testo</translation>
     </message>
     <message>
         <source>Size</source>
-        <translation>Tamaño</translation>
+        <translation>Dimensione</translation>
     </message>
     <message>
         <source>Universe</source>
@@ -6652,55 +6849,55 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Side by side</source>
-        <translation>Lado a lado</translation>
+        <translation>Affiancate</translation>
     </message>
     <message>
-        <source>One above</source>
-        <translation>Una encima</translation>
+        <source>Top and bottom</source>
+        <translation>Una sopra l&apos;altra</translation>
     </message>
     <message>
         <source>Remove section</source>
-        <translation>Quitar sección</translation>
+        <translation>Rimuovi sezione</translation>
     </message>
     <message>
         <source>Fader %1</source>
         <translation>Fader %1</translation>
     </message>
     <message>
-        <source>Button %1</source>
-        <translation>Botón %1</translation>
+        <source>Dial %1</source>
+        <translation>Manopola %1</translation>
     </message>
     <message>
-        <source>Dial %1</source>
-        <translation>Dial %1</translation>
+        <source>Button %1</source>
+        <translation>Tasto %1</translation>
     </message>
     <message>
         <source>Add a fader here</source>
-        <translation>Añadir un fader aquí</translation>
-    </message>
-    <message>
-        <source>Add a button here</source>
-        <translation>Añadir un botón aquí</translation>
+        <translation>Aggiungi un fader qui</translation>
     </message>
     <message>
         <source>Add a dial here</source>
-        <translation>Añadir un dial aquí</translation>
+        <translation>Aggiungi una manopola qui</translation>
+    </message>
+    <message>
+        <source>Add a button here</source>
+        <translation>Aggiungi un tasto qui</translation>
     </message>
     <message>
         <source>Label</source>
-        <translation>Etiqueta</translation>
+        <translation>Etichetta</translation>
     </message>
     <message>
         <source>Automatic</source>
-        <translation>Automática</translation>
+        <translation>Automatica</translation>
     </message>
     <message>
         <source>Action</source>
-        <translation>Acción</translation>
+        <translation>Azione</translation>
     </message>
     <message>
-        <source>A control of another page</source>
-        <translation>Un control de otra página</translation>
+        <source>A control on another page</source>
+        <translation>Un controllo su un&apos;altra pagina</translation>
     </message>
     <message>
         <source>Cuelist</source>
@@ -6708,7 +6905,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>No cuelists yet</source>
-        <translation>Aún no hay cuelists</translation>
+        <translation>Ancora nessuna cuelist</translation>
     </message>
     <message>
         <source>Cue</source>
@@ -6716,158 +6913,178 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>No cues</source>
-        <translation>Sin cues</translation>
+        <translation>Nessuna cue</translation>
     </message>
     <message>
         <source>Does: %1</source>
-        <translation>Hace: %1</translation>
+        <translation>Fa: %1</translation>
     </message>
     <message>
         <source>Controls</source>
-        <translation>Controla</translation>
+        <translation>Controlla</translation>
     </message>
     <message>
         <source>Remove this element</source>
-        <translation>Quitar este elemento</translation>
+        <translation>Rimuovi questo elemento</translation>
     </message>
     <message>
         <source>Choose a scene…</source>
-        <translation>Elige una escena…</translation>
+        <translation>Scegli una scena…</translation>
     </message>
     <message>
         <source>Add another element</source>
-        <translation>Añadir otro elemento</translation>
+        <translation>Aggiungi un altro elemento</translation>
+    </message>
+    <message>
+        <source>Range</source>
+        <translation>Intervallo</translation>
+    </message>
+    <message>
+        <source>From</source>
+        <translation>Da</translation>
+    </message>
+    <message>
+        <source>to</source>
+        <translation>a</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <translation>Inverti</translation>
+    </message>
+    <message>
+        <source>The travel covers only this part of what it drives; with From above to, it works upside down</source>
+        <translation>La corsa copre solo questa parte di ciò che controlla; con «Da» maggiore di «a», funziona al contrario</translation>
     </message>
     <message>
         <source>Flash button: full while pressed</source>
-        <translation>Botón flash: al máximo mientras se pulsa</translation>
+        <translation>Tasto flash: al massimo finché è premuto</translation>
     </message>
     <message>
-        <source>Incremental wheel: turns forever, each notch adds or takes a step</source>
-        <translation>Rueda incremental: gira sin fin y cada muesca suma o resta un paso</translation>
+        <source>Incremental wheel: turns forever, each notch adds or removes a step</source>
+        <translation>Rotella incrementale: gira all&apos;infinito, ogni scatto aggiunge o toglie un passo</translation>
     </message>
     <message>
         <source>Step</source>
-        <translation>Paso</translation>
+        <translation>Passo</translation>
     </message>
     <message>
         <source>Scene</source>
-        <translation>Escena</translation>
+        <translation>Scena</translation>
     </message>
     <message>
         <source>Its own fixtures</source>
-        <translation>Sus propias fixtures</translation>
+        <translation>Le sue fixture</translation>
     </message>
     <message>
         <source>Palette</source>
-        <translation>Paleta</translation>
+        <translation>Palette</translation>
     </message>
     <message>
         <source>On the fixtures</source>
-        <translation>En las fixtures</translation>
+        <translation>Sulle fixture</translation>
     </message>
     <message>
         <source>Like a live edit of the programmer: it goes over the scenes until you press it again.</source>
-        <translation>Como una edición en vivo del programador: va por encima de las escenas hasta que lo vuelvas a pulsar.</translation>
+        <translation>Come una modifica dal vivo del programmatore: va sopra le scene finché non lo premi di nuovo.</translation>
     </message>
     <message>
         <source>Behaviour</source>
-        <translation>Comportamiento</translation>
+        <translation>Comportamento</translation>
     </message>
     <message>
         <source>Toggle: on / off</source>
-        <translation>Alternar: encender / apagar</translation>
+        <translation>Commuta: acceso / spento</translation>
     </message>
     <message>
         <source>Flash: while pressed</source>
-        <translation>Flash: mientras se pulsa</translation>
+        <translation>Flash: finché è premuto</translation>
     </message>
     <message>
         <source>All groups</source>
-        <translation>Todos los grupos</translation>
+        <translation>Tutti i gruppi</translation>
     </message>
     <message>
         <source>Keyboard key</source>
-        <translation>Tecla</translation>
+        <translation>Tasto della tastiera</translation>
     </message>
     <message>
         <source>Colour</source>
-        <translation>Color</translation>
+        <translation>Colore</translation>
     </message>
     <message>
         <source>Icon</source>
-        <translation>Icono</translation>
+        <translation>Icona</translation>
     </message>
     <message>
         <source>Remove the fader</source>
-        <translation>Quitar el fader</translation>
+        <translation>Rimuovi il fader</translation>
     </message>
     <message>
         <source>Remove the button</source>
-        <translation>Quitar el botón</translation>
+        <translation>Rimuovi il tasto</translation>
     </message>
     <message>
         <source>Choose an image</source>
-        <translation>Elegir una imagen</translation>
+        <translation>Scegli un&apos;immagine</translation>
     </message>
     <message>
         <source>Images (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)</source>
-        <translation>Imágenes (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)</translation>
+        <translation>Immagini (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)</translation>
     </message>
 </context>
 <context>
     <name>SectionView</name>
     <message>
         <source>Previous playback page</source>
-        <translation>Página de playbacks anterior</translation>
+        <translation>Pagina di playback precedente</translation>
     </message>
     <message>
         <source>Next playback page</source>
-        <translation>Página de playbacks siguiente</translation>
+        <translation>Pagina di playback successiva</translation>
     </message>
     <message>
         <source>Split in two halves, side by side</source>
-        <translation>Dividir en dos mitades, lado a lado</translation>
+        <translation>Dividi in due metà, affiancate</translation>
     </message>
     <message>
         <source>Split in two halves, one above the other</source>
-        <translation>Dividir en dos mitades, una encima de otra</translation>
+        <translation>Dividi in due metà, una sopra l&apos;altra</translation>
     </message>
     <message>
         <source>Remove this section</source>
-        <translation>Quitar esta sección</translation>
+        <translation>Rimuovi questa sezione</translation>
     </message>
     <message>
         <source>Move</source>
-        <translation>Mover</translation>
+        <translation>Sposta</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
-        <source>The scenes give the colour again</source>
-        <translation>Las escenas vuelven a dar el color</translation>
+        <source>Give the colour back to the scenes</source>
+        <translation>Restituisci il colore alle scene</translation>
     </message>
     <message>
         <source>Centre</source>
         <translation>Centro</translation>
     </message>
     <message>
-        <source>The scenes give the position again</source>
-        <translation>Las escenas vuelven a dar la posición</translation>
+        <source>Give the position back to the scenes</source>
+        <translation>Restituisci la posizione alle scene</translation>
     </message>
     <message>
         <source>Choose an image in the properties</source>
-        <translation>Elige una imagen en las propiedades</translation>
+        <translation>Scegli un&apos;immagine nelle proprietà</translation>
     </message>
     <message>
         <source>Choose a group in the properties</source>
-        <translation>Elige un grupo en las propiedades</translation>
+        <translation>Scegli un gruppo nelle proprietà</translation>
     </message>
     <message>
-        <source>No groups yet. Create them in the Live page.</source>
-        <translation>Aún no hay grupos. Créalos en la página Directo.</translation>
+        <source>No groups yet. Create them on the Live page.</source>
+        <translation>Ancora nessun gruppo. Creali nella pagina Live.</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -6875,11 +7092,11 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Start</source>
-        <translation>Iniciar</translation>
+        <translation>Avvia</translation>
     </message>
     <message>
         <source>Reset</source>
-        <translation>Reiniciar</translation>
+        <translation>Azzera</translation>
     </message>
     <message>
         <source>TAP</source>
@@ -6887,11 +7104,11 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Write the notes in the properties</source>
-        <translation>Escribe las notas en las propiedades</translation>
+        <translation>Scrivi le note nelle proprietà</translation>
     </message>
     <message>
         <source>Nothing is playing</source>
-        <translation>No suena nada</translation>
+        <translation>Niente in riproduzione</translation>
     </message>
     <message>
         <source>Universe %1</source>
@@ -6902,11 +7119,11 @@ Añádelos en la página Patch.</translation>
     <name>SelectedCuelist</name>
     <message>
         <source>Follow</source>
-        <translation>Seguir</translation>
+        <translation>Segui</translation>
     </message>
     <message>
         <source>Wait</source>
-        <translation>Esperar</translation>
+        <translation>Attendi</translation>
     </message>
     <message>
         <source>Playback %1 · %2</source>
@@ -6914,43 +7131,43 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Selected playback</source>
-        <translation>Playback seleccionado</translation>
+        <translation>Playback selezionato</translation>
     </message>
     <message>
         <source>Off</source>
-        <translation>Apagado</translation>
+        <translation>Spento</translation>
     </message>
     <message>
         <source>Released · GO plays %1</source>
-        <translation>Liberada · GO lanza la %1</translation>
+        <translation>Rilasciata · GO avvia la %1</translation>
     </message>
     <message>
         <source>Released</source>
-        <translation>Liberada</translation>
+        <translation>Rilasciata</translation>
     </message>
     <message>
         <source>On</source>
-        <translation>Encendido</translation>
+        <translation>Acceso</translation>
     </message>
     <message>
         <source>Paused</source>
-        <translation>En pausa</translation>
+        <translation>In pausa</translation>
     </message>
     <message>
         <source>Back: the cue before</source>
-        <translation>Atrás: la cue anterior</translation>
+        <translation>Indietro: la cue precedente</translation>
     </message>
     <message>
         <source>The next cue</source>
-        <translation>La cue siguiente</translation>
+        <translation>La cue successiva</translation>
     </message>
     <message>
         <source>Start it</source>
-        <translation>Arrancarlo</translation>
+        <translation>Avvialo</translation>
     </message>
     <message>
-        <source>Go on</source>
-        <translation>Continuar</translation>
+        <source>Resume</source>
+        <translation>Continua</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -6958,15 +7175,15 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Edit in Scenes</source>
-        <translation>Editar en Escenas</translation>
+        <translation>Modifica in Scene</translation>
     </message>
     <message>
         <source>Click the name of a playback to select it: its cues show here, and Main GO plays it.</source>
-        <translation>Haz clic en el nombre de un playback para seleccionarlo: aquí se ven sus cues y Main GO lo reproduce.</translation>
+        <translation>Clicca il nome di un playback per selezionarlo: qui compaiono le sue cue, e Main GO lo riproduce.</translation>
     </message>
     <message>
         <source>CUE</source>
@@ -6974,225 +7191,225 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>NAME</source>
-        <translation>NOMBRE</translation>
+        <translation>NOME</translation>
     </message>
     <message>
         <source>TRIGGER</source>
-        <translation>DISPARO</translation>
+        <translation>AVVIO</translation>
     </message>
     <message>
         <source>DELAY</source>
-        <translation>RETARDO</translation>
+        <translation>RITARDO</translation>
     </message>
     <message>
         <source>FADE</source>
-        <translation>FUNDIDO</translation>
+        <translation>FADE</translation>
     </message>
     <message>
         <source>Next</source>
-        <translation>Siguiente</translation>
+        <translation>Avanti</translation>
     </message>
     <message>
         <source>The next GO plays this cue</source>
-        <translation>El siguiente GO lanza esta cue</translation>
+        <translation>Il prossimo GO avvia questa cue</translation>
     </message>
     <message>
         <source>Go</source>
-        <translation>Ir</translation>
+        <translation>Vai</translation>
     </message>
     <message>
         <source>Go to this cue now</source>
-        <translation>Ir ahora a esta cue</translation>
+        <translation>Vai subito a questa cue</translation>
     </message>
     <message>
         <source>No cues yet: set a look in the programmer, arm Record and click this playback.</source>
-        <translation>Aún no hay cues: monta un aspecto en el programador, arma Grabar y haz clic en este playback.</translation>
+        <translation>Ancora nessuna cue: crea un look nel programmatore, attiva Registra e clicca questo playback.</translation>
     </message>
 </context>
 <context>
     <name>ShowPage</name>
     <message>
-        <source>Locked — hold the lock button to unlock</source>
-        <translation>Bloqueado: mantén pulsado el botón para desbloquear</translation>
-    </message>
-    <message>
-        <source>BPM and tap</source>
-        <translation>BPM y tap</translation>
-    </message>
-    <message>
         <source>Buttons</source>
-        <translation>Botones</translation>
+        <translation>Tasti</translation>
     </message>
     <message>
         <source>Faders</source>
-        <translation>Faders</translation>
+        <translation>Fader</translation>
     </message>
     <message>
         <source>A group</source>
-        <translation>Un grupo</translation>
+        <translation>Un gruppo</translation>
     </message>
     <message>
         <source>All the groups</source>
-        <translation>Todos los grupos</translation>
+        <translation>Tutti i gruppi</translation>
     </message>
     <message>
         <source>Playbacks</source>
-        <translation>Playbacks</translation>
+        <translation>Playback</translation>
     </message>
     <message>
         <source>Live mixer</source>
-        <translation>Mezclador en vivo</translation>
+        <translation>Mixer dal vivo</translation>
     </message>
     <message>
         <source>Clock</source>
-        <translation>Reloj</translation>
+        <translation>Orologio</translation>
     </message>
     <message>
         <source>Timer</source>
-        <translation>Temporizador</translation>
+        <translation>Timer</translation>
+    </message>
+    <message>
+        <source>BPM and tap</source>
+        <translation>BPM e tap</translation>
     </message>
     <message>
         <source>Notes</source>
-        <translation>Notas</translation>
+        <translation>Note</translation>
     </message>
     <message>
         <source>Playing now</source>
-        <translation>Sonando ahora</translation>
+        <translation>In riproduzione ora</translation>
     </message>
     <message>
         <source>Dials and wheels</source>
-        <translation>Diales y ruedas</translation>
+        <translation>Manopole e ruote</translation>
     </message>
     <message>
         <source>Colour wheel</source>
-        <translation>Rueda de color</translation>
+        <translation>Ruota dei colori</translation>
     </message>
     <message>
         <source>XY grid (pan and tilt)</source>
-        <translation>Rejilla XY (pan y tilt)</translation>
+        <translation>Griglia XY (pan e tilt)</translation>
     </message>
     <message>
         <source>Image</source>
-        <translation>Imagen</translation>
+        <translation>Immagine</translation>
     </message>
     <message>
         <source>DMX levels</source>
-        <translation>Niveles DMX</translation>
+        <translation>Livelli DMX</translation>
     </message>
     <message>
         <source>Empty</source>
-        <translation>Vacía</translation>
+        <translation>Vuota</translation>
     </message>
     <message>
-        <source>Editing — split the sections in halves, choose what each one shows, drag scenes onto the buttons</source>
-        <translation>Editando — divide las secciones en mitades, elige qué muestra cada una y arrastra escenas a los botones</translation>
+        <source>Locked — hold the lock button to unlock</source>
+        <translation>Bloccato — tieni premuto il tasto del lucchetto per sbloccare</translation>
+    </message>
+    <message>
+        <source>Editing — split the sections in half, choose what each one shows, drag scenes onto the buttons</source>
+        <translation>Modifica — dividi le sezioni a metà, scegli cosa mostra ciascuna, trascina scene sui tasti</translation>
     </message>
     <message>
         <source>Your show screen</source>
-        <translation>Tu pantalla de show</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Hecho</translation>
-    </message>
-    <message>
-        <source>Edit</source>
-        <translation>Editar</translation>
-    </message>
-    <message>
-        <source>Exit full screen</source>
-        <translation>Salir de pantalla completa</translation>
-    </message>
-    <message>
-        <source>Full screen</source>
-        <translation>Pantalla completa</translation>
-    </message>
-    <message>
-        <source>Unlock</source>
-        <translation>Desbloquear</translation>
-    </message>
-    <message>
-        <source>Lock</source>
-        <translation>Bloquear</translation>
-    </message>
-    <message>
-        <source>Build the screen you want for the show: tables of buttons and faders, groups, a clock, a timer… Each section splits in halves.</source>
-        <translation>Monta la pantalla que quieras para el show: tablas de botones y faders, grupos, un reloj, un temporizador… Cada sección se divide en mitades.</translation>
-    </message>
-    <message>
-        <source>New page</source>
-        <translation>Página nueva</translation>
-    </message>
-    <message>
-        <source>Delete page…</source>
-        <translation>Eliminar la página…</translation>
-    </message>
-    <message>
-        <source>Delete the page “%1”?</source>
-        <translation>¿Eliminar la página «%1»?</translation>
-    </message>
-    <message>
-        <source>Its sections (%1) and the buttons, faders and dials in them (%2) are deleted with it. This can&apos;t be undone.</source>
-        <translation>Sus secciones (%1) y los botones, faders y diales que contienen (%2) se eliminan con ella. No se puede deshacer.</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation>Cancelar</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>La tua schermata dello show</translation>
     </message>
     <message>
         <source>Page</source>
-        <translation>Página</translation>
+        <translation>Pagina</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Fatto</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Modifica</translation>
+    </message>
+    <message>
+        <source>Exit full screen</source>
+        <translation>Esci da schermo intero</translation>
+    </message>
+    <message>
+        <source>Full screen</source>
+        <translation>Schermo intero</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Sblocca</translation>
+    </message>
+    <message>
+        <source>Lock</source>
+        <translation>Blocca</translation>
+    </message>
+    <message>
+        <source>Build the screen you want for the show: tables of buttons and faders, groups, a clock, a timer… Each section splits in half.</source>
+        <translation>Crea la schermata che vuoi per lo show: tabelle di tasti e fader, gruppi, un orologio, un timer… Ogni sezione si divide a metà.</translation>
+    </message>
+    <message>
+        <source>New page</source>
+        <translation>Nuova pagina</translation>
     </message>
     <message>
         <source>Start from my groups</source>
-        <translation>Partir de mis grupos</translation>
+        <translation>Parti dai miei gruppi</translation>
     </message>
     <message>
         <source>Properties</source>
-        <translation>Propiedades</translation>
-    </message>
-    <message>
-        <source>Drag a scene onto a cell:</source>
-        <translation>Arrastra una escena a una celda:</translation>
+        <translation>Proprietà</translation>
     </message>
     <message>
         <source>Drag a scene onto a playback:</source>
-        <translation>Arrastra una escena a un playback:</translation>
+        <translation>Trascina una scena su un playback:</translation>
+    </message>
+    <message>
+        <source>Drag a scene onto a cell:</source>
+        <translation>Trascina una scena su una cella:</translation>
     </message>
     <message>
         <source>Page name</source>
-        <translation>Nombre de la página</translation>
+        <translation>Nome della pagina</translation>
     </message>
     <message>
         <source>Rename…</source>
-        <translation>Renombrar…</translation>
+        <translation>Rinomina…</translation>
     </message>
     <message>
         <source>Move left</source>
-        <translation>Mover a la izquierda</translation>
+        <translation>Sposta a sinistra</translation>
     </message>
     <message>
         <source>Move right</source>
-        <translation>Mover a la derecha</translation>
+        <translation>Sposta a destra</translation>
+    </message>
+    <message>
+        <source>Delete page…</source>
+        <translation>Elimina pagina…</translation>
+    </message>
+    <message>
+        <source>Delete the page “%1”?</source>
+        <translation>Eliminare la pagina «%1»?</translation>
+    </message>
+    <message>
+        <source>Its sections (%1) and the buttons, faders and dials in them (%2) are deleted with it. This can&apos;t be undone.</source>
+        <translation>Le sue sezioni (%1) e i tasti, fader e manopole che contengono (%2) vengono eliminati con essa. Non si può annullare.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>ShowSurface</name>
     <message>
         <source>Page %1</source>
-        <translation>Página %1</translation>
+        <translation>Pagina %1</translation>
     </message>
     <message>
         <source>Groups</source>
-        <translation>Grupos</translation>
+        <translation>Gruppi</translation>
     </message>
     <message>
         <source>Masters</source>
-        <translation>Masters</translation>
+        <translation>Master</translation>
     </message>
     <message>
         <source>Master</source>
@@ -7204,15 +7421,15 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Back · %1</source>
-        <translation>Atrás · %1</translation>
+        <translation>Indietro · %1</translation>
     </message>
     <message>
         <source>Pause / Back · %1</source>
-        <translation>Pausa / Atrás · %1</translation>
+        <translation>Pausa / Indietro · %1</translation>
     </message>
     <message>
         <source>Release · %1</source>
-        <translation>Liberar · %1</translation>
+        <translation>Rilascia · %1</translation>
     </message>
     <message>
         <source>Flash · %1</source>
@@ -7220,11 +7437,11 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>%1 · cue %2</source>
-        <translation>%1 · cue&#xa0;%2</translation>
+        <translation>%1 · cue %2</translation>
     </message>
     <message>
         <source>Choose a cuelist</source>
-        <translation>Elige una cuelist</translation>
+        <translation>Scegli una cuelist</translation>
     </message>
     <message>
         <source>Touch</source>
@@ -7235,176 +7452,176 @@ Añádelos en la página Patch.</translation>
     <name>StagePlan</name>
     <message>
         <source>AUDIENCE</source>
-        <translation>PÚBLICO</translation>
+        <translation>PUBBLICO</translation>
     </message>
 </context>
 <context>
     <name>StaticEditor</name>
     <message>
         <source>Static scene</source>
-        <translation>Escena estática</translation>
+        <translation>Scena statica</translation>
     </message>
     <message>
         <source>%1 channels on %2 fixtures</source>
-        <translation>%1 canales en %2 fixtures</translation>
+        <translation>%1 canali su %2 fixture</translation>
     </message>
     <message>
         <source>A static scene stores fixed values. Load it in the programmer to change them, then save the programmer back into the scene.</source>
-        <translation>Una escena estática guarda valores fijos. Cárgala en el programador para cambiarlos y vuelve a guardar el programador en la escena.</translation>
+        <translation>Una scena statica contiene valori fissi. Caricala nel programmatore per cambiarli, poi salva di nuovo il programmatore nella scena.</translation>
     </message>
     <message>
         <source>Uses these palettes: when they change, the scene changes too</source>
-        <translation>Usa estas paletas: cuando cambian, la escena cambia también</translation>
+        <translation>Usa queste palette: quando cambiano, cambia anche la scena</translation>
     </message>
     <message>
         <source>Edit in the programmer</source>
-        <translation>Editar en el programador</translation>
+        <translation>Modifica nel programmatore</translation>
     </message>
     <message>
         <source>Save the programmer in this scene</source>
-        <translation>Guardar el programador en esta escena</translation>
+        <translation>Salva il programmatore in questa scena</translation>
     </message>
     <message>
         <source>Steps play their channels through this scene: it can&apos;t take FX. Record the programmer as a new scene.</source>
-        <translation>Los pasos reproducen sus canales a través de esta escena: no admite FX. Graba el programador como una escena nueva.</translation>
+        <translation>Dei passi riproducono i loro canali attraverso questa scena: non può avere FX. Registra il programmatore come nuova scena.</translation>
     </message>
 </context>
 <context>
     <name>StepsEditor</name>
     <message>
         <source>Steps (%1)</source>
-        <translation>Pasos (%1)</translation>
+        <translation>Passi (%1)</translation>
     </message>
     <message>
         <source>Add step</source>
-        <translation>Añadir paso</translation>
+        <translation>Aggiungi passo</translation>
     </message>
     <message>
         <source>The programmer becomes a new step after the selected one</source>
-        <translation>El programador se convierte en un paso nuevo tras el seleccionado</translation>
+        <translation>Il programmatore diventa un nuovo passo dopo quello selezionato</translation>
     </message>
     <message>
         <source>Save in step</source>
-        <translation>Guardar en el paso</translation>
+        <translation>Salva nel passo</translation>
     </message>
     <message>
         <source>Store the programmer in the selected step</source>
-        <translation>Guardar el programador en el paso seleccionado</translation>
+        <translation>Salva il programmatore nel passo selezionato</translation>
     </message>
     <message>
         <source>Load step</source>
-        <translation>Cargar paso</translation>
+        <translation>Carica passo</translation>
     </message>
     <message>
         <source>Put the selected step in the programmer, to see and change it</source>
-        <translation>Llevar el paso seleccionado al programador para verlo y cambiarlo</translation>
+        <translation>Porta il passo selezionato nel programmatore per vederlo e modificarlo</translation>
     </message>
     <message>
         <source>Duplicate step</source>
-        <translation>Duplicar paso</translation>
+        <translation>Duplica passo</translation>
     </message>
     <message>
         <source>Delete step</source>
-        <translation>Eliminar paso</translation>
+        <translation>Elimina passo</translation>
     </message>
     <message>
         <source>FADE IN</source>
-        <translation>FUNDIDO ENTRADA</translation>
+        <translation>ENTRATA</translation>
     </message>
     <message>
         <source>HOLD</source>
-        <translation>ESPERA</translation>
+        <translation>TENUTA</translation>
     </message>
     <message>
         <source>FADE OUT</source>
-        <translation>FUNDIDO SALIDA</translation>
+        <translation>USCITA</translation>
     </message>
     <message>
         <source>CHANNELS ON</source>
-        <translation>CANALES ENCENDIDOS</translation>
+        <translation>CANALI ACCESI</translation>
     </message>
     <message>
         <source>Until GO</source>
-        <translation>Hasta GO</translation>
+        <translation>Fino a GO</translation>
     </message>
     <message>
-        <source>Hold for a time again</source>
-        <translation>Volver a mantener un tiempo</translation>
+        <source>Back to a timed hold</source>
+        <translation>Torna a una tenuta a tempo</translation>
     </message>
     <message>
         <source>Wait for GO: the step holds until the next one is asked for</source>
-        <translation>Esperar GO: el paso se mantiene hasta que se pide el siguiente</translation>
+        <translation>Attendi GO: il passo resta finché non si chiede il successivo</translation>
     </message>
     <message>
         <source>Double click a step to load it in the programmer. Ctrl/Shift+click selects several steps to change their times together.</source>
-        <translation>Doble clic en un paso para cargarlo en el programador. Ctrl/Mayús+clic selecciona varios pasos para cambiar sus tiempos a la vez.</translation>
+        <translation>Doppio clic su un passo per caricarlo nel programmatore. Ctrl/Maiusc+clic seleziona più passi per cambiarne i tempi insieme.</translation>
     </message>
 </context>
 <context>
     <name>SuperSceneEditor</name>
     <message>
         <source>Rename track</source>
-        <translation>Renombrar la pista</translation>
+        <translation>Rinomina traccia</translation>
     </message>
     <message>
         <source>Stop</source>
-        <translation>Parar</translation>
+        <translation>Ferma</translation>
     </message>
     <message>
         <source>Play</source>
-        <translation>Reproducir</translation>
+        <translation>Riproduci</translation>
     </message>
     <message>
         <source>From the cursor (Space)</source>
-        <translation>Desde el cursor (Espacio)</translation>
+        <translation>Dal cursore (Spazio)</translation>
     </message>
     <message>
         <source>To the start</source>
-        <translation>Al principio</translation>
+        <translation>All&apos;inizio</translation>
     </message>
     <message>
         <source>bar %1</source>
-        <translation>compás %1</translation>
+        <translation>battuta %1</translation>
     </message>
     <message>
         <source>Time</source>
-        <translation>Tiempo</translation>
+        <translation>Tempo</translation>
     </message>
     <message>
         <source>Bars</source>
-        <translation>Compases</translation>
+        <translation>Battute</translation>
     </message>
     <message>
         <source>Bar 1 here</source>
-        <translation>Compás 1 aquí</translation>
+        <translation>Battuta 1 qui</translation>
     </message>
     <message>
         <source>The first bar starts at the cursor</source>
-        <translation>El primer compás empieza en el cursor</translation>
+        <translation>La prima battuta inizia al cursore</translation>
     </message>
     <message>
         <source>Snap</source>
-        <translation>Ajustar</translation>
+        <translation>Aggancia</translation>
     </message>
     <message>
         <source>End here</source>
-        <translation>Fin aquí</translation>
+        <translation>Fine qui</translation>
     </message>
     <message>
         <source>The super scene ends at the cursor</source>
-        <translation>La super escena acaba en el cursor</translation>
+        <translation>La super scena finisce al cursore</translation>
     </message>
     <message>
         <source>No end marker: it ends with its last block</source>
-        <translation>Sin marcador de fin: acaba con su último bloque</translation>
+        <translation>Nessun marcatore di fine: finisce con il suo ultimo blocco</translation>
     </message>
     <message>
         <source>Loop</source>
-        <translation>Bucle</translation>
+        <translation>Ciclo</translation>
     </message>
     <message>
         <source>Track</source>
-        <translation>Pista</translation>
+        <translation>Traccia</translation>
     </message>
     <message>
         <source>Audio</source>
@@ -7412,98 +7629,98 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>An audio file on the selected track, at the cursor</source>
-        <translation>Un archivo de audio en la pista seleccionada, en el cursor</translation>
+        <translation>Un file audio sulla traccia selezionata, al cursore</translation>
     </message>
     <message>
         <source>Static values (%1)</source>
-        <translation>Valores estáticos (%1)</translation>
+        <translation>Valori statici (%1)</translation>
     </message>
     <message>
         <source>Static values</source>
-        <translation>Valores estáticos</translation>
+        <translation>Valori statici</translation>
     </message>
     <message>
         <source>Take the values of the programmer</source>
-        <translation>Tomar los valores del programador</translation>
+        <translation>Prendi i valori del programmatore</translation>
     </message>
     <message>
         <source>Clear the static values</source>
-        <translation>Borrar los valores estáticos</translation>
+        <translation>Cancella i valori statici</translation>
     </message>
     <message>
         <source>Scenes</source>
-        <translation>Escenas</translation>
+        <translation>Scene</translation>
     </message>
     <message>
         <source>Drag scenes from the list onto a track</source>
-        <translation>Arrastra escenas de la lista a una pista</translation>
+        <translation>Trascina scene dalla lista su una traccia</translation>
     </message>
     <message>
         <source>Start</source>
-        <translation>Inicio</translation>
+        <translation>Inizio</translation>
     </message>
     <message>
         <source>Length</source>
-        <translation>Duración</translation>
+        <translation>Durata</translation>
     </message>
     <message>
         <source>Fade in</source>
-        <translation>Fundido de entrada</translation>
+        <translation>Entrata</translation>
     </message>
     <message>
         <source>Fade out</source>
-        <translation>Fundido de salida</translation>
+        <translation>Uscita</translation>
     </message>
     <message>
         <source>Stretched</source>
-        <translation>Estirada</translation>
+        <translation>Allungata</translation>
     </message>
     <message>
         <source>Loops</source>
-        <translation>En bucle</translation>
+        <translation>In ciclo</translation>
     </message>
     <message>
         <source>Loops: the scene plays again and again in the block. Stretched: one cycle lasts the whole block</source>
-        <translation>En bucle: la escena se repite en el bloque. Estirada: un ciclo dura todo el bloque</translation>
+        <translation>In ciclo: la scena si ripete nel blocco. Allungata: un ciclo dura tutto il blocco</translation>
     </message>
     <message>
         <source>Duplicate</source>
-        <translation>Duplicar</translation>
+        <translation>Duplica</translation>
     </message>
     <message>
         <source>Delete (Del)</source>
-        <translation>Eliminar (Supr)</translation>
+        <translation>Elimina (Canc)</translation>
     </message>
     <message>
         <source>Add audio</source>
-        <translation>Añadir audio</translation>
+        <translation>Aggiungi audio</translation>
     </message>
     <message>
         <source>Audio files (*.wav *.mp3 *.flac *.ogg *.aif *.aiff)</source>
-        <translation>Archivos de audio (*.wav *.mp3 *.flac *.ogg *.aif *.aiff)</translation>
+        <translation>File audio (*.wav *.mp3 *.flac *.ogg *.aif *.aiff)</translation>
     </message>
     <message>
         <source>All files (*)</source>
-        <translation>Todos los archivos (*)</translation>
+        <translation>Tutti i file (*)</translation>
     </message>
 </context>
 <context>
     <name>SurfaceButton</name>
     <message>
         <source>Choose a scene</source>
-        <translation>Elige una escena</translation>
+        <translation>Scegli una scena</translation>
     </message>
     <message>
         <source>Next</source>
-        <translation>Siguiente</translation>
+        <translation>Avanti</translation>
     </message>
     <message>
         <source>Previous</source>
-        <translation>Anterior</translation>
+        <translation>Precedente</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>Blackout</source>
@@ -7511,7 +7728,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Stop all</source>
-        <translation>Parar todo</translation>
+        <translation>Ferma tutto</translation>
     </message>
     <message>
         <source>Tap</source>
@@ -7519,14 +7736,14 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Choose a palette</source>
-        <translation>Elige una paleta</translation>
+        <translation>Scegli una palette</translation>
     </message>
 </context>
 <context>
     <name>SurfaceDial</name>
     <message>
         <source>Grand master</source>
-        <translation>Gran master</translation>
+        <translation>Grand master</translation>
     </message>
     <message>
         <source>BPM</source>
@@ -7534,30 +7751,30 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Choose a group</source>
-        <translation>Elige un grupo</translation>
+        <translation>Scegli un gruppo</translation>
     </message>
     <message>
         <source>Choose a scene</source>
-        <translation>Elige una escena</translation>
+        <translation>Scegli una scena</translation>
     </message>
     <message>
         <source>Speed of %1</source>
-        <translation>Velocidad de %1</translation>
+        <translation>Velocità di %1</translation>
     </message>
     <message>
         <source>Dimmer of %1</source>
-        <translation>Dimmer de %1</translation>
+        <translation>Dimmer di %1</translation>
     </message>
     <message>
         <source>Movement speed</source>
-        <translation>Velocidad de movimiento</translation>
+        <translation>Velocità di movimento</translation>
     </message>
 </context>
 <context>
     <name>SurfaceFader</name>
     <message>
         <source>Grand master</source>
-        <translation>Gran master</translation>
+        <translation>Grand master</translation>
     </message>
     <message>
         <source>BPM</source>
@@ -7565,23 +7782,23 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Choose a group</source>
-        <translation>Elige un grupo</translation>
+        <translation>Scegli un gruppo</translation>
     </message>
     <message>
         <source>Choose a scene</source>
-        <translation>Elige una escena</translation>
+        <translation>Scegli una scena</translation>
     </message>
     <message>
         <source>Speed of %1</source>
-        <translation>Velocidad de %1</translation>
+        <translation>Velocità di %1</translation>
     </message>
     <message>
         <source>Dimmer of %1</source>
-        <translation>Dimmer de %1</translation>
+        <translation>Dimmer di %1</translation>
     </message>
     <message>
         <source>Movement speed</source>
-        <translation>Velocidad de movimiento</translation>
+        <translation>Velocità di movimento</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -7592,30 +7809,30 @@ Añádelos en la página Patch.</translation>
     <name>TextPrompt</name>
     <message>
         <source>Cancel</source>
-        <translation>Cancelar</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <source>OK</source>
-        <translation>Aceptar</translation>
+        <translation>OK</translation>
     </message>
 </context>
 <context>
     <name>Theme</name>
     <message>
         <source>Circle</source>
-        <translation>Círculo</translation>
+        <translation>Cerchio</translation>
     </message>
     <message>
         <source>Eight</source>
-        <translation>Ocho</translation>
+        <translation>Otto</translation>
     </message>
     <message>
         <source>Square</source>
-        <translation>Cuadrado</translation>
+        <translation>Quadrato</translation>
     </message>
     <message>
         <source>Triangle</source>
-        <translation>Triángulo</translation>
+        <translation>Triangolo</translation>
     </message>
     <message>
         <source>Diamond</source>
@@ -7623,19 +7840,19 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Pan line</source>
-        <translation>Línea de pan</translation>
+        <translation>Linea di pan</translation>
     </message>
     <message>
         <source>Tilt line</source>
-        <translation>Línea de tilt</translation>
+        <translation>Linea di tilt</translation>
     </message>
     <message>
         <source>Diagonal</source>
-        <translation>Diagonal</translation>
+        <translation>Diagonale</translation>
     </message>
     <message>
         <source>Leaf</source>
-        <translation>Trébol</translation>
+        <translation>Trifoglio</translation>
     </message>
     <message>
         <source>Lissajous</source>
@@ -7647,7 +7864,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Cross</source>
-        <translation>Cruz</translation>
+        <translation>Croce</translation>
     </message>
     <message>
         <source>Pan / tilt</source>
@@ -7667,7 +7884,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Red</source>
-        <translation>Rojo</translation>
+        <translation>Rosso</translation>
     </message>
     <message>
         <source>Green</source>
@@ -7675,15 +7892,15 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Blue</source>
-        <translation>Azul</translation>
+        <translation>Blu</translation>
     </message>
     <message>
         <source>White</source>
-        <translation>Blanco</translation>
+        <translation>Bianco</translation>
     </message>
     <message>
         <source>Amber</source>
-        <translation>Ámbar</translation>
+        <translation>Ambra</translation>
     </message>
     <message>
         <source>UV</source>
@@ -7691,7 +7908,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Cyan</source>
-        <translation>Cian</translation>
+        <translation>Ciano</translation>
     </message>
     <message>
         <source>Magenta</source>
@@ -7699,23 +7916,23 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Yellow</source>
-        <translation>Amarillo</translation>
+        <translation>Giallo</translation>
     </message>
     <message>
         <source>Lime</source>
-        <translation>Lima</translation>
+        <translation>Lime</translation>
     </message>
     <message>
         <source>Indigo</source>
-        <translation>Índigo</translation>
+        <translation>Indaco</translation>
     </message>
     <message>
         <source>Static</source>
-        <translation>Estática</translation>
+        <translation>Statica</translation>
     </message>
     <message>
         <source>Steps</source>
-        <translation>Pasos</translation>
+        <translation>Passi</translation>
     </message>
     <message>
         <source>Move FX</source>
@@ -7735,7 +7952,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Effect rack</source>
-        <translation>Rack de efectos</translation>
+        <translation>Rack di effetti</translation>
     </message>
     <message>
         <source>Chaser</source>
@@ -7743,7 +7960,7 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Super scene</source>
-        <translation>Super escena</translation>
+        <translation>Super scena</translation>
     </message>
     <message>
         <source>Cuelist</source>
@@ -7758,113 +7975,113 @@ Añádelos en la página Patch.</translation>
     <name>TimelineBlock</name>
     <message>
         <source>Loop the scene in the block</source>
-        <translation>Repetir la escena en el bloque</translation>
+        <translation>Ripeti la scena nel blocco</translation>
     </message>
     <message>
-        <source>Stretch the scene to the block</source>
-        <translation>Estirar la escena al bloque</translation>
+        <source>Stretch the scene to fit the block</source>
+        <translation>Allunga la scena per adattarla al blocco</translation>
     </message>
     <message>
         <source>Duplicate</source>
-        <translation>Duplicar</translation>
+        <translation>Duplica</translation>
     </message>
     <message>
         <source>Unlock</source>
-        <translation>Desbloquear</translation>
+        <translation>Sblocca</translation>
     </message>
     <message>
         <source>Lock</source>
-        <translation>Bloquear</translation>
+        <translation>Blocca</translation>
     </message>
     <message>
         <source>Open the scene</source>
-        <translation>Abrir la escena</translation>
+        <translation>Apri la scena</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
 </context>
 <context>
     <name>TimelineEditor</name>
     <message>
         <source>(missing)</source>
-        <translation>(no existe)</translation>
+        <translation>(mancante)</translation>
     </message>
     <message>
         <source>Track %1</source>
-        <translation>Pista %1</translation>
+        <translation>Traccia %1</translation>
     </message>
     <message>
         <source>“%1” plays this super scene: it can&apos;t go into it</source>
-        <translation>“%1” reproduce esta super escena: no puede ir dentro de ella</translation>
+        <translation>«%1» riproduce questa super scena: non può andarci dentro</translation>
     </message>
     <message>
         <source>Add a track for the audio first</source>
-        <translation>Añade primero una pista para el audio</translation>
+        <translation>Prima aggiungi una traccia per l&apos;audio</translation>
     </message>
     <message>
         <source>The track is locked: unlock it to add the audio</source>
-        <translation>La pista está bloqueada: desbloquéala para añadir el audio</translation>
+        <translation>La traccia è bloccata: sbloccala per aggiungere l&apos;audio</translation>
     </message>
     <message>
         <source>Unable to read the audio of %1</source>
-        <translation>No se pudo leer el audio de %1</translation>
+        <translation>Impossibile leggere l&apos;audio di %1</translation>
     </message>
     <message>
         <source>Set the static values in the programmer first</source>
-        <translation>Pon primero los valores estáticos en el programador</translation>
+        <translation>Prima imposta i valori statici nel programmatore</translation>
     </message>
     <message>
         <source>%1 (static values)</source>
-        <translation>%1 (valores estáticos)</translation>
+        <translation>%1 (valori statici)</translation>
     </message>
 </context>
 <context>
     <name>TimelineTrack</name>
     <message>
         <source>Mute: the track doesn&apos;t play</source>
-        <translation>Silenciar: la pista no suena</translation>
+        <translation>Muto: la traccia non suona</translation>
     </message>
     <message>
         <source>Lock: its blocks don&apos;t move</source>
-        <translation>Bloquear: sus bloques no se mueven</translation>
+        <translation>Blocca: i suoi blocchi non si muovono</translation>
     </message>
     <message>
-        <source>Automation of the dimmer (the volume of audio)</source>
-        <translation>Automatización del dimmer (el volumen del audio)</translation>
+        <source>Automation of the dimmer (the volume of the audio)</source>
+        <translation>Automazione del dimmer (il volume dell&apos;audio)</translation>
     </message>
     <message>
         <source>Automation of the phase of its effects</source>
-        <translation>Automatización de la fase de sus efectos</translation>
+        <translation>Automazione della fase dei suoi effetti</translation>
     </message>
     <message>
         <source>Show the track</source>
-        <translation>Mostrar la pista</translation>
+        <translation>Mostra la traccia</translation>
     </message>
     <message>
         <source>Hide the track</source>
-        <translation>Ocultar la pista</translation>
+        <translation>Nascondi la traccia</translation>
     </message>
     <message>
         <source>Rename</source>
-        <translation>Renombrar</translation>
+        <translation>Rinomina</translation>
     </message>
     <message>
         <source>Move up</source>
-        <translation>Subir</translation>
+        <translation>Sposta su</translation>
     </message>
     <message>
         <source>Move down</source>
-        <translation>Bajar</translation>
+        <translation>Sposta giù</translation>
     </message>
     <message>
         <source>Clear the automation of this lane</source>
-        <translation>Borrar la automatización de esta línea</translation>
+        <translation>Cancella l&apos;automazione di questa corsia</translation>
     </message>
     <message>
         <source>Delete the track</source>
-        <translation>Eliminar la pista</translation>
+        <translation>Elimina la traccia</translation>
     </message>
     <message>
         <source>Phase</source>
@@ -7872,26 +8089,26 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Dimmer / volume</source>
-        <translation>Dimmer / volumen</translation>
+        <translation>Dimmer / volume</translation>
     </message>
 </context>
 <context>
     <name>TrackingSheet</name>
     <message>
         <source>Changes</source>
-        <translation>Cambios</translation>
+        <translation>Modifiche</translation>
     </message>
     <message>
         <source>Tracked</source>
-        <translation>Heredados</translation>
+        <translation>Ereditati</translation>
     </message>
     <message>
         <source>Block</source>
-        <translation>Bloqueo</translation>
+        <translation>Blocco</translation>
     </message>
     <message>
         <source>Released</source>
-        <translation>Liberados</translation>
+        <translation>Rilasciati</translation>
     </message>
     <message>
         <source>FX %1</source>
@@ -7899,136 +8116,136 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Select a cue</source>
-        <translation>Selecciona una cue</translation>
+        <translation>Seleziona una cue</translation>
     </message>
     <message>
         <source>The stage is empty on this cue</source>
-        <translation>El escenario está vacío en esta cue</translation>
+        <translation>Il palco è vuoto in questa cue</translation>
     </message>
     <message numerus="yes">
         <source>%n picked</source>
         <translation>
-            <numerusform>%n elegido</numerusform>
-            <numerusform>%n elegidos</numerusform>
+            <numerusform>%n scelto</numerusform>
+            <numerusform>%n scelti</numerusform>
         </translation>
     </message>
     <message>
         <source>Click channels to pick them</source>
-        <translation>Haz clic en los canales para elegirlos</translation>
+        <translation>Clicca i canali per sceglierli</translation>
     </message>
     <message>
         <source>Release</source>
-        <translation>Liberar</translation>
+        <translation>Rilascia</translation>
     </message>
     <message>
         <source>[RELEASE] in this cue: from here on they go back to what is below (other scenes or their rest value)</source>
-        <translation>[RELEASE] en esta cue: desde aquí vuelven a lo que hay debajo (otras escenas o su valor de reposo)</translation>
+        <translation>[RELEASE] in questa cue: da qui in poi tornano a ciò che c&apos;è sotto (altre scene o il loro valore di riposo)</translation>
     </message>
     <message>
         <source>Take out</source>
-        <translation>Sacar</translation>
+        <translation>Togli</translation>
     </message>
     <message>
         <source>Take them out of this cue: they track from the cues before it again</source>
-        <translation>Sacarlos de esta cue: vuelven a heredar de las cues anteriores</translation>
+        <translation>Toglili da questa cue: tornano a ereditare dalle cue precedenti</translation>
     </message>
 </context>
 <context>
     <name>UpdateBanner</name>
     <message>
         <source>Downloading version %1… %2 %</source>
-        <translation>Descargando la versión %1… %2 %</translation>
+        <translation>Download della versione %1… %2 %</translation>
     </message>
     <message>
         <source>Version %1 will be installed when the program closes</source>
-        <translation>La versión %1 se instalará al cerrar el programa</translation>
+        <translation>La versione %1 verrà installata alla chiusura del programma</translation>
     </message>
     <message>
         <source>Version %1 is downloaded and checked, ready to install</source>
-        <translation>La versión %1 está descargada y comprobada, lista para instalar</translation>
+        <translation>La versione %1 è scaricata e verificata, pronta da installare</translation>
     </message>
     <message>
         <source>Version %1 could not be downloaded: %2</source>
-        <translation>No se ha podido descargar la versión %1: %2</translation>
+        <translation>Impossibile scaricare la versione %1: %2</translation>
     </message>
     <message>
         <source>A test version of DMX Total Control is out: %1</source>
-        <translation>Hay una versión de prueba de DMX Total Control: %1</translation>
+        <translation>È disponibile una versione di prova di DMX Total Control: %1</translation>
     </message>
     <message>
         <source>A new version of DMX Total Control is out: %1</source>
-        <translation>Hay una versión nueva de DMX Total Control: %1</translation>
+        <translation>È disponibile una nuova versione di DMX Total Control: %1</translation>
     </message>
     <message>
         <source>What&apos;s new</source>
-        <translation>Novedades</translation>
+        <translation>Novità</translation>
     </message>
     <message>
         <source>Open on GitHub</source>
-        <translation>Ver en GitHub</translation>
+        <translation>Apri su GitHub</translation>
     </message>
     <message>
         <source>Try again</source>
-        <translation>Reintentar</translation>
+        <translation>Riprova</translation>
     </message>
     <message>
         <source>Download and install</source>
-        <translation>Descargar e instalar</translation>
+        <translation>Scarica e installa</translation>
     </message>
     <message>
         <source>Install now</source>
-        <translation>Instalar ahora</translation>
+        <translation>Installa ora</translation>
     </message>
     <message>
         <source>The program closes (it asks to save the show first) and opens again when the update ends</source>
-        <translation>El programa se cierra (antes pregunta si guardar el show) y se vuelve a abrir al terminar la actualización</translation>
+        <translation>Il programma si chiude (prima chiede di salvare lo show) e si riapre al termine dell&apos;aggiornamento</translation>
     </message>
     <message>
         <source>Not when closing</source>
-        <translation>Al cerrar no</translation>
+        <translation>Non alla chiusura</translation>
     </message>
     <message>
         <source>When closing</source>
-        <translation>Al cerrar</translation>
+        <translation>Alla chiusura</translation>
     </message>
     <message>
         <source>Later</source>
-        <translation>Más tarde</translation>
+        <translation>Più tardi</translation>
     </message>
     <message>
         <source>No more notices for this version (Options › Updates still has it)</source>
-        <translation>Sin más avisos de esta versión (sigue en Opciones › Actualizaciones)</translation>
+        <translation>Nessun altro avviso per questa versione (resta in Opzioni › Aggiornamenti)</translation>
     </message>
 </context>
 <context>
     <name>UpdateChecker</name>
     <message>
         <source>GitHub could not be reached: %1</source>
-        <translation>No se ha podido consultar GitHub: %1</translation>
+        <translation>Impossibile raggiungere GitHub: %1</translation>
     </message>
     <message>
         <source>GitHub sent an answer that can&apos;t be read</source>
-        <translation>GitHub ha enviado una respuesta que no se puede leer</translation>
+        <translation>GitHub ha inviato una risposta illeggibile</translation>
     </message>
     <message>
         <source>The installer can&apos;t be saved in %1</source>
-        <translation>No se puede guardar el instalador en %1</translation>
+        <translation>Impossibile salvare il programma di installazione in %1</translation>
     </message>
     <message>
         <source>The download failed: %1</source>
-        <translation>La descarga ha fallado: %1</translation>
+        <translation>Download non riuscito: %1</translation>
     </message>
     <message>
         <source>The download is incomplete (%1 of %2 bytes)</source>
-        <translation>La descarga está incompleta (%1 de %2 bytes)</translation>
+        <translation>Il download è incompleto (%1 di %2 byte)</translation>
     </message>
     <message>
         <source>The installer doesn&apos;t match the SHA-256 digest GitHub publishes: it was not kept</source>
-        <translation>El instalador no coincide con la huella SHA-256 que publica GitHub: no se ha guardado</translation>
+        <translation>Il programma di installazione non corrisponde all&apos;impronta SHA-256 pubblicata da GitHub: non è stato conservato</translation>
     </message>
     <message>
         <source>The installer could not be started</source>
-        <translation>No se ha podido iniciar el instalador</translation>
+        <translation>Impossibile avviare il programma di installazione</translation>
     </message>
 </context>
 <context>
@@ -8039,70 +8256,70 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>Centre</source>
-        <translation>Centrar</translation>
+        <translation>Centra</translation>
     </message>
 </context>
 <context>
     <name>ZoneColumn</name>
     <message>
         <source>By scene</source>
-        <translation>Por escena</translation>
+        <translation>Per scena</translation>
     </message>
     <message>
         <source>Snap</source>
-        <translation>Corte</translation>
-    </message>
-    <message>
-        <source>Change colour</source>
-        <translation>Cambiar color</translation>
-    </message>
-    <message>
-        <source>Move left</source>
-        <translation>Mover a la izquierda</translation>
-    </message>
-    <message>
-        <source>Move right</source>
-        <translation>Mover a la derecha</translation>
+        <translation>Taglio</translation>
     </message>
     <message>
         <source>Release this group</source>
-        <translation>Liberar este grupo</translation>
+        <translation>Rilascia questo gruppo</translation>
+    </message>
+    <message>
+        <source>Change colour</source>
+        <translation>Cambia colore</translation>
+    </message>
+    <message>
+        <source>Move left</source>
+        <translation>Sposta a sinistra</translation>
+    </message>
+    <message>
+        <source>Move right</source>
+        <translation>Sposta a destra</translation>
     </message>
     <message>
         <source>Delete group</source>
-        <translation>Eliminar grupo</translation>
+        <translation>Elimina gruppo</translation>
     </message>
     <message>
         <source>Previous scene</source>
-        <translation>Escena anterior</translation>
+        <translation>Scena precedente</translation>
     </message>
     <message>
         <source>Next scene</source>
-        <translation>Escena siguiente</translation>
+        <translation>Scena successiva</translation>
     </message>
     <message>
         <source>Exclusive</source>
-        <translation>Exclusiva</translation>
+        <translation>Esclusivo</translation>
     </message>
     <message>
         <source>Mix</source>
-        <translation>Mezcla</translation>
+        <translation>Mix</translation>
     </message>
     <message>
         <source>Exclusive: one scene at a time. Mix: scenes add up.</source>
-        <translation>Exclusiva: una escena a la vez. Mezcla: las escenas se suman.</translation>
+        <translation>Esclusivo: una scena alla volta. Mix: le scene si sommano.</translation>
     </message>
     <message>
         <source>Crossfade time</source>
-        <translation>Tiempo de crossfade</translation>
+        <translation>Tempo di dissolvenza incrociata</translation>
     </message>
     <message>
         <source>Drag to move the scene, also to another group</source>
-        <translation>Arrastra para mover la escena, también a otro grupo</translation>
+        <translation>Trascina per spostare la scena, anche in un altro gruppo</translation>
     </message>
     <message>
         <source>Add scenes</source>
-        <translation>Añadir escenas</translation>
+        <translation>Aggiungi scene</translation>
     </message>
     <message>
         <source>Master</source>
@@ -8110,54 +8327,54 @@ Añádelos en la página Patch.</translation>
     </message>
     <message>
         <source>GO (next cue)</source>
-        <translation>GO (cue siguiente)</translation>
+        <translation>GO (cue successiva)</translation>
     </message>
     <message>
         <source>Back (cue before)</source>
-        <translation>Atrás (cue anterior)</translation>
+        <translation>Indietro (cue precedente)</translation>
     </message>
     <message>
         <source>Release the cuelist</source>
-        <translation>Liberar la cuelist</translation>
+        <translation>Rilascia la cuelist</translation>
     </message>
     <message>
         <source>Properties…</source>
-        <translation>Propiedades…</translation>
+        <translation>Proprietà…</translation>
     </message>
     <message>
         <source>Open in Scenes</source>
-        <translation>Abrir en Escenas</translation>
+        <translation>Apri in Scene</translation>
     </message>
     <message>
-        <source>Edit in programmer</source>
-        <translation>Editar en el programador</translation>
+        <source>Edit in the programmer</source>
+        <translation>Modifica nel programmatore</translation>
     </message>
     <message>
         <source>Priority: %1</source>
-        <translation>Prioridad: %1</translation>
+        <translation>Priorità: %1</translation>
     </message>
     <message>
         <source>%1 (normal)</source>
-        <translation>%1 (normal)</translation>
+        <translation>%1 (normale)</translation>
     </message>
     <message>
         <source>Move up</source>
-        <translation>Subir</translation>
+        <translation>Sposta su</translation>
     </message>
     <message>
         <source>Move down</source>
-        <translation>Bajar</translation>
+        <translation>Sposta giù</translation>
     </message>
     <message>
         <source>Remove from group</source>
-        <translation>Quitar del grupo</translation>
+        <translation>Rimuovi dal gruppo</translation>
     </message>
 </context>
 <context>
     <name>ZoneManager</name>
     <message>
         <source>Group %1</source>
-        <translation>Grupo %1</translation>
+        <translation>Gruppo %1</translation>
     </message>
 </context>
 </TS>

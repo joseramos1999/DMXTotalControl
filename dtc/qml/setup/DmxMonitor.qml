@@ -100,11 +100,13 @@ Item {
                         required property int index
                         readonly property int value: monitor.values.length > index ? monitor.values[index] : 0
                         readonly property string owner: monitor.owners[index] || ""
+                        // the colour it shows, for its text
+                        readonly property color shown: Theme.mix(Theme.background, Theme.accent, 0.08 + 0.8 * value / 255)
 
                         width: grid.cell
                         height: 36
                         radius: 3
-                        color: Qt.rgba(0.24, 0.55, 0.99, 0.08 + 0.8 * value / 255)
+                        color: Qt.alpha(Theme.accent, 0.08 + 0.8 * value / 255)
                         border.color: owner.length ? Theme.borderStrong : "transparent"
 
                         Text {
@@ -118,7 +120,7 @@ Item {
                             text: monitor.percent ? Math.round(cellRect.value * 100 / 255) : cellRect.value
                             font.family: Theme.monoFamily
                             font.pixelSize: 10
-                            color: cellRect.value > 0 ? Theme.text : Theme.textFaint
+                            color: cellRect.value > 0 ? Theme.textOver(cellRect.shown) : Theme.textFaint
                         }
 
                         MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true }

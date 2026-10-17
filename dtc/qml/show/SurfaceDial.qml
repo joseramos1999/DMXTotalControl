@@ -24,9 +24,10 @@ import DMXTotalControl
 import DMXTotalControl.Backend
 
 /**
- * A dial of the SHOW screen: it drives what a fader drives.
+ * A dial of the SHOW screen: it drives what a fader drives, within the same
+ * range ("min", "max", "invert").
  * As an incremental wheel ("encoder") it turns forever: each notch adds or
- * takes "step" % from where the target is.
+ * takes "step" % of the value from where the target is, within its range.
  */
 Rectangle {
     id: cell
@@ -38,9 +39,14 @@ Rectangle {
     readonly property var first: targets.length ? targets[0] : ({ target: "grandMaster" })
     readonly property bool encoder: !!item.encoder
     readonly property bool isBpm: targets.length === 1 && first.target === "bpm"
+    // where the dial is on its travel, and what its first target is at (the text)
     readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.level(item) }
+    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.value(item) }
     // the wheel turns with the hand, whatever the level
     property real wheelAngle: 0
+    // where the hand has the dial while it holds it (-1: not held): a narrow
+    // range on a channel of steps doesn't stall a slow turn
+    property real held: -1
 
     function targetName(t) {
         switch (t.target) {
@@ -51,6 +57,7 @@ Rectangle {
             return zone ? zone.name : qsTr("Choose a group")
         }
         case "scene": return Core.functionInfo(t.functionId).name || qsTr("Choose a scene")
+        case "sceneDimmer": return qsTr("Dimmer of %1").arg(Core.functionInfo(t.functionId).name || "?")
         case "sceneSpeed": return qsTr("Speed of %1").arg(Core.functionInfo(t.functionId).name || "?")
         case "mixerDimmer": {
             let m = Core.mixer.mixers.find(x => x.id === (t.mixerId !== undefined ? t.mixerId : -1))
@@ -66,18 +73,21 @@ Rectangle {
     }
     function label() { return item.label ? item.label : targets.map(t => targetName(t)).join(" + ") }
     function setLevel(v) { Core.surface.setLevel(item, Math.max(0, Math.min(1, v))) }
-    /** a turn of $degrees: a dial moves 270° for the whole range, a wheel adds a notch every 15° */
+    /** a turn of $degrees: a dial moves 270° for its whole travel, a wheel adds a notch every 15° */
     function turn(degrees) {
         if (encoder) {
             wheelAngle += degrees
             let notches = Math.trunc(wheelAngle / 15)
             if (notches !== 0) {
                 wheelAngle -= notches * 15
-                setLevel(level + notches * (item.step || 2) / 100)
+                Core.surface.stepLevel(item, notches)
             }
             knob.requestPaint()
         } else {
-            setLevel(level + degrees / 270)
+            let to = Math.max(0, Math.min(1, (held >= 0 ? held : level) + degrees / 270))
+            if (held >= 0)
+                held = to
+            setLevel(to)
         }
     }
 
@@ -100,10 +110,13 @@ Rectangle {
 
         Canvas {
             id: knob
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             Layout.fillWidth: true
             Layout.fillHeight: true
-            readonly property real level: cell.level
-            readonly property color tint: cell.item.color || Theme.accent
+            readonly property real level: cell.held >= 0 ? cell.held : cell.level
+            readonly property color tint: cell.item.color ? Theme.category(cell.item.color) : Theme.accent
             onLevelChanged: requestPaint()
             onTintChanged: requestPaint()
             onWidthChanged: requestPaint()
@@ -161,7 +174,9 @@ Rectangle {
                 property real lastAngle: 0
                 property real lastY: 0
                 function angleAt(x, y) { return Math.atan2(y - height / 2, x - width / 2) * 180 / Math.PI }
-                onPressed: (ev) => { lastAngle = angleAt(ev.x, ev.y); lastY = ev.y }
+                onPressed: (ev) => { lastAngle = angleAt(ev.x, ev.y); lastY = ev.y; cell.held = cell.encoder ? -1 : cell.level }
+                onReleased: cell.held = -1
+                onCanceled: cell.held = -1
                 onPositionChanged: (ev) => {
                     let a = angleAt(ev.x, ev.y)
                     let d = a - lastAngle
@@ -176,14 +191,22 @@ Rectangle {
                     cell.turn(d)
                 }
                 onWheel: (ev) => cell.turn(ev.angleDelta.y > 0 ? 15 : -15)
-                onDoubleClicked: if (!cell.encoder) cell.setLevel(cell.isBpm ? 70 / 280 : 0)
+                // (the BPM: back to 90, where it is on the travel)
+                onDoubleClicked: {
+                    if (cell.encoder)
+                        return
+                    const reset = cell.isBpm ? Core.surface.positionOf(cell.item, 70 / 280) : 0
+                    cell.setLevel(reset)
+                    // (a move before the button is let go goes on from there)
+                    cell.held = reset
+                }
             }
         }
 
         Text {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            text: cell.isBpm ? Math.round(20 + cell.level * 280) : Math.round(cell.level * 100) + "%"
+            text: cell.isBpm ? Math.round(20 + cell.value * 280) : Math.round(cell.value * 100) + "%"
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: 10

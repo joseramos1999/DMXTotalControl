@@ -368,7 +368,7 @@ Item {
                                     id: chipText
                                     anchors.centerIn: parent
                                     text: modelData.name
-                                    color: parent.allSelected ? "white" : Theme.text
+                                    color: parent.allSelected ? Theme.accentText : Theme.text
                                     font.pixelSize: Theme.fontSmall
                                     font.weight: Font.DemiBold
                                 }
@@ -400,13 +400,13 @@ Item {
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                                     icon: Theme.iconSelect
                                     size: 10
-                                    color: parent.active ? "white" : Theme.textDim
+                                    color: parent.active ? Theme.accentText : Theme.textDim
                                 }
                                 Text {
                                     id: selectionText
                                     anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }
                                     text: modelData.name
-                                    color: parent.active ? "white" : Theme.text
+                                    color: parent.active ? Theme.accentText : Theme.text
                                     font.pixelSize: Theme.fontSmall
                                 }
                                 MouseArea {
@@ -477,7 +477,7 @@ Item {
                             visible: fixtureGrid.count === 0
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.WordWrap
-                            text: qsTr("No fixtures patched yet.\nAdd some in the Patch page.")
+                            text: qsTr("No fixtures patched yet.\nAdd some on the Patch page.")
                             color: Theme.textDim
                         }
                     }
@@ -514,7 +514,7 @@ Item {
                                 VFader {
                                     id: dimmerFader
                                     Layout.fillHeight: true
-                                    fillColor: "#e7e9ef"
+                                    fillColor: Theme.text
                                     onUserMoved: (v) => Core.programmer.setDimmer(v)
                                 }
                                 Column {
@@ -565,7 +565,7 @@ Item {
                                         required property string modelData
                                         width: Math.max(20, Math.min(36, Math.floor((colourColumn.width - 7 * 6) / 8))); height: 30; radius: 6
                                         color: modelData
-                                        border.color: swatchMouse.containsMouse ? "white" : "#00000040"
+                                        border.color: swatchMouse.containsMouse ? Theme.text : Theme.edgeFor(modelData)
                                         border.width: swatchMouse.containsMouse ? 2 : 1
                                         MouseArea {
                                             id: swatchMouse

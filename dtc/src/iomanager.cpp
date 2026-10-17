@@ -51,7 +51,10 @@ QVariantList IOManager::universes() const
     {
         QVariantMap info;
         info.insert("index", i);
-        info.insert("name", i < quint32(names.count()) ? names.at(i) : tr("Universe %1").arg(i + 1));
+        // the name the engine gives a universe is shown in the language of the program
+        const QString defaultName = QString("Universe %1").arg(i + 1);
+        const QString name = i < quint32(names.count()) ? names.at(i) : defaultName;
+        info.insert("name", name == defaultName ? tr("Universe %1").arg(i + 1) : name);
 
         OutputPatch *patch = m_ioMap->outputPatch(i);
         if (patch != nullptr && patch->output() != QLCIOPlugin::invalidLine())

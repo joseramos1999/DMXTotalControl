@@ -19,25 +19,122 @@
 
 pragma Singleton
 import QtQuick
+import DMXTotalControl.Backend
 
 QtObject {
-    // Surfaces: a dark, low glare palette for dark venues
-    readonly property color background: "#0e1014"
-    readonly property color surface: "#161920"
-    readonly property color surfaceRaised: "#1d212a"
-    readonly property color surfaceHover: "#252a35"
-    readonly property color border: "#2b303c"
-    readonly property color borderStrong: "#3a4150"
+    id: theme
 
-    readonly property color text: "#e7e9ef"
-    readonly property color textDim: "#9098ab"
-    readonly property color textFaint: "#5d6475"
+    /** The theme of Options: "dark", "light", "contrast" or "night" */
+    readonly property string name: Core.settings.theme
+    readonly property var palette: palettes[name] || palettes.dark
 
-    readonly property color accent: "#3d8bfd"
-    readonly property color accentText: "#ffffff"
-    readonly property color danger: "#e5484d"
-    readonly property color success: "#30a46c"
-    readonly property color warning: "#f5a524"
+    // The colours of each theme. The remote control has the same ones
+    // (dtc/remote/remote.css)
+    readonly property var palettes: ({
+        // a low glare palette for dark venues
+        dark: {
+            dark: true,
+            background: "#0e1014", surface: "#161920", surfaceRaised: "#1d212a", surfaceHover: "#252a35",
+            border: "#2b303c", borderStrong: "#3a4150",
+            text: "#e7e9ef", textDim: "#9098ab", textFaint: "#5d6475",
+            accent: "#3d8bfd", accentText: "#ffffff", danger: "#e5484d", success: "#30a46c", warning: "#f5a524",
+            learn: "#ae3ec9", learnText: "#d68ee8",
+            knob: "#d9dce3", knobBorder: "#ffffff", shadow: "#60000000", scrim: "#70000000",
+            plan: "#0b0d12", planGrid: "#12151b", planLine: "#262c38", dialogShade: "#28282a",
+            categoryLevel: 1.0
+        },
+        // offices, rehearsals by day, outdoors
+        light: {
+            dark: false,
+            background: "#eceef2", surface: "#ffffff", surfaceRaised: "#f3f4f7", surfaceHover: "#e4e7ed",
+            border: "#d2d7e0", borderStrong: "#b2b9c7",
+            text: "#171b23", textDim: "#4b5364", textFaint: "#7d8598",
+            accent: "#1d6ce0", accentText: "#ffffff", danger: "#c92a2a", success: "#18804c", warning: "#a86200",
+            learn: "#9c36b5", learnText: "#7b2a91",
+            knob: "#ffffff", knobBorder: "#7d8598", shadow: "#30000000", scrim: "#66000000",
+            plan: "#f6f7f9", planGrid: "#fafbfc", planLine: "#cfd5df", dialogShade: "#28282a",
+            categoryLevel: 1.0
+        },
+        // pure black and white, marked edges: low vision, a lot of light around
+        contrast: {
+            dark: true,
+            background: "#000000", surface: "#000000", surfaceRaised: "#101010", surfaceHover: "#2a2a2a",
+            border: "#ffffff", borderStrong: "#ffffff",
+            text: "#ffffff", textDim: "#f0f0f0", textFaint: "#c8c8c8",
+            accent: "#ffd400", accentText: "#000000", danger: "#ff5c5c", success: "#4ade80", warning: "#ff9f1a",
+            learn: "#ff6bff", learnText: "#ff9cff",
+            knob: "#ffffff", knobBorder: "#ffd400", shadow: "#a0000000", scrim: "#b0000000",
+            plan: "#000000", planGrid: "#0c0c0c", planLine: "#808080", dialogShade: "#000000",
+            categoryLevel: 1.0,
+            // the text on a colour: the one of the two that reads best
+            textOnLight: "#000000", textOnDark: "#ffffff"
+        },
+        // very dark and red: a dark booth, without dazzling or losing the night sight
+        night: {
+            dark: true,
+            background: "#050202", surface: "#0b0505", surfaceRaised: "#120808", surfaceHover: "#1b0b0b",
+            border: "#271111", borderStrong: "#3b1818",
+            text: "#d9574a", textDim: "#9c3a31", textFaint: "#6a2620",
+            accent: "#c62f22", accentText: "#1a0505", danger: "#ff3b2f", success: "#b4652a", warning: "#d9822b",
+            learn: "#a3315f", learnText: "#c4507e",
+            knob: "#8a2c22", knobBorder: "#b8392c", shadow: "#a0000000", scrim: "#a0000000",
+            plan: "#030101", planGrid: "#0a0404", planLine: "#2a1010", dialogShade: "#000000",
+            categoryLevel: 0.45,
+            textOnLight: "#1a0505", textOnDark: "#e0a59c"
+        }
+    })
+
+    /** A dark theme (dark, contrast, night): for the few things drawn on it */
+    readonly property bool isDark: palette.dark
+
+    // Surfaces
+    readonly property color background: palette.background
+    readonly property color surface: palette.surface
+    readonly property color surfaceRaised: palette.surfaceRaised
+    readonly property color surfaceHover: palette.surfaceHover
+    readonly property color border: palette.border
+    readonly property color borderStrong: palette.borderStrong
+
+    readonly property color text: palette.text
+    readonly property color textDim: palette.textDim
+    readonly property color textFaint: palette.textFaint
+
+    readonly property color accent: palette.accent
+    readonly property color accentText: palette.accentText
+    readonly property color danger: palette.danger
+    readonly property color success: palette.success
+    readonly property color warning: palette.warning
+
+    /** Learn mode of the mappings, and what can be mapped */
+    readonly property color learn: palette.learn
+    readonly property color learnText: palette.learnText
+    /** The handles of the faders and sliders (knobBorder: one being dragged, its bright edge) */
+    readonly property color knob: palette.knob
+    readonly property color knobBorder: palette.knobBorder
+    readonly property color shadow: palette.shadow
+    /** What covers the page behind a dialog, or a disabled area */
+    readonly property color scrim: palette.scrim
+    /** The 2D plan of the patch and the programmer */
+    readonly property color plan: palette.plan
+    readonly property color planGrid: palette.planGrid
+    readonly property color planLine: palette.planLine
+    /** What dims the page behind a dialog (the controls use it at 50 %): no grey veil on black or at night */
+    readonly property color dialogShade: palette.dialogShade
+
+    /** A colour that means a kind of thing (a scene type, a group): dimmed in the night theme */
+    function category(c) {
+        const level = palette.categoryLevel
+        if (level >= 1.0)
+            return c
+        const k = Qt.color(c)
+        return Qt.rgba(k.r * level, k.g * level, k.b * level, k.a)
+    }
+
+    /** A colour between a and b (t from 0, a, to 1, b): the shades between two tokens */
+    function mix(a, b, t) {
+        const x = Qt.color(a), y = Qt.color(b)
+        return Qt.rgba(x.r + (y.r - x.r) * t, x.g + (y.g - x.g) * t, x.b + (y.b - x.b) * t, x.a + (y.a - x.a) * t)
+    }
 
     readonly property int radius: 8
     readonly property int radiusSmall: 5
@@ -93,6 +190,7 @@ QtObject {
     readonly property string iconCompress: "\uf066"
     readonly property string iconDownload: "\uf019"
     readonly property string iconImport: "\uf56f"
+    readonly property string iconSaveAs: "\uf56e"
     readonly property string iconFolder: "\uf07b"
     readonly property string iconFolderOpen: "\uf07c"
     readonly property string iconFolderPlus: "\uf65e"
@@ -127,8 +225,49 @@ QtObject {
     /** Pick black or white text for a given background */
     function textOn(bg) {
         let c = Qt.color(bg)
+        // high contrast and night: of their two text colours, the one with
+        // the most contrast (WCAG): black on the yellow, no white glare at night
+        if (palette.textOnLight !== undefined) {
+            const l = luminance(c)
+            const dark = luminance(Qt.color(palette.textOnLight))
+            const light = luminance(Qt.color(palette.textOnDark))
+            return (l + 0.05) / (dark + 0.05) >= (light + 0.05) / (l + 0.05) ? palette.textOnLight : palette.textOnDark
+        }
         let luma = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
         return luma > 0.6 ? "#111111" : "#ffffff"
+    }
+
+    /** The text colour over a background that varies (a level): the normal text while it reads */
+    function textOver(bg) {
+        return contrast(text, bg) >= 3 ? text : textOn(bg)
+    }
+
+    /** A colour for text or thin lines on a background: itself, or towards the text colour where it doesn't read (yellow on a light theme) */
+    function readable(c, bg) {
+        return contrast(c, bg === undefined ? surface : bg) >= 3 ? c : mix(c, text, 0.55)
+    }
+
+    /** Text over a dark spot (a shadow, a scrim, a dark tint): white, without glare at night */
+    readonly property color textOnShade: textOn("#000000")
+
+    /** The contrast ratio of two colours (WCAG): 1 the same, 21 black on white */
+    function contrast(a, b) {
+        const x = luminance(Qt.color(a)), y = luminance(Qt.color(b))
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+    }
+
+    /** An edge for a colour that doesn't stand out from the background (a white swatch on a light theme) */
+    function edgeFor(c, bg) {
+        return contrast(c, bg === undefined ? surface : bg) < 1.6 ? borderStrong : "transparent"
+    }
+
+    /** The edge of a handle, where it doesn't stand out (light theme) */
+    readonly property color knobEdge: contrast(knob, surface) < 1.6 ? knobBorder : "transparent"
+
+    /** The relative luminance of a colour (WCAG) */
+    function luminance(c) {
+        const lin = (v) => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b)
     }
 
     /** The figures of the pan/tilt FX, in the order of the engine */
@@ -181,6 +320,10 @@ QtObject {
     }
 
     function functionColor(type) {
+        return category(functionBaseColor(type))
+    }
+
+    function functionBaseColor(type) {
         switch (type) {
         case "Scene": return "#3d8bfd"
         case "Chaser": return "#f59f00"

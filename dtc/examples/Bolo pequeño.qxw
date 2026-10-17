@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Workspace>
+<Workspace xmlns="http://www.qlcplus.org/Workspace">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.13.0 GIT</Version>
+  <Author>joser</Author>
+ </Creator>
+ <Engine>
+  <InputOutputMap>
+   <BeatGenerator BeatType="Internal" BPM="120"/>
+   <NetworkServer Type="Native" AutoStart="False" Name="" Password=""/>
+   <Universe Name="Universe 1" ID="0"/>
+   <Universe Name="Universe 2" ID="1"/>
+   <Universe Name="Universe 3" ID="2"/>
+   <Universe Name="Universe 4" ID="3"/>
+  </InputOutputMap>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>0</ID>
+   <Name>Frontal 1</Name>
+   <Universe>0</Universe>
+   <Address>0</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>1</ID>
+   <Name>Frontal 2</Name>
+   <Universe>0</Universe>
+   <Address>5</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>2</ID>
+   <Name>Frontal 3</Name>
+   <Universe>0</Universe>
+   <Address>10</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>3</ID>
+   <Name>Frontal 4</Name>
+   <Universe>0</Universe>
+   <Address>15</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>4</ID>
+   <Name>Contra 1</Name>
+   <Universe>0</Universe>
+   <Address>20</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>5</ID>
+   <Name>Contra 2</Name>
+   <Universe>0</Universe>
+   <Address>25</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>6</ID>
+   <Name>Contra 3</Name>
+   <Universe>0</Universe>
+   <Address>30</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>7</ID>
+   <Name>Contra 4</Name>
+   <Universe>0</Universe>
+   <Address>35</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Strobe</Model>
+   <Mode>2ch Dimmer+Strobe</Mode>
+   <ID>8</ID>
+   <Name>Estrobo 1</Name>
+   <Universe>0</Universe>
+   <Address>40</Address>
+   <Channels>2</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Strobe</Model>
+   <Mode>2ch Dimmer+Strobe</Mode>
+   <ID>9</ID>
+   <Name>Estrobo 2</Name>
+   <Universe>0</Universe>
+   <Address>42</Address>
+   <Channels>2</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Hazer</Model>
+   <Mode>2ch Haze+Fan</Mode>
+   <ID>10</ID>
+   <Name>Máquina de humo</Name>
+   <Universe>0</Universe>
+   <Address>50</Address>
+   <Channels>2</Channels>
+  </Fixture>
+  <FixtureGroup ID="0">
+   <Name>Frontales</Name>
+   <Size X="4" Y="1"/>
+   <Head X="0" Y="0" Fixture="0">0</Head>
+   <Head X="1" Y="0" Fixture="1">0</Head>
+   <Head X="2" Y="0" Fixture="2">0</Head>
+   <Head X="3" Y="0" Fixture="3">0</Head>
+  </FixtureGroup>
+  <FixtureGroup ID="1">
+   <Name>Contras</Name>
+   <Size X="4" Y="1"/>
+   <Head X="0" Y="0" Fixture="4">0</Head>
+   <Head X="1" Y="0" Fixture="5">0</Head>
+   <Head X="2" Y="0" Fixture="6">0</Head>
+   <Head X="3" Y="0" Fixture="7">0</Head>
+  </FixtureGroup>
+  <FixtureGroup ID="2">
+   <Name>Estrobos</Name>
+   <Size X="2" Y="1"/>
+   <Head X="0" Y="0" Fixture="8">0</Head>
+   <Head X="1" Y="0" Fixture="9">0</Head>
+  </FixtureGroup>
+  <Function ID="0" Type="Scene" Name="Azul">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="1">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+  </Function>
+  <Function ID="1" Type="Scene" Name="Rojo">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="1">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,255,2,0,3,0,4,0</FixtureVal>
+  </Function>
+  <Function ID="2" Type="Scene" Name="Ámbar">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="1">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,255,2,170,3,0,4,0</FixtureVal>
+  </Function>
+  <Function ID="3" Type="Scene" Name="Verde">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="1">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,0,2,255,3,64,4,0</FixtureVal>
+  </Function>
+  <Function ID="4" Type="Scene" Name="Magenta">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="1">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="2">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="3">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="4">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,255,2,0,3,255,4,0</FixtureVal>
+  </Function>
+  <Function ID="5" Type="Scene" Name="Blanco cálido">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="1">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="2">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="3">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="4">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="5">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="6">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="7">0,255,1,87,2,48,3,0,4,168</FixtureVal>
+  </Function>
+  <Function ID="6" Type="Scene" Name="Azul y cálido">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,220,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="1">0,220,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="2">0,220,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="3">0,220,1,87,2,48,3,0,4,168</FixtureVal>
+   <FixtureVal ID="4">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="5">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="6">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+   <FixtureVal ID="7">0,255,1,0,2,48,3,255,4,0</FixtureVal>
+  </Function>
+  <Function ID="9" Type="Scene" Name="Persecución (channels)" Hidden="True">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="4">0,0,1,0,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="5">0,0,1,0,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="6">0,0,1,0,2,0,3,0,4,0</FixtureVal>
+   <FixtureVal ID="7">0,0,1,0,2,0,3,0,4,0</FixtureVal>
+  </Function>
+  <Function ID="10" Type="Sequence" Name="Persecución" BoundScene="9">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="PerStep"/>
+   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0" Values="20">4:0,255,4,255</Step>
+   <Step Number="1" FadeIn="0" Hold="1000" FadeOut="0" Values="20">5:0,255,4,255</Step>
+   <Step Number="2" FadeIn="0" Hold="1000" FadeOut="0" Values="20">6:0,255,4,255</Step>
+   <Step Number="3" FadeIn="0" Hold="1000" FadeOut="0" Values="20">7:0,255,4,255</Step>
+  </Function>
+  <Function ID="11" Type="Scene" Name="Estrobo">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="8">0,255,1,200</FixtureVal>
+   <FixtureVal ID="9">0,255,1,200</FixtureVal>
+  </Function>
+  <Function ID="12" Type="Scene" Name="Luz de sala">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">0,255,1,0,2,0,3,0,4,255</FixtureVal>
+   <FixtureVal ID="1">0,255,1,0,2,0,3,0,4,255</FixtureVal>
+   <FixtureVal ID="2">0,255,1,0,2,0,3,0,4,255</FixtureVal>
+   <FixtureVal ID="3">0,255,1,0,2,0,3,0,4,255</FixtureVal>
+  </Function>
+  <Function ID="13" Type="Scene" Name="Humo">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="10">1,128</FixtureVal>
+  </Function>
+  <Monitor DisplayMode="0" ShowLabels="0">
+   <Font>Arial,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0</Font>
+   <ChannelStyle>0</ChannelStyle>
+   <ValueStyle>0</ValueStyle>
+   <Grid Width="5" Height="3" Depth="5" Units="0"/>
+   <StageItem>0</StageItem>
+   <FxItem ID="0" XPos="300" YPos="300" ZPos="0"/>
+   <FxItem ID="1" XPos="900" YPos="300" ZPos="0"/>
+   <FxItem ID="2" XPos="1500" YPos="300" ZPos="0"/>
+   <FxItem ID="3" XPos="2100" YPos="300" ZPos="0"/>
+   <FxItem ID="4" XPos="2700" YPos="300" ZPos="0"/>
+   <FxItem ID="5" XPos="3300" YPos="300" ZPos="0"/>
+   <FxItem ID="6" XPos="3900" YPos="300" ZPos="0"/>
+   <FxItem ID="7" XPos="300" YPos="900" ZPos="0"/>
+   <FxItem ID="8" XPos="900" YPos="900" ZPos="0"/>
+   <FxItem ID="9" XPos="1500" YPos="900" ZPos="0"/>
+   <FxItem ID="10" XPos="2100" YPos="900" ZPos="0"/>
+  </Monitor>
+  <Function ID="7" Type="FXScene" Name="Arcoíris">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <Fixture>0</Fixture>
+   <Fixture>1</Fixture>
+   <Fixture>2</Fixture>
+   <Fixture>3</Fixture>
+   <Fixture>4</Fixture>
+   <Fixture>5</Fixture>
+   <Fixture>6</Fixture>
+   <Fixture>7</Fixture>
+   <Value Fixture="0" Channel="0">255</Value>
+   <Value Fixture="0" Channel="1">0</Value>
+   <Value Fixture="0" Channel="2">0</Value>
+   <Value Fixture="0" Channel="3">0</Value>
+   <Value Fixture="1" Channel="0">255</Value>
+   <Value Fixture="1" Channel="1">0</Value>
+   <Value Fixture="1" Channel="2">0</Value>
+   <Value Fixture="1" Channel="3">0</Value>
+   <Value Fixture="2" Channel="0">255</Value>
+   <Value Fixture="2" Channel="1">0</Value>
+   <Value Fixture="2" Channel="2">0</Value>
+   <Value Fixture="2" Channel="3">0</Value>
+   <Value Fixture="3" Channel="0">255</Value>
+   <Value Fixture="3" Channel="1">0</Value>
+   <Value Fixture="3" Channel="2">0</Value>
+   <Value Fixture="3" Channel="3">0</Value>
+   <Value Fixture="4" Channel="0">255</Value>
+   <Value Fixture="4" Channel="1">0</Value>
+   <Value Fixture="4" Channel="2">0</Value>
+   <Value Fixture="4" Channel="3">0</Value>
+   <Value Fixture="5" Channel="0">255</Value>
+   <Value Fixture="5" Channel="1">0</Value>
+   <Value Fixture="5" Channel="2">0</Value>
+   <Value Fixture="5" Channel="3">0</Value>
+   <Value Fixture="6" Channel="0">255</Value>
+   <Value Fixture="6" Channel="1">0</Value>
+   <Value Fixture="6" Channel="2">0</Value>
+   <Value Fixture="6" Channel="3">0</Value>
+   <Value Fixture="7" Channel="0">255</Value>
+   <Value Fixture="7" Channel="1">0</Value>
+   <Value Fixture="7" Channel="2">0</Value>
+   <Value Fixture="7" Channel="3">0</Value>
+   <Layer Param="red" Mode="3" Swing="200" BPM="20" Wave="-1" Linked="1" Fixtures="0,1,2,3,4,5,6,7"/>
+   <Layer Param="green" Mode="3" Swing="200" BPM="20" Wave="-1" Phase="120" Linked="1" Fixtures="0,1,2,3,4,5,6,7"/>
+   <Layer Param="blue" Mode="3" Swing="200" BPM="20" Wave="-1" Phase="240" Linked="1" Fixtures="0,1,2,3,4,5,6,7"/>
+  </Function>
+  <Function ID="8" Type="FXScene" Name="Ola">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <Fixture>0</Fixture>
+   <Fixture>1</Fixture>
+   <Fixture>2</Fixture>
+   <Fixture>3</Fixture>
+   <Fixture>4</Fixture>
+   <Fixture>5</Fixture>
+   <Fixture>6</Fixture>
+   <Fixture>7</Fixture>
+   <Value Fixture="0" Channel="0">0</Value>
+   <Value Fixture="1" Channel="0">0</Value>
+   <Value Fixture="2" Channel="0">0</Value>
+   <Value Fixture="3" Channel="0">0</Value>
+   <Value Fixture="4" Channel="0">0</Value>
+   <Value Fixture="5" Channel="0">0</Value>
+   <Value Fixture="6" Channel="0">0</Value>
+   <Value Fixture="7" Channel="0">0</Value>
+   <Layer Param="dimmer" Mode="3" Swing="200" BPM="40" Wave="-1" Fixtures="0,1,2,3,4,5,6,7"/>
+  </Function>
+ </Engine>
+ <DMXTotalControl>
+  <Zones NextID="3">
+   <Zone ID="0" Name="Colores" Color="#3d8bfd" Exclusive="1" Fade="1500" Master="1">
+    <Function ID="0"/>
+    <Function ID="1"/>
+    <Function ID="2"/>
+    <Function ID="3"/>
+    <Function ID="4"/>
+    <Function ID="5"/>
+    <Function ID="6"/>
+   </Zone>
+   <Zone ID="1" Name="Efectos" Color="#ae3ec9" Exclusive="0" Fade="-1" Master="1">
+    <Function ID="7"/>
+    <Function ID="8"/>
+    <Function ID="10"/>
+    <Function ID="11" Flash="1"/>
+   </Zone>
+   <Zone ID="2" Name="Generales" Color="#30a46c" Exclusive="0" Fade="-1" Master="1">
+    <Function ID="12"/>
+    <Function ID="13"/>
+   </Zone>
+  </Zones>
+  <Playbacks SlotsPerPage="10" CurrentPage="0">
+   <Page Name="Page 1"/>
+  </Playbacks>
+  <Surface Version="2">
+   <Page Name="Grupos">
+    <Split ID="n3" Orientation="v" Ratio="0.75">
+     <Section ID="s1" title="" type="groups"/>
+     <Split ID="n5" Orientation="h" Ratio="0.5">
+      <Section ID="s2" cols="8" title="Masters" type="faders">
+       <Item Cell="0" color="#e7e9ef" functionId="-1" label="Master" target="grandMaster" zoneId="-1"/>
+       <Item Cell="1" color="#3d8bfd" functionId="-1" label="" target="group" zoneId="0"/>
+       <Item Cell="2" color="#ae3ec9" functionId="-1" label="" target="group" zoneId="1"/>
+       <Item Cell="3" color="#30a46c" functionId="-1" label="" target="group" zoneId="2"/>
+      </Section>
+      <Split ID="n7" Orientation="h" Ratio="0.5">
+       <Section ID="s4" title="" type="bpm"/>
+       <Section ID="s6" date="true" seconds="true" title="" type="clock"/>
+      </Split>
+     </Split>
+    </Split>
+   </Page>
+  </Surface>
+  <Mappings/>
+  <Numbers>
+   <Fixture ID="0" Number="1"/>
+   <Fixture ID="1" Number="2"/>
+   <Fixture ID="2" Number="3"/>
+   <Fixture ID="3" Number="4"/>
+   <Fixture ID="4" Number="5"/>
+   <Fixture ID="5" Number="6"/>
+   <Fixture ID="6" Number="7"/>
+   <Fixture ID="7" Number="8"/>
+   <Fixture ID="8" Number="9"/>
+   <Fixture ID="9" Number="10"/>
+   <Fixture ID="10" Number="11"/>
+  </Numbers>
+ </DMXTotalControl>
+</Workspace>

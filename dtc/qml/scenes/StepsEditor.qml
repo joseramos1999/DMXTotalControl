@@ -184,7 +184,7 @@ Panel {
                             implicitHeight: 28
                             implicitWidth: 28
                             highlighted: !!row.modelData.waits
-                            ToolTip.text: row.modelData.waits ? qsTr("Hold for a time again")
+                            ToolTip.text: row.modelData.waits ? qsTr("Back to a timed hold")
                                                               : qsTr("Wait for GO: the step holds until the next one is asked for")
                             ToolTip.visible: hovered
                             ToolTip.delay: 500

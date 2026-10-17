@@ -221,8 +221,14 @@ Item {
                 Layout.fillWidth: true
                 spacing: 10
 
+                // a long model name shortens: the buttons always fit
                 Column {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 120
+                    Layout.preferredWidth: 200
                     Text {
+                        width: parent.width
+                        elide: Text.ElideRight
                         text: page.draft.model && page.draft.model.length ? page.draft.model : qsTr("New fixture")
                         color: Theme.text
                         font.pixelSize: Theme.fontTitle
@@ -230,13 +236,14 @@ Item {
                     }
                     Text {
                         readonly property bool inUserList: Core.library.userFixtures.some(f => f.manufacturer === page.draft.manufacturer && f.model === page.draft.model)
+                        width: parent.width
+                        elide: Text.ElideRight
                         text: page.dirty ? qsTr("Unsaved changes")
                                          : (inUserList ? qsTr("Saved in your fixtures") : qsTr("Not saved yet"))
                         color: page.dirty ? Theme.warning : Theme.textDim
                         font.pixelSize: Theme.fontSmall
                     }
                 }
-                Item { Layout.fillWidth: true }
                 AppButton {
                     text: qsTr("Delete")
                     iconGlyph: Theme.iconTrash

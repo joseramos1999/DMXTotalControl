@@ -438,7 +438,7 @@ Rectangle {
                     text: qsTr("Release")
                     implicitHeight: 28
                     enabled: !view.editing
-                    ToolTip.text: qsTr("The scenes give the colour again"); ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Give the colour back to the scenes"); ToolTip.visible: hovered
                     onClicked: Core.surface.releaseSection(colourBox.pageIndex, view.sid)
                 }
             }
@@ -478,7 +478,7 @@ Rectangle {
                 Rectangle {
                     width: 18; height: 18; radius: 9
                     color: Theme.functionColor("EFX")
-                    border.color: "white"
+                    border.color: Theme.textOn(color)
                     border.width: 2
                     opacity: xyBox.pos.available ? 1 : 0.4
                     x: (xyBox.pos.x !== undefined ? xyBox.pos.x : 0.5) * pad.width - width / 2
@@ -508,7 +508,7 @@ Rectangle {
                     text: qsTr("Release")
                     implicitHeight: 28
                     enabled: !view.editing
-                    ToolTip.text: qsTr("The scenes give the position again"); ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Give the position back to the scenes"); ToolTip.visible: hovered
                     onClicked: Core.surface.releaseSection(xyBox.pageIndex, view.sid)
                 }
             }
@@ -589,7 +589,7 @@ Rectangle {
             }
             Text {
                 visible: Core.zones.count === 0
-                text: qsTr("No groups yet. Create them in the Live page.")
+                text: qsTr("No groups yet. Create them on the Live page.")
                 color: Theme.textFaint
             }
         }
@@ -819,7 +819,7 @@ Rectangle {
                         required property int index
                         width: levels.cw
                         height: levels.ch
-                        color: Qt.rgba(0.24, 0.55, 0.99, 0.06 + 0.9 * (monitor.values[index] || 0) / 255)
+                        color: Qt.alpha(Theme.accent, 0.06 + 0.9 * (monitor.values[index] || 0) / 255)
                     }
                 }
             }

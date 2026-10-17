@@ -538,7 +538,7 @@ Item {
                         Layout.preferredWidth: view.wFlag
                         text: "B"
                         horizontalAlignment: Text.AlignHCenter
-                        ToolTip.text: qsTr("Block: Record and Update keep the values equal to the ones it tracks")
+                        ToolTip.text: qsTr("Block: Record and Update also store the values equal to the ones it tracks")
                         ToolTip.visible: blockMouse.containsMouse
                         ToolTip.delay: 400
                         MouseArea { id: blockMouse; anchors.fill: parent; hoverEnabled: true }
@@ -644,6 +644,9 @@ Item {
                                 Layout.minimumWidth: 80
                                 Layout.preferredWidth: 150
                                 text: row.model.name
+                                // out of focus a long text shows its start
+                                onTextChanged: if (!activeFocus) cursorPosition = 0
+                                Component.onCompleted: cursorPosition = 0
                                 placeholderText: qsTr("Name")
                                 placeholderTextColor: Theme.textFaint
                                 color: Theme.text
@@ -653,7 +656,12 @@ Item {
                                     color: nameField.activeFocus ? Theme.background : "transparent"
                                     border.color: nameField.activeFocus ? Theme.accent : "transparent"
                                 }
-                                onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
+                                onActiveFocusChanged: {
+                                    if (activeFocus && !row.isSelected)
+                                        view.select(row.index, 0)
+                                    if (!activeFocus)
+                                        cursorPosition = 0
+                                }
                                 onEditingFinished: if (text !== row.model.name) Core.cuelists.setCueName(view.fid, row.index, text)
                                 Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
                                 Keys.onEscapePressed: { text = Qt.binding(() => row.model.name); focus = false }
@@ -773,7 +781,7 @@ Item {
                                 Layout.preferredWidth: view.wFlag
                                 Layout.preferredHeight: 24
                                 letter: "B"
-                                tint: "#f08c00"
+                                tint: Theme.category("#f08c00")
                                 checked: row.model.block
                                 onToggled: Core.cuelists.setCueFlags(view.fid, view.targets(row.index), -1, checked ? 0 : 1)
                             }
@@ -783,6 +791,9 @@ Item {
                                 Layout.minimumWidth: 60
                                 Layout.preferredWidth: 150
                                 text: row.model.note
+                                // out of focus a long text shows its start
+                                onTextChanged: if (!activeFocus) cursorPosition = 0
+                                Component.onCompleted: cursorPosition = 0
                                 placeholderText: "—"
                                 placeholderTextColor: Theme.textFaint
                                 color: Theme.textDim
@@ -793,7 +804,12 @@ Item {
                                     color: noteField.activeFocus ? Theme.background : "transparent"
                                     border.color: noteField.activeFocus ? Theme.accent : "transparent"
                                 }
-                                onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
+                                onActiveFocusChanged: {
+                                    if (activeFocus && !row.isSelected)
+                                        view.select(row.index, 0)
+                                    if (!activeFocus)
+                                        cursorPosition = 0
+                                }
                                 onEditingFinished: if (text !== row.model.note) Core.cuelists.setCueNote(view.fid, row.index, text)
                                 Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
                                 Keys.onEscapePressed: { text = Qt.binding(() => row.model.note); focus = false }

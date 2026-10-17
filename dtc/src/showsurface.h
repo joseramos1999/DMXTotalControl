@@ -79,11 +79,14 @@ class Doc;
  * A fader item drives one or more targets: "targets" is a list of
  * { target, ... }: "grandMaster", "group" (zoneId: its master), "scene"
  * (functionId: up from zero starts it, down to zero stops it, in between its
- * intensity), "sceneSpeed" (functionId), "mixerDimmer" (mixerId), "moveSpeed"
- * (groupId: the pan/tilt speed channel of a fixture group, -1 all the moving
- * heads), "bpm", "map" (map: a fader target of the mappings). Older items have
- * a single "target" with its keys. "flash":
- * a button under the fader puts it at full while pressed (default true).
+ * intensity), "sceneDimmer" (functionId: the dimmer of the scene, whoever
+ * plays it; it never starts or stops it), "sceneSpeed" (functionId),
+ * "mixerDimmer" (mixerId), "moveSpeed" (groupId: the pan/tilt speed channel
+ * of a fixture group, -1 all the moving heads), "bpm", "map" (map: a fader
+ * target of the mappings). Older items have a single "target" with its keys.
+ * "min", "max" (0-100 %) and "invert": the part of what it drives that the
+ * travel covers (faders and dials). "flash": a button under the fader puts it
+ * at the top of its travel while pressed (default true).
  * Everything runs here (the remote control uses it too).
  */
 class ShowSurface : public QObject
@@ -159,12 +162,40 @@ public:
      *  2.5" for the cuelist actions, else what the mappings call the target */
     Q_INVOKABLE QString mapLabel(const QVariantMap &target) const;
 
-    /** Faders, 0..1: every target of the item follows */
+    /** Faders and dials: their position, 0..1. Every target of the item
+     *  follows, within the range of the item ("min", "max" 0-100 %, "invert",
+     *  as the mappings: ControlMapper::rangeOf); at the end of the travel
+     *  where the value is lowest (the bottom, the top when inverted) a scene
+     *  or playback fader stops it, whatever the minimum */
     Q_INVOKABLE void setLevel(const QVariantMap &item, qreal level);
-    /** The level of a fader: the one of its first target */
+    /** The position of a fader, 0..1, from the value of its first target (a
+     *  value out of the range is at the end of it) */
     Q_INVOKABLE qreal level(const QVariantMap &item) const;
+    /** The value of the first target of a fader, 0..1, as it is: its text */
+    Q_INVOKABLE qreal value(const QVariantMap &item) const;
+    /** Where $value (0..1, a value of the targets) is on the fader, 0..1 */
+    Q_INVOKABLE qreal positionOf(const QVariantMap &item, qreal value) const;
+    /** An encoder: $notches steps of the item's "step" (% of the value,
+     *  default 2) up or down its range; turned up, a stopped scene starts at
+     *  the minimum */
+    Q_INVOKABLE void stepLevel(const QVariantMap &item, int notches);
+    /** Flash: the values of the targets as they are, and back to them
+     *  exactly (also out of the range of the fader) */
+    Q_INVOKABLE QVariantList holdLevels(const QVariantMap &item) const;
+    Q_INVOKABLE void restoreLevels(const QVariantMap &item, const QVariantList &levels);
     /** The targets of a fader item (older items: their single target) */
     Q_INVOKABLE static QVariantList faderTargets(const QVariantMap &item);
+
+    /** The dimmer of a scene ("sceneDimmer" targets), 0..1: it scales the
+     *  scene whoever plays it (its group, a playback, a button, a super
+     *  scene) and never starts or stops it. Saved with the show; it lives
+     *  while a fader or dial is on it (pruneSceneDimmers) */
+    void setSceneDimmer(quint32 functionId, qreal dimmer);
+    qreal sceneDimmer(quint32 functionId) const;
+
+    /** Something the controls show changed with no signal of its own (the
+     *  speed of a scene in no group, from a mapping): they read it again */
+    void refresh();
 
     /** The mixer the "mixerDimmer" targets drive */
     void setMixer(LiveMixer *mixer);
@@ -203,6 +234,8 @@ signals:
     void currentPageChanged();
     /** Alt+click put a control on the SHOW: { page, section, cell, pageName } */
     void controlAdded(const QVariantMap &where);
+    /** The show was closed (another one opens): what the controls held is gone */
+    void cleared();
 
 private slots:
     void slotChanged();
@@ -219,6 +252,11 @@ private slots:
     /** A function deleted: the buttons and faders on it drive nothing (a
      *  function made later may get its ID) */
     void slotFunctionRemoved(quint32 fid);
+    /** A new function has no dimmer (a copy doesn't bring one); one that
+     *  takes the place of another (an effect made an FX) keeps the dimmer, and
+     *  a super scene gives it to its new tracks and static values */
+    void slotFunctionAdded(quint32 fid);
+    void slotFunctionChanged(quint32 fid);
     /** The patch changed: the movement speed faders on the channels of now */
     void slotFixturesChanged();
 
@@ -280,6 +318,20 @@ private:
     QHash<quint32, qreal> m_levels;
     /** The level of the fader on a scene of no group as its intensity */
     void applySceneLevel(Function *f);
+
+    /** The dimmers of the scenes (setSceneDimmer), below 1 only */
+    QHash<quint32, qreal> m_sceneDimmers;
+    /** A dimmer is the base of the intensity of the function (the levels of
+     *  the groups, playbacks and faders are overrides that multiply it); a
+     *  super scene has one per track, and its static values */
+    void applySceneDimmer(Function *f, qreal dimmer);
+    /** No dimmers (another show): the scenes still there back to full */
+    void clearSceneDimmers();
+    /** The dimmers no "sceneDimmer" fader or dial is on any more go (their
+     *  scenes back to full): a dimmer lives with its controls */
+    void pruneSceneDimmers();
+    /** At the bottom of the travel, a scene or a playback fader stops it */
+    static bool bottomStops(const QVariantMap &target);
 
     void setTargetLevel(const QVariantMap &target, qreal level);
     qreal targetLevel(const QVariantMap &target) const;

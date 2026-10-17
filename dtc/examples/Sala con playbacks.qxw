@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Workspace>
+<Workspace xmlns="http://www.qlcplus.org/Workspace">
+ <Creator>
+  <Name>DMX Total Control</Name>
+  <Version>0.13.0 GIT</Version>
+  <Author>joser</Author>
+ </Creator>
+ <Engine>
+  <InputOutputMap>
+   <BeatGenerator BeatType="Internal" BPM="120"/>
+   <NetworkServer Type="Native" AutoStart="False" Name="" Password=""/>
+   <Universe Name="Universe 1" ID="0"/>
+   <Universe Name="Universe 2" ID="1"/>
+   <Universe Name="Universe 3" ID="2"/>
+   <Universe Name="Universe 4" ID="3"/>
+  </InputOutputMap>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>0</ID>
+   <Name>PAR 1</Name>
+   <Universe>0</Universe>
+   <Address>0</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>1</ID>
+   <Name>PAR 2</Name>
+   <Universe>0</Universe>
+   <Address>5</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>2</ID>
+   <Name>PAR 3</Name>
+   <Universe>0</Universe>
+   <Address>10</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>3</ID>
+   <Name>PAR 4</Name>
+   <Universe>0</Universe>
+   <Address>15</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>4</ID>
+   <Name>PAR 5</Name>
+   <Universe>0</Universe>
+   <Address>20</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>5</ID>
+   <Name>PAR 6</Name>
+   <Universe>0</Universe>
+   <Address>25</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>6</ID>
+   <Name>PAR 7</Name>
+   <Universe>0</Universe>
+   <Address>30</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>LED PAR RGBW</Model>
+   <Mode>5ch DRGBW</Mode>
+   <ID>7</ID>
+   <Name>PAR 8</Name>
+   <Universe>0</Universe>
+   <Address>35</Address>
+   <Channels>5</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Moving Head Wash RGBW</Model>
+   <Mode>14ch Extended</Mode>
+   <ID>8</ID>
+   <Name>Wash 1</Name>
+   <Universe>0</Universe>
+   <Address>100</Address>
+   <Channels>14</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Moving Head Wash RGBW</Model>
+   <Mode>14ch Extended</Mode>
+   <ID>9</ID>
+   <Name>Wash 2</Name>
+   <Universe>0</Universe>
+   <Address>114</Address>
+   <Channels>14</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Moving Head Wash RGBW</Model>
+   <Mode>14ch Extended</Mode>
+   <ID>10</ID>
+   <Name>Wash 3</Name>
+   <Universe>0</Universe>
+   <Address>128</Address>
+   <Channels>14</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Moving Head Wash RGBW</Model>
+   <Mode>14ch Extended</Mode>
+   <ID>11</ID>
+   <Name>Wash 4</Name>
+   <Universe>0</Universe>
+   <Address>142</Address>
+   <Channels>14</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Blinder 2 Lamps</Model>
+   <Mode>2ch Lamps</Mode>
+   <ID>12</ID>
+   <Name>Cegadora 1</Name>
+   <Universe>0</Universe>
+   <Address>200</Address>
+   <Channels>2</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Blinder 2 Lamps</Model>
+   <Mode>2ch Lamps</Mode>
+   <ID>13</ID>
+   <Name>Cegadora 2</Name>
+   <Universe>0</Universe>
+   <Address>202</Address>
+   <Channels>2</Channels>
+  </Fixture>
+  <FixtureGroup ID="0">
+   <Name>PARs</Name>
+   <Size X="8" Y="1"/>
+   <Head X="0" Y="0" Fixture="0">0</Head>
+   <Head X="1" Y="0" Fixture="1">0</Head>
+   <Head X="2" Y="0" Fixture="2">0</Head>
+   <Head X="3" Y="0" Fixture="3">0</Head>
+   <Head X="4" Y="0" Fixture="4">0</Head>
+   <Head X="5" Y="0" Fixture="5">0</Head>
+   <Head X="6" Y="0" Fixture="6">0</Head>
+   <Head X="7" Y="0" Fixture="7">0</Head>
+  </FixtureGroup>
+  <FixtureGroup ID="1">
+   <Name>Washes</Name>
+   <Size X="4" Y="1"/>
+   <Head X="0" Y="0" Fixture="8">0</Head>
+   <Head X="1" Y="0" Fixture="9">0</Head>
+   <Head X="2" Y="0" Fixture="10">0</Head>
+   <Head X="3" Y="0" Fixture="11">0</Head>
+  </FixtureGroup>
+  <FixtureGroup ID="2">
+   <Name>Cegadoras</Name>
+   <Size X="2" Y="1"/>
+   <Head X="0" Y="0" Fixture="12">0</Head>
+   <Head X="1" Y="0" Fixture="12">1</Head>
+   <Head X="0" Y="1" Fixture="13">0</Head>
+   <Head X="1" Y="1" Fixture="13">1</Head>
+  </FixtureGroup>
+  <Function ID="3" Type="Scene" Name="Público">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="12">0,255,1,255</FixtureVal>
+   <FixtureVal ID="13">0,255,1,255</FixtureVal>
+  </Function>
+  <Monitor DisplayMode="0" ShowLabels="0">
+   <Font>Arial,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1,,0,0</Font>
+   <ChannelStyle>0</ChannelStyle>
+   <ValueStyle>0</ValueStyle>
+   <Grid Width="5" Height="3" Depth="5" Units="0"/>
+   <StageItem>0</StageItem>
+   <FxItem ID="0" XPos="300" YPos="300" ZPos="0"/>
+   <FxItem ID="1" XPos="900" YPos="300" ZPos="0"/>
+   <FxItem ID="2" XPos="1500" YPos="300" ZPos="0"/>
+   <FxItem ID="3" XPos="2100" YPos="300" ZPos="0"/>
+   <FxItem ID="4" XPos="2700" YPos="300" ZPos="0"/>
+   <FxItem ID="5" XPos="3300" YPos="300" ZPos="0"/>
+   <FxItem ID="6" XPos="3900" YPos="300" ZPos="0"/>
+   <FxItem ID="7" XPos="300" YPos="900" ZPos="0"/>
+   <FxItem ID="8" XPos="900" YPos="900" ZPos="0"/>
+   <FxItem ID="9" XPos="1500" YPos="900" ZPos="0"/>
+   <FxItem ID="10" XPos="2100" YPos="900" ZPos="0"/>
+   <FxItem ID="11" XPos="2700" YPos="900" ZPos="0"/>
+   <FxItem ID="12" XPos="3300" YPos="900" ZPos="0"/>
+   <FxItem ID="13" XPos="3900" YPos="900" ZPos="0"/>
+  </Monitor>
+  <Function ID="0" Type="Cuelist" Name="Canción 1">
+   <Speed FadeIn="1000" FadeOut="1000" Duration="0"/>
+   <Cuelist Tracking="1" AtEnd="Loop" ResetOnRelease="1" BackTime="-1" ReleaseOnNextGo="0" NextUid="4"/>
+   <Cue Uid="1" Number="1000" Name="Inicio" Fade="2000">
+    <V F="0" C="0">255</V>
+    <V F="0" C="1">0</V>
+    <V F="0" C="2">48</V>
+    <V F="0" C="3">255</V>
+    <V F="0" C="4">0</V>
+    <V F="1" C="0">255</V>
+    <V F="1" C="1">0</V>
+    <V F="1" C="2">48</V>
+    <V F="1" C="3">255</V>
+    <V F="1" C="4">0</V>
+    <V F="2" C="0">255</V>
+    <V F="2" C="1">0</V>
+    <V F="2" C="2">48</V>
+    <V F="2" C="3">255</V>
+    <V F="2" C="4">0</V>
+    <V F="3" C="0">255</V>
+    <V F="3" C="1">0</V>
+    <V F="3" C="2">48</V>
+    <V F="3" C="3">255</V>
+    <V F="3" C="4">0</V>
+    <V F="4" C="0">255</V>
+    <V F="4" C="1">0</V>
+    <V F="4" C="2">48</V>
+    <V F="4" C="3">255</V>
+    <V F="4" C="4">0</V>
+    <V F="5" C="0">255</V>
+    <V F="5" C="1">0</V>
+    <V F="5" C="2">48</V>
+    <V F="5" C="3">255</V>
+    <V F="5" C="4">0</V>
+    <V F="6" C="0">255</V>
+    <V F="6" C="1">0</V>
+    <V F="6" C="2">48</V>
+    <V F="6" C="3">255</V>
+    <V F="6" C="4">0</V>
+    <V F="7" C="0">255</V>
+    <V F="7" C="1">0</V>
+    <V F="7" C="2">48</V>
+    <V F="7" C="3">255</V>
+    <V F="7" C="4">0</V>
+    <V F="8" C="5">255</V>
+    <V F="8" C="7">0</V>
+    <V F="8" C="8">48</V>
+    <V F="8" C="9">255</V>
+    <V F="8" C="10">0</V>
+    <V F="9" C="5">255</V>
+    <V F="9" C="7">0</V>
+    <V F="9" C="8">48</V>
+    <V F="9" C="9">255</V>
+    <V F="9" C="10">0</V>
+    <V F="10" C="5">255</V>
+    <V F="10" C="7">0</V>
+    <V F="10" C="8">48</V>
+    <V F="10" C="9">255</V>
+    <V F="10" C="10">0</V>
+    <V F="11" C="5">255</V>
+    <V F="11" C="7">0</V>
+    <V F="11" C="8">48</V>
+    <V F="11" C="9">255</V>
+    <V F="11" C="10">0</V>
+   </Cue>
+   <Cue Uid="2" Number="2000" Name="Estribillo" Fade="2000">
+    <V F="8" C="8">255</V>
+    <V F="9" C="8">255</V>
+    <V F="10" C="8">255</V>
+    <V F="11" C="8">255</V>
+   </Cue>
+   <Cue Uid="3" Number="3000" Name="Final" Fade="500" DownFade="3000">
+    <V F="0" C="2">0</V>
+    <V F="0" C="3">0</V>
+    <V F="0" C="4">255</V>
+    <V F="1" C="2">0</V>
+    <V F="1" C="3">0</V>
+    <V F="1" C="4">255</V>
+    <V F="2" C="2">0</V>
+    <V F="2" C="3">0</V>
+    <V F="2" C="4">255</V>
+    <V F="3" C="2">0</V>
+    <V F="3" C="3">0</V>
+    <V F="3" C="4">255</V>
+    <V F="4" C="2">0</V>
+    <V F="4" C="3">0</V>
+    <V F="4" C="4">255</V>
+    <V F="5" C="2">0</V>
+    <V F="5" C="3">0</V>
+    <V F="5" C="4">255</V>
+    <V F="6" C="2">0</V>
+    <V F="6" C="3">0</V>
+    <V F="6" C="4">255</V>
+    <V F="7" C="2">0</V>
+    <V F="7" C="3">0</V>
+    <V F="7" C="4">255</V>
+    <V F="12" C="0">255</V>
+    <V F="12" C="1">255</V>
+    <V F="13" C="0">255</V>
+    <V F="13" C="1">255</V>
+   </Cue>
+  </Function>
+  <Function ID="1" Type="Cuelist" Name="Canción 2">
+   <Speed FadeIn="1000" FadeOut="1000" Duration="0"/>
+   <Cuelist Tracking="1" AtEnd="Loop" ResetOnRelease="1" BackTime="-1" ReleaseOnNextGo="0" NextUid="4"/>
+   <Cue Uid="1" Number="1000" Name="Inicio" Fade="2000">
+    <V F="0" C="0">255</V>
+    <V F="0" C="1">255</V>
+    <V F="0" C="2">0</V>
+    <V F="0" C="3">0</V>
+    <V F="0" C="4">0</V>
+    <V F="1" C="0">255</V>
+    <V F="1" C="1">255</V>
+    <V F="1" C="2">0</V>
+    <V F="1" C="3">0</V>
+    <V F="1" C="4">0</V>
+    <V F="2" C="0">255</V>
+    <V F="2" C="1">255</V>
+    <V F="2" C="2">0</V>
+    <V F="2" C="3">0</V>
+    <V F="2" C="4">0</V>
+    <V F="3" C="0">255</V>
+    <V F="3" C="1">255</V>
+    <V F="3" C="2">0</V>
+    <V F="3" C="3">0</V>
+    <V F="3" C="4">0</V>
+    <V F="4" C="0">255</V>
+    <V F="4" C="1">255</V>
+    <V F="4" C="2">0</V>
+    <V F="4" C="3">0</V>
+    <V F="4" C="4">0</V>
+    <V F="5" C="0">255</V>
+    <V F="5" C="1">255</V>
+    <V F="5" C="2">0</V>
+    <V F="5" C="3">0</V>
+    <V F="5" C="4">0</V>
+    <V F="6" C="0">255</V>
+    <V F="6" C="1">255</V>
+    <V F="6" C="2">0</V>
+    <V F="6" C="3">0</V>
+    <V F="6" C="4">0</V>
+    <V F="7" C="0">255</V>
+    <V F="7" C="1">255</V>
+    <V F="7" C="2">0</V>
+    <V F="7" C="3">0</V>
+    <V F="7" C="4">0</V>
+    <V F="8" C="5">255</V>
+    <V F="8" C="7">255</V>
+    <V F="8" C="8">0</V>
+    <V F="8" C="9">0</V>
+    <V F="8" C="10">0</V>
+    <V F="9" C="5">255</V>
+    <V F="9" C="7">255</V>
+    <V F="9" C="8">0</V>
+    <V F="9" C="9">0</V>
+    <V F="9" C="10">0</V>
+    <V F="10" C="5">255</V>
+    <V F="10" C="7">255</V>
+    <V F="10" C="8">0</V>
+    <V F="10" C="9">0</V>
+    <V F="10" C="10">0</V>
+    <V F="11" C="5">255</V>
+    <V F="11" C="7">255</V>
+    <V F="11" C="8">0</V>
+    <V F="11" C="9">0</V>
+    <V F="11" C="10">0</V>
+   </Cue>
+   <Cue Uid="2" Number="2000" Name="Estribillo" Fade="2000">
+    <V F="8" C="8">170</V>
+    <V F="9" C="8">170</V>
+    <V F="10" C="8">170</V>
+    <V F="11" C="8">170</V>
+   </Cue>
+   <Cue Uid="3" Number="3000" Name="Final" Fade="500" DownFade="3000">
+    <V F="0" C="3">255</V>
+    <V F="1" C="3">255</V>
+    <V F="2" C="3">255</V>
+    <V F="3" C="3">255</V>
+    <V F="4" C="3">255</V>
+    <V F="5" C="3">255</V>
+    <V F="6" C="3">255</V>
+    <V F="7" C="3">255</V>
+    <V F="12" C="0">255</V>
+    <V F="12" C="1">255</V>
+    <V F="13" C="0">255</V>
+    <V F="13" C="1">255</V>
+   </Cue>
+  </Function>
+  <Function ID="2" Type="Cuelist" Name="Canción 3">
+   <Speed FadeIn="1000" FadeOut="1000" Duration="0"/>
+   <Cuelist Tracking="1" AtEnd="Loop" ResetOnRelease="1" BackTime="-1" ReleaseOnNextGo="0" NextUid="4"/>
+   <Cue Uid="1" Number="1000" Name="Inicio" Fade="2000">
+    <V F="0" C="0">255</V>
+    <V F="0" C="1">0</V>
+    <V F="0" C="2">255</V>
+    <V F="0" C="3">64</V>
+    <V F="0" C="4">0</V>
+    <V F="1" C="0">255</V>
+    <V F="1" C="1">0</V>
+    <V F="1" C="2">255</V>
+    <V F="1" C="3">64</V>
+    <V F="1" C="4">0</V>
+    <V F="2" C="0">255</V>
+    <V F="2" C="1">0</V>
+    <V F="2" C="2">255</V>
+    <V F="2" C="3">64</V>
+    <V F="2" C="4">0</V>
+    <V F="3" C="0">255</V>
+    <V F="3" C="1">0</V>
+    <V F="3" C="2">255</V>
+    <V F="3" C="3">64</V>
+    <V F="3" C="4">0</V>
+    <V F="4" C="0">255</V>
+    <V F="4" C="1">0</V>
+    <V F="4" C="2">255</V>
+    <V F="4" C="3">64</V>
+    <V F="4" C="4">0</V>
+    <V F="5" C="0">255</V>
+    <V F="5" C="1">0</V>
+    <V F="5" C="2">255</V>
+    <V F="5" C="3">64</V>
+    <V F="5" C="4">0</V>
+    <V F="6" C="0">255</V>
+    <V F="6" C="1">0</V>
+    <V F="6" C="2">255</V>
+    <V F="6" C="3">64</V>
+    <V F="6" C="4">0</V>
+    <V F="7" C="0">255</V>
+    <V F="7" C="1">0</V>
+    <V F="7" C="2">255</V>
+    <V F="7" C="3">64</V>
+    <V F="7" C="4">0</V>
+    <V F="8" C="5">255</V>
+    <V F="8" C="7">0</V>
+    <V F="8" C="8">255</V>
+    <V F="8" C="9">64</V>
+    <V F="8" C="10">0</V>
+    <V F="9" C="5">255</V>
+    <V F="9" C="7">0</V>
+    <V F="9" C="8">255</V>
+    <V F="9" C="9">64</V>
+    <V F="9" C="10">0</V>
+    <V F="10" C="5">255</V>
+    <V F="10" C="7">0</V>
+    <V F="10" C="8">255</V>
+    <V F="10" C="9">64</V>
+    <V F="10" C="10">0</V>
+    <V F="11" C="5">255</V>
+    <V F="11" C="7">0</V>
+    <V F="11" C="8">255</V>
+    <V F="11" C="9">64</V>
+    <V F="11" C="10">0</V>
+   </Cue>
+   <Cue Uid="2" Number="2000" Name="Estribillo" Fade="2000">
+    <V F="8" C="8">48</V>
+    <V F="8" C="9">255</V>
+    <V F="9" C="8">48</V>
+    <V F="9" C="9">255</V>
+    <V F="10" C="8">48</V>
+    <V F="10" C="9">255</V>
+    <V F="11" C="8">48</V>
+    <V F="11" C="9">255</V>
+   </Cue>
+   <Cue Uid="3" Number="3000" Name="Final" Fade="500" DownFade="3000">
+    <V F="0" C="1">87</V>
+    <V F="0" C="2">48</V>
+    <V F="0" C="3">0</V>
+    <V F="0" C="4">168</V>
+    <V F="1" C="1">87</V>
+    <V F="1" C="2">48</V>
+    <V F="1" C="3">0</V>
+    <V F="1" C="4">168</V>
+    <V F="2" C="1">87</V>
+    <V F="2" C="2">48</V>
+    <V F="2" C="3">0</V>
+    <V F="2" C="4">168</V>
+    <V F="3" C="1">87</V>
+    <V F="3" C="2">48</V>
+    <V F="3" C="3">0</V>
+    <V F="3" C="4">168</V>
+    <V F="4" C="1">87</V>
+    <V F="4" C="2">48</V>
+    <V F="4" C="3">0</V>
+    <V F="4" C="4">168</V>
+    <V F="5" C="1">87</V>
+    <V F="5" C="2">48</V>
+    <V F="5" C="3">0</V>
+    <V F="5" C="4">168</V>
+    <V F="6" C="1">87</V>
+    <V F="6" C="2">48</V>
+    <V F="6" C="3">0</V>
+    <V F="6" C="4">168</V>
+    <V F="7" C="1">87</V>
+    <V F="7" C="2">48</V>
+    <V F="7" C="3">0</V>
+    <V F="7" C="4">168</V>
+    <V F="12" C="0">255</V>
+    <V F="12" C="1">255</V>
+    <V F="13" C="0">255</V>
+    <V F="13" C="1">255</V>
+   </Cue>
+  </Function>
+ </Engine>
+ <DMXTotalControl>
+  <Zones NextID="1">
+   <Zone ID="0" Name="Canciones" Color="#3d8bfd" Exclusive="1" Fade="-1" Master="1">
+    <Function ID="0"/>
+    <Function ID="1"/>
+    <Function ID="2"/>
+    <Function ID="3"/>
+   </Zone>
+  </Zones>
+  <Playbacks SlotsPerPage="10" CurrentPage="0">
+   <Page Name="Página 1">
+    <Slot Index="0" Function="0"/>
+    <Slot Index="1" Function="1"/>
+    <Slot Index="2" Function="2"/>
+    <Slot Index="5" Function="3"/>
+   </Page>
+  </Playbacks>
+  <Surface Version="2">
+   <Page Name="Playbacks">
+    <Section ID="s1" cols="6" first="0" playbackPage="-1" showBack="true" showCue="true" showFlash="true" title="" type="playbacks"/>
+   </Page>
+  </Surface>
+  <Mappings/>
+  <Numbers>
+   <Fixture ID="0" Number="1"/>
+   <Fixture ID="1" Number="2"/>
+   <Fixture ID="2" Number="3"/>
+   <Fixture ID="3" Number="4"/>
+   <Fixture ID="4" Number="5"/>
+   <Fixture ID="5" Number="6"/>
+   <Fixture ID="6" Number="7"/>
+   <Fixture ID="7" Number="8"/>
+   <Fixture ID="8" Number="9"/>
+   <Fixture ID="9" Number="10"/>
+   <Fixture ID="10" Number="11"/>
+   <Fixture ID="11" Number="12"/>
+   <Fixture ID="12" Number="13"/>
+   <Fixture ID="13" Number="14"/>
+  </Numbers>
+ </DMXTotalControl>
+</Workspace>

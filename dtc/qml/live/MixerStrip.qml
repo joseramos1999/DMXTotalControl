@@ -117,7 +117,7 @@ Rectangle {
                 Layout.fillHeight: true
                 Layout.minimumHeight: 90
                 from: 0; to: 1; stepSize: 0
-                fillColor: strip.mixer.colour ? Qt.hsva(strip.mixer.hue, strip.mixer.saturation, 1, 1) : "#e7e9ef"
+                fillColor: strip.mixer.colour ? Qt.hsva(strip.mixer.hue, strip.mixer.saturation, 1, 1) : Theme.text
                 value: strip.mixer.dimmer !== undefined ? strip.mixer.dimmer : 1
                 resetValue: 0
                 onUserMoved: (v) => strip.set("dimmer", v)

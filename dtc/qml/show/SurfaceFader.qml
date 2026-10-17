@@ -26,8 +26,10 @@ import DMXTotalControl.Backend
 /**
  * A fader of the SHOW screen. It can drive several things
  * at once: grand master, group masters, scenes (up from zero starts them),
- * their speed, the dimmer of fixture groups, the movement speed of moving
- * heads, the BPM. The button under it puts it at full while pressed.
+ * their dimmer (without playing them), their speed, the dimmer of fixture
+ * groups, the movement speed of moving heads, the BPM. Its travel can cover
+ * only a part of them ("min", "max", "invert"). The button under it puts it
+ * at the top of its travel while pressed, then gives back what they were.
  */
 Rectangle {
     id: cell
@@ -42,7 +44,9 @@ Rectangle {
     readonly property var targets: Core.surface.faderTargets(item)
     readonly property var first: targets.length ? targets[0] : ({ target: "grandMaster" })
     readonly property bool isBpm: targets.length === 1 && first.target === "bpm"
+    // where the fader is on its travel, and what its first target is at (the text)
     readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.level(item) }
+    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.value(item) }
 
     function targetName(t) {
         switch (t.target) {
@@ -55,6 +59,10 @@ Rectangle {
         case "scene": {
             let info = Core.functionInfo(t.functionId)
             return info.name || qsTr("Choose a scene")
+        }
+        case "sceneDimmer": {
+            let info = Core.functionInfo(t.functionId)
+            return qsTr("Dimmer of %1").arg(info.name || "?")
         }
         case "sceneSpeed": {
             let info = Core.functionInfo(t.functionId)
@@ -100,25 +108,26 @@ Rectangle {
             Layout.alignment: Qt.AlignHCenter
             implicitWidth: Math.min(44, cell.width - 8)
             enabled: !cell.editing
-            fillColor: cell.item.color || Theme.accent
+            fillColor: cell.item.color ? Theme.category(cell.item.color) : Theme.accent
             from: 0
             to: 255
-            resetValue: cell.isBpm ? 90 : 0
+            // (the BPM: where 90 BPM is on its travel)
+            resetValue: cell.isBpm ? Core.surface.positionOf(cell.item, (90 - 20) / 280) * 255 : 0
             value: cell.level * 255
             onUserMoved: (v) => Core.surface.setLevel(cell.item, v / 255)
         }
         Text {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            text: cell.isBpm ? Math.round(20 + cell.level * 280) : Math.round(cell.level * 100) + "%"
+            text: cell.isBpm ? Math.round(20 + cell.value * 280) : Math.round(cell.value * 100) + "%"
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: 10
         }
-        // full while pressed, then back to where it was
+        // the top of its travel while pressed, then each target back to what it was
         AppButton {
             id: flashButton
-            property real saved: 0
+            property var saved: []
             Layout.fillWidth: true
             implicitHeight: 26
             visible: cell.item.flash !== false
@@ -126,9 +135,9 @@ Rectangle {
             text: qsTr("Flash")
             highlighted: pressed
             accentColor: Theme.warning
-            onPressed: { saved = cell.level; Core.surface.setLevel(cell.item, 1) }
-            onReleased: Core.surface.setLevel(cell.item, saved)
-            onCanceled: Core.surface.setLevel(cell.item, saved)
+            onPressed: { saved = Core.surface.holdLevels(cell.item); Core.surface.setLevel(cell.item, 1) }
+            onReleased: Core.surface.restoreLevels(cell.item, saved)
+            onCanceled: Core.surface.restoreLevels(cell.item, saved)
         }
     }
 

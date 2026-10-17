@@ -51,8 +51,8 @@ Rectangle {
     anchors.fill: parent
     z: 50
     radius: 4
-    color: !learning ? "transparent" : pending ? Qt.rgba(0.68, 0.24, 0.79, 0.55) : Qt.rgba(0.68, 0.24, 0.79, 0.22)
-    border.color: "#ae3ec9"
+    color: !learning ? "transparent" : pending ? Qt.alpha(Theme.learn, 0.55) : Qt.alpha(Theme.learn, 0.22)
+    border.color: Theme.learn
     border.width: !learning ? 0 : pending ? 3 : 1
 
     // how many mappings drive it already
@@ -62,12 +62,12 @@ Rectangle {
         width: Math.max(16, countText.implicitWidth + 8)
         height: 16
         radius: 8
-        color: "#ae3ec9"
+        color: Theme.learn
         Text {
             id: countText
             anchors.centerIn: parent
             text: overlay.count
-            color: "white"
+            color: Theme.textOn(Theme.learn)
             font.pixelSize: 10
             font.weight: Font.Bold
         }

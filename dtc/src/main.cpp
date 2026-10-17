@@ -58,6 +58,17 @@
 
 int main(int argc, char *argv[])
 {
+    // screenshots (--grab) leave the settings of the user alone: they use
+    // their own, empty each time (the recent shows, the size, the guide...)
+    bool grabbing = false;
+    for (int i = 1; i < argc; i++)
+        grabbing = grabbing || QByteArray(argv[i]).startsWith("--grab");
+
+    // the size of the interface (Options), before the application exists
+    const int uiScale = grabbing ? 100 : AppSettings::savedUiScale();
+    if (uiScale != 100 && qEnvironmentVariableIsEmpty("QT_SCALE_FACTOR"))
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(uiScale / 100.0));
+
     // QApplication rather than QGuiApplication: some I/O plugins
     // still open QtWidgets configuration dialogs
     QApplication app(argc, argv);
@@ -66,6 +77,12 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationDomain("dmxtotalcontrol.org");
     QApplication::setApplicationName(APPNAME);
     QApplication::setApplicationVersion(QString(APPVERSION));
+    if (grabbing)
+    {
+        QApplication::setOrganizationName("DMXTotalControlGrab");
+        QSettings().clear();
+        QSettings().setValue("ui/guideShown", true);
+    }
 
     // the icon of the windows and the taskbar (the D alone under 24 px)
     QIcon appIcon;
@@ -145,6 +162,12 @@ int main(int argc, char *argv[])
     parser.addOption(pbNextOption);
     QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button). Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
+    QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
+    parser.addOption(guideOption);
+    QCommandLineOption helpPageOption("help-page", "Developer: open the manual on this page (index, directo...).", "name");
+    parser.addOption(helpPageOption);
+    QCommandLineOption themeOption("theme", "Developer: use this theme (dark, light, contrast, night) for this run, without saving it.", "name");
+    parser.addOption(themeOption);
     QCommandLineOption updateUrlOption("update-url", "Developer: check for updates at once against this release list (a GitHub API URL, or a file:/// JSON in its shape), without the repository rule.", "url");
     parser.addOption(updateUrlOption);
     QCommandLineOption pageOption("page", "Page to show at startup (0 Live, 1 Show, 2 Program, 3 Scenes, 4 Patch, 5 Fixtures, 6 Outputs, 7 Mappings, 8 Options, 9 Playbacks).", "index");
@@ -162,6 +185,8 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
 
     DtcCore core;
+    if (parser.isSet(themeOption))
+        core.settings()->setThemeOverride(parser.value(themeOption));
 
     qmlRegisterSingletonInstance(DTC_QML_BACKEND, 1, 0, "Core", &core);
     qmlRegisterUncreatableType<ZoneManager>(DTC_QML_BACKEND, 1, 0, "ZoneManager", "Owned by Core");
@@ -199,6 +224,8 @@ int main(int argc, char *argv[])
     app.installEventFilter(core.mapping());
 
     QQmlApplicationEngine engine;
+    // Qt.uiLanguage: the language of the interface ("en" without a translation)
+    engine.setUiLanguage(translator.isEmpty() ? QStringLiteral("en") : translator.language());
     // Prefer the deployed QML modules: some Qt builds (e.g. MSYS2) also
     // register module qmldirs in resources, where their plugins can't be found
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/qml");
@@ -307,6 +334,10 @@ int main(int argc, char *argv[])
         window->setProperty("showPlaybackAssign", true);
     if (window && parser.isSet(pbRecordOption))
         window->setProperty("armPlaybackRecord", true);
+    if (window && parser.isSet(guideOption))
+        window->setProperty("startGuide", parser.value(guideOption).toInt());
+    if (window && parser.isSet(helpPageOption))
+        window->setProperty("startHelp", parser.value(helpPageOption));
     if (window && parser.isSet(pbDialogOption))
         window->setProperty("startPlaybackDialog", parser.value(pbDialogOption));
     if (window && parser.isSet(pbGoOption))

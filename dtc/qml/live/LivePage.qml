@@ -44,20 +44,31 @@ Item {
             Layout.fillWidth: true
             spacing: 10
 
+            // the subtitle shortens: the buttons always fit
             Column {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 120
+                Layout.preferredWidth: 200
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Live")
                     color: Theme.text
                     font.pixelSize: Theme.fontTitle
                     font.weight: Font.Bold
                 }
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Groups run in parallel. In an exclusive group only one scene plays at a time.")
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
+                    HoverHandler { id: subtitleHover }
+                    ToolTip.text: text
+                    ToolTip.visible: truncated && subtitleHover.hovered
+                    ToolTip.delay: 500
                 }
             }
-            Item { Layout.fillWidth: true }
             AppButton {
                 text: "◀"
                 enabled: Core.zones.count > 0

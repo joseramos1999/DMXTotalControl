@@ -46,7 +46,7 @@ Switch {
             width: 18
             height: 18
             radius: 9
-            color: control.checked ? "white" : Theme.textDim
+            color: control.checked ? Theme.accentText : Theme.textDim
             Behavior on x { NumberAnimation { duration: 120 } }
         }
     }

@@ -348,6 +348,9 @@ Item {
 
                     Canvas {
                         id: rulerCanvas
+                        // the colours of the theme
+                        readonly property string themeName: Theme.name
+                        onThemeNameChanged: requestPaint()
                         anchors.fill: parent
                         Connections {
                             target: editor
@@ -377,10 +380,10 @@ Item {
                                     continue
                                 let x = editor.xOf(ms)
                                 let major = i % every === 0
-                                ctx.strokeStyle = major ? "#8a919e" : "#3a4150"
+                                ctx.strokeStyle = major ? Theme.mix(Theme.textFaint, Theme.textDim, 0.85) : Theme.borderStrong
                                 ctx.beginPath(); ctx.moveTo(x + 0.5, major ? 12 : 20); ctx.lineTo(x + 0.5, height); ctx.stroke()
                                 if (major) {
-                                    ctx.fillStyle = "#c3c8d2"
+                                    ctx.fillStyle = Theme.mix(Theme.textDim, Theme.text, 0.6)
                                     ctx.fillText(editor.bars ? String(Math.floor(i / editor.beatsPerBar) + 1) : editor.formatTime(ms), x + 3, 2)
                                 }
                             }
@@ -388,7 +391,7 @@ Item {
                             let end = editor.timeline.endTime || 0
                             if (end > 0) {
                                 let x = editor.xOf(end)
-                                ctx.fillStyle = editor.timeline.loop ? "#2fb344" : "#e5484d"
+                                ctx.fillStyle = editor.timeline.loop ? Theme.success : Theme.danger
                                 ctx.fillRect(x - 1, 0, 3, height)
                             }
                         }
@@ -405,6 +408,9 @@ Item {
                 // the grid behind the tracks
                 Canvas {
                     id: gridCanvas
+                    // the colours of the theme
+                    readonly property string themeName: Theme.name
+                    onThemeNameChanged: requestPaint()
                     x: editor.headerWidth
                     y: ruler.height
                     width: parent.width - editor.headerWidth
@@ -430,13 +436,13 @@ Item {
                                 continue
                             let x = editor.xOf(ms)
                             let bar = editor.bars && i % editor.beatsPerBar === 0
-                            ctx.strokeStyle = bar ? "#343b49" : "#1f242e"
+                            ctx.strokeStyle = bar ? Theme.mix(Theme.border, Theme.borderStrong, 0.6) : Theme.mix(Theme.background, Theme.border, 0.62)
                             ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, height); ctx.stroke()
                         }
                         // after the end
                         let end = editor.timeline.endTime || 0
                         if (end > 0) {
-                            ctx.fillStyle = "rgba(0,0,0,0.35)"
+                            ctx.fillStyle = Theme.shadow
                             let x = Math.max(0, editor.xOf(end))
                             ctx.fillRect(x, 0, width - x, height)
                         }
@@ -617,7 +623,7 @@ Item {
             anchors { fill: parent; leftMargin: 8; rightMargin: 6 }
             verticalAlignment: Text.AlignVCenter
             text: dragProxy.label
-            color: "white"
+            color: Theme.accentText
             elide: Text.ElideRight
             font.pixelSize: Theme.fontSmall
         }

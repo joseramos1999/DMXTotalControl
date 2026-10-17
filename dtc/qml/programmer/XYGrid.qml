@@ -73,7 +73,7 @@ ColumnLayout {
                 y: xy.py * grid.height - height / 2
                 width: 16; height: 16; radius: 8
                 color: Theme.accent
-                border.color: "white"
+                border.color: Theme.accentText
                 border.width: 2
             }
 

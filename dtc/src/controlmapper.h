@@ -182,6 +182,11 @@ public:
     static bool followPlaybackPages(QVariantMap &target, const QList<int> &newIndexes,
                                     const QHash<int, quint32> &removedSlots);
 
+    /** The range of a fader ("min", "max": 0-100 %, "invert") as 0..1, the
+     *  whole range when they are missing. From above To is an inverted range,
+     *  as with Invert. The faders of the SHOW have one too */
+    static void rangeOf(const QVariantMap &m, qreal &min, qreal &max, bool &invert);
+
     /** Forget every mapping (their LEDs go off) */
     void clear();
 

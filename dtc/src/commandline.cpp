@@ -652,7 +652,7 @@ bool CommandLine::execute(const QString &command)
             const int applied = m_palettes->apply(id);
             const QString name = m_palettes->palette(id).value("name").toString();
             if (applied == 0)
-                return fail(tr("%1 doesn't go on the selected fixtures").arg(name));
+                return fail(tr("%1 doesn't apply to the selected fixtures").arg(name));
             done.append(tr("%1 on %n fixture(s)", "", applied).arg(name));
         }
         else if (isWord(i, "LOCATE"))
@@ -848,7 +848,7 @@ bool CommandLine::runCueWord(const QList<Token> &t, int &i, QStringList *done, Q
                 return false;
             number = Cuelist::numberToString(n);
             if (cl->indexOfNumber(n) >= 0)
-                return fail(tr("Cue %1 exists: use UPDATE CUE %1").arg(number));
+                return fail(tr("Cue %1 already exists: use UPDATE CUE %1").arg(number));
         }
         QVariantMap opts;
         opts.insert("existing", "ask");

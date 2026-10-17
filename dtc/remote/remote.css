@@ -18,9 +18,96 @@
   --accent: #3d8bfd;
   --danger: #e5484d;
   --warning: #f5a524;
+  --success: #30a46c;
+  --accent-text: #ffffff;
+  /* text on a lit tint, on the danger colour */
+  --on-tint: #000000;
+  --on-danger: #ffffff;
+  --knob: #e7e9ef;
+  --knob-edge: transparent;
+  --scrim: #000000aa;
+  /* what the buttons of a colour mix with */
+  --shade: #000000;
+  /* a colour that means a kind of thing (a group, a scene type): dimmed at night */
+  --category: 100%;
+  --on-kind: #000000;
+}
+
+/* the themes of the program (dtc/qml/Theme.qml) */
+:root[data-theme="light"] {
+  --bg: #eceef2;
+  --surface: #ffffff;
+  --raised: #f3f4f7;
+  --hover: #e4e7ed;
+  --border: #d2d7e0;
+  --strong: #b2b9c7;
+  --text: #171b23;
+  --dim: #4b5364;
+  --faint: #7d8598;
+  --accent: #1d6ce0;
+  --danger: #c92a2a;
+  --warning: #a86200;
+  --success: #18804c;
+  --accent-text: #ffffff;
+  --on-tint: #000000;
+  --on-danger: #ffffff;
+  --knob: #ffffff;
+  --knob-edge: #7d8598;
+  --scrim: #00000066;
+  --shade: #ffffff;
+  --on-kind: #000000;
+}
+:root[data-theme="contrast"] {
+  --bg: #000000;
+  --surface: #000000;
+  --raised: #101010;
+  --hover: #2a2a2a;
+  --border: #ffffff;
+  --strong: #ffffff;
+  --text: #ffffff;
+  --dim: #f0f0f0;
+  --faint: #c8c8c8;
+  --accent: #ffd400;
+  --danger: #ff5c5c;
+  --warning: #ff9f1a;
+  --success: #4ade80;
+  --accent-text: #000000;
+  --on-tint: #000000;
+  --on-danger: #000000;
+  --knob: #ffffff;
+  --knob-edge: #000000;
+  --scrim: #000000bb;
+  --shade: #000000;
+  --on-kind: #000000;
+}
+:root[data-theme="night"] {
+  --bg: #050202;
+  --surface: #0b0505;
+  --raised: #120808;
+  --hover: #1b0b0b;
+  --border: #271111;
+  --strong: #3b1818;
+  --text: #d9574a;
+  --dim: #9c3a31;
+  --faint: #6a2620;
+  --accent: #c62f22;
+  --danger: #ff3b2f;
+  --warning: #d9822b;
+  --success: #b4652a;
+  --accent-text: #1a0505;
+  --on-tint: #1a0505;
+  --on-danger: #1a0505;
+  --knob: #8a2c22;
+  --knob-edge: #b8392c;
+  --scrim: #000000aa;
+  --shade: #000000;
+  --category: 45%;
+  --on-kind: #e0a59c;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* the tint of a button, a fader or a group (set by remote.js), as the theme shows it */
+* { --kind: color-mix(in srgb, var(--tint, transparent) var(--category), #000000); }
 
 html, body {
   margin: 0;
@@ -61,12 +148,12 @@ button:active { background: var(--hover); }
 #pages { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 #pages::-webkit-scrollbar { display: none; }
 #pages button { white-space: nowrap; }
-#pages button.current { background: var(--accent); border-color: var(--accent); color: white; }
+#pages button.current { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 #tools { display: flex; align-items: center; gap: 6px; }
 .tool { min-width: 40px; }
-#blackout.on { background: var(--danger); border-color: var(--danger); color: white; }
+#blackout.on { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
 .dot { width: 10px; height: 10px; border-radius: 5px; background: var(--danger); display: inline-block; }
-.dot.ok { background: #30a46c; }
+.dot.ok { background: var(--success); }
 
 #surface {
   position: absolute;
@@ -99,17 +186,17 @@ button:active { background: var(--hover); }
 .btn {
   width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 6px; border: 1px solid var(--tint);
-  background: color-mix(in srgb, var(--tint) 18%, #000);
+  border-radius: 6px; border: 1px solid var(--kind);
+  background: color-mix(in srgb, var(--kind) 18%, var(--shade));
   background-size: cover; background-position: center;
   font-weight: 600; text-align: center; overflow: hidden;
   padding: 4px; line-height: 1.15;
   font-size: clamp(10px, 2.4vmin, 20px);
 }
-.btn.active { background-color: var(--tint); color: #000; border-color: var(--tint); }
+.btn.active { background-color: var(--kind); color: var(--on-kind); border-color: var(--kind); }
 .btn.pressed { filter: brightness(1.4); }
-.btn .glyph { font-family: "Icons"; font-size: 1.8em; color: var(--tint); }
-.btn.active .glyph { color: #000; }
+.btn .glyph { font-family: "Icons"; font-size: 1.8em; color: var(--kind); }
+.btn.active .glyph { color: var(--on-kind); }
 .btn.image { text-shadow: 0 0 3px #000, 0 0 3px #000; color: white; }
 .btn.image:not(.active) { opacity: 0.6; }
 .btn .flash { position: absolute; top: 3px; left: 5px; font-family: "Icons"; font-size: 10px; }
@@ -122,23 +209,23 @@ button:active { background: var(--hover); }
 .fader .label, .dial .label { font-size: 11px; font-weight: 600; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fader .value, .dial .value { font-size: 10px; color: var(--dim); font-family: ui-monospace, monospace; }
 .track { flex: 1; width: min(48px, 80%); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; position: relative; touch-action: none; }
-.track .fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--tint); border-radius: 5px; opacity: 0.85; }
-.track .knob { position: absolute; left: -4px; right: -4px; height: 14px; background: #e7e9ef; border-radius: 4px; transform: translateY(50%); }
+.track .fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--kind); border-radius: 5px; opacity: 0.85; }
+.track .knob { position: absolute; left: -4px; right: -4px; height: 14px; background: var(--knob); box-shadow: 0 0 0 1px var(--knob-edge); border-radius: 4px; transform: translateY(50%); }
 .fader button { width: 100%; min-height: 28px; font-size: 12px; }
-.fader button:active, .fader button.pressed { background: var(--warning); color: #000; }
+.fader button:active, .fader button.pressed { background: var(--warning); color: var(--on-tint); }
 
 .dial { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; background: var(--raised); border: 1px solid var(--border); border-radius: 6px; padding: 4px; }
 .dial canvas { flex: 1; width: 100%; min-height: 0; touch-action: none; }
 
 /* groups */
 .zones { display: flex; gap: 4px; width: 100%; height: 100%; overflow-x: auto; }
-.zone { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 3px; background: var(--raised); border-radius: 6px; padding: 4px; border-top: 3px solid var(--tint); }
+.zone { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 3px; background: var(--raised); border-radius: 6px; padding: 4px; border-top: 3px solid var(--kind); }
 .zone .name { font-weight: 700; font-size: 13px; padding: 2px 4px; }
 .zone .scenes { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .zone .scene { min-height: 44px; text-align: left; border-color: var(--border); }
-.zone .scene.active { background: var(--tint); color: #000; border-color: var(--tint); }
+.zone .scene.active { background: var(--kind); color: var(--on-kind); border-color: var(--kind); }
 .zone .master { height: 34px; position: relative; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); touch-action: none; }
-.zone .master .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--tint); border-radius: 5px; opacity: 0.7; }
+.zone .master .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--kind); border-radius: 5px; opacity: 0.7; }
 .zone .master span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 
 /* the others */
@@ -162,7 +249,7 @@ button:active { background: var(--hover); }
 .swatch { width: 34px; height: 34px; border-radius: 17px; border: 1px solid var(--border); padding: 0; }
 
 /* overlays */
-.overlay { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.overlay { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .hidden { display: none !important; }
 .box { background: var(--surface); border: 1px solid var(--strong); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; min-width: 240px; text-align: center; }
 .boxTitle { font-weight: 700; font-size: 18px; }
@@ -177,15 +264,15 @@ button:active { background: var(--hover); }
 .pbhead button:disabled { opacity: 0.35; }
 .pbgrid { flex: 1; min-height: 0; display: grid; gap: 3px; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; }
 .pbstrip {
-  --tint: #5d6475;
+  --tint: var(--faint);
   min-width: 0; min-height: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: 3px;
   background: var(--raised); border: 1px solid var(--border); border-radius: 6px; padding: 4px;
 }
-.pbstrip.playing { border-color: var(--tint); }
+.pbstrip.playing { border-color: var(--kind); }
 .pbstrip > * { flex-shrink: 0; }
-.pbstrip .top { display: flex; align-items: center; gap: 4px; height: 18px; border-radius: 4px; padding: 0 4px; background: color-mix(in srgb, var(--tint) 30%, transparent); }
-.pbstrip.playing .top { background: var(--tint); color: #000; }
+.pbstrip .top { display: flex; align-items: center; gap: 4px; height: 18px; border-radius: 4px; padding: 0 4px; background: color-mix(in srgb, var(--kind) 30%, transparent); }
+.pbstrip.playing .top { background: var(--kind); color: var(--on-kind); }
 .pbstrip .number { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
 .pbstrip .name {
   font-size: 12px; font-weight: 600; line-height: 14px; min-height: 28px; max-height: 28px; overflow: hidden; word-break: break-word;
@@ -195,15 +282,15 @@ button:active { background: var(--hover); }
 .pbstrip.empty .name { font-style: italic; font-weight: 400; }
 .pbstrip .cue, .pbstrip .next { font-size: 11px; line-height: 14px; min-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pbstrip .cue { color: var(--dim); }
-.pbstrip .cue.on { color: #30a46c; font-weight: 700; }
+.pbstrip .cue.on { color: var(--success); font-weight: 700; }
 .pbstrip .next { color: var(--faint); }
 .pbstrip .progress { height: 3px; flex: none; background: var(--bg); border-radius: 2px; overflow: hidden; }
-.pbstrip .progress .bar { height: 100%; width: 0; background: #30a46c; }
+.pbstrip .progress .bar { height: 100%; width: 0; background: var(--success); }
 .pbstrip button { width: 100%; min-height: 40px; flex: none; font-weight: 700; padding: 0 4px; }
-.pbstrip .go.active { background: #30a46c; border-color: #30a46c; color: #000; }
+.pbstrip .go.active { background: var(--success); border-color: var(--success); color: var(--on-tint); }
 .pbstrip .go.waiting { animation: pbpulse 0.52s ease-in-out infinite; }
-.pbstrip .go.paused { background: var(--warning); border-color: var(--warning); color: #000; animation: pbblink 1.3s step-end infinite; }
-.pbstrip .flash.active, .pbstrip .flash.pressed { background: var(--warning); border-color: var(--warning); color: #000; }
+.pbstrip .go.paused { background: var(--warning); border-color: var(--warning); color: var(--on-tint); animation: pbblink 1.3s step-end infinite; }
+.pbstrip .flash.active, .pbstrip .flash.pressed { background: var(--warning); border-color: var(--warning); color: var(--on-tint); }
 /* (a finger held on Flash doesn't scroll the strips: it flashes) */
 .pbstrip .flash { touch-action: none; }
 .pbstrip .track { flex: 1 1 auto; min-height: 40px; align-self: center; width: min(44px, 70%); }

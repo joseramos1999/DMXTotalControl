@@ -63,9 +63,12 @@ RemoteServer::RemoteServer(DtcCore *core, QObject *parent)
     m_tick->setInterval(120);
     connect(m_tick, &QTimer::timeout, this, &RemoteServer::slotTick);
     connect(m_core->surface(), &ShowSurface::pagesChanged, this, &RemoteServer::slotLayoutChanged);
+    connect(m_core->surface(), &ShowSurface::cleared, this, &RemoteServer::slotShowCleared);
     connect(m_core, &DtcCore::functionsChanged, this, &RemoteServer::slotLayoutChanged);
     connect(m_core->palettes(), &PaletteManager::palettesChanged, this, &RemoteServer::slotLayoutChanged);
     connect(m_core, &DtcCore::fileNameChanged, this, &RemoteServer::slotLayoutChanged);
+    // the theme of the program is the theme of the remote
+    connect(m_core->settings(), &AppSettings::themeChanged, this, &RemoteServer::slotLayoutChanged);
     // the page of the playbacks comes and goes with them, and has a strip per slot
     connect(m_core->playbacks(), &PlaybackManager::pagesChanged, this, &RemoteServer::slotLayoutChanged);
     connect(m_core->playbacks(), &PlaybackManager::assignmentsChanged, this, &RemoteServer::slotLayoutChanged);
@@ -181,7 +184,7 @@ void RemoteServer::apply()
     connect(m_ws, &QWebSocketServer::newConnection, this, &RemoteServer::slotWebSocket);
     if (m_server->listen(QHostAddress::Any, quint16(port())) == false)
     {
-        m_lastError = tr("The port %1 is in use: choose another one").arg(port());
+        m_lastError = tr("Port %1 is in use: choose another one").arg(port());
         qWarning() << "[Remote]" << m_server->errorString();
         delete m_server;
         m_server = nullptr;
@@ -423,7 +426,7 @@ bool RemoteServer::trackPress(QWebSocket *socket, const QVariantMap &message)
                 return true;
             hold.fader = fader;
             if (fader)
-                hold.level = surface->level(hold.item);
+                hold.levels = surface->holdLevels(hold.item);
         }
         hold.count++;
         m_presses[socket].insert(key, hold);
@@ -450,7 +453,7 @@ bool RemoteServer::trackPress(QWebSocket *socket, const QVariantMap &message)
     if (fader == false)
         surface->release(hold.item);
     else if (hold.count <= 0)
-        surface->setLevel(hold.item, hold.level);
+        surface->restoreLevels(hold.item, hold.levels);
     return true;
 }
 
@@ -461,7 +464,7 @@ void RemoteServer::releasePresses(QWebSocket *socket)
     {
         if (hold.fader)
         {
-            m_core->surface()->setLevel(hold.item, hold.level);
+            m_core->surface()->restoreLevels(hold.item, hold.levels);
             continue;
         }
         for (int i = 0; i < hold.count; i++)
@@ -500,6 +503,46 @@ bool RemoteServer::trackFlash(QWebSocket *socket, QVariantMap &message)
     if (held.value().isEmpty())
         m_flashes.erase(held);
     return hold.gone == false;
+}
+
+void RemoteServer::slotShowCleared()
+{
+    // what the phones hold down belongs to the show before, and the phone's
+    // up of it will do nothing: the buttons go up now (a blackout flash goes
+    // off; the functions are still there), a fader flash gives back only
+    // what isn't of a show (the grand master, the BPM): its scenes, groups
+    // and dimmers aren't these
+    ShowSurface *surface = m_core->surface();
+    const auto presses = m_presses;
+    m_presses.clear();
+    for (const QHash<QString, PressHold> &held : presses)
+    {
+        for (const PressHold &hold : held)
+        {
+            if (hold.fader == false)
+            {
+                for (int i = 0; i < hold.count; i++)
+                    surface->release(hold.item);
+                continue;
+            }
+            const QVariantList targets = ShowSurface::faderTargets(hold.item);
+            QVariantList global, levels;
+            for (int i = 0; i < targets.count() && i < hold.levels.count(); i++)
+            {
+                const QString kind = targets.at(i).toMap().value("target").toString();
+                if (kind == "grandMaster" || kind == "bpm")
+                {
+                    global.append(targets.at(i));
+                    levels.append(hold.levels.at(i));
+                }
+            }
+            if (global.isEmpty() == false)
+                surface->restoreLevels(QVariantMap({ { "targets", global } }), levels);
+        }
+    }
+    for (auto socket = m_flashes.begin(); socket != m_flashes.end(); ++socket)
+        for (auto it = socket.value().begin(); it != socket.value().end(); ++it)
+            it.value().gone = true;
 }
 
 void RemoteServer::releaseFlashes(QWebSocket *socket)
@@ -685,6 +728,7 @@ QString RemoteServer::itemLabel(const QVariantMap &item, const QString &sectionT
             names.append(zone != nullptr ? zone->name() : QString());
         }
         else if (target == "scene") names.append(functionName(t.value("functionId")));
+        else if (target == "sceneDimmer") names.append(tr("Dimmer of %1").arg(functionName(t.value("functionId"))));
         else if (target == "sceneSpeed") names.append(tr("Speed of %1").arg(functionName(t.value("functionId"))));
         else if (target == "mixerDimmer") names.append(tr("Dimmer"));
         else if (target == "moveSpeed") names.append(tr("Movement speed"));
@@ -739,6 +783,13 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
             d.insert("flash", type == "faders" && item.value("flash", true).toBool());
             d.insert("encoder", item.value("encoder", false));
             d.insert("step", item.value("step", 2));
+            // the range of the fader (0..1): the text shows the value while it moves
+            qreal min, max;
+            bool invert;
+            ControlMapper::rangeOf(item, min, max, invert);
+            d.insert("min", min);
+            d.insert("max", max);
+            d.insert("invert", invert);
         }
         described.insert(it.key(), d);
     }
@@ -796,7 +847,7 @@ QVariantMap RemoteServer::layoutMessage() const
                                  { "showFlash", true }, { "showCue", true }, { "items", QVariantMap() } });
         pages.append(QVariantMap({ { "name", tr("Playbacks") }, { "root", root } }));
     }
-    return { { "type", "layout" }, { "title", m_core->showTitle() }, { "pages", pages } };
+    return { { "type", "layout" }, { "title", m_core->showTitle() }, { "theme", m_core->settings()->theme() }, { "pages", pages } };
 }
 
 QVariantMap RemoteServer::playbacksState() const
@@ -874,7 +925,7 @@ QVariantMap RemoteServer::stateMessage() const
             if (type == "buttons")
                 items.insert(prefix + "/" + it.key(), QVariantMap({ { "active", surface->isActive(item) } }));
             else if (type == "faders" || type == "dials")
-                items.insert(prefix + "/" + it.key(), QVariantMap({ { "level", surface->level(item) } }));
+                items.insert(prefix + "/" + it.key(), QVariantMap({ { "level", surface->level(item) }, { "value", surface->value(item) } }));
         }
         if (type == "colour")
         {
@@ -955,8 +1006,7 @@ void RemoteServer::handleCommand(const QVariantMap &message)
         QVariantMap item = itemAt(page, section, cell);
         if (item.isEmpty() == false)
         {
-            qreal step = item.value("step", 2).toDouble() / 100.0;
-            surface->setLevel(item, qBound(0.0, surface->level(item) + message.value("notches").toInt() * step, 1.0));
+            surface->stepLevel(item, message.value("notches").toInt());
         }
     }
     else if (cmd == "colour")

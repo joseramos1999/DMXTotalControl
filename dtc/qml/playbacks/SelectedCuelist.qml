@@ -162,7 +162,7 @@ Panel {
             enabled: !!panel.info.running
             highlighted: !!panel.info.paused
             accentColor: Theme.warning
-            ToolTip.text: panel.info.paused ? qsTr("Go on") : qsTr("Pause")
+            ToolTip.text: panel.info.paused ? qsTr("Resume") : qsTr("Pause")
             ToolTip.visible: hovered
             ToolTip.delay: 500
             onClicked: Core.playbacks.pause(panel.pbPage, panel.pbSlot)

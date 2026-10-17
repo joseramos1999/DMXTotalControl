@@ -33,6 +33,14 @@ class AppSettings : public QObject
 
     /** UI language, e.g. "es_ES". Empty follows the system. Needs a restart */
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged)
+    /** The colours of the interface: "dark" (default), "light", "contrast" or
+     *  "night" (dim and red, for dark booths). It changes at once */
+    Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
+    /** The size of the interface in percent (80-150), for small laptops and
+     *  touch screens. Needs a restart */
+    Q_PROPERTY(int uiScale READ uiScale WRITE setUiScale NOTIFY uiScaleChanged)
+    /** The first steps guide was offered (at the first start) */
+    Q_PROPERTY(bool guideShown READ guideShown WRITE setGuideShown NOTIFY guideShownChanged)
     Q_PROPERTY(bool autosaveEnabled READ autosaveEnabled WRITE setAutosaveEnabled NOTIFY autosaveChanged)
     Q_PROPERTY(int autosaveMinutes READ autosaveMinutes WRITE setAutosaveMinutes NOTIFY autosaveChanged)
     Q_PROPERTY(bool openLastShow READ openLastShow WRITE setOpenLastShow NOTIFY openLastShowChanged)
@@ -105,6 +113,20 @@ public:
     bool clearAfterRecord() const;
     void setClearAfterRecord(bool enable);
 
+    QString theme() const;
+    void setTheme(const QString &theme);
+    /** A theme for this run only, not saved (the developer screenshots) */
+    void setThemeOverride(const QString &theme);
+    static QStringList themes();
+
+    int uiScale() const;
+    void setUiScale(int percent);
+    /** The scale saved, read before the application exists (main) */
+    static int savedUiScale();
+
+    bool guideShown() const;
+    void setGuideShown(bool shown);
+
     /** Set while the application runs: still set at startup means a crash */
     bool sessionRunning() const;
     void setSessionRunning(bool running);
@@ -121,9 +143,13 @@ signals:
     void startupChanged();
     void lockChanged();
     void clearAfterRecordChanged();
+    void themeChanged();
+    void uiScaleChanged();
+    void guideShownChanged();
 
 private:
     QSettings m_settings;
+    QString m_themeOverride;
 };
 
 #endif

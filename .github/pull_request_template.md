@@ -7,4 +7,4 @@
 - [ ] Pasan las pruebas (`./.github/run-tests.sh`)
 - [ ] Probado en el programa (qué páginas o funciones)
 
-Los textos nuevos de la interfaz van en inglés con `qsTr()` y con su traducción al español en `dtc/i18n/dtc_es_ES.ts`.
+Los textos nuevos de la interfaz van en inglés con `qsTr()` y con su traducción al español en `dtc/i18n/dtc_es.ts`.

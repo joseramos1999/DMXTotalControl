@@ -21,10 +21,44 @@ const STRINGS = {
     onComputer: "On the computer only", master: "Master", noGroup: "No group",
     go: "GO", back: "Back", empty: "Empty", page: "Page", playbacks: "Playbacks",
     released: "Released", on: "On", off: "Off", paused: "Paused"
+  },
+  pt: {
+    connecting: "Conectando…", offline: "Sem conexão com o DMX Total Control. Tentando de novo…",
+    wrongPin: "PIN incorreto", noPages: "Este show ainda não tem páginas de SHOW.",
+    release: "Liberar", centre: "Centro", flash: "Flash", tap: "Tap", nothing: "Nada tocando",
+    onComputer: "Só no computador", master: "Master", noGroup: "Sem grupo",
+    go: "GO", back: "Voltar", empty: "Vazio", page: "Página", playbacks: "Playbacks",
+    released: "Liberada", on: "Ligada", off: "Desligada", paused: "Em pausa"
+  },
+  fr: {
+    connecting: "Connexion…", offline: "Pas de connexion avec DMX Total Control. Nouvel essai…",
+    wrongPin: "PIN incorrect", noPages: "Ce show n'a pas encore de pages SHOW.",
+    release: "Libérer", centre: "Centre", flash: "Flash", tap: "Tap", nothing: "Rien ne joue",
+    onComputer: "Sur l'ordinateur seulement", master: "Master", noGroup: "Sans groupe",
+    go: "GO", back: "Retour", empty: "Vide", page: "Page", playbacks: "Playbacks",
+    released: "Libérée", on: "Allumée", off: "Éteinte", paused: "En pause"
+  },
+  it: {
+    connecting: "Connessione…", offline: "Nessuna connessione con DMX Total Control. Nuovo tentativo…",
+    wrongPin: "PIN errato", noPages: "Questo show non ha ancora pagine SHOW.",
+    release: "Rilascia", centre: "Centro", flash: "Flash", tap: "Tap", nothing: "Non suona niente",
+    onComputer: "Solo sul computer", master: "Master", noGroup: "Nessun gruppo",
+    go: "GO", back: "Indietro", empty: "Vuoto", page: "Pagina", playbacks: "Playback",
+    released: "Rilasciata", on: "Accesa", off: "Spenta", paused: "In pausa"
+  },
+  de: {
+    connecting: "Verbinden…", offline: "Keine Verbindung mit DMX Total Control. Neuer Versuch…",
+    wrongPin: "Falsche PIN", noPages: "Diese Show hat noch keine SHOW-Seiten.",
+    release: "Freigeben", centre: "Mitte", flash: "Flash", tap: "Tap", nothing: "Nichts läuft",
+    onComputer: "Nur am Computer", master: "Master", noGroup: "Keine Gruppe",
+    go: "GO", back: "Zurück", empty: "Leer", page: "Seite", playbacks: "Playbacks",
+    released: "Freigegeben", on: "An", off: "Aus", paused: "Pausiert"
   }
 };
-const LANG = (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
+// the language of the phone, if the remote has it
+const LANG = ((code) => STRINGS[code] ? code : "en")((navigator.language || "en").toLowerCase().slice(0, 2));
 const tr = (key) => STRINGS[LANG][key] || key;
+document.documentElement.lang = LANG;
 
 let socket = null;
 let layout = null;
@@ -220,6 +254,11 @@ function render() {
   const pages = layout ? layout.pages : [];
   $("title").textContent = layout && layout.title ? layout.title : "DMX Total Control";
   document.title = $("title").textContent;
+  // the theme of the program
+  const theme = layout && layout.theme ? layout.theme : "dark";
+  document.documentElement.dataset.theme = theme;
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) themeColor.content = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
   if (pageIndex >= pages.length) pageIndex = 0;
 
   const tabs = $("pages");
@@ -271,6 +310,20 @@ function buildNode(node) {
 
 function key(node, cell) {
   return pageIndex + "/" + node.id + (cell === undefined ? "" : "/" + cell);
+}
+
+/* A SHOW fader or dial: the value at a position of its travel (its range,
+   0..1; an older computer sends none) and its text, % or BPM */
+function rangeValue(item, v) {
+  const min = item.min !== undefined ? item.min : 0, max = item.max !== undefined ? item.max : 1;
+  return min + (max - min) * (item.invert ? 1 - v : v);
+}
+function valueText(item, value) {
+  return item.bpm ? Math.round(20 + value * 280) : Math.round(value * 100) + "%";
+}
+// the value of the state (an older computer: from the position)
+function stateValue(item, st) {
+  return st.value !== undefined ? st.value : rangeValue(item, st.level);
 }
 
 const TYPE_COLOURS = {
@@ -439,18 +492,28 @@ const BUILDERS = {
         f.appendChild(value);
         const at = { page: pageIndex, section: node.id, cell: c };
         let level = 0, dragging = false;
-        const show = (v) => {
+        // the knob at the position, the text the value
+        const show = (v, raw) => {
           fill.style.height = (v * 100) + "%";
           knob.style.bottom = (v * 100) + "%";
-          value.textContent = item.bpm ? Math.round(20 + v * 280) : Math.round(v * 100) + "%";
+          value.textContent = valueText(item, raw);
         };
         drag(track, (e) => {
           dragging = true;
           const r = track.getBoundingClientRect();
           level = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
-          show(level);
+          show(level, rangeValue(item, level));
           sendSoon(key(node, c), Object.assign({ cmd: "level", value: level }, at));
-        }, () => { dragging = false; });
+        }, () => {
+          dragging = false;
+          // what the computer made of it (a scene stopped at the end), once
+          // the last move has reached it: the state comes only when it changes
+          setTimeout(() => {
+            if (dragging || !state || !state.items || !state.items[k]) return;
+            level = state.items[k].level;
+            show(level, stateValue(item, state.items[k]));
+          }, 400);
+        });
         const k = key(node, c);
         if (item.flash) {
           // full while a finger is on it; the computer puts the level back,
@@ -467,7 +530,7 @@ const BUILDERS = {
         updaters.push((s) => {
           if (dragging || !s.items[k]) return;
           level = s.items[k].level;
-          show(level);
+          show(level, stateValue(item, s.items[k]));
         });
         cell.appendChild(f);
       }
@@ -493,7 +556,8 @@ const BUILDERS = {
         d.appendChild(value);
         const at = { page: pageIndex, section: node.id, cell: c };
         const tint = item.color || "#3d8bfd";
-        let level = 0, wheel = 0, dragging = false, lastY = 0, rest = 0;
+        // level is the position (the arc), raw the value (the text)
+        let level = 0, raw = 0, wheel = 0, dragging = false, lastY = 0, rest = 0;
         const draw = () => {
           const { ctx, w, h } = sizeCanvas(canvas);
           ctx.clearRect(0, 0, w, h);
@@ -529,7 +593,7 @@ const BUILDERS = {
             ctx.lineTo(cx + Math.cos(a) * r * 0.65, cy + Math.sin(a) * r * 0.65);
             ctx.stroke();
           }
-          value.textContent = item.bpm ? Math.round(20 + level * 280) : Math.round(level * 100) + "%";
+          value.textContent = valueText(item, raw);
         };
         // up and down with the finger: a dial moves its whole range in 200 px, a wheel a notch every 12 px
         drag(canvas, (e, first) => {
@@ -546,14 +610,25 @@ const BUILDERS = {
             }
           } else {
             level = Math.max(0, Math.min(1, level + dy / 200));
+            raw = rangeValue(item, level);
             sendSoon(key(node, c), Object.assign({ cmd: "level", value: level }, at));
           }
           draw();
-        }, () => { dragging = false; });
+        }, () => {
+          dragging = false;
+          // (as the faders: what the computer made of the last move)
+          setTimeout(() => {
+            if (dragging || !state || !state.items || !state.items[k]) return;
+            level = state.items[k].level;
+            raw = stateValue(item, state.items[k]);
+            draw();
+          }, 400);
+        });
         const k = key(node, c);
         updaters.push((s) => {
           if ((dragging && !item.encoder) || !s.items[k]) return;
           level = s.items[k].level;
+          raw = stateValue(item, s.items[k]);
           draw();
         });
         cell.appendChild(d);

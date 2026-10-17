@@ -29,7 +29,7 @@ Rectangle {
     property var item: ({})
     property bool editing: false
 
-    readonly property color tint: item.color || Theme.accent
+    readonly property color tint: item.color ? Theme.category(item.color) : Theme.accent
     readonly property bool active: {
         Core.surface.revision
         Core.blackout
@@ -70,7 +70,9 @@ Rectangle {
     function up() { Core.surface.release(item) }
 
     radius: Theme.radiusSmall
-    color: active ? tint : (mouse.pressed ? Qt.darker(tint, 2.2) : Qt.darker(tint, 3.4))
+    // off: a dark tint, or a pale one on a light theme
+    color: active ? tint : Theme.isDark ? (mouse.pressed ? Qt.darker(tint, 2.2) : Qt.darker(tint, 3.4))
+                                        : Theme.mix(Theme.surface, tint, mouse.pressed ? 0.4 : 0.16)
     border.color: tint
     border.width: active ? 0 : 1
     clip: true
@@ -123,12 +125,12 @@ Rectangle {
         width: keyText.implicitWidth + 6
         height: 14
         radius: 3
-        color: "#00000060"
+        color: "transparent"
         Text {
             id: keyText
             anchors.centerIn: parent
             text: (button.item.key || "").toUpperCase()
-            color: "white"
+            color: button.active ? Theme.textOn(button.tint) : Theme.text
             font.family: Theme.monoFamily
             font.pixelSize: 9
         }

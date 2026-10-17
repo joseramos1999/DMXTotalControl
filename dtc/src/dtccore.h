@@ -195,6 +195,14 @@ public:
     /** Put a text on the clipboard */
     Q_INVOKABLE void copyToClipboard(const QString &text);
 
+    /** A page of the manual (docs/manual, built in): its Markdown text, or
+     *  an empty string. $name: "programar", "index"... */
+    Q_INVOKABLE QString manualPage(const QString &name) const;
+    /** The same page as HTML for the help panel: its pictures $width wide */
+    Q_INVOKABLE QString manualHtml(const QString &name, int width) const;
+    /** The example shows installed with the program: [{ name, url }] */
+    Q_INVOKABLE QVariantList examples() const;
+
     /** The URL of a local file (a path with '#' or '%' stays a path) */
     Q_INVOKABLE QUrl localFileUrl(const QString &path) const;
 

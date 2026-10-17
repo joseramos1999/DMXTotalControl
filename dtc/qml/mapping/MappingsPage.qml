@@ -58,20 +58,31 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
+            // the subtitle shortens: the buttons always fit
             Column {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 120
+                Layout.preferredWidth: 200
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Mappings")
                     color: Theme.text
                     font.pixelSize: Theme.fontTitle
                     font.weight: Font.Bold
                 }
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Drive the show from MIDI controllers, OSC, a DMX desk or the keyboard")
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
+                    HoverHandler { id: subtitleHover }
+                    ToolTip.text: text
+                    ToolTip.visible: truncated && subtitleHover.hovered
+                    ToolTip.delay: 500
                 }
             }
-            Item { Layout.fillWidth: true }
             Row {
                 spacing: 0
                 AppButton { text: qsTr("Mappings"); iconGlyph: Theme.iconList; highlighted: page.tab === "mappings"; onClicked: page.tab = "mappings" }
@@ -82,7 +93,7 @@ Item {
                 text: Core.mapping.learnMode ? qsTr("Learning…") : qsTr("Learn")
                 iconGlyph: Theme.iconTarget
                 highlighted: Core.mapping.learnMode
-                accentColor: "#ae3ec9"
+                accentColor: Theme.learn
                 ToolTip.text: qsTr("Pick a control of the app, then move the control of your device")
                 ToolTip.visible: hovered
                 onClicked: Core.mapping.learnMode = !Core.mapping.learnMode
@@ -130,7 +141,7 @@ Item {
                             spacing: 10
                             Rectangle {
                                 width: 8; height: 8; radius: 4
-                                color: parent.parent.modelData.button ? "#ae3ec9" : Theme.accent
+                                color: parent.parent.modelData.button ? Theme.category("#ae3ec9") : Theme.accent
                             }
                             Text {
                                 Layout.preferredWidth: parent.width * 0.42
@@ -215,12 +226,12 @@ Item {
                             Layout.preferredWidth: 48
                             height: 22
                             radius: 4
-                            color: parent.parent.modelData.kind === "midi" ? "#ae3ec9"
-                                 : parent.parent.modelData.kind === "osc" ? "#17a2b8" : "#3d8bfd"
+                            color: Theme.category(parent.parent.modelData.kind === "midi" ? "#ae3ec9"
+                                 : parent.parent.modelData.kind === "osc" ? "#17a2b8" : "#3d8bfd")
                             Text {
                                 anchors.centerIn: parent
                                 text: parent.parent.parent.modelData.kind.toUpperCase()
-                                color: "white"
+                                color: Theme.textOn(parent.color)
                                 font.pixelSize: 10
                                 font.weight: Font.Bold
                             }

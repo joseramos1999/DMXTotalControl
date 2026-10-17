@@ -23,6 +23,7 @@
 #include <QRandomGenerator>
 
 #include "appsettings.h"
+#include "qlcconfig.h"
 
 #define KSettingLanguage        QStringLiteral("ui/language")
 #define KSettingAutosave        QStringLiteral("autosave/enabled")
@@ -40,6 +41,9 @@
 #define KSettingLockedScreens   QStringLiteral("lock/screens")
 #define KSettingLockPassword    QStringLiteral("lock/password")
 #define KSettingClearAfterRecord QStringLiteral("programmer/clearAfterRecord")
+#define KSettingTheme           QStringLiteral("ui/theme")
+#define KSettingUiScale         QStringLiteral("ui/scale")
+#define KSettingGuideShown      QStringLiteral("ui/guideShown")
 
 #define MAX_RECENT_SHOWS 8
 
@@ -319,4 +323,76 @@ void AppSettings::setClearAfterRecord(bool enable)
         return;
     m_settings.setValue(KSettingClearAfterRecord, enable);
     emit clearAfterRecordChanged();
+}
+
+/*********************************************************************
+ * Look
+ *********************************************************************/
+
+QStringList AppSettings::themes()
+{
+    return { QStringLiteral("dark"), QStringLiteral("light"), QStringLiteral("contrast"), QStringLiteral("night") };
+}
+
+QString AppSettings::theme() const
+{
+    if (m_themeOverride.isEmpty() == false)
+        return m_themeOverride;
+    const QString theme = m_settings.value(KSettingTheme).toString();
+    return themes().contains(theme) ? theme : QStringLiteral("dark");
+}
+
+void AppSettings::setTheme(const QString &theme)
+{
+    if (themes().contains(theme) == false)
+        return;
+    const QString before = this->theme();
+    m_themeOverride.clear();
+    m_settings.setValue(KSettingTheme, theme);
+    if (theme != before)
+        emit themeChanged();
+}
+
+void AppSettings::setThemeOverride(const QString &theme)
+{
+    if (themes().contains(theme) == false)
+        return;
+    const QString before = this->theme();
+    m_themeOverride = theme;
+    if (theme != before)
+        emit themeChanged();
+}
+
+int AppSettings::uiScale() const
+{
+    return qBound(80, m_settings.value(KSettingUiScale, 100).toInt(), 150);
+}
+
+void AppSettings::setUiScale(int percent)
+{
+    percent = qBound(80, percent, 150);
+    if (percent == uiScale())
+        return;
+    m_settings.setValue(KSettingUiScale, percent);
+    emit uiScaleChanged();
+}
+
+int AppSettings::savedUiScale()
+{
+    // (main reads it before the application, and its names, exist)
+    QSettings settings(QStringLiteral("DMXTotalControl"), QStringLiteral(APPNAME));
+    return qBound(80, settings.value(KSettingUiScale, 100).toInt(), 150);
+}
+
+bool AppSettings::guideShown() const
+{
+    return m_settings.value(KSettingGuideShown, false).toBool();
+}
+
+void AppSettings::setGuideShown(bool shown)
+{
+    if (shown == guideShown())
+        return;
+    m_settings.setValue(KSettingGuideShown, shown);
+    emit guideShownChanged();
 }

@@ -87,6 +87,8 @@ Slider {
             y: parent.height - 2 - height
             radius: Theme.radiusSmall - 1
             color: control.fillColor
+            // (a white light on a light theme)
+            border.color: Theme.edgeFor(control.fillColor, Theme.background)
             opacity: control.enabled ? 0.85 : 0.3
         }
     }
@@ -97,8 +99,8 @@ Slider {
         width: 38
         height: 14
         radius: 3
-        color: control.pressed ? "#ffffff" : "#d9dce3"
-        border.color: "#00000060"
+        color: control.pressed ? Theme.knobBorder : Theme.knob
+        border.color: Theme.knobEdge
 
         Rectangle {
             width: parent.width - 10

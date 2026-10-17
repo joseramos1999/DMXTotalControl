@@ -248,7 +248,7 @@ Flickable {
                 text: editor.learning ? qsTr("Move a control of your device…") : qsTr("Learn the control")
                 iconGlyph: Theme.iconTarget
                 highlighted: editor.learning
-                accentColor: "#ae3ec9"
+                accentColor: Theme.learn
                 onClicked: editor.learning ? Core.mapping.cancelLearn() : Core.mapping.learnSource(editor.mid)
             }
 
@@ -351,7 +351,7 @@ Flickable {
             ComboBox {
                 Layout.fillWidth: true
                 visible: editor.functionPlayback
-                readonly property var choices: [{ id: -1, name: qsTr("No: the playback above") }].concat(editor.functionList)
+                readonly property var choices: [{ id: -1, name: qsTr("None: the playback above") }].concat(editor.functionList)
                 textRole: "name"
                 model: choices
                 currentIndex: Math.max(0, choices.findIndex(f => f.id === (editor.mapping.functionId !== undefined ? editor.mapping.functionId : -1)))
@@ -360,7 +360,7 @@ Flickable {
             }
             RowLayout {
                 visible: editor.targetInfo.needs === "playbackCue"
-                Text { text: qsTr("Cue (1 is the first one of the list)"); color: Theme.textDim }
+                Text { text: qsTr("Cue (1 is the first one in the list)"); color: Theme.textDim }
                 SpinBox {
                     from: 1; to: 999; editable: true
                     value: (editor.mapping.cue || 0) + 1

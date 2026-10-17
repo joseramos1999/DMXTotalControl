@@ -30,11 +30,25 @@ Item {
 
     /** The downloaded update is to be installed now (Main closes the program) */
     signal installUpdate()
+    /** The manual and the first steps guide are wanted (Main has them) */
+    signal manualWanted()
+    signal guideWanted()
+
+    readonly property var themes: [
+        { code: "dark", name: qsTr("Dark") },
+        { code: "light", name: qsTr("Light") },
+        { code: "contrast", name: qsTr("High contrast") },
+        { code: "night", name: qsTr("Night (dimmed)") }
+    ]
 
     readonly property var languages: [
         { code: "", name: qsTr("System language") },
         { code: "es_ES", name: "Español" },
-        { code: "en_US", name: "English" }
+        { code: "en_US", name: "English" },
+        { code: "pt_BR", name: "Português" },
+        { code: "fr_FR", name: "Français" },
+        { code: "it_IT", name: "Italiano" },
+        { code: "de_DE", name: "Deutsch" }
     ]
 
     component SectionTitle: Text {
@@ -118,6 +132,28 @@ Item {
                             }
                         }
                         OptionRow {
+                            label: qsTr("Theme")
+                            hint: qsTr("Light for bright rooms, high contrast to read from afar, night for a dark booth. The remote control follows it too")
+                            ComboBox {
+                                Layout.preferredWidth: 200
+                                textRole: "name"
+                                model: page.themes
+                                currentIndex: Math.max(0, page.themes.findIndex(t => t.code === Core.settings.theme))
+                                onActivated: (i) => Core.settings.theme = page.themes[i].code
+                            }
+                        }
+                        OptionRow {
+                            label: qsTr("Size of the interface")
+                            hint: qsTr("Smaller for small laptops, bigger for touch screens. Applied the next time the application starts")
+                            SpinBox {
+                                from: 80; to: 150; stepSize: 10
+                                value: Core.settings.uiScale
+                                textFromValue: (v) => v + " %"
+                                valueFromText: (t) => parseInt(t)
+                                onValueModified: Core.settings.uiScale = value
+                            }
+                        }
+                        OptionRow {
                             label: qsTr("Open the last show at startup")
                             AppSwitch { checked: Core.settings.openLastShow; onToggled: Core.settings.openLastShow = checked }
                         }
@@ -137,8 +173,8 @@ Item {
                         }
                         OptionRow {
                             label: qsTr("Lock screens")
-                            hint: Core.settings.lockedScreens.length > 0 ? qsTr("Locked now. Also with the padlock of the top bar")
-                                                                       : qsTr("Setup, programming or SHOW editing, with a password or without. Also with the padlock of the top bar")
+                            hint: Core.settings.lockedScreens.length > 0 ? qsTr("Locked now. Also with the padlock in the top bar")
+                                                                       : qsTr("Setup, programming or SHOW editing, with a password or without. Also with the padlock in the top bar")
                             AppButton {
                                 text: Core.settings.lockedScreens.length > 0 ? qsTr("Unlock…") : qsTr("Lock…")
                                 iconGlyph: Core.settings.lockedScreens.length > 0 ? Theme.iconUnlock : Theme.iconLock
@@ -409,9 +445,37 @@ Item {
                             Text {
                                 Layout.fillWidth: true
                                 wrapMode: Text.WordWrap
-                                text: qsTr("Libraries of other programs in closed or encrypted formats can't be imported. Most fixtures exist in the Open Fixture Library or on GDTF-Share; missing ones can be made in the Fixtures page.")
+                                text: qsTr("Libraries of other programs in closed or encrypted formats can't be imported. Most fixtures exist in the Open Fixture Library or on GDTF-Share; missing ones can be made on the Fixtures page.")
                                 color: Theme.textFaint
                                 font.pixelSize: Theme.fontSmall
+                            }
+                        }
+                    }
+
+                    // the manual and the first steps guide
+                    Panel {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: helpColumn.implicitHeight + 24
+
+                        ColumnLayout {
+                            id: helpColumn
+                            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14 }
+                            spacing: 12
+
+                            SectionTitle { text: qsTr("Help") }
+                            OptionRow {
+                                label: qsTr("Manual")
+                                hint: qsTr("Every page of the program, with pictures. F12 or «?» open it on the page you are on")
+                                AppButton { text: qsTr("Open the manual"); onClicked: page.manualWanted() }
+                            }
+                            OptionRow {
+                                label: qsTr("First steps guide")
+                                hint: qsTr("Five steps to light a stage, with a practice show")
+                                AppButton { text: qsTr("Start the guide"); onClicked: page.guideWanted() }
+                            }
+                            OptionRow {
+                                label: qsTr("Example shows")
+                                hint: qsTr("Shows ready to open, in the ▾ menu next to Open: a small gig, a concert with moving heads, a venue with playbacks")
                             }
                         }
                     }
@@ -430,7 +494,7 @@ Item {
 
                             SectionTitle { text: qsTr("Updates") }
                             OptionRow {
-                                label: qsTr("Look for updates at startup")
+                                label: qsTr("Check for updates at startup")
                                 hint: qsTr("Once a day, on GitHub. Nothing is downloaded or installed without asking you.")
                                 AppSwitch { checked: Core.updates.autoCheck; onToggled: Core.updates.autoCheck = checked }
                             }
@@ -446,7 +510,7 @@ Item {
                                     const v = Core.updates.latestVersion
                                     switch (updatesColumn.phase) {
                                     case UpdateChecker.Checking:
-                                        return qsTr("Looking for updates…")
+                                        return qsTr("Checking for updates…")
                                     case UpdateChecker.UpToDate:
                                         return qsTr("You have the latest version (%1).").arg(Core.updates.currentVersion)
                                     case UpdateChecker.Available:
@@ -472,7 +536,7 @@ Item {
                                 AppButton {
                                     visible: updatesColumn.phase !== UpdateChecker.Downloading && updatesColumn.phase !== UpdateChecker.Ready
                                     enabled: updatesColumn.phase !== UpdateChecker.Checking
-                                    text: qsTr("Look for updates")
+                                    text: qsTr("Check for updates")
                                     iconGlyph: Theme.iconRefresh
                                     onClicked: Core.updates.check(true)
                                 }

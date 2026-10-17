@@ -29,6 +29,10 @@
 #include <QSaveFile>
 #include <QFile>
 #include <QDir>
+#include <QRegularExpression>
+#include <QTextDocument>
+#include <QCoreApplication>
+#include <QUrl>
 #include <QDebug>
 
 #include "dtccore.h"
@@ -1271,4 +1275,51 @@ void DtcCore::copyToClipboard(const QString &text)
 {
     if (QGuiApplication::clipboard() != nullptr)
         QGuiApplication::clipboard()->setText(text);
+}
+
+/*********************************************************************
+ * Help
+ *********************************************************************/
+
+QString DtcCore::manualPage(const QString &name) const
+{
+    // only the pages of the manual: a name, never a path
+    static const QRegularExpression valid(QStringLiteral("^[a-z0-9-]+$"));
+    if (valid.match(name).hasMatch() == false)
+        return QString();
+    QFile file(QStringLiteral(":/manual/%1.md").arg(name));
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text) == false)
+        return QString();
+    return QString::fromUtf8(file.readAll());
+}
+
+QVariantList DtcCore::examples() const
+{
+    // installed next to the program (dtc/examples in the sources)
+    QVariantList list;
+    const QDir dir(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("Examples")));
+    const QFileInfoList files = dir.entryInfoList({ QStringLiteral("*.qxw") }, QDir::Files, QDir::Name);
+    for (const QFileInfo &file : files)
+        list.append(QVariantMap({ { "name", file.completeBaseName() },
+                                  { "url", QUrl::fromLocalFile(file.absoluteFilePath()) } }));
+    return list;
+}
+
+QString DtcCore::manualHtml(const QString &name, int width) const
+{
+    const QString markdown = manualPage(name);
+    if (markdown.isEmpty())
+        return QString();
+    QTextDocument doc;
+    doc.setMarkdown(markdown, QTextDocument::MarkdownDialectGitHub);
+    QString html = doc.toHtml();
+    // the screenshots fit the panel (the Text of QML shows them at their size)
+    static const QRegularExpression image(QStringLiteral("<img src=\"([^\"]+)\"[^>]*/?>"));
+    html.replace(image, QStringLiteral("<img src=\"\\1\" width=\"%1\" />").arg(qMax(100, width)));
+    // the font and the colour of the links come from the panel (its theme)
+    static const QRegularExpression bodyStyle(QStringLiteral("<body style=\"[^\"]*\">"));
+    html.replace(bodyStyle, QStringLiteral("<body>"));
+    static const QRegularExpression linkColour(QStringLiteral(" ?color:#0000ff;"), QRegularExpression::CaseInsensitiveOption);
+    html.remove(linkColour);
+    return html;
 }

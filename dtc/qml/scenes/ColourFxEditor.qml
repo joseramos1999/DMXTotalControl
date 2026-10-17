@@ -162,7 +162,7 @@ Panel {
                                 readonly property string hex: (editor.info.colors || [])[index] || ""
                                 width: 42; height: 42; radius: 8
                                 color: hex.length ? hex : "transparent"
-                                border.color: editor.pickingColor === index ? "white" : Theme.borderStrong
+                                border.color: editor.pickingColor === index ? Theme.text : Theme.borderStrong
                                 border.width: editor.pickingColor === index ? 3 : 1
                                 Text {
                                     anchors.centerIn: parent
@@ -319,7 +319,7 @@ Panel {
                         required property string modelData
                         width: 34; height: 34; radius: 6
                         color: modelData
-                        border.color: "#00000040"
+                        border.color: Theme.edgeFor(modelData)
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor

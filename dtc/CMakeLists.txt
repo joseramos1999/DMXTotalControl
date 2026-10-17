@@ -49,6 +49,8 @@ set(QML_FILES
     qml/components/FxControls.qml
     qml/components/ReleaseNotes.qml
     qml/components/UpdateBanner.qml
+    qml/components/HelpPanel.qml
+    qml/components/FirstStepsGuide.qml
     qml/components/FxPreview.qml
     qml/components/LockDialog.qml
     qml/components/TimeSpin.qml
@@ -143,8 +145,14 @@ qt_add_qml_module(${module_name}
 
 # Translations, embedded under :/i18n. Update the .ts files with the
 # ${module_name}_lupdate target
+# The manual (docs/manual), built in for the help panel (F12)
+file(GLOB DTC_MANUAL_FILES CONFIGURE_DEPENDS
+     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
+qt_add_resources(${module_name} "manual" PREFIX "/manual" BASE "${CMAKE_SOURCE_DIR}/docs/manual"
+                 FILES ${DTC_MANUAL_FILES})
+
 qt_add_translations(${module_name}
-    TS_FILES i18n/dtc_es_ES.ts
+    TS_FILES i18n/dtc_es.ts i18n/dtc_pt.ts i18n/dtc_fr.ts i18n/dtc_it.ts i18n/dtc_de.ts
     RESOURCE_PREFIX /i18n
     LUPDATE_OPTIONS -no-obsolete -locations none
 )
@@ -180,6 +188,11 @@ install(TARGETS ${module_name} DESTINATION ${INSTALLROOT}/${BINDIR})
 # Basic generic fixtures, see fixtures/generate-generic.pl
 install(DIRECTORY fixtures/Generic/ DESTINATION ${INSTALLROOT}/${FIXTUREDIR}/DMXTotalControl
         FILES_MATCHING PATTERN "*.qxf")
+
+# The example shows (written by the backend test exampleShows), opened from
+# the ▾ menu next to Open and by the first steps guide
+cmake_path(APPEND INSTALLROOT "${DATADIR}" "Examples" OUTPUT_VARIABLE DTC_EXAMPLES_DESTINATION)
+install(DIRECTORY examples/ DESTINATION ${DTC_EXAMPLES_DESTINATION} FILES_MATCHING PATTERN "*.qxw")
 
 # The license and the notices go with the program (Apache License 2.0,
 # section 4), and the license of the icon font

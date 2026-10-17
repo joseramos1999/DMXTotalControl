@@ -68,7 +68,7 @@ QString PatchManager::addMatrix(const QString &name, int columns, int rows, cons
     int lines = vertical ? columns : rows;
     int length = vertical ? rows : columns;
     if (length * perPixel > UNIVERSE_SIZE)
-        return tr("A line of %1 pixels needs %2 channels: more than a universe").arg(length).arg(length * perPixel);
+        return tr("A line of %1 pixels needs %2 channels: more than one universe").arg(length).arg(length * perPixel);
 
     InputOutputMap *ioMap = m_doc->inputOutputMap();
     QString baseName = name.trimmed().isEmpty() ? (rows == 1 ? tr("LED strip") : tr("LED matrix")) : name.trimmed();

@@ -176,7 +176,7 @@ Item {
                 implicitHeight: 34
                 enabled: Core.playbacks.currentPage < Core.playbacks.pageCount - 1
                 onClicked: Core.playbacks.nextPage()
-                ToolTip.text: qsTr("Next page (PgDown)")
+                ToolTip.text: qsTr("Next page (PgDn)")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
                 MapTarget { target: ({ target: "playbackPageNext" }) }
@@ -289,7 +289,7 @@ Item {
                 iconGlyph: Theme.iconStop
                 implicitHeight: 52
                 onClicked: Core.playbacks.releaseAll()
-                ToolTip.text: qsTr("Release every playback and every cuelist that plays")
+                ToolTip.text: qsTr("Release every playback and every cuelist that is playing")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
                 MapTarget { target: ({ target: "playbackReleaseAll" }) }
@@ -332,7 +332,7 @@ Item {
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: "GO"
-                        color: "white"
+                        color: Theme.textOn(Theme.success)
                         font.pixelSize: Theme.fontTitle
                         font.weight: Font.Black
                     }
@@ -342,7 +342,7 @@ Item {
                         Layout.rightMargin: 8
                         horizontalAlignment: Text.AlignHCenter
                         text: mainGo.target
-                        color: "white"
+                        color: Theme.textOn(Theme.success)
                         opacity: view.hasSelection ? 0.95 : 0.7
                         font.pixelSize: Theme.fontSmall
                         elide: Text.ElideRight

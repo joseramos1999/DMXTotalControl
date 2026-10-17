@@ -62,7 +62,7 @@ Item {
     width: Math.max(4, (endMs - startMs) * px)
     height: parent ? parent.height - 8 : 50
 
-    readonly property color tint: block.color && block.color.length ? block.color : Theme.functionColor(block.type)
+    readonly property color tint: block.color && block.color.length ? Theme.category(block.color) : Theme.functionColor(block.type)
 
     Rectangle {
         anchors.fill: parent
@@ -76,6 +76,9 @@ Item {
         // the waveform of the audio
         Canvas {
             id: wave
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             anchors { fill: parent; topMargin: 16; bottomMargin: 2 }
             visible: blockItem.audio
             property int revision: 0
@@ -126,6 +129,9 @@ Item {
         // the fades
         Canvas {
             id: fades
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             anchors.fill: parent
             property real fin: blockItem.fadeInMs * blockItem.px
             property real fout: blockItem.fadeOutMs * blockItem.px
@@ -135,7 +141,7 @@ Item {
             onPaint: {
                 let ctx = getContext("2d")
                 ctx.reset()
-                ctx.fillStyle = Qt.rgba(0, 0, 0, 0.35)
+                ctx.fillStyle = Theme.shadow
                 ctx.strokeStyle = Qt.lighter(blockItem.tint, 1.3)
                 ctx.lineWidth = 1.5
                 if (fin > 0) {
@@ -176,7 +182,7 @@ Item {
         x: Math.min(blockItem.width - 10, fades.fin) - 5
         y: -5
         width: 10; height: 10; radius: 5
-        color: "white"
+        color: Theme.knob
         border.color: blockItem.tint
     }
     Rectangle {
@@ -184,7 +190,7 @@ Item {
         x: Math.max(0, blockItem.width - fades.fout) - 5
         y: -5
         width: 10; height: 10; radius: 5
-        color: "white"
+        color: Theme.knob
         border.color: blockItem.tint
     }
 
@@ -272,7 +278,7 @@ Item {
     AppMenu {
         id: blockMenu
         MenuItem {
-            text: blockItem.block.stretch ? qsTr("Loop the scene in the block") : qsTr("Stretch the scene to the block")
+            text: blockItem.block.stretch ? qsTr("Loop the scene in the block") : qsTr("Stretch the scene to fit the block")
             enabled: !blockItem.audio && blockItem.block.cycle > 0
             onTriggered: Core.timeline.setBlock(editor.showId, blockItem.block.id, "stretch", !blockItem.block.stretch)
         }

@@ -284,7 +284,7 @@ Item {
                     Text {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: qsTr("This effect is from the old effects module. It plays as before; converted to FX it gets the FX editor (in the programmer too). Groups, SHOW buttons and mappings keep it.")
+                        text: qsTr("This effect is from the old effects module. It plays as before; once converted to FX, it is edited with the FX editor (in the programmer too). Groups, SHOW buttons and mappings keep it.")
                         color: Theme.text
                         font.pixelSize: Theme.fontSmall
                     }
@@ -365,7 +365,7 @@ Item {
         Item {
             Text {
                 anchors.centerIn: parent
-                text: qsTr("This type is edited in its own page in a later version")
+                text: qsTr("This type will get its own editing page in a later version")
                 color: Theme.textDim
             }
         }

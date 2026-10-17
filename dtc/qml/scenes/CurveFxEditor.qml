@@ -37,7 +37,7 @@ RowLayout {
         "RampDown": qsTr("Ramp down"), "Square": qsTr("Square"), "Random": qsTr("Random"),
         "Strobe": qsTr("Strobe"), "RandomStrobe": qsTr("Random strobe")
     })
-    readonly property var lineColors: ["#ae3ec9", "#3d8bfd", "#30a46c", "#f5a524", "#e5484d", "#17a2b8", "#d6336c", "#e7e9ef"]
+    readonly property var lineColors: ["#ae3ec9", "#3d8bfd", "#30a46c", "#f5a524", "#e5484d", "#17a2b8", "#d6336c", Theme.text]
 
     function set(key, value) { Core.effects.setCurveFx(info.id, key, value) }
 
@@ -76,6 +76,9 @@ RowLayout {
 
         Canvas {
             id: preview
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             anchors { fill: parent; margins: 14; bottomMargin: 110 }
             onPaint: {
                 let ctx = getContext("2d")

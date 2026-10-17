@@ -100,14 +100,14 @@ Item {
                 HeaderButton {
                     text: "D"
                     highlighted: trackItem.lane === "dimmer"
-                    accentColor: "#f5c524"
-                    ToolTip.text: qsTr("Automation of the dimmer (the volume of audio)"); ToolTip.visible: hovered; ToolTip.delay: 500
+                    accentColor: Theme.category("#f5c524")
+                    ToolTip.text: qsTr("Automation of the dimmer (the volume of the audio)"); ToolTip.visible: hovered; ToolTip.delay: 500
                     onClicked: editor.setLane(trackItem.trackId, trackItem.lane === "dimmer" ? "" : "dimmer")
                 }
                 HeaderButton {
                     text: "φ"
                     highlighted: trackItem.lane === "phase"
-                    accentColor: "#ae3ec9"
+                    accentColor: Theme.category("#ae3ec9")
                     ToolTip.text: qsTr("Automation of the phase of its effects"); ToolTip.visible: hovered; ToolTip.delay: 500
                     onClicked: editor.setLane(trackItem.trackId, trackItem.lane === "phase" ? "" : "phase")
                 }
@@ -155,7 +155,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: trackItem.track.mute ? Qt.rgba(0, 0, 0, 0.3) : "transparent"
+            color: trackItem.track.mute ? Theme.shadow : "transparent"
             border.color: Theme.border
             border.width: 1
         }
@@ -210,7 +210,7 @@ Item {
         height: trackItem.laneHeight
         clip: true
 
-        readonly property color tint: trackItem.lane === "phase" ? "#ae3ec9" : "#f5c524"
+        readonly property color tint: Theme.category(trackItem.lane === "phase" ? "#ae3ec9" : "#f5c524")
         // the points, edited here before they are saved
         property var points: trackItem.track[trackItem.lane] || []
         property int dragging: -1
@@ -235,19 +235,22 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: Qt.rgba(0, 0, 0, 0.25)
+            color: Qt.alpha(Theme.shadow, Theme.shadow.a * 0.7)
             border.color: Theme.border
         }
         Text {
             anchors { left: parent.left; top: parent.top; margins: 3 }
             text: trackItem.lane === "phase" ? qsTr("Phase") : qsTr("Dimmer / volume")
-            color: laneArea.tint
+            color: Theme.readable(laneArea.tint)
             font.pixelSize: 9
             opacity: 0.8
         }
 
         Canvas {
             id: curve
+            // the colours of the theme
+            readonly property string themeName: Theme.name
+            onThemeNameChanged: requestPaint()
             anchors.fill: parent
             onPaint: {
                 let ctx = getContext("2d")

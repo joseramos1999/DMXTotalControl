@@ -51,6 +51,7 @@ ApplicationWindow {
     palette.light: Theme.surfaceHover
     palette.toolTipBase: Theme.surfaceRaised
     palette.toolTipText: Theme.text
+    palette.shadow: Theme.dialogShade
 
     /* Pages, in navigation order */
     readonly property int pageLive: 0
@@ -66,6 +67,10 @@ ApplicationWindow {
     readonly property int pagePlaybacks: 9
 
     property int currentPage: pageLive
+    /* The top bar on smaller screens: icons for Save as and the running
+       count, a shorter grand master; narrow: Blackout and Stop all too */
+    readonly property bool compactBar: width < 1600
+    readonly property bool narrowBar: width < 1300
     /** Developer option --scene: open the Scenes page on this scene */
     property int startScene: -1
     onStartSceneChanged: if (startScene >= 0) { scenesPage.select(startScene); currentPage = pageScenes }
@@ -89,6 +94,11 @@ ApplicationWindow {
     property bool armPlaybackRecord: false
     onArmPlaybackRecordChanged: playbacksPage.recordArmed = armPlaybackRecord
     /** Developer option --pb-dialog: a menu or dialog of the Playbacks page (kind:slot) */
+    /** Developer options --guide and --help-page: the guide on a step, the manual on a page */
+    property int startGuide: -1
+    onStartGuideChanged: if (startGuide >= 0) { firstSteps.start(); firstSteps.go(startGuide) }
+    property string startHelp: ""
+    onStartHelpChanged: if (startHelp.length > 0) helpPanel.show(startHelp)
     property string startPlaybackDialog: ""
     onStartPlaybackDialogChanged: { currentPage = pagePlaybacks; playbacksPage.devOpen(startPlaybackDialog) }
     /** Developer option --mapping: the Mappings page with a mapping selected */
@@ -180,6 +190,32 @@ ApplicationWindow {
         }
     }
 
+    /** The example shows installed with the program */
+    readonly property var exampleShows: Core.examples()
+
+    // the page of the manual about the page on screen
+    function helpPage() {
+        switch (window.locked ? window.pageShow : window.currentPage) {
+        case window.pageLive: return "directo"
+        case window.pageShow: return "show"
+        case window.pageProgram: return "programar"
+        case window.pageScenes: return "escenas"
+        case window.pagePatch: return "patch"
+        case window.pageFixtures: return "fixtures"
+        case window.pageOutputs: return "salidas"
+        case window.pageMappings: return "mapeos"
+        case window.pageOptions: return "opciones"
+        case window.pagePlaybacks: return "playbacks"
+        default: return "index"
+        }
+    }
+    function showHelp() {
+        if (helpPanel.opened)
+            helpPanel.close()
+        else
+            helpPanel.show(helpPage())
+    }
+
     // the downloaded update: the show saved (or not) first, then the installer
     // runs and opens the program again
     function installUpdate() {
@@ -218,12 +254,17 @@ ApplicationWindow {
         // the show given to open (or the last one) couldn't be opened
         else if (Core.lastError.length > 0)
             showMessage(Core.lastError, true)
+        // the very first start: the first steps guide, once
+        else if (!Core.settings.guideShown && !Core.settings.startShowFullScreen && Core.settings.recentShows.length === 0)
+            firstSteps.start()
+        Core.settings.guideShown = true
     }
 
     /* ****************************************************************
      * Keyboard shortcuts
      * ****************************************************************/
     Shortcut { sequences: [StandardKey.Save]; enabled: !window.locked; onActivated: window.saveOrAsk() }
+    Shortcut { sequences: [StandardKey.SaveAs]; enabled: !window.locked && !window.setupLocked; onActivated: saveDialog.open() }
     Shortcut { sequences: [StandardKey.Open]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => openDialog.open()) }
     Shortcut { sequences: [StandardKey.New]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => Core.newShow()) }
     Shortcut { sequence: "F1"; enabled: !window.locked; onActivated: window.currentPage = window.pageLive }
@@ -254,6 +295,8 @@ ApplicationWindow {
     Shortcut { sequence: "PgUp"; enabled: window.playbackKeys; onActivated: Core.playbacks.previousPage() }
     Shortcut { sequence: "PgDown"; enabled: window.playbackKeys; onActivated: Core.playbacks.nextPage() }
     Shortcut { sequence: "F11"; onActivated: window.setFullScreen(window.visibility !== Window.FullScreen) }
+    // the manual of the page on screen (F1-F10 open the pages)
+    Shortcut { sequence: "F12"; onActivated: window.showHelp() }
     Shortcut { sequence: "Ctrl+B"; onActivated: Core.blackout = !Core.blackout }
     Shortcut { sequence: "G"; enabled: window.currentPage !== window.pageShow; onActivated: Core.drive.beatGo() }
     // on the Show page the letters belong to the buttons of the technician
@@ -352,19 +395,28 @@ ApplicationWindow {
                 smooth: true
                 mipmap: true
             }
-            Column {
+            // the show title gives way first when the bar is short
+            ColumnLayout {
                 Layout.rightMargin: 12
+                Layout.fillWidth: true
+                Layout.minimumWidth: 90
+                Layout.maximumWidth: implicitWidth
+                spacing: 0
                 Text {
+                    Layout.fillWidth: true
                     text: Core.appName
                     font.pixelSize: Theme.fontNormal
                     font.weight: Font.Bold
                     color: Theme.text
+                    elide: Text.ElideRight
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: (Core.modified ? "● " : "") + Core.showTitle
                           + (Core.lastAutosave.length ? "  ·  " + qsTr("autosaved %1").arg(Core.lastAutosave) : "")
                     font.pixelSize: Theme.fontSmall
                     color: Core.modified ? Theme.warning : Theme.textDim
+                    elide: Text.ElideRight
                 }
             }
 
@@ -377,8 +429,8 @@ ApplicationWindow {
                 AppButton {
                     text: "▾"
                     flat: true
-                    enabled: Core.settings.recentShows.length > 0
-                    ToolTip.text: qsTr("Recent shows")
+                    enabled: Core.settings.recentShows.length > 0 || window.exampleShows.length > 0
+                    ToolTip.text: qsTr("Recent shows and examples")
                     ToolTip.visible: hovered
                     onClicked: recentMenu.popup()
 
@@ -398,10 +450,35 @@ ApplicationWindow {
                             onObjectAdded: (index, object) => recentMenu.insertItem(index, object)
                             onObjectRemoved: (index, object) => recentMenu.removeItem(object)
                         }
+                        MenuSeparator { visible: Core.settings.recentShows.length > 0 && window.exampleShows.length > 0 }
+                        // the example shows installed with the program
+                        AppMenu {
+                            id: examplesMenu
+                            title: qsTr("Examples")
+                            enabled: window.exampleShows.length > 0
+                            Instantiator {
+                                model: window.exampleShows
+                                delegate: MenuItem {
+                                    required property var modelData
+                                    text: modelData.name
+                                    onTriggered: window.whenSaved(() => window.openShow(modelData.url))
+                                }
+                                onObjectAdded: (index, object) => examplesMenu.insertItem(index, object)
+                                onObjectRemoved: (index, object) => examplesMenu.removeItem(object)
+                            }
+                        }
                     }
                 }
                 AppButton { iconGlyph: Theme.iconSave; flat: true; ToolTip.text: qsTr("Save (Ctrl+S)"); ToolTip.visible: hovered; onClicked: window.saveOrAsk() }
-                AppButton { text: qsTr("Save as…"); flat: true; onClicked: saveDialog.open() }
+                AppButton {
+                    text: window.compactBar ? "" : qsTr("Save as…")
+                    iconGlyph: window.compactBar ? Theme.iconSaveAs : ""
+                    flat: true
+                    ToolTip.text: qsTr("Save as… (Ctrl+Shift+S)")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: window.compactBar ? 0 : 500
+                    onClicked: saveDialog.open()
+                }
             }
 
             Item { Layout.fillWidth: true }
@@ -447,6 +524,7 @@ ApplicationWindow {
                         MapTarget { target: ({ target: "bpm" }) }
                     }
                     Text {
+                        visible: !window.narrowBar
                         anchors.verticalCenter: parent.verticalCenter
                         text: "BPM"
                         color: Theme.textDim
@@ -566,7 +644,7 @@ ApplicationWindow {
                 visible: !window.locked
                 iconGlyph: Theme.iconTarget
                 highlighted: Core.mapping.learnMode
-                accentColor: "#ae3ec9"
+                accentColor: Theme.learn
                 onClicked: Core.mapping.learnMode = !Core.mapping.learnMode
                 ToolTip.text: qsTr("Learn mode: click a control of the app, then move the control of your MIDI/OSC device or press a key")
                 ToolTip.visible: hovered
@@ -586,16 +664,19 @@ ApplicationWindow {
                 }
             }
 
-            // running functions
+            // running functions (on a short bar: the number alone)
             Row {
                 spacing: 6
+                HoverHandler { id: runningHover }
+                ToolTip.text: qsTr("%n running", "", Core.runningFunctions)
+                ToolTip.visible: window.compactBar && runningHover.hovered
                 Rectangle {
                     width: 8; height: 8; radius: 4
                     anchors.verticalCenter: parent.verticalCenter
                     color: Core.runningFunctions > 0 ? Theme.success : Theme.textFaint
                 }
                 Text {
-                    text: qsTr("%n running", "", Core.runningFunctions)
+                    text: window.compactBar ? Core.runningFunctions : qsTr("%n running", "", Core.runningFunctions)
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
                 }
@@ -603,7 +684,7 @@ ApplicationWindow {
 
             // grand master
             Rectangle {
-                Layout.preferredWidth: 190
+                Layout.preferredWidth: window.compactBar ? 150 : 190
                 Layout.preferredHeight: 36
                 radius: Theme.radiusSmall
                 color: Theme.surfaceRaised
@@ -633,23 +714,32 @@ ApplicationWindow {
                 }
             }
 
+            // the manual, on the page on screen
             AppButton {
-                text: qsTr("Blackout")
+                text: "?"
+                flat: true
+                font.weight: Font.Bold
+                ToolTip.text: qsTr("Manual (F12)")
+                ToolTip.visible: hovered
+                onClicked: window.showHelp()
+            }
+            AppButton {
+                text: window.narrowBar ? "" : qsTr("Blackout")
                 iconGlyph: Theme.iconPower
                 highlighted: Core.blackout
                 accentColor: Theme.danger
                 onClicked: Core.blackout = !Core.blackout
-                ToolTip.text: "Ctrl+B"
+                ToolTip.text: window.narrowBar ? qsTr("Blackout") + " (Ctrl+B)" : "Ctrl+B"
                 ToolTip.visible: hovered
                 MapTarget { target: ({ target: "blackout" }) }
             }
             AppButton {
-                text: qsTr("Stop all")
+                text: window.narrowBar ? "" : qsTr("Stop all")
                 iconGlyph: Theme.iconStop
                 accentColor: Theme.danger
                 primary: true
                 onClicked: Core.stopAll()
-                ToolTip.text: "Esc"
+                ToolTip.text: window.narrowBar ? qsTr("Stop all") + " (Esc)" : "Esc"
                 ToolTip.visible: hovered
                 MapTarget { target: ({ target: "stopAll" }) }
             }
@@ -737,13 +827,13 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 38
                 visible: Core.mapping.learnMode && !window.locked
-                color: Qt.rgba(0.68, 0.24, 0.79, 0.18)
-                Rectangle { width: parent.width; height: 1; anchors.bottom: parent.bottom; color: "#ae3ec9" }
+                color: Qt.alpha(Theme.learn, 0.18)
+                Rectangle { width: parent.width; height: 1; anchors.bottom: parent.bottom; color: Theme.learn }
 
                 RowLayout {
                     anchors { fill: parent; leftMargin: 14; rightMargin: 8 }
                     spacing: 10
-                    IconLabel { icon: Theme.iconTarget; color: "#d68ee8" }
+                    IconLabel { icon: Theme.iconTarget; color: Theme.learnText }
                     Text {
                         Layout.fillWidth: true
                         readonly property var pending: Core.mapping.pendingTarget
@@ -763,7 +853,7 @@ ApplicationWindow {
                     AppButton {
                         text: qsTr("Done")
                         implicitHeight: 28
-                        accentColor: "#ae3ec9"
+                        accentColor: Theme.learn
                         primary: true
                         onClicked: Core.mapping.learnMode = false
                     }
@@ -818,7 +908,11 @@ ApplicationWindow {
                 FixtureEditorPage { onMessage: (text, isError) => window.showMessage(text, isError) }
                 OutputsPage { levelsView: window.showLevels }
                 MappingsPage { id: mappingsPage; onMessage: (text, isError) => window.showMessage(text, isError) }
-                OptionsPage { onInstallUpdate: window.installUpdate() }
+                OptionsPage {
+                    onInstallUpdate: window.installUpdate()
+                    onManualWanted: helpPanel.show("index")
+                    onGuideWanted: firstSteps.start()
+                }
                 // (the last one: its index is pagePlaybacks)
                 PlaybacksPage {
                     id: playbacksPage
@@ -910,6 +1004,20 @@ ApplicationWindow {
     /* ****************************************************************
      * Toast notifications
      * ****************************************************************/
+
+    // the manual (F12, «?») and the first steps guide (first start, Options)
+    HelpPanel { id: helpPanel }
+    FirstStepsGuide {
+        id: firstSteps
+        pagePatch: window.pagePatch
+        pageProgram: window.pageProgram
+        pageLive: window.pageLive
+        pagePlaybacks: window.pagePlaybacks
+        onPageWanted: (page) => window.goTo(page)
+        onPracticeWanted: (url) => window.whenSaved(() => window.openShow(url))
+        onManualWanted: helpPanel.show("primeros-pasos")
+    }
+
     Popup {
         id: toast
 
@@ -929,7 +1037,7 @@ ApplicationWindow {
         }
         contentItem: Text {
             text: toast.text
-            color: Theme.text
+            color: toast.isError ? Theme.textOn(Theme.danger) : Theme.text
             font.pixelSize: Theme.fontNormal
             wrapMode: Text.Wrap
         }

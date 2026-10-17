@@ -203,7 +203,7 @@ Popup {
         Text {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: qsTr("The fader is the intensity of what it plays. Up from zero it starts it; GO with the fader down plays it at full.")
+            text: qsTr("The fader is the intensity of what it plays. Raising it from zero starts it; GO with the fader down plays it at full.")
             color: Theme.textFaint
             font.pixelSize: Theme.fontSmall
         }

@@ -33,6 +33,8 @@ Rectangle {
     /** Live page: the item dragged to reorder scenes and groups */
     property Item dragProxy: null
     readonly property bool canDrag: !operatorMode && dragProxy !== null
+    /** The colour of the group (dimmed in the night theme) */
+    readonly property color tint: zoneObject ? Theme.category(zoneObject.color) : Theme.accent
 
     // start dragging a scene or this group
     function beginDrag(mouseArea, ev, functionId, label, isZone) {
@@ -85,7 +87,7 @@ Rectangle {
     radius: Theme.radius
     color: Theme.surface
     border.color: columnDrop.containsDrag || groupDrop.containsDrag ? Theme.accent
-                : zoneObject && zoneObject.activeCount > 0 ? Qt.darker(zoneObject.color, 1.4) : Theme.border
+                : zoneObject && zoneObject.activeCount > 0 ? Qt.darker(column.tint, 1.4) : Theme.border
     border.width: columnDrop.containsDrag || groupDrop.containsDrag ? 2 : 1
 
     // a scene dropped on the column, not on a scene: at the end of the group
@@ -116,7 +118,7 @@ Rectangle {
     Rectangle {
         height: 4
         radius: 2
-        color: column.zoneObject ? column.zoneObject.color : Theme.accent
+        color: column.tint
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
     }
 
@@ -301,7 +303,7 @@ Rectangle {
                     type: tileCell.info.type
                     functionId: tileCell.modelData
                     active: !!tileCell.info.active
-                    zoneColor: column.zoneObject ? column.zoneObject.color : Theme.accent
+                    zoneColor: column.tint
                     keyIndex: tileCell.index + 1
                     priority: tileCell.info.priority !== undefined ? tileCell.info.priority : 5
                     large: column.operatorMode
@@ -350,8 +352,8 @@ Rectangle {
                     width: 20
                     height: 24
                     radius: 4
-                    color: "#00000070"
-                    IconLabel { anchors.centerIn: parent; icon: Theme.iconGrip; size: 11; color: "white" }
+                    color: Theme.scrim
+                    IconLabel { anchors.centerIn: parent; icon: Theme.iconGrip; size: 11; color: Theme.textOnShade }
                     MouseArea {
                         id: gripMouse
                         anchors.fill: parent
@@ -398,7 +400,7 @@ Rectangle {
                 Text { text: qsTr("Master"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
                 HSlider {
                     Layout.fillWidth: true
-                    fillColor: column.zoneObject ? column.zoneObject.color : Theme.accent
+                    fillColor: column.tint
                     from: 0; to: 1
                     value: column.zoneObject ? column.zoneObject.master : 1
                     onMoved: column.zoneObject.master = value
@@ -465,7 +467,7 @@ Rectangle {
             onTriggered: column.openScene(tileMenu.functionId)
         }
         MenuItem {
-            text: qsTr("Edit in programmer")
+            text: qsTr("Edit in the programmer")
             enabled: tileMenu.functionType === "Scene"
             onTriggered: column.editScene(tileMenu.functionId)
         }

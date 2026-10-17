@@ -7,6 +7,8 @@ Software de control de iluminación DMX, libre y de código abierto, con una int
 - **Escenas**: estáticas, pasos, FX, super escenas con línea de tiempo y audio, y cuelists con tracking.
 - **Playbacks**: páginas de faders con GO, pausa y flash para cuelists y escenas, también desde una Akai APC mini, APC mini mk2 o APC40 mkII.
 - **Show y remoto**: una pantalla táctil que montas a tu medida con botones, faders y paneles, también en el móvil o la tablet por wifi.
+- **Para empezar**: una guía de primeros pasos dentro del programa, shows de ejemplo y el [manual](docs/manual/index.md) completo, que se abre con F12 en la página en la que estás.
+- **A tu gusto**: en español, inglés, portugués, francés, italiano y alemán; temas oscuro, claro, de alto contraste y nocturno; y el tamaño de la interfaz de 80 % a 150 %.
 - **Hardware**: interfaces **DMX USB** (Enttec Open/Pro, Eurolite, DMXKing, uDMX, Peperoni, Velleman…), Art-Net, sACN/E1.31, MIDI y OSC, y una biblioteca de miles de fixtures, más la Open Fixture Library y la importación de GDTF.
 
 Los shows se guardan en formato `.qxw`, compatible con QLC+: puedes abrir shows de QLC+, y QLC+ puede leer la parte del motor de los nuestros.

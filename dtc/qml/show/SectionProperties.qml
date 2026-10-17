@@ -125,9 +125,9 @@ Flickable {
         const index = Core.mapping.cueIndexOf(item.map)
         return index < cueList.length ? index : -1
     }
-    readonly property var targets: ["scene", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "bpm"]
-    readonly property var targetNames: [qsTr("Play a scene (its intensity)"), qsTr("Master of a group"),
-                                        qsTr("Grand master"), qsTr("Dimmer of fixtures"),
+    readonly property var targets: ["scene", "sceneDimmer", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "bpm"]
+    readonly property var targetNames: [qsTr("Play a scene (its intensity)"), qsTr("Dimmer of a scene (does not play it)"),
+                                        qsTr("Master of a group"), qsTr("Grand master"), qsTr("Dimmer of fixtures"),
                                         qsTr("Movement speed of moving heads"), qsTr("Speed of a scene"), qsTr("BPM")]
     readonly property var fixtureGroupChoices: [{ id: -1, name: qsTr("All the moving heads") }].concat(Core.patch.groups)
 
@@ -140,7 +140,7 @@ Flickable {
         if (values.target !== undefined && values.target !== t.target) {
             // a new kind of element: start from its first choice
             t = { target: values.target }
-            if (values.target === "scene" || values.target === "sceneSpeed")
+            if (values.target === "scene" || values.target === "sceneDimmer" || values.target === "sceneSpeed")
                 t.functionId = functionList.length ? functionList[0].id : -1
             else if (values.target === "group")
                 t.zoneId = zoneList.length ? zoneList[0].id : -1
@@ -180,6 +180,10 @@ Flickable {
     function setItem(values) { Core.surface.setItem(surface.currentPage, sid, cell, values) }
     function setItemKey(key, value) { let v = {}; v[key] = value; setItem(v) }
 
+    // the −/+ buttons of a SpinBox take 80 px: below this width its biggest value is cut ("100 %" shows "ı00 %")
+    FontMetrics { id: spinFont; font.family: Theme.fontFamily; font.pixelSize: Theme.fontNormal }
+    function spinMinWidth(spin) { return spin.leftPadding + spin.rightPadding + spinFont.advanceWidth(spin.textFromValue(spin.to, spin.locale)) + 4 }
+
     contentHeight: column.implicitHeight + 24
     clip: true
     boundsBehavior: Flickable.StopAtBounds
@@ -203,7 +207,7 @@ Flickable {
             visible: props.sid === ""
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: qsTr("Select a section to set it up. Split it in halves with the buttons of its title bar.")
+            text: qsTr("Select a section to set it up. Split it in half with the buttons in its title bar.")
             color: Theme.textFaint
         }
 
@@ -432,7 +436,7 @@ Flickable {
                 AppButton {
                     Layout.fillWidth: true
                     iconGlyph: Theme.iconArrowsV
-                    text: qsTr("One above")
+                    text: qsTr("Top and bottom")
                     onClicked: props.surface.split(props.sid, "v")
                 }
             }
@@ -487,7 +491,7 @@ Flickable {
                     Layout.fillWidth: true
                     visible: props.type === "buttons"
                     model: props.actionNames
-                    displayText: props.itemAction === "map" ? qsTr("A control of another page") : currentText
+                    displayText: props.itemAction === "map" ? qsTr("A control on another page") : currentText
                     currentIndex: Math.max(0, props.actions.indexOf(props.itemAction))
                     onActivated: (i) => props.setAction(props.actions[i])
                 }
@@ -576,7 +580,7 @@ Flickable {
                             }
                             ComboBox {
                                 Layout.fillWidth: true
-                                visible: targetBox.modelData.target === "scene" || targetBox.modelData.target === "sceneSpeed"
+                                visible: ["scene", "sceneDimmer", "sceneSpeed"].indexOf(targetBox.modelData.target) >= 0
                                 textRole: "name"
                                 model: props.functionList
                                 displayText: currentIndex < 0 ? qsTr("Choose a scene…") : currentText
@@ -619,6 +623,60 @@ Flickable {
                     flat: true
                     onClicked: props.addTarget()
                 }
+                // the travel covers only a part of the targets (as the mappings: "min" above "max" inverts it)
+                Caption { visible: props.levelType; text: qsTr("Range") }
+                GridLayout {
+                    visible: props.levelType
+                    Layout.fillWidth: true
+                    columns: 2
+                    columnSpacing: 8
+                    rowSpacing: 4
+                    Text { text: qsTr("From"); color: Theme.textDim }
+                    SpinBox {
+                        id: minSpin
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: props.spinMinWidth(minSpin)
+                        from: 0; to: 100; editable: true
+                        value: props.item && props.item.min !== undefined ? props.item.min : 0
+                        textFromValue: (v) => v + " %"
+                        valueFromText: (t) => { const v = parseInt(t); return isNaN(v) ? minSpin.value : v }
+                        validator: RegularExpressionValidator { regularExpression: /[0-9]{1,3}\s*%?/ }
+                        onValueModified: props.setItemKey("min", value)
+                    }
+                    Text { text: qsTr("to"); color: Theme.textDim }
+                    SpinBox {
+                        id: maxSpin
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: props.spinMinWidth(maxSpin)
+                        from: 0; to: 100; editable: true
+                        value: props.item && props.item.max !== undefined ? props.item.max : 100
+                        textFromValue: (v) => v + " %"
+                        valueFromText: (t) => { const v = parseInt(t); return isNaN(v) ? maxSpin.value : v }
+                        validator: RegularExpressionValidator { regularExpression: /[0-9]{1,3}\s*%?/ }
+                        onValueModified: props.setItemKey("max", value)
+                    }
+                }
+                RowLayout {
+                    visible: props.levelType
+                    AppSwitch {
+                        checked: !!(props.item && props.item.invert)
+                        onToggled: props.setItemKey("invert", checked)
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Invert")
+                        color: Theme.text
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: props.levelType
+                    text: qsTr("The travel covers only this part of what it drives; with From above to, it works upside down")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.WordWrap
+                }
                 RowLayout {
                     visible: props.type === "faders"
                     AppSwitch {
@@ -642,7 +700,7 @@ Flickable {
                     Text {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: qsTr("Incremental wheel: turns forever, each notch adds or takes a step")
+                        text: qsTr("Incremental wheel: turns forever, each notch adds or removes a step")
                         color: Theme.text
                     }
                 }

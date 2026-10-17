@@ -582,6 +582,49 @@ void Function_Test::unregisterAttributeOverrides()
     QCOMPARE(stub->getAttributeValue(Function::Intensity), 1.0);
 }
 
+void Function_Test::baseUnderOverride()
+{
+    Doc doc(this);
+
+    Function_Stub* stub = new Function_Stub(&doc);
+    QSignalSpy changed(stub, SIGNAL(attributeChanged(int,qreal)));
+
+    /* The base of the intensity changes while an override is there (the
+     * dimmer of a scene that plays): the final value is the new base times
+     * the override, at once */
+    stub->adjustAttribute(0.5, Function::Intensity);
+    int attr = stub->requestAttributeOverride(Function::Intensity, 0.4);
+    QCOMPARE(stub->getAttributeValue(Function::Intensity), 0.2); /* 0.5 * 0.4 */
+
+    changed.clear();
+    QCOMPARE(stub->adjustAttribute(1.0, Function::Intensity), int(Function::Intensity));
+    QCOMPARE(stub->getAttributeValue(Function::Intensity), 0.4); /* 1.0 * 0.4 */
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(changed.last().at(1).toReal(), 0.4);
+    QCOMPARE(stub->attributes().at(Function::Intensity).m_value, 1.0);
+
+    stub->adjustAttribute(0.0, Function::Intensity);
+    QCOMPARE(stub->getAttributeValue(Function::Intensity), 0.0);
+
+    /* the override still moves on the new base */
+    stub->adjustAttribute(0.5, Function::Intensity);
+    stub->adjustAttribute(0.8, attr);
+    QCOMPARE(stub->getAttributeValue(Function::Intensity), 0.4); /* 0.5 * 0.8 */
+
+    /* released: the base alone */
+    stub->releaseAttributeOverride(attr);
+    QCOMPARE(stub->getAttributeValue(Function::Intensity), 0.5);
+
+    /* a last wins attribute keeps the value of its override */
+    stub->registerAttribute("Foo", Function::LastWins, 0.0, 1.0, 1.0);
+    int foo = stub->requestAttributeOverride(1, 0.3);
+    QVERIFY(foo != Function::invalidAttributeId());
+    stub->adjustAttribute(0.9, 1);
+    QCOMPARE(stub->getAttributeValue(1), 0.3);
+    stub->releaseAttributeOverride(foo);
+    QCOMPARE(stub->getAttributeValue(1), 0.9);
+}
+
 void Function_Test::blendMode()
 {
     Doc doc(this);

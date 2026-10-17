@@ -79,3 +79,9 @@ target_link_libraries(dtc_backend_test PRIVATE
     qlcplusengine
 )
 set_target_properties(dtc_backend_test PROPERTIES AUTORCC ON)
+
+# the built-in manual (DtcCore::manualPage)
+file(GLOB DTC_TEST_MANUAL_FILES CONFIGURE_DEPENDS
+     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
+qt_add_resources(dtc_backend_test "test_manual" PREFIX "/manual" BASE "${CMAKE_SOURCE_DIR}/docs/manual"
+                 FILES ${DTC_TEST_MANUAL_FILES})

@@ -86,7 +86,7 @@ Slider {
         width: 16
         height: 16
         radius: 8
-        color: control.pressed ? "#ffffff" : "#d9dce3"
-        border.color: "#00000060"
+        color: control.pressed ? Theme.knobBorder : Theme.knob
+        border.color: Theme.knobEdge
     }
 }

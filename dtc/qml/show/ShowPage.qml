@@ -260,19 +260,37 @@ Item {
             Layout.fillWidth: true
             spacing: 12
 
+            // a long title or hint shortens: the page buttons always fit
             Column {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 120
+                readonly property real textWidth: Math.max(titleMetrics.advanceWidth, hintMetrics.advanceWidth) + 2
+                Layout.preferredWidth: textWidth
+                Layout.maximumWidth: textWidth
                 Text {
+                    id: showTitleText
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: Core.showTitle
                     color: Theme.text
                     font.pixelSize: Theme.fontTitle + 4
                     font.weight: Font.Bold
+                    TextMetrics { id: titleMetrics; text: showTitleText.text; font: showTitleText.font }
                 }
                 Text {
+                    id: showHintText
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: page.locked ? qsTr("Locked — hold the lock button to unlock")
-                        : page.editing ? qsTr("Editing — split the sections in halves, choose what each one shows, drag scenes onto the buttons")
+                        : page.editing ? qsTr("Editing — split the sections in half, choose what each one shows, drag scenes onto the buttons")
                         : qsTr("Your show screen")
                     color: page.locked || page.editing ? Theme.warning : Theme.textDim
                     font.pixelSize: Theme.fontSmall
+                    TextMetrics { id: hintMetrics; text: showHintText.text; font: showHintText.font }
+                    HoverHandler { id: hintHover }
+                    ToolTip.text: text
+                    ToolTip.visible: truncated && hintHover.hovered
+                    ToolTip.delay: 500
                 }
             }
 
@@ -382,7 +400,7 @@ Item {
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
-                        text: qsTr("Build the screen you want for the show: tables of buttons and faders, groups, a clock, a timer… Each section splits in halves.")
+                        text: qsTr("Build the screen you want for the show: tables of buttons and faders, groups, a clock, a timer… Each section splits in half.")
                         color: Theme.textDim
                     }
                     Row {

@@ -141,7 +141,7 @@ Popup {
 
         Text {
             text: dialog.mode === "unlock" ? qsTr("Password")
-                  : Core.settings.hasLockPassword ? qsTr("New password (empty: keep the one there is)")
+                  : Core.settings.hasLockPassword ? qsTr("New password (empty: keep the current one)")
                   : qsTr("Password (optional)")
             color: Theme.textDim
             font.pixelSize: Theme.fontSmall

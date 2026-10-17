@@ -45,6 +45,7 @@
 #include "inputoutputmap.h"
 #include "function.h"
 #include "cuelist.h"
+#include "show.h"
 #include "doc.h"
 
 #define KXMLDTCSurfacePage   QStringLiteral("Page")
@@ -53,6 +54,7 @@
 #define KXMLDTCSurfaceItem    QStringLiteral("Item")
 #define KXMLDTCSurfaceTarget  QStringLiteral("Target")
 #define KXMLDTCSurfaceWidget  QStringLiteral("Widget")   // version 1 pages
+#define KXMLDTCSurfaceDimmer  QStringLiteral("SceneDimmer")
 
 ShowSurface::ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent)
     : QObject(parent)
@@ -78,6 +80,9 @@ ShowSurface::ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent)
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionGone(quint32)));
     connect(m_doc, SIGNAL(functionReplaced(quint32)), this, SLOT(slotFunctionGone(quint32)));
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
+    // (the dimmers of the scenes are the base of their intensity)
+    connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotFunctionAdded(quint32)));
+    connect(m_doc, SIGNAL(functionChanged(quint32)), this, SLOT(slotFunctionChanged(quint32)));
     m_speedSource->setOutputEnabled(true);
     slotZonesChanged();
 }
@@ -254,8 +259,49 @@ QVariantMap ShowSurface::toMap(const Node *node) const
 
 void ShowSurface::changed()
 {
+    pruneSceneDimmers();
     m_doc->setModified();
     emit pagesChanged();
+}
+
+void ShowSurface::pruneSceneDimmers()
+{
+    if (m_sceneDimmers.isEmpty())
+        return;
+
+    // the scenes some fader or dial still dims
+    QSet<quint32> dimmed;
+    std::function<void(const Node *)> walk = [&](const Node *node) {
+        if (node == nullptr)
+            return;
+        walk(node->a.get());
+        walk(node->b.get());
+        const QVariantMap items = node->props.value("items").toMap();
+        for (const QVariant &item : items)
+        {
+            for (const QVariant &v : faderTargets(item.toMap()))
+            {
+                const QVariantMap target = v.toMap();
+                if (target.value("target").toString() == "sceneDimmer" && target.value("functionId", -1).toInt() >= 0)
+                    dimmed.insert(target.value("functionId").toUInt());
+            }
+        }
+    };
+    for (const Page &page : m_pages)
+        walk(page.root.get());
+
+    // a dimmer nothing shows any more (its fader deleted or on another
+    // scene) would dim its scene where no one can see why: back to full
+    for (auto it = m_sceneDimmers.begin(); it != m_sceneDimmers.end();)
+    {
+        if (dimmed.contains(it.key()))
+        {
+            ++it;
+            continue;
+        }
+        applySceneDimmer(m_doc->function(it.key()), 1.0);
+        it = m_sceneDimmers.erase(it);
+    }
 }
 
 /*********************************************************************
@@ -591,10 +637,12 @@ void ShowSurface::clear()
     m_pages.clear();
     m_overrides.clear();
     m_levels.clear();
+    clearSceneDimmers();
     m_lastId = 0;
     m_speedLevels.clear();
     m_speedOrder.clear();
     m_speedSource->unsetAll();
+    emit cleared();
     emit pagesChanged();
 }
 
@@ -848,18 +896,152 @@ QVariantList ShowSurface::faderTargets(const QVariantMap &item)
     return targets;
 }
 
+bool ShowSurface::bottomStops(const QVariantMap &target)
+{
+    const QString kind = target.value("target").toString();
+    return kind == "scene" || (kind == "map" && target.value("map").toMap().value("target").toString() == "playbackFader");
+}
+
 void ShowSurface::setLevel(const QVariantMap &item, qreal level)
 {
-    level = qBound(0.0, level, 1.0);
-    for (const QVariant &target : faderTargets(item))
-        setTargetLevel(target.toMap(), level);
+    level = qIsFinite(level) ? qBound(0.0, level, 1.0) : 0.0;
+    qreal min, max;
+    bool invert;
+    ControlMapper::rangeOf(item, min, max, invert);
+    const qreal value = min + (max - min) * (invert ? 1.0 - level : level);
+    // a scene stops at the end of the travel where the value is lowest (the
+    // bottom; the top when inverted), whatever the minimum: there its fader
+    // shows it stopped (level())
+    const bool atStop = invert ? level >= 1.0 : level <= 0.0;
+    for (const QVariant &v : faderTargets(item))
+    {
+        const QVariantMap target = v.toMap();
+        setTargetLevel(target, atStop && bottomStops(target) ? 0.0 : value);
+    }
     slotChanged();
 }
 
 qreal ShowSurface::level(const QVariantMap &item) const
 {
     QVariantList targets = faderTargets(item);
+    return targets.isEmpty() ? 0.0 : positionOf(item, targetLevel(targets.first().toMap()));
+}
+
+qreal ShowSurface::value(const QVariantMap &item) const
+{
+    QVariantList targets = faderTargets(item);
     return targets.isEmpty() ? 0.0 : targetLevel(targets.first().toMap());
+}
+
+qreal ShowSurface::positionOf(const QVariantMap &item, qreal value) const
+{
+    qreal min, max;
+    bool invert;
+    ControlMapper::rangeOf(item, min, max, invert);
+    // (no range: at the top from its value up)
+    qreal position = max > min ? (value - min) / (max - min) : (value >= max ? 1.0 : 0.0);
+    position = qIsFinite(position) ? qBound(0.0, position, 1.0) : 0.0;
+    return invert ? 1.0 - position : position;
+}
+
+void ShowSurface::stepLevel(const QVariantMap &item, int notches)
+{
+    // in steps of the value (as the encoders of the mappings), so a narrow
+    // range doesn't stall on the steps of a channel
+    qreal min, max;
+    bool invert;
+    ControlMapper::rangeOf(item, min, max, invert);
+    bool ok = false;
+    const int stepPercent = item.value("step").toInt(&ok);
+    const qreal step = (ok ? qBound(1, stepPercent, 100) : 2) / 100.0;
+    // (up the travel is down the value on an inverted fader)
+    const qreal delta = notches * step * (invert ? -1.0 : 1.0);
+    qreal next = qBound(min, value(item) + delta, max);
+    // (steps of 0.1 don't add up to the ends exactly)
+    if (qAbs(next - min) < 1e-6)
+        next = min;
+    else if (qAbs(next - max) < 1e-6)
+        next = max;
+    qreal position = positionOf(item, next);
+    // turned up from a stopped scene (or one below the range): it starts at
+    // the minimum, it doesn't stay at the end that stops it
+    const qreal nudge = 1e-6;
+    if (delta > 0.0 && (invert ? position >= 1.0 : position <= 0.0))
+        position = invert ? 1.0 - nudge : nudge;
+    // turned down to the minimum: the end that stops it (also when From is
+    // To, where the minimum has no place of its own on the travel)
+    else if (delta < 0.0 && next <= min)
+        position = invert ? 1.0 : 0.0;
+    setLevel(item, position);
+}
+
+QVariantList ShowSurface::holdLevels(const QVariantMap &item) const
+{
+    QVariantList levels;
+    for (const QVariant &target : faderTargets(item))
+        levels.append(targetLevel(target.toMap()));
+    return levels;
+}
+
+void ShowSurface::restoreLevels(const QVariantMap &item, const QVariantList &levels)
+{
+    const QVariantList targets = faderTargets(item);
+    for (int i = 0; i < targets.count() && i < levels.count(); i++)
+    {
+        bool ok = false;
+        const qreal level = levels.at(i).toDouble(&ok);
+        if (ok && qIsFinite(level))
+            setTargetLevel(targets.at(i).toMap(), qBound(0.0, level, 1.0));
+    }
+    slotChanged();
+}
+
+void ShowSurface::setSceneDimmer(quint32 functionId, qreal dimmer)
+{
+    dimmer = qIsFinite(dimmer) ? qBound(0.0, dimmer, 1.0) : 1.0;
+    if (qFuzzyCompare(sceneDimmer(functionId), dimmer))
+        return;
+    Function *f = m_doc->function(functionId);
+    if (f == nullptr)
+        return;
+
+    if (dimmer >= 1.0)
+        m_sceneDimmers.remove(functionId);
+    else
+        m_sceneDimmers.insert(functionId, dimmer);
+    applySceneDimmer(f, dimmer);
+    // (a super scene gets it on its tracks added later when it runs again)
+    connect(f, SIGNAL(running(quint32)), this, SLOT(slotFunctionRunning(quint32)), Qt::UniqueConnection);
+    m_doc->setModified();
+    slotChanged();
+}
+
+qreal ShowSurface::sceneDimmer(quint32 functionId) const
+{
+    return m_sceneDimmers.value(functionId, 1.0);
+}
+
+void ShowSurface::clearSceneDimmers()
+{
+    for (auto it = m_sceneDimmers.cbegin(); it != m_sceneDimmers.cend(); ++it)
+        applySceneDimmer(m_doc->function(it.key()), 1.0);
+    m_sceneDimmers.clear();
+}
+
+void ShowSurface::applySceneDimmer(Function *f, qreal dimmer)
+{
+    if (f == nullptr)
+        return;
+    // a super scene: the level of each of its tracks, and its static values
+    if (Show *show = qobject_cast<Show *>(f))
+    {
+        for (int i = 0; i < show->attributes().count(); i++)
+            show->adjustAttribute(dimmer, i);
+        if (Function *values = m_doc->function(show->staticScene()))
+            values->adjustAttribute(dimmer, Function::Intensity);
+        return;
+    }
+    f->adjustAttribute(dimmer, Function::Intensity);
 }
 
 void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
@@ -884,6 +1066,11 @@ void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
     {
         if (Zone *zone = m_zones->zoneById(t.value("zoneId").toUInt()))
             zone->setMaster(level);
+    }
+    else if (target == "sceneDimmer")
+    {
+        // whoever plays the scene (it doesn't start or stop it)
+        setSceneDimmer(t.value("functionId").toUInt(), level);
     }
     else if (target == "sceneSpeed")
     {
@@ -964,9 +1151,14 @@ void ShowSurface::applySceneLevel(Function *f)
 
 void ShowSurface::slotFunctionRunning(quint32 fid)
 {
-    // a scene of no group the fader started (again): its level again
     Function *f = m_doc->function(fid);
-    if (f == nullptr || m_levels.contains(fid) == false || zoneFor(fid) != nullptr)
+    if (f == nullptr)
+        return;
+    // its dimmer again (the tracks a super scene got since)
+    if (m_sceneDimmers.contains(fid))
+        applySceneDimmer(f, m_sceneDimmers.value(fid));
+    // a scene of no group the fader started (again): its level again
+    if (m_levels.contains(fid) == false || zoneFor(fid) != nullptr)
         return;
     applySceneLevel(f);
 }
@@ -995,10 +1187,28 @@ void ShowSurface::slotFunctionGone(quint32 fid)
 
 void ShowSurface::slotFunctionRemoved(quint32 fid)
 {
+    m_sceneDimmers.remove(fid);
     // a reference to it: it drives nothing now, not a function made later
     // with its ID (a playback target lets its slot go too, like a mapping)
     if (forgetFunctions([fid](const QVariant &id) { return id.toInt() >= 0 && id.toUInt() == fid; }))
         changed();
+}
+
+void ShowSurface::slotFunctionAdded(quint32 fid)
+{
+    // (a copy of an effect copies the base of its intensity: not the dimmer)
+    Function *f = m_doc->function(fid);
+    if (f != nullptr && m_sceneDimmers.contains(fid) == false &&
+        f->attributes().isEmpty() == false && f->attributes().first().m_value != 1.0)
+        applySceneDimmer(f, 1.0);
+}
+
+void ShowSurface::slotFunctionChanged(quint32 fid)
+{
+    // another function in its place (an effect made an FX), or a super scene
+    // with new tracks or static values: the same dimmer, before they play
+    if (m_sceneDimmers.contains(fid))
+        applySceneDimmer(m_doc->function(fid), m_sceneDimmers.value(fid));
 }
 
 bool ShowSurface::forgetFunctions(const std::function<bool(const QVariant &)> &gone)
@@ -1118,6 +1328,8 @@ qreal ShowSurface::targetLevel(const QVariantMap &t) const
         Zone *zone = m_zones->zoneById(t.value("zoneId").toUInt());
         return zone != nullptr ? zone->master() : 0.0;
     }
+    if (target == "sceneDimmer")
+        return sceneDimmer(t.value("functionId").toUInt());
     if (target == "sceneSpeed")
     {
         quint32 fid = t.value("functionId").toUInt();
@@ -1209,6 +1421,11 @@ void ShowSurface::slotChanged()
     emit revisionChanged();
 }
 
+void ShowSurface::refresh()
+{
+    slotChanged();
+}
+
 void ShowSurface::slotZonesChanged()
 {
     for (int i = 0; i < m_zones->count(); i++)
@@ -1217,6 +1434,8 @@ void ShowSurface::slotZonesChanged()
         // UniqueConnection: zones already connected stay connected once
         connect(zone, SIGNAL(activeChanged()), this, SLOT(slotChanged()), Qt::UniqueConnection);
         connect(zone, SIGNAL(masterChanged()), this, SLOT(slotChanged()), Qt::UniqueConnection);
+        // (the speed of a scene changed elsewhere: the faders on it follow)
+        connect(zone, SIGNAL(functionsChanged()), this, SLOT(slotChanged()), Qt::UniqueConnection);
     }
     slotChanged();
 }
@@ -1311,6 +1530,17 @@ bool ShowSurface::saveXML(QXmlStreamWriter *doc) const
         saveNode(doc, page.root.get());
         doc->writeEndElement();
     }
+    // the dimmers of the scenes (in the order of their IDs: the same show
+    // saves the same file)
+    QList<quint32> dimmed = m_sceneDimmers.keys();
+    std::sort(dimmed.begin(), dimmed.end());
+    for (quint32 fid : std::as_const(dimmed))
+    {
+        doc->writeStartElement(KXMLDTCSurfaceDimmer);
+        doc->writeAttribute("Function", QString::number(fid));
+        doc->writeAttribute("Value", QString::number(m_sceneDimmers.value(fid)));
+        doc->writeEndElement();
+    }
     doc->writeEndElement();
     return true;
 }
@@ -1389,6 +1619,18 @@ std::unique_ptr<ShowSurface::Node> ShowSurface::loadNode(QXmlStreamReader &root)
                     cell = attr.value().toString();
                 else
                     item.insert(attr.name().toString(), fromXmlValue(attr.name().toString(), attr.value().toString()));
+            }
+            // the range of a fader as the editor gives it (0-100 %)
+            for (const QString &key : { QStringLiteral("min"), QStringLiteral("max") })
+            {
+                if (item.contains(key) == false)
+                    continue;
+                bool ok = false;
+                const double percent = item.value(key).toDouble(&ok);
+                if (ok && qIsFinite(percent))
+                    item.insert(key, int(qBound(0.0, percent, 100.0)));
+                else
+                    item.remove(key);
             }
             QVariantList targets;
             while (root.readNextStartElement())
@@ -1481,9 +1723,21 @@ bool ShowSurface::loadXML(QXmlStreamReader &root)
     bool version1 = root.attributes().hasAttribute("Version") == false;
     m_pages.clear();
     m_lastId = 0;
+    clearSceneDimmers();
 
     while (root.readNextStartElement())
     {
+        // the dimmer of a scene that is there (0..1)
+        if (root.name() == KXMLDTCSurfaceDimmer)
+        {
+            bool idOk = false, valueOk = false;
+            const quint32 fid = root.attributes().value("Function").toUInt(&idOk);
+            const double dimmer = root.attributes().value("Value").toDouble(&valueOk);
+            if (idOk && valueOk && qIsFinite(dimmer) && m_doc->function(fid) != nullptr && dimmer < 1.0)
+                m_sceneDimmers.insert(fid, qBound(0.0, dimmer, 1.0));
+            root.skipCurrentElement();
+            continue;
+        }
         if (root.name() != KXMLDTCSurfacePage)
         {
             root.skipCurrentElement();
@@ -1515,6 +1769,14 @@ bool ShowSurface::loadXML(QXmlStreamReader &root)
     }
 
     checkLoaded();
+    // (the functions are there: they get their dimmers, if a control is on them)
+    pruneSceneDimmers();
+    for (auto it = m_sceneDimmers.cbegin(); it != m_sceneDimmers.cend(); ++it)
+    {
+        Function *f = m_doc->function(it.key());
+        applySceneDimmer(f, it.value());
+        connect(f, SIGNAL(running(quint32)), this, SLOT(slotFunctionRunning(quint32)), Qt::UniqueConnection);
+    }
     emit pagesChanged();
     return true;
 }
@@ -1842,6 +2104,9 @@ QVariantMap ShowSurface::addFromTarget(const QVariantMap &origin, int page)
             t = QVariantMap({ { "target", "group" }, { "zoneId", target.value("zoneId", -1) } });
         else if (kind == "mixerDimmer")
             t = QVariantMap({ { "target", "mixerDimmer" }, { "mixerId", target.value("mixerId", -1) } });
+        // (the same speed: of its group, or of the scene alone)
+        else if (kind == "sceneSpeed")
+            t = QVariantMap({ { "target", "sceneSpeed" }, { "functionId", target.value("functionId", -1) } });
         else
         {
             t = QVariantMap({ { "target", "map" }, { "map", target } });

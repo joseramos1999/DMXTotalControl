@@ -111,6 +111,8 @@ private slots:
     void slotTextMessage(const QString &text);
     void slotSocketGone();
     void slotLayoutChanged();
+    /** Another show: what the phones hold is let go of, not given back */
+    void slotShowCleared();
     /** The groups are in the layout (their names, colours and scenes): it
      *  follows them */
     void slotZonesChanged();
@@ -179,7 +181,8 @@ private:
         int count = 0;
         QVariantMap item;
         bool fader = false;
-        qreal level = 0.0;
+        // (a fader: the values of its targets before, given back exactly)
+        QVariantList levels;
     };
     QHash<QWebSocket *, QHash<QString, PressHold>> m_presses;
 };

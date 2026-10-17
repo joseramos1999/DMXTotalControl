@@ -1010,7 +1010,7 @@ bool FixtureLibrary::deleteUserDefinition(const QString &manufacturer, const QSt
     if (QFile::remove(def->definitionSourceFile()) == false)
         return false;
 
-    setStatus(tr("%1 %2 deleted. It disappears from the library at the next start").arg(manufacturer, model));
+    setStatus(tr("%1 %2 deleted. It will disappear from the library on the next start").arg(manufacturer, model));
     emit libraryChanged();
     return true;
 }

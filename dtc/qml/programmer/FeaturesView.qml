@@ -39,7 +39,7 @@ ColumnLayout {
 
     readonly property var tabs: [
         { id: "dimmer", name: qsTr("Dimmer") },
-        { id: "color", name: qsTr("Color") },
+        { id: "color", name: qsTr("Colour") },
         { id: "position", name: qsTr("Position") },
         { id: "gobo", name: qsTr("Gobo") },
         { id: "beam", name: qsTr("Beam") },

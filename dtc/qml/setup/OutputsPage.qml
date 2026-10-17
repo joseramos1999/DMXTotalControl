@@ -37,20 +37,31 @@ Item {
             Layout.fillWidth: true
             spacing: 10
 
+            // the subtitle shortens: the buttons always fit
             Column {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 120
+                Layout.preferredWidth: 200
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Outputs")
                     color: Theme.text
                     font.pixelSize: Theme.fontTitle
                     font.weight: Font.Bold
                 }
                 Text {
+                    width: parent.width
+                    elide: Text.ElideRight
                     text: qsTr("Connect each universe to a DMX interface: DMX USB, Art-Net, sACN and more.")
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
+                    HoverHandler { id: subtitleHover }
+                    ToolTip.text: text
+                    ToolTip.visible: truncated && subtitleHover.hovered
+                    ToolTip.delay: 500
                 }
             }
-            Item { Layout.fillWidth: true }
             AppButton { text: qsTr("Universes"); iconGlyph: Theme.iconPlug; highlighted: !page.levelsView; onClicked: page.levelsView = false }
             AppButton { text: qsTr("DMX levels"); iconGlyph: Theme.iconSliders; highlighted: page.levelsView; onClicked: page.levelsView = true }
             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 28; color: Theme.border }

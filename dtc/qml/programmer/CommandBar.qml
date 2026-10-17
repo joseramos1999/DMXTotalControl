@@ -163,7 +163,7 @@ Rectangle {
             iconGlyph: Theme.iconStepBackward
             flat: true
             implicitHeight: 30
-            ToolTip.text: qsTr("Previous fixture of the selection, one at a time (PREV)")
+            ToolTip.text: qsTr("Previous fixture in the selection, one at a time (PREV)")
             ToolTip.visible: hovered
             ToolTip.delay: 500
             onClicked: Core.programmer.previousFixture()
@@ -179,7 +179,7 @@ Rectangle {
             iconGlyph: Theme.iconStepForward
             flat: true
             implicitHeight: 30
-            ToolTip.text: qsTr("Next fixture of the selection, one at a time (NEXT)")
+            ToolTip.text: qsTr("Next fixture in the selection, one at a time (NEXT)")
             ToolTip.visible: hovered
             ToolTip.delay: 500
             onClicked: Core.programmer.nextFixture()

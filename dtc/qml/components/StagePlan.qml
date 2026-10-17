@@ -125,7 +125,7 @@ Rectangle {
         y: plan.stageY
         width: plan.stage.width * plan.mmScale
         height: plan.stage.height * plan.mmScale
-        color: "#12151b"
+        color: Theme.planGrid
         border.color: Theme.borderStrong
         radius: 4
 
@@ -257,8 +257,8 @@ Rectangle {
             let path = bandArea.path
             if (!bandArea.banding || !plan.lasso || path.length < 2)
                 return
-            ctx.fillStyle = Qt.rgba(0.24, 0.55, 0.99, 0.15)
-            ctx.strokeStyle = "#3d8bfd"
+            ctx.fillStyle = Qt.alpha(Theme.accent, 0.15)
+            ctx.strokeStyle = Theme.accent
             ctx.lineWidth = 1.5
             ctx.beginPath()
             ctx.moveTo(path[0].x, path[0].y)
@@ -346,8 +346,8 @@ Rectangle {
                                 width: cells.width / fxItem.heads
                                 height: cells.height
                                 color: fxItem.lit && fxItem.liveState.colors[index] !== undefined ? fxItem.liveState.colors[index]
-                                     : (fxItem.selected ? Qt.alpha(Theme.accent, 0.6) : "#262c38")
-                                border.color: "#12151b"
+                                     : (fxItem.selected ? Qt.alpha(Theme.accent, 0.6) : Theme.planLine)
+                                border.color: Theme.planGrid
                                 border.width: width > 5 ? 1 : 0
                             }
                         }
@@ -393,7 +393,7 @@ Rectangle {
                     id: indexText
                     anchors.centerIn: parent
                     text: fxItem.selectionIndex + 1
-                    color: "white"
+                    color: fxItem.lit || fxItem.bar ? Theme.textOnShade : Theme.accentText
                     font.pixelSize: fxItem.bar ? Theme.fontSmall : Theme.fontLarge
                     font.weight: Font.Bold
                 }
@@ -403,7 +403,7 @@ Rectangle {
                 visible: fxItem.lit && fxItem.liveState.gobo.length > 0 && fxItem.liveState.dimmer > 0.02
                 anchors { right: parent.right; bottom: parent.bottom; margins: -6 }
                 width: 20; height: 20; radius: 10
-                color: "#0b0d12"
+                color: Theme.plan
                 border.color: Theme.borderStrong
                 Image {
                     anchors { fill: parent; margins: 2 }

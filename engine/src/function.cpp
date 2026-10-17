@@ -1535,6 +1535,10 @@ int Function::adjustAttribute(qreal value, int attributeId)
         // Adjust the original value of an attribute. Only Function editors should do this!
         m_attributes[attributeId].m_value = CLAMP(value, m_attributes[attributeId].m_min, m_attributes[attributeId].m_max);
         attrIndex = attributeId;
+        // DMX Total Control: with overrides, the final value is the new base
+        // times them (it kept the old base until an override moved)
+        if (m_attributes[attrIndex].m_isOverridden)
+            calculateOverrideValue(attrIndex);
     }
     else
     {

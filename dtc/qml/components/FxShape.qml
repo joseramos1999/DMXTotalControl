@@ -24,6 +24,9 @@ import DMXTotalControl.Backend
 /** The drawing of an FX mode (the wave around the base line) or of a pan/tilt figure */
 Canvas {
     id: shape
+    // the colours of the theme
+    readonly property string themeName: Theme.name
+    onThemeNameChanged: requestPaint()
 
     /** a figure (pan/tilt) instead of a mode */
     property bool figure: false

@@ -51,6 +51,8 @@ UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
+; el idioma de Windows, sin preguntar si es uno de los del instalador
+ShowLanguageDialog=auto
 ; Si el programa está abierto durante una actualización, se ofrece cerrarlo.
 CloseApplications=yes
 RestartApplications=yes
@@ -60,12 +62,27 @@ ChangesAssociations=yes
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
+Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
+Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [CustomMessages]
 spanish.ShowFile=Show de {#AppName}
 english.ShowFile={#AppName} show
 spanish.FtdiDrivers=Abrir la página de los drivers USB de FTDI (interfaces DMX USB como Enttec Open DMX o USB Pro)
 english.FtdiDrivers=Open the page of the FTDI USB drivers (DMX USB interfaces such as Enttec Open DMX or USB Pro)
+brazilianportuguese.ShowFile=Show do {#AppName}
+brazilianportuguese.FtdiDrivers=Abrir a página dos drivers USB da FTDI (interfaces DMX USB como Enttec Open DMX ou USB Pro)
+portuguese.ShowFile=Show do {#AppName}
+portuguese.FtdiDrivers=Abrir a página dos controladores USB da FTDI (interfaces DMX USB como Enttec Open DMX ou USB Pro)
+french.ShowFile=Show {#AppName}
+french.FtdiDrivers=Ouvrir la page des pilotes USB FTDI (interfaces DMX USB comme Enttec Open DMX ou USB Pro)
+italian.ShowFile=Show di {#AppName}
+italian.FtdiDrivers=Apri la pagina dei driver USB FTDI (interfacce DMX USB come Enttec Open DMX o USB Pro)
+german.ShowFile={#AppName}-Show
+german.FtdiDrivers=Seite der FTDI-USB-Treiber öffnen (DMX-USB-Interfaces wie Enttec Open DMX oder USB Pro)
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"

@@ -52,6 +52,7 @@ private slots:
     void tempo();
     void attributes();
     void unregisterAttributeOverrides();
+    void baseUnderOverride();
     void blendMode();
     void loaderWrongRoot();
     void loaderWrongID();

@@ -103,6 +103,8 @@ RowLayout {
                     Rectangle {
                         width: 10; height: 10; radius: 5
                         color: paramRow.modelData.colour || (paramRow.modelData.key === "pantilt" ? Theme.functionColor("EFX") : Theme.textFaint)
+                        // (a white light on a light theme)
+                        border.color: Theme.edgeFor(color, Theme.surface)
                     }
                     Text {
                         Layout.fillWidth: true
@@ -302,7 +304,7 @@ RowLayout {
                 text: qsTr("Like the rest")
                 iconGlyph: Theme.iconRefresh
                 implicitHeight: 28
-                ToolTip.text: qsTr("The selected fixtures do what the FX does again"); ToolTip.visible: hovered
+                ToolTip.text: qsTr("The selected fixtures follow the FX again"); ToolTip.visible: hovered
                 onClicked: Core.programmer.resetFxOwn(panel.param)
             }
         }

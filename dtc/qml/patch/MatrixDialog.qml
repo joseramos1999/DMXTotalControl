@@ -168,7 +168,7 @@ Popup {
                     Layout.fillWidth: true
                     visible: dialog.error.length > 0 || dialog.lineChannels > 512
                     wrapMode: Text.WordWrap
-                    text: dialog.lineChannels > 512 ? qsTr("A line of pixels needs more than a universe: make it shorter or wire it the other way.")
+                    text: dialog.lineChannels > 512 ? qsTr("A line of pixels needs more than one universe: make it shorter or wire it the other way.")
                                                     : dialog.error
                     color: Theme.danger
                     font.pixelSize: Theme.fontSmall
@@ -191,6 +191,9 @@ Popup {
 
                     Canvas {
                         id: wires
+                        // the colours of the theme
+                        readonly property string themeName: Theme.name
+                        onThemeNameChanged: requestPaint()
                         width: preview.shownColumns * preview.cell
                         height: preview.shownRows * preview.cell
                         anchors.centerIn: parent
@@ -199,12 +202,12 @@ Popup {
                             ctx.reset()
                             let c = preview.cell
                             // the cells
-                            ctx.fillStyle = "#1c212b"
+                            ctx.fillStyle = Theme.surfaceRaised
                             for (let x = 0; x < preview.shownColumns; x++)
                                 for (let y = 0; y < preview.shownRows; y++)
                                     ctx.fillRect(x * c + 1, y * c + 1, c - 2, c - 2)
                             // the wire, from pixel 1
-                            ctx.strokeStyle = "#3d8bfd"
+                            ctx.strokeStyle = Theme.accent
                             ctx.lineWidth = Math.max(1, c / 8)
                             ctx.beginPath()
                             let first = true
@@ -220,7 +223,7 @@ Popup {
                             // pixel 1
                             if (preview.order.length) {
                                 let p = preview.order[0]
-                                ctx.fillStyle = "#2fb344"
+                                ctx.fillStyle = Theme.success
                                 ctx.beginPath()
                                 ctx.arc(p.x * c + c / 2, p.y * c + c / 2, Math.max(3, c / 3), 0, 2 * Math.PI)
                                 ctx.fill()

@@ -376,7 +376,7 @@ Item {
                             width: 10
                             height: 10
                             radius: 5
-                            color: row.modelData.color || Theme.textFaint
+                            color: row.modelData.color ? Theme.category(row.modelData.color) : Theme.textFaint
                         }
                         Text {
                             Layout.fillWidth: true
@@ -651,7 +651,7 @@ Item {
             }
         }
         MenuItem {
-            text: qsTr("Out of its folder")
+            text: qsTr("Remove from its folder")
             onTriggered: Core.setFunctionFolder(sceneMenu.ids, "")
         }
     }
