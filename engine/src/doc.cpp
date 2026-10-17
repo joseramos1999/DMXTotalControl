@@ -304,6 +304,11 @@ void Doc::destroyAudioCapture()
     }
 }
 
+void Doc::setAudioInputCapture(QSharedPointer<AudioCapture> capture)
+{
+    m_inputCapture = capture;
+}
+
 /*****************************************************************************
  * Modified status
  *****************************************************************************/

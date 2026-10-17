@@ -48,6 +48,10 @@ InputOutputMap::InputOutputMap(const Doc *doc, quint32 universes)
     , m_blackout(false)
     , m_universeChanged(false)
     , m_localProfilesLoaded(false)
+    // DMX Total Control: it was left uninitialized; read as Audio from a
+    // reused heap block, the first setBeatGeneratorType() unregistered from
+    // a garbage capture pointer (an intermittent segfault)
+    , m_beatGeneratorType(Disabled)
     , m_currentBPM(0)
     , m_beatTime(new QElapsedTimer())
     , m_networkServerType(NativeServer)
@@ -1029,7 +1033,9 @@ void InputOutputMap::setBeatGeneratorType(InputOutputMap::BeatGeneratorType type
     if (type == m_beatGeneratorType)
         return;
 
-    if (m_beatGeneratorType == Audio)
+    // (the capture is a QPointer: Doc::clearContents() deletes the audio
+    // input while the beat generator may still be on it)
+    if (m_beatGeneratorType == Audio && m_inputCapture)
     {
         m_inputCapture->unregisterBandsNumber(4);
         disconnect(m_inputCapture, SIGNAL(beatDetected(int)), this, SLOT(slotProcessBeat(int)));

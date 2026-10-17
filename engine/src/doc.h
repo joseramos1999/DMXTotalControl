@@ -153,6 +153,10 @@ public:
     /** Destroy a previously created audio capture instance */
     void destroyAudioCapture();
 
+    /** DMX Total Control: the audio input of the show from now on, instead
+     *  of the one of the sound card (the tests give one that opens no device) */
+    void setAudioInputCapture(QSharedPointer<AudioCapture> capture);
+
 private:
     QLCFixtureDefCache *m_fixtureDefCache;
     QLCModifiersCache *m_modifiersCache;

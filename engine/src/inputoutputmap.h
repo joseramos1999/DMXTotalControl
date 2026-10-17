@@ -21,6 +21,7 @@
 #define INPUTOUTPUTMAP_H
 
 #include <QSharedPointer>
+#include <QPointer>
 #include <QObject>
 #include <QMutex>
 #include <QDir>
@@ -622,7 +623,7 @@ private:
     BeatGeneratorType m_beatGeneratorType;
     int m_currentBPM;
     QElapsedTimer *m_beatTime;
-    AudioCapture *m_inputCapture;
+    QPointer<AudioCapture> m_inputCapture;
 
     /*********************************************************************
      * Network server

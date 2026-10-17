@@ -282,6 +282,8 @@ private slots:
     void remoteFaderRanges();
     void moveSpeedFollowsPatchEdits();
     void pulseGoesOnWithNewShow();
+    void beatTypeStartsDisabled();
+    void beatTypeSwitchedWhileCaptureRuns();
     void pauseResumesOnlyWhatItPaused();
     void sectionTypeKeepsWhatItDrives();
     void audioNeedsAnUnlockedTrack();
@@ -16167,6 +16169,133 @@ void Backend_Test::pulseGoesOnWithNewShow()
 
     drive.setPulseEnabled(false);
     QVERIFY(drive.pulseEnabled() == false);
+}
+
+void Backend_Test::beatTypeStartsDisabled()
+{
+    // Doc makes its map in a block of the heap that held something else: the
+    // beat type found there is not the map's. One that read as "Audio" made
+    // the first setBeatGeneratorType() unregister from a garbage capture
+    // pointer (newEffectsNamedAndPrioritised crashed so, now and then)
+    alignas(InputOutputMap) unsigned char block[sizeof(InputOutputMap)];
+    const quint32 audio = InputOutputMap::Audio;
+    for (size_t i = 0; i + sizeof(audio) <= sizeof(block); i += sizeof(audio))
+        memcpy(block + i, &audio, sizeof(audio));
+    InputOutputMap *io = new (block) InputOutputMap(m_doc, 1);
+    auto destroy = qScopeGuard([io]() { io->~InputOutputMap(); });
+
+    QCOMPARE(io->beatGeneratorType(), InputOutputMap::Disabled);
+    io->setBeatGeneratorType(InputOutputMap::Internal);
+    QCOMPARE(io->beatGeneratorType(), InputOutputMap::Internal);
+}
+
+/** An audio input that opens no device: its thread runs as with a sound
+ *  card, reading a block of clicks and noise every millisecond */
+class ClickCapture : public AudioCapture
+{
+public:
+    ~ClickCapture() override
+    {
+        // (as the inputs of the sound card do: the thread ends first)
+        stop();
+    }
+    void setVolume(qreal volume) override { Q_UNUSED(volume) }
+    int blocksRead() const { return m_blocks.loadRelaxed(); }
+
+protected:
+    bool initialize() override { return true; }
+    void uninitialize() override {}
+    void suspend() override {}
+    void resume() override {}
+    qint64 latency() const override { return 0; }
+    bool readAudio(int maxSize) override
+    {
+        QThread::msleep(1);
+        // a click every 11 blocks (about 117 BPM in the time of the audio)
+        const int block = m_blocks.fetchAndAddRelaxed(1);
+        for (int i = 0; i < maxSize; i++)
+        {
+            m_noise = m_noise * 1103515245u + 12345u;
+            const int noise = int((m_noise >> 16) % 801) - 400;
+            m_audioBuffer[i] = int16_t(block % 11 == 0 && i < 64 ? 20000 : noise);
+        }
+        return true;
+    }
+
+private:
+    QAtomicInt m_blocks;
+    quint32 m_noise = 1;
+};
+
+/** Every switch of the beat generator logs a few lines: hundreds of them
+ *  are not worth reading */
+static QtMessageHandler s_beatSwitchHandler = nullptr;
+
+static void beatSwitchQuiet(QtMsgType type, const QMessageLogContext &context, const QString &message)
+{
+    if (type == QtDebugMsg && (message.startsWith(QLatin1String("[AudioCapture]"))
+                               || message.startsWith(QLatin1String("[InputOutputMap]"))))
+        return;
+    if (s_beatSwitchHandler != nullptr)
+        s_beatSwitchHandler(type, context, message);
+}
+
+void Backend_Test::beatTypeSwitchedWhileCaptureRuns()
+{
+    // the beat generator goes on and off the audio input many times while
+    // its thread reads and analyses blocks: alone (the thread starts and
+    // stops each time) and with another listener that keeps it running.
+    // Then New lets the input go while the beat generator is on it
+    s_beatSwitchHandler = qInstallMessageHandler(beatSwitchQuiet);
+    auto restoreHandler = qScopeGuard([]() {
+        qInstallMessageHandler(s_beatSwitchHandler);
+        s_beatSwitchHandler = nullptr;
+    });
+    InputOutputMap *io = m_doc->inputOutputMap();
+    QSharedPointer<ClickCapture> capture(new ClickCapture());
+    m_doc->setAudioInputCapture(capture);
+    const InputOutputMap::BeatGeneratorType others[] = {
+        InputOutputMap::Internal, InputOutputMap::Plugin, InputOutputMap::Disabled };
+
+    for (int i = 0; i < 60; i++)
+    {
+        io->setBeatGeneratorType(InputOutputMap::Audio);
+        QVERIFY(capture->isRunning());
+        if (i % 6 == 0)
+        {
+            // (some blocks read and analysed before it stops)
+            const int blocks = capture->blocksRead();
+            QTRY_VERIFY_WITH_TIMEOUT(capture->blocksRead() > blocks + 2, 2000);
+        }
+        io->setBeatGeneratorType(others[i % 3]);
+        QVERIFY2(capture->isRunning() == false, "the capture runs with nobody listening");
+    }
+
+    // another listener (Pulse, the audio triggers) keeps the thread running
+    capture->registerBandsNumber(16);
+    for (int i = 0; i < 400; i++)
+    {
+        io->setBeatGeneratorType(i % 2 == 0 ? InputOutputMap::Audio : InputOutputMap::Internal);
+        // (the beats queued to this thread arrive)
+        if (i % 20 == 0)
+            QTest::qWait(5);
+        QVERIFY(capture->isRunning());
+    }
+    const int blocks = capture->blocksRead();
+    QTRY_VERIFY_WITH_TIMEOUT(capture->blocksRead() > blocks + 2, 2000);
+    QCOMPARE(io->beatGeneratorType(), InputOutputMap::Internal);
+
+    // New deletes the input of the show while the beat generator is on it:
+    // leaving it afterwards doesn't touch the deleted capture
+    io->setBeatGeneratorType(InputOutputMap::Audio);
+    capture->unregisterBandsNumber(16);
+    QVERIFY(capture->isRunning());
+    QPointer<AudioCapture> gone(capture.data());
+    capture.clear();
+    m_doc->clearContents();
+    QVERIFY(gone.isNull());
+    io->setBeatGeneratorType(InputOutputMap::Internal);
+    QCOMPARE(io->beatGeneratorType(), InputOutputMap::Internal);
 }
 
 void Backend_Test::pauseResumesOnlyWhatItPaused()
