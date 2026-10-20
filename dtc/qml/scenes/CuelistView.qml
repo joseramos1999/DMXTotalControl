@@ -218,7 +218,7 @@ Item {
         horizontalAlignment: TextInput.AlignRight
         font.family: Theme.monoFamily
         font.pixelSize: Theme.fontSmall + 1
-        color: (allowSame && same) || ms === 0 ? Theme.textFaint : Theme.text
+        color: (allowSame && same) || ms === 0 ? Theme.textDim : Theme.text
         selectByMouse: true
         leftPadding: 6
         rightPadding: 6
@@ -277,7 +277,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: box.letter
-            color: box.checked ? Theme.textOn(box.tint) : Theme.textFaint
+            color: box.checked ? Theme.textOn(box.tint) : Theme.textDim
             font.pixelSize: Theme.fontSmall
             font.weight: Font.Bold
         }
@@ -677,7 +677,7 @@ Item {
                                     text: (row.model.trigger === "follow" ? qsTr("Follow")
                                            : row.model.trigger === "wait" ? qsTr("Wait") : qsTr("GO")) + " ▾"
                                     highlighted: row.model.trigger !== "go"
-                                    accentColor: Qt.alpha(Theme.warning, 0.75)
+                                    accentColor: Theme.warning
                                     onClicked: triggerMenu.popup()
                                     AppMenu {
                                         id: triggerMenu

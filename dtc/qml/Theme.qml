@@ -36,7 +36,7 @@ QtObject {
             dark: true,
             background: "#0e1014", surface: "#161920", surfaceRaised: "#1d212a", surfaceHover: "#252a35",
             border: "#2b303c", borderStrong: "#3a4150",
-            text: "#e7e9ef", textDim: "#9098ab", textFaint: "#5d6475",
+            text: "#e7e9ef", textDim: "#a3aaba", textFaint: "#848997",
             accent: "#3d8bfd", accentText: "#ffffff", danger: "#e5484d", success: "#30a46c", warning: "#f5a524",
             learn: "#ae3ec9", learnText: "#d68ee8",
             knob: "#d9dce3", knobBorder: "#ffffff", shadow: "#60000000", scrim: "#70000000",
@@ -48,8 +48,8 @@ QtObject {
             dark: false,
             background: "#eceef2", surface: "#ffffff", surfaceRaised: "#f3f4f7", surfaceHover: "#e4e7ed",
             border: "#d2d7e0", borderStrong: "#b2b9c7",
-            text: "#171b23", textDim: "#4b5364", textFaint: "#7d8598",
-            accent: "#1d6ce0", accentText: "#ffffff", danger: "#c92a2a", success: "#18804c", warning: "#a86200",
+            text: "#171b23", textDim: "#4b5364", textFaint: "#5b6171",
+            accent: "#1a62cc", accentText: "#ffffff", danger: "#c32929", success: "#167546", warning: "#965700",
             learn: "#9c36b5", learnText: "#7b2a91",
             knob: "#ffffff", knobBorder: "#7d8598", shadow: "#30000000", scrim: "#66000000",
             plan: "#f6f7f9", planGrid: "#fafbfc", planLine: "#cfd5df", dialogShade: "#28282a",
@@ -74,8 +74,8 @@ QtObject {
             dark: true,
             background: "#050202", surface: "#0b0505", surfaceRaised: "#120808", surfaceHover: "#1b0b0b",
             border: "#271111", borderStrong: "#3b1818",
-            text: "#d9574a", textDim: "#9c3a31", textFaint: "#6a2620",
-            accent: "#c62f22", accentText: "#1a0505", danger: "#ff3b2f", success: "#b4652a", warning: "#d9822b",
+            text: "#e78075", textDim: "#c4726a", textFaint: "#ab6b64",
+            accent: "#d84a3d", accentText: "#1a0505", danger: "#ff3b2f", success: "#b4652a", warning: "#d9822b",
             learn: "#a3315f", learnText: "#c4507e",
             knob: "#8a2c22", knobBorder: "#b8392c", shadow: "#a0000000", scrim: "#a0000000",
             plan: "#030101", planGrid: "#0a0404", planLine: "#2a1010", dialogShade: "#000000",
@@ -101,6 +101,9 @@ QtObject {
 
     readonly property color accent: palette.accent
     readonly property color accentText: palette.accentText
+    /** The accent behind text (a chip, a selected fixture, a switch on): as
+     *  dark as accentText needs to read on it */
+    readonly property color accentFill: fill(accent)
     readonly property color danger: palette.danger
     readonly property color success: palette.success
     readonly property color warning: palette.warning
@@ -233,22 +236,56 @@ QtObject {
             const light = luminance(Qt.color(palette.textOnDark))
             return (l + 0.05) / (dark + 0.05) >= (light + 0.05) / (l + 0.05) ? palette.textOnLight : palette.textOnDark
         }
-        let luma = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
-        return luma > 0.6 ? "#111111" : "#ffffff"
+        // white while it reads (4.5, WCAG), else the one that reads best
+        const l = luminance(c)
+        const onWhite = 1.05 / (l + 0.05), onBlack = (l + 0.05) / (luminance(Qt.color("#111111")) + 0.05)
+        return onWhite >= 4.5 || onWhite >= onBlack ? "#ffffff" : "#111111"
+    }
+
+    /** A colour to fill behind text (a lit button, a scene playing): itself,
+     *  or just as much darker as white text needs to read on it (4.5); light
+     *  colours (yellow, white) keep their dark text and stay as they are */
+    function fill(c) {
+        let col = Qt.color(c)
+        // the dark text (high contrast and night: theirs) where it reads, else
+        // the light one, on the colour made darker until it does
+        const dark = Qt.color(palette.textOnLight !== undefined ? palette.textOnLight : "#111111")
+        const light = Qt.color(palette.textOnDark !== undefined ? palette.textOnDark : "#ffffff")
+        if (contrast(dark, col) >= (palette.textOnLight !== undefined ? 4.5 : 7))
+            return col
+        for (let i = 0; i < 60 && contrast(light, col) < 4.5; i++)
+            col = Qt.darker(col, 1.03)
+        return col
     }
 
     /** The text colour over a background that varies (a level): the normal text while it reads */
     function textOver(bg) {
-        return contrast(text, bg) >= 3 ? text : textOn(bg)
+        return readableOn(text, bg)
+    }
+
+    /** Text of colour $c over $bg: itself while it reads (4.5, WCAG), else the text colour that does */
+    function readableOn(c, bg) {
+        return contrast(c, bg) >= 4.5 ? c : textOn(bg)
     }
 
     /** A colour for text or thin lines on a background: itself, or towards the text colour where it doesn't read (yellow on a light theme) */
     function readable(c, bg) {
-        return contrast(c, bg === undefined ? surface : bg) >= 3 ? c : mix(c, text, 0.55)
+        return contrast(c, bg === undefined ? surface : bg) >= 3.2 ? c : mix(c, text, 0.55)
     }
 
     /** Text over a dark spot (a shadow, a scrim, a dark tint): white, without glare at night */
     readonly property color textOnShade: textOn("#000000")
+
+    /** How bright the colours of the lights show (swatches, wheels, colour
+     *  bars): dimmed in the night theme, as the categories */
+    readonly property real lightLevel: palette.categoryLevel
+
+    /** A number typed in a field, with a point or a comma whatever the
+     *  language, without its unit ("2,5 s", "1.5 m"); $fallback if none */
+    function parseNumber(text, fallback) {
+        const n = parseFloat(String(text).replace(",", ".").replace(/[^0-9.-]/g, ""))
+        return isNaN(n) ? fallback : n
+    }
 
     /** The contrast ratio of two colours (WCAG): 1 the same, 21 black on white */
     function contrast(a, b) {

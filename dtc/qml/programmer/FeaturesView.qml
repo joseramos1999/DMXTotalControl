@@ -27,7 +27,8 @@ import DMXTotalControl.Backend
  * The features of the selection, by tabs: Dimmer, Color,
  * Position, Gobo, Beam, Focus, Others. Each channel shows its presets as
  * buttons (with their colour or gobo) and a fader; the Color tab has a
- * colour picker with favourites, the Position tab an XY grid.
+ * colour picker with favourites, the Position tab an XY grid and the fan of
+ * the position (pan and tilt only: their rotations and speeds are in Others).
  */
 ColumnLayout {
     id: view
@@ -114,7 +115,9 @@ ColumnLayout {
             }
 
             Flow {
-                width: Math.max(260, view.width - (view.tab === "color" || view.tab === "position" ? 300 : 0))
+                // (the position is the grid and its fan alone)
+                visible: view.tab !== "position" || view.tabKeys.length > 0
+                width: Math.max(260, view.width - (view.tab === "color" ? 300 : 0))
                 spacing: 8
                 Repeater {
                     model: view.tabKeys

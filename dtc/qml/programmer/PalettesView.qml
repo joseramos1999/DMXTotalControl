@@ -31,6 +31,9 @@ import DMXTotalControl.Backend
 Item {
     id: view
 
+    // a kind of palette inside a sentence: in lower case, but German nouns keep their capital
+    function inText(name) { return Qt.uiLanguage.indexOf("de") === 0 ? name : name.toLowerCase() }
+
     readonly property var types: [
         { type: "intensity", name: qsTr("Intensity"), word: "INT", icon: Theme.iconSun, color: Theme.text },
         { type: "position", name: qsTr("Position"), word: "POS", icon: Theme.iconMove, color: Theme.functionColor("EFX") },
@@ -75,7 +78,7 @@ Item {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
-                        IconLabel { icon: pool.modelData.icon; size: 12; color: pool.modelData.color }
+                        IconLabel { icon: pool.modelData.icon; size: 12; color: Theme.readable(pool.modelData.color, Theme.background) }
                         Text {
                             Layout.fillWidth: true
                             text: pool.modelData.name
@@ -85,12 +88,13 @@ Item {
                         }
                         AppButton {
                             iconGlyph: Theme.iconPlus
-                            text: qsTr("Record")
+                            text: pool.width >= 240 ? qsTr("Record") : ""
+                            // (a narrow pool: the icon, so its name shows)
                             implicitHeight: 26
                             enabled: pool.recordable > 0
                             ToolTip.text: pool.recordable > 0
-                                ? qsTr("Record the %1 values of the selection as a new palette").arg(pool.modelData.name.toLowerCase())
-                                : qsTr("Set some %1 values on the selection first").arg(pool.modelData.name.toLowerCase())
+                                ? qsTr("Record the %1 values of the selection as a new palette").arg(view.inText(pool.modelData.name))
+                                : qsTr("Set some %1 values on the selection first").arg(view.inText(pool.modelData.name))
                             ToolTip.visible: hovered
                             ToolTip.delay: 400
                             onClicked: {
@@ -138,6 +142,7 @@ Item {
                                         width: pool.modelData.type === "colour" ? 14 : 4
                                         radius: 3
                                         color: tile.swatch
+                                        opacity: Theme.lightLevel
                                         border.color: Theme.edgeFor(tile.swatch, tile.color)
                                     }
                                     Text {
@@ -198,7 +203,7 @@ Item {
                             visible: pool.palettes.length === 0
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.WordWrap
-                            text: qsTr("Set the %1 of the selection and press Record").arg(pool.modelData.name.toLowerCase())
+                            text: qsTr("Set the %1 of the selection and press Record").arg(view.inText(pool.modelData.name))
                             color: Theme.textFaint
                             font.pixelSize: Theme.fontSmall
                         }

@@ -820,6 +820,7 @@ Flickable {
                             height: 24
                             radius: 12
                             color: modelData
+                            opacity: Theme.lightLevel
                             border.color: Theme.text
                             border.width: props.item && props.item.color && Qt.colorEqual(props.item.color, modelData) ? 2 : 0
                             MouseArea { anchors.fill: parent; onClicked: props.setItemKey("color", parent.modelData) }

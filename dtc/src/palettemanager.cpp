@@ -81,9 +81,10 @@ QString PaletteManager::typeOf(const QLCChannel *ch)
         // the strobe goes with the intensity, the iris with the beam
         case QLCChannel::Shutter:
             return attribute == QLatin1String("iris") ? QStringLiteral("beam") : QStringLiteral("intensity");
+        // (as the grid: pan and tilt, not a rotation of them)
         case QLCChannel::Pan:
         case QLCChannel::Tilt:
-            return QStringLiteral("position");
+            return Programmer::isPositionChannel(ch) ? QStringLiteral("position") : QString();
         case QLCChannel::Colour:
             return QStringLiteral("colour");
         case QLCChannel::Speed:

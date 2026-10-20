@@ -319,6 +319,7 @@ Panel {
                         required property string modelData
                         width: 34; height: 34; radius: 6
                         color: modelData
+                        opacity: Theme.lightLevel
                         border.color: Theme.edgeFor(modelData)
                         MouseArea {
                             anchors.fill: parent
@@ -334,6 +335,7 @@ Panel {
                     id: huePick
                     Layout.preferredWidth: 220
                     from: 0; to: 1
+                    opacity: Theme.lightLevel
                     trackGradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: "#ff0000" }

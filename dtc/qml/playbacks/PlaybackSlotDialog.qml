@@ -136,7 +136,8 @@ Popup {
                         height: 24
                         radius: 12
                         // the first one: the colour of its type
-                        color: modelData.length > 0 ? modelData : Theme.functionColor(dialog.info.type || "")
+                        // (as the strip shows it: dimmed at night)
+                        color: modelData.length > 0 ? Theme.category(modelData) : Theme.functionColor(dialog.info.type || "")
                         border.color: Theme.text
                         border.width: chosen ? 2 : 0
                         Text {

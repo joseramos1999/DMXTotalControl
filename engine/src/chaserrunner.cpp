@@ -873,7 +873,8 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
             qDebug() << "[ChaserRunner] Function" << step->m_function->name() << "duration:" << step->m_duration << "beats:" << step->m_elapsedBeats;
         }
 
-        if (step->m_duration != Function::infiniteSpeed() &&
+        // (with a rhythm of its own, its beats move the steps, not their times)
+        if (step->m_duration != Function::infiniteSpeed() && m_chaser->tapPeriod() == 0 &&
             ((m_chaser->tempoType() == Function::Time && step->m_elapsed >= step->m_duration) ||
              (m_chaser->tempoType() == Function::Beats && step->m_elapsedBeats >= step->m_duration)))
         {

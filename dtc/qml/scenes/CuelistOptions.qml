@@ -182,5 +182,14 @@ Item {
                 }
             }
         }
+        Labeled {
+            visible: options.showAll
+            label: qsTr("Tapped rhythm")
+            tip: qsTr("Press its button several times in a row (Live, SHOW, a mapping): a GO on each beat, at that rhythm")
+            TapRhythm {
+                period: options.info.tap || 0
+                onEdited: (ms) => Core.effects.setPlayback(options.fid, "tap", ms)
+            }
+        }
     }
 }

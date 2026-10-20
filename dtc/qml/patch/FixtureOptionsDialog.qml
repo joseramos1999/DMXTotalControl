@@ -34,6 +34,8 @@ Popup {
     property var ids: []
     property var options: ({})
     readonly property bool single: ids.length === 1
+    // the columns of the channel switches: as wide as their titles need
+    readonly property real flagWidth: Math.max(64, fadesHead.implicitWidth + 8, dimmerHead.implicitWidth + 8)
 
     function openFor(list) {
         ids = list
@@ -216,8 +218,8 @@ Popup {
             visible: dialog.single
             title: qsTr("Channels")
             headerItems: [
-                Text { text: qsTr("Fades"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; width: 64; horizontalAlignment: Text.AlignHCenter; anchors.verticalCenter: parent.verticalCenter },
-                Text { text: qsTr("Dimmer"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; width: 64; horizontalAlignment: Text.AlignHCenter; anchors.verticalCenter: parent.verticalCenter }
+                Text { id: fadesHead; text: qsTr("Fades"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; width: dialog.flagWidth; horizontalAlignment: Text.AlignHCenter; anchors.verticalCenter: parent.verticalCenter },
+                Text { id: dimmerHead; text: qsTr("Dimmer"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; width: dialog.flagWidth; horizontalAlignment: Text.AlignHCenter; anchors.verticalCenter: parent.verticalCenter }
             ]
 
             ListView {
@@ -248,12 +250,12 @@ Popup {
                             elide: Text.ElideRight
                         }
                         Text {
-                            text: parent.parent.modelData.group
+                            text: parent.parent.modelData.groupName || parent.parent.modelData.group
                             color: Theme.textFaint
                             font.pixelSize: Theme.fontSmall
                         }
                         CheckBox {
-                            Layout.preferredWidth: 64
+                            Layout.preferredWidth: dialog.flagWidth
                             checked: parent.parent.modelData.canFade
                             ToolTip.text: qsTr("Follows the fade times. Off: jumps straight to its value (colour and gobo wheels)")
                             ToolTip.visible: hovered
@@ -262,7 +264,7 @@ Popup {
                                                                     checked, parent.parent.modelData.dimmer)
                         }
                         CheckBox {
-                            Layout.preferredWidth: 64
+                            Layout.preferredWidth: dialog.flagWidth
                             checked: parent.parent.modelData.dimmer
                             ToolTip.text: qsTr("Scaled by the grand master, the group masters and the scene dimmers")
                             ToolTip.visible: hovered

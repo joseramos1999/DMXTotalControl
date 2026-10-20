@@ -38,6 +38,7 @@
 #include "showsurface.h"
 #include "dtccore.h"
 #include "zone.h"
+#include "scenetaps.h"
 
 #include "inputoutputmap.h"
 #include "functionparent.h"
@@ -658,6 +659,8 @@ QVariantList ControlMapper::targets() const
         << t("pauseAll", "button", tr("Pause all"), "")
         << t("tap", "button", tr("Tap tempo"), "")
         << t("beatgo", "button", tr("BeatGO"), "")
+        << t("pressGo", "button", tr("GO (scene buttons start and mark the rhythm)"), "")
+        << t("pressStop", "button", tr("Stop (scene buttons stop)"), "")
         << t("palette", "button", tr("Palette"), "palette")
         << t("mixerFull", "button", tr("Mixer: full"), "mixer")
         << t("mixerBlackout", "button", tr("Mixer: blackout"), "mixer")
@@ -1630,7 +1633,8 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
 
     // momentary actions: on the press
     if (target == "stopAll" || target == "tap" || target == "beatgo" ||
-        target == "groupRelease" || target == "groupNext" || target == "groupPrevious")
+        target == "groupRelease" || target == "groupNext" || target == "groupPrevious" ||
+        target == "pressGo" || target == "pressStop")
     {
         if (pressed == false)
             return;
@@ -1640,6 +1644,12 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
             m_core->tapTempo();
         else if (target == "beatgo")
             m_core->drive()->beatGo();
+        // the mode of the scene buttons, on and off as in the top bar
+        else if (target == "pressGo" || target == "pressStop")
+        {
+            const QString wanted = target == "pressGo" ? "go" : "stop";
+            m_core->setPressMode(m_core->pressMode() == wanted ? "toggle" : wanted);
+        }
         else if (target == "groupRelease")
             allZones ? zones->stopAll() : (zone ? zone->stopAll() : void());
         else if (target == "groupNext")
@@ -1679,6 +1689,17 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
                 owner->start(fid);
             else if (next == false && owner->isActive(fid))
                 owner->stop(fid);
+        }
+        else if (mode == "toggle")
+        {
+            // in the mode of the buttons (GO, Stop or as always): start,
+            // stop, or a beat of its own rhythm
+            const bool running = f->isRunning();
+            const SceneTaps::Outcome outcome = SceneTaps::press(f, running);
+            if (outcome == SceneTaps::StartIt || (outcome == SceneTaps::ToggleIt && next && running == false))
+                f->start(m_core->doc()->masterTimer(), FunctionParent::master());
+            else if (outcome == SceneTaps::StopIt || (outcome == SceneTaps::ToggleIt && next == false && running))
+                f->stop(FunctionParent::master());
         }
         else if (next && f->isRunning() == false)
         {
@@ -1811,6 +1832,8 @@ int ControlMapper::buttonState(const QVariantMap &m) const
         return m_core->palettes()->isLive(m.value("paletteId").toInt(), m.value("groupId", -1).toInt()) ? 1 : 0;
     if (target == "blackout")
         return m_core->blackout() ? 1 : 0;
+    if (target == "pressGo" || target == "pressStop")
+        return m_core->pressMode() == (target == "pressGo" ? "go" : "stop") ? 1 : 0;
     if (target == "pauseAll")
         return m_core->zones()->paused() ? 1 : 0;
     if (target.startsWith("mixer"))

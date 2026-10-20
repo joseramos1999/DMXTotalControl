@@ -301,7 +301,10 @@ void Collection::preRun(MasterTimer *timer)
     {
         QMutexLocker locker(&m_functionListMutex);
         m_runningChildren.clear();
-        foreach (quint32 fid, m_functions)
+        // DMX Total Control: stopped before its first frame, it starts none
+        // of them (they would play a moment after the stop)
+        const QList<quint32> children = stopped() ? QList<quint32>() : m_functions;
+        foreach (quint32 fid, children)
         {
             Function *function = doc->function(fid);
             Q_ASSERT(function != NULL);

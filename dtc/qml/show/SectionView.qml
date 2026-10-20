@@ -61,7 +61,7 @@ Rectangle {
         Text {
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter; right: pager.visible ? pager.left : tools.left; rightMargin: 6 }
             text: (view.section.title || "").length ? view.section.title : view.surface ? view.surface.typeName(view.type) : ""
-            color: (view.section.title || "").length ? Theme.text : Theme.textFaint
+            color: (view.section.title || "").length ? Theme.text : Theme.textDim
             font.pixelSize: Theme.fontSmall
             font.weight: Font.Bold
             font.capitalization: Font.AllUppercase
@@ -366,7 +366,7 @@ Rectangle {
 
             Canvas {
                 id: wheel
-                readonly property real side: Math.min(parent.width, parent.height - 40)
+                readonly property real side: Math.min(parent.width, parent.height - 48)
                 width: side
                 height: side
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -422,7 +422,7 @@ Rectangle {
             }
 
             Row {
-                anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+                anchors { bottom: parent.bottom; bottomMargin: 6; horizontalCenter: parent.horizontalCenter }
                 spacing: 4
                 Repeater {
                     model: colourBox.swatches
@@ -430,6 +430,7 @@ Rectangle {
                         required property string modelData
                         width: 28; height: 28; radius: 14
                         color: modelData
+                        opacity: Theme.lightLevel
                         border.color: Theme.border
                         MouseArea { anchors.fill: parent; enabled: !view.editing; onClicked: colourBox.pick(parent.modelData) }
                     }
@@ -460,7 +461,7 @@ Rectangle {
 
             Rectangle {
                 id: pad
-                readonly property real side: Math.min(parent.width, parent.height - 40)
+                readonly property real side: Math.min(parent.width, parent.height - 48)
                 width: side
                 height: side
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -496,7 +497,7 @@ Rectangle {
                 }
             }
             Row {
-                anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+                anchors { bottom: parent.bottom; bottomMargin: 6; horizontalCenter: parent.horizontalCenter }
                 spacing: 6
                 AppButton {
                     text: qsTr("Centre")
@@ -683,46 +684,45 @@ Rectangle {
         }
     }
 
+    // the rhythm: GO (the scene buttons start their scenes and mark their
+    // rhythm) and Stop (they stop them), as in the top bar (each button
+    // shows the rhythm of its scene with steps), and BeatGO
     Component {
         id: bpmContent
-        RowLayout {
-            spacing: 8
-            Rectangle {
-                id: led
-                Layout.preferredWidth: 16
-                Layout.preferredHeight: 16
-                Layout.alignment: Qt.AlignVCenter
-                radius: 8
-                color: Theme.warning
-                opacity: 0.2
-                Connections { target: Core; function onBeat() { beatAnim.restart() } }
-                NumberAnimation on opacity { id: beatAnim; running: false; from: 1; to: 0.2; duration: 220 }
-            }
-            Text {
+        ColumnLayout {
+            spacing: 6
+            RowLayout {
                 Layout.fillWidth: true
-                text: Core.bpm
-                color: Theme.text
-                font.family: Theme.monoFamily
-                font.pixelSize: Math.max(16, Math.min(view.height / 2.2, 64))
-            }
-            ColumnLayout {
                 Layout.fillHeight: true
-                spacing: 4
+                spacing: 6
                 AppButton {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    text: qsTr("TAP")
+                    Layout.preferredWidth: 1
+                    text: "GO"
+                    highlighted: Core.pressMode === "go"
+                    accentColor: Theme.success
                     enabled: !view.editing
-                    onPressed: Core.tapTempo()
+                    onClicked: Core.pressMode = Core.pressMode === "go" ? "toggle" : "go"
                 }
                 AppButton {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    text: "BeatGO"
-                    accentColor: Theme.warning
+                    Layout.preferredWidth: 1
+                    text: qsTr("Stop")
+                    highlighted: Core.pressMode === "stop"
+                    accentColor: Theme.danger
                     enabled: !view.editing
-                    onPressed: Core.drive.beatGo()
+                    onClicked: Core.pressMode = Core.pressMode === "stop" ? "toggle" : "stop"
                 }
+            }
+            AppButton {
+                Layout.fillWidth: true
+                text: "BeatGO"
+                implicitHeight: 30
+                accentColor: Theme.warning
+                enabled: !view.editing
+                onPressed: Core.drive.beatGo()
             }
         }
     }

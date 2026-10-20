@@ -20,6 +20,7 @@
   limitations under the License.
 */
 
+#include <QFile>
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QQmlApplicationEngine>
@@ -51,6 +52,7 @@
 #include "drivecontrol.h"
 #include "livemixer.h"
 #include "controlmapper.h"
+#include "uiaudit.h"
 #include "zone.h"
 #include "qlcconfig.h"
 
@@ -100,6 +102,8 @@ int main(int argc, char *argv[])
     parser.addOption(localeOption);
     QCommandLineOption grabOption("grab", "Developer: save a screenshot of the window and quit.", "file");
     parser.addOption(grabOption);
+    QCommandLineOption auditOption("audit", "Developer: with --grab, write what is hard to read on that screen (contrast, shortened or overflowing texts) to this file.", "file");
+    parser.addOption(auditOption);
     QCommandLineOption sceneOption("scene", "Developer: open the Scenes page on this scene ID.", "id");
     parser.addOption(sceneOption);
     QCommandLineOption editShowOption("edit-show", "Developer: open the Show page in edit mode, with this control selected.", "widget");
@@ -178,6 +182,9 @@ int main(int argc, char *argv[])
     QString language = parser.isSet(localeOption) ? parser.value(localeOption)
                                                    : QSettings().value("ui/language").toString();
     QLocale locale = language.isEmpty() ? QLocale() : QLocale(language);
+    // dates and numbers in the language of the app, not the one of the system
+    if (language.isEmpty() == false)
+        QLocale::setDefault(locale);
     QTranslator translator;
     if (translator.load(locale, "dtc", "_", ":/i18n"))
         app.installTranslator(&translator);
@@ -433,7 +440,15 @@ int main(int argc, char *argv[])
     if (window && parser.isSet(grabOption))
     {
         const QString grabFile = parser.value(grabOption);
-        QTimer::singleShot(2000, window, [window, grabFile]() {
+        const QString auditFile = parser.value(auditOption);
+        QTimer::singleShot(2000, window, [window, grabFile, auditFile]() {
+            // what is hard to read on the screen grabbed, a line each
+            if (auditFile.isEmpty() == false)
+            {
+                QFile file(auditFile);
+                if (file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+                    file.write((UiAudit::run(window).join('\n') + '\n').toUtf8());
+            }
             window->grabWindow().save(grabFile);
             QCoreApplication::quit();
         });

@@ -467,7 +467,7 @@ Item {
                             Text {
                                 visible: !browser.compact
                                 text: Theme.typeLabel(row.modelData.type || "")
-                                color: Theme.textFaint
+                                color: sceneRow.current || sceneRow.selected ? Theme.textDim : Theme.textFaint
                                 font.pixelSize: Theme.fontSmall
                             }
                         }

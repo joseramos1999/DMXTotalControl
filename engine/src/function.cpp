@@ -221,6 +221,7 @@ bool Function::copyFrom(const Function* function)
     m_divisions = function->divisions();
     m_startMode = function->startMode();
     m_stagger = function->stagger();
+    m_tapPeriod.storeRelaxed(int(function->tapPeriod()));
     m_uiState = function->uiStateMap();
 
     emit changed(m_id);
@@ -1125,6 +1126,8 @@ void Function::preRun(MasterTimer *timer)
     m_tickRemainder = 0;
     m_frameTick = MasterTimer::tick();
     m_pendingJumps.storeRelaxed(0);
+    m_tapElapsed = 0;
+    m_tapRephase.storeRelaxed(0);
 
     emit running(m_id);
 }
@@ -1708,6 +1711,7 @@ void Function::updateFadersPriority()
 #define KXMLDTCDivisions QStringLiteral("Divisions")
 #define KXMLDTCStart     QStringLiteral("StartMode")
 #define KXMLDTCStagger   QStringLiteral("Stagger")
+#define KXMLDTCTap       QStringLiteral("Tap")
 
 void Function::setLoopCount(int count)
 {
@@ -1837,6 +1841,58 @@ int Function::takeDivisionJumps()
     return m_pendingJumps.fetchAndStoreOrdered(0);
 }
 
+void Function::setTapPeriod(uint ms)
+{
+    // (0: none; else as a tap can give it, and a little more by hand)
+    const int period = ms == 0 ? 0 : int(qBound(100u, ms, 10000u));
+    if (m_tapPeriod.loadRelaxed() == period)
+        return;
+    m_tapPeriod.storeRelease(period);
+    // (not changed(): a chaser runner would read its steps again in this
+    // thread while the timer plays them)
+    if (doc() != nullptr)
+        doc()->setModified();
+    emit tapChanged(m_id);
+}
+
+uint Function::tapPeriod() const
+{
+    return uint(m_tapPeriod.loadAcquire());
+}
+
+void Function::tapBeat()
+{
+    m_tapRephase.storeRelease(1);
+}
+
+int Function::takeRhythmSteps()
+{
+    int steps = takeDivisionJumps();
+    const uint period = tapPeriod();
+    if (period == 0)
+    {
+        m_tapElapsed = 0;
+        m_tapRephase.storeRelaxed(0);
+        return steps;
+    }
+    // a tap: its step now, the next beats from here
+    if (m_tapRephase.fetchAndStoreOrdered(0) != 0)
+    {
+        m_tapElapsed = 0;
+        return steps + 1;
+    }
+    // (with the live speed, as its own times would; a step a frame at most,
+    // and what is left over a beat doesn't pile up: no burst of steps when
+    // the period gets shorter or the speed goes up)
+    m_tapElapsed += frameTick();
+    if (m_tapElapsed >= period)
+    {
+        m_tapElapsed %= period;
+        steps++;
+    }
+    return steps;
+}
+
 Function::CycleResult Function::cycleCompleted()
 {
     m_cyclesDone++;
@@ -1864,6 +1920,8 @@ bool Function::saveXMLPlayback(QXmlStreamWriter *doc) const
         doc->writeAttribute(KXMLDTCStart, "Paused");
     if (m_stagger > 0)
         doc->writeAttribute(KXMLDTCStagger, QString::number(m_stagger));
+    if (tapPeriod() > 0)
+        doc->writeAttribute(KXMLDTCTap, QString::number(tapPeriod()));
     return true;
 }
 
@@ -1888,4 +1946,8 @@ void Function::loadXMLPlayback(const QXmlStreamAttributes &attrs)
         m_startMode = attrs.value(KXMLDTCStart) == QLatin1String("Paused") ? StartPaused : StartPlaying;
     if (attrs.hasAttribute(KXMLDTCStagger))
         m_stagger = attrs.value(KXMLDTCStagger).toUInt();
+    // its own rhythm (no number: none)
+    bool tapOk = false;
+    const uint tap = attrs.value(KXMLDTCTap).toUInt(&tapOk);
+    m_tapPeriod.storeRelaxed(tapOk && tap > 0 ? int(qBound(100u, tap, 10000u)) : 0);
 }

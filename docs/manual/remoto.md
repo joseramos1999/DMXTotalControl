@@ -38,7 +38,7 @@ Debajo, la página con sus secciones, como en el ordenador:
 - **Grupos**: sus escenas como botones y su master.
 - **Playbacks**: las tiras con su nombre, la cue que suena y la siguiente, **GO**, **Atrás**, su fader y **Flash**. Las secciones que siguen la página actual tienen ◀ ▶ para cambiarla.
 - **Rueda de color** y **rejilla XY**, con sus botones **Liberar** y **Centro**.
-- **Reloj**, **BPM** (con **Tap** y **BeatGO**), **notas**, **sonando ahora** e **imagen**.
+- **Reloj**, **Ritmo** (**GO**, **Stop** y **BeatGO**; los botones de escenas con pasos o cuelists llevan dentro su barra del ritmo), **notas**, **sonando ahora** e **imagen**.
 
 Los **temporizadores**, el **mezclador en vivo** y los **niveles DMX** aparecen como «Solo en el ordenador».
 

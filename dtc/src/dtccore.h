@@ -75,6 +75,10 @@ class DtcCore : public QObject
     Q_PROPERTY(int grandMaster READ grandMaster WRITE setGrandMaster NOTIFY grandMasterChanged)
     Q_PROPERTY(int runningFunctions READ runningFunctions NOTIFY runningFunctionsChanged)
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
+    /** How the buttons of the scenes act: "toggle" (as always), "go" or "stop" */
+    Q_PROPERTY(QString pressMode READ pressMode WRITE setPressMode NOTIFY pressModeChanged)
+    /** Changes when a scene with steps that plays moves to another step (stepOf) */
+    Q_PROPERTY(int stepsRevision READ stepsRevision NOTIFY stepsChanged)
     Q_PROPERTY(QVariantList functions READ functions NOTIFY functionsChanged)
     Q_PROPERTY(QStringList sceneFolders READ sceneFolders NOTIFY functionsChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
@@ -150,6 +154,20 @@ public:
     /** Tap tempo: the BPM follows the spacing of the taps */
     Q_INVOKABLE void tapTempo();
 
+    /** The buttons of the scenes (Live, SHOW, mappings, the phone): "toggle"
+     *  (a press starts or stops it; presses in a row of one with steps mark
+     *  its rhythm), "go" (a press starts it, the next ones mark its rhythm)
+     *  or "stop" (a press stops it). Not saved: "toggle" when it opens */
+    QString pressMode() const;
+    void setPressMode(const QString &mode);
+    /** The step (or cue) each scene with steps that plays is on: the rhythm
+     *  bar of its buttons alternates when it moves. -1: it doesn't play, or
+     *  has no steps. stepsChanged when one moves, starts or stops */
+    Q_INVOKABLE int stepOf(quint32 id) const;
+    int stepsRevision() const;
+    /** The same for every one: ID -> step (the remote) */
+    QHash<quint32, int> steps() const;
+
     /** [{ id, name, type }] */
     QVariantList functions() const;
 
@@ -218,6 +236,8 @@ signals:
     void functionsChanged();
     void lastErrorChanged();
     void bpmChanged();
+    void pressModeChanged();
+    void stepsChanged();
     /** Emitted on every beat, to flash the BPM indicator */
     void beat();
     void hasRecoveryChanged();
@@ -226,6 +246,7 @@ signals:
     void autosaveFailed(const QString &error);
 
 private slots:
+    void slotStepsTick();
     void slotAutosave();
     void slotAutosaveSettingsChanged();
     void slotGrandMasterModeChanged();
@@ -267,6 +288,10 @@ private:
     CuelistEditor *m_cuelists;
     PlaybackManager *m_playbacks;
     QTimer *m_autosaveTimer;
+    /** The steps of the scenes with steps that play, looked at every frame or so */
+    QTimer *m_stepsTimer = nullptr;
+    QHash<quint32, int> m_steps;
+    int m_stepsRevision = 0;
     bool m_hasRecovery;
     bool m_backupDone;
     /** The show is being cleared (its functions all go) */

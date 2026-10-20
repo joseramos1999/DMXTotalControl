@@ -649,8 +649,9 @@ void Show::preRun(MasterTimer* timer)
         m_runner->start();
     }
 
-    // DMX Total Control: the static values of the show play with it
-    if (Function *values = doc()->function(m_staticScene))
+    // DMX Total Control: the static values of the show play with it (not
+    // when it was stopped before its first frame: then it plays nothing)
+    if (Function *values = stopped() ? nullptr : doc()->function(m_staticScene))
         values->start(timer, FunctionParent(FunctionParent::Function, id()));
 }
 

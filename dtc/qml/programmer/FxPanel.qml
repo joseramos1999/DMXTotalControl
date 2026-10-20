@@ -332,7 +332,6 @@ RowLayout {
                 fx: panel.fx
                 sets: panel.fx.sets || 1
                 partial: !!panel.fx.partial
-                opacity: panel.fx.active ? 1 : 0.7
                 onEdit: (props) => panel.edit(props)
             }
         }

@@ -38,7 +38,7 @@ Pulsa **«Nueva»**:
 - **La carpeta** (icono de carpeta): mover la escena a una carpeta.
 - **«Probar»** / **«Parar»**: la reproduce ahora, fuera de los grupos. Las cuelists tienen su propio GO.
 - **«Añadir al grupo…»**: la añade a un grupo de Directo.
-- **Convertir a pasos** (racks, FX, Colour FX, Move FX, Curve FX y chasers): graba un ciclo en una escena de pasos nueva.
+- **Convertir a pasos** (racks, FX, Colour FX, Move FX, Curve FX y chasers): graba un ciclo en una escena de pasos nueva, solo con los canales a los que la escena da un valor: los demás, aunque tengan un valor por defecto (el pan o el zoom en el centro de muchas cabezas móviles), no entran en los pasos.
 - **Convertir en cuelist** (pasos): consulta [Cuelists](escenas.md#cuelists).
 - **Exportar**, **«Duplicar»** y **«Eliminar»** (se quita también de sus grupos y racks).
 
@@ -50,6 +50,7 @@ Debajo de la cabecera está el panel de reproducción. Muestra lo que tiene sent
 - **«Tiempo de ciclo»** (o **«Tiempo por paso»** en un Colour FX) y **«Velocidad»** (de un ciclo por minuto a diez por segundo; doble clic: un ciclo por segundo), con **×½** y **×2**.
 - **«Entrada gradual»** (estáticas y pasos): cada fixture empieza su fundido este tiempo después del anterior, en orden de selección.
 - **«Modo de conducción»**: **«Duración»** (los tiempos normales), **«BPM»** (los tiempos pasan a beats y siguen el tempo del show), **«BeatGO»** o **«Pulso»** (avanza con el botón BeatGO o con los picos de la entrada de audio). Con BeatGO o Pulso, **«Divisiones»** (/2, ×2).
+- **«Ritmo marcado»** (secuencias y chasers): el ritmo marcado pulsando su botón varias veces seguidas ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), en BPM. Mientras lo tiene, sus pasos van a ese ritmo y no por sus tiempos. **«Quitar»** vuelve a sus tiempos.
 - **«Inicio»**: **«Reproduciendo»** o **«En pausa, pulsar otra vez para reproducir»**.
 - **«Se reproduce»**: **«Siempre»** o **«N veces»**, **«y luego»** **«Liberarla»** o **«Mantener el último fotograma»**, **«y reproducir»** «Nada», «La siguiente escena del grupo», «La escena anterior del grupo» o cualquier otra escena.
 
@@ -196,6 +197,7 @@ Arriba del editor:
 - **«Atrás»**: los tiempos de BACK: **«Tiempos de la cue»** o **«Tiempo fijo»**.
 - **«Prioridad»**.
 - **«GO al ritmo»**: «No», «BeatGO» o «Pulso» dan un GO en cada división.
+- **«Ritmo marcado»**: el ritmo marcado pulsando su botón varias veces seguidas, en BPM: un GO en cada pulso. Mientras lo tiene, sus Follow y Wait no cuentan. **«Quitar»** vuelve a sus tiempos.
 
 En una ventana estrecha, parte de las opciones se pliega: **«Más opciones»** las muestra.
 

@@ -11,7 +11,7 @@ Un SHOW tiene **páginas**. Cada página está hecha de **secciones** que llenan
 Con un show nuevo la página está vacía y ofrece dos botones:
 
 - **«Página nueva»**: crea una página con una tabla de botones y entra en el modo edición.
-- **«Partir de mis grupos»**: crea la página «Grupos» con todos tus grupos de Directo arriba y, abajo, una tabla de faders «Masters» (el gran master y los masters de los primeros grupos), una sección de BPM y tap y un reloj. Solo aparece si ya tienes grupos.
+- **«Partir de mis grupos»**: crea la página «Grupos» con todos tus grupos de Directo arriba y, abajo, una tabla de faders «Masters» (el gran master y los masters de los primeros grupos), una sección de Ritmo y un reloj. Solo aparece si ya tienes grupos.
 
 ## El modo edición
 
@@ -34,7 +34,7 @@ Pulsa **«Editar»** para montar la pantalla y **«Hecho»** para volver a usarl
 | **Mezclador en vivo** | El [mezclador](directo.md#mezclador) de Directo. |
 | **Reloj** | La hora, con segundos y fecha opcionales. |
 | **Temporizador** | Un cronómetro o una cuenta atrás. |
-| **BPM y tap** | El BPM con un piloto al ritmo y los botones TAP y BeatGO. |
+| **Ritmo: GO y Stop** | **GO** y **Stop** grandes, como los de la barra superior (cambian lo que hacen los botones de las escenas), y **BeatGO**. Los botones de escenas con pasos o cuelists llevan dentro su barra del ritmo. |
 | **Notas** | Un texto tuyo, del tamaño que quieras. |
 | **Sonando ahora** | Lo que está sonando, con un botón para pararlo. |
 | **Diales y ruedas** | Una tabla de diales o ruedas sin fin. |
@@ -73,12 +73,12 @@ La forma más rápida de llenar una tabla es **arrastrar escenas** desde la list
 
 | Acción | Qué hace |
 |---|---|
-| **Reproducir una escena** | Lanza la escena en su grupo (o sola, si no está en ningún grupo). |
+| **Reproducir una escena** | Lanza la escena en su grupo (o sola, si no está en ningún grupo). Pulsado varias veces seguidas, marca el [ritmo](directo.md#ritmo-de-una-escena-con-pasos) de una escena con pasos o de una cuelist. |
 | **Siguiente escena de un grupo** / **Escena anterior de un grupo** | En un grupo, o en «Todos los grupos». |
 | **Liberar un grupo** | Un grupo, o todos. |
 | **Blackout** | Activa o quita el blackout. |
 | **Parar todo** | Como el botón de la barra superior. |
-| **Tap tempo** | Marca el BPM. |
+| **Tap tempo** | Marca el tempo del show (el de los FX y las escenas en modo BPM). |
 | **BeatGO (siguiente división)** | Como el botón BeatGO de la barra superior. |
 | **Una paleta** | Pone la paleta en los fixtures con los que se grabó («Sus propias fixtures») o en un grupo de fixtures, como una edición en vivo del programador: va por encima de las escenas hasta que vuelves a pulsar. |
 | **GO de cuelist** / **Atrás de cuelist** / **Liberar una cuelist** | Sobre la cuelist que elijas en **Cuelist**. |
@@ -160,7 +160,7 @@ En el modo edición, suelta una escena sobre una tira para ponerla en ese playba
 
 - **Reloj**: hora y fecha del ordenador.
 - **Temporizador**: **«Iniciar»** / **«Pausa»** y **«Reiniciar»**. En cuenta atrás se pone naranja en el último minuto y rojo al llegar a cero. Sigue contando aunque cambies de página.
-- **BPM y tap**: el tempo, **TAP** y **BeatGO**.
+- **Ritmo**: **GO**, **Stop** y **BeatGO**.
 - **Notas**: el texto que escribas en sus propiedades (la escaleta, avisos para el operador…).
 - **Sonando ahora**: lo que suena, con el botón de parar al lado de cada escena.
 - **Niveles DMX**: una cuadrícula con los 512 canales del universo elegido.
@@ -192,6 +192,6 @@ Consulta [Opciones](opciones.md#show-y-bloqueo).
 
 ## Teclas, mapeos y remoto
 
-- Las **teclas** de los botones solo funcionan en la página Show. Por eso, en esta página las teclas G y T no hacen BeatGO ni Tap.
+- Las **teclas** de los botones solo funcionan en la página Show. Por eso, en esta página la tecla G no hace BeatGO.
 - En el modo Mapear, los botones y los faders del SHOW se pueden asignar a un controlador; un control MIDI puede mover un fader del SHOW entero, con todos sus elementos (consulta [Mapeos](mapeos.md)).
 - Las páginas del SHOW se ven y se usan en el móvil o la tablet con el [control remoto](remoto.md).

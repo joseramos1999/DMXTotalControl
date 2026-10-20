@@ -22,6 +22,7 @@
 #include <QDebug>
 
 #include "zone.h"
+#include "scenetaps.h"
 #include "zonemanager.h"
 #include "doc.h"
 #include "function.h"
@@ -222,6 +223,8 @@ QVariantList Zone::functionsInfo() const
         info.insert("type", Function::typeToString(f->type()));
         info.insert("active", m_active.contains(fid));
         info.insert("priority", f->priority());
+        // its own rhythm, tapped on its button (ms a step, 0: none)
+        info.insert("tap", f->tapPeriod());
         Options opt = m_options.value(fid);
         info.insert("release", opt.release);
         info.insert("protection", opt.protection);
@@ -281,6 +284,7 @@ void Zone::connectFunction(quint32 fid)
     connect(f, SIGNAL(stopped(quint32)), this, SLOT(slotFunctionStopped(quint32)), Qt::UniqueConnection);
     connect(f, SIGNAL(nameChanged(quint32)), this, SIGNAL(functionsChanged()), Qt::UniqueConnection);
     connect(f, SIGNAL(changed(quint32)), this, SIGNAL(functionsChanged()), Qt::UniqueConnection);
+    connect(f, SIGNAL(tapChanged(quint32)), this, SIGNAL(functionsChanged()), Qt::UniqueConnection);
     connect(f, SIGNAL(loopsFinished(quint32)), this, SLOT(slotLoopsFinished(quint32)), Qt::UniqueConnection);
 }
 
@@ -307,19 +311,40 @@ uint Zone::fadeOut() const
 
 void Zone::trigger(quint32 fid)
 {
-    // a scene started paused plays at the second press
-    if (m_active.contains(fid) && m_waiting.remove(fid))
+    const bool active = m_active.contains(fid);
+    // a scene started paused plays at the second press (with Stop, it stops)
+    if (active && SceneTaps::mode() != SceneTaps::Stop && m_waiting.remove(fid))
     {
         if (Function *f = m_doc->function(fid))
+        {
             f->setPause(false);
+            // (its rhythm counts from this press, as from a start)
+            SceneTaps::press(f, false);
+        }
         emit functionsChanged();
         return;
     }
 
-    if (m_active.contains(fid))
-        stop(fid);
-    else
-        start(fid);
+    // what its button does in the mode of the buttons (GO, Stop or as
+    // always): start it, stop it, or a beat of its own rhythm (a new rhythm
+    // changes the function, and so the list)
+    switch (SceneTaps::press(m_doc->function(fid), active))
+    {
+        case SceneTaps::StartIt:
+            start(fid);
+            break;
+        case SceneTaps::StopIt:
+            stop(fid);
+            break;
+        case SceneTaps::ToggleIt:
+            if (active)
+                stop(fid);
+            else
+                start(fid);
+            break;
+        case SceneTaps::Keep:
+            break;
+    }
 }
 
 void Zone::start(quint32 fid)

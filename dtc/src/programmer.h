@@ -30,6 +30,7 @@
 #include <functional>
 #include <QSet>
 #include <QHash>
+#include <QPointF>
 
 #include "fxscene.h"
 
@@ -40,6 +41,7 @@ class Cuelist;
 class Fixture;
 class ZoneManager;
 class PaletteManager;
+class PatchManager;
 class Doc;
 
 /**
@@ -63,6 +65,9 @@ class Programmer : public QObject
     Q_PROPERTY(bool blind READ blind WRITE setBlind NOTIFY blindChanged)
     /** Pan and tilt of the selection, 0..1: { x, y, available } */
     Q_PROPERTY(QVariantMap position READ position NOTIFY channelsChanged)
+    /** The fan of the position of the selection: { pan, tilt (-1..1), mode } */
+    Q_PROPERTY(QVariantMap positionFan READ positionFan NOTIFY channelsChanged)
+    Q_PROPERTY(QVariantMap aim READ aim NOTIFY aimChanged)
     Q_PROPERTY(QVariantList fxLayers READ fxLayers NOTIFY fxChanged)
     Q_PROPERTY(QVariantList fxParams READ fxParams NOTIFY fxParamsChanged)
     Q_PROPERTY(QString lastParam READ lastParam WRITE setLastParam NOTIFY lastParamChanged)
@@ -121,9 +126,28 @@ public:
     /** Release the values of the selected fixtures only */
     Q_INVOKABLE void resetSelected();
 
-    /** Pan and tilt of the selection from an XY grid, 0..1, with the fine channels */
+    /** Pan and tilt of the selection from an XY grid, 0..1, with the fine
+     *  channels (only those: not a rotation or a speed of pan and tilt). With
+     *  a fan, the fixtures go there and keep their fan around it */
     Q_INVOKABLE void setPosition(qreal x, qreal y);
+    /** { available, x, y, points: [{ x, y }] the position of each fixture
+     *  of the selection with pan or tilt }; with a fan, x and y are its centre */
     QVariantMap position() const;
+
+    /**
+     * A fan of the position: each fixture of the selection (in its order)
+     * moves from where it was by up to half the travel times  and 
+     * (-1..1): "spread" from one end to the other (-1 to 1), "v" the ends
+     * out and the middle still (1 0 1), "first" from the first one (0 to
+     * 1). 0 and 0: back where they were. Moved by something else (a
+     * palette, released, another selection) the fan starts again from there
+     */
+    Q_INVOKABLE void setPositionFan(qreal pan, qreal tilt, const QString &mode);
+    QVariantMap positionFan() const;
+
+    /** A channel of the position: pan or tilt, coarse or fine (a preset of
+     *  them, or one of their groups that isn't a rotation, a speed...) */
+    static bool isPositionChannel(const QLCChannel *ch, bool *pan = nullptr, bool *fine = nullptr);
 
     /** The same on other fixtures than the selection (the SHOW colour wheel and XY grid) */
     void setColorFor(const QList<quint32> &fixtures, const QColor &color);
@@ -149,6 +173,22 @@ public:
     Q_INVOKABLE void beamOff();
     /** Pan and tilt to the centre */
     Q_INVOKABLE void centreBeam();
+
+    /*********************************************************************
+     * Follow: the moving heads of the selection aim at a point of the plan
+     *********************************************************************/
+    /** The patch: where the fixtures are and how they hang */
+    void setPatch(PatchManager *patch);
+    /** The moving heads of the selection aim at the point $x, $y of the
+     *  stage plan (mm) at height $z (mm over the floor): their pan and tilt,
+     *  with the inversions, limits and swap of the patch undone. Dragged,
+     *  each one goes the short way from where it aimed. @return aim() */
+    Q_INVOKABLE QVariantMap aimAt(qreal x, qreal y, qreal z);
+    /** { active, x, y, z (mm), aimed: [ids], unreachable: [ids out of their
+     *  reach], guessed: [ids whose travel is a guess], skipped: [ids of
+     *  scanners] }; active until the position is set another way, the
+     *  selection changes or the programmer is cleared */
+    QVariantMap aim() const;
 
     /**
      * Spread a channel over the selection, in selection order: from $base
@@ -292,6 +332,7 @@ signals:
     void fxParamsChanged();
     void lastParamChanged();
     void highlightChanged();
+    void aimChanged();
     /** clear() released everything (loading a look into the programmer doesn't emit it) */
     void cleared();
     /** A scene or a step was loaded to edit it (loadScene, loadValues): the
@@ -377,6 +418,37 @@ private:
      *  values were set: a fixture that changes mode keeps them on the same
      *  attributes (its dimmer may be on another channel now) */
     QHash<quint32, QStringList> m_valueKeys;
+
+    /** The fan of the position: the fixtures it moves (in order), where
+     *  each one was (its centre), what it wrote (moved since: it's gone) */
+    qreal m_fanPan = 0.0;
+    qreal m_fanTilt = 0.0;
+    QString m_fanMode = QStringLiteral("spread");
+    QList<quint32> m_fanFixtures;
+    QHash<quint32, QPointF> m_fanBases;
+    QHash<quint32, QPointF> m_fanWritten;
+    /** The fixtures of the selection with a position, in its order */
+    QList<quint32> positionedSelection() const;
+    /** Whether the fan is still what the fixtures have */
+    bool fanHolds() const;
+    /** The fan on the fixtures, from their centres */
+    void applyPositionFan();
+    /** The position of one fixture, without telling (the fan writes them all);
+     *  with onlyMoves, only the axes that change */
+    void writePosition(quint32 fixtureId, qreal x, qreal y, bool onlyMoves = false);
+
+    /** Follow: the patch, what aim() gives, where each head aimed (degrees) */
+    PatchManager *m_patch = nullptr;
+    QVariantMap m_aim;
+    QHash<quint32, QPointF> m_aimAngles;
+    /** What writeAim wrote: changed another way (a palette, a fader), the heads aim no more */
+    QHash<QPair<quint32, quint32>, uchar> m_aimWritten;
+    bool aimHolds() const;
+    /** The position was set another way: no aim */
+    void dropAim();
+    /** Pan and tilt of one fixture as they leave it (0..1 of their travel):
+     *  through the inversions, limits and swap of the patch */
+    void writeAim(quint32 fixtureId, qreal pan, qreal tilt);
 };
 
 #endif

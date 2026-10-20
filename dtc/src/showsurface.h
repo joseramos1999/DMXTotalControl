@@ -51,7 +51,7 @@ class Doc;
  *  "groups"   every group side by side
  *  "clock"    time and date
  *  "timer"    a stopwatch or a countdown (mode, minutes)
- *  "bpm"      BPM, tap, BeatGO and the pulse meter
+ *  "bpm"      the rhythm: GO and Stop of the scene buttons, BeatGO
  *  "notes"    text for the show (text, fontSize)
  *  "running"  the scenes playing, with their stop buttons
  *  "monitor"  the DMX levels of a universe (universe)

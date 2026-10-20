@@ -25,6 +25,7 @@
 #include <QColor>
 #include <QUrl>
 #include <qmath.h>
+#include <cmath>
 
 #include "patchmanager.h"
 #include "monitorproperties.h"
@@ -36,6 +37,8 @@
 #include "qlcchannel.h"
 #include "universe.h"
 #include "fixture.h"
+#include "qlcphysical.h"
+#include "programmer.h"
 #include "doc.h"
 
 /* Distance between the pixels of a matrix in the plan, in millimeters */
@@ -400,6 +403,148 @@ void PatchManager::setFixtureShape(const QVariantList &ids, const QString &shape
 void PatchManager::clearPlan()
 {
     m_shapes.clear();
+    m_aims.clear();
+}
+
+/*********************************************************************
+ * Follow
+ *********************************************************************/
+
+// a moving head: it has pan or tilt (not just a rotation or a speed)
+static bool aimable(const Fixture *fxi)
+{
+    if (fxi == nullptr)
+        return false;
+    for (quint32 c = 0; c < fxi->channels(); c++)
+    {
+        if (Programmer::isPositionChannel(fxi->channel(c)))
+            return true;
+    }
+    return false;
+}
+
+AimMount PatchManager::aimMount(quint32 id, bool *guessed) const
+{
+    AimMount mount;
+    const AimSetup setup = m_aims.value(id);
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    if (monitor != nullptr && monitor->containsFixture(id))
+    {
+        const QVector3D pos = monitor->fixturePosition(id, 0, 0);
+        mount.position = QVector3D(pos.x(), pos.y(), 0);
+        mount.facing = monitor->fixtureRotation(id, 0, 0).z();
+    }
+    mount.hanging = setup.standing == false;
+    mount.position.setZ(setup.height >= 0 ? setup.height : (setup.standing ? 0 : defaultHeight()));
+
+    // the travel: its own, its definition's, or the usual one of a moving head
+    int panDefinition = 0, tiltDefinition = 0;
+    const Fixture *fxi = m_doc->fixture(id);
+    if (fxi != nullptr && fxi->fixtureMode() != nullptr)
+    {
+        const QLCPhysical physical = fxi->fixtureMode()->physical();
+        panDefinition = physical.focusPanMax();
+        tiltDefinition = physical.focusTiltMax();
+        mount.mirror = physical.focusType() == QLatin1String("Mirror");
+    }
+    mount.panRange = setup.panRange > 0 ? setup.panRange : (panDefinition > 0 ? panDefinition : 540);
+    mount.tiltRange = setup.tiltRange > 0 ? setup.tiltRange : (tiltDefinition > 0 ? tiltDefinition : 270);
+    mount.panInverted = setup.panInverted;
+    mount.tiltInverted = setup.tiltInverted;
+    if (guessed != nullptr)
+        *guessed = (setup.panRange <= 0 && panDefinition <= 0) || (setup.tiltRange <= 0 && tiltDefinition <= 0);
+    return mount;
+}
+
+QVariantMap PatchManager::aimSettings(const QVariantList &ids) const
+{
+    QVariantMap settings;
+    QStringList mixed;
+    int count = 0;
+    for (quint32 id : existing(m_doc, ids))
+    {
+        const Fixture *fxi = m_doc->fixture(id);
+        if (aimable(fxi) == false)
+            continue;
+        const AimSetup setup = m_aims.value(id);
+        const AimMount mount = aimMount(id);
+        const QLCPhysical physical = fxi->fixtureMode() != nullptr ? fxi->fixtureMode()->physical() : QLCPhysical();
+        const QVariantMap one = {
+            { "height", qRound(mount.position.z()) },
+            { "standing", setup.standing },
+            { "facing", qRound(std::fmod(std::fmod(mount.facing, 360.0) + 360.0, 360.0)) % 360 },
+            { "panRange", setup.panRange },
+            { "tiltRange", setup.tiltRange },
+            { "panDefinition", physical.focusPanMax() },
+            { "tiltDefinition", physical.focusTiltMax() },
+            { "panInverted", setup.panInverted },
+            { "tiltInverted", setup.tiltInverted },
+            { "mirror", mount.mirror },
+        };
+        if (count == 0)
+        {
+            settings = one;
+        }
+        else
+        {
+            for (auto it = one.cbegin(); it != one.cend(); ++it)
+            {
+                if (settings.value(it.key()) != it.value() && mixed.contains(it.key()) == false)
+                    mixed.append(it.key());
+            }
+        }
+        count++;
+    }
+    settings.insert("count", count);
+    settings.insert("mixed", mixed);
+    return settings;
+}
+
+void PatchManager::setAimSetting(const QVariantList &ids, const QString &key, const QVariant &value)
+{
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    bool changed = false;
+    for (quint32 id : existing(m_doc, ids))
+    {
+        if (aimable(m_doc->fixture(id)) == false)
+            continue;
+        // the way it faces is its turn in the plan
+        if (key == "facing")
+        {
+            if (monitor == nullptr || monitor->containsFixture(id) == false)
+                continue;
+            QVector3D rotation = monitor->fixtureRotation(id, 0, 0);
+            rotation.setZ(std::fmod(std::fmod(value.toDouble(), 360.0) + 360.0, 360.0));
+            monitor->setFixtureRotation(id, 0, 0, rotation);
+            changed = true;
+            continue;
+        }
+        AimSetup setup = m_aims.value(id);
+        if (key == "height")
+            setup.height = qBound(0, value.toInt(), 100000);
+        else if (key == "standing")
+            setup.standing = value.toBool();
+        else if (key == "panRange")
+            setup.panRange = qBound(0, value.toInt(), 1080);
+        else if (key == "tiltRange")
+            setup.tiltRange = qBound(0, value.toInt(), 1080);
+        else if (key == "panInverted")
+            setup.panInverted = value.toBool();
+        else if (key == "tiltInverted")
+            setup.tiltInverted = value.toBool();
+        else
+            return;
+        if (setup.isDefault())
+            m_aims.remove(id);
+        else
+            m_aims.insert(id, setup);
+        changed = true;
+    }
+    if (changed)
+    {
+        m_doc->setModified();
+        notifyFixtures();
+    }
 }
 
 /*********************************************************************

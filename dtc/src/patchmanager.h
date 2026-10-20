@@ -28,6 +28,8 @@
 #include <QStringList>
 #include <QVariant>
 
+#include "aim.h"
+
 class GenericDMXSource;
 class ChannelModifier;
 class QLCFixtureMode;
@@ -235,6 +237,25 @@ public:
     Q_INVOKABLE QVariantList liveStates() const;
 
     /*********************************************************************
+     * Follow: where the moving heads hang and how they move, so they can
+     * all aim at a point of the plan (Programmer::aimAt)
+     *********************************************************************/
+    /** What fixtures $ids have (the ones with pan or tilt): { count, height
+     *  (mm), standing, facing (degrees, clockwise; 0: the audience),
+     *  panRange, tiltRange (their own, degrees; 0: the definition's),
+     *  panDefinition, tiltDefinition (0: it says none), panInverted,
+     *  tiltInverted, mixed: [the keys that differ between them] } */
+    Q_INVOKABLE QVariantMap aimSettings(const QVariantList &ids) const;
+    /** One of them on fixtures $ids: "height" (mm), "standing", "facing",
+     *  "panRange", "tiltRange", "panInverted", "tiltInverted" */
+    Q_INVOKABLE void setAimSetting(const QVariantList &ids, const QString &key, const QVariant &value);
+    /** Where fixture $id is and how it moves; $guessed: its pan or tilt
+     *  travel comes from nowhere (the usual one of a moving head) */
+    AimMount aimMount(quint32 id, bool *guessed = nullptr) const;
+    /** The height of a hung head without one (mm) */
+    static int defaultHeight() { return 4000; }
+
+    /*********************************************************************
      * Selections: ordered parts of a fixture group
      *********************************************************************/
     /** [{ id, name, groupId, fixtures: [ids, in order] }] */
@@ -309,6 +330,22 @@ private:
     int m_lastSelectionId;
     /** The shape of the fixtures in the plan, when not round */
     QHash<quint32, QString> m_shapes;
+    /** Follow: how each moving head hangs, when not the default */
+    struct AimSetup
+    {
+        int height = -1;            // mm, -1: the default
+        bool standing = false;
+        int panRange = 0;           // degrees, 0: the definition's
+        int tiltRange = 0;
+        bool panInverted = false;
+        bool tiltInverted = false;
+        bool isDefault() const
+        {
+            return height < 0 && standing == false && panRange == 0 && tiltRange == 0 &&
+                   panInverted == false && tiltInverted == false;
+        }
+    };
+    QHash<quint32, AimSetup> m_aims;
     /** The fixture numbers */
     QHash<quint32, int> m_numbers;
 };

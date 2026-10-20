@@ -144,6 +144,7 @@ Rectangle {
             Layout.fillWidth: true
             from: 0; to: 1
             value: strip.mixer.hue || 0
+            opacity: Theme.lightLevel
             trackGradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "#ff0000" }
@@ -188,7 +189,7 @@ Rectangle {
             MapTarget { target: ({ target: "mixerStrobeHz", mixerId: strip.mid }) }
         }
         Text {
-            text: qsTr("%1 Hz").arg((strip.mixer.strobeHz || 8).toFixed(1))
+            text: qsTr("%1 Hz").arg((strip.mixer.strobeHz || 8).toLocaleString(Qt.locale(), "f", 1))
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: Theme.fontSmall

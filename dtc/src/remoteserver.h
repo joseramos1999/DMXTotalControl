@@ -133,6 +133,8 @@ private:
     /** The playbacks of the state: the current playback page and the pages
      *  the "playbacks" sections show */
     QVariantMap playbacksState() const;
+    /** The step of each scene with steps that plays: ID -> step (the rhythm bars) */
+    QVariantMap stepsState() const;
     /** A flash a phone holds (page, slot): let go of it when the phone goes.
      *  False for an "up" of a flash the phone doesn't hold (already let go
      *  of: it would release a hold of somebody else). The phone lets go

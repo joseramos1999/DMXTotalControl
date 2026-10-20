@@ -62,12 +62,12 @@ Rectangle {
         width: Math.max(16, countText.implicitWidth + 8)
         height: 16
         radius: 8
-        color: Theme.learn
+        color: Theme.fill(Theme.learn)
         Text {
             id: countText
             anchors.centerIn: parent
             text: overlay.count
-            color: Theme.textOn(Theme.learn)
+            color: Theme.textOn(Theme.fill(Theme.learn))
             font.pixelSize: 10
             font.weight: Font.Bold
         }

@@ -167,6 +167,9 @@ public:
 signals:
     /** Signal telling that the contents of this function have changed */
     void changed(quint32 fid);
+    /** DMX Total Control: its tapped rhythm changed (not changed(): the
+     *  runners that follow the steps don't need to look at them again) */
+    void tapChanged(quint32 fid);
 
     /*********************************************************************
      * Copying
@@ -1131,6 +1134,14 @@ public:
     /** Jump to the next division of the cycle at the next frame (BeatGO, pulse) */
     void requestDivisionJump();
 
+    /** DMX Total Control: its own rhythm, tapped on its button (steps and
+     *  cuelists): a step (a cue) every $ms, instead of their own times; 0 for
+     *  none. Saved with the function */
+    void setTapPeriod(uint ms);
+    uint tapPeriod() const;
+    /** A beat of that rhythm: the next step now, the next beats from here */
+    void tapBeat();
+
     /** The tick of the current frame, scaled by the speed factor */
     uint frameTick() const;
 
@@ -1150,6 +1161,9 @@ protected:
     void advanceFrameTick();
     /** Pending division jumps, cleared */
     int takeDivisionJumps();
+    /** The steps due at this frame: the division jumps, and the beats of its
+     *  own rhythm (call after advanceFrameTick) */
+    int takeRhythmSteps();
 
     bool saveXMLPlayback(QXmlStreamWriter *doc) const;
     void loadXMLPlayback(const QXmlStreamAttributes &attrs);
@@ -1168,6 +1182,10 @@ private:
     uint m_frameTick;
     int m_cyclesDone;
     QAtomicInt m_pendingJumps;
+    // its own rhythm: the period (ms), the time since its last beat, a tap to come
+    QAtomicInt m_tapPeriod;
+    uint m_tapElapsed = 0;
+    QAtomicInt m_tapRephase;
 };
 
 /** @} */

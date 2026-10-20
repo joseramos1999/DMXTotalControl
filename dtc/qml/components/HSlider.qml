@@ -22,7 +22,8 @@ import QtQuick.Controls
 import DMXTotalControl
 import DMXTotalControl.Backend
 
-/** A flat horizontal slider. Set trackGradient to paint the track (e.g. a hue bar) */
+/** A flat slider, horizontal (or vertical: orientation Qt.Vertical, filled
+ *  from the bottom). Set trackGradient to paint the track (e.g. a hue bar) */
 Slider {
     id: control
 
@@ -44,7 +45,11 @@ Slider {
     }
 
     focusPolicy: Qt.StrongFocus
-    implicitHeight: 24
+    // (horizontal: the size of the style, as always; vertical: a column of 24)
+    implicitHeight: horizontal ? 24 : Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                               implicitHandleHeight + topPadding + bottomPadding)
+    implicitWidth: horizontal ? Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                                         implicitHandleWidth + leftPadding + rightPadding) : 24
 
     Keys.onPressed: (event) => {
         switch (event.key) {
@@ -62,10 +67,10 @@ Slider {
     }
 
     background: Rectangle {
-        x: control.leftPadding
-        y: control.topPadding + control.availableHeight / 2 - height / 2
-        width: control.availableWidth
-        height: 6
+        x: control.horizontal ? control.leftPadding : control.leftPadding + control.availableWidth / 2 - width / 2
+        y: control.horizontal ? control.topPadding + control.availableHeight / 2 - height / 2 : control.topPadding
+        width: control.horizontal ? control.availableWidth : 6
+        height: control.horizontal ? 6 : control.availableHeight
         radius: 3
         color: Theme.background
         border.color: control.activeFocus ? Theme.accent : Theme.border
@@ -73,16 +78,20 @@ Slider {
 
         Rectangle {
             visible: control.trackGradient === null
-            width: control.visualPosition * parent.width
-            height: parent.height
+            // (vertical: up from the bottom)
+            y: control.horizontal ? 0 : parent.height - height
+            width: control.horizontal ? control.visualPosition * parent.width : parent.width
+            height: control.horizontal ? parent.height : control.position * parent.height
             radius: 3
             color: control.fillColor
         }
     }
 
     handle: Rectangle {
-        x: control.leftPadding + control.visualPosition * (control.availableWidth - width)
-        y: control.topPadding + control.availableHeight / 2 - height / 2
+        x: control.horizontal ? control.leftPadding + control.visualPosition * (control.availableWidth - width)
+                              : control.leftPadding + control.availableWidth / 2 - width / 2
+        y: control.horizontal ? control.topPadding + control.availableHeight / 2 - height / 2
+                              : control.topPadding + control.visualPosition * (control.availableHeight - height)
         width: 16
         height: 16
         radius: 8

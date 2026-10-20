@@ -1639,8 +1639,8 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
     {
         QMutexLocker locker(&m_mutex);
 
-        // BeatGO and pulses: a GO per division
-        for (int jumps = takeDivisionJumps(); jumps > 0; jumps--)
+        // BeatGO and pulses (a GO per division) and its own rhythm (a GO a beat)
+        for (int jumps = takeRhythmSteps(); jumps > 0; jumps--)
             m_actions.append(Action());
 
         // the cues changed while playing: the new data shows at once, and the
@@ -1661,8 +1661,9 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
         // only the first cue of a run starts in the middle
         m_seekRemainder = 0;
 
-        // Follow and Wait: at most one automatic step per frame
-        if (applied == false && m_followArmed && m_current >= 0)
+        // Follow and Wait: at most one automatic step per frame (with a rhythm
+        // of its own, its beats move the cues instead)
+        if (applied == false && m_followArmed && m_current >= 0 && tapPeriod() == 0)
         {
             const int next = naturalNextLocked();
             const Cue *trigger = autoTriggerLocked(next);

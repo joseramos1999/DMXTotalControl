@@ -21,12 +21,17 @@
 #include <QSet>
 #include <QUrl>
 #include <QFileInfo>
+#include <QRegularExpression>
+#include <QVector3D>
 #include <algorithm>
 
 #include "programmer.h"
 #include "zonemanager.h"
 #include "zone.h"
 #include "palettemanager.h"
+#include "patchmanager.h"
+#include "channelmodifier.h"
+#include "aim.h"
 
 #include "genericdmxsource.h"
 #include "qlccapability.h"
@@ -72,6 +77,14 @@ Programmer::Programmer(Doc *doc, ZoneManager *zones, QObject *parent)
     m_fx = new FXScene(m_doc);
     m_fx->setName(tr("Programmer FX"));
     m_fx->setPriority(Function::maxPriority());
+
+    // Follow aims the heads of a selection
+    connect(this, &Programmer::selectionChanged, this, &Programmer::dropAim);
+    // (and no more once their values change another way)
+    connect(this, &Programmer::valuesChanged, this, [this]() {
+        if (m_aim.isEmpty() == false && aimHolds() == false)
+            dropAim();
+    });
 
     // scenes that start take back the channels they play (live edit)
     connect(m_doc->masterTimer(), SIGNAL(functionStarted(quint32)), this, SLOT(slotFunctionStarted(quint32)));
@@ -226,9 +239,11 @@ static QString featureTab(const QLCChannel *ch)
             return "dimmer";
         case QLCChannel::Colour:
             return "color";
+        // the position is pan and tilt alone: their rotations and speeds go
+        // with the others
         case QLCChannel::Pan:
         case QLCChannel::Tilt:
-            return "position";
+            return Programmer::isPositionChannel(ch) ? "position" : "other";
         case QLCChannel::Gobo:
             return "gobo";
         case QLCChannel::Prism:
@@ -236,7 +251,7 @@ static QString featureTab(const QLCChannel *ch)
         case QLCChannel::Beam:
             return name.contains("focus") || name.contains("zoom") ? "focus" : "beam";
         case QLCChannel::Speed:
-            return name.contains("pan") || name.contains("tilt") ? "position" : "other";
+            return "other";
         default:
             return name.contains("focus") || name.contains("zoom") ? "focus" : "other";
     }
@@ -557,6 +572,13 @@ void Programmer::clear()
     m_valueKeys.clear();
     m_paletteRefs.clear();
     m_fxLayers.clear();
+    // (no fan either)
+    m_fanFixtures.clear();
+    m_fanBases.clear();
+    m_fanWritten.clear();
+    m_fanPan = 0.0;
+    m_fanTilt = 0.0;
+    dropAim();
     syncFx();
 
     emit valuesChanged();
@@ -1052,10 +1074,12 @@ void Programmer::centreBeam()
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
             const QLCChannel *ch = fxi->channel(c);
-            if (ch != nullptr && (ch->group() == QLCChannel::Pan || ch->group() == QLCChannel::Tilt))
-                setValue(fxid, c, ch->controlByte() == QLCChannel::MSB ? 128 : 0);
+            bool fine = false;
+            if (isPositionChannel(ch, nullptr, &fine))
+                setValue(fxid, c, fine ? 0 : 128);
         }
     }
+    dropAim();
     notifyValues();
 }
 
@@ -1476,37 +1500,221 @@ void Programmer::resetSelected()
  * Position (XY grid)
  *********************************************************************/
 
+bool Programmer::isPositionChannel(const QLCChannel *ch, bool *pan, bool *fine)
+{
+    if (ch == nullptr)
+        return false;
+    bool isPan = false, isFine = false;
+    switch (ch->preset())
+    {
+        case QLCChannel::PositionPan: case QLCChannel::PositionXAxis: isPan = true; break;
+        case QLCChannel::PositionPanFine: isPan = true; isFine = true; break;
+        case QLCChannel::PositionTilt: case QLCChannel::PositionYAxis: break;
+        case QLCChannel::PositionTiltFine: isFine = true; break;
+        case QLCChannel::Custom:
+        {
+            // no preset: its group, unless it is something else of the pan
+            // and tilt. Its ranges say so (a rotation), or its name does
+            // ("Pan Continuous Rotation", "Tilt Offset", "Auto Move", "Pan/Tilt
+            // speed"...); a pan named "Rotation" (0-540°) or "Giro" is a pan
+            if (ch->group() != QLCChannel::Pan && ch->group() != QLCChannel::Tilt)
+                return false;
+            for (const QLCCapability *cap : ch->capabilities())
+            {
+                if (cap->preset() >= QLCCapability::RotationStop &&
+                    cap->preset() <= QLCCapability::RotationCounterClockwiseFastToSlow)
+                    return false;
+            }
+            static const QRegularExpression other(QStringLiteral("contin|endless|sin fin|infinit|speed|spd|veloc|vitesse|geschw"
+                                                                 "|offset|auto|macro|reset|mode|time"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+            if (other.match(ch->name()).hasMatch())
+                return false;
+            isPan = ch->group() == QLCChannel::Pan;
+            isFine = ch->controlByte() == QLCChannel::LSB;
+            break;
+        }
+        // a preset of another thing of the pan or tilt (a rotation, a speed)
+        default:
+            return false;
+    }
+    if (pan != nullptr)
+        *pan = isPan;
+    if (fine != nullptr)
+        *fine = isFine;
+    return true;
+}
+
 void Programmer::setPosition(qreal x, qreal y)
 {
-    setPositionFor(m_selection, x, y);
+    x = qBound(0.0, x, 1.0);
+    y = qBound(0.0, y, 1.0);
+    // with a fan: the centre moves, the fixtures keep their fan around it
+    if (fanHolds() && (m_fanPan != 0.0 || m_fanTilt != 0.0))
+    {
+        for (quint32 fxid : std::as_const(m_fanFixtures))
+            m_fanBases.insert(fxid, QPointF(x, y));
+        applyPositionFan();
+    }
+    else
+    {
+        setPositionFor(m_selection, x, y);
+    }
     setLastParam("pantilt");
+}
+
+void Programmer::writePosition(quint32 fixtureId, qreal x, qreal y, bool onlyMoves)
+{
+    Fixture *fxi = m_doc->fixture(fixtureId);
+    if (fxi == nullptr)
+        return;
+    // (set this way, the heads aim at no point any more)
+    dropAim();
+    x = qBound(0.0, x, 1.0);
+    y = qBound(0.0, y, 1.0);
+    // (the fan: an axis that stays where it is isn't written, so it keeps
+    // its palette, and one that isn't in the programmer stays out of it)
+    bool panMoves = true, tiltMoves = true;
+    if (onlyMoves)
+    {
+        const QVariantMap now = positionFor({ fixtureId });
+        panMoves = qAbs(now.value("x").toDouble() - x) > 1e-9;
+        tiltMoves = qAbs(now.value("y").toDouble() - y) > 1e-9;
+    }
+    for (quint32 c = 0; c < fxi->channels(); c++)
+    {
+        bool pan = false, fine = false;
+        if (isPositionChannel(fxi->channel(c), &pan, &fine) == false || (pan ? panMoves : tiltMoves) == false)
+            continue;
+        // 16 bit: the coarse channel and the fine one
+        int value = qRound((pan ? x : y) * 65535.0);
+        setValue(fixtureId, c, uchar(fine ? value & 0xff : value >> 8));
+    }
 }
 
 void Programmer::setPositionFor(const QList<quint32> &fixtures, qreal x, qreal y)
 {
-    x = qBound(0.0, x, 1.0);
-    y = qBound(0.0, y, 1.0);
     for (quint32 fxid : fixtures)
+        writePosition(fxid, x, y);
+    notifyValues();
+}
+
+QList<quint32> Programmer::positionedSelection() const
+{
+    QList<quint32> fixtures;
+    for (quint32 fxid : m_selection)
     {
-        Fixture *fxi = m_doc->fixture(fxid);
-        if (fxi == nullptr)
-            continue;
-        for (quint32 c = 0; c < fxi->channels(); c++)
-        {
-            const QLCChannel *ch = fxi->channel(c);
-            if (ch == nullptr || (ch->group() != QLCChannel::Pan && ch->group() != QLCChannel::Tilt))
-                continue;
-            // 16 bit: the coarse channel and the fine one
-            int value = qRound((ch->group() == QLCChannel::Pan ? x : y) * 65535.0);
-            setValue(fxid, c, uchar(ch->controlByte() == QLCChannel::MSB ? value >> 8 : value & 0xff));
-        }
+        if (positionFor({ fxid }).value("available").toBool())
+            fixtures.append(fxid);
+    }
+    return fixtures;
+}
+
+bool Programmer::fanHolds() const
+{
+    // the same fixtures, in the same order, where the fan put them
+    if (m_fanFixtures.isEmpty() || m_fanFixtures != positionedSelection())
+        return false;
+    for (quint32 fxid : m_fanFixtures)
+    {
+        const QVariantMap now = positionFor({ fxid });
+        const QPointF written = m_fanWritten.value(fxid, QPointF(-1, -1));
+        if (qAbs(now.value("x").toDouble() - written.x()) > 1e-9 || qAbs(now.value("y").toDouble() - written.y()) > 1e-9)
+            return false;
+    }
+    return true;
+}
+
+void Programmer::applyPositionFan()
+{
+    const int n = int(m_fanFixtures.count());
+    for (int i = 0; i < n; i++)
+    {
+        const quint32 fxid = m_fanFixtures.at(i);
+        // where it is in the fan: -1..1 from one end to the other, 1 0 1 in
+        // a V, 0..1 from the first one
+        const qreal t = n > 1 ? qreal(i) / qreal(n - 1) : 0.5;
+        qreal k = 2.0 * t - 1.0;
+        if (m_fanMode == QLatin1String("v"))
+            k = qAbs(k);
+        else if (m_fanMode == QLatin1String("first"))
+            k = n > 1 ? t : 0.0;
+        const QPointF base = m_fanBases.value(fxid);
+        writePosition(fxid, base.x() + m_fanPan * 0.5 * k, base.y() + m_fanTilt * 0.5 * k, true);
+        // (what it has now, through its coarse and fine channels)
+        const QVariantMap now = positionFor({ fxid });
+        m_fanWritten.insert(fxid, QPointF(now.value("x").toDouble(), now.value("y").toDouble()));
     }
     notifyValues();
 }
 
+void Programmer::setPositionFan(qreal pan, qreal tilt, const QString &mode)
+{
+    pan = qIsFinite(pan) ? qBound(-1.0, pan, 1.0) : 0.0;
+    tilt = qIsFinite(tilt) ? qBound(-1.0, tilt, 1.0) : 0.0;
+    const bool validMode = mode == QLatin1String("spread") || mode == QLatin1String("v") || mode == QLatin1String("first");
+    // no fan to open (a mode chosen first): the mode alone, nothing written
+    if (pan == 0.0 && tilt == 0.0 && fanHolds() == false)
+    {
+        if (validMode && mode != m_fanMode)
+        {
+            m_fanMode = mode;
+            emit channelsChanged();
+        }
+        return;
+    }
+    // a new fan (or the fixtures moved since): from where each one is now
+    if (fanHolds() == false)
+    {
+        m_fanFixtures = positionedSelection();
+        m_fanBases.clear();
+        m_fanWritten.clear();
+        for (quint32 fxid : std::as_const(m_fanFixtures))
+        {
+            const QVariantMap now = positionFor({ fxid });
+            m_fanBases.insert(fxid, QPointF(now.value("x").toDouble(), now.value("y").toDouble()));
+        }
+    }
+    if (m_fanFixtures.isEmpty())
+        return;
+    m_fanPan = pan;
+    m_fanTilt = tilt;
+    if (validMode)
+        m_fanMode = mode;
+    applyPositionFan();
+    setLastParam("pantilt");
+}
+
+QVariantMap Programmer::positionFan() const
+{
+    const bool holds = fanHolds();
+    return QVariantMap({ { "pan", holds ? m_fanPan : 0.0 }, { "tilt", holds ? m_fanTilt : 0.0 }, { "mode", m_fanMode } });
+}
+
 QVariantMap Programmer::position() const
 {
-    return positionFor(m_selection);
+    QVariantMap map = positionFor(m_selection);
+    // where each fixture is (the fan shows)
+    QVariantList points;
+    for (quint32 fxid : positionedSelection())
+    {
+        const QVariantMap one = positionFor({ fxid });
+        points.append(QVariantMap({ { "x", one.value("x") }, { "y", one.value("y") } }));
+    }
+    map.insert("points", points);
+    // with a fan, the cross is its centre
+    if ((m_fanPan != 0.0 || m_fanTilt != 0.0) && fanHolds())
+    {
+        qreal x = 0.0, y = 0.0;
+        for (quint32 fxid : m_fanFixtures)
+        {
+            x += m_fanBases.value(fxid).x();
+            y += m_fanBases.value(fxid).y();
+        }
+        map.insert("x", x / m_fanFixtures.count());
+        map.insert("y", y / m_fanFixtures.count());
+    }
+    return map;
 }
 
 QVariantMap Programmer::positionFor(const QList<quint32> &fixtures) const
@@ -1525,12 +1733,12 @@ QVariantMap Programmer::positionFor(const QList<quint32> &fixtures) const
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
             const QLCChannel *ch = fxi->channel(c);
-            if (ch == nullptr || (ch->group() != QLCChannel::Pan && ch->group() != QLCChannel::Tilt))
+            bool isPan = false, fine = false;
+            if (isPositionChannel(ch, &isPan, &fine) == false)
                 continue;
             auto it = m_values.constFind(qMakePair(fxid, c));
             int value = it != m_values.constEnd() ? int(it.value()) : int(ch->defaultValue());
-            bool isPan = ch->group() == QLCChannel::Pan;
-            if (ch->controlByte() == QLCChannel::MSB)
+            if (fine == false)
                 (isPan ? pan : tilt) = value;
             else
                 (isPan ? panFine : tiltFine) = value;
@@ -2278,10 +2486,16 @@ void Programmer::locate()
                 continue;
             switch (ch->group())
             {
-                // centred
+                // centred (a rotation or a speed of them: at rest)
                 case QLCChannel::Pan: case QLCChannel::Tilt:
-                    values.insert(c, ch->controlByte() == QLCChannel::MSB ? 128 : 0);
+                {
+                    bool fine = false;
+                    if (isPositionChannel(ch, nullptr, &fine))
+                        values.insert(c, fine ? 0 : 128);
+                    else
+                        values.insert(c, ch->defaultValue());
                     break;
+                }
                 // an open beam: no gobo, no prism, the iris open, the rest at rest
                 case QLCChannel::Gobo: case QLCChannel::Prism: case QLCChannel::Beam: case QLCChannel::Shutter:
                 case QLCChannel::Effect:
@@ -2433,6 +2647,129 @@ int Programmer::nudgeDimmer(int delta)
 void Programmer::setPalettes(PaletteManager *palettes)
 {
     m_palettes = palettes;
+}
+
+/*********************************************************************
+ * Follow
+ *********************************************************************/
+
+void Programmer::setPatch(PatchManager *patch)
+{
+    if (m_patch != nullptr)
+        disconnect(m_patch, nullptr, this, nullptr);
+    m_patch = patch;
+    // the heads moved, turned or inverted: they aim no more
+    if (m_patch != nullptr)
+        connect(m_patch, &PatchManager::fixturesChanged, this, &Programmer::dropAim);
+}
+
+QVariantMap Programmer::aimAt(qreal x, qreal y, qreal z)
+{
+    if (m_patch == nullptr)
+        return aim();
+
+    const QVector3D target = QVector3D(float(x), float(y), float(z));
+    m_aimWritten.clear();
+    QVariantList aimed, unreachable, guessed, skipped;
+    for (quint32 fxid : positionedSelection())
+    {
+        bool guess = false;
+        const AimMount mount = m_patch->aimMount(fxid, &guess);
+        // a scanner moves a mirror: not this geometry
+        if (mount.mirror)
+        {
+            skipped.append(fxid);
+            continue;
+        }
+        QPointF angles;
+        const bool reached = Aim::solve(mount, target, m_aimAngles.value(fxid), m_aimAngles.contains(fxid), &angles);
+        m_aimAngles.insert(fxid, angles);
+        writeAim(fxid, angles.x() / mount.panRange, angles.y() / mount.tiltRange);
+        aimed.append(fxid);
+        if (reached == false)
+            unreachable.append(fxid);
+        if (guess)
+            guessed.append(fxid);
+    }
+
+    m_aim = { { "active", true }, { "x", x }, { "y", y }, { "z", z }, { "aimed", aimed },
+              { "unreachable", unreachable }, { "guessed", guessed }, { "skipped", skipped } };
+    notifyValues();
+    setLastParam("pantilt");
+    emit aimChanged();
+    return m_aim;
+}
+
+QVariantMap Programmer::aim() const
+{
+    if (m_aim.isEmpty())
+        return { { "active", false } };
+    return m_aim;
+}
+
+bool Programmer::aimHolds() const
+{
+    for (auto it = m_aimWritten.cbegin(); it != m_aimWritten.cend(); ++it)
+    {
+        auto value = m_values.constFind(it.key());
+        if (value == m_values.cend() || value.value() != it.value())
+            return false;
+    }
+    return true;
+}
+
+void Programmer::dropAim()
+{
+    m_aimAngles.clear();
+    m_aimWritten.clear();
+    if (m_aim.isEmpty())
+        return;
+    m_aim.clear();
+    emit aimChanged();
+}
+
+// the value to give a channel so its modifier (an inversion, the limits)
+// sends $wanted, or the nearest it can
+static uchar beforeModifier(const ChannelModifier *modifier, uchar wanted)
+{
+    if (modifier == nullptr)
+        return wanted;
+    int best = wanted, bestGap = 256;
+    for (int value = 0; value < 256 && bestGap > 0; value++)
+    {
+        const int gap = qAbs(int(modifier->getValue(uchar(value))) - int(wanted));
+        if (gap < bestGap)
+        {
+            best = value;
+            bestGap = gap;
+        }
+    }
+    return uchar(best);
+}
+
+void Programmer::writeAim(quint32 fixtureId, qreal pan, qreal tilt)
+{
+    Fixture *fxi = m_doc->fixture(fixtureId);
+    if (fxi == nullptr)
+        return;
+    const int panValue = qRound(qBound(0.0, pan, 1.0) * 65535.0);
+    const int tiltValue = qRound(qBound(0.0, tilt, 1.0) * 65535.0);
+    for (quint32 c = 0; c < fxi->channels(); c++)
+    {
+        bool isPan = false, fine = false;
+        if (isPositionChannel(fxi->channel(c), &isPan, &fine) == false)
+            continue;
+        // what it moves at the output: with pan and tilt swapped, the other one
+        bool outPan = isPan, outFine = fine;
+        const quint32 out = fxi->outputChannel(c);
+        if (out != c && out < fxi->channels())
+            isPositionChannel(fxi->channel(out), &outPan, &outFine);
+        const int value = outPan ? panValue : tiltValue;
+        const uchar wanted = uchar(outFine ? value & 0xff : value >> 8);
+        const uchar given = beforeModifier(fxi->channelModifier(c), wanted);
+        m_aimWritten.insert(qMakePair(fixtureId, c), given);
+        setValue(fixtureId, c, given);
+    }
 }
 
 PaletteManager *Programmer::palettes() const

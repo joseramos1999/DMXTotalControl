@@ -437,6 +437,24 @@ function playbackStrip(node, slot, pbPage) {
   return strip;
 }
 
+// the rhythm of a scene with steps (a cuelist) inside its button: two halves
+// that light one after the other, a step each; only while it plays
+function rhythmBar(button, functionId) {
+  const bar = el("div", "rhythm"), halves = [el("div", "half"), el("div", "half")];
+  halves.forEach((half) => bar.appendChild(half));
+  button.appendChild(bar);
+  let last = -1, left = true;
+  updaters.push((s) => {
+    const steps = s.steps || {};
+    const step = steps[String(functionId)] !== undefined ? steps[String(functionId)] : -1;
+    if (step >= 0 && last >= 0 && step !== last) left = !left;
+    last = step;
+    bar.classList.toggle("on", step >= 0);
+    halves[0].classList.toggle("lit", left);
+    halves[1].classList.toggle("lit", !left);
+  });
+}
+
 const BUILDERS = {
   buttons(content, node) {
     const cols = Math.max(1, node.cols || 1), rows = Math.max(1, node.rows || 1);
@@ -456,6 +474,8 @@ const BUILDERS = {
         b.appendChild(el("div", "", item.label || ""));
         if (item.flash)
           b.appendChild(el("span", "flash", ""));
+        if (item.functionId !== undefined)
+          rhythmBar(b, item.functionId);
         const at = { page: pageIndex, section: node.id, cell: c };
         // pressed while a finger is on it: its release reaches the computer
         // wherever the finger is let go (see holdDown)
@@ -685,6 +705,7 @@ const BUILDERS = {
       z.scenes.forEach((sc) => {
         const b = el("button", "scene", sc.name);
         b.addEventListener("click", () => send({ cmd: "scene", zone: z.id, id: sc.id }));
+        rhythmBar(b, sc.id);
         list.appendChild(b);
         buttons.push({ b: b, id: sc.id });
       });
@@ -728,16 +749,23 @@ const BUILDERS = {
     content.appendChild(box);
   },
 
+  // the rhythm: GO (a press of a scene starts it and marks its rhythm) and
+  // Stop (a press stops it), BeatGO (each scene button shows its own rhythm)
   bpm(content) {
-    const box = el("div", "bpm"), number = el("div", "number", "–"), row = el("div", "row");
-    const tap = el("button", "", tr("tap")), go = el("button", "", "BeatGO");
-    tap.addEventListener("pointerdown", () => send({ cmd: "global", action: "tap" }));
-    go.addEventListener("pointerdown", () => send({ cmd: "global", action: "beatgo" }));
-    row.appendChild(tap);
-    row.appendChild(go);
-    box.appendChild(number);
+    const box = el("div", "bpm"), modes = el("div", "row modes"), row = el("div", "row");
+    const go = el("button", "go", "GO"), stop = el("button", "stop", "Stop"), beat = el("button", "", "BeatGO");
+    go.addEventListener("pointerdown", () => send({ cmd: "global", action: "pressGo" }));
+    stop.addEventListener("pointerdown", () => send({ cmd: "global", action: "pressStop" }));
+    beat.addEventListener("pointerdown", () => send({ cmd: "global", action: "beatgo" }));
+    modes.appendChild(go);
+    modes.appendChild(stop);
+    row.appendChild(beat);
+    box.appendChild(modes);
     box.appendChild(row);
-    updaters.push((s) => { number.textContent = s.bpm; });
+    updaters.push((s) => {
+      go.classList.toggle("on", s.pressMode === "go");
+      stop.classList.toggle("on", s.pressMode === "stop");
+    });
     content.appendChild(box);
   },
 

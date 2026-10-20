@@ -12,6 +12,9 @@ set(SRC_FILES
     src/fxtools.cpp src/fxtools.h
     src/remoteserver.cpp src/remoteserver.h
     src/updatechecker.cpp src/updatechecker.h
+    src/uiaudit.cpp src/uiaudit.h
+    src/scenetaps.cpp src/scenetaps.h
+    src/aim.cpp src/aim.h
     src/palettemanager.cpp src/palettemanager.h
     src/commandline.cpp src/commandline.h
     src/cuelisteditor.cpp src/cuelisteditor.h
@@ -37,6 +40,8 @@ set(QML_FILES
     qml/components/AppMenu.qml
     qml/components/AppSwitch.qml
     qml/components/HSlider.qml
+    qml/components/TapRhythm.qml
+    qml/components/RhythmBar.qml
     qml/components/IconLabel.qml
     qml/components/MapTarget.qml
     qml/components/NavButton.qml
@@ -105,6 +110,7 @@ set(QML_FILES
     qml/patch/EditFixtureDialog.qml
     qml/patch/ReaddressDialog.qml
     qml/patch/FixtureOptionsDialog.qml
+    qml/patch/AimSettingsDialog.qml
     qml/patch/MatrixDialog.qml
     qml/patch/PatchGrid.qml
     qml/fixtures/FixtureEditorPage.qml

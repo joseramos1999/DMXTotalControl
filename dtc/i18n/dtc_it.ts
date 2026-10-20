@@ -93,6 +93,88 @@
     </message>
 </context>
 <context>
+    <name>AimSettingsDialog</name>
+    <message>
+        <source>(they differ)</source>
+        <translation>(diverse)</translation>
+    </message>
+    <message>
+        <source>Its definition</source>
+        <translation>Quella della definizione</translation>
+    </message>
+    <message>
+        <source>Definition: %1°</source>
+        <translation>Definizione: %1°</translation>
+    </message>
+    <message>
+        <source>Not in the definition: %1°</source>
+        <translation>Non nella definizione: %1°</translation>
+    </message>
+    <message>
+        <source>Height and facing</source>
+        <translation>Altezza e orientamento</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n moving head(s) of the selection. Follow aims them at a point of the plan with this.</source>
+        <translation>
+            <numerusform>%n testa mobile della selezione. Con questo, Follow la punta a un punto della pianta.</numerusform>
+            <numerusform>%n teste mobili della selezione. Con questo, Follow le punta a un punto della pianta.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>There are no moving heads in the selection.</source>
+        <translation>Nella selezione non ci sono teste mobili.</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Altezza</translation>
+    </message>
+    <message>
+        <source>Mounted</source>
+        <translation>Montaggio</translation>
+    </message>
+    <message>
+        <source>Hung</source>
+        <translation>Appesa</translation>
+    </message>
+    <message>
+        <source>Standing</source>
+        <translation>In piedi</translation>
+    </message>
+    <message>
+        <source>Facing</source>
+        <translation>Orientamento</translation>
+    </message>
+    <message>
+        <source>0°: towards the audience; it turns clockwise on the plan</source>
+        <translation>0°: verso il pubblico; gira in senso orario sulla pianta</translation>
+    </message>
+    <message>
+        <source>Pan travel</source>
+        <translation>Escursione del pan</translation>
+    </message>
+    <message>
+        <source>Tilt travel</source>
+        <translation>Escursione del tilt</translation>
+    </message>
+    <message>
+        <source>Pan the other way</source>
+        <translation>Pan invertito</translation>
+    </message>
+    <message>
+        <source>Tilt the other way</source>
+        <translation>Tilt invertito</translation>
+    </message>
+    <message>
+        <source>Facing is where the beam goes with the pan in the middle and the tilt leaning forward; the arrow on the plan shows it. If a head aims somewhere else with Follow, turn it 180° or make its pan or tilt turn the other way here (only for Follow).</source>
+        <translation>L&apos;orientamento è dove va il fascio con il pan al centro e il tilt inclinato in avanti; la freccia sulla pianta lo mostra. Se con Follow una testa punta altrove, ruotala di 180° o inverti qui il suo pan o il suo tilt (solo per Follow).</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Chiudi</translation>
+    </message>
+</context>
+<context>
     <name>CapabilitiesDialog</name>
     <message>
         <source>Value ranges of %1</source>
@@ -598,6 +680,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>BeatGO</translation>
     </message>
     <message>
+        <source>GO (scene buttons start and mark the rhythm)</source>
+        <translation>GO (i pulsanti delle scene avviano e battono il ritmo)</translation>
+    </message>
+    <message>
+        <source>Stop (scene buttons stop)</source>
+        <translation>Stop (i pulsanti delle scene fermano)</translation>
+    </message>
+    <message>
         <source>Palette</source>
         <translation>Palette</translation>
     </message>
@@ -1009,6 +1099,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Pulse</source>
         <translation>Impulso</translation>
+    </message>
+    <message>
+        <source>Tapped rhythm</source>
+        <translation>Ritmo battuto</translation>
+    </message>
+    <message>
+        <source>Press its button several times in a row (Live, SHOW, a mapping): a GO on each beat, at that rhythm</source>
+        <translation>Premi il suo pulsante più volte di seguito (Live, SHOW, una mappatura): un GO a ogni battito, a quel ritmo</translation>
     </message>
 </context>
 <context>
@@ -2933,12 +3031,16 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Salva come… (Ctrl+Maiusc+S)</translation>
     </message>
     <message>
-        <source>Tap</source>
-        <translation>Tap</translation>
+        <source>GO: a press of a scene starts it, and the next ones mark its rhythm (it doesn&apos;t stop). Click again to go back to normal</source>
+        <translation>GO: premere una scena la avvia, e le pressioni successive ne battono il ritmo (non si ferma). Clicca di nuovo per tornare al normale</translation>
     </message>
     <message>
-        <source>Tap to the beat (T)</source>
-        <translation>Batti a tempo (T)</translation>
+        <source>Stop</source>
+        <translation>Stop</translation>
+    </message>
+    <message>
+        <source>Stop: a press of a scene stops it. Click again to go back to normal</source>
+        <translation>Stop: premere una scena la ferma. Clicca di nuovo per tornare al normale</translation>
     </message>
     <message>
         <source>Next division of the scenes driven by BeatGO (G)</source>
@@ -4597,6 +4699,54 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Gruppo %1</translation>
     </message>
     <message>
+        <source>Intensity</source>
+        <translation>Intensità</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Colore</translation>
+    </message>
+    <message>
+        <source>Gobo</source>
+        <translation>Gobo</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Velocità</translation>
+    </message>
+    <message>
+        <source>Pan</source>
+        <translation>Pan</translation>
+    </message>
+    <message>
+        <source>Tilt</source>
+        <translation>Tilt</translation>
+    </message>
+    <message>
+        <source>Shutter</source>
+        <translation>Shutter</translation>
+    </message>
+    <message>
+        <source>Prism</source>
+        <translation>Prisma</translation>
+    </message>
+    <message>
+        <source>Beam</source>
+        <translation>Fascio</translation>
+    </message>
+    <message>
+        <source>Effect</source>
+        <translation>Effetto</translation>
+    </message>
+    <message>
+        <source>Maintenance</source>
+        <translation>Manutenzione</translation>
+    </message>
+    <message>
+        <source>Nothing</source>
+        <translation>Niente</translation>
+    </message>
+    <message>
         <source>The number must be 1 or more</source>
         <translation>Il numero deve essere 1 o più</translation>
     </message>
@@ -4999,6 +5149,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Ruota la selezione di 15° (clic destro: nell&apos;altro senso)</translation>
     </message>
     <message>
+        <source>Height and facing</source>
+        <translation>Altezza e orientamento</translation>
+    </message>
+    <message>
+        <source>Where the selected moving heads hang, so Follow can aim them</source>
+        <translation>Dove sono appese le teste mobili selezionate, perché Follow possa puntarle</translation>
+    </message>
+    <message>
         <source>Rename</source>
         <translation>Rinomina</translation>
     </message>
@@ -5241,6 +5399,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Paused, press again to play</source>
         <translation>In pausa, premi di nuovo per riprodurre</translation>
+    </message>
+    <message>
+        <source>Tapped rhythm</source>
+        <translation>Ritmo battuto</translation>
+    </message>
+    <message>
+        <source>Press its button several times in a row (Live, SHOW, a mapping): a step on each beat, at that rhythm</source>
+        <translation>Premi il suo pulsante più volte di seguito (Live, SHOW, una mappatura): un passo a ogni battito, a quel ritmo</translation>
     </message>
     <message>
         <source>Plays</source>
@@ -5889,22 +6055,6 @@ Aggiungine alcune nella pagina Patch.</translation>
         <translation>Sat</translation>
     </message>
     <message>
-        <source>Fan</source>
-        <translation>Ventaglio</translation>
-    </message>
-    <message>
-        <source>Channel to spread over the selection</source>
-        <translation>Canale da distribuire sulla selezione</translation>
-    </message>
-    <message>
-        <source>From the start</source>
-        <translation>Dall&apos;inizio</translation>
-    </message>
-    <message>
-        <source>From the centre</source>
-        <translation>Dal centro</translation>
-    </message>
-    <message>
         <source>FX</source>
         <translation>FX</translation>
     </message>
@@ -6420,6 +6570,14 @@ Aggiungine alcune nella pagina Patch.</translation>
     <message>
         <source>Live speed</source>
         <translation>Velocità dal vivo</translation>
+    </message>
+    <message>
+        <source>Tapped rhythm</source>
+        <translation>Ritmo battuto</translation>
+    </message>
+    <message>
+        <source>Press its button several times in a row: a step (a GO) on each beat, at that rhythm</source>
+        <translation>Premi il suo pulsante più volte di seguito: un passo (un GO) a ogni battito, a quel ritmo</translation>
     </message>
     <message>
         <source>Live phase</source>
@@ -7099,8 +7257,8 @@ Aggiungine alcune nella pagina Patch.</translation>
         <translation>Azzera</translation>
     </message>
     <message>
-        <source>TAP</source>
-        <translation>TAP</translation>
+        <source>Stop</source>
+        <translation>Stop</translation>
     </message>
     <message>
         <source>Write the notes in the properties</source>
@@ -7261,8 +7419,8 @@ Aggiungine alcune nella pagina Patch.</translation>
         <translation>Timer</translation>
     </message>
     <message>
-        <source>BPM and tap</source>
-        <translation>BPM e tap</translation>
+        <source>Rhythm: GO and Stop</source>
+        <translation>Ritmo: GO e Stop</translation>
     </message>
     <message>
         <source>Notes</source>
@@ -7806,6 +7964,21 @@ Aggiungine alcune nella pagina Patch.</translation>
     </message>
 </context>
 <context>
+    <name>TapRhythm</name>
+    <message>
+        <source>Off</source>
+        <translation>Spento</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Rimuovi</translation>
+    </message>
+    <message>
+        <source>Back to its own times</source>
+        <translation>Torna ai suoi tempi</translation>
+    </message>
+</context>
+<context>
     <name>TextPrompt</name>
     <message>
         <source>Cancel</source>
@@ -8257,6 +8430,98 @@ Aggiungine alcune nella pagina Patch.</translation>
     <message>
         <source>Centre</source>
         <translation>Centra</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>Follow</translation>
+    </message>
+    <message>
+        <source>The moving heads aim at a point of the stage plan</source>
+        <translation>Le teste mobili puntano a un punto della pianta del palco</translation>
+    </message>
+    <message>
+        <source>Fan</source>
+        <translation>Ventaglio</translation>
+    </message>
+    <message>
+        <source>Drag on the grid to open the fan: across, the pan; up and down, the tilt</source>
+        <translation>Trascina sulla griglia per aprire il ventaglio: di lato, il pan; su e giù, il tilt</translation>
+    </message>
+    <message>
+        <source>Height of the point</source>
+        <translation>Altezza del punto</translation>
+    </message>
+    <message>
+        <source>Click or drag on the stage: the selected moving heads aim there. Their height and the way they face are set in Patch › 2D plan.</source>
+        <translation>Fai clic o trascina sul palco: le teste mobili selezionate puntano lì. La loro altezza e il loro orientamento si impostano in Patch › Pianta 2D.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n moving head(s) aim at the point.</source>
+        <translation>
+            <numerusform>%n testa mobile punta al punto.</numerusform>
+            <numerusform>%n teste mobili puntano al punto.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n can&apos;t reach it: as near as they can.</source>
+        <translation>
+            <numerusform>%n non ci arriva: resta il più vicino possibile.</numerusform>
+            <numerusform>%n non ci arrivano: restano il più vicino possibile.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n without pan and tilt travel in their definition: 540° and 270° are used.</source>
+        <translation>
+            <numerusform>%n senza escursione di pan e tilt nella definizione: si usano 540° e 270°.</numerusform>
+            <numerusform>%n senza escursione di pan e tilt nella definizione: si usano 540° e 270°.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n scanner(s) left as they are.</source>
+        <translation>
+            <numerusform>%n scanner resta com&apos;è.</numerusform>
+            <numerusform>%n scanner restano come sono.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Aperto</translation>
+    </message>
+    <message>
+        <source>From one end to the other</source>
+        <translation>Da un’estremità all’altra</translation>
+    </message>
+    <message>
+        <source>V</source>
+        <translation>A V</translation>
+    </message>
+    <message>
+        <source>The ends out, the middle still</source>
+        <translation>Le estremità si aprono, il centro resta fermo</translation>
+    </message>
+    <message>
+        <source>From the first</source>
+        <translation>Dal primo</translation>
+    </message>
+    <message>
+        <source>From the first one, more and more</source>
+        <translation>Dal primo, sempre di più</translation>
+    </message>
+    <message>
+        <source>Pan</source>
+        <translation>Pan</translation>
+    </message>
+    <message>
+        <source>Tilt</source>
+        <translation>Tilt</translation>
+    </message>
+    <message>
+        <source>No fan</source>
+        <translation>Senza ventaglio</translation>
+    </message>
+    <message>
+        <source>The fixtures back where they were</source>
+        <translation>Le fixture tornano dov’erano</translation>
     </message>
 </context>
 <context>

@@ -325,14 +325,14 @@ Item {
                 }
                 background: Rectangle {
                     radius: Theme.radius
-                    color: mainGo.down ? Qt.darker(Theme.success, 1.25) : mainGo.hovered ? Qt.lighter(Theme.success, 1.1) : Theme.success
+                    color: mainGo.down ? Qt.darker(Theme.fill(Theme.success), 1.25) : mainGo.hovered ? Qt.lighter(Theme.fill(Theme.success), 1.1) : Theme.fill(Theme.success)
                 }
                 contentItem: ColumnLayout {
                     spacing: 0
                     Text {
                         Layout.alignment: Qt.AlignHCenter
                         text: "GO"
-                        color: Theme.textOn(Theme.success)
+                        color: Theme.textOn(Theme.fill(Theme.success))
                         font.pixelSize: Theme.fontTitle
                         font.weight: Font.Black
                     }
@@ -342,8 +342,8 @@ Item {
                         Layout.rightMargin: 8
                         horizontalAlignment: Text.AlignHCenter
                         text: mainGo.target
-                        color: Theme.textOn(Theme.success)
-                        opacity: view.hasSelection ? 0.95 : 0.7
+                        color: Theme.textOn(Theme.fill(Theme.success))
+                        font.italic: !view.hasSelection
                         font.pixelSize: Theme.fontSmall
                         elide: Text.ElideRight
                     }

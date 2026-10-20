@@ -615,7 +615,7 @@ Item {
         width: 150
         height: 28
         radius: 4
-        color: Qt.alpha(Theme.accent, 0.85)
+        color: Qt.alpha(Theme.accentFill, 0.9)
         z: 100
         Drag.keys: ["dtc-timeline-scene"]
         Drag.hotSpot: Qt.point(12, 14)

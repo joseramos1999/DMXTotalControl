@@ -204,15 +204,18 @@ void MasterTimer::stopAllFunctions()
         if (ticking == false)
             m_startQueue.clear();
     }
-    auto queued = [this]() {
+    // (both under the lock the tick moves the queue into the list with: never
+    // the moment in between, when both look empty and this would return
+    // while the tick is about to run what it took from the queue)
+    auto busy = [this, ticking]() {
         QMutexLocker locker(&m_functionListMutex);
-        return m_startQueue.isEmpty() == false;
+        return m_functionList.isEmpty() == false || (ticking && m_startQueue.isEmpty() == false);
     };
 
     m_stopAllFunctions = true;
 
     /* Wait until all functions have been stopped */
-    while (runningFunctions() > 0 || (ticking && queued()))
+    while (busy())
     {
 #if defined(WIN32) || defined(Q_OS_WIN)
         Sleep(10);
@@ -355,10 +358,14 @@ void MasterTimer::timerTickFunctions(QList<Universe *> universes)
         // on this round. The indices in removeList are automatically sorted because the
         // list is iterated with an int above from 0 to size, so iterating the removeList
         // backwards here will always remove the correct indices.
-        QListIterator <int> it(removeList);
-        it.toBack();
-        while (it.hasPrevious() == true)
-            m_functionList.removeAt(it.previous());
+        {
+            // (DMX Total Control: under the lock a stop all reads the list with)
+            QMutexLocker locker(&m_functionListMutex);
+            QListIterator <int> it(removeList);
+            it.toBack();
+            while (it.hasPrevious() == true)
+                m_functionList.removeAt(it.previous());
+        }
 
         firstIteration = false;
     }
@@ -369,23 +376,33 @@ void MasterTimer::timerTickFunctions(QList<Universe *> universes)
         {
             QList<Function*> startQueue(m_startQueue);
             m_startQueue.clear();
-            locker.unlock();
-
-            foreach (Function* f, startQueue)
+            // DMX Total Control: into the list before the lock goes (a stop
+            // all reads both under it); the ones already in it start again
+            QList<Function*> restarted;
+            for (Function *f : std::as_const(startQueue))
             {
                 if (m_functionList.contains(f))
                 {
-                    f->postRun(this, universes);
+                    restarted.append(f);
                 }
                 else
                 {
                     m_functionList.append(f);
                     functionListHasChanged = true;
                 }
+            }
+            locker.unlock();
+
+            foreach (Function* f, startQueue)
+            {
+                if (restarted.contains(f))
+                    f->postRun(this, universes);
                 f->preRun(this);
-                // DMX Total Control: a stop all waits for it: no frame, it
-                // stops with the next tick
-                if (m_stopAllFunctions == false)
+                // DMX Total Control: a stop all waits for it, and one stopped
+                // before its first frame (a GO and a stop in the same frame):
+                // no frame, it stops with the next tick (a frame would start
+                // the first step of a chaser, after the stop)
+                if (m_stopAllFunctions == false && f->stopped() == false)
                     f->write(this, universes);
                 emit functionStarted(f->id());
             }

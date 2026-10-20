@@ -100,6 +100,7 @@ Popup {
                 source: "qrc:/icons/dtc-48.png"
                 sourceSize: Qt.size(48, 48)
                 smooth: true
+                opacity: Theme.lightLevel
             }
             Text {
                 Layout.fillWidth: true
@@ -109,8 +110,10 @@ Popup {
                 font.weight: Font.Bold
                 elide: Text.ElideRight
             }
+            // the numbered steps only (not the welcome nor the end)
             Text {
-                text: qsTr("%1 of %2").arg(guide.step + 1).arg(guide.steps.length)
+                visible: guide.step > 0 && guide.step < guide.steps.length - 1
+                text: qsTr("%1 of %2").arg(guide.step).arg(guide.steps.length - 2)
                 color: Theme.textFaint
                 font.pixelSize: Theme.fontSmall
             }

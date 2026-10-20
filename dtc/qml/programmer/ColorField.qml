@@ -49,6 +49,7 @@ ColumnLayout {
         Layout.preferredHeight: 160
         radius: Theme.radiusSmall
         border.color: Theme.border
+        opacity: Theme.lightLevel
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "#ff0000" }
@@ -112,6 +113,7 @@ ColumnLayout {
                 required property string modelData
                 width: 26; height: 26; radius: 5
                 color: modelData
+                opacity: Theme.lightLevel
                 border.color: Theme.borderStrong
                 MouseArea {
                     anchors.fill: parent

@@ -362,8 +362,8 @@ Item {
                                 width: chipText.implicitWidth + 20
                                 height: 28
                                 radius: 14
-                                color: allSelected ? Theme.accent : (chipMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
-                                border.color: allSelected ? Theme.accent : Theme.border
+                                color: allSelected ? Theme.accentFill : (chipMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
+                                border.color: allSelected ? Theme.accentFill : Theme.border
                                 Text {
                                     id: chipText
                                     anchors.centerIn: parent
@@ -394,8 +394,8 @@ Item {
                                 width: selectionText.implicitWidth + 34
                                 height: 28
                                 radius: 14
-                                color: active ? Theme.accent : (selectionMouse.containsMouse ? Theme.surfaceHover : "transparent")
-                                border.color: active ? Theme.accent : Theme.border
+                                color: active ? Theme.accentFill : (selectionMouse.containsMouse ? Theme.surfaceHover : "transparent")
+                                border.color: active ? Theme.accentFill : Theme.border
                                 IconLabel {
                                     anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
                                     icon: Theme.iconSelect
@@ -516,6 +516,19 @@ Item {
                                     Layout.fillHeight: true
                                     fillColor: Theme.text
                                     onUserMoved: (v) => Core.programmer.setDimmer(v)
+                                    // the dimmer the selection has in the programmer (also
+                                    // from the command line or a palette), but not while dragged
+                                    function follow() {
+                                        const ch = Core.programmer.channels.find(c => c.key === "dimmer")
+                                        if (ch !== undefined && !pressed)
+                                            value = ch.value
+                                    }
+                                    Component.onCompleted: follow()
+                                    Connections {
+                                        target: Core.programmer
+                                        function onChannelsChanged() { dimmerFader.follow() }
+                                        function onValuesChanged() { dimmerFader.follow() }
+                                    }
                                 }
                                 Column {
                                     Layout.alignment: Qt.AlignTop
@@ -565,6 +578,7 @@ Item {
                                         required property string modelData
                                         width: Math.max(20, Math.min(36, Math.floor((colourColumn.width - 7 * 6) / 8))); height: 30; radius: 6
                                         color: modelData
+                                        opacity: Theme.lightLevel
                                         border.color: swatchMouse.containsMouse ? Theme.text : Theme.edgeFor(modelData)
                                         border.width: swatchMouse.containsMouse ? 2 : 1
                                         MouseArea {
@@ -583,11 +597,12 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 10
-                                Text { Layout.preferredWidth: 34; text: qsTr("Hue"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall }
+                                Text { id: hueLabel; Layout.preferredWidth: Math.max(34, hueLabel.implicitWidth, satLabel.implicitWidth); text: qsTr("Hue"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall }
                                 HSlider {
                                     id: hueSlider
                                     Layout.fillWidth: true
                                     from: 0; to: 1
+                                    opacity: Theme.lightLevel
                                     trackGradient: Gradient {
                                         orientation: Gradient.Horizontal
                                         GradientStop { position: 0.0; color: "#ff0000" }
@@ -604,67 +619,14 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 10
-                                Text { Layout.preferredWidth: 34; text: qsTr("Sat"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall }
+                                Text { id: satLabel; Layout.preferredWidth: Math.max(34, hueLabel.implicitWidth, satLabel.implicitWidth); text: qsTr("Sat"); color: Theme.textFaint; font.pixelSize: Theme.fontSmall }
                                 HSlider {
                                     id: satSlider
                                     Layout.fillWidth: true
                                     from: 0; to: 1; value: 1
-                                    fillColor: Qt.hsva(hueSlider.value, 1, 1, 1)
+                                    fillColor: Theme.category(Qt.hsva(hueSlider.value, 1, 1, 1))
                                     onMoved: Core.programmer.setColor(Qt.hsva(hueSlider.value, value, 1, 1))
                                 }
-                            }
-                        }
-
-                        Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: Theme.border }
-
-                        // linear fan over the selection, in selection order
-                        ColumnLayout {
-                            id: fanColumn
-                            Layout.preferredWidth: 230
-                            Layout.minimumWidth: 150
-                            Layout.fillHeight: true
-                            spacing: 8
-
-                            property int baseValue: 0
-                            readonly property var channelList: Core.programmer.channels
-
-                            Text { text: qsTr("Fan"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; font.weight: Font.Bold }
-                            ComboBox {
-                                id: fanChannel
-                                Layout.fillWidth: true
-                                property string selectedKey: ""
-                                model: fanColumn.channelList.map(c => c.name)
-                                // the list is rebuilt on every value change: keep the chosen channel
-                                onModelChanged: currentIndex = Math.max(0, fanColumn.channelList.findIndex(c => c.key === selectedKey))
-                                onActivated: (i) => selectedKey = fanColumn.channelList[i].key
-                                ToolTip.text: qsTr("Channel to spread over the selection")
-                                ToolTip.visible: hovered
-                                ToolTip.delay: 500
-                            }
-                            ComboBox {
-                                id: fanMode
-                                Layout.fillWidth: true
-                                model: [qsTr("From the start"), qsTr("From the centre")]
-                            }
-                            HSlider {
-                                id: fanSlider
-                                Layout.fillWidth: true
-                                from: -255; to: 255; value: 0; stepSize: 1
-                                enabled: fanChannel.currentIndex >= 0 && fanColumn.channelList.length > 0
-                                // the spread starts from the value the channel has when grabbed
-                                onPressedChanged: {
-                                    if (pressed && fanChannel.currentIndex >= 0)
-                                        fanColumn.baseValue = fanColumn.channelList[fanChannel.currentIndex].value
-                                }
-                                onMoved: Core.programmer.setChannelFan(fanColumn.channelList[fanChannel.currentIndex].key,
-                                                                       fanColumn.baseValue, Math.round(value),
-                                                                       fanMode.currentIndex === 1)
-                            }
-                            Text {
-                                text: (fanSlider.value > 0 ? "+" : "") + Math.round(fanSlider.value)
-                                color: Theme.textDim
-                                font.family: Theme.monoFamily
-                                font.pixelSize: Theme.fontSmall
                             }
                         }
                     }

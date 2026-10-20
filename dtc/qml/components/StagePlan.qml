@@ -46,16 +46,28 @@ Rectangle {
     property string tool: "select"
     /** Grid step in mm the moved fixtures land on (0: free) */
     property real snap: 0
+    /** The names under the fixtures */
+    property bool showNames: true
 
     // a drag of fixtures in progress: the others of the selection follow
     property int draggingId: -1
     property real dragDX: 0
     property real dragDY: 0
 
+    /** Follow: a click or a drag on the stage picks the point the moving
+     *  heads aim at; the fixtures aren't selected nor moved */
+    property bool aiming: false
+    /** The point they aim at ({ x, y } in mm), or null */
+    property var target: null
+    /** The fixtures aiming at it: a line from each one */
+    property var aimedIds: []
+
     /** ids, additive */
     signal selectRequested(var ids, bool additive)
     /** move fixtures $ids by dx, dy (mm) */
     signal movedBy(var ids, real dx, real dy)
+    /** Follow: the point picked on the stage (mm) */
+    signal pointPicked(real x, real y)
 
     readonly property size stage: Core.patch.stageSize
     readonly property real fitScale: Math.min((width - 40) / Math.max(1, stage.width),
@@ -63,6 +75,8 @@ Rectangle {
     readonly property real mmScale: fitScale * zoom
     readonly property real stageX: (width - stage.width * mmScale) / 2 + pan.x
     readonly property real stageY: (height - stage.height * mmScale) / 2 + pan.y
+    // a small plan: smaller fixtures (as big as 50 cm of the stage, from 40 % on)
+    readonly property real bodyScale: Math.max(0.4, Math.min(1, mmScale * 500 / 40))
 
     /** What each fixture shows, by id (live) */
     property var states: ({})
@@ -288,8 +302,8 @@ Rectangle {
             readonly property real barThickness: Math.max(4, Math.min(22, barLength / heads))
             // the shape chosen in the plan: round, square or a rectangle
             readonly property string shape: modelData.shape || "round"
-            readonly property real bodyWidth: bar ? barLength : (shape === "rectangle" ? 58 : 40)
-            readonly property real bodyHeight: bar ? barThickness : (shape === "rectangle" ? 30 : 40)
+            readonly property real bodyWidth: bar ? barLength : (shape === "rectangle" ? 58 : 40) * plan.bodyScale
+            readonly property real bodyHeight: bar ? barThickness : (shape === "rectangle" ? 30 : 40) * plan.bodyScale
             readonly property real angle: (modelData.rotation || 0) * Math.PI / 180
             // bounding box of the turned body
             width: Math.abs(bodyWidth * Math.cos(angle)) + Math.abs(bodyHeight * Math.sin(angle))
@@ -304,7 +318,7 @@ Rectangle {
             Rectangle {
                 anchors.centerIn: parent
                 visible: fxItem.lit && !fxItem.bar && fxItem.liveState.dimmer > 0.02
-                width: 40 + 26 * (fxItem.lit ? fxItem.liveState.dimmer : 0)
+                width: (40 + 26 * (fxItem.lit ? fxItem.liveState.dimmer : 0)) * plan.bodyScale
                 height: width
                 radius: width / 2
                 color: fxItem.lit ? fxItem.liveState.colors[0] : "transparent"
@@ -324,7 +338,7 @@ Rectangle {
                     anchors.fill: parent
                     radius: fxItem.shape === "round" ? width / 2 : 5
                     color: fxItem.lit ? fxItem.liveState.colors[0]
-                                      : (fxItem.selected ? Theme.accent : Theme.surfaceRaised)
+                                      : (fxItem.selected ? Theme.accentFill : Theme.surfaceRaised)
                     border.color: fxItem.selected ? Qt.lighter(Theme.accent, 1.4) : Theme.borderStrong
                     border.width: fxItem.selected ? 3 : 2
                 }
@@ -378,7 +392,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: !fxItem.bar && !fxItem.selected && !fxItem.lit
                 icon: plan.typeIcon(fxItem.modelData.type)
-                size: 15
+                size: Math.max(8, Math.round(15 * plan.bodyScale))
                 color: Theme.textDim
             }
             // selection index: effects and fans follow this order
@@ -394,7 +408,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: fxItem.selectionIndex + 1
                     color: fxItem.lit || fxItem.bar ? Theme.textOnShade : Theme.accentText
-                    font.pixelSize: fxItem.bar ? Theme.fontSmall : Theme.fontLarge
+                    font.pixelSize: fxItem.bar || plan.bodyScale < 0.8 ? Theme.fontSmall : Theme.fontLarge
                     font.weight: Font.Bold
                 }
             }
@@ -422,6 +436,22 @@ Rectangle {
                 }
             }
 
+            // a moving head: the way it faces (where its pan is in the middle),
+            // on the edge of its body
+            Item {
+                visible: !!fxItem.modelData.aimable && !fxItem.bar
+                anchors.centerIn: parent
+                width: fxItem.bodyWidth
+                height: fxItem.bodyHeight
+                rotation: fxItem.modelData.rotation || 0
+                IconLabel {
+                    anchors { bottom: parent.bottom; bottomMargin: 1; horizontalCenter: parent.horizontalCenter }
+                    icon: Theme.iconChevronDown
+                    size: 10
+                    color: fxItem.selected ? Theme.accentText : Theme.textDim
+                }
+            }
+
             Text {
                 anchors { top: parent.bottom; topMargin: 2; horizontalCenter: parent.horizontalCenter }
                 width: Math.max(90, parent.width)
@@ -430,7 +460,7 @@ Rectangle {
                 text: fxItem.modelData.name
                 color: fxItem.selected ? Theme.text : Theme.textDim
                 font.pixelSize: 10
-                visible: !fxItem.bar || plan.zoom >= 1.5 || fxItem.selected
+                visible: plan.showNames && (!fxItem.bar || plan.zoom >= 1.5 || fxItem.selected)
             }
 
             MouseArea {
@@ -483,6 +513,70 @@ Rectangle {
                 }
             }
         }
+    }
+
+    // Follow: a line from each head to the point, and the point
+    Canvas {
+        id: aimCanvas
+        anchors.fill: parent
+        z: 15
+        visible: plan.target !== null && plan.target !== undefined
+        onPaint: {
+            let ctx = getContext("2d")
+            ctx.reset()
+            if (!visible)
+                return
+            let tx = plan.stageX + plan.target.x * plan.mmScale
+            let ty = plan.stageY + plan.target.y * plan.mmScale
+            ctx.strokeStyle = Theme.warning
+            ctx.globalAlpha = 0.7
+            ctx.lineWidth = 1.5
+            ctx.setLineDash([4, 3])
+            for (let f of plan.fixtures) {
+                if (plan.aimedIds.indexOf(f.id) < 0)
+                    continue
+                ctx.beginPath()
+                ctx.moveTo(plan.stageX + f.x * plan.mmScale, plan.stageY + f.y * plan.mmScale)
+                ctx.lineTo(tx, ty)
+                ctx.stroke()
+            }
+        }
+        Connections {
+            target: plan
+            function onTargetChanged() { aimCanvas.requestPaint() }
+            function onAimedIdsChanged() { aimCanvas.requestPaint() }
+            function onFixturesChanged() { aimCanvas.requestPaint() }
+            function onStageXChanged() { aimCanvas.requestPaint() }
+            function onStageYChanged() { aimCanvas.requestPaint() }
+            function onMmScaleChanged() { aimCanvas.requestPaint() }
+        }
+        onVisibleChanged: requestPaint()
+    }
+    IconLabel {
+        visible: aimCanvas.visible
+        z: 16
+        icon: Theme.iconTarget
+        size: 22
+        color: Theme.warning
+        x: plan.stageX + (visible ? plan.target.x : 0) * plan.mmScale - width / 2
+        y: plan.stageY + (visible ? plan.target.y : 0) * plan.mmScale - height / 2
+    }
+    // picking the point: the left button, on the stage; the right one still moves the view
+    MouseArea {
+        anchors.fill: parent
+        z: 25
+        visible: plan.aiming
+        acceptedButtons: Qt.LeftButton
+        cursorShape: Qt.CrossCursor
+        preventStealing: true
+        function pick(ev) {
+            let x = Math.max(0, Math.min(plan.stage.width, (ev.x - plan.stageX) / plan.mmScale))
+            let y = Math.max(0, Math.min(plan.stage.height, (ev.y - plan.stageY) / plan.mmScale))
+            plan.pointPicked(x, y)
+        }
+        onPressed: (ev) => pick(ev)
+        onPositionChanged: (ev) => { if (pressed) pick(ev) }
+        onWheel: (ev) => plan.zoomAt(ev.x, ev.y, ev.angleDelta.y > 0 ? 1.15 : 1 / 1.15)
     }
 
     // zoom

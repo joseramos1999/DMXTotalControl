@@ -695,16 +695,21 @@ void Chaser::write(MasterTimer* timer, QList<Universe *> universes)
     if (isPaused() && m_startupAction.m_action != ChaserPauseRequest)
         return;
 
+    bool pauseRequest = false;
     if (m_startupAction.m_action == ChaserPauseRequest)
     {
         qDebug() << "[Chaser] Request PAUSE" << m_startupAction.m_fadeMode;
         m_runner->setAction(m_startupAction);
         m_startupAction.m_action = ChaserNoAction;
+        pauseRequest = true;
     }
 
-    // DMX Total Control: live speed, and BeatGO/pulses go to the next step
+    // DMX Total Control: live speed, and BeatGO/pulses and its own rhythm go
+    // to the next step (not in the frame that pauses or resumes it: the
+    // runner takes one action, and that one must not be lost)
     advanceFrameTick();
-    if (takeDivisionJumps() > 0)
+    const int rhythmSteps = takeRhythmSteps();
+    if (rhythmSteps > 0 && pauseRequest == false)
     {
         QMutexLocker runnerLocker(&m_runnerMutex);
         // (once its loops are over, the last step holds)

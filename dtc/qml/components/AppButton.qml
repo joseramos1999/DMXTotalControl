@@ -46,8 +46,11 @@ Button {
     }
 
     readonly property bool lit: primary || checked || highlighted
+    // lit: its colour, as dark as its text needs to read
+    readonly property color litFill: Theme.fill(accentColor)
+    readonly property color litText: Theme.textOn(litFill)
     // a lit button looks the same disabled: it fades instead
-    opacity: lit && !enabled ? 0.45 : 1.0
+    opacity: lit && !enabled ? 0.6 : 1.0
 
     contentItem: Item {
         implicitWidth: contentRow.implicitWidth
@@ -63,7 +66,7 @@ Button {
                 visible: control.iconGlyph.length > 0
                 icon: control.iconGlyph
                 size: 13
-                color: control.lit ? Theme.textOn(control.accentColor) : (control.enabled ? Theme.text : Theme.textFaint)
+                color: control.lit ? control.litText : (control.enabled ? Theme.text : Theme.textFaint)
             }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -72,7 +75,7 @@ Button {
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontNormal
                 font.weight: Font.DemiBold
-                color: control.lit ? Theme.textOn(control.accentColor) : (control.enabled ? Theme.text : Theme.textFaint)
+                color: control.lit ? control.litText : (control.enabled ? Theme.text : Theme.textFaint)
             }
         }
     }
@@ -81,7 +84,7 @@ Button {
         radius: Theme.radiusSmall
         color: {
             if (control.lit)
-                return control.down ? Qt.darker(control.accentColor, 1.2) : control.accentColor
+                return control.down ? Qt.darker(control.litFill, 1.2) : control.litFill
             if (control.flat)
                 return control.hovered ? Theme.surfaceHover : "transparent"
             return control.down ? Theme.surface : (control.hovered ? Theme.surfaceHover : Theme.surfaceRaised)

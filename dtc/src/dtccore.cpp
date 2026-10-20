@@ -42,6 +42,7 @@
 #include "effectexchange.h"
 #include "timelineeditor.h"
 #include "zone.h"
+#include "scenetaps.h"
 #include "iomanager.h"
 
 #include "qlcfixturedefcache.h"
@@ -79,6 +80,8 @@ DtcCore::DtcCore(QObject *parent)
     m_programmer = new Programmer(m_doc, m_zones, this);
     m_palettes = new PaletteManager(m_doc, m_programmer, m_patch, this);
     m_programmer->setPalettes(m_palettes);
+    // Follow: where the heads are
+    m_programmer->setPatch(m_patch);
     // cuelists record from the programmer, with its palettes
     m_cuelists = new CuelistEditor(m_doc, m_programmer, m_zones, m_palettes, this);
     m_commands = new CommandLine(m_doc, m_programmer, m_patch, m_palettes, this);
@@ -122,6 +125,12 @@ DtcCore::DtcCore(QObject *parent)
         QFile::remove(recoveryFilePath());
     m_settings->setSessionRunning(true);
 
+    // the rhythm bars of the buttons: the steps of what plays, about every frame
+    m_stepsTimer = new QTimer(this);
+    m_stepsTimer->setInterval(40);
+    connect(m_stepsTimer, SIGNAL(timeout()), this, SLOT(slotStepsTick()));
+    m_stepsTimer->start();
+
     m_autosaveTimer = new QTimer(this);
     connect(m_autosaveTimer, SIGNAL(timeout()), this, SLOT(slotAutosave()));
     connect(m_settings, SIGNAL(autosaveChanged()), this, SLOT(slotAutosaveSettingsChanged()));
@@ -130,6 +139,10 @@ DtcCore::DtcCore(QObject *parent)
 
 DtcCore::~DtcCore()
 {
+    // (nothing looks at the steps of what is torn down)
+    if (m_stepsTimer != nullptr)
+        m_stepsTimer->stop();
+
     // the remote control first: it reads everything
     delete m_remote;
     m_remote = nullptr;
@@ -147,6 +160,7 @@ DtcCore::~DtcCore()
     delete m_cuelists;
     m_cuelists = nullptr;
     m_programmer->setPalettes(nullptr);
+    m_programmer->setPatch(nullptr);
     delete m_palettes;
     m_palettes = nullptr;
 
@@ -429,6 +443,63 @@ void DtcCore::tapTempo()
     setBpm(qRound(60000.0 / (qreal(sum) / m_tapIntervals.count())));
 }
 
+QString DtcCore::pressMode() const
+{
+    switch (SceneTaps::mode())
+    {
+        case SceneTaps::Go: return QStringLiteral("go");
+        case SceneTaps::Stop: return QStringLiteral("stop");
+        default: return QStringLiteral("toggle");
+    }
+}
+
+void DtcCore::setPressMode(const QString &mode)
+{
+    const SceneTaps::Mode wanted = mode == "go" ? SceneTaps::Go : mode == "stop" ? SceneTaps::Stop : SceneTaps::Toggle;
+    if (wanted == SceneTaps::mode())
+        return;
+    SceneTaps::setMode(wanted);
+    emit pressModeChanged();
+}
+
+void DtcCore::slotStepsTick()
+{
+    // the step (cue) of every scene with steps that plays (a playing one with
+    // no step yet: 0, so its bar shows)
+    QHash<quint32, int> now;
+    for (Function *f : m_doc->functions())
+    {
+        if (SceneTaps::tappable(f) == false || f->isRunning() == false)
+            continue;
+        int step = 0;
+        if (Chaser *chaser = qobject_cast<Chaser *>(f))
+            step = chaser->currentStepIndex();
+        else if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
+            step = cuelist->status().current;
+        now.insert(f->id(), qMax(0, step));
+    }
+    if (now == m_steps)
+        return;
+    m_steps = now;
+    m_stepsRevision++;
+    emit stepsChanged();
+}
+
+int DtcCore::stepOf(quint32 id) const
+{
+    return m_steps.value(id, -1);
+}
+
+int DtcCore::stepsRevision() const
+{
+    return m_stepsRevision;
+}
+
+QHash<quint32, int> DtcCore::steps() const
+{
+    return m_steps;
+}
+
 int DtcCore::runningFunctions() const
 {
     // the FX of the programmer are live edits, not a scene
@@ -470,6 +541,7 @@ QVariantMap DtcCore::functionInfo(quint32 id) const
     info.insert("fadeOut", f->fadeOutSpeed());
     info.insert("priority", f->priority());
     info.insert("running", f->isRunning());
+    info.insert("tap", f->tapPeriod());
     if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
         info.insert("cueCount", cuelist->cueCount());
     return info;
@@ -662,6 +734,7 @@ void DtcCore::clearShow()
     m_patch->clearSelections();
     m_patch->clearPlan();
     m_palettes->clear();
+    SceneTaps::clear();
     m_folders.clear();
     m_foreignSections.clear();
     m_doc->masterTimer()->stop();

@@ -84,6 +84,7 @@ Panel {
                             anchors { left: parent.left; leftMargin: 8; verticalCenter: parent.verticalCenter }
                             width: 10; height: 10; radius: 5
                             color: modelData.color.length > 0 ? modelData.color : Theme.textFaint
+                            opacity: Theme.lightLevel
                         }
                         Text {
                             id: chip

@@ -213,6 +213,25 @@ Panel {
             }
         }
 
+        // its own rhythm: presses in a row of its button
+        RowLayout {
+            Layout.columnSpan: 2
+            visible: panel.type === "Sequence" || panel.type === "Chaser"
+            spacing: 8
+            Text {
+                text: qsTr("Tapped rhythm")
+                color: Theme.textDim
+                ToolTip.text: qsTr("Press its button several times in a row (Live, SHOW, a mapping): a step on each beat, at that rhythm")
+                ToolTip.visible: tapMouse.containsMouse
+                ToolTip.delay: 500
+                MouseArea { id: tapMouse; anchors.fill: parent; hoverEnabled: true }
+            }
+            TapRhythm {
+                period: panel.info.tap || 0
+                onEdited: (ms) => panel.set("tap", ms)
+            }
+        }
+
         // ---------------------------------------------------------------- loops
         RowLayout {
             Layout.columnSpan: 2
@@ -241,7 +260,14 @@ Panel {
                 currentIndex: panel.info.endAction === "pause" ? 1 : 0
                 onActivated: (i) => panel.set("endAction", i === 1 ? "pause" : "release")
             }
-            Text { visible: (panel.info.loops || 0) > 0; text: qsTr("and play"); color: Theme.textDim; leftPadding: 6 }
+            Item { Layout.fillWidth: true }
+        }
+        // (on a row of its own: the scene names are long)
+        RowLayout {
+            Layout.columnSpan: 2
+            visible: panel.hasLoops && (panel.info.loops || 0) > 0
+            spacing: 8
+            Text { text: qsTr("and play"); color: Theme.textDim }
             ComboBox {
                 visible: (panel.info.loops || 0) > 0
                 Layout.preferredWidth: 230

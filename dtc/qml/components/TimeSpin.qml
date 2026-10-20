@@ -42,7 +42,7 @@ SpinBox {
     value: Math.round(engineValue / 100)
 
     textFromValue: (v, locale) => (v / 10).toLocaleString(locale, 'f', 1) + (beats ? " b" : " s")
-    valueFromText: (text, locale) => Math.round(Number.fromLocaleString(locale, text.replace(/[sb]/g, "").trim()) * 10)
+    valueFromText: (text, locale) => Math.round(Theme.parseNumber(text, value / 10) * 10)
     validator: RegularExpressionValidator { regularExpression: /[0-9]+([.,][0-9])?\s*[sb]?/ }
 
     onValueModified: edited(value * 100)

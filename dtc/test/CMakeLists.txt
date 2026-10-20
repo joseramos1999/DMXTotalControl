@@ -1,6 +1,7 @@
 add_executable(dtc_zone_test
     zone_test.cpp
     ../src/zone.cpp ../src/zone.h
+    ../src/scenetaps.cpp ../src/scenetaps.h
     ../src/zonemanager.cpp ../src/zonemanager.h
 )
 
@@ -21,10 +22,12 @@ target_link_libraries(dtc_zone_test PRIVATE
 add_executable(dtc_backend_test
     backend_test.cpp
     ../src/patchmanager.cpp ../src/patchmanager.h ../src/patchplan.cpp
+    ../src/aim.cpp ../src/aim.h
     ../src/fixturelibrary.cpp ../src/fixturelibrary.h
     ../src/gdtfimporter.cpp ../src/gdtfimporter.h
     ../src/programmer.cpp ../src/programmer.h
     ../src/zone.cpp ../src/zone.h
+    ../src/scenetaps.cpp ../src/scenetaps.h
     ../src/zonemanager.cpp ../src/zonemanager.h
     ../src/iomanager.cpp ../src/iomanager.h
     ../src/effecteditor.cpp ../src/effecteditor.h

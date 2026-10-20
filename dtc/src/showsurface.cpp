@@ -28,6 +28,7 @@
 
 #include "showsurface.h"
 #include "zonemanager.h"
+#include "scenetaps.h"
 #include "zone.h"
 #include "livemixer.h"
 #include "dtccore.h"
@@ -735,15 +736,33 @@ void ShowSurface::press(const QVariantMap &item)
             else
                 owner->trigger(fid);
         }
-        // (started or stopped just before, it changes at the next tick: the
-        // toggle goes by what was asked)
-        else if (flash || f->stopped())
+        else if (flash)
         {
             f->start(m_doc->masterTimer(), FunctionParent::master());
         }
         else
         {
-            f->stop(FunctionParent::master());
+            // (started or stopped just before, it changes at the next tick:
+            // the toggle goes by what was asked). In the mode of the buttons
+            // (GO, Stop or as always): start, stop, or a beat of its rhythm
+            const bool active = f->stopped() == false;
+            switch (SceneTaps::press(f, active))
+            {
+                case SceneTaps::StartIt:
+                    f->start(m_doc->masterTimer(), FunctionParent::master());
+                    break;
+                case SceneTaps::StopIt:
+                    f->stop(FunctionParent::master());
+                    break;
+                case SceneTaps::ToggleIt:
+                    if (active)
+                        f->stop(FunctionParent::master());
+                    else
+                        f->start(m_doc->masterTimer(), FunctionParent::master());
+                    break;
+                case SceneTaps::Keep:
+                    break;
+            }
         }
     }
     else if (action == "next")
@@ -1989,7 +2008,7 @@ QList<quint32> ShowSurface::sectionFixtures(const Node *node) const
             if (ch == nullptr)
                 continue;
             if (type == "xy")
-                has = ch->group() == QLCChannel::Pan || ch->group() == QLCChannel::Tilt;
+                has = Programmer::isPositionChannel(ch);
             else
                 has = ch->group() == QLCChannel::Intensity && ch->colour() != QLCChannel::NoColour;
         }
@@ -2041,7 +2060,7 @@ void ShowSurface::releaseSection(int page, const QString &sectionId)
     const bool position = node->props.value("type").toString() == "xy";
     m_core->programmer()->releaseChannels(sectionFixtures(node), [position](const QLCChannel *ch) {
         if (position)
-            return ch->group() == QLCChannel::Pan || ch->group() == QLCChannel::Tilt;
+            return Programmer::isPositionChannel(ch);
         return ch->group() == QLCChannel::Intensity && ch->colour() != QLCChannel::NoColour;
     });
     slotChanged();

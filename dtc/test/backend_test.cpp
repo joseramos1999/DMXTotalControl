@@ -81,6 +81,9 @@
 #include "curvefx.h"
 #include "fxscene.h"
 #include "cuelist.h"
+#include "scenetaps.h"
+#include "aim.h"
+#include "monitorproperties.h"
 #include "cuelisteditor.h"
 #include "updatechecker.h"
 #include "fxtools.h"
@@ -187,6 +190,11 @@ private slots:
     void programmerReleaseAndReload();
     void demoShow();
     void attributeKeys();
+    void positionFeature();
+    void tapRhythm();
+    void followAim();
+    void stopBeforeFirstFrame();
+    void convertFxStepsOwnChannels();
     void fixtureNumbers();
     void palettes();
     void commandLine();
@@ -5002,6 +5010,191 @@ void Backend_Test::demoTimelineShow()
 
     QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
     qInfo() << "Super scene" << id;
+}
+
+void Backend_Test::positionFeature()
+{
+    // the position is pan and tilt alone, with their fine channels: not a
+    // rotation or a speed of them (by preset, or by name when there is none).
+    // A fan spreads it over the selection, each fixture from where it was
+    QLCFixtureDef *def = new QLCFixtureDef();
+    def->setManufacturer("Test");
+    def->setModel("Rotating head");
+    def->setType(QLCFixtureDef::MovingHead);
+    auto channel = [def](const QString &name, QLCChannel::Group group) {
+        QLCChannel *ch = new QLCChannel();
+        ch->setName(name);
+        ch->setGroup(group);
+        def->addChannel(ch);
+        return ch;
+    };
+    QLCChannel *pan = channel("Pan", QLCChannel::Pan);
+    QLCChannel *panFine = channel("Pan fine", QLCChannel::Pan);
+    panFine->setControlByte(QLCChannel::LSB);
+    QLCChannel *tilt = channel("Inclinación", QLCChannel::Tilt);
+    tilt->setPreset(QLCChannel::PositionTilt);
+    QLCChannel *tiltFine = channel("Inclinación fina", QLCChannel::Tilt);
+    tiltFine->setPreset(QLCChannel::PositionTiltFine);
+    QLCChannel *rotation = channel("Pan Continuous Rotation", QLCChannel::Pan);
+    QLCChannel *spin = channel("Tilt spin", QLCChannel::Tilt);
+    spin->setPreset(QLCChannel::SpeedTiltSlowFast);
+    QLCChannel *speed = channel("Pan/Tilt speed", QLCChannel::Speed);
+    QLCChannel *dimmer = channel("Dimmer", QLCChannel::Intensity);
+    QLCFixtureMode *mode = new QLCFixtureMode(def);
+    mode->setName("8ch");
+    quint32 index = 0;
+    for (QLCChannel *ch : { pan, panFine, tilt, tiltFine, rotation, spin, speed, dimmer })
+        QVERIFY(mode->insertChannel(ch, index++));
+    QVERIFY(def->addMode(mode));
+    QVERIFY(m_doc->fixtureDefCache()->addFixtureDef(def));
+
+    bool isPan = false, fine = true;
+    QVERIFY(Programmer::isPositionChannel(pan, &isPan, &fine));
+    QVERIFY(isPan && fine == false);
+    QVERIFY(Programmer::isPositionChannel(panFine, &isPan, &fine));
+    QVERIFY(isPan && fine);
+    QVERIFY(Programmer::isPositionChannel(tilt, &isPan, &fine));
+    QVERIFY(isPan == false && fine == false);
+    QVERIFY(Programmer::isPositionChannel(tiltFine, &isPan, &fine));
+    QVERIFY(isPan == false && fine);
+    for (QLCChannel *other : { rotation, spin, speed, dimmer })
+        QVERIFY2(Programmer::isPositionChannel(other) == false, qPrintable(other->name()));
+
+    QCOMPARE(m_patch->addFixtures("Test", "Rotating head", "8ch", "Head", 0, 1, 3), 3);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.selectAll();
+
+    // the Position tab: pan and tilt; their rotations and the speed are Others
+    auto tabOf = [&prog](const QString &name) {
+        for (const QVariant &v : prog.channels())
+            if (v.toMap().value("name").toString() == name)
+                return v.toMap().value("tab").toString();
+        return QString();
+    };
+    QCOMPARE(tabOf("Pan"), QString("position"));
+    QCOMPARE(tabOf("Inclinación"), QString("position"));
+    QCOMPARE(tabOf("Pan Continuous Rotation"), QString("other"));
+    QCOMPARE(tabOf("Tilt spin"), QString("other"));
+    QCOMPARE(tabOf("Pan/Tilt speed"), QString("other"));
+
+    // the grid moves pan and tilt only, centring too
+    auto activeOf = [&prog](const QString &name) {
+        for (const QVariant &v : prog.channels())
+            if (v.toMap().value("name").toString() == name)
+                return v.toMap().value("active").toBool();
+        return false;
+    };
+    prog.setPosition(0.5, 0.25);
+    QVERIFY(activeOf("Pan") && activeOf("Inclinación"));
+    QVERIFY(activeOf("Pan Continuous Rotation") == false);
+    QVERIFY(activeOf("Tilt spin") == false);
+    QVERIFY(activeOf("Pan/Tilt speed") == false);
+    QVariantMap position = prog.position();
+    QVERIFY(qAbs(position.value("x").toDouble() - 0.5) < 1e-4);
+    QVERIFY(qAbs(position.value("y").toDouble() - 0.25) < 1e-4);
+    QCOMPARE(position.value("points").toList().count(), 3);
+    prog.centreBeam();
+    QVERIFY(activeOf("Pan Continuous Rotation") == false);
+    QVERIFY(activeOf("Tilt spin") == false);
+
+    /* the fan: each fixture from where it was, by up to half the travel */
+    auto points = [&prog](const char *axis) {
+        QList<qreal> list;
+        for (const QVariant &p : prog.position().value("points").toList())
+            list.append(p.toMap().value(axis).toDouble());
+        return list;
+    };
+    auto closeTo = [](const QList<qreal> &actual, const QList<qreal> &expected) {
+        if (actual.count() != expected.count())
+            return false;
+        for (int i = 0; i < actual.count(); i++)
+            if (qAbs(actual.at(i) - expected.at(i)) > 1e-4)
+                return false;
+        return true;
+    };
+    prog.setPosition(0.5, 0.5);
+    prog.setPositionFan(0.5, 0.0, "spread");
+    QVERIFY(closeTo(points("x"), { 0.25, 0.5, 0.75 }));
+    QVERIFY(closeTo(points("y"), { 0.5, 0.5, 0.5 }));
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.5);
+    QCOMPARE(prog.positionFan().value("mode").toString(), QString("spread"));
+    // the grid moves its centre, the fan stays
+    prog.setPosition(0.4, 0.5);
+    QVERIFY(closeTo(points("x"), { 0.15, 0.4, 0.65 }));
+    QVERIFY(qAbs(prog.position().value("x").toDouble() - 0.4) < 1e-4);
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.5);
+    prog.setPositionFan(0.5, 0.0, "v");
+    QVERIFY(closeTo(points("x"), { 0.65, 0.4, 0.65 }));
+    prog.setPositionFan(0.5, 0.0, "first");
+    QVERIFY(closeTo(points("x"), { 0.4, 0.525, 0.65 }));
+    prog.setPositionFan(0.0, 0.5, "spread");
+    QVERIFY(closeTo(points("x"), { 0.4, 0.4, 0.4 }));
+    QVERIFY(closeTo(points("y"), { 0.25, 0.5, 0.75 }));
+    // out of the travel: at its end
+    prog.setPositionFan(1.0, 0.0, "spread");
+    QVERIFY(closeTo(points("x"), { 0.0, 0.4, 0.9 }));
+    // no fan: back where they were
+    prog.setPositionFan(0.0, 0.0, "spread");
+    QVERIFY(closeTo(points("x"), { 0.4, 0.4, 0.4 }));
+    QVERIFY(closeTo(points("y"), { 0.5, 0.5, 0.5 }));
+
+    // moved by something else: the fan starts again from there
+    prog.setPositionFan(0.5, 0.0, "spread");
+    prog.setChannelValue("pan", 128);
+    prog.setChannelValue("pan fine", 0);
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.0);
+    const qreal moved = points("x").first();
+    prog.setPositionFan(0.2, 0.0, "spread");
+    QVERIFY(closeTo(points("x"), { moved - 0.1, moved, moved + 0.1 }));
+    // another selection, or the programmer cleared: no fan
+    prog.selectFixtures(QVariantList({ m_doc->fixtures().at(0)->id(), m_doc->fixtures().at(1)->id() }));
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.0);
+    prog.selectAll();
+    prog.setPositionFan(0.3, 0.0, "spread");
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.3);
+    prog.clear();
+    QCOMPARE(prog.positionFan().value("pan").toDouble(), 0.0);
+
+    // a mode chosen with no fan writes nothing; a fan of the pan leaves the
+    // tilt out of the programmer
+    prog.selectAll();
+    prog.setPositionFan(0.0, 0.0, "v");
+    QCOMPARE(prog.positionFan().value("mode").toString(), QString("v"));
+    QVERIFY(activeOf("Pan") == false && activeOf("Inclinación") == false);
+    QVERIFY(prog.hasValues() == false);
+    prog.setChannelValue("pan", 100);
+    prog.setPositionFan(0.4, 0.0, "spread");
+    QVERIFY(activeOf("Pan"));
+    QVERIFY(activeOf("Inclinación") == false);
+    prog.clear();
+
+    /* names of the library: a pan named "Rotation" (0-540°) or "Giro" is a
+       pan; "Tilt Offset", "Auto Move", a misspelled "Continous Pan" or any
+       channel whose ranges are a rotation aren't */
+    auto custom = [](const QString &name, QLCChannel::Group group, bool lsb = false) {
+        auto ch = std::make_unique<QLCChannel>();
+        ch->setName(name);
+        ch->setGroup(group);
+        if (lsb)
+            ch->setControlByte(QLCChannel::LSB);
+        return ch;
+    };
+    QVERIFY(Programmer::isPositionChannel(custom("Rotation", QLCChannel::Pan).get(), &isPan, &fine));
+    QVERIFY(isPan && fine == false);
+    QVERIFY(Programmer::isPositionChannel(custom("Fine Adjustment Rotation", QLCChannel::Pan, true).get(), &isPan, &fine));
+    QVERIFY(isPan && fine);
+    QVERIFY(Programmer::isPositionChannel(custom("Giro", QLCChannel::Pan).get()));
+    QVERIFY(Programmer::isPositionChannel(custom("Rotación vertical", QLCChannel::Tilt).get()));
+    QVERIFY(Programmer::isPositionChannel(custom("Tilt Offset", QLCChannel::Tilt).get()) == false);
+    QVERIFY(Programmer::isPositionChannel(custom("Auto Move", QLCChannel::Pan).get()) == false);
+    QVERIFY(Programmer::isPositionChannel(custom("Continous Pan", QLCChannel::Pan).get()) == false);
+    QVERIFY(Programmer::isPositionChannel(custom("Velocidad pan", QLCChannel::Pan).get()) == false);
+    auto spinning = custom("Pan", QLCChannel::Pan);
+    QLCCapability *turn = new QLCCapability(0, 255, "Clockwise");
+    turn->setPreset(QLCCapability::RotationClockwise);
+    QVERIFY(spinning->addCapability(turn));
+    QVERIFY(Programmer::isPositionChannel(spinning.get()) == false);
 }
 
 void Backend_Test::attributeKeys()
@@ -23838,6 +24031,586 @@ void Backend_Test::isolatedFromTheUser()
     QCOMPARE(m_library->saveDefinition(def), QString());
     QVERIFY(QDir(QLCFixtureDefCache::userDefinitionDirectory()).entryList(QDir::Files).isEmpty() == false);
     QVERIFY(QLCFixtureDefCache::userDefinitionDirectory().absolutePath().startsWith(home, Qt::CaseInsensitive));
+}
+
+void Backend_Test::tapRhythm()
+{
+    // the rhythm of a scene with steps (a cuelist), tapped on its own button:
+    // presses in a row are beats, a pause or a double click is a press; its
+    // steps go on the beats, not on their own times; saved with it; from a
+    // group, a SHOW button with no group and a mapping
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    IOManager io(m_doc);
+    auto out = [&](int channel) { return io.channelValues(0).at(channel).toInt(); };
+
+    // steps of 60 s (or 100 ms)
+    QList<quint32> scenes;
+    for (uchar value : { uchar(10), uchar(20), uchar(30) })
+    {
+        Scene *scene = new Scene(m_doc);
+        scene->setValue(par, 0, value);
+        QVERIFY(m_doc->addFunction(scene));
+        scenes.append(scene->id());
+    }
+    auto chaserOf = [&](uint duration) {
+        Chaser *chaser = new Chaser(m_doc);
+        chaser->setDurationMode(Chaser::PerStep);
+        for (quint32 sid : std::as_const(scenes))
+        {
+            ChaserStep step(sid, 0, duration, 0);
+            step.duration = duration;
+            chaser->addStep(step);
+        }
+        m_doc->addFunction(chaser);
+        return chaser;
+    };
+    Chaser *chaser = chaserOf(60000);
+
+    // the presses: the first one, beats (the rhythm is their average), a
+    // pause, a double click
+    QCOMPARE(SceneTaps::press(chaser, false, 1000), SceneTaps::ToggleIt);
+    QCOMPARE(chaser->tapPeriod(), 0u);
+    QCOMPARE(SceneTaps::press(chaser, true, 1500), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 500u);
+    QCOMPARE(SceneTaps::press(chaser, true, 2000), SceneTaps::Keep);
+    QCOMPARE(SceneTaps::press(chaser, true, 2600), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 533u);
+    QCOMPARE(SceneTaps::press(chaser, true, 2600 + SceneTaps::window() + 1), SceneTaps::ToggleIt);
+    QCOMPARE(chaser->tapPeriod(), 533u);
+    QCOMPARE(SceneTaps::press(chaser, true, 4700), SceneTaps::ToggleIt);
+    QCOMPARE(SceneTaps::press(chaser, true, 4900), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 200u);
+    // a press that starts it is no beat, and counts again from there:
+    // scenes switched in a group (A, B, A) get no rhythm
+    QCOMPARE(SceneTaps::press(chaser, false, 5300), SceneTaps::ToggleIt);
+    QCOMPARE(chaser->tapPeriod(), 200u);
+    QCOMPARE(SceneTaps::press(chaser, true, 5700), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 400u);
+    // with a live speed, what was tapped plays (its own time is twice as long)
+    chaser->setSpeedFactor(2.0);
+    QCOMPARE(SceneTaps::press(chaser, true, 6000), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 700u);
+    chaser->setSpeedFactor(1.0);
+    chaser->setTapPeriod(300);
+    // a new show forgets the presses
+    SceneTaps::clear();
+    QCOMPARE(SceneTaps::press(chaser, true, 5500), SceneTaps::ToggleIt);
+    // a scene with no steps takes no rhythm
+    Scene *still = qobject_cast<Scene *>(m_doc->function(scenes.first()));
+    QCOMPARE(SceneTaps::press(still, false, 0), SceneTaps::ToggleIt);
+    QCOMPARE(SceneTaps::press(still, true, 300), SceneTaps::ToggleIt);
+    QCOMPARE(still->tapPeriod(), 0u);
+    QCOMPARE(SceneTaps::press(nullptr, true), SceneTaps::Keep);
+    // GO (the top bar): a press starts it, the next ones are its steps (in
+    // a row, its rhythm) and never stop it, not even after a pause; a scene
+    // with no steps just plays
+    chaser->setTapPeriod(0);
+    SceneTaps::setMode(SceneTaps::Go);
+    QCOMPARE(SceneTaps::press(chaser, false, 10000), SceneTaps::StartIt);
+    QCOMPARE(SceneTaps::press(chaser, true, 10500), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 500u);
+    QCOMPARE(SceneTaps::press(chaser, true, 20000), SceneTaps::Keep);
+    QCOMPARE(chaser->tapPeriod(), 500u);
+    QCOMPARE(SceneTaps::press(still, false, 20100), SceneTaps::StartIt);
+    QCOMPARE(SceneTaps::press(still, true, 30000), SceneTaps::Keep);
+    // Stop: a press stops it, and does nothing to one that doesn't play
+    SceneTaps::setMode(SceneTaps::Stop);
+    QCOMPARE(SceneTaps::press(chaser, true, 30100), SceneTaps::StopIt);
+    QCOMPARE(SceneTaps::press(chaser, false, 30200), SceneTaps::Keep);
+    QCOMPARE(SceneTaps::press(still, true, 30300), SceneTaps::StopIt);
+    SceneTaps::setMode(SceneTaps::Toggle);
+    // the rhythm bar follows the last one with steps pressed
+    QCOMPARE(SceneTaps::focus(), chaser->id());
+    // as a tap can give it (and a little more by hand)
+    chaser->setTapPeriod(50);
+    QCOMPARE(chaser->tapPeriod(), 100u);
+    chaser->setTapPeriod(20000);
+    QCOMPARE(chaser->tapPeriod(), 10000u);
+    chaser->setTapPeriod(0);
+    QCOMPARE(chaser->tapPeriod(), 0u);
+
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+
+    // its own times: it holds the first step; at 300 ms a step on each beat,
+    // round and round
+    chaser->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 10, 3000);
+    QTest::qWait(600);
+    QCOMPARE(out(0), 10);
+    chaser->setTapPeriod(300);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 20, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 30, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 10, 3000);
+    // a beat: its step at once, the next beat a whole period later
+    chaser->setTapPeriod(5000);
+    QTest::qWait(200);
+    const int before = out(0);
+    chaser->tapBeat();
+    QTRY_VERIFY_WITH_TIMEOUT(out(0) != before, 1000);
+    const int after = out(0);
+    QTest::qWait(600);
+    QCOMPARE(out(0), after);
+    chaser->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(chaser->isRunning() == false, 3000);
+
+    // steps of 100 ms at a slow rhythm: the rhythm, not their times
+    Chaser *fast = chaserOf(100);
+    fast->setTapPeriod(5000);
+    fast->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 10, 3000);
+    QTest::qWait(700);
+    QCOMPARE(out(0), 10);
+    fast->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(fast->isRunning() == false, 3000);
+
+    // a cuelist: a GO on each beat, its Follow times aside
+    typedef Cuelist::Key Key;
+    const Key green(par, 1);
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    cl->addCue(testCue(1000, { { green, 10 } }));
+    cl->addCue(testCue(2000, { { green, 20 } }));
+    cl->addCue(testCue(3000, { { green, 30 } }, 0, -1, 0, Cuelist::TriggerFollow, 60000));
+    cl->setTapPeriod(300);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 10, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 20, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 30, 3000);
+    // (after the last one, it loops)
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 10, 3000);
+    cl->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning() == false, 3000);
+    m_doc->masterTimer()->stop();
+
+    // saved with the show; none, not written
+    {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        const QString text = QString::fromUtf8(buffer.data());
+        QCOMPARE(text.count("Tap=\""), 3);
+        Doc other(this);
+        other.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(other.loadXML(reader, false));
+        QCOMPARE(other.function(chaser->id())->tapPeriod(), 5000u);
+        QCOMPARE(other.function(fast->id())->tapPeriod(), 5000u);
+        QCOMPARE(other.function(cl->id())->tapPeriod(), 300u);
+        QCOMPARE(other.function(scenes.first())->tapPeriod(), 0u);
+    }
+
+    // the presses of the buttons: a group (Live, the SHOW, a mapping), a
+    // SHOW button with no group, a mapping with no group
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 lamp = core.doc()->fixtures().first()->id();
+    auto stepsIn = [&](Doc *doc) {
+        Chaser *steps = new Chaser(doc);
+        steps->setDurationMode(Chaser::PerStep);
+        for (uchar value : { uchar(10), uchar(20) })
+        {
+            Scene *scene = new Scene(doc);
+            scene->setValue(lamp, 0, value);
+            doc->addFunction(scene);
+            ChaserStep step(scene->id(), 0, 60000, 0);
+            step.duration = 60000;
+            steps->addStep(step);
+        }
+        doc->addFunction(steps);
+        return steps;
+    };
+    core.doc()->masterTimer()->start();
+
+    // a press starts it; one 400 ms later is a beat: it keeps running at
+    // about that rhythm; one after a pause stops it, and the rhythm stays
+    auto presses = [&](const std::function<void()> &press, Function *f, const std::function<bool()> &active) {
+        press();
+        QTRY_VERIFY_WITH_TIMEOUT(active(), 3000);
+        QTest::qWait(400);
+        press();
+        QVERIFY(active());
+        QVERIFY2(f->tapPeriod() >= 350 && f->tapPeriod() < 1500, qPrintable(QString::number(f->tapPeriod())));
+        QTest::qWait(300);
+        QVERIFY(active());
+        QTest::qWait(SceneTaps::window() + 200);
+        press();
+        QTRY_VERIFY_WITH_TIMEOUT(active() == false, 3000);
+        QVERIFY(f->tapPeriod() > 0);
+    };
+    Zone *zone = core.zones()->addZone("A");
+    Chaser *grouped = stepsIn(core.doc());
+    zone->addFunction(grouped->id());
+    presses([&]() { zone->trigger(grouped->id()); }, grouped, [&]() { return zone->isActive(grouped->id()); });
+    QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning() == false, 3000);
+
+    Chaser *loose = stepsIn(core.doc());
+    ShowSurface *surface = core.surface();
+    QVariantMap at = surface->addFromTarget({ { "target", "scene" }, { "functionId", int(loose->id()) } });
+    QVariantMap button = surface->item(0, at.value("section").toString(), at.value("cell").toInt());
+    QCOMPARE(button.value("action").toString(), QString("scene"));
+    presses([&]() { surface->press(button); }, loose, [&]() { return loose->isRunning(); });
+
+    Chaser *mapped = stepsIn(core.doc());
+    ControlMapper *mapper = core.mapping();
+    QVERIFY(mapper->addMapping({ { "source", "key" }, { "key", "m" }, { "target", "scene" },
+                                 { "functionId", int(mapped->id()) }, { "mode", "toggle" } }) > 0);
+    auto key = [&]() {
+        QVERIFY(mapper->keyEvent("M", true));
+        QVERIFY(mapper->keyEvent("M", false));
+    };
+    presses(key, mapped, [&]() { return mapped->isRunning(); });
+
+    // GO: a press starts it and the next ones step it, never stopping it
+    // (after a pause too); the rhythm bar of its buttons follows its steps.
+    // Stop: a press stops it, and nothing for one that doesn't play
+    QSignalSpy stepsMoved(&core, SIGNAL(stepsChanged()));
+    QCOMPARE(core.stepOf(grouped->id()), -1);
+    core.setPressMode("go");
+    QCOMPARE(core.pressMode(), QString("go"));
+    zone->trigger(grouped->id());
+    QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(core.stepOf(grouped->id()) >= 0, 3000);
+    const int firstStep = core.stepOf(grouped->id());
+    const int revision = core.stepsRevision();
+    QVERIFY(stepsMoved.count() > 0);
+    QTest::qWait(SceneTaps::window() + 200);
+    zone->trigger(grouped->id());
+    QTRY_VERIFY_WITH_TIMEOUT(core.stepOf(grouped->id()) != firstStep, 3000);
+    QVERIFY(core.stepsRevision() > revision);
+    QVERIFY(zone->isActive(grouped->id()));
+    core.setPressMode("stop");
+    zone->trigger(grouped->id());
+    QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning() == false, 3000);
+    QVERIFY(zone->isActive(grouped->id()) == false);
+    zone->trigger(grouped->id());
+    QTest::qWait(200);
+    QVERIFY(grouped->isRunning() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(grouped->id()), -1, 3000);
+    core.setPressMode("toggle");
+    QCOMPARE(core.pressMode(), QString("toggle"));
+    core.doc()->masterTimer()->stop();
+}
+
+void Backend_Test::followAim()
+{
+    // Follow: the geometry; what the patch keeps of each moving head (saved
+    // with the show); the programmer aiming them through the inversions and
+    // the swap of the patch
+    auto at = [](const QPointF &angles, qreal pan, qreal tilt) {
+        return qAbs(angles.x() - pan) < 0.01 && qAbs(angles.y() - tilt) < 0.01;
+    };
+    auto text = [](const QPointF &angles) { return QString("%1, %2").arg(angles.x()).arg(angles.y()); };
+    QPointF angles;
+
+    // hung at 4 m, facing the audience (down the plan), 540° and 270°
+    AimMount hung;
+    hung.position = QVector3D(5000, 3000, 4000);
+    // right below: the middle of both
+    QVERIFY(Aim::solve(hung, QVector3D(5000, 3000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 135), qPrintable(text(angles)));
+    // 4 m ahead on the floor: 45° the way it faces, no turn
+    QVERIFY(Aim::solve(hung, QVector3D(5000, 7000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 180), qPrintable(text(angles)));
+    // 4 m behind: 45° the other way, no turn either
+    QVERIFY(Aim::solve(hung, QVector3D(5000, -1000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 90), qPrintable(text(angles)));
+    // to a side: a quarter turn (seen from above, a hung head turns the
+    // other way); inverted, the other way round
+    QVERIFY(Aim::solve(hung, QVector3D(9000, 3000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 180, 180), qPrintable(text(angles)));
+    hung.panInverted = true;
+    QVERIFY(Aim::solve(hung, QVector3D(9000, 3000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 360, 180), qPrintable(text(angles)));
+    hung.panInverted = false;
+    hung.tiltInverted = true;
+    QVERIFY(Aim::solve(hung, QVector3D(5000, 7000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 90), qPrintable(text(angles)));
+    hung.tiltInverted = false;
+    // facing the back, or a side: ahead is that way
+    hung.facing = 180;
+    QVERIFY(Aim::solve(hung, QVector3D(5000, -1000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 180), qPrintable(text(angles)));
+    hung.facing = 90;
+    QVERIFY(Aim::solve(hung, QVector3D(1000, 3000, 0), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 270, 180), qPrintable(text(angles)));
+    hung.facing = 0;
+    // dragged: the way nearest where it was, not a swing the long way round
+    QVERIFY(Aim::solve(hung, QVector3D(5000, 7000, 0), QPointF(450, 180), true, &angles));
+    QVERIFY2(at(angles, 450, 90), qPrintable(text(angles)));
+    // right below while dragged: the pan stays where it was; also a few mm
+    // off (a pixel under the head doesn't swing it round)
+    QVERIFY(Aim::solve(hung, QVector3D(5000, 3000, 0), QPointF(400, 150), true, &angles));
+    QVERIFY2(at(angles, 400, 135), qPrintable(text(angles)));
+    QVERIFY(Aim::solve(hung, QVector3D(5010, 3010, 0), QPointF(400, 150), true, &angles));
+    QVERIFY2(qAbs(angles.x() - 400) < 0.01 && qAbs(angles.y() - 135) < 0.5, qPrintable(text(angles)));
+    // standing on the floor: up is its axis, it turns the other way
+    AimMount standing;
+    standing.hanging = false;
+    standing.position = QVector3D(5000, 3000, 0);
+    QVERIFY(Aim::solve(standing, QVector3D(9000, 3000, 4000), QPointF(), false, &angles));
+    QVERIFY2(at(angles, 360, 180), qPrintable(text(angles)));
+    // out of its reach: the nearest it can, and it says so
+    AimMount short_;
+    short_.position = QVector3D(0, 0, 1000);
+    short_.panRange = 180;
+    short_.tiltRange = 90;
+    QVERIFY(Aim::solve(short_, QVector3D(0, 10000, 0), QPointF(), false, &angles) == false);
+    QVERIFY(angles.x() >= 0 && angles.x() <= 180 && angles.y() >= 0 && angles.y() <= 90);
+
+    // the patch: two spots, a scanner (a mirror: not this geometry) and a par
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 2), 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "Scanner", "6ch Basic", "Scan", 0, 40, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 60, 1), 1);
+    const quint32 spotA = m_doc->fixtures().at(0)->id();
+    const quint32 spotB = m_doc->fixtures().at(1)->id();
+    const quint32 scan = m_doc->fixtures().at(2)->id();
+    const quint32 par = m_doc->fixtures().at(3)->id();
+    const QVariantList spots = { int(spotA), int(spotB) };
+    QVariantMap settings = m_patch->aimSettings(spots);
+    QCOMPARE(settings.value("count").toInt(), 2);
+    QCOMPARE(settings.value("height").toInt(), PatchManager::defaultHeight());
+    QCOMPARE(settings.value("standing").toBool(), false);
+    QCOMPARE(settings.value("panDefinition").toInt(), 540);
+    QCOMPARE(settings.value("tiltDefinition").toInt(), 270);
+    QCOMPARE(settings.value("panRange").toInt(), 0);
+    QVERIFY(settings.value("mixed").toStringList().isEmpty());
+    QCOMPARE(m_patch->aimSettings({ int(par) }).value("count").toInt(), 0);
+    QCOMPARE(m_patch->aimSettings({ int(scan) }).value("mirror").toBool(), true);
+    // one higher than the other: mixed
+    m_patch->setAimSetting({ int(spotB) }, "height", 6000);
+    QVERIFY(m_patch->aimSettings(spots).value("mixed").toStringList().contains("height"));
+    // the way it faces is its turn in the plan, 0-359°
+    m_patch->setAimSetting(spots, "facing", 450);
+    QCOMPARE(m_patch->aimSettings({ int(spotA) }).value("facing").toInt(), 90);
+    QCOMPARE(m_doc->monitorProperties()->fixtureRotation(spotA, 0, 0).z(), 90.0f);
+    m_patch->setAimSetting(spots, "facing", -90);
+    QCOMPARE(m_patch->aimSettings({ int(spotB) }).value("facing").toInt(), 270);
+    m_patch->setAimSetting(spots, "facing", 0);
+    // the plan knows the moving heads, and how high they hang
+    QHash<quint32, QVariantMap> plan;
+    for (const QVariant &v : m_patch->fixtures())
+        plan.insert(v.toMap().value("id").toUInt(), v.toMap());
+    QVERIFY(plan.value(spotA).value("aimable").toBool());
+    QCOMPARE(plan.value(spotB).value("height").toInt(), 6000);
+    QVERIFY(plan.value(par).value("aimable").toBool() == false);
+
+    // saved with the show; what isn't the default only
+    m_patch->setAimSetting({ int(spotA) }, "standing", true);
+    m_patch->setAimSetting({ int(spotA) }, "panRange", 630);
+    m_patch->setAimSetting({ int(spotA) }, "tiltInverted", true);
+    m_patch->setAimSetting({ int(par) }, "height", 2000);
+    {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        m_patch->saveXML(&writer);
+        buffer.close();
+        const QString xml = QString::fromUtf8(buffer.data());
+        QVERIFY2(xml.contains("Mount=\"Standing\"") && xml.contains("PanRange=\"630\"") &&
+                 xml.contains("TiltInverted=\"1\"") && xml.contains("Height=\"6000\""), qPrintable(xml));
+        QVERIFY2(xml.contains("Shape") == false && xml.contains("TiltRange") == false, qPrintable(xml));
+        m_patch->clearPlan();
+        QCOMPARE(m_patch->aimSettings({ int(spotB) }).value("height").toInt(), PatchManager::defaultHeight());
+        QXmlStreamReader reader(buffer.data());
+        reader.readNextStartElement();
+        QVERIFY(m_patch->loadXML(reader));
+    }
+    settings = m_patch->aimSettings({ int(spotA) });
+    QCOMPARE(settings.value("standing").toBool(), true);
+    QCOMPARE(settings.value("height").toInt(), 0);
+    QCOMPARE(settings.value("panRange").toInt(), 630);
+    QCOMPARE(settings.value("tiltInverted").toBool(), true);
+    QCOMPARE(m_patch->aimSettings({ int(spotB) }).value("height").toInt(), 6000);
+    QCOMPARE(m_patch->aimMount(spotA).panRange, 630.0);
+    // back to the defaults: nothing kept
+    for (const char *key : { "standing", "panRange", "tiltInverted" })
+        m_patch->setAimSetting({ int(spotA) }, key, 0);
+    m_patch->setAimSetting({ int(spotB) }, "height", PatchManager::defaultHeight());
+
+    // the programmer: both spots hung at 4 m, 6 m apart; the scanner is left
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    m_patch->setFixturePosition(spotA, 2000, 1000);
+    m_patch->setFixturePosition(spotB, 8000, 1000);
+    auto value = [&](quint32 fixture, quint32 channel) {
+        return int(prog.valueMap().value(qMakePair(fixture, channel), 0));
+    };
+    QSignalSpy aimSpy(&prog, SIGNAL(aimChanged()));
+    prog.selectFixtures({ int(spotA), int(spotB), int(scan) });
+    // 4 m ahead of A on the floor: its pan in the middle, its tilt 45° ahead
+    // (180 of 270: 43690 = 170 170); the 11ch mode: pan, tilt, pan fine, tilt fine
+    QVariantMap aim = prog.aimAt(2000, 5000, 0);
+    QVERIFY(aim.value("active").toBool());
+    QCOMPARE(aim.value("aimed").toList().count(), 2);
+    QCOMPARE(aim.value("skipped").toList().count(), 1);
+    QCOMPARE(aim.value("skipped").toList().first().toUInt(), scan);
+    QVERIFY(aim.value("unreachable").toList().isEmpty());
+    QVERIFY(aim.value("guessed").toList().isEmpty());
+    QCOMPARE(aimSpy.count(), 1);
+    QCOMPARE(prog.aim().value("x").toDouble(), 2000.0);
+    QCOMPARE(value(spotA, 0), 128);
+    QCOMPARE(value(spotA, 2), 0);
+    QCOMPARE(value(spotA, 1), 170);
+    QCOMPARE(value(spotA, 3), 170);
+    // B turns towards it
+    QVERIFY(value(spotB, 0) != 128);
+    QCOMPARE(prog.lastParam(), QString("pantilt"));
+
+    // pan inverted in the patch: what leaves is the same, so the programmer
+    // value is the other way round
+    m_patch->setInverted({ int(spotA) }, "pan", true);
+    prog.aimAt(2000, 5000, 0);
+    QCOMPARE(value(spotA, 0), 127);
+    QCOMPARE(value(spotA, 2), 255);
+    QCOMPARE(value(spotA, 1), 170);
+    m_patch->setInverted({ int(spotA) }, "pan", false);
+    // pan and tilt swapped at the output: the tilt channel carries the pan
+    m_patch->setLimits({ int(spotA) }, { { "swapPanTilt", true } });
+    prog.aimAt(2000, 5000, 0);
+    QCOMPARE(value(spotA, 1), 128);
+    QCOMPARE(value(spotA, 0), 170);
+    m_patch->setLimits({ int(spotA) }, { { "swapPanTilt", false } });
+
+    // set another way, or another selection: no aim
+    prog.aimAt(2000, 5000, 0);
+    QVERIFY(prog.aim().value("active").toBool());
+    prog.setPosition(0.5, 0.5);
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    prog.aimAt(2000, 5000, 0);
+    prog.selectFixtures({ int(spotA) });
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    prog.aimAt(2000, 5000, 0);
+    prog.clear();
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    // a value changed another way (a fader), or a head moved in the plan: no aim
+    prog.selectFixtures({ int(spotA), int(spotB) });
+    prog.aimAt(2000, 5000, 0);
+    QVERIFY(prog.aim().value("active").toBool());
+    prog.setChannelValue("pan", 10);
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    prog.aimAt(2000, 5000, 0);
+    QVERIFY(prog.aim().value("active").toBool());
+    m_patch->setFixturePosition(spotB, 7000, 1000);
+    QVERIFY(prog.aim().value("active").toBool() == false);
+}
+
+void Backend_Test::stopBeforeFirstFrame()
+{
+    // a GO and a stop in the same frame: what was started gives no frame,
+    // so a collection starts none of its scenes after the stop (it did: a
+    // scene lit for a few frames after the stop). (Stop all had a race too:
+    // it could return before the tick ran what it took from the queue;
+    // playbackRuntimeStopAndNewShow catches it now and then)
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    Scene *step = new Scene(m_doc);
+    step->setValue(par, 0, 200);
+    QVERIFY(m_doc->addFunction(step));
+    Collection *chaser = new Collection(m_doc);
+    QVERIFY(m_doc->addFunction(chaser));
+    QVERIFY(chaser->addFunction(step->id()));
+    // (engine signals go by name: MinGW)
+    QSignalSpy stepRuns(step, SIGNAL(running(quint32)));
+
+    m_doc->inputOutputMap()->startUniverses();
+    for (int i = 0; i < 10; i++)
+    {
+        // (the timer stopped meanwhile: no tick between the GO and the stop)
+        m_doc->masterTimer()->stop();
+        chaser->start(m_doc->masterTimer(), FunctionParent::master());
+        chaser->stop(FunctionParent::master());
+        m_doc->masterTimer()->start();
+        QTRY_VERIFY_WITH_TIMEOUT(chaser->isRunning() == false && m_doc->masterTimer()->runningFunctions() == 0, 2000);
+    }
+    QTest::qWait(100);
+    QCOMPARE(stepRuns.count(), 0);
+
+    // started and left to play, it plays its step
+    chaser->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(stepRuns.count() > 0, 2000);
+    chaser->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(chaser->isRunning() == false, 2000);
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::convertFxStepsOwnChannels()
+{
+    // an FX turned into steps records the channels it gives a value, not the
+    // defaults of the others (pan, tilt and zoom in the middle of many moving
+    // heads of the library): the steps would hold them over other scenes
+    QLCFixtureDef *def = m_doc->fixtureDefCache()->fixtureDef("Generic", "Moving Head Spot");
+    QVERIFY(def != nullptr);
+    for (QLCChannel *ch : def->channels())
+    {
+        if (ch->name() == "Pan" || ch->name() == "Tilt")
+            ch->setDefaultValue(128);
+    }
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 30, 1), 1);
+    Fixture *spot = m_doc->fixtures().at(2);
+    quint32 pan = QLCChannel::invalid(), tilt = QLCChannel::invalid(), dimmer = QLCChannel::invalid();
+    for (quint32 c = 0; c < spot->channels(); c++)
+    {
+        const QString name = spot->channel(c)->name();
+        if (name == "Pan")
+            pan = c;
+        else if (name == "Tilt")
+            tilt = c;
+        else if (name == "Dimmer")
+            dimmer = c;
+    }
+    QVERIFY(pan != QLCChannel::invalid() && tilt != QLCChannel::invalid() && dimmer != QLCChannel::invalid());
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    // the channels of the spot its steps hold
+    auto spotChannels = [&](int fxId) {
+        QSet<quint32> held;
+        const int steps = fx.convertToSteps(quint32(fxId), 100);
+        Sequence *sequence = qobject_cast<Sequence *>(m_doc->function(quint32(steps)));
+        if (sequence == nullptr)
+            return held;
+        for (const ChaserStep &step : sequence->steps())
+        {
+            for (const SceneValue &value : step.values)
+            {
+                if (value.fxi == spot->id())
+                    held.insert(value.channel);
+            }
+        }
+        return held;
+    };
+
+    // a dimmer FX on the PARs and the spot: their dimmers, not the pan and
+    // tilt it leaves at rest
+    prog.selectAll();
+    prog.setFx("dimmer", { { "mode", 1 }, { "bpm", 120 } });
+    const int wave = prog.recordScene("Dimmer wave");
+    QVERIFY(wave >= 0);
+    QSet<quint32> held = spotChannels(wave);
+    QVERIFY(held.contains(dimmer));
+    QVERIFY(held.contains(pan) == false);
+    QVERIFY(held.contains(tilt) == false);
+
+    // a circle: the pan and tilt it moves from that default
+    prog.clear();
+    prog.selectFixtures({ int(spot->id()) });
+    prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 20 }, { "swingTilt", 20 }, { "bpm", 120 } });
+    const int circle = prog.recordScene("Circle");
+    QVERIFY(circle >= 0);
+    held = spotChannels(circle);
+    QVERIFY(held.contains(pan));
+    QVERIFY(held.contains(tilt));
 }
 
 #include "backend_test.moc"

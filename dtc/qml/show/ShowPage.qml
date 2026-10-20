@@ -58,7 +58,7 @@ Item {
         { type: "mixer", name: qsTr("Live mixer"), icon: Theme.iconSliders },
         { type: "clock", name: qsTr("Clock"), icon: Theme.iconCircle },
         { type: "timer", name: qsTr("Timer"), icon: Theme.iconPlay },
-        { type: "bpm", name: qsTr("BPM and tap"), icon: Theme.iconBolt },
+        { type: "bpm", name: qsTr("Rhythm: GO and Stop"), icon: Theme.iconBolt },
         { type: "notes", name: qsTr("Notes"), icon: Theme.iconPen },
         { type: "running", name: qsTr("Playing now"), icon: Theme.iconList },
         { type: "dials", name: qsTr("Dials and wheels"), icon: Theme.iconCircle },

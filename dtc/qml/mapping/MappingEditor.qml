@@ -531,6 +531,7 @@ Flickable {
                                 height: 26
                                 radius: 4
                                 color: modelData.color
+                                opacity: Theme.lightLevel
                                 border.color: ledRow.current === modelData.value ? Theme.text : Theme.border
                                 border.width: ledRow.current === modelData.value ? 3 : 1
                                 // a blinking colour

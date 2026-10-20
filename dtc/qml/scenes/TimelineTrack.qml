@@ -241,9 +241,8 @@ Item {
         Text {
             anchors { left: parent.left; top: parent.top; margins: 3 }
             text: trackItem.lane === "phase" ? qsTr("Phase") : qsTr("Dimmer / volume")
-            color: Theme.readable(laneArea.tint)
+            color: Theme.textDim
             font.pixelSize: 9
-            opacity: 0.8
         }
 
         Canvas {

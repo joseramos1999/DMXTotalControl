@@ -37,6 +37,9 @@ Popup {
     readonly property bool dynamic: ["Sequence", "Chaser", "EFX", "RGBMatrix", "CurveFX", "FXScene", "Cuelist"].indexOf(functionType) >= 0
     /** Scenes with a shape: the live phase and size apply */
     readonly property bool shaped: functionType === "EFX" || functionType === "CurveFX" || functionType === "FXScene"
+    /** Steps and cuelists: they take the rhythm tapped on their button */
+    readonly property bool tappable: ["Sequence", "Chaser", "Cuelist"].indexOf(functionType) >= 0
+    property int tapPeriod: 0
 
     // combo index -> Zone::ReleaseMode / Zone::Protection
     readonly property var releaseValues: [-1, 0, 1, 2, 3]
@@ -59,6 +62,7 @@ Popup {
         flashSwitch.checked = opts.flash
         dimmerSlider.value = opts.dimmer !== undefined ? opts.dimmer : 1
         functionType = info.type || ""
+        tapPeriod = info.tap || 0
         speedSlider.value = Math.log10(opts.speed || 1)
         phaseSlider.value = opts.phase || 0
         sizeSlider.value = opts.size !== undefined ? opts.size : 1
@@ -89,7 +93,7 @@ Popup {
         from: 0; to: 6000; stepSize: 1
         editable: true
         textFromValue: (value, locale) => (value / 10).toLocaleString(locale, 'f', 1) + " s"
-        valueFromText: (text, locale) => Math.round(Number.fromLocaleString(locale, text.replace(" s", "").trim()) * 10)
+        valueFromText: (text, locale) => Math.round(Theme.parseNumber(text, value / 10) * 10)
         validator: RegularExpressionValidator { regularExpression: /[0-9]+([.,][0-9])?( s)?/ }
     }
 
@@ -169,9 +173,29 @@ Popup {
                 Text {
                     Layout.preferredWidth: 52
                     horizontalAlignment: Text.AlignRight
-                    text: "×" + Math.pow(10, speedSlider.value).toFixed(2)
+                    text: "×" + Math.pow(10, speedSlider.value).toLocaleString(Qt.locale(), "f", 2)
                     color: Theme.text
                     font.family: Theme.monoFamily
+                }
+            }
+
+            // its own rhythm: presses in a row of its button
+            Text {
+                text: qsTr("Tapped rhythm")
+                color: Theme.textDim
+                visible: dialog.tappable
+                ToolTip.text: qsTr("Press its button several times in a row: a step (a GO) on each beat, at that rhythm")
+                ToolTip.visible: tapMouse.containsMouse
+                ToolTip.delay: 500
+                MouseArea { id: tapMouse; anchors.fill: parent; hoverEnabled: true }
+            }
+            TapRhythm {
+                visible: dialog.tappable
+                period: dialog.tapPeriod
+                // a live setting: applied at once
+                onEdited: (ms) => {
+                    Core.effects.setPlayback(dialog.functionId, "tap", ms)
+                    dialog.tapPeriod = Core.functionInfo(dialog.functionId).tap || 0
                 }
             }
 
@@ -225,7 +249,7 @@ Popup {
                 Text {
                     Layout.preferredWidth: 52
                     horizontalAlignment: Text.AlignRight
-                    text: "×" + Math.pow(10, fadeSpeedSlider.value).toFixed(2)
+                    text: "×" + Math.pow(10, fadeSpeedSlider.value).toLocaleString(Qt.locale(), "f", 2)
                     color: Theme.text
                     font.family: Theme.monoFamily
                 }

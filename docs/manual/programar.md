@@ -63,15 +63,7 @@ El fader **Dimmer** y los botones **100%**, **75%**, **50%**, **25%** y **0%** d
 
 Haz clic en una de las 16 muestras, o mueve **Tono** y **Sat.** El color se mezcla en los canales RGB (la parte blanca va al canal blanco si el fixture lo tiene) o CMY de cada fixture. Para las ruedas de color, usa sus presets en [Features](programar.md#features) › Color.
 
-### Abanico
-
-El abanico reparte un canal entre la selección, en su orden:
-
-1. En el primer desplegable, elige el **canal** (por ejemplo, el pan o el dimmer).
-2. En el segundo, **«Desde el inicio»** (del primero al último) o **«Desde el centro»** (hacia los extremos).
-3. Arrastra el deslizador: a la derecha suma y a la izquierda resta, más cuanto más lejos está cada fixture del primero (o del centro). Parte del valor que tiene el canal al empezar a arrastrar.
-
-> **Consejo:** para un abanico de dimmer escrito, usa `@ 0 THRU 100`: del 0 % en el primero al 100 % en el último.
+> **Consejo:** para un abanico de dimmer, usa la línea de comandos: `@ 0 THRU 100` va del 0 % en el primero al 100 % en el último. El abanico de la posición está en [Features › Posición](programar.md#posición-rejilla-xy-y-abanico).
 
 ## Features
 
@@ -87,13 +79,40 @@ En la pestaña **Color**, el cuadro de la izquierda da el tono (de lado a lado) 
 
 Debajo, **«Favoritos»**: el **+** guarda el color actual; un clic en un favorito lo pone; clic derecho lo quita. Los favoritos sirven para todos los shows.
 
-### Posición: rejilla XY
+### Posición: rejilla XY y abanico
 
-En la pestaña **Posición**, la rejilla mueve pan y tilt (en 16 bits si el fixture tiene canales finos):
+La pestaña **Posición** solo mueve el **pan** y el **tilt** (con sus canales finos, en 16 bits). La rotación continua de pan o tilt y su velocidad están en **Otros**.
 
 - Arrastra la **cruz** para colocarla, o arrastra en otro sitio de la rejilla para un movimiento lento y fino.
-- El fader de la izquierda es el **tilt** y el deslizador de abajo el **pan**.
+- La barra de la izquierda es el **tilt** y la de abajo el **pan**.
+- Con varios fixtures, cada uno es un punto en la rejilla.
 - **«Centrar»** lleva pan y tilt al centro.
+
+A la derecha está el **Abanico**: abre la posición de la selección, en su orden, cada fixture desde donde estaba.
+
+- **«Abierto»**: de un extremo al otro (el primero a un lado, el último al otro, el del medio quieto).
+- **«En V»**: los extremos se abren y el centro queda quieto.
+- **«Desde el primero»**: el primero quieto y cada uno un poco más.
+- **Pan** y **Tilt**: cuánto se abre cada uno (de −100 a 100 %; doble clic, a 0). Al 100 %, los extremos se mueven media rejilla.
+- **«Sin abanico»**: los fixtures vuelven a donde estaban.
+- El botón **«Abanico»** bajo la rejilla hace que arrastrar en ella abra el abanico en vez de mover: de lado, el pan; arriba y abajo, el tilt.
+
+Si después mueves la cruz, el centro se mueve y el abanico se mantiene. Si la posición cambia por otro lado (una paleta, otra selección, «Restablecer todo»), el abanico vuelve a 0 y empieza de nuevo desde donde estén.
+
+### Follow: apuntar a un punto
+
+El botón **«Follow»** bajo la rejilla cambia el abanico por un plano del escenario. Haz clic o arrastra sobre él: **todas las cabezas móviles seleccionadas apuntan a ese punto**, cada una con su pan y su tilt, y una línea va de cada una al punto.
+
+- **«Altura del punto»**: 0 m es el suelo; súbelo para apuntar, por ejemplo, a la cara de quien canta (1,6 m).
+- Cada cabeza calcula su pan y su tilt con su sitio en el plano, su altura, si está colgada o de pie y hacia dónde mira. Todo eso se ajusta en [Patch › Plano 2D › «Altura y orientación»](patch.md#altura-y-orientación-follow).
+- Al arrastrar, cada cabeza va por el camino corto desde donde apuntaba, sin dar la vuelta larga.
+- Los valores quedan en el programador como cualquier pan y tilt: grábalos en una escena, una cue o una paleta.
+- Debajo se indica cuántas apuntan, cuáles no llegan (se quedan lo más cerca que pueden), cuáles no traen el recorrido de pan y tilt en su definición (se usan 540° y 270°) y los escáneres, que no se mueven (su espejo no sigue esta geometría).
+- Las inversiones, los límites y el intercambio de pan y tilt del [Patch](patch.md#límites) ya se tienen en cuenta.
+
+Si mueves la cruz, el abanico o «Centrar», o cambias la selección, el punto desaparece.
+
+> **Sin probar con equipos reales:** cada fabricante orienta sus cabezas a su manera. Si una apunta mal, ajusta su orientación o pon su pan o su tilt al revés en «Altura y orientación».
 
 ## Faders
 
@@ -163,7 +182,7 @@ En **FX** hay tres zonas: los parámetros y los FX en marcha a la izquierda, los
 
 - **La figura o el modo** (el dibujo de la izquierda): haz clic en él para elegir otro. Para pan/tilt hay **12 figuras** (círculo, ocho, cuadrado, triángulo, diamante, línea de pan, línea de tilt, diagonal, trébol, lissajous, ballyhoo y cruz). Para el resto, **22 modos**: la línea de puntos es el valor base y la onda va por encima, por debajo o a los dos lados; los modos 9 a 12 son para persecuciones, con paso.
 - **Amplitud** (de 0 a 250 %). En pan/tilt, **«Amplitud pan»** y **«Amplitud tilt»** por separado.
-- **Velocidad**, en BPM. **½** y **×2** la dividen o la doblan. **«BPM del show»** hace que siga el tempo de la barra superior (tap, BeatGO). **«Multiplicador»**: de ×¼ a ×8.
+- **Velocidad**, en BPM. **½** y **×2** la dividen o la doblan. **«BPM del show»** hace que siga el tempo del show (un fader o dial de BPM del SHOW, o un mapeo de BPM o Tap). **«Multiplicador»**: de ×¼ a ×8.
 - Solo pan/tilt: **«Invertir pan»**, **«Invertir tilt»**, **«Al revés»** y **«Girar»** (0–359°).
 
 ### Timing del FX

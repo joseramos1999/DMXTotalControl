@@ -30,6 +30,8 @@ Rectangle {
     property bool editing: false
 
     readonly property color tint: item.color ? Theme.category(item.color) : Theme.accent
+    // on: the tint, as dark as its text needs to read
+    readonly property color litTint: Theme.fill(tint)
     readonly property bool active: {
         Core.surface.revision
         Core.blackout
@@ -71,7 +73,7 @@ Rectangle {
 
     radius: Theme.radiusSmall
     // off: a dark tint, or a pale one on a light theme
-    color: active ? tint : Theme.isDark ? (mouse.pressed ? Qt.darker(tint, 2.2) : Qt.darker(tint, 3.4))
+    color: active ? litTint : Theme.isDark ? (mouse.pressed ? Qt.darker(tint, 2.2) : Qt.darker(tint, 3.4))
                                         : Theme.mix(Theme.surface, tint, mouse.pressed ? 0.4 : 0.16)
     border.color: tint
     border.width: active ? 0 : 1
@@ -94,7 +96,7 @@ Rectangle {
         text: button.item.icon || ""
         font.family: Theme.iconFamily
         font.pixelSize: Math.max(12, Math.min(button.height * 0.36, button.width * 0.4))
-        color: button.active ? Theme.textOn(button.tint) : button.tint
+        color: button.active ? Theme.textOn(button.litTint) : Theme.readable(button.tint, button.color)
     }
 
     Text {
@@ -102,7 +104,7 @@ Rectangle {
         text: button.label()
         style: button.item.image ? Text.Outline : Text.Normal
         styleColor: "black"
-        color: button.active ? Theme.textOn(button.tint) : Theme.text
+        color: button.active ? Theme.textOn(button.litTint) : Theme.text
         font.pixelSize: Math.max(10, Math.min(20, button.height / 4, button.width / 7))
         font.weight: Font.DemiBold
         wrapMode: Text.Wrap
@@ -117,7 +119,7 @@ Rectangle {
         text: Theme.iconBolt
         font.family: Theme.iconFamily
         font.pixelSize: 10
-        color: button.active ? Theme.textOn(button.tint) : button.tint
+        color: button.active ? Theme.textOn(button.litTint) : Theme.readable(button.tint, button.color)
     }
     Rectangle {
         visible: !!button.item.key
@@ -130,10 +132,18 @@ Rectangle {
             id: keyText
             anchors.centerIn: parent
             text: (button.item.key || "").toUpperCase()
-            color: button.active ? Theme.textOn(button.tint) : Theme.text
+            color: button.active ? Theme.textOn(button.litTint) : Theme.text
             font.family: Theme.monoFamily
             font.pixelSize: 9
         }
+    }
+
+    // a scene with steps (a cuelist) that plays: its rhythm, a half a step
+    RhythmBar {
+        functionId: button.item.action === "scene" && button.item.functionId !== undefined ? button.item.functionId : -1
+        litColor: button.active ? Theme.textOn(button.litTint) : Theme.readable(button.tint, button.color)
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 6; bottomMargin: 4 }
+        height: Math.max(3, Math.min(6, button.height / 16))
     }
 
     MouseArea {

@@ -35,7 +35,7 @@ Un control del programa puede tener varios mapeos (por ejemplo, un pad de un con
 
 ### Qué se puede mapear
 
-- **Barra superior**: BPM, Tap, BeatGO, gran master, Blackout y Parar todo.
+- **Barra superior**: GO, Stop, BeatGO, gran master, Blackout y Parar todo.
 - **Directo**: cada escena, ◀ ▶, Pausa y Liberar grupos de la cabecera, y en cada grupo su liberar, anterior, siguiente y master.
 - **Mezclador**: en cada tira, el dimmer, el tono, la saturación, el estrobo y su velocidad, y los botones Full, Blackout, Flash, Flash excl. y Full excl.
 - **Programar**: las paletas.
@@ -67,7 +67,7 @@ Lo que hace el mapeo. Los **botones**:
 | Lanzar una escena | La escena elegida, en su grupo. |
 | Escena N de un grupo | La escena que está en ese puesto del grupo (**Número de escena**). |
 | Liberar un grupo / Escena siguiente de un grupo / Escena anterior de un grupo | En un grupo o en «Todos los grupos». |
-| Blackout, Parar todo, Pausar todo, Tap tempo, BeatGO | Como sus botones. |
+| Blackout, Parar todo, Pausar todo, Tap tempo, BeatGO, GO, Stop | Como sus botones (GO y Stop se encienden y se apagan, como en la barra superior). |
 | Paleta | La paleta en sus propias fixtures o en un grupo de fixtures. |
 | Mezclador: full, blackout, flash, flash exclusivo, full exclusivo, estrobo | En la tira elegida del mezclador. |
 | Playback: GO, atrás, pausa / atrás, flash, liberar, seleccionar | En un playback. |

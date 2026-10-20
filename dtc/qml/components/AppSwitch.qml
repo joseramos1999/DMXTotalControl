@@ -35,8 +35,8 @@ Switch {
         x: control.leftPadding
         y: (control.height - height) / 2
         radius: 12
-        color: control.checked ? Theme.accent : Theme.background
-        border.color: control.checked ? Theme.accent : Theme.borderStrong
+        color: control.checked ? Theme.accentFill : Theme.background
+        border.color: control.checked ? Theme.accentFill : Theme.borderStrong
         opacity: control.enabled ? 1 : 0.4
         Behavior on color { ColorAnimation { duration: 120 } }
 

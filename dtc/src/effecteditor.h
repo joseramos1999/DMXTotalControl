@@ -151,7 +151,8 @@ public:
      *********************************************************************/
     /** keys: loops (0 = always), endAction ("release"/"pause"), jumpTo (-1 none,
      *  -2 next, -3 previous, or a scene ID), drive ("off"/"bpm"/"beatgo"/"pulse"),
-     *  divisions, startMode ("play"/"paused"), stagger (ms) */
+     *  divisions, startMode ("play"/"paused"), stagger (ms), tap (ms a step of
+     *  its own rhythm, 0: its own times) */
     Q_INVOKABLE void setPlayback(quint32 id, const QString &key, const QVariant &value);
 
     /*********************************************************************

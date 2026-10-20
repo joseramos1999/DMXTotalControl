@@ -18,6 +18,7 @@
 */
 
 import QtQuick
+import QtQuick.Controls
 import DMXTotalControl
 
 Rectangle {
@@ -46,7 +47,7 @@ Rectangle {
         font.family: Theme.monoFamily
         font.pixelSize: 10
         font.weight: Font.Bold
-        color: tile.selected ? Theme.accent : Theme.textFaint
+        color: tile.selected ? Theme.text : Theme.textFaint
     }
     Text {
         anchors { left: parent.left; right: numberText.visible ? numberText.left : parent.right; top: parent.top; margins: 8 }
@@ -63,14 +64,16 @@ Rectangle {
         font.pixelSize: 10
         color: Theme.textDim
     }
+    // its type, where it fits whole (else: on hover)
     Text {
+        id: typeText
         anchors { right: parent.right; bottom: parent.bottom; margins: 8 }
         text: tile.type
         width: parent.width / 2
+        visible: implicitWidth <= width
         horizontalAlignment: Text.AlignRight
-        elide: Text.ElideRight
         font.pixelSize: 9
-        color: Theme.textFaint
+        color: tile.selected ? Theme.textDim : Theme.textFaint
     }
 
     MouseArea {
@@ -79,5 +82,8 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: (ev) => tile.clicked((ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+        ToolTip.text: tile.type
+        ToolTip.visible: containsMouse && !typeText.visible && tile.type.length > 0
+        ToolTip.delay: 600
     }
 }

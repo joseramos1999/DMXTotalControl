@@ -13,8 +13,8 @@
   --border: #2b303c;
   --strong: #3a4150;
   --text: #e7e9ef;
-  --dim: #9098ab;
-  --faint: #5d6475;
+  --dim: #a3aaba;
+  --faint: #848997;
   --accent: #3d8bfd;
   --danger: #e5484d;
   --warning: #f5a524;
@@ -23,6 +23,7 @@
   /* text on a lit tint, on the danger colour */
   --on-tint: #000000;
   --on-danger: #ffffff;
+  --on-success: #06140c;
   --knob: #e7e9ef;
   --knob-edge: transparent;
   --scrim: #000000aa;
@@ -43,14 +44,15 @@
   --strong: #b2b9c7;
   --text: #171b23;
   --dim: #4b5364;
-  --faint: #7d8598;
-  --accent: #1d6ce0;
-  --danger: #c92a2a;
-  --warning: #a86200;
-  --success: #18804c;
+  --faint: #5b6171;
+  --accent: #1a62cc;
+  --danger: #c32929;
+  --warning: #965700;
+  --success: #167546;
   --accent-text: #ffffff;
   --on-tint: #000000;
   --on-danger: #ffffff;
+  --on-success: #ffffff;
   --knob: #ffffff;
   --knob-edge: #7d8598;
   --scrim: #00000066;
@@ -74,6 +76,7 @@
   --accent-text: #000000;
   --on-tint: #000000;
   --on-danger: #000000;
+  --on-success: #000000;
   --knob: #ffffff;
   --knob-edge: #000000;
   --scrim: #000000bb;
@@ -87,16 +90,17 @@
   --hover: #1b0b0b;
   --border: #271111;
   --strong: #3b1818;
-  --text: #d9574a;
-  --dim: #9c3a31;
-  --faint: #6a2620;
-  --accent: #c62f22;
+  --text: #e78075;
+  --dim: #c4726a;
+  --faint: #ab6b64;
+  --accent: #d84a3d;
   --danger: #ff3b2f;
   --warning: #d9822b;
   --success: #b4652a;
   --accent-text: #1a0505;
   --on-tint: #1a0505;
   --on-danger: #1a0505;
+  --on-success: #1a0505;
   --knob: #8a2c22;
   --knob-edge: #b8392c;
   --scrim: #000000aa;
@@ -192,6 +196,7 @@ button:active { background: var(--hover); }
   font-weight: 600; text-align: center; overflow: hidden;
   padding: 4px; line-height: 1.15;
   font-size: clamp(10px, 2.4vmin, 20px);
+  position: relative;
 }
 .btn.active { background-color: var(--kind); color: var(--on-kind); border-color: var(--kind); }
 .btn.pressed { filter: brightness(1.4); }
@@ -222,7 +227,7 @@ button:active { background: var(--hover); }
 .zone { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 3px; background: var(--raised); border-radius: 6px; padding: 4px; border-top: 3px solid var(--kind); }
 .zone .name { font-weight: 700; font-size: 13px; padding: 2px 4px; }
 .zone .scenes { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-.zone .scene { min-height: 44px; text-align: left; border-color: var(--border); }
+.zone .scene { min-height: 44px; text-align: left; border-color: var(--border); position: relative; }
 .zone .scene.active { background: var(--kind); color: var(--on-kind); border-color: var(--kind); }
 .zone .master { height: 34px; position: relative; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); touch-action: none; }
 .zone .master .fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--kind); border-radius: 5px; opacity: 0.7; }
@@ -233,10 +238,18 @@ button:active { background: var(--hover); }
 .clock .time { font-family: ui-monospace, monospace; font-size: clamp(24px, 9vmin, 90px); }
 .clock .date { color: var(--dim); }
 .notes { white-space: pre-wrap; overflow: auto; height: 100%; }
-.bpm { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; }
-.bpm .number { font-size: clamp(28px, 10vmin, 80px); font-family: ui-monospace, monospace; }
-.bpm .row { display: flex; gap: 6px; }
+/* the rhythm: GO and Stop of the scene buttons, the bar of the scene with steps that plays */
+.bpm { display: flex; flex-direction: column; align-items: stretch; justify-content: center; height: 100%; gap: 8px; }
+.bpm .row { display: flex; gap: 6px; justify-content: center; }
 .bpm button { min-width: 80px; min-height: 44px; }
+.bpm .modes button { flex: 1; font-size: 1.2em; font-weight: 700; }
+.bpm .modes button.on.go { background: var(--success); border-color: var(--success); color: var(--on-success); }
+.bpm .modes button.on.stop { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+/* the rhythm of a scene with steps inside its button: two halves, a step each */
+.rhythm { display: none; position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; gap: 3px; pointer-events: none; }
+.rhythm.on { display: flex; }
+.rhythm .half { flex: 1; border-radius: 2px; background: currentColor; opacity: 0.25; }
+.rhythm .half.lit { opacity: 1; }
 .running { overflow: auto; height: 100%; }
 .running div { padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .placeholder { color: var(--faint); display: flex; align-items: center; justify-content: center; height: 100%; text-align: center; }

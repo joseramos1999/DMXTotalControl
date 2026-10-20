@@ -815,25 +815,17 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
     for (Function *f : tmp->functions())
         f->setTempoType(Function::Time);
 
-    Function *function = tmp->function(root);
-    function->start(tmp->masterTimer(), FunctionParent::master());
-
-    QList<QList<SceneValue>> samples;
-    uint now = 0;
-    for (int s = 0; s < stepCount; s++)
+    auto renderFrame = [&]()
     {
-        uint target = uint(s) * stepMs;
-        do
-        {
-            tmp->masterTimer()->renderTick();
-            QList<Universe *> universes = tmp->inputOutputMap()->claimUniverses();
-            for (Universe *universe : universes)
-                universe->renderFrame(MasterTimer::tick());
-            tmp->inputOutputMap()->releaseUniverses(false);
-            now += MasterTimer::tick();
-        }
-        while (now <= target);
-
+        tmp->masterTimer()->renderTick();
+        QList<Universe *> universes = tmp->inputOutputMap()->claimUniverses();
+        for (Universe *universe : universes)
+            universe->renderFrame(MasterTimer::tick());
+        tmp->inputOutputMap()->releaseUniverses(false);
+    };
+    // every channel of its fixtures as it goes out now
+    auto sampleOutput = [&]()
+    {
         QList<SceneValue> sample;
         QList<Universe *> universes = tmp->inputOutputMap()->claimUniverses();
         for (Fixture *fxi : tmp->fixtures())
@@ -845,18 +837,45 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
                 sample.append(SceneValue(fxi->id(), c, universe->preGMValue(int(fxi->address() + c))));
         }
         tmp->inputOutputMap()->releaseUniverses(false);
-        samples.append(sample);
+        return sample;
+    };
+
+    // what goes out before the effect: the default values of the channels
+    // (a pan or a zoom in the middle, a shutter open...). It records what the
+    // effect changes from that, not the defaults of the channels it doesn't
+    // touch (the steps would hold them over the other scenes)
+    renderFrame();
+    QHash<QPair<quint32, quint32>, uchar> rest;
+    for (const SceneValue &scv : sampleOutput())
+        rest.insert(qMakePair(scv.fxi, scv.channel), scv.value);
+
+    Function *function = tmp->function(root);
+    function->start(tmp->masterTimer(), FunctionParent::master());
+
+    QList<QList<SceneValue>> samples;
+    uint now = 0;
+    for (int s = 0; s < stepCount; s++)
+    {
+        uint target = uint(s) * stepMs;
+        do
+        {
+            renderFrame();
+            now += MasterTimer::tick();
+        }
+        while (now <= target);
+        samples.append(sampleOutput());
     }
 
     function->stop(FunctionParent::master());
     tmp->masterTimer()->renderTick();
     delete tmp;
 
-    // the channels the effect moves (never at zero all along)
+    // the channels the effect gives a value: somewhere in the cycle, other
+    // than the one at rest
     QSet<QPair<quint32, quint32>> active;
     for (const QList<SceneValue> &sample : std::as_const(samples))
         for (const SceneValue &scv : sample)
-            if (scv.value > 0)
+            if (scv.value != rest.value(qMakePair(scv.fxi, scv.channel), 0))
                 active.insert(qMakePair(scv.fxi, scv.channel));
     if (active.isEmpty())
     {

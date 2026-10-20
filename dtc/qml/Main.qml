@@ -43,7 +43,7 @@ ApplicationWindow {
     palette.text: Theme.text
     palette.button: Theme.surfaceRaised
     palette.buttonText: Theme.text
-    palette.highlight: Theme.accent
+    palette.highlight: Theme.accentFill
     palette.highlightedText: Theme.accentText
     palette.placeholderText: Theme.textFaint
     palette.mid: Theme.border
@@ -298,9 +298,8 @@ ApplicationWindow {
     // the manual of the page on screen (F1-F10 open the pages)
     Shortcut { sequence: "F12"; onActivated: window.showHelp() }
     Shortcut { sequence: "Ctrl+B"; onActivated: Core.blackout = !Core.blackout }
-    Shortcut { sequence: "G"; enabled: window.currentPage !== window.pageShow; onActivated: Core.drive.beatGo() }
     // on the Show page the letters belong to the buttons of the technician
-    Shortcut { sequence: "T"; enabled: window.currentPage !== window.pageShow; onActivated: Core.tapTempo() }
+    Shortcut { sequence: "G"; enabled: window.currentPage !== window.pageShow; onActivated: Core.drive.beatGo() }
     Shortcut { sequence: "Ctrl+Right"; onActivated: Core.zones.nextAll() }
     Shortcut { sequence: "Ctrl+Left"; onActivated: Core.zones.previousAll() }
     // while learning a mapping, Esc only cancels it; Record armed, it disarms it
@@ -394,6 +393,8 @@ ApplicationWindow {
                 sourceSize: Qt.size(64, 64)
                 smooth: true
                 mipmap: true
+                // (dimmed at night, as the colours of the lights)
+                opacity: Theme.lightLevel
             }
             // the show title gives way first when the bar is short
             ColumnLayout {
@@ -483,64 +484,47 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // tempo: click the BPM to type it, tap to follow the music
+            // the beat: how the buttons of the scenes act (GO: they start them
+            // and mark their rhythm; Stop: they stop them; each button shows
+            // the rhythm of its scene with steps), BeatGO and the audio pulses
             Rectangle {
                 Layout.preferredHeight: 36
-                Layout.preferredWidth: bpmRow.implicitWidth + 16
+                Layout.preferredWidth: beatRow.implicitWidth + 16
                 radius: Theme.radiusSmall
                 color: Theme.surfaceRaised
                 border.color: Theme.border
 
                 Row {
-                    id: bpmRow
+                    id: beatRow
                     anchors.centerIn: parent
                     spacing: 8
 
-                    Rectangle {
-                        id: beatLed
-                        width: 8; height: 8; radius: 4
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.accent
-                        opacity: 0.25
-                        Connections {
-                            target: Core
-                            function onBeat() { beatAnim.restart() }
-                        }
-                        SequentialAnimation {
-                            id: beatAnim
-                            PropertyAction { target: beatLed; property: "opacity"; value: 1 }
-                            NumberAnimation { target: beatLed; property: "opacity"; to: 0.25; duration: 180 }
-                        }
-                    }
-                    SpinBox {
-                        id: bpmSpin
-                        anchors.verticalCenter: parent.verticalCenter
-                        from: 20; to: 300
-                        editable: true
-                        value: Core.bpm
-                        implicitWidth: 110
-                        implicitHeight: 28
-                        onValueModified: Core.bpm = value
-                        MapTarget { target: ({ target: "bpm" }) }
-                    }
-                    Text {
-                        visible: !window.narrowBar
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "BPM"
-                        color: Theme.textDim
-                        font.pixelSize: Theme.fontSmall
-                        font.weight: Font.Bold
-                    }
                     AppButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Tap")
+                        text: "GO"
                         implicitHeight: 28
-                        onPressed: Core.tapTempo()
-                        MapTarget { target: ({ target: "tap" }) }
-                        ToolTip.text: qsTr("Tap to the beat (T)")
+                        highlighted: Core.pressMode === "go"
+                        accentColor: Theme.success
+                        onClicked: Core.pressMode = Core.pressMode === "go" ? "toggle" : "go"
+                        MapTarget { target: ({ target: "pressGo" }) }
+                        ToolTip.text: qsTr("GO: a press of a scene starts it, and the next ones mark its rhythm (it doesn't stop). Click again to go back to normal")
                         ToolTip.visible: hovered
                         ToolTip.delay: 500
                     }
+                    AppButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Stop")
+                        implicitHeight: 28
+                        highlighted: Core.pressMode === "stop"
+                        accentColor: Theme.danger
+                        onClicked: Core.pressMode = Core.pressMode === "stop" ? "toggle" : "stop"
+                        MapTarget { target: ({ target: "pressStop" }) }
+                        ToolTip.text: qsTr("Stop: a press of a scene stops it. Click again to go back to normal")
+                        ToolTip.visible: hovered
+                        ToolTip.delay: 500
+                    }
+                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 1; height: 20; color: Theme.border }
+
                     // BeatGO: scenes driven by BeatGO go to their next division
                     AppButton {
                         id: beatGoButton
@@ -1006,7 +990,12 @@ ApplicationWindow {
      * ****************************************************************/
 
     // the manual (F12, «?») and the first steps guide (first start, Options)
-    HelpPanel { id: helpPanel }
+    // below the top bar: blackout and stop all stay at hand
+    HelpPanel {
+        id: helpPanel
+        y: window.header ? window.header.height : 0
+        height: window.height - y
+    }
     FirstStepsGuide {
         id: firstSteps
         pagePatch: window.pagePatch
@@ -1032,17 +1021,19 @@ ApplicationWindow {
         closePolicy: Popup.NoAutoClose
         background: Rectangle {
             radius: Theme.radius
-            color: toast.isError ? Theme.danger : Theme.surfaceRaised
+            color: toast.isError ? Theme.fill(Theme.danger) : Theme.surfaceRaised
             border.color: toast.isError ? Qt.darker(Theme.danger, 1.3) : Theme.borderStrong
+            // a click closes it (an error stays longer: it covers what is below)
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toast.close() }
         }
         contentItem: Text {
             text: toast.text
-            color: toast.isError ? Theme.textOn(Theme.danger) : Theme.text
+            color: toast.isError ? Theme.textOn(Theme.fill(Theme.danger)) : Theme.text
             font.pixelSize: Theme.fontNormal
             wrapMode: Text.Wrap
         }
         onOpened: toastTimer.restart()
 
-        Timer { id: toastTimer; interval: 3200; onTriggered: toast.close() }
+        Timer { id: toastTimer; interval: toast.isError ? 8000 : 3200; onTriggered: toast.close() }
     }
 }

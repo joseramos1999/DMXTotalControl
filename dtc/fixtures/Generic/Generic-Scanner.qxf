@@ -73,4 +73,11 @@
   <Channel Number="6">Shutter</Channel>
   <Channel Number="7">Dimmer</Channel>
  </Mode>
+ <Physical>
+  <Bulb Type="LED" Lumens="0" ColourTemperature="0"/>
+  <Dimensions Weight="0" Width="0" Height="0" Depth="0"/>
+  <Lens Name="Other" DegreesMin="0" DegreesMax="0"/>
+  <Focus Type="Mirror" PanMax="180" TiltMax="90"/>
+  <Technical PowerConsumption="0" DmxConnector="3-pin"/>
+ </Physical>
 </FixtureDefinition>

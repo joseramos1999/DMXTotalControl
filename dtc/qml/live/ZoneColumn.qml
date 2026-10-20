@@ -308,6 +308,7 @@ Rectangle {
                     priority: tileCell.info.priority !== undefined ? tileCell.info.priority : 5
                     large: column.operatorMode
                     flash: !!tileCell.info.flash
+                    tap: tileCell.info.tap || 0
                     onPressedDown: column.zoneObject.press(tileCell.modelData)
                     onReleasedUp: column.zoneObject.unpress(tileCell.modelData)
                     onContextRequested: {

@@ -101,19 +101,19 @@ Item {
                         readonly property int value: monitor.values.length > index ? monitor.values[index] : 0
                         readonly property string owner: monitor.owners[index] || ""
                         // the colour it shows, for its text
-                        readonly property color shown: Theme.mix(Theme.background, Theme.accent, 0.08 + 0.8 * value / 255)
+                        readonly property color shown: Theme.fill(Theme.mix(Theme.background, Theme.accent, 0.08 + 0.8 * value / 255))
 
                         width: grid.cell
                         height: 36
                         radius: 3
-                        color: Qt.alpha(Theme.accent, 0.08 + 0.8 * value / 255)
+                        color: shown
                         border.color: owner.length ? Theme.borderStrong : "transparent"
 
                         Text {
                             anchors { top: parent.top; left: parent.left; margins: 2 }
                             text: cellRect.index + 1
                             font.pixelSize: 8
-                            color: Theme.textFaint
+                            color: Theme.readableOn(Theme.textFaint, cellRect.shown)
                         }
                         Text {
                             anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 2 }

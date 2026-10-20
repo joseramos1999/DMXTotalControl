@@ -40,6 +40,7 @@
 #include "fixturegroup.h"
 #include "universe.h"
 #include "fixture.h"
+#include "programmer.h"
 #include "doc.h"
 
 /* Spacing of the automatic 2D layout, in millimeters */
@@ -198,6 +199,17 @@ QVariantList PatchManager::fixtures() const
         info.insert("y", pos.y());
         info.insert("rotation", positioned ? monitor->fixtureRotation(fxi->id(), 0, 0).z() : 0.0);
         info.insert("shape", m_shapes.value(fxi->id(), "round"));
+        // a moving head: the way it faces and how high it hangs (Follow)
+        bool aimable = false;
+        for (quint32 c = 0; c < fxi->channels() && aimable == false; c++)
+            aimable = Programmer::isPositionChannel(fxi->channel(c));
+        info.insert("aimable", aimable);
+        if (aimable)
+        {
+            const AimMount mount = aimMount(fxi->id());
+            info.insert("height", qRound(mount.position.z()));
+            info.insert("standing", mount.hanging == false);
+        }
         list.append(info);
     }
     return list;
@@ -932,6 +944,26 @@ void PatchManager::setInverted(const QVariantList &ids, const QString &axis, boo
  * Limits and channel options
  *********************************************************************/
 
+// the group of a channel, in the language of the app
+static QString groupName(int group)
+{
+    switch (group)
+    {
+        case QLCChannel::Intensity: return PatchManager::tr("Intensity");
+        case QLCChannel::Colour: return PatchManager::tr("Colour");
+        case QLCChannel::Gobo: return PatchManager::tr("Gobo");
+        case QLCChannel::Speed: return PatchManager::tr("Speed");
+        case QLCChannel::Pan: return PatchManager::tr("Pan");
+        case QLCChannel::Tilt: return PatchManager::tr("Tilt");
+        case QLCChannel::Shutter: return PatchManager::tr("Shutter");
+        case QLCChannel::Prism: return PatchManager::tr("Prism");
+        case QLCChannel::Beam: return PatchManager::tr("Beam");
+        case QLCChannel::Effect: return PatchManager::tr("Effect");
+        case QLCChannel::Maintenance: return PatchManager::tr("Maintenance");
+        default: return PatchManager::tr("Nothing");
+    }
+}
+
 QVariantMap PatchManager::fixtureOptions(quint32 id) const
 {
     QVariantMap info;
@@ -954,6 +986,7 @@ QVariantMap PatchManager::fixtureOptions(quint32 id) const
         channel.insert("index", c);
         channel.insert("name", ch->name());
         channel.insert("group", QLCChannel::groupToString(ch->group()));
+        channel.insert("groupName", groupName(ch->group()));
         channel.insert("canFade", fxi->channelCanFade(int(c)));
         channel.insert("dimmer", fxi->channelFollowsDimmer(int(c)));
         channels.append(channel);
@@ -1128,6 +1161,7 @@ void PatchManager::slotDocCleared()
     stopIdentify();
     m_numbers.clear();
     m_shapes.clear();
+    m_aims.clear();
 }
 
 void PatchManager::slotFixtureRemoved()
@@ -1313,6 +1347,7 @@ void PatchManager::slotFixtureGone(quint32 id)
     m_numbers.remove(id);
     // Doc gives its ID to the next fixture patched: not its shape
     m_shapes.remove(id);
+    m_aims.remove(id);
 }
 
 /*********************************************************************
@@ -1486,14 +1521,31 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
     }
     if (root.name() == KXMLDTCPlan)
     {
-        // how the fixtures look in the plan
+        // how the fixtures look in the plan, and how the moving heads hang
         m_shapes.clear();
+        m_aims.clear();
         while (root.readNextStartElement())
         {
-            quint32 id = root.attributes().value("ID").toUInt();
-            QString shape = root.attributes().value("Shape").toString();
-            if (root.name() == QLatin1String("Fixture") && m_doc->fixture(id) != nullptr && shape.isEmpty() == false)
-                m_shapes.insert(id, shape);
+            const QXmlStreamAttributes attrs = root.attributes();
+            quint32 id = attrs.value("ID").toUInt();
+            if (root.name() == QLatin1String("Fixture") && m_doc->fixture(id) != nullptr)
+            {
+                QString shape = attrs.value("Shape").toString();
+                if (shape == "square" || shape == "rectangle")
+                    m_shapes.insert(id, shape);
+                AimSetup setup;
+                bool ok = false;
+                const int height = attrs.value("Height").toInt(&ok);
+                if (ok)
+                    setup.height = qBound(0, height, 100000);
+                setup.standing = attrs.value("Mount") == QLatin1String("Standing");
+                setup.panRange = qBound(0, attrs.value("PanRange").toInt(), 1080);
+                setup.tiltRange = qBound(0, attrs.value("TiltRange").toInt(), 1080);
+                setup.panInverted = attrs.value("PanInverted") == QLatin1String("1");
+                setup.tiltInverted = attrs.value("TiltInverted") == QLatin1String("1");
+                if (setup.isDefault() == false)
+                    m_aims.insert(id, setup);
+            }
             root.skipCurrentElement();
         }
         notifyFixtures();
@@ -1551,11 +1603,16 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
 
 bool PatchManager::saveXML(QXmlStreamWriter *doc) const
 {
-    if (m_shapes.isEmpty() == false)
+    if (m_shapes.isEmpty() == false || m_aims.isEmpty() == false)
     {
         doc->writeStartElement(KXMLDTCPlan);
         // by fixture: the same show is the same file (a hash has no order)
         QList<quint32> ids = m_shapes.keys();
+        for (quint32 id : m_aims.keys())
+        {
+            if (m_shapes.contains(id) == false)
+                ids.append(id);
+        }
         std::sort(ids.begin(), ids.end());
         for (quint32 id : std::as_const(ids))
         {
@@ -1563,7 +1620,22 @@ bool PatchManager::saveXML(QXmlStreamWriter *doc) const
                 continue;
             doc->writeStartElement("Fixture");
             doc->writeAttribute("ID", QString::number(id));
-            doc->writeAttribute("Shape", m_shapes.value(id));
+            if (m_shapes.contains(id))
+                doc->writeAttribute("Shape", m_shapes.value(id));
+            // how a moving head hangs, what isn't the default
+            const AimSetup setup = m_aims.value(id);
+            if (setup.height >= 0)
+                doc->writeAttribute("Height", QString::number(setup.height));
+            if (setup.standing)
+                doc->writeAttribute("Mount", "Standing");
+            if (setup.panRange > 0)
+                doc->writeAttribute("PanRange", QString::number(setup.panRange));
+            if (setup.tiltRange > 0)
+                doc->writeAttribute("TiltRange", QString::number(setup.tiltRange));
+            if (setup.panInverted)
+                doc->writeAttribute("PanInverted", "1");
+            if (setup.tiltInverted)
+                doc->writeAttribute("TiltInverted", "1");
             doc->writeEndElement();
         }
         doc->writeEndElement();

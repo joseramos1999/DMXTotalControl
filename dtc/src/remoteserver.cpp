@@ -773,6 +773,9 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
         {
             d.insert("icon", item.value("icon"));
             d.insert("flash", item.value("mode").toString() == "flash");
+            // a scene: its rhythm bar follows its steps
+            if (item.value("action").toString() == "scene")
+                d.insert("functionId", item.value("functionId"));
             if (item.value("image").toString().isEmpty() == false)
                 d.insert("image", QString("/image?page=%1&section=%2&cell=%3").arg(page).arg(sid, it.key()));
         }
@@ -848,6 +851,15 @@ QVariantMap RemoteServer::layoutMessage() const
         pages.append(QVariantMap({ { "name", tr("Playbacks") }, { "root", root } }));
     }
     return { { "type", "layout" }, { "title", m_core->showTitle() }, { "theme", m_core->settings()->theme() }, { "pages", pages } };
+}
+
+QVariantMap RemoteServer::stepsState() const
+{
+    QVariantMap steps;
+    const QHash<quint32, int> all = m_core->steps();
+    for (auto it = all.cbegin(); it != all.cend(); ++it)
+        steps.insert(QString::number(it.key()), it.value());
+    return steps;
 }
 
 QVariantMap RemoteServer::playbacksState() const
@@ -964,6 +976,9 @@ QVariantMap RemoteServer::stateMessage() const
         { "blackout", m_core->blackout() },
         { "grandMaster", m_core->grandMaster() / 255.0 },
         { "bpm", m_core->bpm() },
+        // GO and Stop of the scene buttons, and the step of each scene with steps that plays
+        { "pressMode", m_core->pressMode() },
+        { "steps", stepsState() },
         { "items", items },
         { "colours", colours },
         { "xy", positions },
@@ -1046,6 +1061,11 @@ void RemoteServer::handleCommand(const QVariantMap &message)
             m_core->tapTempo();
         else if (action == "beatgo")
             m_core->drive()->beatGo();
+        else if (action == "pressGo" || action == "pressStop")
+        {
+            const QString wanted = action == "pressGo" ? "go" : "stop";
+            m_core->setPressMode(m_core->pressMode() == wanted ? "toggle" : wanted);
+        }
     }
     else if (cmd == "playback")
     {

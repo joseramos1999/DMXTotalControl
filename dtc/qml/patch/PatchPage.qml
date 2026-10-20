@@ -394,7 +394,7 @@ Item {
                                 Text {
                                     text: qsTr("%n fixture(s)", "", groupItem.modelData.fixtures.length)
                                           + (groupItem.selections.length ? "  ·  " + qsTr("%n selection(s)", "", groupItem.selections.length) : "")
-                                    color: Theme.textFaint
+                                    color: groupRow.allSelected ? Theme.textDim : Theme.textFaint
                                     font.pixelSize: Theme.fontSmall
                                 }
                             }
@@ -580,7 +580,7 @@ Item {
                                         Text {
                                             Layout.preferredWidth: 34
                                             text: parent.parent.fx.number || ""
-                                            color: Theme.accent
+                                            color: parent.parent.selected ? Theme.text : Theme.accent
                                             font.family: Theme.monoFamily
                                             font.weight: Font.Bold
                                         }
@@ -848,6 +848,18 @@ Item {
                             enabled: page.selectedIds.length > 0
                             onClicked: Core.patch.rotate(page.selectedIds, 90)
                         }
+                        Rectangle { width: 1; height: 28; color: Theme.border }
+                        // Follow: how high the moving heads hang and the way they face
+                        AppButton {
+                            text: qsTr("Height and facing")
+                            iconGlyph: Theme.iconLocate
+                            implicitHeight: 28
+                            enabled: page.selectedFixtures().some(f => f.aimable)
+                            ToolTip.text: qsTr("Where the selected moving heads hang, so Follow can aim them")
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 500
+                            onClicked: aimDialog.openFor(page.selectedIds)
+                        }
                     }
 
                     StagePlan {
@@ -939,6 +951,7 @@ Item {
     EditFixtureDialog { id: editDialog }
     ReaddressDialog { id: readdressDialog }
     FixtureOptionsDialog { id: optionsDialog }
+    AimSettingsDialog { id: aimDialog }
     MatrixDialog {
         id: matrixDialog
         onMessage: (text) => page.message(text, false)

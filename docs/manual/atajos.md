@@ -26,7 +26,6 @@ Todas las teclas y combinaciones del programa, por página. Las teclas que asign
 | **Esc** | Parar todo. En el modo Mapear, cancela el control pendiente o sale del modo; con «Grabar» armado en Playbacks, lo desarma |
 | **Ctrl+→** | Escena siguiente en cada grupo que suena |
 | **Ctrl+←** | Escena anterior en cada grupo que suena |
-| **T** | Tap tempo (menos en la página Show) |
 | **G** | BeatGO (menos en la página Show) |
 
 Si una página está bloqueada, su tecla pide la contraseña (si la hay) y desbloquea. Con el SHOW bloqueado (modo quiosco) las teclas de página no funcionan, y con el Setup bloqueado tampoco Ctrl+N, Ctrl+O ni Ctrl+Mayús+S.

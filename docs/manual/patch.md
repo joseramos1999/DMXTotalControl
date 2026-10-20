@@ -106,10 +106,27 @@ Las herramientas (trabajan sobre la selección y en su orden):
 - **«Colocar»**: los coloca en «Línea», «Línea, de delante a atrás», «Círculo», «Rejilla, por filas», «Rejilla, en zigzag», «Rejilla, por columnas» o «Rejilla, en zigzag por columnas», con la **Separación (cm)** y las **Columnas** de al lado.
 - **«Alinear»**: «Izquierda», «Centro», «Derecha», «Fondo», «Medio», «Frente», «Repartir a lo ancho» y «Repartir a lo hondo».
 - **15°** (clic derecho: hacia el otro lado) y **90°**: giran la selección.
+- **«Altura y orientación»**: dónde cuelgan las cabezas móviles seleccionadas, para [Follow](patch.md#altura-y-orientación-follow).
+
+Las cabezas móviles llevan una pequeña flecha en el borde: hacia dónde miran.
 
 La **rueda** hace zoom, el **botón derecho** o el central arrastran la vista y un doble clic con ellos la centra. Los botones de la esquina también hacen zoom.
 
 > **Consejo:** coloca los fixtures en el orden en que quieres que corran los efectos: selecciónalos de izquierda a derecha y usa «Colocar › Línea».
+
+### Altura y orientación (Follow)
+
+Para que [Follow](programar.md#follow-apuntar-a-un-punto) apunte bien todas las cabezas móviles a un punto, cada una necesita saber dónde está. Coloca las cabezas en el plano donde están de verdad, selecciónalas y pulsa **«Altura y orientación»**. Lo que cambies se aplica al momento a todas las seleccionadas y se guarda con el show:
+
+| Campo | Qué es |
+|---|---|
+| **Altura** | A cuántos metros del suelo del escenario está el eje de la cabeza (sin ajustar: 4 m colgada, 0 m de pie). |
+| **Montaje** | **«Colgada»** (de una vara o un truss, boca abajo) o **«De pie»** (en el suelo). |
+| **Orientación** | Hacia dónde va el haz con el pan en el centro y el tilt inclinado hacia delante. 0° es hacia el público y gira en el sentido de las agujas del reloj; es el mismo giro que el de los botones 15° y 90°, y la flecha del plano lo muestra. |
+| **Recorrido de pan** / **de tilt** | Los grados que recorre cada eje. «Su definición» usa los de la definición del fixture; si no los trae se usan 540° y 270°, y se avisa en naranja. |
+| **Pan al revés** / **Tilt al revés** | Si con Follow una cabeza gira o se inclina hacia el lado contrario. Solo afecta a Follow; las inversiones del Patch están en [Límites](patch.md#límites). |
+
+«(distintas)» indica que las cabezas seleccionadas no tienen el mismo valor; al cambiarlo, todas toman el nuevo.
 
 ## Límites
 

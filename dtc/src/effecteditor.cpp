@@ -169,6 +169,8 @@ QVariantMap EffectEditor::info(quint32 id) const
     map.insert("divisions", f->divisions());
     map.insert("startMode", f->startMode() == Function::StartPaused ? "paused" : "play");
     map.insert("stagger", f->stagger());
+    // its own rhythm, tapped on its button (ms a step, 0: none)
+    map.insert("tap", f->tapPeriod());
     map.insert("cycle", EffectExchange::cycleDuration(m_doc, id));
 
     if (Scene *scene = qobject_cast<Scene *>(f))
@@ -1456,6 +1458,10 @@ void EffectEditor::setPlayback(quint32 id, const QString &key, const QVariant &v
     else if (key == "divisions")
     {
         f->setDivisions(value.toInt());
+    }
+    else if (key == "tap")
+    {
+        f->setTapPeriod(uint(qMax(0, value.toInt())));
     }
     else if (key == "startMode")
     {

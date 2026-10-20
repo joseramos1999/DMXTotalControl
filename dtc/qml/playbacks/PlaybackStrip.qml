@@ -219,7 +219,7 @@ Rectangle {
         focusPolicy: Qt.NoFocus
         hoverEnabled: true
         implicitHeight: big ? 46 : 32
-        opacity: enabled ? 1 : 0.35
+        opacity: enabled ? 1 : 0.5
 
         SequentialAnimation on phase {
             running: sb.lit && sb.blink > 0
@@ -236,7 +236,7 @@ Rectangle {
                 anchors.fill: parent
                 radius: parent.radius
                 visible: sb.lit
-                color: sb.lit ? sb.litColor : "transparent"
+                color: sb.lit ? Theme.fill(sb.litColor) : "transparent"
                 opacity: sb.blink > 0 ? sb.phase : 1
             }
         }
@@ -254,7 +254,7 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         icon: modelData
                         size: sb.big ? 15 : 12
-                        color: sb.lit ? Theme.textOn(sb.litColor) : Theme.text
+                        color: sb.lit ? Theme.textOn(Theme.fill(sb.litColor)) : Theme.text
                     }
                 }
                 Text {
@@ -264,7 +264,7 @@ Rectangle {
                     font.family: Theme.fontFamily
                     font.pixelSize: sb.big ? Theme.fontLarge : Theme.fontSmall + 1
                     font.weight: Font.Bold
-                    color: sb.lit ? Theme.textOn(sb.litColor) : Theme.text
+                    color: sb.lit ? Theme.textOn(Theme.fill(sb.litColor)) : Theme.text
                 }
             }
         }
@@ -302,14 +302,21 @@ Rectangle {
                 height: 20
                 radius: 4
                 // lit while it plays
-                color: strip.empty ? Theme.surfaceRaised : strip.running ? strip.tint : Qt.alpha(strip.tint, 0.3)
+                color: strip.empty ? Theme.surfaceRaised : strip.running ? Theme.fill(strip.tint) : Qt.alpha(strip.tint, 0.3)
                 Text {
                     anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     text: strip.slot + 1
-                    color: strip.running ? Theme.textOn(strip.tint) : strip.empty ? Theme.textFaint : Theme.text
+                    color: strip.running ? Theme.textOn(Theme.fill(strip.tint)) : strip.empty ? Theme.textFaint : Theme.text
                     font.family: Theme.monoFamily
                     font.pixelSize: Theme.fontSmall
                     font.weight: Font.Bold
+                }
+                // a scene with steps (a cuelist) that plays: its rhythm, a half a step
+                RhythmBar {
+                    functionId: !strip.empty && strip.info.functionId !== undefined ? strip.info.functionId : -1
+                    litColor: Theme.textOn(Theme.fill(strip.tint))
+                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 26; rightMargin: 24 }
+                    height: 4
                 }
                 AbstractButton {
                     id: releaseButton
