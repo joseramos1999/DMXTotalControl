@@ -25,7 +25,7 @@ En una ventana estrecha algunos botones muestran solo su icono; al pasar el rat�
 El panel **«Fixtures (N sel.)»** muestra una ficha por fixture con su nombre, su número (para la línea de comandos), su dirección (universo.dirección) y su tipo.
 
 - **Clic** en una ficha: selecciona solo esa.
-- **Ctrl+clic** o **Mayús+clic**: la añade o la quita de la selección.
+- **Ctrl+clic**: la añade o la quita de la selección. **Mayús+clic**: selecciona todas las fichas desde la última que pulsaste hasta esa (en ese sentido, que es el orden de la selección); **Ctrl+Mayús+clic** las añade.
 - **«Todos»** y **«Ninguno»**, en la cabecera del panel.
 - **«Invertir»**: selecciona los que no lo estaban.
 - **½**, **⅓**, **¼**: deja uno de cada dos, tres o cuatro.

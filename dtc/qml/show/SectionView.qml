@@ -33,6 +33,15 @@ Rectangle {
     property var section: ({})
     /** The ShowPage: edit mode, selection, timers, drag item */
     property var surface: null
+    /** Half of a split (SectionNode): a group section can fold to its strip,
+     *  across when the halves are one above the other */
+    property bool inSplit: false
+    property bool foldsUp: false
+    /** Folding changes the show: not in a locked SHOW (a kiosk) */
+    readonly property bool canFold: surface !== null && !surface.locked
+    function setFolded(props) {
+        Core.surface.updateSection(surface.currentPage, sid, props)
+    }
 
     readonly property string sid: section.id || ""
     readonly property string type: section.type || "empty"
@@ -550,6 +559,11 @@ Rectangle {
                 operatorMode: true
                 border.width: 0
                 color: "transparent"
+                // in half of a page: folded to a strip, the other half grows
+                folded: view.section.folded === true
+                canFold: view.inSplit && view.canFold
+                foldsUp: view.foldsUp
+                onFoldToggled: view.setFolded({ folded: !folded })
             }
             Text {
                 anchors.centerIn: parent
@@ -576,6 +590,10 @@ Rectangle {
         Row {
             id: groupsRow
             spacing: 6
+            // the groups folded here, by ID ("3,7"): strips, the others share the rest
+            readonly property var foldedIds: String(view.section.foldedGroups ?? "").split(",")
+                                                 .filter(s => s.length > 0).map(Number)
+            readonly property int foldedCount: { Core.zones.count; return foldedIds.filter(id => Core.zones.zoneById(id) !== null).length }
             Repeater {
                 model: Core.zones
                 delegate: ZoneColumn {
@@ -584,8 +602,16 @@ Rectangle {
                     zoneObject: zone
                     zoneIndex: index
                     operatorMode: true
-                    width: (groupsRow.width - (Core.zones.count - 1) * groupsRow.spacing) / Math.max(1, Core.zones.count)
+                    folded: groupsRow.foldedIds.indexOf(zone.id) >= 0
+                    canFold: view.canFold
+                    width: folded ? foldedSize
+                                  : (groupsRow.width - (Core.zones.count - 1) * groupsRow.spacing - groupsRow.foldedCount * foldedSize)
+                                    / Math.max(1, Core.zones.count - groupsRow.foldedCount)
                     height: groupsRow.height
+                    onFoldToggled: {
+                        const ids = folded ? groupsRow.foldedIds.filter(id => id !== zone.id) : groupsRow.foldedIds.concat([zone.id])
+                        view.setFolded({ foldedGroups: ids.join(",") })
+                    }
                 }
             }
             Text {

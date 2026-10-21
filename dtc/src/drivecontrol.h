@@ -24,6 +24,7 @@
 #include <QSharedPointer>
 #include <QAtomicInt>
 #include <QObject>
+#include <QStringList>
 
 #include "function.h"
 
@@ -62,6 +63,12 @@ public:
     void setThreshold(qreal threshold);
 
     qreal level() const;
+
+    /** The audio inputs of the machine, by name */
+    Q_INVOKABLE QStringList audioInputs() const;
+    /** Another audio input was chosen: Pulse listens to it from now on (an
+     *  audio matrix that is running, from its next start) */
+    void restartInput();
 
 signals:
     void pulseEnabledChanged();

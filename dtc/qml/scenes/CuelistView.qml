@@ -368,10 +368,19 @@ Item {
                 anchors { fill: parent; margins: 8 }
                 spacing: 6
 
-                // record and edit, from the programmer
+                // record and edit, from the programmer (a narrow list or a long
+                // language: Update, Load and Take out keep their icon only, and
+                // their name in the tooltip)
                 Flow {
+                    id: tools
                     Layout.fillWidth: true
                     spacing: 6
+                    /** The width under which the names didn't fit (learned) */
+                    property real wrapsBelow: 0
+                    readonly property bool compact: width < wrapsBelow
+                    function check() { if (!compact && implicitHeight > 40) wrapsBelow = width + 1 }
+                    onImplicitHeightChanged: Qt.callLater(check)
+                    onWidthChanged: Qt.callLater(check)
 
                     AppButton {
                         text: view.recordNumber.length ? qsTr("Record cue %1").arg(view.recordNumber) : qsTr("Record cue")
@@ -386,11 +395,11 @@ Item {
                         onClicked: view.recordCue()
                     }
                     AppButton {
-                        text: qsTr("Update") + " ▾"
+                        text: (tools.compact ? "" : qsTr("Update") + " ") + "▾"
                         iconGlyph: Theme.iconSave
                         implicitHeight: 30
                         enabled: view.hasProgrammer && view.current >= 0
-                        ToolTip.text: qsTr("Merge the programmer into the selected cue")
+                        ToolTip.text: (tools.compact ? qsTr("Update") + ": " : "") + qsTr("Merge the programmer into the selected cue")
                         ToolTip.visible: hovered
                         ToolTip.delay: 500
                         onClicked: updateMenu.popup()
@@ -407,11 +416,11 @@ Item {
                         }
                     }
                     AppButton {
-                        text: qsTr("Load") + " ▾"
+                        text: (tools.compact ? "" : qsTr("Load") + " ") + "▾"
                         iconGlyph: Theme.iconSliders
                         implicitHeight: 30
                         enabled: view.current >= 0
-                        ToolTip.text: qsTr("Put the selected cue in the programmer, to see and change it (double click a cue)")
+                        ToolTip.text: (tools.compact ? qsTr("Load") + ": " : "") + qsTr("Put the selected cue in the programmer, to see and change it (double click a cue)")
                         ToolTip.visible: hovered
                         ToolTip.delay: 500
                         onClicked: loadMenu.popup()
@@ -428,11 +437,11 @@ Item {
                         }
                     }
                     AppButton {
-                        text: qsTr("Take out") + " ▾"
+                        text: (tools.compact ? "" : qsTr("Take out") + " ") + "▾"
                         iconGlyph: Theme.iconEraser
                         implicitHeight: 30
                         enabled: view.hasProgrammer && view.current >= 0
-                        ToolTip.text: qsTr("The channels of the programmer in the selected cue: take them out, or release them")
+                        ToolTip.text: (tools.compact ? qsTr("Take out") + ": " : "") + qsTr("The channels of the programmer in the selected cue: take them out, or release them")
                         ToolTip.visible: hovered
                         ToolTip.delay: 500
                         onClicked: takeOutMenu.popup()
@@ -510,23 +519,24 @@ Item {
                     Layout.leftMargin: 10
                     Layout.rightMargin: 10
                     spacing: 8
-                    HeaderText { Layout.preferredWidth: view.wCue; text: qsTr("CUE") }
+                    HeaderText { Layout.preferredWidth: view.wCue; Layout.minimumWidth: view.wCue; Layout.maximumWidth: view.wCue; text: qsTr("CUE") }
                     HeaderText { Layout.fillWidth: true; Layout.minimumWidth: 80; Layout.preferredWidth: 150; text: qsTr("NAME") }
-                    HeaderText { Layout.preferredWidth: view.wTrigger; text: qsTr("TRIGGER") }
-                    HeaderText { Layout.preferredWidth: view.wTime; text: qsTr("DELAY"); horizontalAlignment: Text.AlignRight }
-                    HeaderText { Layout.preferredWidth: view.wTime; text: qsTr("FADE"); horizontalAlignment: Text.AlignRight }
+                    HeaderText { Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger; text: qsTr("TRIGGER") }
+                    HeaderText { Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("DELAY"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
+                    HeaderText { Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("FADE"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
                     HeaderText {
-                        Layout.preferredWidth: view.wTime
+                        Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                         text: qsTr("DOWN")
                         horizontalAlignment: Text.AlignRight
+                        rightPadding: 6
                         ToolTip.text: qsTr("Fade of the dimmers that go down; = is the same as the fade")
                         ToolTip.visible: downMouse.containsMouse
                         ToolTip.delay: 400
                         MouseArea { id: downMouse; anchors.fill: parent; hoverEnabled: true }
                     }
-                    HeaderText { Layout.preferredWidth: view.wChanges; text: qsTr("CHANGES") }
+                    HeaderText { Layout.preferredWidth: view.wChanges; Layout.minimumWidth: view.wChanges; Layout.maximumWidth: view.wChanges; text: qsTr("CHANGES") }
                     HeaderText {
-                        Layout.preferredWidth: view.wFlag
+                        Layout.preferredWidth: view.wFlag; Layout.minimumWidth: view.wFlag; Layout.maximumWidth: view.wFlag
                         text: "S"
                         horizontalAlignment: Text.AlignHCenter
                         ToolTip.text: qsTr("Skip (cue only): what the cue changes doesn't go on to the next cues")
@@ -535,7 +545,7 @@ Item {
                         MouseArea { id: skipMouse; anchors.fill: parent; hoverEnabled: true }
                     }
                     HeaderText {
-                        Layout.preferredWidth: view.wFlag
+                        Layout.preferredWidth: view.wFlag; Layout.minimumWidth: view.wFlag; Layout.maximumWidth: view.wFlag
                         text: "B"
                         horizontalAlignment: Text.AlignHCenter
                         ToolTip.text: qsTr("Block: Record and Update also store the values equal to the ones it tracks")
@@ -608,7 +618,7 @@ Item {
 
                             // number: double click gives it another one; a pen: it is in the programmer
                             Item {
-                                Layout.preferredWidth: view.wCue
+                                Layout.preferredWidth: view.wCue; Layout.minimumWidth: view.wCue; Layout.maximumWidth: view.wCue
                                 Layout.fillHeight: true
                                 Text {
                                     id: numberText
@@ -668,7 +678,7 @@ Item {
                             }
                             // trigger: GO, Follow (after the cue before ends) or Wait (after its GO)
                             RowLayout {
-                                Layout.preferredWidth: view.wTrigger
+                                Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger
                                 spacing: 4
                                 AppButton {
                                     Layout.preferredWidth: 86
@@ -705,19 +715,19 @@ Item {
                                 Item { Layout.fillWidth: true; visible: row.model.trigger === "go" }
                             }
                             TimeField {
-                                Layout.preferredWidth: view.wTime
+                                Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 ms: row.model.delay
                                 onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                 onCommitted: (v) => Core.cuelists.setCueTimes(view.fid, view.targets(row.index), -1, -1, v)
                             }
                             TimeField {
-                                Layout.preferredWidth: view.wTime
+                                Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 ms: row.model.fade
                                 onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                 onCommitted: (v) => Core.cuelists.setCueTimes(view.fid, view.targets(row.index), v, -1, -1)
                             }
                             TimeField {
-                                Layout.preferredWidth: view.wTime
+                                Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 allowSame: true
                                 same: row.model.downFade < 0
                                 ms: Math.max(0, row.model.downFade)
@@ -727,7 +737,7 @@ Item {
                             }
                             // what it changes: channels, FX, releases, palettes
                             Row {
-                                Layout.preferredWidth: view.wChanges
+                                Layout.preferredWidth: view.wChanges; Layout.minimumWidth: view.wChanges; Layout.maximumWidth: view.wChanges
                                 spacing: 4
                                 clip: true
                                 Text {
@@ -770,7 +780,7 @@ Item {
                                 }
                             }
                             FlagBox {
-                                Layout.preferredWidth: view.wFlag
+                                Layout.preferredWidth: view.wFlag; Layout.minimumWidth: view.wFlag; Layout.maximumWidth: view.wFlag
                                 Layout.preferredHeight: 24
                                 letter: "S"
                                 tint: Theme.warning
@@ -778,7 +788,7 @@ Item {
                                 onToggled: Core.cuelists.setCueFlags(view.fid, view.targets(row.index), checked ? 0 : 1, -1)
                             }
                             FlagBox {
-                                Layout.preferredWidth: view.wFlag
+                                Layout.preferredWidth: view.wFlag; Layout.minimumWidth: view.wFlag; Layout.maximumWidth: view.wFlag
                                 Layout.preferredHeight: 24
                                 letter: "B"
                                 tint: Theme.category("#f08c00")

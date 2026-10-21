@@ -2,7 +2,7 @@
 
 ![La página Opciones](img/opciones.png)
 
-**Opciones** (F9) reúne los ajustes del programa. A la izquierda están los ajustes generales, el arranque, el bloqueo, el autoguardado y la reproducción; a la derecha, el control remoto, la biblioteca de fixtures, las actualizaciones, la ayuda y «Acerca de».
+**Opciones** (F9) reúne los ajustes del programa. A la izquierda están los ajustes generales, el arranque, el bloqueo, el autoguardado, la reproducción y el audio; a la derecha, el control remoto, la biblioteca de fixtures, las actualizaciones, la ayuda y «Acerca de».
 
 Los ajustes de esta página son del ordenador, no del show: valen para todos los shows que abras.
 
@@ -51,6 +51,10 @@ Los shows con nombre se sobrescriben y la versión anterior se guarda como `.bak
   - **«Se restablecen todas»**: el programador se vacía.
 - **El grand master actúa sobre**: **«Canales de intensidad»** o **«Todos los canales»**.
 
+## Audio
+
+- **Entrada de audio**: el micrófono o la entrada de línea que escuchan **Pulso** y las matrices de audio. **«Predeterminada del sistema»** usa la que tenga el sistema operativo. Pulso cambia de entrada al momento; una matriz de audio que ya esté sonando, la próxima vez que arranque. Una entrada elegida que ahora no está conectada sale como «(no conectada)», y mientras tanto se usa la predeterminada.
+
 ## Shows recientes
 
 La lista de los últimos shows abiertos (también en la flecha **▾** de la barra superior). **«Vaciar lista»** la borra.
@@ -71,7 +75,7 @@ Consulta [Control remoto](remoto.md).
 
 Indica cuántas definiciones de fixtures hay disponibles (la biblioteca incluida, los genéricos y los tuyos) y permite ampliarla:
 
-- **Open Fixture Library**: **«Descargar»** (necesita internet). Ya instalada, vuelve a descargarla para actualizarla.
+- **Open Fixture Library**: **«Descargar»** (necesita internet). Ya descargada, se ve cuántos fixtures tiene y cuándo se descargó, y el botón pasa a ser **«Actualizar»**: trae los fixtures nuevos y los mejorados, y conserva tus fixtures y los que la biblioteca ya no tenga. Si hay novedades, se dice y el botón se resalta (consulta [Fixtures](fixtures.md#open-fixture-library)).
 - **Importar archivos de fixtures**: **«Importar…»** definiciones `.qxf` (el formato de QLC+), archivos `.gdtf` o un `.zip` con ellos.
 - **Fixtures GDTF**: **«GDTF-Share»** abre su web; **«Importar GDTF…»** importa archivos, carpetas o el `.zip` de su descarga múltiple. Indica cuántos fixtures GDTF hay en la biblioteca.
 - **Importar mis fixtures de QLC+**: **«Importar»** copia los fixtures que creaste en QLC+.
@@ -81,12 +85,12 @@ Todo esto se explica en [Fixtures](fixtures.md).
 
 ## Actualizaciones
 
-- **Buscar actualizaciones al arrancar**: una vez al día, en GitHub. No se descarga ni se instala nada sin preguntarte. Sin internet, no molesta.
+- **Buscar actualizaciones al arrancar**: una vez al día, en GitHub: el programa y, si descargaste la Open Fixture Library, si tiene fixtures nuevos (un aviso lo dice). No se descarga ni se instala nada sin preguntarte. Sin internet, no molesta.
 - **Incluir versiones de prueba**: las novedades antes, menos probadas.
 
 Debajo se ve el estado («Tienes la última versión», «Ya está disponible la versión…») y los botones:
 
-- **«Buscar actualizaciones»**: comprueba ahora.
+- **«Buscar actualizaciones»**: comprueba ahora (también la Open Fixture Library).
 - **«Novedades»**: lo nuevo de esa versión.
 - **«Descargar e instalar»**: descarga el instalador y comprueba su huella SHA-256 antes de guardarlo. Si una versión no publica su huella, solo se puede descargar desde su página («Ver en GitHub»).
 - **«Instalar ahora»**: el programa se cierra (antes pregunta si guardar el show), se instala la versión nueva y se vuelve a abrir.
@@ -97,7 +101,7 @@ Cuando hay una versión nueva, aparece también un aviso encima de las páginas 
 
 ## Ayuda
 
-- **Manual**: **«Abrir el manual»** abre este manual en su índice. F12 o el botón **«?»** de la barra superior lo abren en la página en la que estás.
+- **Manual**: **«Abrir el manual»** abre este manual en su índice. F12 o el botón **«?»** de la barra superior lo abren en la página en la que estás. Sale en el idioma del programa (español, inglés, portugués, francés, italiano o alemán); las capturas son las de la versión en español.
 - **Guía de primeros pasos**: **«Empezar la guía»** vuelve a abrir la guía (consulta [Primeros pasos](primeros-pasos.md#la-guía)).
 - **Shows de ejemplo**: están en la flecha **▾** junto a «Abrir» de la barra superior, en «Ejemplos» (consulta [el índice](index.md#la-guía-y-los-shows-de-ejemplo)).
 

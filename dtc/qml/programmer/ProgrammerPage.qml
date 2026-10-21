@@ -450,6 +450,29 @@ Item {
                         boundsBehavior: Flickable.StopAtBounds
                         ScrollBar.vertical: ScrollBar {}
 
+                        /** The fixture clicked last: Shift+click selects from it */
+                        property int anchorId: -1
+                        /** Alone: only it; Ctrl: toggles it; Shift: every fixture
+                         *  from the last one clicked (in that direction: the
+                         *  order of the selection); Ctrl+Shift: adds them */
+                        function clickFixture(id, modifiers) {
+                            const order = Core.patch.fixtures.map(f => f.id)
+                            const from = order.indexOf(anchorId)
+                            const to = order.indexOf(id)
+                            if ((modifiers & Qt.ShiftModifier) && from >= 0 && to >= 0) {
+                                let range = order.slice(Math.min(from, to), Math.max(from, to) + 1)
+                                if (to < from)
+                                    range.reverse()
+                                Core.programmer.selectFixtures(range, (modifiers & Qt.ControlModifier) !== 0)
+                                return
+                            }
+                            if (modifiers & Qt.ControlModifier)
+                                Core.programmer.toggle(id)
+                            else
+                                Core.programmer.select(id, false)
+                            anchorId = id
+                        }
+
                         delegate: Item {
                             required property var modelData
                             width: fixtureGrid.cellWidth
@@ -462,12 +485,7 @@ Item {
                                 number: modelData.number || 0
                                 address: (modelData.universe + 1) + "." + modelData.address
                                 selected: Core.programmer.selection.indexOf(modelData.id) >= 0
-                                onClicked: (additive) => {
-                                    if (additive)
-                                        Core.programmer.toggle(modelData.id)
-                                    else
-                                        Core.programmer.select(modelData.id, false)
-                                }
+                                onClicked: (modifiers) => fixtureGrid.clickFixture(modelData.id, modifiers)
                             }
                         }
 

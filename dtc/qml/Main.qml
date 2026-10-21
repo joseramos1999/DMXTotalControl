@@ -254,6 +254,9 @@ ApplicationWindow {
         // the show given to open (or the last one) couldn't be opened
         else if (Core.lastError.length > 0)
             showMessage(Core.lastError, true)
+        // ...or it opened without some of its files
+        else if (Core.missingFiles.length > 0)
+            missingFiles.notify()
         // the very first start: the first steps guide, once
         else if (!Core.settings.guideShown && !Core.settings.startShowFullScreen && Core.settings.recentShows.length === 0)
             firstSteps.start()
@@ -341,6 +344,11 @@ ApplicationWindow {
     Connections {
         target: Core.surface
         function onControlAdded(where) { window.showMessage(qsTr("Added to the SHOW, page “%1”").arg(where.pageName)) }
+    }
+    // the check of the start found new fixtures in the Open Fixture Library
+    Connections {
+        target: Core.library
+        function onOflUpdateFound() { window.showMessage(qsTr("New fixtures in the Open Fixture Library: update it in Options")) }
     }
 
     FileDialog {
@@ -762,7 +770,7 @@ ApplicationWindow {
                     { text: qsTr("Options"), icon: Theme.iconGear, key: "F9", page: window.pageOptions }
                 ]
                 // a short window: shorter buttons, so the version stays in sight
-                readonly property real buttonHeight: Math.max(48, Math.min(66, (navRail.height - 40) / entries.length - spacing))
+                readonly property real buttonHeight: Math.max(48, Math.min(66, (navRail.height - 56) / entries.length - spacing))
 
                 Repeater {
                     model: navColumn.entries
@@ -787,7 +795,22 @@ ApplicationWindow {
                 }
             }
 
+            // the processor the application takes: a warning colour when the
+            // output may not keep its pace
             Text {
+                anchors { bottom: versionText.top; bottomMargin: 3; horizontalCenter: parent.horizontalCenter }
+                visible: Core.cpuLoad >= 0
+                text: qsTr("CPU %1 %").arg(Core.cpuLoad)
+                color: Core.cpuLoad >= 90 ? Theme.readableOn(Theme.danger, Theme.background)
+                     : Core.cpuLoad >= 70 ? Theme.readableOn(Theme.warning, Theme.background) : Theme.textFaint
+                font.pixelSize: 10
+                font.weight: Core.cpuLoad >= 70 ? Font.Bold : Font.Normal
+                HoverHandler { id: cpuHover }
+                ToolTip.visible: cpuHover.hovered
+                ToolTip.text: qsTr("Processor used by DMX Total Control (all the cores of the computer). Above 70 % the output may lose its pace: close other programs or stop some effects.")
+            }
+            Text {
+                id: versionText
                 anchors { bottom: parent.bottom; bottomMargin: 10; horizontalCenter: parent.horizontalCenter }
                 text: "v" + Core.appVersion
                 color: Theme.textFaint
@@ -935,6 +958,26 @@ ApplicationWindow {
     }
 
     LockDialog { id: lockDialog }
+
+    // the sounds, videos and pictures of the show that opened and aren't there
+    // (a locked SHOW, a kiosk, only says it)
+    MissingFilesDialog {
+        id: missingFiles
+        function notify() {
+            if (window.locked)
+                window.showMessage(qsTr("%n file(s) of the show are missing", "", Core.missingFiles.length), true)
+            else if (!opened)
+                open()
+        }
+        onMessage: (text, isError) => window.showMessage(text, isError)
+    }
+    Connections {
+        target: Core
+        function onMissingFilesChanged() {
+            if (Core.missingFiles.length > 0)
+                missingFiles.notify()
+        }
+    }
 
     ConfirmPopup {
         id: closeDialog

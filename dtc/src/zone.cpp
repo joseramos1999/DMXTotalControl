@@ -38,6 +38,7 @@
 #define KXMLDTCZoneExclusive QStringLiteral("Exclusive")
 #define KXMLDTCZoneFade      QStringLiteral("Fade")
 #define KXMLDTCZoneMaster    QStringLiteral("Master")
+#define KXMLDTCZoneFolded    QStringLiteral("Folded")
 #define KXMLDTCZoneFunction  QStringLiteral("Function")
 #define KXMLDTCZoneRelease   QStringLiteral("Release")
 #define KXMLDTCZoneProtect   QStringLiteral("Protect")
@@ -134,6 +135,20 @@ void Zone::setFadeTime(int ms)
 qreal Zone::master() const
 {
     return m_master;
+}
+
+bool Zone::folded() const
+{
+    return m_folded;
+}
+
+void Zone::setFolded(bool folded)
+{
+    if (folded == m_folded)
+        return;
+    m_folded = folded;
+    m_doc->setModified();
+    emit foldedChanged();
 }
 
 void Zone::setMaster(qreal value)
@@ -688,6 +703,7 @@ bool Zone::loadXML(QXmlStreamReader &root)
     const qreal master = attrs.value(KXMLDTCZoneMaster).toDouble(&masterOk);
     if (masterOk && qIsFinite(master))
         m_master = qBound(0.0, master, 1.0);
+    m_folded = attrs.value(KXMLDTCZoneFolded).toInt() != 0;
 
     while (root.readNextStartElement())
     {
@@ -749,6 +765,8 @@ bool Zone::saveXML(QXmlStreamWriter *doc) const
     doc->writeAttribute(KXMLDTCZoneExclusive, m_exclusive ? "1" : "0");
     doc->writeAttribute(KXMLDTCZoneFade, QString::number(m_fadeTime));
     doc->writeAttribute(KXMLDTCZoneMaster, QString::number(m_master));
+    if (m_folded)
+        doc->writeAttribute(KXMLDTCZoneFolded, "1");
 
     for (quint32 fid : m_functions)
     {

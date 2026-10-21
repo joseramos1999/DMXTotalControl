@@ -2073,6 +2073,44 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
             <numerusform>%n neu in der Bibliothek</numerusform>
         </translation>
     </message>
+    <message>
+        <source>Looking for new fixtures in the Open Fixture Library…</source>
+        <translation>Suche nach neuen Fixtures in der Open Fixture Library…</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t look for new fixtures: %1</source>
+        <translation>Neue Fixtures konnten nicht gesucht werden: %1</translation>
+    </message>
+    <message>
+        <source>unexpected answer</source>
+        <translation>unerwartete Antwort</translation>
+    </message>
+    <message>
+        <source>The Open Fixture Library has new or improved fixtures since your download (%1)</source>
+        <translation>Die Open Fixture Library hat seit Ihrem Download neue oder verbesserte Fixtures (%1)</translation>
+    </message>
+    <message>
+        <source>The Open Fixture Library is up to date</source>
+        <translation>Die Open Fixture Library ist aktuell</translation>
+    </message>
+    <message numerus="yes">
+        <source>Open Fixture Library: %n fixture(s) downloaded</source>
+        <translation>
+            <numerusform>Open Fixture Library: %n Fixture heruntergeladen</numerusform>
+            <numerusform>Open Fixture Library: %n Fixtures heruntergeladen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>nothing new</source>
+        <translation>nichts Neues</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n improved</source>
+        <translation>
+            <numerusform>%n verbessert</numerusform>
+            <numerusform>%n verbessert</numerusform>
+        </translation>
+    </message>
     <message numerus="yes">
         <source>%n .qxf file(s) imported</source>
         <translation>
@@ -2115,8 +2153,8 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>%1 kann nicht geschrieben werden</translation>
     </message>
     <message>
-        <source>Open Fixture Library: %1 fixtures downloaded, %2 new in the library</source>
-        <translation>Open Fixture Library: %1 Fixtures heruntergeladen, %2 neu in der Bibliothek</translation>
+        <source>The download has no fixtures: the Open Fixture Library stays as it was</source>
+        <translation>Der Download enthält keine Fixtures: Die Open Fixture Library bleibt, wie sie war</translation>
     </message>
     <message>
         <source>Manufacturer and model are required</source>
@@ -2983,6 +3021,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Zur SHOW hinzugefügt, Seite „%1“</translation>
     </message>
     <message>
+        <source>New fixtures in the Open Fixture Library: update it in Options</source>
+        <translation>Neue Fixtures in der Open Fixture Library: Aktualisieren Sie sie unter Optionen</translation>
+    </message>
+    <message>
         <source>Open show</source>
         <translation>Show öffnen</translation>
     </message>
@@ -3126,6 +3168,14 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Optionen</translation>
     </message>
     <message>
+        <source>CPU %1 %</source>
+        <translation>CPU %1 %</translation>
+    </message>
+    <message>
+        <source>Processor used by DMX Total Control (all the cores of the computer). Above 70 % the output may lose its pace: close other programs or stop some effects.</source>
+        <translation>Von DMX Total Control genutzter Prozessor (alle Kerne des Computers). Über 70 % kann die Ausgabe aus dem Takt geraten: Schließen Sie andere Programme oder stoppen Sie einige Effekte.</translation>
+    </message>
+    <message>
         <source>Learn mode: click a purple control (Shift+click still uses it)</source>
         <translation>Lernmodus: klicken Sie auf ein violettes Element (Umschalt+Klick bedient es normal)</translation>
     </message>
@@ -3136,6 +3186,13 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Done</source>
         <translation>Fertig</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) of the show are missing</source>
+        <translation>
+            <numerusform>%n Datei der Show fehlt</numerusform>
+            <numerusform>%n Dateien der Show fehlen</numerusform>
+        </translation>
     </message>
     <message>
         <source>Save changes?</source>
@@ -3779,6 +3836,50 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     </message>
 </context>
 <context>
+    <name>MissingFilesDialog</name>
+    <message>
+        <source>Folder with the missing files</source>
+        <translation>Ordner mit den fehlenden Dateien</translation>
+    </message>
+    <message>
+        <source>None of the missing files is in that folder</source>
+        <translation>Keine der fehlenden Dateien ist in diesem Ordner</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) found, %1 still missing</source>
+        <translation>
+            <numerusform>%n Datei gefunden, %1 fehlen noch</numerusform>
+            <numerusform>%n Dateien gefunden, %1 fehlen noch</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) found. Save the show to keep them</source>
+        <translation>
+            <numerusform>%n Datei gefunden. Speichern Sie die Show, um sie zu behalten</numerusform>
+            <numerusform>%n Dateien gefunden. Speichern Sie die Show, um sie zu behalten</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) of the show are missing</source>
+        <translation>
+            <numerusform>%n Datei der Show fehlt</numerusform>
+            <numerusform>%n Dateien der Show fehlen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The show plays without them. If it comes from another computer, choose the folder where they are: they are looked for by name, also in its subfolders.</source>
+        <translation>Die Show läuft ohne sie. Kommt sie von einem anderen Computer, wählen Sie den Ordner, in dem sie liegen: Sie werden nach ihrem Namen gesucht, auch in den Unterordnern.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+    <message>
+        <source>Look in a folder…</source>
+        <translation>In einem Ordner suchen…</translation>
+    </message>
+</context>
+<context>
     <name>MixerStrip</name>
     <message numerus="yes">
         <source>%n fixture(s)</source>
@@ -4153,6 +4254,26 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Alle Kanäle</translation>
     </message>
     <message>
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <source>Audio input</source>
+        <translation>Audioeingang</translation>
+    </message>
+    <message>
+        <source>The microphone or line input of Pulse and of the audio matrices</source>
+        <translation>Das Mikrofon oder der Line-Eingang für Puls und die Audio-Matrizen</translation>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation>Systemstandard</translation>
+    </message>
+    <message>
+        <source>%1 (not connected)</source>
+        <translation>%1 (nicht verbunden)</translation>
+    </message>
+    <message>
         <source>Recent shows</source>
         <translation>Letzte Shows</translation>
     </message>
@@ -4216,12 +4337,27 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Open Fixture Library</translation>
     </message>
     <message>
-        <source>Installed. Download it again to update it.</source>
-        <translation>Installiert. Laden Sie sie erneut herunter, um sie zu aktualisieren.</translation>
+        <source>Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it. Nothing is downloaded or installed without asking you.</source>
+        <translation>Einmal am Tag, auf GitHub: das Programm und, falls Sie die Open Fixture Library heruntergeladen haben, ihre neuen Fixtures. Ohne Ihre Zustimmung wird nichts heruntergeladen oder installiert.</translation>
     </message>
     <message>
         <source>Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.</source>
         <translation>Tausende weitere Fixtures von open-fixture-library.org (MIT-Lizenz). Benötigt Internet.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s), downloaded on %1.</source>
+        <translation>
+            <numerusform>%n Fixture, heruntergeladen am %1.</numerusform>
+            <numerusform>%n Fixtures, heruntergeladen am %1.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>There are new or improved fixtures: update it.</source>
+        <translation>Es gibt neue oder verbesserte Fixtures: Aktualisieren Sie sie.</translation>
+    </message>
+    <message>
+        <source>Updating it keeps your own fixtures.</source>
+        <translation>Beim Aktualisieren bleiben Ihre eigenen Fixtures erhalten.</translation>
     </message>
     <message>
         <source>Cancel</source>
@@ -4230,6 +4366,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Download</source>
         <translation>Herunterladen</translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation>Aktualisieren</translation>
     </message>
     <message>
         <source>Import fixture files</source>
@@ -4286,6 +4426,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <source>Open folder</source>
         <translation>Ordner öffnen</translation>
     </message>
+    <message>
+        <source>New: %1</source>
+        <translation>Neu: %1</translation>
+    </message>
     <message numerus="yes">
         <source>…and %n more</source>
         <translation>
@@ -4340,10 +4484,6 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Check for updates at startup</source>
         <translation>Beim Start nach Updates suchen</translation>
-    </message>
-    <message>
-        <source>Once a day, on GitHub. Nothing is downloaded or installed without asking you.</source>
-        <translation>Einmal täglich, auf GitHub. Ohne Ihre Zustimmung wird nichts heruntergeladen oder installiert.</translation>
     </message>
     <message>
         <source>Include test versions</source>
@@ -4937,6 +5077,14 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Fixture groups</source>
         <translation>Fixture-Gruppen</translation>
+    </message>
+    <message>
+        <source>Show its selections</source>
+        <translation>Ihre Auswahlen anzeigen</translation>
+    </message>
+    <message>
+        <source>Hide its selections</source>
+        <translation>Ihre Auswahlen ausblenden</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s)</source>
@@ -8533,6 +8681,28 @@ Fügen Sie welche auf der Seite Patch hinzu.</translation>
     <message>
         <source>Snap</source>
         <translation>Schnitt</translation>
+    </message>
+    <message>
+        <source>Unfold the group</source>
+        <translation>Gruppe aufklappen</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n scene(s) playing</source>
+        <translation>
+            <numerusform>%n Szene läuft</numerusform>
+            <numerusform>%n Szenen laufen</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n playing</source>
+        <translation>
+            <numerusform>%n läuft</numerusform>
+            <numerusform>%n laufen</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Fold the group: a strip with its name, to make room for the others. Its scenes go on playing</source>
+        <translation>Gruppe einklappen: ein Streifen mit ihrem Namen, um Platz für die anderen zu schaffen. Ihre Szenen laufen weiter</translation>
     </message>
     <message>
         <source>Release this group</source>

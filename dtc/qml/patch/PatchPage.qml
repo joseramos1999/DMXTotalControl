@@ -60,6 +60,34 @@ Item {
         selectedIds = s
     }
 
+    /** The fixture clicked last in the list: Shift+click selects from it */
+    property int anchorId: -1
+    /** A click on a fixture of the list: alone, Ctrl toggles it, Shift selects
+     *  every fixture shown from the last one clicked (in that direction: the
+     *  order of the selection), Ctrl+Shift adds them */
+    function clickFixture(id, modifiers) {
+        const order = rows.filter(r => !r.header).map(r => r.fixture.id)
+        const from = order.indexOf(anchorId)
+        const to = order.indexOf(id)
+        if ((modifiers & Qt.ShiftModifier) && from >= 0 && to >= 0) {
+            let range = order.slice(Math.min(from, to), Math.max(from, to) + 1)
+            if (to < from)
+                range.reverse()
+            select(range, (modifiers & Qt.ControlModifier) !== 0)
+            return
+        }
+        select([id], (modifiers & Qt.ControlModifier) !== 0)
+        anchorId = id
+    }
+
+    /** Folded in the list: the types (their header) whose fixtures don't show */
+    property var foldedTypes: []
+    /** Folded in the fixture groups: the groups whose selections don't show */
+    property var foldedGroups: []
+    function toggleFolded(list, key) {
+        return list.indexOf(key) >= 0 ? list.filter(k => k !== key) : list.concat([key])
+    }
+
     signal message(string text, bool isError)
 
     // the shape tools of the plan, on the selection in its order
@@ -121,9 +149,12 @@ Item {
         }
         let out = []
         for (let key of order) {
-            out.push({ header: true, title: key, ids: groups[key].map(f => f.id) })
-            for (let f of groups[key])
-                out.push({ header: false, fixture: f })
+            const folded = foldedTypes.indexOf(key) >= 0
+            out.push({ header: true, title: key, ids: groups[key].map(f => f.id), folded: folded })
+            if (!folded) {
+                for (let f of groups[key])
+                    out.push({ header: false, fixture: f })
+            }
         }
         return out
     }
@@ -361,6 +392,7 @@ Item {
                         width: groupList.width
                         spacing: 2
                         readonly property var selections: Core.patch.selections.filter(s => s.groupId === modelData.id)
+                        readonly property bool folded: page.foldedGroups.indexOf(modelData.id) >= 0
 
                         Rectangle {
                             id: groupRow
@@ -388,9 +420,24 @@ Item {
                                     }
                                 }
                             }
+                            // its selections, folded or not
+                            AppButton {
+                                id: foldButton
+                                visible: groupItem.selections.length > 0
+                                anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
+                                implicitWidth: 24
+                                implicitHeight: 26
+                                flat: true
+                                iconGlyph: groupItem.folded ? Theme.iconChevronRight : Theme.iconChevronDown
+                                ToolTip.text: groupItem.folded ? qsTr("Show its selections") : qsTr("Hide its selections")
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 500
+                                onClicked: page.foldedGroups = page.toggleFolded(page.foldedGroups, groupItem.modelData.id)
+                            }
                             Column {
-                                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                                Text { text: groupItem.modelData.name; color: Theme.text; font.weight: Font.DemiBold }
+                                anchors { left: parent.left; leftMargin: foldButton.visible ? 28 : 10; right: parent.right; rightMargin: 34
+                                          verticalCenter: parent.verticalCenter }
+                                Text { width: parent.width; text: groupItem.modelData.name; color: Theme.text; font.weight: Font.DemiBold; elide: Text.ElideRight }
                                 Text {
                                     text: qsTr("%n fixture(s)", "", groupItem.modelData.fixtures.length)
                                           + (groupItem.selections.length ? "  ·  " + qsTr("%n selection(s)", "", groupItem.selections.length) : "")
@@ -414,7 +461,7 @@ Item {
 
                         // its selections: ordered parts of the group
                         Repeater {
-                            model: groupItem.selections
+                            model: groupItem.folded ? [] : groupItem.selections
                             delegate: Rectangle {
                                 id: selectionRow
                                 required property var modelData
@@ -508,14 +555,17 @@ Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
-                        model: page.rows
+                        // by count: a change of a fixture (an inversion, a
+                        // name) updates its row where it is, the list stays
+                        // where it was
+                        model: page.rows.length
                         boundsBehavior: Flickable.StopAtBounds
                         ScrollBar.vertical: ScrollBar {}
 
                         delegate: Loader {
                             id: rowLoader
-                            required property var modelData
                             required property int index
+                            readonly property var modelData: page.rows[index] || ({ header: true, title: "", ids: [], folded: false })
                             width: table.width
                             sourceComponent: modelData.header ? headerRow : fixtureRow
 
@@ -525,6 +575,12 @@ Item {
                                     height: 36
                                     color: Theme.background
                                     readonly property bool allSelected: rowLoader.modelData.ids.every(id => page.isSelected(id))
+                                    // a click on the header folds or unfolds its fixtures
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: page.foldedTypes = page.toggleFolded(page.foldedTypes, rowLoader.modelData.title)
+                                    }
                                     RowLayout {
                                         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                                         spacing: 10
@@ -537,11 +593,17 @@ Item {
                                                     page.select(rowLoader.modelData.ids, true)
                                             }
                                         }
+                                        IconLabel {
+                                            icon: rowLoader.modelData.folded ? Theme.iconChevronRight : Theme.iconChevronDown
+                                            size: 11
+                                            color: Theme.textDim
+                                        }
                                         Text {
                                             Layout.fillWidth: true
                                             text: rowLoader.modelData.title
                                             color: Theme.text
                                             font.weight: Font.Bold
+                                            elide: Text.ElideRight
                                         }
                                         Text {
                                             text: qsTr("%n fixture(s)", "", rowLoader.modelData.ids.length)
@@ -565,7 +627,7 @@ Item {
                                         id: rowMouse
                                         anchors.fill: parent
                                         hoverEnabled: true
-                                        onClicked: (ev) => page.select([fx.id], (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                        onClicked: (ev) => page.clickFixture(fx.id, ev.modifiers)
                                         onDoubleClicked: editDialog.edit(fx)
                                     }
 
@@ -575,7 +637,7 @@ Item {
                                         CheckBox {
                                             Layout.preferredWidth: 20
                                             checked: parent.parent.selected
-                                            onClicked: page.select([parent.parent.fx.id], true)
+                                            onClicked: { page.select([parent.parent.fx.id], true); page.anchorId = parent.parent.fx.id }
                                         }
                                         Text {
                                             Layout.preferredWidth: 34
@@ -628,7 +690,7 @@ Item {
                                             flat: !highlighted
                                             iconGlyph: Theme.iconLocate
                                             accentColor: Theme.warning
-                                            highlighted: parent.parent.fx.identified
+                                            highlighted: Core.patch.identified.indexOf(parent.parent.fx.id) >= 0
                                             ToolTip.text: qsTr("Identify: blink this fixture in white"); ToolTip.visible: hovered
                                             onClicked: Core.patch.toggleIdentify(parent.parent.fx.id)
                                         }

@@ -214,6 +214,8 @@ QtObject {
     readonly property string iconShapes: "\uf61f"
     readonly property string iconChevronRight: "\uf054"
     readonly property string iconChevronDown: "\uf078"
+    readonly property string iconChevronLeft: "\uf053"
+    readonly property string iconChevronUp: "\uf077"
     readonly property string iconLocate: "\uf601"
     readonly property string iconSun: "\uf185"
     readonly property string iconCloud: "\uf0c2"

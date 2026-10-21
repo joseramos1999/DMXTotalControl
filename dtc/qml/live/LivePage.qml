@@ -150,6 +150,11 @@ Item {
                         zoneObject: zone
                         zoneIndex: index
                         height: zonesRow.height
+                        // folded: a strip with its name, saved with the show
+                        folded: zone.folded
+                        canFold: true
+                        width: folded ? foldedSize : 300
+                        onFoldToggled: zone.folded = !zone.folded
                         dragProxy: dragItem
                         onEditScene: (id) => page.editScene(id)
                         onOpenScene: (id) => page.openScene(id)

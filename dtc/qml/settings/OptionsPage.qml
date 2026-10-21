@@ -239,6 +239,23 @@ Item {
                             }
                         }
 
+                        // the input Pulse listens to (one that was chosen and
+                        // is not plugged in now stays in the list)
+                        SectionTitle { text: qsTr("Audio") }
+                        OptionRow {
+                            label: qsTr("Audio input")
+                            hint: qsTr("The microphone or line input of Pulse and of the audio matrices")
+                            ComboBox {
+                                Layout.preferredWidth: 300
+                                readonly property var available: Core.drive.audioInputs()
+                                readonly property string saved: Core.settings.audioInput
+                                readonly property var inputs: saved.length > 0 && available.indexOf(saved) < 0 ? available.concat([saved]) : available
+                                model: [qsTr("System default")].concat(inputs.map(n => available.indexOf(n) < 0 ? qsTr("%1 (not connected)").arg(n) : n))
+                                currentIndex: saved.length > 0 ? inputs.indexOf(saved) + 1 : 0
+                                onActivated: (i) => Core.settings.audioInput = (i === 0 ? "" : inputs[i - 1])
+                            }
+                        }
+
                         SectionTitle { text: qsTr("Recent shows") }
                         Repeater {
                             model: Core.settings.recentShows
@@ -367,15 +384,23 @@ Item {
                                 color: Theme.text
                             }
 
+                            // downloaded: when, and whether it has new fixtures since
+                            // (an update keeps your own fixtures, and the ones
+                            // it doesn't have any more)
                             OptionRow {
                                 label: qsTr("Open Fixture Library")
-                                hint: Core.library.openFixtureLibraryInstalled
-                                      ? qsTr("Installed. Download it again to update it.")
-                                      : qsTr("Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.")
+                                hint: !Core.library.openFixtureLibraryInstalled
+                                      ? qsTr("Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.")
+                                      : qsTr("%n fixture(s), downloaded on %1.", "", Core.library.oflCount)
+                                            .arg(Core.library.oflDownloaded.toLocaleDateString(Qt.locale(), Locale.ShortFormat))
+                                        + " " + (Core.library.oflUpdateAvailable ? qsTr("There are new or improved fixtures: update it.")
+                                                                                 : qsTr("Updating it keeps your own fixtures."))
                                 AppButton {
-                                    text: Core.library.downloading ? qsTr("Cancel") : qsTr("Download")
-                                    iconGlyph: Core.library.downloading ? Theme.iconClose : Theme.iconDownload
-                                    primary: !Core.library.downloading
+                                    text: Core.library.downloading ? qsTr("Cancel")
+                                          : Core.library.openFixtureLibraryInstalled ? qsTr("Update") : qsTr("Download")
+                                    iconGlyph: Core.library.downloading ? Theme.iconClose
+                                               : Core.library.openFixtureLibraryInstalled ? Theme.iconRefresh : Theme.iconDownload
+                                    primary: !Core.library.downloading && (!Core.library.openFixtureLibraryInstalled || Core.library.oflUpdateAvailable)
                                     onClicked: Core.library.downloading ? Core.library.cancelDownload()
                                                                         : Core.library.downloadOpenFixtureLibrary()
                                 }
@@ -431,6 +456,16 @@ Item {
                                 wrapMode: Text.WordWrap
                                 text: Core.library.status
                                 color: Theme.accent
+                            }
+                            // the fixtures the last update of the Open Fixture Library brought
+                            Text {
+                                Layout.fillWidth: true
+                                visible: Core.library.oflNewFixtures.length > 0 && !Core.library.downloading
+                                wrapMode: Text.WordWrap
+                                text: qsTr("New: %1").arg(Core.library.oflNewFixtures.slice(0, 8).join(", "))
+                                      + (Core.library.oflNewFixtures.length > 8 ? " " + qsTr("…and %n more", "", Core.library.oflNewFixtures.length - 8) : "")
+                                color: Theme.textDim
+                                font.pixelSize: Theme.fontSmall
                             }
                             // the GDTF files that couldn't be read, and why
                             Text {
@@ -495,7 +530,7 @@ Item {
                             SectionTitle { text: qsTr("Updates") }
                             OptionRow {
                                 label: qsTr("Check for updates at startup")
-                                hint: qsTr("Once a day, on GitHub. Nothing is downloaded or installed without asking you.")
+                                hint: qsTr("Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it. Nothing is downloaded or installed without asking you.")
                                 AppSwitch { checked: Core.updates.autoCheck; onToggled: Core.updates.autoCheck = checked }
                             }
                             OptionRow {
@@ -538,7 +573,11 @@ Item {
                                     enabled: updatesColumn.phase !== UpdateChecker.Checking
                                     text: qsTr("Check for updates")
                                     iconGlyph: Theme.iconRefresh
-                                    onClicked: Core.updates.check(true)
+                                    onClicked: {
+                                        Core.updates.check(true)
+                                        if (Core.library.openFixtureLibraryInstalled)
+                                            Core.library.checkOpenFixtureLibrary(true)
+                                    }
                                 }
                                 AppButton {
                                     visible: Core.updates.latestVersion.length > 0

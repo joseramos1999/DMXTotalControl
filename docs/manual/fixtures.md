@@ -69,7 +69,16 @@ La Open Fixture Library es una biblioteca abierta con miles de fixtures adiciona
 2. En **Biblioteca de fixtures › Open Fixture Library**, pulsa **«Descargar»**. Hace falta internet.
 3. Espera a que termine la barra de progreso («Cancelar» la para).
 
-Al terminar se dice cuántos fixtures se han descargado y cuántos son nuevos. Para actualizarla, vuelve a descargarla.
+Al terminar se dice cuántos fixtures se han descargado y cuántos son nuevos. Después, en el mismo sitio se ve cuántos tiene y cuándo se descargó.
+
+Para ponerla al día, pulsa **«Actualizar»** (el mismo botón). Si en Opciones está activado «Buscar actualizaciones al arrancar», el programa mira una vez al día en GitHub si la biblioteca tiene fixtures nuevos o mejorados desde tu descarga, te avisa y resalta el botón; «Buscar actualizaciones» lo comprueba en el momento. La actualización:
+
+- añade los fixtures nuevos (debajo se listan);
+- cambia los que han mejorado, también los que tengas patcheados (si su modo nuevo no cabe donde están, se quedan con la versión anterior hasta que los vuelvas a patchear);
+- conserva los que la biblioteca ya no tiene, por si un show los usa;
+- no toca tus fixtures ni los de la biblioteca incluida: si tienen el mismo fabricante y modelo, se queda el tuyo (o el incluido).
+
+Una descarga que no se puede leer, o que se corta, no cambia nada.
 
 ## Importar GDTF
 

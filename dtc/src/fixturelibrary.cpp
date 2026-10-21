@@ -30,6 +30,13 @@
 #include <QThread>
 #include <QHash>
 #include <QSet>
+#include <QSettings>
+#include <QLocale>
+#include <QTemporaryDir>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QTimer>
 
 #include <memory>
 
@@ -58,9 +65,21 @@
 #include "doc.h"
 
 #define OFL_DOWNLOAD_URL QStringLiteral("https://open-fixture-library.org/download.qlcplus_4.12.2")
+// the last change of its fixtures, on GitHub (where the site is published from)
+#define OFL_COMMITS_URL  QStringLiteral("https://api.github.com/repos/OpenLightingProject/open-fixture-library/commits?path=fixtures&per_page=1")
+#define KSettingOflDownloaded QStringLiteral("library/oflDownloaded")
+#define KSettingOflLatest     QStringLiteral("library/oflLatest")
+#define KSettingOflLastCheck  QStringLiteral("library/oflLastCheck")
 #define GENERIC_SUBDIR   QStringLiteral("DMXTotalControl")
 #define OFL_SUBDIR       QStringLiteral("OpenFixtureLibrary")
 #define GDTF_SUBDIR      QStringLiteral("GDTF")
+
+/* A time saved in the settings (UTC, ISO 8601): invalid when there is none */
+static QDateTime settingTime(const QString &key)
+{
+    const QDateTime time = QDateTime::fromString(QSettings().value(key).toString(), Qt::ISODate);
+    return time.isValid() ? time.toUTC() : time;
+}
 
 /* The status of an update when some patched fixtures keep the old version */
 static QString keptMessage(int kept)
@@ -77,7 +96,13 @@ FixtureLibrary::FixtureLibrary(Doc *doc, QObject *parent)
     , m_progress(0)
     , m_cancelImport(false)
     , m_importProgress(0)
+    , m_oflDownloadUrl(OFL_DOWNLOAD_URL)
+    , m_oflCommitsUrl(OFL_COMMITS_URL)
 {
+    // (an update found before, and not downloaded yet; from the settings
+    // alone: the user folder is only made when something needs it)
+    const QDateTime downloaded = settingTime(KSettingOflDownloaded);
+    m_oflUpdate = downloaded.isValid() && settingTime(KSettingOflLatest) > downloaded;
 }
 
 FixtureLibrary::~FixtureLibrary()
@@ -185,6 +210,192 @@ bool FixtureLibrary::openFixtureLibraryInstalled() const
 {
     QDir dir = openFixtureLibraryDirectory();
     return dir.exists() && dir.entryList(QStringList() << "*.qxf", QDir::Files).isEmpty() == false;
+}
+
+int FixtureLibrary::oflCount() const
+{
+    QDir dir = openFixtureLibraryDirectory();
+    return dir.exists() ? int(dir.entryList(QStringList() << "*.qxf", QDir::Files).count()) : 0;
+}
+
+QDateTime FixtureLibrary::oflDownloaded() const
+{
+    if (openFixtureLibraryInstalled() == false)
+        return QDateTime();
+    // (downloaded before the date was kept: the date of its folder)
+    const QDateTime time = settingTime(KSettingOflDownloaded);
+    return time.isValid() ? time : QFileInfo(openFixtureLibraryDirectory().absolutePath()).lastModified().toUTC();
+}
+
+bool FixtureLibrary::oflUpdateAvailable() const
+{
+    return m_oflUpdate;
+}
+
+bool FixtureLibrary::oflChecking() const
+{
+    return m_checkReply != nullptr;
+}
+
+QStringList FixtureLibrary::oflNewFixtures() const
+{
+    return m_oflNew;
+}
+
+void FixtureLibrary::setOpenFixtureLibraryUrls(const QString &download, const QString &commits)
+{
+    m_oflDownloadUrl = download;
+    m_oflCommitsUrl = commits;
+}
+
+void FixtureLibrary::checkOnStartup(bool autoCheck)
+{
+    if (autoCheck == false || openFixtureLibraryInstalled() == false)
+        return;
+    const QDateTime last = settingTime(KSettingOflLastCheck);
+    if (last.isValid() && last.secsTo(QDateTime::currentDateTimeUtc()) < 20 * 3600)
+        return;
+    // after the start and the check of the program
+    QTimer::singleShot(8000, this, [this]() { checkOpenFixtureLibrary(false); });
+}
+
+void FixtureLibrary::checkOpenFixtureLibrary(bool manual)
+{
+    if (m_checkReply != nullptr)
+        return;
+    if (m_network == nullptr)
+        m_network = new QNetworkAccessManager(this);
+
+    QNetworkRequest request{QUrl(m_oflCommitsUrl)};
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QString("%1/%2").arg(APPNAME, APPVERSION));
+    request.setRawHeader("Accept", "application/vnd.github+json");
+    request.setTransferTimeout(20000);
+    m_checkManual = manual;
+    m_checkReply = m_network->get(request);
+    connect(m_checkReply, &QNetworkReply::finished, this, &FixtureLibrary::slotCheckFinished);
+    if (manual)
+        setStatus(tr("Looking for new fixtures in the Open Fixture Library…"));
+    emit oflCheckChanged();
+}
+
+void FixtureLibrary::slotCheckFinished()
+{
+    QNetworkReply *reply = m_checkReply;
+    m_checkReply = nullptr;
+    reply->deleteLater();
+
+    // [{ "commit": { "committer": { "date": "2026-10-20T08:00:00Z" } } }]
+    const QJsonArray commits = QJsonDocument::fromJson(reply->readAll()).array();
+    const QDateTime latest = commits.isEmpty() ? QDateTime()
+        : QDateTime::fromString(commits.first().toObject().value("commit").toObject()
+                                    .value("committer").toObject().value("date").toString(), Qt::ISODate).toUTC();
+    if (reply->error() != QNetworkReply::NoError || latest.isValid() == false)
+    {
+        if (m_checkManual)
+            setStatus(tr("Couldn't look for new fixtures: %1")
+                      .arg(reply->error() != QNetworkReply::NoError ? reply->errorString() : tr("unexpected answer")));
+        emit oflCheckChanged();
+        return;
+    }
+
+    QSettings settings;
+    settings.setValue(KSettingOflLastCheck, QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    settings.setValue(KSettingOflLatest, latest.toString(Qt::ISODate));
+    const bool update = openFixtureLibraryInstalled() && latest > oflDownloaded();
+    const bool found = update && m_oflUpdate == false;
+    m_oflUpdate = update;
+    if (m_checkManual)
+        setStatus(update ? tr("The Open Fixture Library has new or improved fixtures since your download (%1)")
+                               .arg(QLocale().toString(latest.toLocalTime().date(), QLocale::ShortFormat))
+                         : tr("The Open Fixture Library is up to date"));
+    emit oflCheckChanged();
+    if (found && m_checkManual == false)
+        emit oflUpdateFound();
+}
+
+QString FixtureLibrary::mergeOpenFixtureLibrary(const QDir &staging, int count)
+{
+    QDir target = openFixtureLibraryDirectory();
+    target.mkpath(".");
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    // (the first download is all new: only an update tells its new ones)
+    const bool update = target.entryList(QStringList() << "*.qxf", QDir::Files).isEmpty() == false;
+
+    QStringList added;
+    int updated = 0;
+    int kept = 0;
+    for (const QString &file : staging.entryList(QStringList() << "*.qxf", QDir::Files))
+    {
+        const QString from = staging.filePath(file);
+        const QString to = target.filePath(file);
+        // the same as the one there: nothing to do
+        QFile old(to);
+        QFile fresh(from);
+        const bool existed = old.exists();
+        if (existed && old.open(QIODevice::ReadOnly) && fresh.open(QIODevice::ReadOnly) &&
+            old.size() == fresh.size() && old.readAll() == fresh.readAll())
+            continue;
+        old.close();
+        fresh.close();
+
+        QLCFixtureDef *def = new QLCFixtureDef();
+        if (def->loadXML(from) != QFile::NoError || def->modes().isEmpty())
+        {
+            delete def;
+            continue;
+        }
+        QFile::remove(to);
+        if (QFile::copy(from, to) == false)
+        {
+            delete def;
+            continue;
+        }
+        def->setDefinitionSourceFile(to);
+
+        // in the library: new, or the one from this file changed. The same
+        // fixture from another library (the built-in one, the user's) stays
+        QLCFixtureDef *current = cache->fixtureDef(def->manufacturer(), def->model());
+        if (current == nullptr)
+        {
+            const QString name = def->manufacturer() + " " + def->model();
+            def->setIsUser(true);
+            def->setLoaded(true);
+            if (cache->addFixtureDef(def))
+                added.append(name);
+            else
+                delete def;
+        }
+        else if (QFileInfo(current->definitionSourceFile()) == QFileInfo(to))
+        {
+            kept += installDefinition(def);
+            updated++;
+        }
+        else
+        {
+            delete def;
+        }
+    }
+
+    QSettings().setValue(KSettingOflDownloaded, QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    m_oflUpdate = false;
+    std::sort(added.begin(), added.end(), [](const QString &a, const QString &b) {
+        return QString::localeAwareCompare(a, b) < 0;
+    });
+    m_oflNew = update ? added : QStringList();
+    emit oflCheckChanged();
+    emit libraryChanged();
+
+    QString status = tr("Open Fixture Library: %n fixture(s) downloaded", "", count);
+    if (added.isEmpty() && updated == 0)
+        status += " · " + tr("nothing new");
+    if (added.isEmpty() == false)
+        status += " · " + tr("%n new in the library", "", int(added.count()));
+    if (updated > 0)
+        status += " · " + tr("%n improved", "", updated);
+    if (kept > 0)
+        status += " · " + keptMessage(kept);
+    return status;
 }
 
 /*********************************************************************
@@ -563,7 +774,7 @@ void FixtureLibrary::downloadOpenFixtureLibrary()
     if (m_network == nullptr)
         m_network = new QNetworkAccessManager(this);
 
-    QNetworkRequest request{QUrl(OFL_DOWNLOAD_URL)};
+    QNetworkRequest request{QUrl(m_oflDownloadUrl)};
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setHeader(QNetworkRequest::UserAgentHeader, QString("%1/%2").arg(APPNAME, APPVERSION));
 
@@ -615,16 +826,15 @@ void FixtureLibrary::slotDownloadFinished()
     zipFile.write(reply->readAll());
     zipFile.close();
 
-    // replace the previous download
-    QDir target = openFixtureLibraryDirectory();
-    target.removeRecursively();
-    target.mkpath(".");
-
-    int count = importZip(zipPath, target);
+    // unpacked apart first: a download that can't be read leaves the
+    // library as it was
+    QTemporaryDir staging;
+    const int count = staging.isValid() ? importZip(zipPath, QDir(staging.path())) : 0;
     QFile::remove(zipPath);
-
-    int added = loadNewDefinitions(target);
-    setStatus(tr("Open Fixture Library: %1 fixtures downloaded, %2 new in the library").arg(count).arg(added));
+    if (count == 0)
+        setStatus(tr("The download has no fixtures: the Open Fixture Library stays as it was"));
+    else
+        setStatus(mergeOpenFixtureLibrary(QDir(staging.path()), count));
     m_progress = 1;
     emit downloadChanged();
 }

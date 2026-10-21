@@ -92,6 +92,9 @@
 #include "chaserstep.h"
 #include "sequence.h"
 #include "rgbmatrix.h"
+#include "appsettings.h"
+#include "cpuload.h"
+#include "audio.h"
 #include "collection.h"
 #include "efx.h"
 #include "zone.h"
@@ -290,6 +293,9 @@ private slots:
     void remoteFaderRanges();
     void moveSpeedFollowsPatchEdits();
     void pulseGoesOnWithNewShow();
+    void audioInputSetting();
+    void missingShowFiles();
+    void cpuLoadMeasured();
     void beatTypeStartsDisabled();
     void beatTypeSwitchedWhileCaptureRuns();
     void pauseResumesOnlyWhatItPaused();
@@ -357,6 +363,8 @@ private slots:
     // GUI sweep: the user folder with a long UserProfile, zips with accents
     void userFolderWithLongProfile();
     void zipImportAccentedNames();
+    // the Open Fixture Library kept up to date, from a local server
+    void openFixtureLibraryUpdate();
     // the tests themselves: nothing of the user of the machine
     void isolatedFromTheUser();
 
@@ -1722,6 +1730,9 @@ void Backend_Test::surfaceTouch()
     QVERIFY(qAbs(pos.value("x").toDouble() - 0.25) < 0.01 && qAbs(pos.value("y").toDouble() - 0.75) < 0.01);
     surface->releaseSection(0, xy);
     QVERIFY(core.programmer()->hasValues() == false);
+    // folded groups: a group section to its strip, groups of a row of them
+    surface->updateSection(0, colour, { { "folded", true } });
+    surface->updateSection(0, xy, { { "foldedGroups", "3,7" } });
 
     // saved and loaded with the new sections
     QBuffer buffer;
@@ -1735,6 +1746,8 @@ void Backend_Test::surfaceTouch()
     QVERIFY(surface->loadXML(reader));
     QCOMPARE(surface->section(0, colour).value("type").toString(), QString("colour"));
     QCOMPARE(surface->section(0, xy).value("type").toString(), QString("xy"));
+    QCOMPARE(surface->section(0, colour).value("folded"), QVariant(true));
+    QCOMPARE(surface->section(0, xy).value("foldedGroups").toString(), QString("3,7"));
     QCOMPARE(surface->item(0, pauseAt.value("section").toString(), pauseAt.value("cell").toInt())
                  .value("map").toMap().value("target").toString(), QString("pauseAll"));
 }
@@ -2350,6 +2363,53 @@ void Backend_Test::manualPages()
             QVERIFY2(QFile::exists(":/manual/" + src), qPrintable(name + ": " + src));
         }
     }
+
+    // the translations: the manual in the language of the app, every page
+    // of it, with the pictures of the original; Spanish and a language
+    // without a translation show the original
+    const QLocale before;
+    auto restore = qScopeGuard([before]() { QLocale::setDefault(before); });
+    QLocale::setDefault(QLocale("es_ES"));
+    QCOMPARE(core.manualLanguage(), QString());
+    QLocale::setDefault(QLocale("ja_JP"));
+    QCOMPARE(core.manualLanguage(), QString());
+    QCOMPARE(core.manualPage("index"), index);
+    const QStringList originals = QDir(":/manual").entryList({ "*.md" });
+    int translations = 0;
+    for (const QString &language : QDir(":/manual").entryList(QDir::Dirs | QDir::NoDotAndDotDot))
+    {
+        if (language == "img")
+            continue;
+        QLocale::setDefault(QLocale(language));
+        QCOMPARE(core.manualLanguage(), language);
+        QCOMPARE(QDir(":/manual/" + language).entryList({ "*.md" }), originals);
+        for (const QString &page : originals)
+        {
+            const QString name = page.chopped(3);
+            const QString markdown = core.manualPage(name);
+            QVERIFY2(markdown.isEmpty() == false, qPrintable(language + "/" + name));
+            QVERIFY2(markdown.contains("](../img/") == false, qPrintable(language + "/" + name));
+            auto it = image.globalMatch(core.manualHtml(name, 420));
+            while (it.hasNext())
+            {
+                const QString src = it.next().captured(1);
+                QVERIFY2(QFile::exists(":/manual/" + src), qPrintable(language + "/" + name + ": " + src));
+            }
+        }
+        QVERIFY2(core.manualPage("index") != index, qPrintable(language));
+        translations++;
+    }
+    // (English, Portuguese, French, Italian and German)
+    QVERIFY(translations >= 5);
+
+    // the program says which translation of the interface it loaded: none
+    // is the English of the sources (a system in a language without one)
+    core.setUiLanguage("");
+    QCOMPARE(core.manualLanguage(), QString("en"));
+    core.setUiLanguage("de_DE");
+    QCOMPARE(core.manualLanguage(), QString("de"));
+    core.setUiLanguage("es");
+    QCOMPARE(core.manualLanguage(), QString());
 }
 
 void Backend_Test::remoteControl()
@@ -16364,6 +16424,131 @@ void Backend_Test::pulseGoesOnWithNewShow()
     QVERIFY(drive.pulseEnabled() == false);
 }
 
+void Backend_Test::audioInputSetting()
+{
+    // the input chosen in the options is the one the capture of the engine
+    // opens; the default of the system is no value at all
+    ScopedTestSettings scoped;
+    AppSettings settings;
+    QSignalSpy changed(&settings, SIGNAL(audioInputChanged()));
+    QCOMPARE(settings.audioInput(), QString());
+    settings.setAudioInput("Micrófono (USB Audio)");
+    settings.setAudioInput("Micrófono (USB Audio)");
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(QSettings().value(SETTINGS_AUDIO_INPUT_DEVICE).toString(), QString("Micrófono (USB Audio)"));
+    settings.setAudioInput(QString());
+    QCOMPARE(changed.count(), 2);
+    QVERIFY(QSettings().contains(SETTINGS_AUDIO_INPUT_DEVICE) == false);
+
+    // (the tests see no device of the machine)
+    SilentDrive drive(m_doc);
+    QVERIFY(drive.audioInputs().isEmpty());
+    // Pulse off listens to nothing; on, it opens the input again and goes on
+    drive.restartInput();
+    QVERIFY(drive.pulseEnabled() == false);
+    QVERIFY(drive.input() == nullptr);
+    QSignalSpy pulses(&drive, SIGNAL(pulseTriggered()));
+    drive.setPulseEnabled(true);
+    drive.restartInput();
+    QVERIFY(drive.pulseEnabled());
+    QTest::qWait(150);
+    drive.input()->feed(30000);
+    QTRY_COMPARE_WITH_TIMEOUT(pulses.count(), 1, 2000);
+    drive.setPulseEnabled(false);
+}
+
+void Backend_Test::missingShowFiles()
+{
+    // a show brought from another computer: its sound, the picture of a
+    // matrix and the one of the SHOW aren't where it says. They are told,
+    // and looked for by name in a folder and below it
+    QTemporaryDir dir;
+    const QString sound = dir.filePath("gone/Intro.wav");
+    const QString logo = dir.filePath("gone/Logo.png");
+    const QString backdrop = dir.filePath("gone/Fondo.png");
+    const QUrl url = QUrl::fromLocalFile(dir.filePath("missing.qxw"));
+    quint32 audioId, matrixId;
+    {
+        DtcCore core;
+        Audio *audio = new Audio(core.doc());
+        QVERIFY(core.doc()->addFunction(audio));
+        audio->setSourceFileName(sound);
+        audioId = audio->id();
+        RGBMatrix *matrix = new RGBMatrix(core.doc());
+        RGBImage *image = new RGBImage(core.doc());
+        image->setFilename(logo);
+        matrix->setAlgorithm(image);
+        QVERIFY(core.doc()->addFunction(matrix));
+        matrixId = matrix->id();
+        ShowSurface *surface = core.surface();
+        const int page = surface->addPage("Fondo");
+        const QString root = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+        surface->updateSection(page, root, { { "type", "image" }, { "image", QUrl::fromLocalFile(backdrop).toString() } });
+        QVERIFY(core.saveShow(url));
+        QVERIFY2(core.missingFiles().isEmpty(), "only an opened show is looked at");
+    }
+
+    DtcCore core;
+    QSignalSpy told(&core, SIGNAL(missingFilesChanged()));
+    QVERIFY(core.openShow(url));
+    QCOMPARE(told.count(), 1);
+    QStringList missing = core.missingFiles();
+    missing.sort();
+    QCOMPARE(missing, QStringList({ backdrop, sound, logo }));
+
+    // none of them in an empty folder
+    QTemporaryDir empty;
+    QCOMPARE(core.locateMissingFiles(QUrl::fromLocalFile(empty.path())), 0);
+    QCOMPARE(core.missingFiles().size(), 3);
+    QVERIFY(core.modified() == false);
+
+    // two of them in another folder (one below it, one named in capitals)
+    QTemporaryDir other;
+    QVERIFY(QDir(other.path()).mkpath("img"));
+    const QString newSound = other.filePath("INTRO.WAV");
+    const QString newBackdrop = other.filePath("img/Fondo.png");
+    for (const QString &path : { newSound, newBackdrop })
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    QCOMPARE(core.locateMissingFiles(QUrl::fromLocalFile(other.path())), 2);
+    QCOMPARE(core.missingFiles(), QStringList({ logo }));
+    QCOMPARE(qobject_cast<Audio *>(core.doc()->function(audioId))->getSourceFileName(), newSound);
+    RGBMatrix *matrix = qobject_cast<RGBMatrix *>(core.doc()->function(matrixId));
+    QCOMPARE(static_cast<RGBImage *>(matrix->algorithm())->filename(), logo);
+    // (the SHOW keeps a file URL as such)
+    const QVariantMap page = core.surface()->pages().last().toMap();
+    const QString root = page.value("root").toMap().value("id").toString();
+    QCOMPARE(core.surface()->section(core.surface()->pages().size() - 1, root).value("image").toString(),
+             QUrl::fromLocalFile(newBackdrop).toString());
+    QVERIFY(core.modified());
+
+    // a new show misses nothing
+    core.newShow();
+    QVERIFY(core.missingFiles().isEmpty());
+}
+
+void Backend_Test::cpuLoadMeasured()
+{
+    // the processor time of the application goes up as it works; the load
+    // is unknown until the first look (two seconds after the start)
+    const qint64 before = processCpuTime();
+    QVERIFY(before >= 0);
+    QElapsedTimer busy;
+    busy.start();
+    volatile double x = 0;
+    while (busy.elapsed() < 250)
+        x = x + qSin(x + 1.0);
+    QVERIFY(processCpuTime() > before);
+
+    DtcCore core;
+    QCOMPARE(core.cpuLoad(), -1);
+    QSignalSpy measured(&core, SIGNAL(cpuLoadChanged()));
+    QVERIFY(measured.wait(4000));
+    QVERIFY(core.cpuLoad() >= 0 && core.cpuLoad() <= 100);
+}
+
 void Backend_Test::beatTypeStartsDisabled()
 {
     // Doc makes its map in a block of the heap that held something else: the
@@ -23915,6 +24100,141 @@ void Backend_Test::userFolderWithLongProfile()
     QVERIFY(user.exists());
     // nothing made where the program runs
     QCOMPARE(QDir(work.path()).entryList(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Hidden), QStringList());
+}
+
+void Backend_Test::openFixtureLibraryUpdate()
+{
+    // the Open Fixture Library downloaded and kept up to date: GitHub says
+    // when its fixtures changed; an update brings the new ones, puts the
+    // changed ones in place of the old ones (the patched fixtures too),
+    // keeps the ones it doesn't have any more, and never touches the user's
+    // own fixtures nor the built-in ones. A local server plays the site
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    auto qxf = [&dir](const QString &manufacturer, const QString &model, const QString &channelName) {
+        QLCFixtureDef def;
+        def.setManufacturer(manufacturer);
+        def.setModel(model);
+        def.setType(QLCFixtureDef::ColorChanger);
+        QLCChannel *ch = new QLCChannel();
+        ch->setName(channelName);
+        ch->setGroup(QLCChannel::Intensity);
+        def.addChannel(ch);
+        QLCFixtureMode *mode = new QLCFixtureMode(&def);
+        mode->setName("1ch");
+        mode->insertChannel(ch, 0);
+        def.addMode(mode);
+        const QString path = dir.filePath("def.qxf");
+        def.saveXML(path);
+        QFile file(path);
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    };
+    auto zip = [](const QList<QPair<QString, QByteArray>> &files) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QZipWriter writer(&buffer);
+        for (const auto &file : files)
+            writer.addFile(file.first, file.second);
+        writer.close();
+        return buffer.data();
+    };
+    auto commits = [](const QDateTime &when) {
+        return QJsonDocument(QJsonArray({ QJsonObject({ { "commit", QJsonObject({ { "committer",
+                   QJsonObject({ { "date", when.toUTC().toString(Qt::ISODate) } }) } }) } }) })).toJson();
+    };
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+
+    FakeGitHub site;
+    QVERIFY(site.listen(QHostAddress::LocalHost));
+    site.answers.insert("/ofl.zip", { 200, "application/zip", zip({ { "ofl-test/par-a.qxf", qxf("OFL Test", "Par A", "Dimmer") },
+                                                                    { "ofl-test/par-b.qxf", qxf("OFL Test", "Par B", "Dimmer") } }) });
+    m_library->setOpenFixtureLibraryUrls(QString::fromLatin1(site.url("/ofl.zip")), QString::fromLatin1(site.url("/commits")));
+    QVERIFY(m_library->openFixtureLibraryInstalled() == false);
+    QVERIFY(m_library->oflDownloaded().isValid() == false);
+
+    // the first download: all of it, nothing listed as new
+    m_library->downloadOpenFixtureLibrary();
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->downloading() == false, 10000);
+    QVERIFY2(m_library->openFixtureLibraryInstalled(), qPrintable(m_library->status()));
+    QCOMPARE(m_library->oflCount(), 2);
+    QVERIFY(cache->fixtureDef("OFL Test", "Par A") != nullptr);
+    QVERIFY(cache->fixtureDef("OFL Test", "Par B") != nullptr);
+    QVERIFY(m_library->oflNewFixtures().isEmpty());
+    QVERIFY(qAbs(m_library->oflDownloaded().secsTo(QDateTime::currentDateTimeUtc())) < 60);
+
+    // GitHub: nothing since the download, then new fixtures (at the start
+    // it is told once)
+    QSignalSpy found(m_library, SIGNAL(oflUpdateFound()));
+    site.answers.insert("/commits", { 200, "application/json", commits(QDateTime::currentDateTimeUtc().addDays(-3)) });
+    m_library->checkOpenFixtureLibrary(true);
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->oflChecking() == false, 5000);
+    QVERIFY(m_library->oflUpdateAvailable() == false);
+    site.answers.insert("/commits", { 200, "application/json", commits(QDateTime::currentDateTimeUtc().addSecs(3600)) });
+    m_library->checkOpenFixtureLibrary(false);
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->oflChecking() == false, 5000);
+    QVERIFY(m_library->oflUpdateAvailable());
+    QCOMPARE(found.count(), 1);
+    // (kept for the next start)
+    {
+        FixtureLibrary again(m_doc);
+        QVERIFY(again.oflUpdateAvailable());
+    }
+    // an answer that isn't one changes nothing
+    site.answers.insert("/commits", { 200, "application/json", "{}" });
+    m_library->checkOpenFixtureLibrary(true);
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->oflChecking() == false, 5000);
+    QVERIFY(m_library->oflUpdateAvailable());
+
+    // a fixture of the user with a name the update brings too, and one patched
+    const QDir user = QLCFixtureDefCache::userDefinitionDirectory();
+    QVERIFY(user.mkpath("."));
+    {
+        QFile mine(user.filePath("OFL_Test-Par_D.qxf"));
+        QVERIFY(mine.open(QIODevice::WriteOnly));
+        mine.write(qxf("OFL Test", "Par D", "Mine"));
+    }
+    QVERIFY(cache->loadQXF(user.filePath("OFL_Test-Par_D.qxf"), true));
+    QCOMPARE(m_patch->addFixtures("OFL Test", "Par A", "1ch", "A", 0, 1, 1), 1);
+    Fixture *patched = m_doc->fixtures().first();
+    QLCFixtureDef *before = patched->fixtureDef();
+    const QString builtIn = cache->fixtureDef("Generic", "LED PAR RGBW")->definitionSourceFile();
+
+    // the update: A changed, B gone, C new, D the user's, and the built-in one
+    site.answers.insert("/ofl.zip", { 200, "application/zip", zip({ { "ofl-test/par-a.qxf", qxf("OFL Test", "Par A", "Intensity") },
+                                                                    { "ofl-test/par-c.qxf", qxf("OFL Test", "Par C", "Dimmer") },
+                                                                    { "ofl-test/par-d.qxf", qxf("OFL Test", "Par D", "Theirs") },
+                                                                    { "generic/led-par.qxf", qxf("Generic", "LED PAR RGBW", "Dimmer") } }) });
+    m_library->downloadOpenFixtureLibrary();
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->downloading() == false, 10000);
+    QCOMPARE(m_library->oflNewFixtures(), QStringList({ "OFL Test Par C" }));
+    QVERIFY(m_library->oflUpdateAvailable() == false);
+    QVERIFY2(m_library->status().contains("1"), qPrintable(m_library->status()));
+    // A: the new version, also for the fixture patched with it
+    QCOMPARE(cache->fixtureDef("OFL Test", "Par A")->channels().first()->name(), QString("Intensity"));
+    QVERIFY(patched->fixtureDef() != before);
+    QCOMPARE(patched->fixtureDef(), cache->fixtureDef("OFL Test", "Par A"));
+    // B stays (a show may use it), the user's D and the built-in one too
+    QVERIFY(cache->fixtureDef("OFL Test", "Par B") != nullptr);
+    QVERIFY(QFile::exists(FixtureLibrary::openFixtureLibraryDirectory().filePath("ofl-test-par-b.qxf")));
+    QCOMPARE(cache->fixtureDef("OFL Test", "Par D")->channels().first()->name(), QString("Mine"));
+    QCOMPARE(cache->fixtureDef("Generic", "LED PAR RGBW")->definitionSourceFile(), builtIn);
+    QCOMPARE(m_library->oflCount(), 5);
+
+    // the same again: nothing new
+    m_library->downloadOpenFixtureLibrary();
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->downloading() == false, 10000);
+    QVERIFY(m_library->oflNewFixtures().isEmpty());
+
+    // a download that isn't one, or that fails: the library stays as it was
+    site.answers.insert("/ofl.zip", { 200, "application/zip", "not a zip" });
+    m_library->downloadOpenFixtureLibrary();
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->downloading() == false, 10000);
+    QCOMPARE(m_library->oflCount(), 5);
+    QVERIFY(cache->fixtureDef("OFL Test", "Par C") != nullptr);
+    site.answers.remove("/ofl.zip");
+    m_library->downloadOpenFixtureLibrary();
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->downloading() == false, 10000);
+    QCOMPARE(m_library->oflCount(), 5);
 }
 
 void Backend_Test::zipImportAccentedNames()

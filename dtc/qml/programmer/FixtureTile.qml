@@ -31,8 +31,9 @@ Rectangle {
     property int number: 0
     property bool selected: false
 
-    /** additive is true with Ctrl/Shift, to build multi selections */
-    signal clicked(bool additive)
+    /** The keys held (Qt.ControlModifier, Qt.ShiftModifier): the page builds
+     *  the selection with them */
+    signal clicked(int modifiers)
 
     radius: Theme.radiusSmall
     color: selected ? Qt.alpha(Theme.accent, 0.22) : (mouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
@@ -81,7 +82,7 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: (ev) => tile.clicked((ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+        onClicked: (ev) => tile.clicked(ev.modifiers)
         ToolTip.text: tile.type
         ToolTip.visible: containsMouse && !typeText.visible && tile.type.length > 0
         ToolTip.delay: 600

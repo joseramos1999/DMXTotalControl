@@ -79,6 +79,9 @@ class DtcCore : public QObject
     Q_PROPERTY(QString pressMode READ pressMode WRITE setPressMode NOTIFY pressModeChanged)
     /** Changes when a scene with steps that plays moves to another step (stepOf) */
     Q_PROPERTY(int stepsRevision READ stepsRevision NOTIFY stepsChanged)
+    /** The processor this application uses, in percent of the whole machine
+     *  (all of its cores), looked at every two seconds. -1: unknown */
+    Q_PROPERTY(int cpuLoad READ cpuLoad NOTIFY cpuLoadChanged)
     Q_PROPERTY(QVariantList functions READ functions NOTIFY functionsChanged)
     Q_PROPERTY(QStringList sceneFolders READ sceneFolders NOTIFY functionsChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
@@ -105,6 +108,9 @@ class DtcCore : public QObject
     /** An autosaved, never saved show from a session that crashed can be recovered */
     Q_PROPERTY(bool hasRecovery READ hasRecovery NOTIFY hasRecoveryChanged)
     Q_PROPERTY(QString lastAutosave READ lastAutosave NOTIFY lastAutosaveChanged)
+    /** The files the open show names that are not there: its sounds, videos
+     *  and pictures (paths of this machine) */
+    Q_PROPERTY(QStringList missingFiles READ missingFiles NOTIFY missingFilesChanged)
 
 public:
     explicit DtcCore(QObject *parent = nullptr);
@@ -165,6 +171,7 @@ public:
      *  has no steps. stepsChanged when one moves, starts or stops */
     Q_INVOKABLE int stepOf(quint32 id) const;
     int stepsRevision() const;
+    int cpuLoad() const;
     /** The same for every one: ID -> step (the remote) */
     QHash<quint32, int> steps() const;
 
@@ -186,6 +193,11 @@ public:
     Q_INVOKABLE bool recoverShow();
     Q_INVOKABLE void discardRecovery();
     QString lastAutosave() const;
+
+    QStringList missingFiles() const;
+    /** Look for the missing files by their name in $folder and below: the
+     *  show uses the ones found. @return how many were found */
+    Q_INVOKABLE int locateMissingFiles(const QUrl &folder);
 
     /** Stop every running function (panic) */
     Q_INVOKABLE void stopAll();
@@ -218,6 +230,13 @@ public:
     Q_INVOKABLE QString manualPage(const QString &name) const;
     /** The same page as HTML for the help panel: its pictures $width wide */
     Q_INVOKABLE QString manualHtml(const QString &name, int width) const;
+    /** The language the manual is shown in ("en", "de"...): the one of the app
+     *  where it is translated; empty: the original, in Spanish */
+    Q_INVOKABLE QString manualLanguage() const;
+    /** The language of the translation of the interface that was loaded
+     *  ("es", "de_DE"...; empty: none, the interface is in English). The
+     *  manual follows it. Not set: the language of the locale */
+    void setUiLanguage(const QString &language);
     /** The example shows installed with the program: [{ name, url }] */
     Q_INVOKABLE QVariantList examples() const;
 
@@ -238,15 +257,18 @@ signals:
     void bpmChanged();
     void pressModeChanged();
     void stepsChanged();
+    void cpuLoadChanged();
     /** Emitted on every beat, to flash the BPM indicator */
     void beat();
     void hasRecoveryChanged();
     void lastAutosaveChanged();
+    void missingFilesChanged();
     /** An autosave couldn't write the show: nothing protects it */
     void autosaveFailed(const QString &error);
 
 private slots:
     void slotStepsTick();
+    void slotCpuTick();
     void slotAutosave();
     void slotAutosaveSettingsChanged();
     void slotGrandMasterModeChanged();
@@ -256,6 +278,8 @@ private slots:
 private:
     void initDoc();
     void clearShow();
+    /** Look at which files of the show are missing (missingFiles) */
+    void checkFiles();
     bool loadWorkspace(QXmlStreamReader &reader);
     void loadSection(QXmlStreamReader &reader);
     /** The current element of $reader as it is (QLC+ sections kept) */
@@ -292,7 +316,14 @@ private:
     QTimer *m_stepsTimer = nullptr;
     QHash<quint32, int> m_steps;
     int m_stepsRevision = 0;
+    QTimer *m_cpuTimer = nullptr;
+    QElapsedTimer m_cpuClock;
+    qint64 m_cpuTime = -1;
+    int m_cpuLoad = -1;
     bool m_hasRecovery;
+    QStringList m_missingFiles;
+    /** See setUiLanguage(): null until it is set */
+    QString m_uiLanguage;
     bool m_backupDone;
     /** The show is being cleared (its functions all go) */
     bool m_clearing;

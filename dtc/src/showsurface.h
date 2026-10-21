@@ -222,6 +222,12 @@ public:
 
     int revision() const;
 
+    /** The pictures of the SHOW (picture sections and buttons), as saved:
+     *  paths or file URLs */
+    QStringList images() const;
+    /** The picture saved as $from is $to now. @return how many changed */
+    int replaceImage(const QString &from, const QString &to);
+
     /*********************************************************************
      * Load & Save
      *********************************************************************/

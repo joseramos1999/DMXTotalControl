@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
     parser.addOption(pbDialogOption);
     QCommandLineOption pbNextOption("pb-next", "Developer: 1.7 seconds after start (after --pb-go), Next on a cue of a playback of the current page (slot:cue index).", "slot:cue");
     parser.addOption(pbNextOption);
-    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button). Steps separated by ';'.", "steps");
+    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held). Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
     QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
     parser.addOption(guideOption);
@@ -192,6 +192,8 @@ int main(int argc, char *argv[])
     QQuickStyle::setStyle("Basic");
 
     DtcCore core;
+    // the manual in the language of the interface (English without a translation)
+    core.setUiLanguage(translator.isEmpty() ? QString("") : translator.language());
     if (parser.isSet(themeOption))
         core.settings()->setThemeOverride(parser.value(themeOption));
 
@@ -426,8 +428,12 @@ int main(int argc, char *argv[])
                 {
                     const QPointF local(arg.section(QLatin1Char(','), 0, 0).toDouble(), arg.section(QLatin1Char(','), 1, 1).toDouble());
                     const QPointF global = window->mapToGlobal(local);
-                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
-                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                    // click:x,y,shift / click:x,y,ctrl: with that key held
+                    const QString held = arg.section(QLatin1Char(','), 2, 2);
+                    const Qt::KeyboardModifiers mods = held == QLatin1String("shift") ? Qt::ShiftModifier
+                                                     : held == QLatin1String("ctrl") ? Qt::ControlModifier : Qt::NoModifier;
+                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress, mods);
+                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease, mods);
                 }
                 QQuickItem *focus = window->activeFocusItem();
                 qInfo("keys: %s -> focus %s, playback keys %d", qPrintable(step),
@@ -464,6 +470,8 @@ int main(int argc, char *argv[])
     else if (parser.isSet(grabOption) == false)
     {
         core.updates()->checkOnStartup();
+        // and new fixtures in the Open Fixture Library, if it is downloaded
+        core.library()->checkOnStartup(core.updates()->autoCheck());
     }
 
     const int result = app.exec();

@@ -302,19 +302,28 @@ Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con e
 - [x] De paso, en el motor: «Parar todo» podía volver un instante antes de tiempo (el temporizador sacaba de la cola lo recién lanzado antes de anotarlo como en marcha), y lo lanzado y parado en el mismo fotograma daba un fotograma (una colección o una super escena encendían sus escenas un momento tras la parada). Lo encontró una prueba de estrés que fallaba de vez en cuando; ahora tiene además una prueba fija.
 - [x] Convertir a pasos ya no graba los canales que el efecto no toca: guardaba todo lo que salía por encima de 0, y en fixtures con valores por defecto (pan, tilt y zoom en el centro, un shutter abierto) los pasos los fijaban por encima de otras escenas. Ahora graba lo que el efecto cambia respecto a lo que sale en reposo.
 
+## v0.14.4 — Manual en seis idiomas, bibliotecas al día y mejoras (hecho)
+
+- [x] **El manual en los seis idiomas del programa**: inglés, portugués, francés, italiano y alemán, además del español, en `docs/manual/<idioma>/` con la misma estructura página a página. El panel de ayuda (F12) lo abre en el idioma del programa; las capturas son las de la versión en español (las traducciones las enlazan como `../img/`, así se ven también en GitHub). Prueba `manualPages`: cada idioma tiene todas las páginas y todas sus imágenes existen.
+- [x] **Open Fixture Library al día**: una vez descargada, Opciones muestra cuántos fixtures tiene y cuándo se descargó, y el botón pasa a «Actualizar». Una vez al día (con «Buscar actualizaciones al arrancar», y también con «Buscar actualizaciones») el programa pregunta a GitHub cuándo cambiaron por última vez sus fixtures; si es después de la descarga, lo avisa y resalta el botón. La actualización se descomprime aparte y solo entonces se aplica: añade los fixtures nuevos (y los lista), pone los mejorados en lugar de los anteriores (también en los fixtures patcheados, salvo los que no caben con su modo nuevo), conserva los que la biblioteca ya no tiene (un show puede usarlos) y no toca los fixtures propios ni los de la biblioteca incluida. Una descarga que no se puede leer o que falla no cambia nada (antes se borraba la carpeta antes de importar). Probado con un servidor local que hace de la web y de GitHub; sin probar contra la web real.
+- [x] **Entrada de audio de Pulso** en Opciones › Audio: «Predeterminada del sistema» o cualquier entrada del ordenador; Pulso cambia de entrada al momento. Una entrada elegida que no está conectada se ve como «(no conectada)» y mientras tanto se usa la predeterminada. Sin probar con varias tarjetas de sonido reales.
+- [x] **Archivos que faltan al abrir un show** (sonidos, vídeos, la imagen de una matriz y las imágenes del SHOW): se listan en un aviso, y «Buscar en una carpeta…» los busca por nombre en esa carpeta y sus subcarpetas y el show pasa a usarlos. En un SHOW bloqueado (quiosco) solo se avisa.
+- [x] **CPU** que usa el programa, abajo en la barra lateral, naranja por encima del 70 % y roja por encima del 90 %.
+- [x] **Plegar grupos** (petición del usuario): en Directo, la flecha junto al nombre deja el grupo en una tira estrecha con su nombre y cuántas escenas suenan (se guarda con el show, atributo `Folded` del grupo); en el SHOW, los grupos de «Todos los grupos» (los demás se reparten el ancho) y una sección «Un grupo» en media página (se queda en su tira o su cabecera y la otra mitad crece), guardado con la página e independiente de Directo; en el Patch, los modelos de la lista agrupada (clic en su cabecera) y las selecciones de cada grupo de fixtures. Las escenas siguen sonando.
+- [x] **Mayús+clic selecciona un tramo** en la lista del Patch y en las fichas de Programar: desde el último fixture pulsado hasta ese, en ese sentido (el orden de la selección); Ctrl+Mayús+clic lo añade. Antes Mayús hacía lo mismo que Ctrl.
+- [x] **«Identificar» ya no lleva la lista del Patch arriba del todo**: identificar no rehace la lista de fixtures, y la lista se actualiza fila a fila (invertir pan o tilt tampoco la mueve).
+- [x] **Detalles de la interfaz** que quedaban de la revisión: los nombres de fixtures muy juntos en el plano ya no se pisan (se ocultan hasta acercar el zoom); la barra de cues deja «Actualizar», «Cargar» y «Sacar» en icono cuando no cabe (alemán, listas estrechas) en lugar de partirse en dos líneas; los títulos de las columnas de la lista de cues siempre alineados con sus valores; las tiras de playback de una sección del SHOW muy baja quitan el botón 2 para que quepan el fader y el flash; las insignias del modo Mapear van en la esquina de los botones y faders pequeños, sin tapar su texto; y las casillas numéricas de las propiedades de las secciones del SHOW, alineadas.
+
 ## v0.15 — Hardware y bibliotecas (pendiente)
 
 - [ ] **Conexión con hardware**: probar y ajustar con equipos reales todo lo que las etapas anteriores dejan «sin probar con hardware real»: interfaces DMX USB (Enttec, FTDI/Open DMX), nodos Art-Net y sACN, entrada DMX, las controladoras APC mini, mini mk2 y APC40 mkII y otros controladores MIDI, OSC, móviles por wifi y fixtures reales. Con un asistente que detecte las interfaces conectadas y una prueba de salida.
-- [ ] **Descarga automática de bibliotecas**: descargar y mantener al día desde el programa la Open Fixture Library (publicada en GitHub) y avisar de las definiciones nuevas, sin tocar las fixtures propias. GDTF-Share pide cuenta y no tiene una API pública documentada: hay que estudiar cómo acceder con la cuenta del usuario o seguir importando su descarga múltiple.
+- [ ] **GDTF-Share**: pide cuenta y no tiene una API pública documentada: hay que estudiar cómo acceder con la cuenta del usuario o seguir importando su descarga múltiple. (La Open Fixture Library ya se mantiene al día: v0.14.4.)
 
 ## Más adelante
 
-- [ ] El manual en los otros idiomas del programa (ahora solo en español; el panel de ayuda lo avisa).
 - [ ] Visualizador 3D [la vista 3D de la interfaz original, `qmlui/`].
 - [ ] Mappings de **vídeo** sobre el plano 2D (el motor solo reproduce vídeo en pantalla, no lo lleva a los fixtures).
-- [ ] Elegir la entrada de audio de Pulse en Opciones (ahora usa la entrada por defecto del sistema).
-- [ ] Comprobar archivos que faltan (audio, imágenes) al abrir un show.
-- [ ] Indicador de carga de CPU.
+- [ ] Capturas del manual en cada idioma (ahora todas las traducciones usan las de la versión en español).
 
 ## Fuera de alcance
 

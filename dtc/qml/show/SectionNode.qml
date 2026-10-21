@@ -37,6 +37,27 @@ Item {
     // while the divider is dragged, before it is saved
     property real dragRatio: -1
     readonly property real ratio: dragRatio >= 0 ? dragRatio : (nodeData.ratio || 0.5)
+    /** Half of a split, and of a split in a column (the halves one above
+     *  the other): a group section can fold there, to its strip */
+    property bool inSplit: false
+    property bool inColumn: false
+
+    // a folded group section takes its strip only: across the row, or its
+    // header in a column (with the title of the section, if it shows)
+    function folded(d) {
+        return !!d && d.split !== "h" && d.split !== "v" && d.type === "group" && d.folded === true
+    }
+    readonly property bool firstFolded: isSplit && folded(nodeData.a)
+    readonly property bool secondFolded: isSplit && folded(nodeData.b) && !firstFolded
+    function foldedSize(d) {
+        if (horizontal)
+            return 46
+        const header = (d && (d.title || "").length > 0) || (surface !== null && surface.editing) ? 26 : 0
+        return 50 + header
+    }
+    readonly property real span: (horizontal ? width : height) - gap
+    readonly property real firstSpan: firstFolded ? foldedSize(nodeData.a)
+                                    : secondFolded ? span - foldedSize(nodeData.b) : span * ratio
 
     // a section
     Loader {
@@ -46,6 +67,8 @@ Item {
             SectionView {
                 section: node.nodeData
                 surface: node.surface
+                inSplit: node.inSplit
+                foldsUp: node.inColumn
             }
         }
     }
@@ -57,11 +80,13 @@ Item {
         source: "SectionNode.qml"
         x: 0
         y: 0
-        width: node.horizontal ? (node.width - node.gap) * node.ratio : node.width
-        height: node.horizontal ? node.height : (node.height - node.gap) * node.ratio
+        width: node.horizontal ? node.firstSpan : node.width
+        height: node.horizontal ? node.height : node.firstSpan
         onLoaded: {
             item.surface = Qt.binding(() => node.surface)
             item.nodeData = Qt.binding(() => node.nodeData.a || ({}))
+            item.inSplit = true
+            item.inColumn = Qt.binding(() => !node.horizontal)
         }
     }
     Loader {
@@ -75,6 +100,8 @@ Item {
         onLoaded: {
             item.surface = Qt.binding(() => node.surface)
             item.nodeData = Qt.binding(() => node.nodeData.b || ({}))
+            item.inSplit = true
+            item.inColumn = Qt.binding(() => !node.horizontal)
         }
     }
 

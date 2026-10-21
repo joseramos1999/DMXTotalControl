@@ -35,15 +35,15 @@ Para dimmers sueltos, elige **Generic › Generic Dimmer**: en lugar de modo, pi
 
 Columnas: casilla de selección, **#** (número), **NOMBRE**, **DIRECCIÓN** (universo . dirección), **CANALES**, **FIXTURE** (fabricante y modelo), **MODO**, **INVERTIR** (pan y tilt) y el botón de identificar.
 
-- **«Agrupar por fixture»** los agrupa por modelo, con una casilla para seleccionar todos los de cada modelo.
+- **«Agrupar por fixture»** los agrupa por modelo, con una casilla para seleccionar todos los de cada modelo. Un clic en la cabecera de un modelo lo pliega (oculta sus fixtures) o lo despliega.
 - **Doble clic** en un fixture lo edita.
 
 ## Seleccionar
 
 Las herramientas de la barra trabajan sobre la selección:
 
-- **Clic** selecciona; **Ctrl+clic** o **Mayús+clic** añade o quita. **«Todos»** y **«Ninguno»**.
-- **«Identificar»**: los fixtures seleccionados parpadean en blanco para encontrarlos en el escenario. **«Dejar de identificar»** lo para (también se para al salir de la página). El botón de cada fila identifica solo ese fixture.
+- **Clic** selecciona; **Ctrl+clic** añade o quita; **Mayús+clic** selecciona todos los fixtures desde el último que pulsaste hasta ese (en ese sentido, que es el orden de la selección), y **Ctrl+Mayús+clic** los añade. **«Todos»** y **«Ninguno»**.
+- **«Identificar»**: los fixtures seleccionados parpadean en blanco para encontrarlos en el escenario. **«Dejar de identificar»** lo para (también se para al salir de la página). El botón de cada fila identifica solo ese fixture. La lista se queda donde estaba.
 - **Invertir pan** e **invertir tilt** (los iconos de flechas): para los fixtures que lo tienen.
 - **«Límites»**, **«Editar»**, **«Redireccionar»**, **«Numerar»**, **«Crear grupo»** y **«Eliminar»**: se explican a continuación.
 
@@ -84,7 +84,7 @@ Una **selección** es una parte ordenada de un grupo: por ejemplo, los spots de 
 1. Selecciona los fixtures en el orden que quieras (o con un patrón del menú del grupo).
 2. Pulsa el **+** del grupo (o «Guardar la selección aquí…») y escribe un nombre.
 
-Las selecciones aparecen bajo su grupo. Un clic selecciona sus fixtures en su orden, aquí y en Programar. Clic derecho: **«Renombrar»** y **«Eliminar la selección»**.
+Las selecciones aparecen bajo su grupo. Un clic selecciona sus fixtures en su orden, aquí y en Programar. Clic derecho: **«Renombrar»** y **«Eliminar la selección»**. La flecha a la izquierda del grupo oculta o muestra sus selecciones.
 
 ## Plano 2D
 
@@ -108,7 +108,7 @@ Las herramientas (trabajan sobre la selección y en su orden):
 - **15°** (clic derecho: hacia el otro lado) y **90°**: giran la selección.
 - **«Altura y orientación»**: dónde cuelgan las cabezas móviles seleccionadas, para [Follow](patch.md#altura-y-orientación-follow).
 
-Las cabezas móviles llevan una pequeña flecha en el borde: hacia dónde miran.
+Las cabezas móviles llevan una pequeña flecha en el borde: hacia dónde miran. Los nombres de los fixtures muy juntos se ocultan para no pisarse: acerca el zoom para leerlos.
 
 La **rueda** hace zoom, el **botón derecho** o el central arrastran la vista y un doble clic con ellos la centra. Los botones de la esquina también hacen zoom.
 

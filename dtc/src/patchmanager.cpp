@@ -178,7 +178,6 @@ QVariantList PatchManager::fixtures() const
         info.insert("hasTilt", hasTilt);
         info.insert("invertPan", hasPan && isInverted(fxi, QLCChannel::Pan));
         info.insert("invertTilt", hasTilt && isInverted(fxi, QLCChannel::Tilt));
-        info.insert("identified", m_identified.contains(fxi->id()));
         info.insert("swapPanTilt", fxi->swapPanTilt());
         // limited: a limit on the dimmer, the pan or the tilt (not just an inversion)
         auto limited = [&](int group, int colour) {
@@ -1138,7 +1137,6 @@ void PatchManager::identify(const QVariantList &ids)
     else
         m_blinkTimer->start();
     emit identifiedChanged();
-    notifyFixtures();
 }
 
 void PatchManager::toggleIdentify(quint32 id)

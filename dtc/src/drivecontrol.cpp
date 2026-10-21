@@ -24,6 +24,8 @@
 
 #include "drivecontrol.h"
 #include "audiocapture.h"
+#include "audioplugincache.h"
+#include "audiorenderer.h"
 #include "function.h"
 #include "doc.h"
 
@@ -183,6 +185,34 @@ void DriveControl::setThreshold(qreal threshold)
 qreal DriveControl::level() const
 {
     return m_level;
+}
+
+QStringList DriveControl::audioInputs() const
+{
+    QStringList names;
+    for (const AudioDeviceInfo &info : m_doc->audioPluginCache()->audioDevicesList())
+    {
+        if (info.capabilities & AUDIO_CAP_INPUT)
+            names.append(info.deviceName);
+    }
+    return names;
+}
+
+void DriveControl::restartInput()
+{
+    if (m_pulseEnabled == false)
+        return;
+
+    // the capture stops when nobody listens to it, and opens the input
+    // chosen when it starts again
+    detachCapture();
+    if (attachCapture() == false)
+    {
+        m_levelTimer->stop();
+        m_pulseEnabled = false;
+        emit pulseEnabledChanged();
+    }
+    slotUpdateLevel();
 }
 
 void DriveControl::slotAudioData(double *bands, int size, double maxMagnitude, quint32 power)

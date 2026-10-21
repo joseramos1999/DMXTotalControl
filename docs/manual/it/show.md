@@ -1,0 +1,199 @@
+# Show
+
+![La pagina Show](../img/show.png)
+
+La pagina **Show** (F2) è la tua schermata operativa: la costruisci tu, su misura, con tasti, fader, manopole, gruppi, playback, orologio, note… È pensata per gli schermi touch, per restare a schermo intero durante lo show e per usarla anche dal telefono con il [controllo remoto](remoto.md). Si salva con lo show.
+
+Uno SHOW ha delle **pagine**. Ogni pagina è fatta di **sezioni** che riempiono lo schermo. Ogni sezione si può dividere in due metà, affiancate o una sopra l'altra, tutte le volte che vuoi, e ogni sezione mostra una cosa: una tabella di tasti, una tabella di fader, un gruppo, un orologio…
+
+## Iniziare
+
+Con uno show nuovo la pagina è vuota e offre due tasti:
+
+- **«Nuova pagina»**: crea una pagina con una tabella di tasti ed entra nella modalità modifica.
+- **«Parti dai miei gruppi»**: crea la pagina «Gruppi» con tutti i tuoi gruppi di Live in alto e, in basso, una tabella di fader «Master» (il grand master e i master dei primi gruppi), una sezione Ritmo e un orologio. Compare solo se hai già dei gruppi.
+
+## La modalità modifica
+
+Premi **«Modifica»** per costruire la schermata e **«Fatto»** per tornare a usarla. Nella modalità modifica:
+
+- Fai clic sul titolo di una sezione (o in qualsiasi suo punto) per **selezionarla**. Le sue proprietà compaiono nel pannello **«Proprietà»** a destra.
+- Nella barra del titolo di ogni sezione ci sono tre tasti: **dividi in due metà affiancate**, **dividi una sopra l'altra** e **rimuovi questa sezione**. Gli stessi sono nelle proprietà: «Affiancate», «Una sopra l'altra» e «Rimuovi sezione».
+- Trascina il **separatore** tra due metà per cambiarne la dimensione. Si aggancia da solo a quarti, terzi e metà.
+- Una sezione **«Vuota»** mostra dei tasti con tutti i tipi: fai clic su uno per scegliere cosa mostra.
+
+### Tipi di sezione
+
+| Tipo | Cosa mostra |
+|---|---|
+| **Tasti** | Una tabella di tasti (colonne × righe). |
+| **Fader** | Una fila di fader. |
+| **Un gruppo** | Un gruppo di Live con tasti grandi. |
+| **Tutti i gruppi** | Tutti i gruppi di Live, uno accanto all'altro. |
+| **Playback** | I playback della pagina Playback, con il loro GO, i loro tasti e il loro fader. |
+| **Mixer dal vivo** | Il [mixer](directo.md#mixer) di Live. |
+| **Orologio** | L'ora, con secondi e data facoltativi. |
+| **Timer** | Un cronometro o un conto alla rovescia. |
+| **Ritmo: GO e Stop** | **GO** e **Stop** grandi, come quelli della barra superiore (cambiano ciò che fanno i tasti delle scene), e **BeatGO**. I tasti di scene a passi o di cuelist contengono la loro barra del ritmo. |
+| **Note** | Un tuo testo, della dimensione che vuoi. |
+| **In riproduzione ora** | Ciò che è in riproduzione, con un tasto per fermarlo. |
+| **Manopole e ruote** | Una tabella di manopole o di rotelle infinite. |
+| **Ruota dei colori** | Una ruota per dare colore a un gruppo di fixture. |
+| **Griglia XY (pan e tilt)** | Un'area per muovere le teste mobili. |
+| **Immagine** | Un'immagine (un logo, una pianta…). |
+| **Livelli DMX** | I 512 canali di un universo, dal vivo. |
+| **Vuota** | Niente (nella modalità modifica, l'elenco dei tipi). |
+
+### Proprietà della sezione
+
+A seconda del tipo, il pannello delle proprietà mostra:
+
+- **Mostra**: il tipo di sezione.
+- **Titolo**: il testo della sua barra del titolo. Senza titolo, fuori dalla modalità modifica la barra non si vede.
+- **Colonne** e **Righe**: la dimensione della tabella (fino a 32). Tasti, fader e manopole riempiono le loro celle.
+- **Riempi con le scene di un gruppo** (tasti): mette in un colpo solo un tasto per ogni scena di quel gruppo.
+- **Gruppo** (un gruppo): quale mostra.
+- **Fixture** (ruota dei colori e griglia XY): su quale gruppo di fixture agiscono, oppure «Tutte le fixture con colore» / «Tutte le teste mobili».
+- **Immagine** (immagine): il file, e «Immagine intera» o «Riempi la sezione».
+- **Secondi** e **Data** (orologio).
+- **Conta** (timer): «In avanti (cronometro)» o «All'indietro (conto alla rovescia)», con i suoi **Minuti**.
+- **Testo** e **Dimensione** (note).
+- **Universo** (livelli DMX).
+- **Pagina di playback**, **Playback** e **Primo playback** (playback): vedi [Playback nello SHOW](show.md#playback-nello-show).
+
+## Tasti
+
+1. Seleziona una sezione di tasti e fai clic su una cella vuota (quella con il **+**).
+2. Premi **«Aggiungi un tasto qui»**.
+3. Scegli la sua **Azione** e ciò che serve (la scena, il gruppo, la palette…).
+
+Il modo più rapido per riempire una tabella è **trascinare le scene** dall'elenco che si trova sotto le proprietà («Trascina una scena su una cella:») fino alle celle: ogni scena diventa un tasto che la avvia.
+
+### Azioni di un tasto
+
+| Azione | Cosa fa |
+|---|---|
+| **Riproduci una scena** | Avvia la scena nel suo gruppo (o da sola, se non è in nessun gruppo). Premuto più volte di seguito, batte il [ritmo](directo.md#ritmo-di-una-scena-a-passi) di una scena a passi o di una cuelist. |
+| **Scena successiva di un gruppo** / **Scena precedente di un gruppo** | In un gruppo, o in «Tutti i gruppi». |
+| **Rilascia un gruppo** | Un gruppo, o tutti. |
+| **Blackout** | Attiva o toglie il blackout. |
+| **Ferma tutto** | Come il tasto della barra superiore. |
+| **Tap tempo** | Batte il tempo dello show (quello degli FX e delle scene in modalità BPM). |
+| **BeatGO (divisione successiva)** | Come il tasto BeatGO della barra superiore. |
+| **Una palette** | Mette la palette sulle fixture con cui è stata registrata («Le sue fixture») o su un gruppo di fixture, come una modifica dal vivo del programmatore: va sopra le scene finché non premi di nuovo. |
+| **GO della cuelist** / **Indietro della cuelist** / **Rilascia una cuelist** | Sulla cuelist che scegli in **Cuelist**. |
+| **Vai a una cue…** | Salta alla **Cue** che scegli di quella cuelist. |
+
+Un tasto portato da un'altra pagina con Alt+clic mostra «Un controllo su un'altra pagina» e sotto ciò che fa («Fa: …»).
+
+### Opzioni di un tasto
+
+- **Etichetta**: il suo testo. Vuota («Automatica»), mostra il nome della scena, della palette o dell'azione.
+- **Comportamento** (scena, blackout e palette): **«Commuta: acceso / spento»** o **«Flash: finché è premuto»**. I tasti flash hanno un fulmine nell'angolo.
+- **Tasto della tastiera**: un tasto della tastiera che lo preme mentre sei nella pagina Show. La lettera si vede nell'angolo del tasto.
+- **Colore**, **Icona** e **Immagine** di sfondo (l'immagine appare attenuata mentre il tasto è spento).
+
+Un tasto acceso si riempie con il suo colore.
+
+### Spostare e rimuovere
+
+Nella modalità modifica, trascina un tasto, un fader o una manopola in un'altra cella della stessa sezione per spostarlo. Per rimuoverlo, selezionalo e premi **Canc** (o «Rimuovi il tasto» / «Rimuovi il fader» nelle proprietà). **Esc** annulla la selezione.
+
+## Fader
+
+Un fader dello SHOW può controllare **più cose insieme**. Nelle sue proprietà, sotto **Controlla**, ogni elemento è uno di questi:
+
+| Elemento | Cosa fa il fader |
+|---|---|
+| **Avvia una scena (la sua intensità)** | Salendo da 0, la scena parte nel suo gruppo (rispettando se è esclusivo); scendendo a 0, si ferma; nel mezzo è la sua intensità. |
+| **Dimmer di una scena (senza avviarla)** | Attenua la scena chiunque la avvii (il suo gruppo, un playback, un tasto, una super scena). Non la avvia né la ferma. Il suo livello si salva con lo show e dura finché c'è un fader o una manopola di dimmer su quella scena: se lo rimuovi, la scena torna al 100 %. |
+| **Master di un gruppo** | Il master di quel gruppo di Live. |
+| **Grand master** | Il GM della barra superiore. |
+| **Dimmer di fixture** | Il dimmer del mixer di tutte le fixture o di un gruppo di fixture. |
+| **Velocità di movimento delle teste mobili** | Il canale di velocità pan/tilt di tutte le teste mobili o di un gruppo (in alto = più veloce). |
+| **Velocità di una scena** | La velocità dal vivo di quella scena. |
+| **BPM** | Il tempo dello show, da 20 a 300. |
+
+La differenza tra i due di scena: **«Avvia una scena (la sua intensità)»** è la scena stessa, e la avvia e la ferma; **«Dimmer di una scena (senza avviarla)»** la attenua soltanto, anche quando viene avviata da un altro punto. Si possono usare insieme: con il dimmer al 50 % e il fader che la avvia all'80 %, la scena esce al 40 %.
+
+Premi **«Aggiungi un altro elemento»** per aggiungerne un altro e l'icona del cestino per rimuoverlo. Se trascini una scena su una cella di fader, si crea un fader che la avvia.
+
+Con **Intervallo**, **Da** … **a** … (da 0 a 100 %), la corsa del fader copre solo quella parte di ciò che muove, in tutti i suoi elementi. Per esempio, la velocità di una scena dal 20 all'80 %, o un dimmer da 0 a 60 % perché non vada oltre. Con «Da» maggiore di «a», o con **«Inverti»**, il fader va al contrario. Un fader che avvia una scena la ferma all'estremo dove il valore è più basso (in fondo; in cima se è invertito), anche se «Da» non è 0.
+
+Il testo del fader mostra il valore reale (la % o i BPM), non dove si trova il fader. Se un altro controllo porta il valore fuori dall'intervallo, il fader resta all'estremo.
+
+Sotto ogni fader c'è un tasto **«Flash»**: lo porta in cima alla sua corsa finché lo premi e, quando lo rilasci, ripristina esattamente ciò che c'era. Si toglie o si mette con l'interruttore «Tasto flash: al massimo finché è premuto» nelle sue proprietà.
+
+> **Consiglio:** un fader con «Master di un gruppo» dei tuoi wash e «Dimmer di fixture» dei PAR sul pubblico ti dà un solo fader per abbassare tutto il frontale.
+
+## Manopole e ruote
+
+Le manopole controllano le stesse cose dei fader (la tabella sopra), con lo stesso **Intervallo**. Ogni manopola può essere:
+
+- Una **manopola**: percorre tutto il suo intervallo in tre quarti di giro. Il doppio clic la porta all'inizio della sua corsa (il valore di «Da», o quello di «a» se è invertita); se controlla i BPM, a 90, o all'estremo dell'intervallo più vicino se 90 resta fuori.
+- Una **rotella incrementale** («Rotella incrementale: gira all'infinito, ogni scatto aggiunge o toglie un passo»): gira all'infinito, e ogni scatto aggiunge o toglie il **Passo** (da 1 a 25 %) al punto in cui si trova il valore. Il passo è una % del valore, non della corsa, e la rotella non esce dall'intervallo; girandola verso l'alto con la scena ferma, la avvia su «Da». L'arco intorno mostra il livello.
+
+Per girarle, trascina intorno al centro con il mouse o con il dito, oppure su e giù vicino al centro. Ogni scatto della rotella del mouse le gira un po' (in una rotella incrementale, uno scatto).
+
+## Ruota dei colori e griglia XY
+
+- **Ruota dei colori**: tocca la ruota per dare tonalità e saturazione (bianco al centro) alle fixture della sezione, o premi uno dei campioni sotto.
+- **Griglia XY (pan e tilt)**: trascina il punto per muovere le teste. **«Centro»** le porta al centro.
+
+Entrambe agiscono come una modifica dal vivo del programmatore: vanno sopra le scene finché non premi **«Rilascia»**, e allora le scene tornano a dare il colore o la posizione.
+
+## Gruppi e mixer
+
+Le sezioni **Un gruppo** e **Tutti i gruppi** mostrano le colonne di [Live](directo.md) con tasti grandi, i loro precedente/successivo, il loro tasto di rilascio e il loro master, senza opzioni di modifica. **Mixer dal vivo** mostra le strisce del mixer adattate alla larghezza.
+
+Anche qui i gruppi si **comprimono**, con la freccia accanto al loro nome: in **Tutti i gruppi**, il gruppo diventa una striscia stretta e gli altri si dividono la larghezza; una sezione **Un gruppo** che occupa una metà della pagina si comprime nella sua striscia (o nella sua intestazione, se le metà sono una sopra l'altra) e l'altra metà si allarga. Le sue scene restano in riproduzione e si salva con la pagina (è indipendente dalla compressione in Live). In uno SHOW bloccato i gruppi non si comprimono.
+
+## Playback nello SHOW
+
+La sezione **Playback** mostra strisce uguali a quelle della pagina [Playback](playbacks.md):
+
+- **Pagina di playback**: **«Segui la pagina attuale»** (la barra del titolo mostra ◀ il nome della pagina ▶ per cambiarla) o una pagina fissa.
+- **Playback**: quanti se ne vedono (fino a 20) e **Primo playback**: da quale.
+- Tre interruttori per mostrare o nascondere il **secondo tasto (Pausa / Indietro)**, il **terzo tasto (Flash)** e **la cue in riproduzione e la successiva**.
+
+Nella modalità modifica, rilascia una scena su una striscia per metterla su quel playback.
+
+## Utilità
+
+- **Orologio**: ora e data del computer.
+- **Timer**: **«Avvia»** / **«Pausa»** e **«Azzera»**. Nel conto alla rovescia diventa arancione nell'ultimo minuto e rosso quando arriva a zero. Continua a contare anche se cambi pagina.
+- **Ritmo**: **GO**, **Stop** e **BeatGO**.
+- **Note**: il testo che scrivi nelle sue proprietà (la scaletta, avvisi per l'operatore…).
+- **In riproduzione ora**: ciò che è in riproduzione, con il tasto per fermarla accanto a ogni scena.
+- **Livelli DMX**: una griglia con i 512 canali dell'universo scelto.
+- **Immagine**: intera o a riempire la sezione.
+
+## Pagine
+
+- Nella modalità modifica, **«+ Pagina»** aggiunge una pagina.
+- Fai clic sul nome di una pagina per vederla. Le schede delle pagine si vedono se ce n'è più di una.
+- Nella modalità modifica, un doppio clic su una scheda la rinomina; il clic destro apre **«Rinomina…»**, **«Sposta a sinistra»**, **«Sposta a destra»** e **«Elimina pagina…»**. Quando la elimini, viene indicato quante sezioni e controlli se ne vanno con lei: non si può annullare.
+
+## Portare qualsiasi controllo nello SHOW
+
+**Alt+clic** su quasi qualsiasi controllo del programma lo copia nella pagina dello SHOW che hai aperta: una scena di Live, il master di un gruppo, un tasto del mixer, il grand master, il blackout, una palette di Programma, i tasti e il fader di un playback… Il programma avvisa «Aggiunto allo SHOW, pagina «…»».
+
+Il nuovo controllo va nella prima cella libera di una tabella di tasti o di fader di quella pagina. Se non ce n'è nessuna, una sezione vuota si trasforma in una (con il titolo «Touch»), oppure si divide l'ultima sezione.
+
+## Schermo intero e blocco
+
+- **«Schermo intero»** (F11) e **«Esci da schermo intero»**.
+- **«Blocca»**: nasconde la barra laterale e lascia solo lo SHOW, senza modifica né navigazione. Per uscire, **tieni premuto «Sblocca»** (una barra si riempie sotto il tasto). Se c'è una password di blocco, la chiede.
+
+### Blocco e modalità chiosco
+
+- In Opzioni › «SHOW e blocco», **«Apri lo SHOW a schermo intero all'avvio»** apre direttamente lo SHOW. Con **«…e bloccato»**, si avvia anche bloccato: solo lo SHOW, come un chiosco.
+- Se blocchi la **«Modifica dello SHOW»** con il lucchetto della barra superiore, il tasto «Modifica» scompare: le pagine si usano, ma non si modificano.
+
+Vedi [Opzioni](opciones.md#show-e-blocco).
+
+## Tasti, mappature e controllo remoto
+
+- I **tasti della tastiera** assegnati ai tasti funzionano solo nella pagina Show. Per questo, in questa pagina il tasto G non fa BeatGO.
+- Nella modalità Apprendi, i tasti e i fader dello SHOW si possono assegnare a un controller; un controllo MIDI può muovere un fader dello SHOW intero, con tutti i suoi elementi (vedi [Mappature](mapeos.md)).
+- Le pagine dello SHOW si vedono e si usano sul telefono o sul tablet con il [controllo remoto](remoto.md).

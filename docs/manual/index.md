@@ -48,13 +48,15 @@ La ventana tiene tres partes: la barra superior, la barra lateral con las págin
 
 **F11** pone la ventana a pantalla completa o la devuelve a su tamaño. Si una página está bloqueada, en la barra lateral lleva un candado y al abrirla se pide la contraseña, si la hay (consulta [Opciones](opciones.md#show-y-bloqueo)).
 
+Abajo de la barra lateral están la versión del programa y la **CPU** que usa («CPU 12 %», de todos los núcleos del ordenador juntos). Por encima del 70 % se pone naranja, y por encima del 90 %, roja: la salida puede perder el ritmo. Cierra otros programas o para algunos efectos.
+
 ### La barra superior
 
 De izquierda a derecha:
 
 - **El show**: su nombre. Un punto **●** delante avisa de que hay cambios sin guardar; si el autoguardado está activo, se ve también la hora del último («autoguardado…»).
 - **Archivo**: «Nuevo show (Ctrl+N)», «Abrir (Ctrl+O)», la flecha **▾** con los shows recientes y los «Ejemplos», «Guardar (Ctrl+S)» y «Guardar como…» (Ctrl+Mayús+S).
-- **Ritmo**: **«GO»** y **«Stop»** cambian lo que hacen los botones de las escenas (en Directo, el SHOW, los mapeos y el móvil). Con **GO** encendido, pulsar una escena la lanza y las pulsaciones siguientes marcan su ritmo, sin pararla nunca; con **Stop** encendido, pulsar una escena la para; con los dos apagados, como siempre ([Directo](directo.md#ritmo-de-una-escena-con-pasos)). Cada botón de una escena con pasos o de una cuelist que suena (en Directo, el SHOW, los playbacks y el móvil) lleva dentro una **barra partida en dos** que enciende un lado y luego el otro en cada paso: así ves el ritmo de cada una. Después, **«BeatGO»** (siguiente división de las escenas que van por BeatGO, también con la tecla G) y **«Pulso»**, que escucha la entrada de audio del ordenador: cada pico que pasa la línea del medidor mueve las escenas que van por Pulso. Arrastra la línea del medidor para cambiar el umbral. El tempo del show, el de los FX y las escenas en modo BPM, se cambia con un fader o un dial de BPM del [SHOW](show.md) o con los [mapeos](mapeos.md).
+- **Ritmo**: **«GO»** y **«Stop»** cambian lo que hacen los botones de las escenas (en Directo, el SHOW, los mapeos y el móvil). Con **GO** encendido, pulsar una escena la lanza y las pulsaciones siguientes marcan su ritmo, sin pararla nunca; con **Stop** encendido, pulsar una escena la para; con los dos apagados, como siempre ([Directo](directo.md#ritmo-de-una-escena-con-pasos)). Cada botón de una escena con pasos o de una cuelist que suena (en Directo, el SHOW, los playbacks y el móvil) lleva dentro una **barra partida en dos** que enciende un lado y luego el otro en cada paso: así ves el ritmo de cada una. Después, **«BeatGO»** (siguiente división de las escenas que van por BeatGO, también con la tecla G) y **«Pulso»**, que escucha la entrada de audio del ordenador (se elige en [Opciones](opciones.md#audio)): cada pico que pasa la línea del medidor mueve las escenas que van por Pulso. Arrastra la línea del medidor para cambiar el umbral. El tempo del show, el de los FX y las escenas en modo BPM, se cambia con un fader o un dial de BPM del [SHOW](show.md) o con los [mapeos](mapeos.md).
 - **El candado**: bloquea pantallas para que nada cambie por error (consulta [Opciones](opciones.md#show-y-bloqueo)).
 - **La diana**: el modo Mapear, para asignar controles MIDI, OSC o teclas (consulta [Mapeos](mapeos.md#modo-mapear)). Su piloto verde parpadea con cada mensaje que llega.
 - **«N en marcha»**: cuántas escenas y efectos están sonando.
@@ -66,6 +68,8 @@ De izquierda a derecha:
 En una ventana estrecha o una pantalla pequeña, la barra se compacta: el nombre del show se recorta, «Guardar como…» queda como un icono, «N en marcha» se queda en el número y, en las más estrechas, «Blackout» y «Parar todo» quedan solo con su icono. Pasa el ratón por encima de un icono para ver qué es. Si todo se ve pequeño o grande, cambia el **Tamaño de la interfaz** en [Opciones](opciones.md#general).
 
 Al cerrar el programa, o al abrir o crear otro show, si hay cambios sin guardar se pregunta «¿Guardar los cambios?» con «Cancelar», «No guardar» y «Guardar».
+
+Si el show que abres usa archivos que no están (sus sonidos, vídeos o imágenes; por ejemplo, un show traído de otro ordenador), se avisa con la lista. El show funciona sin ellos. Con **«Buscar en una carpeta…»** eliges la carpeta donde están: se buscan por su nombre, también en sus subcarpetas, y el show pasa a usarlos (guárdalo para conservarlo así).
 
 > **Consejo:** si el programa se cerró de forma inesperada y tenías un show sin guardar, al volver a abrirlo te ofrece «¿Recuperar el show sin guardar?». Pulsa «Recuperar» y guárdalo con un nombre.
 

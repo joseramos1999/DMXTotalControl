@@ -21,6 +21,8 @@ En la cabecera de la página tienes:
 
 El botón del engranaje de cada columna abre su menú: **«Cambiar color»** (pasa al siguiente color), **«Mover a la izquierda»**, **«Mover a la derecha»** y **«Eliminar grupo»**. También puedes arrastrar el grupo por el asa que hay a la izquierda de su nombre y soltarlo sobre otro grupo para ocupar su lugar.
 
+La flecha **‹** junto al nombre **pliega** el grupo: queda una tira estrecha con su nombre y cuántas escenas suenan, para dejar sitio a los demás. Sus escenas siguen sonando. La flecha **›** de la tira lo despliega. Se guarda con el show.
+
 ### Añadir y ordenar escenas
 
 1. Pulsa **«Añadir escenas»** al final de la columna.

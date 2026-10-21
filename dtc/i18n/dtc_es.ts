@@ -2074,6 +2074,44 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
             <numerusform>%n nuevas en la biblioteca</numerusform>
         </translation>
     </message>
+    <message>
+        <source>Looking for new fixtures in the Open Fixture Library…</source>
+        <translation>Buscando fixtures nuevos en la Open Fixture Library…</translation>
+    </message>
+    <message>
+        <source>Couldn&apos;t look for new fixtures: %1</source>
+        <translation>No se han podido buscar fixtures nuevos: %1</translation>
+    </message>
+    <message>
+        <source>unexpected answer</source>
+        <translation>respuesta inesperada</translation>
+    </message>
+    <message>
+        <source>The Open Fixture Library has new or improved fixtures since your download (%1)</source>
+        <translation>La Open Fixture Library tiene fixtures nuevos o mejorados desde tu descarga (%1)</translation>
+    </message>
+    <message>
+        <source>The Open Fixture Library is up to date</source>
+        <translation>La Open Fixture Library está al día</translation>
+    </message>
+    <message numerus="yes">
+        <source>Open Fixture Library: %n fixture(s) downloaded</source>
+        <translation>
+            <numerusform>Open Fixture Library: %n fixture descargado</numerusform>
+            <numerusform>Open Fixture Library: %n fixtures descargados</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>nothing new</source>
+        <translation>nada nuevo</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n improved</source>
+        <translation>
+            <numerusform>%n mejorado</numerusform>
+            <numerusform>%n mejorados</numerusform>
+        </translation>
+    </message>
     <message numerus="yes">
         <source>%n .qxf file(s) imported</source>
         <translation>
@@ -2116,8 +2154,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>No se puede escribir %1</translation>
     </message>
     <message>
-        <source>Open Fixture Library: %1 fixtures downloaded, %2 new in the library</source>
-        <translation>Open Fixture Library: %1 fixtures descargados, %2 nuevos en la biblioteca</translation>
+        <source>The download has no fixtures: the Open Fixture Library stays as it was</source>
+        <translation>La descarga no trae fixtures: la Open Fixture Library se queda como estaba</translation>
     </message>
     <message>
         <source>Manufacturer and model are required</source>
@@ -2996,6 +3034,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Añadido al SHOW, página «%1»</translation>
     </message>
     <message>
+        <source>New fixtures in the Open Fixture Library: update it in Options</source>
+        <translation>Fixtures nuevos en la Open Fixture Library: actualízala en Opciones</translation>
+    </message>
+    <message>
         <source>Save show as</source>
         <translation>Guardar show como</translation>
     </message>
@@ -3127,6 +3169,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Opciones</translation>
     </message>
     <message>
+        <source>CPU %1 %</source>
+        <translation>CPU %1 %</translation>
+    </message>
+    <message>
+        <source>Processor used by DMX Total Control (all the cores of the computer). Above 70 % the output may lose its pace: close other programs or stop some effects.</source>
+        <translation>Procesador que usa DMX Total Control (todos los núcleos del ordenador). Por encima del 70 % la salida puede perder el ritmo: cierra otros programas o para algunos efectos.</translation>
+    </message>
+    <message>
         <source>Learn mode: click a purple control (Shift+click still uses it)</source>
         <translation>Modo aprender: haz clic en un control morado (Mayús+clic sigue usándolo)</translation>
     </message>
@@ -3137,6 +3187,13 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Done</source>
         <translation>Hecho</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) of the show are missing</source>
+        <translation>
+            <numerusform>Falta %n archivo del show</numerusform>
+            <numerusform>Faltan %n archivos del show</numerusform>
+        </translation>
     </message>
     <message>
         <source>Save changes?</source>
@@ -3780,6 +3837,50 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     </message>
 </context>
 <context>
+    <name>MissingFilesDialog</name>
+    <message>
+        <source>Folder with the missing files</source>
+        <translation>Carpeta con los archivos que faltan</translation>
+    </message>
+    <message>
+        <source>None of the missing files is in that folder</source>
+        <translation>Ninguno de los archivos que faltan está en esa carpeta</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) found, %1 still missing</source>
+        <translation>
+            <numerusform>%n archivo encontrado; aún faltan %1</numerusform>
+            <numerusform>%n archivos encontrados; aún faltan %1</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) found. Save the show to keep them</source>
+        <translation>
+            <numerusform>%n archivo encontrado. Guarda el show para conservarlo</numerusform>
+            <numerusform>%n archivos encontrados. Guarda el show para conservarlos</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n file(s) of the show are missing</source>
+        <translation>
+            <numerusform>Falta %n archivo del show</numerusform>
+            <numerusform>Faltan %n archivos del show</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The show plays without them. If it comes from another computer, choose the folder where they are: they are looked for by name, also in its subfolders.</source>
+        <translation>El show funciona sin ellos. Si viene de otro ordenador, elige la carpeta donde están: se buscan por su nombre, también en sus subcarpetas.</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Cerrar</translation>
+    </message>
+    <message>
+        <source>Look in a folder…</source>
+        <translation>Buscar en una carpeta…</translation>
+    </message>
+</context>
+<context>
     <name>MixerStrip</name>
     <message numerus="yes">
         <source>%n fixture(s)</source>
@@ -4154,6 +4255,26 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Todos los canales</translation>
     </message>
     <message>
+        <source>Audio</source>
+        <translation>Audio</translation>
+    </message>
+    <message>
+        <source>Audio input</source>
+        <translation>Entrada de audio</translation>
+    </message>
+    <message>
+        <source>The microphone or line input of Pulse and of the audio matrices</source>
+        <translation>El micrófono o la entrada de línea de Pulso y de las matrices de audio</translation>
+    </message>
+    <message>
+        <source>System default</source>
+        <translation>Predeterminada del sistema</translation>
+    </message>
+    <message>
+        <source>%1 (not connected)</source>
+        <translation>%1 (no conectada)</translation>
+    </message>
+    <message>
         <source>Recent shows</source>
         <translation>Shows recientes</translation>
     </message>
@@ -4217,8 +4338,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Open Fixture Library</translation>
     </message>
     <message>
-        <source>Installed. Download it again to update it.</source>
-        <translation>Instalada. Descárgala de nuevo para actualizarla.</translation>
+        <source>Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it. Nothing is downloaded or installed without asking you.</source>
+        <translation>Una vez al día, en GitHub: el programa y, si descargaste la Open Fixture Library, sus fixtures nuevos. No se descarga ni se instala nada sin preguntarte.</translation>
     </message>
     <message>
         <source>Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.</source>
@@ -4250,6 +4371,25 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Import…</source>
         <translation>Importar…</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s), downloaded on %1.</source>
+        <translation>
+            <numerusform>%n fixture, descargada el %1.</numerusform>
+            <numerusform>%n fixtures, descargada el %1.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>There are new or improved fixtures: update it.</source>
+        <translation>Hay fixtures nuevos o mejorados: actualízala.</translation>
+    </message>
+    <message>
+        <source>Updating it keeps your own fixtures.</source>
+        <translation>Al actualizarla se conservan tus fixtures.</translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation>Actualizar</translation>
     </message>
     <message>
         <source>GDTF fixtures</source>
@@ -4293,6 +4433,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Open folder</source>
         <translation>Abrir carpeta</translation>
+    </message>
+    <message>
+        <source>New: %1</source>
+        <translation>Nuevos: %1</translation>
     </message>
     <message>
         <source>Libraries of other programs in closed or encrypted formats can&apos;t be imported. Most fixtures exist in the Open Fixture Library or on GDTF-Share; missing ones can be made on the Fixtures page.</source>
@@ -4341,10 +4485,6 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Check for updates at startup</source>
         <translation>Buscar actualizaciones al arrancar</translation>
-    </message>
-    <message>
-        <source>Once a day, on GitHub. Nothing is downloaded or installed without asking you.</source>
-        <translation>Una vez al día, en GitHub. No se descarga ni se instala nada sin preguntarte.</translation>
     </message>
     <message>
         <source>Include test versions</source>
@@ -4938,6 +5078,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Fixture groups</source>
         <translation>Grupos de fixtures</translation>
+    </message>
+    <message>
+        <source>Show its selections</source>
+        <translation>Mostrar sus selecciones</translation>
+    </message>
+    <message>
+        <source>Hide its selections</source>
+        <translation>Ocultar sus selecciones</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s)</source>
@@ -8550,6 +8698,28 @@ Añádelos en la página Patch.</translation>
     <message>
         <source>Release this group</source>
         <translation>Liberar este grupo</translation>
+    </message>
+    <message>
+        <source>Unfold the group</source>
+        <translation>Desplegar el grupo</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n scene(s) playing</source>
+        <translation>
+            <numerusform>%n escena sonando</numerusform>
+            <numerusform>%n escenas sonando</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n playing</source>
+        <translation>
+            <numerusform>%n sonando</numerusform>
+            <numerusform>%n sonando</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Fold the group: a strip with its name, to make room for the others. Its scenes go on playing</source>
+        <translation>Plegar el grupo: una tira con su nombre, para dejar sitio a los demás. Sus escenas siguen sonando</translation>
     </message>
     <message>
         <source>Delete group</source>

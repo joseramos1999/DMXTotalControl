@@ -146,6 +146,8 @@ Las dos actúan como una edición en vivo del programador: van por encima de las
 
 Las secciones **Un grupo** y **Todos los grupos** muestran las columnas de [Directo](directo.md) con botones grandes, su anterior/siguiente, su botón de liberar y su master, sin opciones de edición. **Mezclador en vivo** muestra las tiras del mezclador ajustadas al ancho.
 
+Los grupos también se **pliegan** aquí, con la flecha junto a su nombre: en **Todos los grupos**, el grupo queda en una tira estrecha y los demás se reparten el ancho; una sección **Un grupo** que ocupa una mitad de la página se pliega a su tira (o a su cabecera, si las mitades van una encima de otra) y la otra mitad crece. Sus escenas siguen sonando y se guarda con la página (es independiente del plegado de Directo). En un SHOW bloqueado no se pliega.
+
 ## Playbacks en el SHOW
 
 La sección **Playbacks** muestra tiras iguales a las de la página [Playbacks](playbacks.md):

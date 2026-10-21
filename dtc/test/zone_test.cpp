@@ -215,6 +215,7 @@ void Zone_Test::saveLoadRoundTrip()
     wash->setExclusive(false);
     wash->setFadeTime(1500);
     wash->setMaster(0.5);
+    wash->setFolded(true);
     wash->addFunction(m_scenes[2]);
     wash->addFunction(m_scenes[0]);
     Zone *fx = manager.addZone("FX");
@@ -241,6 +242,9 @@ void Zone_Test::saveLoadRoundTrip()
     QCOMPARE(w->exclusive(), false);
     QCOMPARE(w->fadeTime(), 1500);
     QCOMPARE(w->master(), 0.5);
+    // folded in Live, the other one not
+    QVERIFY(w->folded());
+    QVERIFY(loaded.zone(1)->folded() == false);
     QCOMPARE(w->functionIDs(), QList<quint32>() << m_scenes[2] << m_scenes[0]);
     QCOMPARE(loaded.zone(1)->name(), QString("FX"));
     QCOMPARE(loaded.zone(1)->functionIDs(), QList<quint32>() << m_scenes[1]);
@@ -390,6 +394,10 @@ void Zone_Test::masterMarksModified()
     Zone zone(m_doc, 0);
     m_doc->resetModified();
     zone.setMaster(0.6);
+    QVERIFY(m_doc->isModified());
+    // folding it too
+    m_doc->resetModified();
+    zone.setFolded(true);
     QVERIFY(m_doc->isModified());
 }
 

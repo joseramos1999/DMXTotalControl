@@ -43,6 +43,9 @@ Rectangle {
     property bool recordMode: false
     /** Low: one line of cue, smaller buttons */
     property bool compact: false
+    /** Too low for all of it (a short section of the SHOW): button 2 goes,
+     *  so the fader and the flash stay */
+    readonly property bool tight: compact && height > 0 && height < 240
     /** Buttons 2 and 3, and the cue lines */
     property bool showBack: true
     property bool showFlash: true
@@ -462,7 +465,7 @@ Rectangle {
         StripButton {
             id: button2
             Layout.fillWidth: true
-            visible: strip.showBack
+            visible: strip.showBack && !strip.tight
             act: strip.info.button2 || "pauseBack"
             // (learn mode: the controls of an empty playback can be mapped too)
             enabled: (!strip.empty && act !== "none") || Core.mapping.learnMode

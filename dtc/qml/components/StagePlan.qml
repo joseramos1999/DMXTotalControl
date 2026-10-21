@@ -81,6 +81,23 @@ Rectangle {
     /** What each fixture shows, by id (live) */
     property var states: ({})
 
+    /** The room of the name of each fixture, by id (px): up to the nearest
+     *  fixture beside it, so the names don't run over each other */
+    readonly property var labelRooms: {
+        const list = plan.fixtures || []
+        const s = plan.mmScale
+        let rooms = {}
+        for (let i = 0; i < list.length; i++) {
+            let room = 90
+            for (let j = 0; j < list.length; j++) {
+                if (i !== j && Math.abs(list[j].y - list[i].y) * s < 16)
+                    room = Math.min(room, Math.abs(list[j].x - list[i].x) * s)
+            }
+            rooms[list[i].id] = room
+        }
+        return rooms
+    }
+
     function resetView() { zoom = 1; pan = Qt.point(0, 0) }
     function zoomAt(px, py, factor) {
         let mmX = (px - stageX) / mmScale, mmY = (py - stageY) / mmScale
@@ -452,15 +469,16 @@ Rectangle {
                 }
             }
 
+            // (too close to the next one: no name, zoom in to read it)
             Text {
                 anchors { top: parent.bottom; topMargin: 2; horizontalCenter: parent.horizontalCenter }
-                width: Math.max(90, parent.width)
+                width: fxItem.bar ? Math.max(90, parent.width) : Math.min(90, (plan.labelRooms[fxItem.modelData.id] ?? 90) - 6)
                 horizontalAlignment: Text.AlignHCenter
                 elide: Text.ElideRight
                 text: fxItem.modelData.name
                 color: fxItem.selected ? Theme.text : Theme.textDim
                 font.pixelSize: 10
-                visible: plan.showNames && (!fxItem.bar || plan.zoom >= 1.5 || fxItem.selected)
+                visible: plan.showNames && (fxItem.bar ? plan.zoom >= 1.5 || fxItem.selected : width >= 26)
             }
 
             MouseArea {

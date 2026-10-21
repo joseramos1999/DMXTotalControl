@@ -23,6 +23,7 @@ add_executable(dtc_backend_test
     backend_test.cpp
     ../src/patchmanager.cpp ../src/patchmanager.h ../src/patchplan.cpp
     ../src/aim.cpp ../src/aim.h
+    ../src/cpuload.cpp ../src/cpuload.h
     ../src/fixturelibrary.cpp ../src/fixturelibrary.h
     ../src/gdtfimporter.cpp ../src/gdtfimporter.h
     ../src/programmer.cpp ../src/programmer.h
@@ -85,6 +86,7 @@ set_target_properties(dtc_backend_test PROPERTIES AUTORCC ON)
 
 # the built-in manual (DtcCore::manualPage)
 file(GLOB DTC_TEST_MANUAL_FILES CONFIGURE_DEPENDS
-     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
+     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/*/*.md"
+     "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
 qt_add_resources(dtc_backend_test "test_manual" PREFIX "/manual" BASE "${CMAKE_SOURCE_DIR}/docs/manual"
                  FILES ${DTC_TEST_MANUAL_FILES})

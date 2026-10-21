@@ -62,6 +62,9 @@ class AppSettings : public QObject
     Q_PROPERTY(bool hasLockPassword READ hasLockPassword NOTIFY lockChanged)
     /** The programmer is cleared after recording a cue or a new cuelist */
     Q_PROPERTY(bool clearAfterRecord READ clearAfterRecord WRITE setClearAfterRecord NOTIFY clearAfterRecordChanged)
+    /** The audio input of Pulse and of the audio matrices, by its name.
+     *  Empty: the default one of the system */
+    Q_PROPERTY(QString audioInput READ audioInput WRITE setAudioInput NOTIFY audioInputChanged)
 
 public:
     explicit AppSettings(QObject *parent = nullptr);
@@ -113,6 +116,9 @@ public:
     bool clearAfterRecord() const;
     void setClearAfterRecord(bool enable);
 
+    QString audioInput() const;
+    void setAudioInput(const QString &name);
+
     QString theme() const;
     void setTheme(const QString &theme);
     /** A theme for this run only, not saved (the developer screenshots) */
@@ -143,6 +149,7 @@ signals:
     void startupChanged();
     void lockChanged();
     void clearAfterRecordChanged();
+    void audioInputChanged();
     void themeChanged();
     void uiScaleChanged();
     void guideShownChanged();

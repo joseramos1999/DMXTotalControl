@@ -112,8 +112,8 @@ Drawer {
                 }
                 Text {
                     Layout.fillWidth: true
-                    // the manual is written in Spanish: said in the other languages
-                    text: Qt.uiLanguage.startsWith("es") ? qsTr("Manual") : qsTr("Manual (in Spanish)")
+                    // the manual in the language of the app; else the original, in Spanish: said
+                    text: Qt.uiLanguage.startsWith("es") || Core.manualLanguage().length > 0 ? qsTr("Manual") : qsTr("Manual (in Spanish)")
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
                     font.weight: Font.Bold

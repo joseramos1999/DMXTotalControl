@@ -55,10 +55,12 @@ Rectangle {
     border.color: Theme.learn
     border.width: !learning ? 0 : pending ? 3 : 1
 
-    // how many mappings drive it already
+    // how many mappings drive it already (on the corner of a small control,
+    // a button or a fader, not over its text or its handle)
     Rectangle {
         visible: overlay.learning && overlay.count > 0
-        anchors { right: parent.right; top: parent.top; margins: 2 }
+        z: 1
+        anchors { right: parent.right; top: parent.top; margins: overlay.height < 44 ? -8 : 2 }
         width: Math.max(16, countText.implicitWidth + 8)
         height: 16
         radius: 8

@@ -41,6 +41,8 @@
 #define KSettingLockedScreens   QStringLiteral("lock/screens")
 #define KSettingLockPassword    QStringLiteral("lock/password")
 #define KSettingClearAfterRecord QStringLiteral("programmer/clearAfterRecord")
+// (the key the audio capture of the engine reads)
+#define KSettingAudioInput      QStringLiteral("audio/input")
 #define KSettingTheme           QStringLiteral("ui/theme")
 #define KSettingUiScale         QStringLiteral("ui/scale")
 #define KSettingGuideShown      QStringLiteral("ui/guideShown")
@@ -323,6 +325,22 @@ void AppSettings::setClearAfterRecord(bool enable)
         return;
     m_settings.setValue(KSettingClearAfterRecord, enable);
     emit clearAfterRecordChanged();
+}
+
+QString AppSettings::audioInput() const
+{
+    return m_settings.value(KSettingAudioInput).toString();
+}
+
+void AppSettings::setAudioInput(const QString &name)
+{
+    if (name == audioInput())
+        return;
+    if (name.isEmpty())
+        m_settings.remove(KSettingAudioInput);
+    else
+        m_settings.setValue(KSettingAudioInput, name);
+    emit audioInputChanged();
 }
 
 /*********************************************************************

@@ -242,7 +242,7 @@ Flickable {
             RowLayout {
                 visible: props.isTable || props.type === "playbacks"
                 Layout.fillWidth: true
-                Caption { text: props.type === "playbacks" ? qsTr("Playbacks") : qsTr("Columns") }
+                Caption { Layout.fillWidth: true; text: props.type === "playbacks" ? qsTr("Playbacks") : qsTr("Columns") }
                 SpinBox {
                     from: 1; to: props.type === "playbacks" ? 20 : 32; editable: true
                     value: props.section.cols || 1
@@ -266,7 +266,7 @@ Flickable {
             RowLayout {
                 visible: props.type === "playbacks"
                 Layout.fillWidth: true
-                Caption { text: qsTr("First playback") }
+                Caption { Layout.fillWidth: true; text: qsTr("First playback") }
                 SpinBox {
                     from: 1; to: 20; editable: true
                     value: (props.section.first || 0) + 1
@@ -297,7 +297,7 @@ Flickable {
             RowLayout {
                 visible: props.type === "buttons" || props.type === "dials"
                 Layout.fillWidth: true
-                Caption { text: qsTr("Rows") }
+                Caption { Layout.fillWidth: true; text: qsTr("Rows") }
                 SpinBox {
                     from: 1; to: 32; editable: true
                     value: props.section.rows || 1
@@ -367,7 +367,8 @@ Flickable {
 
             RowLayout {
                 visible: props.type === "clock"
-                Caption { text: qsTr("Seconds") }
+                Layout.fillWidth: true
+                Caption { Layout.fillWidth: true; text: qsTr("Seconds") }
                 AppSwitch { checked: props.section.seconds !== false; onToggled: props.setSection({ seconds: checked }) }
                 Caption { text: qsTr("Date") }
                 AppSwitch { checked: props.section.date !== false; onToggled: props.setSection({ date: checked }) }
@@ -383,7 +384,8 @@ Flickable {
             }
             RowLayout {
                 visible: props.type === "timer" && props.section.mode === "countdown"
-                Caption { text: qsTr("Minutes") }
+                Layout.fillWidth: true
+                Caption { Layout.fillWidth: true; text: qsTr("Minutes") }
                 SpinBox {
                     from: 1; to: 600; editable: true
                     value: props.section.minutes || 5
@@ -406,7 +408,8 @@ Flickable {
             }
             RowLayout {
                 visible: props.type === "notes"
-                Caption { text: qsTr("Size") }
+                Layout.fillWidth: true
+                Caption { Layout.fillWidth: true; text: qsTr("Size") }
                 SpinBox {
                     from: 10; to: 96; editable: true
                     value: props.section.fontSize || 20

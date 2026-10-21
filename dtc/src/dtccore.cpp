@@ -29,6 +29,9 @@
 #include <QSaveFile>
 #include <QFile>
 #include <QDir>
+#include <QDirIterator>
+#include <QThread>
+#include <QSet>
 #include <QRegularExpression>
 #include <QTextDocument>
 #include <QCoreApplication>
@@ -43,6 +46,7 @@
 #include "timelineeditor.h"
 #include "zone.h"
 #include "scenetaps.h"
+#include "cpuload.h"
 #include "iomanager.h"
 
 #include "qlcfixturedefcache.h"
@@ -57,6 +61,9 @@
 #include "function.h"
 #include "fixturegroup.h"
 #include "rgbmatrix.h"
+#include "rgbimage.h"
+#include "audio.h"
+#include "video.h"
 #include "sequence.h"
 #include "showfunction.h"
 #include "track.h"
@@ -117,6 +124,9 @@ DtcCore::DtcCore(QObject *parent)
     connect(m_settings, SIGNAL(grandMasterModeChanged()), this, SLOT(slotGrandMasterModeChanged()));
     slotGrandMasterModeChanged();
 
+    // Pulse listens to the audio input chosen in the options at once
+    connect(m_settings, &AppSettings::audioInputChanged, m_drive, &DriveControl::restartInput);
+
     // A session that didn't end cleanly may have left an autosave of an
     // untitled show behind
     if (m_settings->sessionRunning() && QFile::exists(recoveryFilePath()))
@@ -130,6 +140,14 @@ DtcCore::DtcCore(QObject *parent)
     m_stepsTimer->setInterval(40);
     connect(m_stepsTimer, SIGNAL(timeout()), this, SLOT(slotStepsTick()));
     m_stepsTimer->start();
+
+    // the processor it takes (a slow computer, too many effects)
+    m_cpuTimer = new QTimer(this);
+    m_cpuTimer->setInterval(2000);
+    connect(m_cpuTimer, SIGNAL(timeout()), this, SLOT(slotCpuTick()));
+    m_cpuTime = processCpuTime();
+    m_cpuClock.start();
+    m_cpuTimer->start();
 
     m_autosaveTimer = new QTimer(this);
     connect(m_autosaveTimer, SIGNAL(timeout()), this, SLOT(slotAutosave()));
@@ -495,6 +513,30 @@ int DtcCore::stepsRevision() const
     return m_stepsRevision;
 }
 
+int DtcCore::cpuLoad() const
+{
+    return m_cpuLoad;
+}
+
+void DtcCore::slotCpuTick()
+{
+    const qint64 time = processCpuTime();
+    const qint64 elapsed = m_cpuClock.restart();
+    int load = -1;
+    if (time >= 0 && m_cpuTime >= 0 && elapsed > 0)
+    {
+        // (as the task manager shows it: of all the cores together)
+        const int cores = qMax(1, QThread::idealThreadCount());
+        load = qBound(0, int(qRound64(100.0 * qreal(time - m_cpuTime) / qreal(elapsed) / cores)), 100);
+    }
+    m_cpuTime = time;
+    if (load != m_cpuLoad)
+    {
+        m_cpuLoad = load;
+        emit cpuLoadChanged();
+    }
+}
+
 QHash<quint32, int> DtcCore::steps() const
 {
     return m_steps;
@@ -756,6 +798,11 @@ void DtcCore::clearShow()
         m_lastAutosave.clear();
         emit lastAutosaveChanged();
     }
+    if (m_missingFiles.isEmpty() == false)
+    {
+        m_missingFiles.clear();
+        emit missingFilesChanged();
+    }
 }
 
 void DtcCore::newShow()
@@ -861,6 +908,7 @@ bool DtcCore::openShow(const QUrl &url)
 
     if (damaged)
     {
+        checkFiles();
         // what could be read stays, as an untitled show: nothing (autosave,
         // Save) writes the part over the whole file
         setFileName(QString());
@@ -872,6 +920,7 @@ bool DtcCore::openShow(const QUrl &url)
         return false;
     }
 
+    checkFiles();
     setFileName(path);
     m_doc->resetModified();
     m_backupDone = false;
@@ -1257,6 +1306,141 @@ QString DtcCore::lastAutosave() const
     return m_lastAutosave;
 }
 
+/*********************************************************************
+ * The files of the show
+ *********************************************************************/
+
+/** A file a show names as a path of this machine: empty for what is not a
+ *  local file (a stream, a resource) */
+static QString localFile(const QString &name)
+{
+    if (name.startsWith(QLatin1String("file:")))
+        return QUrl(name).toLocalFile();
+    if (name.contains(QLatin1String("://")) || name.startsWith(QLatin1String("qrc:")))
+        return QString();
+    return name;
+}
+
+/** The picture of a matrix that shows one, null for the others */
+static RGBImage *matrixImage(RGBMatrix *matrix)
+{
+    RGBAlgorithm *algorithm = matrix->algorithm();
+    if (algorithm == nullptr || algorithm->type() != RGBAlgorithm::Image)
+        return nullptr;
+    return static_cast<RGBImage *>(algorithm);
+}
+
+QStringList DtcCore::missingFiles() const
+{
+    return m_missingFiles;
+}
+
+void DtcCore::checkFiles()
+{
+    QStringList missing;
+    auto check = [&missing](const QString &name) {
+        const QString path = localFile(name);
+        if (path.isEmpty() == false && QFileInfo::exists(path) == false && missing.contains(path) == false)
+            missing.append(path);
+    };
+
+    for (Function *f : m_doc->functions())
+    {
+        if (Audio *audio = qobject_cast<Audio *>(f))
+            check(audio->getSourceFileName());
+        else if (Video *video = qobject_cast<Video *>(f))
+            check(video->sourceUrl());
+        else if (RGBMatrix *matrix = qobject_cast<RGBMatrix *>(f))
+        {
+            QMutexLocker locker(&matrix->algorithmMutex());
+            if (RGBImage *image = matrixImage(matrix))
+                check(image->filename());
+        }
+    }
+    for (const QString &image : m_surface->images())
+        check(image);
+
+    if (missing != m_missingFiles)
+    {
+        m_missingFiles = missing;
+        emit missingFilesChanged();
+    }
+}
+
+int DtcCore::locateMissingFiles(const QUrl &folder)
+{
+    const QString root = folder.isLocalFile() ? folder.toLocalFile() : folder.toString();
+    if (root.isEmpty() || m_missingFiles.isEmpty())
+        return 0;
+
+    // the names wanted, and where the first file of each name is in the
+    // folder or below it (a whole disk is looked through only so far)
+    QSet<QString> wanted;
+    for (const QString &path : std::as_const(m_missingFiles))
+        wanted.insert(QFileInfo(path).fileName().toLower());
+    QHash<QString, QString> found;
+    QDirIterator it(root, QDir::Files, QDirIterator::Subdirectories);
+    for (int seen = 0; it.hasNext() && found.size() < wanted.size() && seen < 100000; seen++)
+    {
+        const QString path = it.next();
+        const QString name = it.fileName().toLower();
+        if (wanted.contains(name) && found.contains(name) == false)
+            found.insert(name, path);
+    }
+    if (found.isEmpty())
+        return 0;
+
+    /* where a missing file is now, empty when it isn't missing or wasn't found */
+    auto newPath = [&found](const QString &name) {
+        const QString path = localFile(name);
+        if (path.isEmpty() || QFileInfo::exists(path))
+            return QString();
+        return found.value(QFileInfo(path).fileName().toLower());
+    };
+
+    for (Function *f : m_doc->functions())
+    {
+        if (Audio *audio = qobject_cast<Audio *>(f))
+        {
+            const QString path = newPath(audio->getSourceFileName());
+            if (path.isEmpty() == false)
+                audio->setSourceFileName(path);
+        }
+        else if (Video *video = qobject_cast<Video *>(f))
+        {
+            const QString path = newPath(video->sourceUrl());
+            if (path.isEmpty() == false)
+                video->setSourceUrl(path);
+        }
+        else if (RGBMatrix *matrix = qobject_cast<RGBMatrix *>(f))
+        {
+            QMutexLocker locker(&matrix->algorithmMutex());
+            RGBImage *image = matrixImage(matrix);
+            const QString path = image != nullptr ? newPath(image->filename()) : QString();
+            if (path.isEmpty() == false)
+                image->setFilename(path);
+        }
+    }
+    // (the SHOW keeps a picture as it was chosen: a file URL or a path)
+    for (const QString &image : m_surface->images())
+    {
+        const QString path = newPath(image);
+        if (path.isEmpty() == false)
+            m_surface->replaceImage(image, image.startsWith(QLatin1String("file:")) ? QUrl::fromLocalFile(path).toString() : path);
+    }
+
+    const int before = m_missingFiles.size();
+    checkFiles();
+    const int count = before - m_missingFiles.size();
+    if (count > 0)
+    {
+        m_doc->setModified();
+        emit functionsChanged();
+        emit modifiedChanged();
+    }
+    return count;
+}
+
 void DtcCore::slotAutosaveSettingsChanged()
 {
     if (m_settings->autosaveEnabled())
@@ -1360,10 +1544,37 @@ QString DtcCore::manualPage(const QString &name) const
     static const QRegularExpression valid(QStringLiteral("^[a-z0-9-]+$"));
     if (valid.match(name).hasMatch() == false)
         return QString();
-    QFile file(QStringLiteral(":/manual/%1.md").arg(name));
+    // in the language of the app where the page is translated, else the
+    // original (Spanish)
+    const QString language = manualLanguage();
+    const bool translated = language.isEmpty() == false &&
+                            QFile::exists(QStringLiteral(":/manual/%1/%2.md").arg(language, name));
+    QFile file(translated ? QStringLiteral(":/manual/%1/%2.md").arg(language, name)
+                          : QStringLiteral(":/manual/%1.md").arg(name));
     if (file.open(QIODevice::ReadOnly | QIODevice::Text) == false)
         return QString();
-    return QString::fromUtf8(file.readAll());
+    QString markdown = QString::fromUtf8(file.readAll());
+    // a translation is in a folder of its own and shows the pictures of the
+    // original (the panel finds them from :/manual)
+    if (translated)
+        markdown.replace(QLatin1String("](../img/"), QLatin1String("](img/"));
+    return markdown;
+}
+
+QString DtcCore::manualLanguage() const
+{
+    // the language the interface is in (no translation: English), where the
+    // manual has it; Spanish is the original
+    QString language = m_uiLanguage.isNull() ? QLocale().name() : m_uiLanguage;
+    language = language.isEmpty() ? QStringLiteral("en") : language.section(QLatin1Char('_'), 0, 0);
+    if (language != QLatin1String("es") && QFile::exists(QStringLiteral(":/manual/%1/index.md").arg(language)))
+        return language;
+    return QString();
+}
+
+void DtcCore::setUiLanguage(const QString &language)
+{
+    m_uiLanguage = language.isNull() ? QStringLiteral("") : language;
 }
 
 QVariantList DtcCore::examples() const

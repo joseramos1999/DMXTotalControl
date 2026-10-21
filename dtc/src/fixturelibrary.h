@@ -26,6 +26,7 @@
 #include <QDir>
 #include <QPointer>
 #include <QStringList>
+#include <QDateTime>
 
 #include <atomic>
 
@@ -61,6 +62,14 @@ class FixtureLibrary : public QObject
     Q_PROPERTY(QStringList importErrors READ importErrors NOTIFY importChanged)
     /** How many GDTF fixtures are in the library */
     Q_PROPERTY(int gdtfCount READ gdtfCount NOTIFY libraryChanged)
+    /** The Open Fixture Library download: how many fixtures, when (UTC,
+     *  invalid before the first one), and whether it has changed since */
+    Q_PROPERTY(int oflCount READ oflCount NOTIFY libraryChanged)
+    Q_PROPERTY(QDateTime oflDownloaded READ oflDownloaded NOTIFY libraryChanged)
+    Q_PROPERTY(bool oflUpdateAvailable READ oflUpdateAvailable NOTIFY oflCheckChanged)
+    Q_PROPERTY(bool oflChecking READ oflChecking NOTIFY oflCheckChanged)
+    /** The fixtures the last download added to the library ("Manufacturer Model") */
+    Q_PROPERTY(QStringList oflNewFixtures READ oflNewFixtures NOTIFY libraryChanged)
 
 public:
     FixtureLibrary(Doc *doc, QObject *parent = nullptr);
@@ -87,6 +96,11 @@ public:
     qreal importProgress() const;
     QStringList importErrors() const;
     int gdtfCount() const;
+    int oflCount() const;
+    QDateTime oflDownloaded() const;
+    bool oflUpdateAvailable() const;
+    bool oflChecking() const;
+    QStringList oflNewFixtures() const;
 
     /** Copy .qxf files (or the .qxf inside .zip files) to the user folder, and
      *  convert the GDTF files (.gdtf, also in folders and .zip) in the background.
@@ -94,8 +108,21 @@ public:
     Q_INVOKABLE int importFiles(const QList<QUrl> &urls);
     /** Import the user fixtures of a QLC+ installation, if there is one */
     Q_INVOKABLE int importFromQlcPlus();
-    /** Download the whole Open Fixture Library (MIT licensed) */
+    /** Download the whole Open Fixture Library (MIT licensed). Again: an
+     *  update, in the same folder (apart from the user's own fixtures). The
+     *  new fixtures join the library; the changed ones take the place of the
+     *  old ones (the fixtures patched with them too); the ones it doesn't
+     *  have any more stay (shows may use them). A download that can't be
+     *  read changes nothing */
     Q_INVOKABLE void downloadOpenFixtureLibrary();
+    /** Ask GitHub when the fixtures of the Open Fixture Library last changed:
+     *  later than the download is an update (oflUpdateAvailable) */
+    Q_INVOKABLE void checkOpenFixtureLibrary(bool manual = true);
+    /** At the start, at most once a day, if it is downloaded and the updates
+     *  are looked for (UpdateChecker::autoCheck) */
+    void checkOnStartup(bool autoCheck);
+    /** Other addresses for the download and the check (tests) */
+    void setOpenFixtureLibraryUrls(const QString &download, const QString &commits);
     Q_INVOKABLE void cancelDownload();
     Q_INVOKABLE void cancelImport();
     Q_INVOKABLE void openUserFolder() const;
@@ -129,10 +156,14 @@ signals:
     void downloadChanged();
     void statusChanged();
     void importChanged();
+    void oflCheckChanged();
+    /** A check at the start found new or changed fixtures */
+    void oflUpdateFound();
 
 private slots:
     void slotDownloadProgress(qint64 received, qint64 total);
     void slotDownloadFinished();
+    void slotCheckFinished();
 
 private:
     void setStatus(const QString &status);
@@ -146,6 +177,9 @@ private:
      *  where they are: those keep the old one until they are patched again.
      *  @return how many keep the old one */
     int installDefinition(QLCFixtureDef *def);
+    /** The definitions of $staging (a download) into the Open Fixture
+     *  Library folder and the library. @return the status */
+    QString mergeOpenFixtureLibrary(const QDir &staging, int count);
     struct GdtfJob
     {
         QString path;
@@ -165,6 +199,12 @@ private:
     std::atomic<bool> m_cancelImport;
     qreal m_importProgress;
     QStringList m_importErrors;
+    QString m_oflDownloadUrl;
+    QString m_oflCommitsUrl;
+    QNetworkReply *m_checkReply = nullptr;
+    bool m_checkManual = false;
+    bool m_oflUpdate = false;
+    QStringList m_oflNew;
 };
 
 #endif

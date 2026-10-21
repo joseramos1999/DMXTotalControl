@@ -75,6 +75,9 @@ public:
     Q_PROPERTY(qreal master READ master WRITE setMaster NOTIFY masterChanged)
     Q_PROPERTY(QVariantList functions READ functionsInfo NOTIFY functionsChanged)
     Q_PROPERTY(int activeCount READ activeCount NOTIFY activeChanged)
+    /** Folded in Live (a narrow strip with its name), to make room for the
+     *  others; saved with the show. Its scenes play as always */
+    Q_PROPERTY(bool folded READ folded WRITE setFolded NOTIFY foldedChanged)
 
 public:
     Zone(Doc *doc, quint32 id, QObject *parent = nullptr);
@@ -99,6 +102,9 @@ public:
     /** Intensity master applied to every function started by this zone (0.0 - 1.0) */
     qreal master() const;
     void setMaster(qreal value);
+
+    bool folded() const;
+    void setFolded(bool folded);
 
     QList<quint32> functionIDs() const;
     QVariantList functionsInfo() const;
@@ -158,6 +164,7 @@ signals:
     void exclusiveChanged();
     void fadeTimeChanged();
     void masterChanged();
+    void foldedChanged();
     void functionsChanged();
     void activeChanged();
 
@@ -185,6 +192,7 @@ private:
     bool m_exclusive;
     int m_fadeTime;
     qreal m_master;
+    bool m_folded = false;
 
     QList<quint32> m_functions;
     /** Functions started by this zone */

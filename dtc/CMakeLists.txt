@@ -15,6 +15,7 @@ set(SRC_FILES
     src/uiaudit.cpp src/uiaudit.h
     src/scenetaps.cpp src/scenetaps.h
     src/aim.cpp src/aim.h
+    src/cpuload.cpp src/cpuload.h
     src/palettemanager.cpp src/palettemanager.h
     src/commandline.cpp src/commandline.h
     src/cuelisteditor.cpp src/cuelisteditor.h
@@ -58,6 +59,7 @@ set(QML_FILES
     qml/components/FirstStepsGuide.qml
     qml/components/FxPreview.qml
     qml/components/LockDialog.qml
+    qml/components/MissingFilesDialog.qml
     qml/components/TimeSpin.qml
     qml/components/VFader.qml
     qml/live/LivePage.qml
@@ -151,9 +153,11 @@ qt_add_qml_module(${module_name}
 
 # Translations, embedded under :/i18n. Update the .ts files with the
 # ${module_name}_lupdate target
-# The manual (docs/manual), built in for the help panel (F12)
+# The manual (docs/manual), built in for the help panel (F12): the original
+# in Spanish, the other languages in a folder each (en, pt, fr, it, de)
 file(GLOB DTC_MANUAL_FILES CONFIGURE_DEPENDS
-     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
+     "${CMAKE_SOURCE_DIR}/docs/manual/*.md" "${CMAKE_SOURCE_DIR}/docs/manual/*/*.md"
+     "${CMAKE_SOURCE_DIR}/docs/manual/img/*.png")
 qt_add_resources(${module_name} "manual" PREFIX "/manual" BASE "${CMAKE_SOURCE_DIR}/docs/manual"
                  FILES ${DTC_MANUAL_FILES})
 

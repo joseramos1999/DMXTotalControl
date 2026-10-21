@@ -230,6 +230,8 @@ La cue que suena lleva una barra verde con el avance del fundido; la siguiente, 
 - **«Número…»**: otro número para la cue seleccionada. Mover una cue cambia lo que heredan las que van detrás.
 - **Eliminar**: con **«Mantener el aspecto de las cues siguientes»** marcada, lo que cambia la cue pasa a la siguiente y las de detrás se ven igual.
 
+En una lista estrecha (o en un idioma con palabras largas), «Actualizar», «Cargar» y «Sacar» se quedan con su icono y su flecha **▾**; al pasar el ratón se ve su nombre.
+
 El clic derecho en una cue tiene **«Ir a la cue N»**, las dos formas de cargar, **«Actualizar con el programador»**, **«Número…»** y **«Eliminar…»**.
 
 Las cues pueden usar **paletas por referencia** y llevar **capas de FX**, que se heredan de cue en cue.

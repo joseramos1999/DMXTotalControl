@@ -1434,6 +1434,74 @@ int ShowSurface::revision() const
     return m_revision;
 }
 
+QStringList ShowSurface::images() const
+{
+    QStringList images;
+    std::function<void(const Node *)> walk = [&](const Node *node) {
+        if (node == nullptr)
+            return;
+        if (node->split != "none")
+        {
+            walk(node->a.get());
+            walk(node->b.get());
+            return;
+        }
+        const QString image = node->props.value("image").toString();
+        if (image.isEmpty() == false && images.contains(image) == false)
+            images.append(image);
+        const QVariantMap items = node->props.value("items").toMap();
+        for (const QVariant &item : items)
+        {
+            const QString itemImage = item.toMap().value("image").toString();
+            if (itemImage.isEmpty() == false && images.contains(itemImage) == false)
+                images.append(itemImage);
+        }
+    };
+    for (const Page &page : m_pages)
+        walk(page.root.get());
+    return images;
+}
+
+int ShowSurface::replaceImage(const QString &from, const QString &to)
+{
+    int count = 0;
+    std::function<void(Node *)> walk = [&](Node *node) {
+        if (node == nullptr)
+            return;
+        if (node->split != "none")
+        {
+            walk(node->a.get());
+            walk(node->b.get());
+            return;
+        }
+        if (node->props.value("image").toString() == from)
+        {
+            node->props.insert("image", to);
+            count++;
+        }
+        QVariantMap items = node->props.value("items").toMap();
+        bool itemsChanged = false;
+        for (auto it = items.begin(); it != items.end(); ++it)
+        {
+            QVariantMap item = it.value().toMap();
+            if (item.value("image").toString() != from)
+                continue;
+            item.insert("image", to);
+            it.value() = item;
+            itemsChanged = true;
+            count++;
+        }
+        if (itemsChanged)
+            node->props.insert("items", items);
+    };
+    for (Page &page : m_pages)
+        walk(page.root.get());
+
+    if (count > 0)
+        changed();
+    return count;
+}
+
 void ShowSurface::slotChanged()
 {
     m_revision++;

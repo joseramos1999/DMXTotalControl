@@ -35,6 +35,14 @@ Rectangle {
     readonly property bool canDrag: !operatorMode && dragProxy !== null
     /** The colour of the group (dimmed in the night theme) */
     readonly property color tint: zoneObject ? Theme.category(zoneObject.color) : Theme.accent
+    /** Folded: only a strip with its name (its scenes play as always). The
+     *  page keeps it (Live: the group; SHOW: the section) and folds it on
+     *  foldToggled. foldsUp: a strip across, at the top (a column of sections) */
+    property bool folded: false
+    property bool canFold: false
+    property bool foldsUp: false
+    readonly property int foldedSize: 46
+    signal foldToggled()
 
     // start dragging a scene or this group
     function beginDrag(mouseArea, ev, functionId, label, isZone) {
@@ -122,9 +130,91 @@ Rectangle {
         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
     }
 
+    // folded: unfold, the name, what plays, release
+    Item {
+        anchors { fill: parent; margins: 4; topMargin: 8 }
+        visible: column.folded
+
+        // a strip down (a row of groups)
+        Column {
+            visible: !column.foldsUp
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top }
+            spacing: 6
+            AppButton {
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitWidth: 34
+                flat: true
+                iconGlyph: Theme.iconChevronRight
+                ToolTip.text: qsTr("Unfold the group")
+                ToolTip.visible: hovered
+                onClicked: column.foldToggled()
+            }
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: column.zoneObject && column.zoneObject.activeCount > 0
+                width: 22; height: 22; radius: 11
+                color: Theme.fill(column.tint)
+                Text {
+                    anchors.centerIn: parent
+                    text: column.zoneObject ? column.zoneObject.activeCount : ""
+                    color: Theme.textOn(Theme.fill(column.tint))
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: Font.Bold
+                }
+                ToolTip.text: qsTr("%n scene(s) playing", "", column.zoneObject ? column.zoneObject.activeCount : 0)
+                ToolTip.visible: activeHover.hovered
+                HoverHandler { id: activeHover }
+            }
+        }
+        // the name, read from bottom to top
+        Text {
+            visible: !column.foldsUp
+            anchors.centerIn: parent
+            width: parent.height - 150
+            rotation: -90
+            horizontalAlignment: Text.AlignHCenter
+            text: column.zoneObject ? column.zoneObject.name : ""
+            color: Theme.text
+            font.pixelSize: Theme.fontLarge
+            font.weight: Font.Bold
+            elide: Text.ElideRight
+        }
+
+        // a strip across (a column of sections)
+        RowLayout {
+            visible: column.foldsUp
+            anchors { left: parent.left; right: parent.right; top: parent.top; leftMargin: 4; rightMargin: 4 }
+            spacing: 6
+            AppButton {
+                implicitWidth: 34
+                flat: true
+                iconGlyph: Theme.iconChevronDown
+                ToolTip.text: qsTr("Unfold the group")
+                ToolTip.visible: hovered
+                onClicked: column.foldToggled()
+            }
+            Text {
+                Layout.fillWidth: true
+                text: column.zoneObject ? column.zoneObject.name : ""
+                color: Theme.text
+                font.pixelSize: Theme.fontLarge
+                font.weight: Font.Bold
+                elide: Text.ElideRight
+            }
+            Text {
+                visible: column.zoneObject && column.zoneObject.activeCount > 0
+                text: qsTr("%n playing", "", column.zoneObject ? column.zoneObject.activeCount : 0)
+                color: Theme.readable(column.tint)
+                font.pixelSize: Theme.fontSmall
+                font.weight: Font.Bold
+            }
+        }
+    }
+
     ColumnLayout {
         anchors { fill: parent; margins: 10; topMargin: 12 }
         spacing: 8
+        visible: !column.folded
 
         // title row
         RowLayout {
@@ -174,6 +264,15 @@ Rectangle {
                 }
             }
 
+            AppButton {
+                visible: column.canFold
+                iconGlyph: column.foldsUp ? Theme.iconChevronUp : Theme.iconChevronLeft
+                flat: true
+                ToolTip.text: qsTr("Fold the group: a strip with its name, to make room for the others. Its scenes go on playing")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+                onClicked: column.foldToggled()
+            }
             AppButton {
                 iconGlyph: Theme.iconStop
                 flat: true
