@@ -24,6 +24,7 @@
 #include <QXmlStreamWriter>
 #include <QBuffer>
 #include <QSet>
+#include <QCollator>
 #include <algorithm>
 
 #include "patchmanager.h"
@@ -671,8 +672,16 @@ int PatchManager::importFixtures(Doc *from, QHash<quint32, quint32> *copies)
 
 QVariantList PatchManager::groups() const
 {
+    // in the order given; the others (new ones) after them, as they came
+    QList<FixtureGroup *> ordered = m_doc->fixtureGroups();
+    std::stable_sort(ordered.begin(), ordered.end(), [this](FixtureGroup *a, FixtureGroup *b) {
+        const qsizetype ia = m_groupOrder.indexOf(a->id());
+        const qsizetype ib = m_groupOrder.indexOf(b->id());
+        return (ia < 0 ? m_groupOrder.size() : ia) < (ib < 0 ? m_groupOrder.size() : ib);
+    });
+
     QVariantList list;
-    for (FixtureGroup *grp : m_doc->fixtureGroups())
+    for (FixtureGroup *grp : std::as_const(ordered))
     {
         // the groups made for colour effects belong to them, not to the user
         if (grp->name().endsWith(" (FX)") || grp->name().endsWith(" (FX 2D)"))
@@ -709,7 +718,11 @@ int PatchManager::createGroup(const QString &name, const QVariantList &fixtureId
 void PatchManager::deleteGroup(quint32 id)
 {
     if (m_doc->deleteFixtureGroup(id))
+    {
+        // (a new group given its ID doesn't take its place)
+        m_groupOrder.removeAll(id);
         emit groupsChanged();
+    }
 }
 
 void PatchManager::renameGroup(quint32 id, const QString &name)
@@ -748,6 +761,43 @@ void PatchManager::setGroupFixtures(quint32 id, const QVariantList &fixtureIds)
 
     m_doc->setModified();
     emit groupsChanged();
+}
+
+void PatchManager::setGroupOrder(const QList<quint32> &ids)
+{
+    if (ids == m_groupOrder)
+        return;
+    m_groupOrder = ids;
+    m_doc->setModified();
+    emit groupsChanged();
+}
+
+void PatchManager::moveGroup(int from, int to)
+{
+    QList<quint32> ids;
+    for (const QVariant &group : groups())
+        ids.append(group.toMap().value("id").toUInt());
+    if (from < 0 || from >= ids.count() || to < 0 || to >= ids.count() || from == to)
+        return;
+    ids.move(from, to);
+    setGroupOrder(ids);
+}
+
+void PatchManager::sortGroups()
+{
+    QList<FixtureGroup *> sorted;
+    for (const QVariant &group : groups())
+        sorted.append(m_doc->fixtureGroup(group.toMap().value("id").toUInt()));
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::stable_sort(sorted.begin(), sorted.end(), [&collator](FixtureGroup *a, FixtureGroup *b) {
+        return collator.compare(a->name(), b->name()) < 0;
+    });
+    QList<quint32> ids;
+    for (FixtureGroup *grp : std::as_const(sorted))
+        ids.append(grp->id());
+    setGroupOrder(ids);
 }
 
 /*********************************************************************
@@ -1160,6 +1210,7 @@ void PatchManager::slotDocCleared()
     m_numbers.clear();
     m_shapes.clear();
     m_aims.clear();
+    m_groupOrder.clear();
 }
 
 void PatchManager::slotFixtureRemoved()
@@ -1476,6 +1527,22 @@ void PatchManager::slotGroupRemoved(quint32 id)
 
 bool PatchManager::loadXML(QXmlStreamReader &root)
 {
+    if (root.name() == KXMLDTCGroupOrder)
+    {
+        // "3,1,2"; a group that isn't there (a damaged file) is left out
+        QList<quint32> ids;
+        for (const QString &part : root.readElementText().split(QLatin1Char(','), Qt::SkipEmptyParts))
+        {
+            bool ok = false;
+            const quint32 id = part.trimmed().toUInt(&ok);
+            if (ok && m_doc->fixtureGroup(id) != nullptr && ids.contains(id) == false)
+                ids.append(id);
+        }
+        m_groupOrder = ids;
+        emit groupsChanged();
+        return true;
+    }
+
     if (root.name() == KXMLDTCNumbers)
     {
         // the saved numbers replace the ones given while loading. A number
@@ -1656,6 +1723,16 @@ bool PatchManager::saveXML(QXmlStreamWriter *doc) const
         }
         doc->writeEndElement();
     }
+
+    // the order of the groups, when the user gave one
+    QStringList order;
+    for (quint32 id : m_groupOrder)
+    {
+        if (m_doc->fixtureGroup(id) != nullptr)
+            order.append(QString::number(id));
+    }
+    if (order.isEmpty() == false)
+        doc->writeTextElement(KXMLDTCGroupOrder, order.join(QLatin1Char(',')));
 
     if (m_numbers.isEmpty() == false)
     {

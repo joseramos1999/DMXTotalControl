@@ -67,7 +67,7 @@ Da esquerda para a direita:
 
 Em uma janela estreita ou uma tela pequena, a barra fica compacta: o nome do show é cortado, “Salvar como…” vira um ícone, “N rodando” fica só no número e, nas mais estreitas, “Blackout” e “Parar tudo” ficam só com o ícone. Passe o mouse sobre um ícone para ver o que ele é. Se tudo parecer pequeno ou grande, mude o **Tamanho da interface** em [Opções](opciones.md#geral).
 
-Ao fechar o programa, ou ao abrir ou criar outro show, se houver alterações não salvas aparece a pergunta “Salvar as alterações?” com “Cancelar”, “Não salvar” e “Salvar”.
+Ao fechar o programa, ou ao abrir ou criar outro show, se houver alterações não salvas aparece a pergunta “Salvar as alterações?” com “Cancelar”, “Não salvar” e “Salvar”. Ao fechar, o programa primeiro para todas as cenas, os playbacks e o programador, e deixa as saídas enviarem o palco em repouso: muitos aparelhos ficam com o último sinal que receberam.
 
 Se o show que você abre usa arquivos que não estão lá (os sons, vídeos ou imagens dele; por exemplo, um show trazido de outro computador), um aviso mostra a lista. O show funciona sem eles. Com **“Procurar em uma pasta…”** você escolhe a pasta onde eles estão: são procurados pelo nome, também nas subpastas, e o show passa a usá-los (salve-o para mantê-lo assim).
 

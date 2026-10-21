@@ -5079,6 +5079,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Fixture-Gruppen</translation>
     </message>
     <message>
+        <source>Order the groups alphabetically (also their number in the command line). To order them by hand, drag them by their grip</source>
+        <translation>Gruppen alphabetisch ordnen (auch ihre Nummer in der Befehlszeile). Um sie von Hand zu ordnen, ziehen Sie sie an ihrem Griff</translation>
+    </message>
+    <message>
         <source>Show its selections</source>
         <translation>Ihre Auswahlen anzeigen</translation>
     </message>
@@ -5311,6 +5315,14 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Rename group</source>
         <translation>Gruppe umbenennen</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Nach oben</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Nach unten</translation>
     </message>
     <message>
         <source>Replace with selection</source>
@@ -7419,6 +7431,10 @@ Fügen Sie welche auf der Seite Patch hinzu.</translation>
     <message>
         <source>Universe %1</source>
         <translation>Universum %1</translation>
+    </message>
+    <message>
+        <source>What it shows</source>
+        <translation>Was er zeigt</translation>
     </message>
 </context>
 <context>

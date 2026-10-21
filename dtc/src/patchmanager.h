@@ -44,6 +44,7 @@ class Doc;
 #define KXMLDTCSelections QStringLiteral("Selections")
 #define KXMLDTCPlan QStringLiteral("Plan")
 #define KXMLDTCNumbers QStringLiteral("Numbers")
+#define KXMLDTCGroupOrder QStringLiteral("GroupOrder")
 
 /**
  * Fixture library browsing and fixture patching
@@ -147,13 +148,19 @@ public:
     /*********************************************************************
      * Fixture groups
      *********************************************************************/
-    /** [{ id, name, fixtures: [ids] }] */
+    /** [{ id, name, fixtures: [ids] }], in the order the user gives them
+     *  (new ones at the end). The place is also the number of GROUP in the
+     *  command line */
     QVariantList groups() const;
 
     Q_INVOKABLE int createGroup(const QString &name, const QVariantList &fixtureIds);
     Q_INVOKABLE void deleteGroup(quint32 id);
     Q_INVOKABLE void renameGroup(quint32 id, const QString &name);
     Q_INVOKABLE void setGroupFixtures(quint32 id, const QVariantList &fixtureIds);
+    /** The group at $from (in groups()) goes to $to */
+    Q_INVOKABLE void moveGroup(int from, int to);
+    /** In alphabetical order (numbers as numbers: "Truss 2" before "Truss 10") */
+    Q_INVOKABLE void sortGroups();
 
     /*********************************************************************
      * 2D stage plan
@@ -318,6 +325,9 @@ private:
     QString m_lastError;
     QList<quint32> m_identified;
     bool m_blinkOn;
+    /** The order of the groups the user gave (IDs; saved with the show) */
+    QList<quint32> m_groupOrder;
+    void setGroupOrder(const QList<quint32> &ids);
 
     struct Selection
     {

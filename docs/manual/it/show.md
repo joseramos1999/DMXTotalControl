@@ -20,7 +20,7 @@ Premi **«Modifica»** per costruire la schermata e **«Fatto»** per tornare a 
 - Fai clic sul titolo di una sezione (o in qualsiasi suo punto) per **selezionarla**. Le sue proprietà compaiono nel pannello **«Proprietà»** a destra.
 - Nella barra del titolo di ogni sezione ci sono tre tasti: **dividi in due metà affiancate**, **dividi una sopra l'altra** e **rimuovi questa sezione**. Gli stessi sono nelle proprietà: «Affiancate», «Una sopra l'altra» e «Rimuovi sezione».
 - Trascina il **separatore** tra due metà per cambiarne la dimensione. Si aggancia da solo a quarti, terzi e metà.
-- Una sezione **«Vuota»** mostra dei tasti con tutti i tipi: fai clic su uno per scegliere cosa mostra.
+- Una sezione **«Vuota»** mostra dei tasti con tutti i tipi: fai clic su uno per scegliere cosa mostra. Se la sezione è piccola e non ci stanno, resta un solo tasto, **«Cosa mostra ▾»**, con l'elenco.
 
 ### Tipi di sezione
 
@@ -50,7 +50,7 @@ A seconda del tipo, il pannello delle proprietà mostra:
 
 - **Mostra**: il tipo di sezione.
 - **Titolo**: il testo della sua barra del titolo. Senza titolo, fuori dalla modalità modifica la barra non si vede.
-- **Colonne** e **Righe**: la dimensione della tabella (fino a 32). Tasti, fader e manopole riempiono le loro celle.
+- **Colonne** e **Righe**: la dimensione della tabella (fino a 32). Tasti, fader e manopole riempiono le loro celle. In una sezione troppo piccola per la sua tabella, le celle non si rimpiccioliscono oltre quanto si può leggere e premere: la tabella scorre (con la rotella o trascinando).
 - **Riempi con le scene di un gruppo** (tasti): mette in un colpo solo un tasto per ogni scena di quel gruppo.
 - **Gruppo** (un gruppo): quale mostra.
 - **Fixture** (ruota dei colori e griglia XY): su quale gruppo di fixture agiscono, oppure «Tutte le fixture con colore» / «Tutte le teste mobili».

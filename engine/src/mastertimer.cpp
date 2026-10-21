@@ -245,6 +245,11 @@ void MasterTimer::fadeAndStopAll(int timeout)
     stopAllFunctions();
 }
 
+bool MasterTimer::isTicking() const
+{
+    return d_ptr != NULL && d_ptr->isRunning();
+}
+
 int MasterTimer::runningFunctions() const
 {
     return m_functionList.size();

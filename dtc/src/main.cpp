@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
     parser.addOption(pbDialogOption);
     QCommandLineOption pbNextOption("pb-next", "Developer: 1.7 seconds after start (after --pb-go), Next on a cue of a playback of the current page (slot:cue index).", "slot:cue");
     parser.addOption(pbNextOption);
-    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held). Steps separated by ';'.", "steps");
+    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), drag:x1,y1,x2,y2 drags. Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
     QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
     parser.addOption(guideOption);
@@ -434,6 +434,24 @@ int main(int argc, char *argv[])
                                                      : held == QLatin1String("ctrl") ? Qt::ControlModifier : Qt::NoModifier;
                     WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress, mods);
                     WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease, mods);
+                }
+                else if (step.startsWith(QLatin1String("drag:")))
+                {
+                    // drag:x1,y1,x2,y2: pressed at the first point, moved in
+                    // ten steps to the second, released there
+                    const QStringList p = arg.split(QLatin1Char(','));
+                    if (p.count() == 4)
+                    {
+                        const QPointF from(p.at(0).toDouble(), p.at(1).toDouble());
+                        const QPointF to(p.at(2).toDouble(), p.at(3).toDouble());
+                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, from, window->mapToGlobal(from), Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+                        for (int i = 1; i <= 10; i++)
+                        {
+                            const QPointF at = from + (to - from) * (i / 10.0);
+                            WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, at, window->mapToGlobal(at), Qt::LeftButton, Qt::NoButton, QEvent::MouseMove);
+                        }
+                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, to, window->mapToGlobal(to), Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                    }
                 }
                 QQuickItem *focus = window->activeFocusItem();
                 qInfo("keys: %s -> focus %s, playback keys %d", qPrintable(step),

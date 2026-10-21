@@ -20,7 +20,7 @@ Appuyez sur **« Modifier »** pour construire l’écran et sur **« Termin�
 - Cliquez sur le titre d’une section (ou n’importe où dedans) pour la **sélectionner**. Ses propriétés apparaissent dans le panneau **« Propriétés »** à droite.
 - Dans la barre de titre de chaque section, il y a trois boutons : **diviser en deux moitiés côte à côte**, **diviser l’une au-dessus de l’autre** et **retirer cette section**. Les mêmes se trouvent dans les propriétés : « Côte à côte », « Haut et bas » et « Retirer la section ».
 - Faites glisser le **séparateur** entre deux moitiés pour changer leur taille. Il s’aimante aux quarts, aux tiers et aux moitiés.
-- Une section **« Vide »** affiche des boutons avec tous les types : cliquez sur l’un d’eux pour choisir ce qu’elle affiche.
+- Une section **« Vide »** affiche des boutons avec tous les types : cliquez sur l’un d’eux pour choisir ce qu’elle affiche. Si la section est petite et qu’ils ne tiennent pas, il ne reste qu’un bouton, **« Ce qu’elle affiche ▾ »**, avec la liste.
 
 ### Types de section
 
@@ -50,7 +50,7 @@ Selon le type, le panneau des propriétés affiche :
 
 - **Affiche** : le type de section.
 - **Titre** : le texte de sa barre de titre. Sans titre, la barre ne se voit pas hors du mode édition.
-- **Colonnes** et **Lignes** : la taille du tableau (jusqu’à 32). Les boutons, faders et rotatifs remplissent leurs cellules.
+- **Colonnes** et **Lignes** : la taille du tableau (jusqu’à 32). Les boutons, faders et rotatifs remplissent leurs cellules. Dans une section trop petite pour son tableau, les cellules ne rétrécissent pas au-delà de ce qui se lit et se touche : le tableau défile (à la molette ou en faisant glisser).
 - **Remplir avec les scènes d’un groupe** (boutons) : place d’un coup un bouton pour chaque scène de ce groupe.
 - **Groupe** (un groupe) : lequel elle affiche.
 - **Fixtures** (roue de couleur et grille XY) : le groupe de fixtures sur lequel elles agissent, ou « Tous les fixtures avec couleur » / « Toutes les lyres ».

@@ -72,10 +72,13 @@ I gruppi di fixture servono per selezionare con un clic in Patch e in Programma 
 Il pannello **«Gruppi di fixture»** a sinistra li mostra con il loro numero di fixture. Un clic su un gruppo seleziona le sue fixture; **Ctrl+clic** o **Maiusc+clic** le aggiunge. Clic destro:
 
 - **«Rinomina»**.
+- **«Sposta su»** e **«Sposta giù»**: lo spostano nell'elenco.
 - **«Sostituisci con la selezione»**: il gruppo passa ad avere le fixture selezionate.
 - **«Salva qui la selezione…»**: vedi [Selezioni](patch.md#selezioni).
 - Schemi di selezione, nell'ordine del gruppo: **«Seleziona le dispari»**, **«Seleziona le pari»**, **«Seleziona in ordine inverso»**, **«Seleziona la prima metà»**, **«Seleziona la seconda metà»**, **«Seleziona dagli estremi al centro»** e **«Seleziona dal centro agli estremi»**.
 - **«Elimina gruppo»**.
+
+**L'ordine dei gruppi** lo scegli tu: trascina un gruppo dalla sua maniglia (a sinistra del nome) in un altro punto dell'elenco, oppure usa «Sposta su» e «Sposta giù». **«A–Z»**, nell'intestazione del pannello, li ordina alfabeticamente (i numeri come numeri: «Truss 2» prima di «Truss 10»). I gruppi nuovi vanno in fondo. L'ordine si salva con lo show ed è lo stesso in Programma e nei numeri di `GROUP` della riga di comando.
 
 ### Selezioni
 

@@ -438,6 +438,10 @@ public:
     /** Retrieve a modifiable list of the currently active faders */
     QList<QSharedPointer<GenericFader> > faders();
 
+    /** DMX Total Control: a function (a scene playing, or one fading out
+     *  after it stopped) still writes in this universe */
+    bool hasFunctionFaders();
+
     /** DMX Total Control: the fixtures moved or changed: the channels of the
      *  faders follow them (see GenericFader::refreshFixtures) */
     void refreshFaderFixtures(const Doc *doc);

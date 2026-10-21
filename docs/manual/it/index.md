@@ -67,7 +67,7 @@ Da sinistra a destra:
 
 In una finestra stretta o su uno schermo piccolo, la barra si compatta: il nome dello show viene accorciato, «Salva come…» resta come icona, «N in esecuzione» si riduce al numero e, nelle più strette, «Blackout» e «Ferma tutto» restano solo con la loro icona. Passa il mouse sopra un'icona per vedere cos'è. Se tutto appare piccolo o grande, cambia la **Dimensione dell'interfaccia** in [Opzioni](opciones.md#generale).
 
-Quando chiudi il programma, o apri o crei un altro show, se ci sono modifiche non salvate viene chiesto «Salvare le modifiche?» con «Annulla», «Non salvare» e «Salva».
+Quando chiudi il programma, o apri o crei un altro show, se ci sono modifiche non salvate viene chiesto «Salvare le modifiche?» con «Annulla», «Non salvare» e «Salva». Alla chiusura, il programma ferma prima tutte le scene, i playback e il programmatore, e lascia che le uscite inviino il palco a riposo: molti apparecchi restano con l'ultima cosa che hanno ricevuto.
 
 Se lo show che apri usa file che mancano (i suoi suoni, video o immagini; per esempio, uno show portato da un altro computer), compare un avviso con l'elenco. Lo show funziona senza di loro. Con **«Cerca in una cartella…»** scegli la cartella dove si trovano: vengono cercati per nome, anche nelle sottocartelle, e lo show passa a usarli (salvalo per mantenerlo così).
 

@@ -72,10 +72,13 @@ Fixture groups let you select with one click in Patch and in Program (`GROUP 2` 
 The **“Fixture groups”** panel on the left shows them with their number of fixtures. A click on a group selects its fixtures; **Ctrl+click** or **Shift+click** adds them. Right click:
 
 - **“Rename”**.
+- **“Move up”** and **“Move down”**: move it in the list.
 - **“Replace with selection”**: the group now has the selected fixtures.
 - **“Save the selection here…”**: see [Selections](patch.md#selections).
 - Selection patterns, in the group order: **“Select odd”**, **“Select even”**, **“Select in reverse order”**, **“Select the first half”**, **“Select the second half”**, **“Select from the ends to the middle”** and **“Select from the middle to the ends”**.
 - **“Delete group”**.
+
+**The order of the groups** is yours to choose: drag a group by its grip (left of its name) to another place in the list, or use “Move up” and “Move down”. **“A–Z”**, in the header of the panel, orders them alphabetically (numbers as numbers: “Truss 2” before “Truss 10”). New groups go at the end. The order is saved with the show, and it is the same in Program and in the `GROUP` numbers of the command line.
 
 ### Selections
 

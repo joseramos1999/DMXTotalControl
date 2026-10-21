@@ -252,24 +252,52 @@ Rectangle {
         }
     }
 
+    // A table in a section too small for it: its cells keep a size to read
+    // and press them, and it scrolls (only then: otherwise it fills the section)
+    component TableArea: Flickable {
+        id: area
+        /** The smallest cell, and how many there are */
+        property real minCellWidth: 0
+        property real minCellHeight: 0
+        property int cols: 1
+        property int rows: 1
+        readonly property int gap: 3
+        readonly property real tableWidth: Math.max(width, cols * minCellWidth + (cols - 1) * gap)
+        readonly property real tableHeight: Math.max(height, rows * minCellHeight + (rows - 1) * gap)
+        clip: true
+        contentWidth: tableWidth
+        contentHeight: tableHeight
+        interactive: contentWidth > width + 1 || contentHeight > height + 1
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar { policy: area.contentHeight > area.height + 1 ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+        ScrollBar.horizontal: ScrollBar { policy: area.contentWidth > area.width + 1 ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+    }
+
     Component {
         id: buttonsContent
-        Grid {
-            id: grid
-            readonly property int cols: Math.max(1, view.section.cols || 1)
-            readonly property int rowCount: Math.max(1, view.section.rows || 1)
-            columns: cols
-            spacing: 3
-            Repeater {
-                model: grid.cols * grid.rowCount
-                Cell {
-                    width: (grid.width - (grid.cols - 1) * grid.spacing) / grid.cols
-                    height: (grid.height - (grid.rowCount - 1) * grid.spacing) / grid.rowCount
-                    SurfaceButton {
-                        anchors.fill: parent
-                        visible: parent.item !== undefined
-                        item: parent.item || ({})
-                        editing: view.editing
+        TableArea {
+            id: buttonsArea
+            cols: Math.max(1, view.section.cols || 1)
+            rows: Math.max(1, view.section.rows || 1)
+            minCellWidth: 56
+            minCellHeight: 36
+            Grid {
+                id: grid
+                width: buttonsArea.tableWidth
+                height: buttonsArea.tableHeight
+                columns: buttonsArea.cols
+                spacing: buttonsArea.gap
+                Repeater {
+                    model: buttonsArea.cols * buttonsArea.rows
+                    Cell {
+                        width: (grid.width - (buttonsArea.cols - 1) * grid.spacing) / buttonsArea.cols
+                        height: (grid.height - (buttonsArea.rows - 1) * grid.spacing) / buttonsArea.rows
+                        SurfaceButton {
+                            anchors.fill: parent
+                            visible: parent.item !== undefined
+                            item: parent.item || ({})
+                            editing: view.editing
+                        }
                     }
                 }
             }
@@ -278,23 +306,29 @@ Rectangle {
 
     Component {
         id: fadersContent
-        Row {
-            id: row
-            readonly property int cols: Math.max(1, view.section.cols || 1)
-            spacing: 3
-            Repeater {
-                model: row.cols
-                Cell {
-                    width: (row.width - (row.cols - 1) * row.spacing) / row.cols
-                    height: row.height
-                    SurfaceFader {
-                        anchors.fill: parent
-                        visible: parent.item !== undefined
-                        item: parent.item || ({})
-                        editing: view.editing
-                        page: view.surface ? view.surface.currentPage : 0
-                        sectionId: view.sid
-                        cellIndex: parent.index
+        TableArea {
+            id: fadersArea
+            cols: Math.max(1, view.section.cols || 1)
+            minCellWidth: 44
+            Row {
+                id: row
+                width: fadersArea.tableWidth
+                height: fadersArea.tableHeight
+                spacing: fadersArea.gap
+                Repeater {
+                    model: fadersArea.cols
+                    Cell {
+                        width: (row.width - (fadersArea.cols - 1) * row.spacing) / fadersArea.cols
+                        height: row.height
+                        SurfaceFader {
+                            anchors.fill: parent
+                            visible: parent.item !== undefined
+                            item: parent.item || ({})
+                            editing: view.editing
+                            page: view.surface ? view.surface.currentPage : 0
+                            sectionId: view.sid
+                            cellIndex: parent.index
+                        }
                     }
                 }
             }
@@ -303,22 +337,29 @@ Rectangle {
 
     Component {
         id: dialsContent
-        Grid {
-            id: dialGrid
-            readonly property int cols: Math.max(1, view.section.cols || 1)
-            readonly property int rowCount: Math.max(1, view.section.rows || 1)
-            columns: cols
-            spacing: 3
-            Repeater {
-                model: dialGrid.cols * dialGrid.rowCount
-                Cell {
-                    width: (dialGrid.width - (dialGrid.cols - 1) * dialGrid.spacing) / dialGrid.cols
-                    height: (dialGrid.height - (dialGrid.rowCount - 1) * dialGrid.spacing) / dialGrid.rowCount
-                    SurfaceDial {
-                        anchors.fill: parent
-                        visible: parent.item !== undefined
-                        item: parent.item || ({})
-                        editing: view.editing
+        TableArea {
+            id: dialsArea
+            cols: Math.max(1, view.section.cols || 1)
+            rows: Math.max(1, view.section.rows || 1)
+            minCellWidth: 64
+            minCellHeight: 76
+            Grid {
+                id: dialGrid
+                width: dialsArea.tableWidth
+                height: dialsArea.tableHeight
+                columns: dialsArea.cols
+                spacing: dialsArea.gap
+                Repeater {
+                    model: dialsArea.cols * dialsArea.rows
+                    Cell {
+                        width: (dialGrid.width - (dialsArea.cols - 1) * dialGrid.spacing) / dialsArea.cols
+                        height: (dialGrid.height - (dialsArea.rows - 1) * dialGrid.spacing) / dialsArea.rows
+                        SurfaceDial {
+                            anchors.fill: parent
+                            visible: parent.item !== undefined
+                            item: parent.item || ({})
+                            editing: view.editing
+                        }
                     }
                 }
             }
@@ -855,11 +896,21 @@ Rectangle {
     Component {
         id: emptyContent
         Item {
-            // edit mode: what goes in this section
+            id: emptyItem
+            function choose(type) {
+                view.surface.selectSection(view.sid)
+                Core.surface.updateSection(view.surface.currentPage, view.sid, { type: type })
+            }
+            // edit mode: what goes in this section, as buttons where they fit
+            // (a low or narrow section: one button with them in a menu)
+            readonly property bool fits: typeFlow.height <= height
             Flow {
+                id: typeFlow
                 anchors.centerIn: parent
                 width: Math.min(parent.width - 10, 460)
-                visible: view.editing
+                // (hidden, not invisible: it keeps measuring its height)
+                opacity: view.editing && emptyItem.fits ? 1 : 0
+                enabled: opacity > 0
                 spacing: 6
                 Repeater {
                     model: view.surface ? view.surface.sectionTypes : []
@@ -868,10 +919,28 @@ Rectangle {
                         text: modelData.name
                         iconGlyph: modelData.icon
                         implicitHeight: 32
-                        onClicked: {
-                            view.surface.selectSection(view.sid)
-                            Core.surface.updateSection(view.surface.currentPage, view.sid, { type: modelData.type })
+                        onClicked: emptyItem.choose(modelData.type)
+                    }
+                }
+            }
+            AppButton {
+                anchors.centerIn: parent
+                width: Math.min(implicitWidth, parent.width - 10)
+                visible: view.editing && !emptyItem.fits
+                text: qsTr("What it shows") + " ▾"
+                iconGlyph: Theme.iconGrid
+                onClicked: typeMenu.popup()
+                AppMenu {
+                    id: typeMenu
+                    Instantiator {
+                        model: view.surface ? view.surface.sectionTypes : []
+                        delegate: MenuItem {
+                            required property var modelData
+                            text: modelData.name
+                            onTriggered: emptyItem.choose(modelData.type)
                         }
+                        onObjectAdded: (index, object) => typeMenu.insertItem(index, object)
+                        onObjectRemoved: (index, object) => typeMenu.removeItem(object)
                     }
                 }
             }

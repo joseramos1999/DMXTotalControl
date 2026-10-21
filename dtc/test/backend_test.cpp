@@ -131,6 +131,7 @@ private slots:
     void editFixtureModeAndAddress();
     void readdress();
     void fixtureGroups();
+    void fixtureGroupOrder();
     void stagePositions();
     void fixtureEditorRoundTrip();
     void programmerFan();
@@ -204,6 +205,7 @@ private slots:
     void demoPalettesShow();
     void gdtfImport();
     void newShowClearsEverything();
+    void closeStopsEverything();
     void genericFaderAutoRemove();
     void docSaveOrderAndUnknownTypes();
     void groundworkHelpers();
@@ -711,6 +713,56 @@ void Backend_Test::fixtureGroups()
 
     m_patch->deleteGroup(group);
     QCOMPARE(m_patch->groups().count(), 0);
+}
+
+void Backend_Test::fixtureGroupOrder()
+{
+    // the groups in the order the user gives them, or A to Z (numbers as
+    // numbers); saved with the show; GROUP n of the command line follows it
+    QTemporaryDir dir;
+    const QUrl url = QUrl::fromLocalFile(dir.filePath("groups.qxw"));
+    auto names = [](DtcCore &core) {
+        QStringList list;
+        for (const QVariant &g : core.patch()->groups())
+            list.append(g.toMap().value("name").toString());
+        return list;
+    };
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 4), 4);
+        QList<quint32> ids;
+        for (Fixture *f : core.doc()->fixtures())
+            ids << f->id();
+        core.patch()->createGroup("Truss 10", { ids[0] });
+        core.patch()->createGroup("truss 2", { ids[1] });
+        core.patch()->createGroup("Back", { ids[2] });
+        core.patch()->createGroup("Front", { ids[3] });
+        QCOMPARE(names(core), QStringList({ "Truss 10", "truss 2", "Back", "Front" }));
+
+        QSignalSpy changed(core.patch(), SIGNAL(groupsChanged()));
+        core.patch()->sortGroups();
+        QCOMPARE(names(core), QStringList({ "Back", "Front", "truss 2", "Truss 10" }));
+        QCOMPARE(changed.count(), 1);
+        core.patch()->moveGroup(3, 0);
+        QCOMPARE(names(core), QStringList({ "Truss 10", "Back", "Front", "truss 2" }));
+        // (out of the list: nothing)
+        core.patch()->moveGroup(0, 9);
+        QCOMPARE(names(core), QStringList({ "Truss 10", "Back", "Front", "truss 2" }));
+        // GROUP 2 is the second one of the list
+        QVERIFY(core.commands()->execute("GROUP 2"));
+        QCOMPARE(core.programmer()->selection(), QVariantList({ ids[2] }));
+        // a new group goes at the end; a deleted one leaves the order
+        core.patch()->createGroup("Side", { ids[0] });
+        QCOMPARE(names(core).last(), QString("Side"));
+        QVERIFY(core.saveShow(url));
+    }
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(core.openShow(url));
+    QCOMPARE(names(core), QStringList({ "Truss 10", "Back", "Front", "truss 2", "Side" }));
+    QVERIFY(core.modified() == false);
 }
 
 void Backend_Test::stagePositions()
@@ -6212,6 +6264,48 @@ private:
     Doc *m_doc;
 };
 
+
+void Backend_Test::closeStopsEverything()
+{
+    // closing the program: the scenes stop and the programmer lets go before
+    // it goes, so the outputs send the stage at rest (most fixtures keep the
+    // last frame they got), not the last look
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    Fixture *par = core.doc()->fixtures().first();
+    Scene *scene = new Scene(core.doc());
+    scene->setValue(par->id(), 0, 255);
+    scene->setValue(par->id(), 1, 200);
+    QVERIFY(core.doc()->addFunction(scene));
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(scene->id());
+    core.doc()->inputOutputMap()->startUniverses();
+    core.doc()->masterTimer()->start();
+    // the stage at rest (the master dimmer of these PARs rests at full: with
+    // no colour they give no light)
+    QTest::qWait(100);
+    const QByteArray rest = *core.doc()->inputOutputMap()->universes().first()->postGMValues();
+    zone->start(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(core.io()->channelValues(0).at(1).toInt(), 200, 3000);
+    // the second PAR from the programmer
+    core.programmer()->select(core.doc()->fixtures().last()->id(), false);
+    core.programmer()->setDimmer(255);
+    QTRY_COMPARE_WITH_TIMEOUT(core.io()->channelValues(0).at(5).toInt(), 255, 3000);
+
+    QElapsedTimer took;
+    took.start();
+    core.releaseOutput();
+    QVERIFY(took.elapsed() < 2000);
+    QCOMPARE(core.doc()->masterTimer()->runningFunctions(), 0);
+    QVERIFY(core.programmer()->hasValues() == false);
+    // what the universe sends to the outputs when it returns: the stage at rest
+    const QByteArray values = *core.doc()->inputOutputMap()->universes().first()->postGMValues();
+    QVERIFY(uchar(rest.at(1)) == 0 && uchar(rest.at(5)) == 0);
+    for (int ch = 0; ch < 10; ch++)
+        QVERIFY2(values.at(ch) == rest.at(ch), qPrintable(QString("channel %1: %2, at rest %3").arg(ch + 1)
+                                                          .arg(uchar(values.at(ch))).arg(uchar(rest.at(ch)))));
+}
 
 void Backend_Test::newShowClearsEverything()
 {

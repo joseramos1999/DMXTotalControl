@@ -20,7 +20,7 @@ Pressione **“Editar”** para montar a tela e **“Concluído”** para voltar
 - Clique no título de uma seção (ou em qualquer parte dela) para **selecioná-la**. As propriedades dela aparecem no painel **“Propriedades”** da direita.
 - Na barra de título de cada seção há três botões: **dividir em duas metades, lado a lado**, **dividir em duas metades, uma acima da outra** e **remover esta seção**. Os mesmos estão nas propriedades: “Lado a lado”, “Em cima e embaixo” e “Remover seção”.
 - Arraste o **separador** entre duas metades para mudar o tamanho delas. Ele se ajusta sozinho a quartos, terços e metades.
-- Uma seção **“Vazia”** mostra botões com todos os tipos: clique em um para escolher o que ela mostra.
+- Uma seção **“Vazia”** mostra botões com todos os tipos: clique em um para escolher o que ela mostra. Se a seção for pequena e eles não couberem, fica um só botão, **“O que mostra ▾”**, com a lista.
 
 ### Tipos de seção
 
@@ -50,7 +50,7 @@ Conforme o tipo, o painel de propriedades mostra:
 
 - **Mostra**: o tipo de seção.
 - **Título**: o texto da barra de título. Sem título, fora do modo de edição a barra não aparece.
-- **Colunas** e **Linhas**: o tamanho da tabela (até 32). Os botões, faders e dials preenchem as células.
+- **Colunas** e **Linhas**: o tamanho da tabela (até 32). Os botões, faders e dials preenchem as células. Em uma seção pequena demais para a tabela, as células não encolhem além do que dá para ler e tocar: a tabela rola (com a roda do mouse ou arrastando).
 - **Preencher com as cenas de um grupo** (botões): coloca de uma vez um botão para cada cena desse grupo.
 - **Grupo** (um grupo): qual ela mostra.
 - **Fixtures** (roda de cores e grade XY): sobre qual grupo de fixtures elas atuam, ou “Todos os fixtures com cor” / “Todos os moving heads”.

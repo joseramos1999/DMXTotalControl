@@ -67,7 +67,7 @@ From left to right:
 
 In a narrow window or on a small screen, the bar becomes compact: the show name is cut short, “Save as…” becomes an icon, “N running” keeps only the number and, in the narrowest ones, “Blackout” and “Stop all” keep only their icon. Hover over an icon to see what it is. If everything looks too small or too big, change the **Size of the interface** in [Options](opciones.md#general).
 
-When you close the program, or open or create another show, if there are unsaved changes it asks “Save changes?” with “Cancel”, “Don't save” and “Save”.
+When you close the program, or open or create another show, if there are unsaved changes it asks “Save changes?” with “Cancel”, “Don't save” and “Save”. When it closes, the program first stops every scene, the playbacks and the programmer, and lets the outputs send the stage at rest: many fixtures keep the last thing they received.
 
 If the show you open uses files that are missing (its sounds, videos or images; for example, a show brought from another computer), you are warned with the list. The show plays without them. With **“Look in a folder…”** you choose the folder where they are: they are looked for by name, also in its subfolders, and the show starts using them (save it to keep it that way).
 

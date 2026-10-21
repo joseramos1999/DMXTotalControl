@@ -67,7 +67,7 @@ De gauche à droite :
 
 Dans une fenêtre étroite ou sur un petit écran, la barre se compacte : le nom du show est raccourci, « Enregistrer sous… » devient une icône, « N en cours » se réduit au nombre et, dans les plus étroites, « Blackout » et « Tout arrêter » n’affichent que leur icône. Survolez une icône avec la souris pour voir ce que c’est. Si tout paraît petit ou grand, changez la **Taille de l’interface** dans [Options](opciones.md#général).
 
-Quand vous fermez le programme, ou que vous ouvrez ou créez un autre show, s’il y a des modifications non enregistrées, la question « Enregistrer les modifications ? » s’affiche avec « Annuler », « Ne pas enregistrer » et « Enregistrer ».
+Quand vous fermez le programme, ou que vous ouvrez ou créez un autre show, s’il y a des modifications non enregistrées, la question « Enregistrer les modifications ? » s’affiche avec « Annuler », « Ne pas enregistrer » et « Enregistrer ». À la fermeture, le programme arrête d’abord toutes les scènes, les playbacks et le programmeur, et laisse les sorties envoyer la scène au repos : beaucoup d’appareils gardent la dernière chose qu’ils ont reçue.
 
 Si le show que vous ouvrez utilise des fichiers manquants (ses sons, vidéos ou images ; par exemple, un show venu d’un autre ordinateur), un avis en donne la liste. Le show fonctionne sans eux. Avec **« Chercher dans un dossier… »**, vous choisissez le dossier où ils se trouvent : ils sont recherchés par leur nom, y compris dans ses sous-dossiers, et le show les utilise désormais (enregistrez-le pour le garder ainsi).
 

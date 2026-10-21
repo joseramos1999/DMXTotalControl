@@ -67,7 +67,7 @@ Von links nach rechts:
 
 In einem schmalen Fenster oder auf einem kleinen Bildschirm wird die Leiste kompakter: Der Showname wird gekürzt, „Speichern unter…“ erscheint nur als Symbol, „N laufen“ nur als Zahl, und in den schmalsten Fenstern zeigen „Blackout“ und „Alles stoppen“ nur ihr Symbol. Fahren Sie mit der Maus über ein Symbol, um zu sehen, was es ist. Wirkt alles zu klein oder zu groß, ändern Sie die **Größe der Oberfläche** unter [Optionen](opciones.md#allgemein).
 
-Wenn Sie das Programm schließen oder eine andere Show öffnen oder anlegen und es ungespeicherte Änderungen gibt, fragt das Programm „Änderungen speichern?“ mit „Abbrechen“, „Nicht speichern“ und „Speichern“.
+Wenn Sie das Programm schließen oder eine andere Show öffnen oder anlegen und es ungespeicherte Änderungen gibt, fragt das Programm „Änderungen speichern?“ mit „Abbrechen“, „Nicht speichern“ und „Speichern“. Beim Schließen stoppt das Programm zuerst alle Szenen, die Playbacks und den Programmer und lässt die Ausgänge die Bühne in Ruhe senden: Viele Geräte behalten das Letzte, was sie empfangen haben.
 
 Verwendet die Show, die Sie öffnen, fehlende Dateien (ihre Sounds, Videos oder Bilder; zum Beispiel bei einer Show von einem anderen Computer), erscheint ein Hinweis mit der Liste. Die Show läuft ohne sie. Mit **„In einem Ordner suchen…“** wählen Sie den Ordner, in dem sie liegen: Sie werden nach ihrem Namen gesucht, auch in den Unterordnern, und die Show verwendet sie dann (speichern Sie die Show, damit das so bleibt).
 

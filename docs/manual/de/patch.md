@@ -72,10 +72,13 @@ Mit Fixture-Gruppen wählen Sie im Patch und unter Programmieren mit einem Klick
 Der Bereich **„Fixture-Gruppen“** links zeigt sie mit ihrer Fixture-Anzahl. Ein Klick auf eine Gruppe wählt ihre Fixtures aus; **Strg+Klick** oder **Umschalt+Klick** fügt sie hinzu. Rechtsklick:
 
 - **„Umbenennen“**.
+- **„Nach oben“** und **„Nach unten“**: verschieben sie in der Liste.
 - **„Durch Auswahl ersetzen“**: Die Gruppe enthält danach die ausgewählten Fixtures.
 - **„Auswahl hier speichern…“**: siehe [Auswahlen](patch.md#auswahlen).
 - Auswahlmuster, in der Reihenfolge der Gruppe: **„Ungerade auswählen“**, **„Gerade auswählen“**, **„In umgekehrter Reihenfolge auswählen“**, **„Erste Hälfte auswählen“**, **„Zweite Hälfte auswählen“**, **„Von außen zur Mitte auswählen“** und **„Von der Mitte nach außen auswählen“**.
 - **„Gruppe löschen“**.
+
+**Die Reihenfolge der Gruppen** bestimmen Sie: Ziehen Sie eine Gruppe an ihrem Griff (links neben ihrem Namen) an eine andere Stelle der Liste, oder verwenden Sie „Nach oben“ und „Nach unten“. **„A–Z“** im Kopf des Bereichs ordnet sie alphabetisch (Zahlen als Zahlen: „Truss 2“ vor „Truss 10“). Neue Gruppen kommen ans Ende. Die Reihenfolge wird mit der Show gespeichert und gilt ebenso in Programmieren und für die `GROUP`-Nummern der Befehlszeile.
 
 ### Auswahlen
 

@@ -161,6 +161,17 @@ DtcCore::~DtcCore()
     if (m_stepsTimer != nullptr)
         m_stepsTimer->stop();
 
+    // everything stops before the program goes: the fixtures keep the stage
+    // at rest, not the last look (most keep the last frame they got). While
+    // it waits for the outputs nothing else runs: no autosave (of changes the
+    // user chose not to save), no feedback to the controllers (they go dark
+    // just after)
+    m_autosaveTimer->stop();
+    if (m_cpuTimer != nullptr)
+        m_cpuTimer->stop();
+    m_mapping->stopFeedback();
+    releaseOutput();
+
     // the remote control first: it reads everything
     delete m_remote;
     m_remote = nullptr;
@@ -752,6 +763,43 @@ void DtcCore::setFunctionFolder(const QVariantList &ids, const QString &folder)
     emit functionsChanged();
 }
 
+void DtcCore::releaseOutput()
+{
+    const bool live = m_doc->masterTimer()->runningFunctions() > 0 || m_programmer->hasValues() ||
+                      m_patch->identified().isEmpty() == false;
+
+    // the scenes, the playbacks and their flashes stop, the programmer and the
+    // identify let their channels go (the FX of the programmer too)
+    m_playbacks->resetLive();
+    m_zones->stopAll();
+    m_doc->masterTimer()->stopAllFunctions();
+    m_patch->stopIdentify();
+    m_programmer->clear();
+    if (live == false || m_doc->masterTimer()->isTicking() == false)
+        return;
+
+    // their fade outs end (a second at most), and the outputs send the stage
+    // at rest for a few frames. (The universes write when the timer tells
+    // them, through the event loop: it runs while this waits)
+    auto fading = [this]() {
+        for (Universe *universe : m_doc->inputOutputMap()->universes())
+            if (universe->hasFunctionFaders())
+                return true;
+        return false;
+    };
+    auto runFor = [](int ms, const std::function<bool()> &until) {
+        QElapsedTimer waited;
+        waited.start();
+        while (waited.elapsed() < ms && (until == nullptr || until()))
+        {
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 10);
+            QThread::msleep(5);
+        }
+    };
+    runFor(1000, fading);
+    runFor(120, nullptr);
+}
+
 void DtcCore::stopAll()
 {
     // the flashes held on playbacks are let go (their levels stay)
@@ -1123,7 +1171,7 @@ void DtcCore::loadSection(QXmlStreamReader &reader)
         else if (reader.name() == KXMLDTCPalettes)
             m_palettes->loadXML(reader);
         else if (reader.name() == KXMLDTCSelections || reader.name() == KXMLDTCPlan ||
-                 reader.name() == KXMLDTCNumbers)
+                 reader.name() == KXMLDTCNumbers || reader.name() == KXMLDTCGroupOrder)
             m_patch->loadXML(reader);
         else if (reader.name() == KXMLDTCFolders)
         {

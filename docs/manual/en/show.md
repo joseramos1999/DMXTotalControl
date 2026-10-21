@@ -20,7 +20,7 @@ Press **“Edit”** to build the screen and **“Done”** to use it again. In 
 - Click the title of a section (or anywhere in it) to **select it**. Its properties appear in the **“Properties”** panel on the right.
 - In the title bar of each section there are three buttons: **split into two halves side by side**, **split one above the other** and **remove this section**. The same ones are in the properties: “Side by side”, “Top and bottom” and “Remove section”.
 - Drag the **divider** between two halves to change their size. It snaps to quarters, thirds and halves.
-- An **“Empty”** section shows buttons with all the types: click one to choose what it shows.
+- An **“Empty”** section shows buttons with all the types: click one to choose what it shows. If the section is small and they don't fit, a single **“What it shows ▾”** button holds the list.
 
 ### Section types
 
@@ -50,7 +50,7 @@ Depending on the type, the properties panel shows:
 
 - **Shows**: the section type.
 - **Title**: the text of its title bar. With no title, the bar is hidden outside edit mode.
-- **Columns** and **Rows**: the size of the table (up to 32). Buttons, faders and dials fill their cells.
+- **Columns** and **Rows**: the size of the table (up to 32). Buttons, faders and dials fill their cells. In a section too small for its table, the cells don't shrink below what can be read and pressed: the table scrolls (with the wheel or by dragging).
 - **Fill with the scenes of a group** (buttons): adds one button for each scene of that group in one go.
 - **Group** (a group): which one it shows.
 - **Fixtures** (colour wheel and XY grid): which fixture group they act on, or “All the fixtures with colour” / “All the moving heads”.

@@ -201,6 +201,9 @@ public:
 
     /** Stop every running function (panic) */
     Q_INVOKABLE void stopAll();
+    /** Before the program closes: everything stops and lets its channels
+     *  go, and the outputs get to send the stage at rest */
+    void releaseOutput();
 
     Q_INVOKABLE void renameFunction(quint32 id, const QString &name);
     Q_INVOKABLE void deleteFunction(quint32 id);

@@ -2142,6 +2142,11 @@ void ControlMapper::lightsOff()
     m_sentFeedback.clear();
 }
 
+void ControlMapper::stopFeedback()
+{
+    m_feedbackTimer->stop();
+}
+
 /*********************************************************************
  * Load & Save
  *********************************************************************/

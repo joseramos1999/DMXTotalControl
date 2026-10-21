@@ -20,7 +20,7 @@ Pulsa **«Editar»** para montar la pantalla y **«Hecho»** para volver a usarl
 - Haz clic en el título de una sección (o en cualquier parte de ella) para **seleccionarla**. Sus propiedades aparecen en el panel **«Propiedades»** de la derecha.
 - En la barra de título de cada sección hay tres botones: **dividir en dos mitades lado a lado**, **dividir una encima de otra** y **quitar esta sección**. Los mismos están en las propiedades: «Lado a lado», «Una encima» y «Quitar sección».
 - Arrastra el **separador** entre dos mitades para cambiar su tamaño. Se ajusta solo a cuartos, tercios y mitades.
-- Una sección **«Vacía»** muestra botones con todos los tipos: haz clic en uno para elegir qué muestra.
+- Una sección **«Vacía»** muestra botones con todos los tipos: haz clic en uno para elegir qué muestra. Si la sección es pequeña y no caben, queda un solo botón, **«Qué muestra ▾»**, con la lista.
 
 ### Tipos de sección
 
@@ -50,7 +50,7 @@ Según el tipo, el panel de propiedades muestra:
 
 - **Muestra**: el tipo de sección.
 - **Título**: el texto de su barra de título. Sin título, fuera del modo edición la barra no se ve.
-- **Columnas** y **Filas**: el tamaño de la tabla (hasta 32). Los botones, faders y diales llenan sus celdas.
+- **Columnas** y **Filas**: el tamaño de la tabla (hasta 32). Los botones, faders y diales llenan sus celdas. En una sección demasiado pequeña para su tabla, las celdas no se encogen más de lo que se puede leer y pulsar: la tabla se desplaza (con la rueda o arrastrando).
 - **Llenar con las escenas de un grupo** (botones): pone de una vez un botón por cada escena de ese grupo.
 - **Grupo** (un grupo): cuál muestra.
 - **Fixtures** (rueda de color y rejilla XY): sobre qué grupo de fixtures actúan, o «Todas las fixtures con color» / «Todas las cabezas móviles».

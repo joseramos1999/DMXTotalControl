@@ -20,7 +20,7 @@ Drücken Sie **„Bearbeiten“**, um den Bildschirm zu bauen, und **„Fertig�
 - Klicken Sie auf den Titel eines Bereichs (oder irgendwo in ihn), um ihn **auszuwählen**. Seine Eigenschaften erscheinen rechts unter **„Eigenschaften“**.
 - In der Titelleiste jedes Bereichs gibt es drei Tasten: **in zwei Hälften nebeneinander teilen**, **übereinander teilen** und **diesen Bereich entfernen**. Dieselben finden Sie in den Eigenschaften: „Nebeneinander“, „Übereinander“ und „Bereich entfernen“.
 - Ziehen Sie den **Trenner** zwischen zwei Hälften, um ihre Größe zu ändern. Er rastet von selbst bei Vierteln, Dritteln und Hälften ein.
-- Ein Bereich **„Leer“** zeigt Tasten mit allen Typen: Klicken Sie auf einen, um zu wählen, was er zeigt.
+- Ein Bereich **„Leer“** zeigt Tasten mit allen Typen: Klicken Sie auf einen, um zu wählen, was er zeigt. Ist der Bereich klein und passen sie nicht hinein, bleibt eine einzige Taste, **„Was er zeigt ▾“**, mit der Liste.
 
 ### Bereichstypen
 
@@ -50,7 +50,7 @@ Je nach Typ zeigen die Eigenschaften:
 
 - **Zeigt**: den Bereichstyp.
 - **Titel**: den Text seiner Titelleiste. Ohne Titel ist die Leiste außerhalb des Bearbeitungsmodus nicht zu sehen.
-- **Spalten** und **Zeilen**: die Größe der Tabelle (bis 32). Tasten, Fader und Drehregler füllen ihre Zellen.
+- **Spalten** und **Zeilen**: die Größe der Tabelle (bis 32). Tasten, Fader und Drehregler füllen ihre Zellen. In einem Bereich, der für seine Tabelle zu klein ist, schrumpfen die Zellen nicht unter eine lesbare und bedienbare Größe: Die Tabelle lässt sich scrollen (mit dem Mausrad oder durch Ziehen).
 - **Mit den Szenen einer Gruppe füllen** (Tasten): legt auf einmal eine Taste für jede Szene dieser Gruppe an.
 - **Gruppe** (eine Gruppe): welche angezeigt wird.
 - **Fixtures** (Farbrad und XY-Feld): auf welche Fixture-Gruppe sie wirken, oder „Alle Fixtures mit Farbe“ / „Alle Moving Heads“.

@@ -112,6 +112,9 @@ public:
     /** Get the number of currently running functions */
     int runningFunctions() const;
 
+    /** DMX Total Control: the timer ticks (started, not stopped) */
+    bool isTicking() const;
+
     /** DMX Total Control: a cuelist tells it went to a cue (from its write
      *  method, in the timer thread): emits cueStarted */
     void notifyCueStarted(quint32 functionId, quint32 cueUid) { emit cueStarted(functionId, cueUid); }

@@ -5079,6 +5079,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Groupes de fixtures</translation>
     </message>
     <message>
+        <source>Order the groups alphabetically (also their number in the command line). To order them by hand, drag them by their grip</source>
+        <translation>Trier les groupes par ordre alphabétique (ainsi que leur numéro dans la ligne de commande). Pour les ordonner à la main, faites-les glisser par leur poignée</translation>
+    </message>
+    <message>
         <source>Show its selections</source>
         <translation>Afficher ses sélections</translation>
     </message>
@@ -5311,6 +5315,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Rename group</source>
         <translation>Renommer le groupe</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Monter</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Descendre</translation>
     </message>
     <message>
         <source>Replace with selection</source>
@@ -7420,6 +7432,10 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Universe %1</source>
         <translation>Univers %1</translation>
     </message>
+    <message>
+        <source>What it shows</source>
+        <translation>Ce qu’elle affiche</translation>
+    </message>
 </context>
 <context>
     <name>SelectedCuelist</name>
@@ -8702,7 +8718,7 @@ Ajoutez-en sur la page Patch.</translation>
     </message>
     <message>
         <source>Fold the group: a strip with its name, to make room for the others. Its scenes go on playing</source>
-        <translation>Replier le groupe : une bande avec son nom, pour laisser de la place aux autres. Ses scènes continuent de jouer</translation>
+        <translation>Replier le groupe&#xa0;: une bande avec son nom, pour laisser de la place aux autres. Ses scènes continuent de jouer</translation>
     </message>
     <message>
         <source>Release this group</source>

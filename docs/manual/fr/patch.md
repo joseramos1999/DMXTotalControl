@@ -72,10 +72,13 @@ Les groupes de fixtures servent à sélectionner d’un clic dans Patch et dans 
 Le panneau **« Groupes de fixtures »** de gauche les affiche avec leur nombre de fixtures. Un clic sur un groupe sélectionne ses fixtures ; **Ctrl+clic** ou **Maj+clic** les ajoute. Clic droit :
 
 - **« Renommer »**.
+- **« Monter »** et **« Descendre »** : le déplacent dans la liste.
 - **« Remplacer par la sélection »** : le groupe contient désormais les fixtures sélectionnés.
 - **« Enregistrer la sélection ici… »** : voir [Sélections](patch.md#sélections).
 - Motifs de sélection, dans l’ordre du groupe : **« Sélectionner les impairs »**, **« Sélectionner les pairs »**, **« Sélectionner dans l’ordre inverse »**, **« Sélectionner la première moitié »**, **« Sélectionner la seconde moitié »**, **« Sélectionner des extrémités vers le milieu »** et **« Sélectionner du milieu vers les extrémités »**.
 - **« Supprimer le groupe »**.
+
+**L’ordre des groupes**, c’est vous qui le choisissez : faites glisser un groupe par sa poignée (à gauche de son nom) vers un autre endroit de la liste, ou utilisez « Monter » et « Descendre ». **« A–Z »**, dans l’en-tête du panneau, les trie par ordre alphabétique (les nombres comme des nombres : « Truss 2 » avant « Truss 10 »). Les nouveaux groupes vont à la fin. L’ordre est enregistré avec le show, et c’est le même dans Programmer et dans les numéros de `GROUP` de la ligne de commande.
 
 ### Sélections
 

@@ -377,6 +377,20 @@ Item {
                 Layout.preferredWidth: 250
                 Layout.fillHeight: true
                 title: qsTr("Fixture groups")
+                // the order of the groups: A to Z (or by hand: drag them by
+                // their grip, or Move up / Move down in their menu)
+                headerItems: [
+                    AppButton {
+                        text: "A–Z"
+                        flat: true
+                        implicitHeight: 26
+                        enabled: Core.patch.groups.length > 1
+                        ToolTip.text: qsTr("Order the groups alphabetically (also their number in the command line). To order them by hand, drag them by their grip")
+                        ToolTip.visible: hovered
+                        ToolTip.delay: 500
+                        onClicked: Core.patch.sortGroups()
+                    }
+                ]
 
                 ListView {
                     id: groupList
@@ -386,9 +400,14 @@ Item {
                     model: Core.patch.groups
                     ScrollBar.vertical: ScrollBar {}
 
+                    /** A group dragged by its grip: from where, and where it goes */
+                    property int dragFrom: -1
+                    property int dragTo: -1
+
                     delegate: Column {
                         id: groupItem
                         required property var modelData
+                        required property int index
                         width: groupList.width
                         spacing: 2
                         readonly property var selections: Core.patch.selections.filter(s => s.groupId === modelData.id)
@@ -401,8 +420,12 @@ Item {
                             radius: Theme.radiusSmall
                             readonly property bool allSelected: groupItem.modelData.fixtures.length > 0 &&
                                                                 groupItem.modelData.fixtures.every(id => page.isSelected(id))
+                            readonly property bool dropHere: groupList.dragFrom >= 0 && groupList.dragTo === groupItem.index &&
+                                                             groupList.dragTo !== groupList.dragFrom
                             color: allSelected ? Qt.alpha(Theme.accent, 0.2) : (groupMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
-                            border.color: allSelected ? Theme.accent : Theme.border
+                            border.color: dropHere || allSelected ? Theme.accent : Theme.border
+                            border.width: dropHere ? 2 : 1
+                            opacity: groupList.dragFrom === groupItem.index ? 0.5 : 1
 
                             MouseArea {
                                 id: groupMouse
@@ -414,17 +437,58 @@ Item {
                                         groupMenu.groupId = groupItem.modelData.id
                                         groupMenu.groupName = groupItem.modelData.name
                                         groupMenu.fixtures = groupItem.modelData.fixtures
+                                        groupMenu.groupIndex = groupItem.index
                                         groupMenu.popup()
                                     } else {
                                         page.select(groupItem.modelData.fixtures, (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
                                     }
                                 }
                             }
+                            // grip: drag the group to another place in the list
+                            IconLabel {
+                                id: groupGrip
+                                anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                                width: 12
+                                icon: Theme.iconGrip
+                                size: 12
+                                color: gripMouse.containsMouse || gripMouse.pressed ? Theme.text : Theme.textFaint
+                                MouseArea {
+                                    id: gripMouse
+                                    anchors.fill: parent
+                                    anchors.margins: -5
+                                    hoverEnabled: true
+                                    preventStealing: true
+                                    cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                    onPressed: { groupList.dragFrom = groupItem.index; groupList.dragTo = groupItem.index }
+                                    onPositionChanged: (ev) => {
+                                        if (!pressed)
+                                            return
+                                        const p = mapToItem(groupList.contentItem, ev.x, ev.y)
+                                        const target = groupList.indexAt(groupList.width / 2, p.y)
+                                        if (target >= 0)
+                                            groupList.dragTo = target
+                                        else if (p.y < 0)
+                                            groupList.dragTo = 0
+                                        else
+                                            groupList.dragTo = groupList.count - 1
+                                    }
+                                    onReleased: {
+                                        // (the move rebuilds the list, this row too: last thing)
+                                        const from = groupList.dragFrom
+                                        const to = groupList.dragTo
+                                        groupList.dragFrom = -1
+                                        groupList.dragTo = -1
+                                        if (from >= 0 && to >= 0 && to !== from)
+                                            Core.patch.moveGroup(from, to)
+                                    }
+                                    onCanceled: { groupList.dragFrom = -1; groupList.dragTo = -1 }
+                                }
+                            }
                             // its selections, folded or not
                             AppButton {
                                 id: foldButton
                                 visible: groupItem.selections.length > 0
-                                anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
+                                anchors { left: groupGrip.right; leftMargin: 2; verticalCenter: parent.verticalCenter }
                                 implicitWidth: 24
                                 implicitHeight: 26
                                 flat: true
@@ -435,7 +499,7 @@ Item {
                                 onClicked: page.foldedGroups = page.toggleFolded(page.foldedGroups, groupItem.modelData.id)
                             }
                             Column {
-                                anchors { left: parent.left; leftMargin: foldButton.visible ? 28 : 10; right: parent.right; rightMargin: 34
+                                anchors { left: groupGrip.right; leftMargin: foldButton.visible ? 30 : 8; right: parent.right; rightMargin: 34
                                           verticalCenter: parent.verticalCenter }
                                 Text { width: parent.width; text: groupItem.modelData.name; color: Theme.text; font.weight: Font.DemiBold; elide: Text.ElideRight }
                                 Text {
@@ -945,8 +1009,20 @@ Item {
         property int groupId: -1
         property string groupName: ""
         property var fixtures: []
+        /** Its place in the list */
+        property int groupIndex: -1
 
         MenuItem { text: qsTr("Rename"); onTriggered: prompt.ask(qsTr("Rename group"), groupMenu.groupName, (name) => Core.patch.renameGroup(groupMenu.groupId, name)) }
+        MenuItem {
+            text: qsTr("Move up")
+            enabled: groupMenu.groupIndex > 0
+            onTriggered: Core.patch.moveGroup(groupMenu.groupIndex, groupMenu.groupIndex - 1)
+        }
+        MenuItem {
+            text: qsTr("Move down")
+            enabled: groupMenu.groupIndex >= 0 && groupMenu.groupIndex < Core.patch.groups.length - 1
+            onTriggered: Core.patch.moveGroup(groupMenu.groupIndex, groupMenu.groupIndex + 1)
+        }
         MenuItem {
             text: qsTr("Replace with selection")
             enabled: page.selectedIds.length > 0

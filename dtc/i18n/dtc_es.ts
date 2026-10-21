@@ -5080,6 +5080,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Grupos de fixtures</translation>
     </message>
     <message>
+        <source>Order the groups alphabetically (also their number in the command line). To order them by hand, drag them by their grip</source>
+        <translation>Ordenar los grupos alfabéticamente (también su número en la línea de comandos). Para ordenarlos a mano, arrástralos por su asa</translation>
+    </message>
+    <message>
         <source>Show its selections</source>
         <translation>Mostrar sus selecciones</translation>
     </message>
@@ -5308,6 +5312,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Rename group</source>
         <translation>Renombrar grupo</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Subir</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Bajar</translation>
     </message>
     <message>
         <source>Replace with selection</source>
@@ -7420,6 +7432,10 @@ Añádelos en la página Patch.</translation>
     <message>
         <source>Universe %1</source>
         <translation>Universo %1</translation>
+    </message>
+    <message>
+        <source>What it shows</source>
+        <translation>Qué muestra</translation>
     </message>
 </context>
 <context>

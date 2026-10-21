@@ -193,6 +193,9 @@ public:
     /** Turn off the LEDs of every button mapping, e.g. when the
      *  application closes: the controller doesn't stay lit */
     void lightsOff();
+    /** No more feedback to the controllers (the application closes: their
+     *  LEDs go off after, nothing else is sent to them) */
+    void stopFeedback();
 
     /*********************************************************************
      * Learn

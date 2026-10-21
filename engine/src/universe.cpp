@@ -316,6 +316,17 @@ QList<QSharedPointer<GenericFader> > Universe::faders()
     return m_faders;
 }
 
+bool Universe::hasFunctionFaders()
+{
+    QMutexLocker fadersLocker(&m_fadersMutex);
+    for (const QSharedPointer<GenericFader> &fader : std::as_const(m_faders))
+    {
+        if (!fader.isNull() && fader->parentFunctionID() != Function::invalidId() && fader->deleteRequested() == false)
+            return true;
+    }
+    return false;
+}
+
 void Universe::refreshFaderFixtures(const Doc *doc)
 {
     // DMX Total Control

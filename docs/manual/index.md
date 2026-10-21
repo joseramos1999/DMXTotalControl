@@ -67,7 +67,7 @@ De izquierda a derecha:
 
 En una ventana estrecha o una pantalla pequeña, la barra se compacta: el nombre del show se recorta, «Guardar como…» queda como un icono, «N en marcha» se queda en el número y, en las más estrechas, «Blackout» y «Parar todo» quedan solo con su icono. Pasa el ratón por encima de un icono para ver qué es. Si todo se ve pequeño o grande, cambia el **Tamaño de la interfaz** en [Opciones](opciones.md#general).
 
-Al cerrar el programa, o al abrir o crear otro show, si hay cambios sin guardar se pregunta «¿Guardar los cambios?» con «Cancelar», «No guardar» y «Guardar».
+Al cerrar el programa, o al abrir o crear otro show, si hay cambios sin guardar se pregunta «¿Guardar los cambios?» con «Cancelar», «No guardar» y «Guardar». Al cerrar, el programa para antes todas las escenas, los playbacks y el programador, y deja que las salidas envíen el escenario en reposo: muchos aparatos se quedan con lo último que recibieron.
 
 Si el show que abres usa archivos que no están (sus sonidos, vídeos o imágenes; por ejemplo, un show traído de otro ordenador), se avisa con la lista. El show funciona sin ellos. Con **«Buscar en una carpeta…»** eliges la carpeta donde están: se buscan por su nombre, también en sus subcarpetas, y el show pasa a usarlos (guárdalo para conservarlo así).
 

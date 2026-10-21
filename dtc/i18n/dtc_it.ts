@@ -5079,6 +5079,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Gruppi di fixture</translation>
     </message>
     <message>
+        <source>Order the groups alphabetically (also their number in the command line). To order them by hand, drag them by their grip</source>
+        <translation>Ordina i gruppi in ordine alfabetico (anche il loro numero nella riga di comando). Per ordinarli a mano, trascinali dalla maniglia</translation>
+    </message>
+    <message>
         <source>Show its selections</source>
         <translation>Mostra le sue selezioni</translation>
     </message>
@@ -5311,6 +5315,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Rename group</source>
         <translation>Rinomina gruppo</translation>
+    </message>
+    <message>
+        <source>Move up</source>
+        <translation>Sposta su</translation>
+    </message>
+    <message>
+        <source>Move down</source>
+        <translation>Sposta giù</translation>
     </message>
     <message>
         <source>Replace with selection</source>
@@ -7419,6 +7431,10 @@ Aggiungine alcune nella pagina Patch.</translation>
     <message>
         <source>Universe %1</source>
         <translation>Universo %1</translation>
+    </message>
+    <message>
+        <source>What it shows</source>
+        <translation>Cosa mostra</translation>
     </message>
 </context>
 <context>
