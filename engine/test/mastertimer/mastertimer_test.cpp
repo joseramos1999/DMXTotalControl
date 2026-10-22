@@ -194,8 +194,11 @@ void MasterTimer_Test::interval()
 #ifndef SKIP_TEST
     /* It's not guaranteed that context switch happens exactly after 50
        cycles, so we just have to estimate here... */
-    QVERIFY(fs.m_writeCalls >= 49 && fs.m_writeCalls <= 51);
-    QVERIFY(dss.m_writeCalls >= 49 && dss.m_writeCalls <= 51);
+    // DMX Total Control: the timer ticks every 20 ms exactly now: 50 or 51
+    // ticks in the wait (it lasts a little more than a second), plus the
+    // timerTick() above
+    QVERIFY2(fs.m_writeCalls >= 49 && fs.m_writeCalls <= 52, qPrintable(QString::number(fs.m_writeCalls)));
+    QVERIFY2(dss.m_writeCalls >= 49 && dss.m_writeCalls <= 51, qPrintable(QString::number(dss.m_writeCalls)));
 #endif
 
     fs.stop(FunctionParent::master());

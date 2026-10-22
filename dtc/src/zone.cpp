@@ -403,7 +403,10 @@ void Zone::start(quint32 fid)
     // the master first, so its first frame isn't at full (it is given again
     // when it runs: a previous run still stopping drops the overrides)
     applyIntensity(fid);
-    f->start(m_doc->masterTimer(), FunctionParent(FunctionParent::ManualVCWidget, m_id), 0, in, out);
+    // (the crossfade of the group is ms: a sequence in beats doesn't read
+    // them as beats. Without one, the function's own fades, in its tempo)
+    f->start(m_doc->masterTimer(), FunctionParent(FunctionParent::ManualVCWidget, m_id), 0, in, out,
+             Function::defaultSpeed(), m_fadeTime >= 0 ? Function::Time : Function::Original);
 
     m_active.insert(fid);
     m_lastStarted = fid;
@@ -508,40 +511,72 @@ void Zone::setOption(quint32 fid, const QString &key, const QVariant &value)
     if (m_functions.contains(fid) == false)
         return;
 
+    // the same value again (a controller fader sends the position it has)
+    // changes nothing: the show isn't marked as modified
+    auto same = [](qreal a, qreal b) { return qFuzzyCompare(1.0 + a, 1.0 + b); };
     Options &opt = m_options[fid];
     if (key == "release")
-        opt.release = qBound(int(ReleaseGroupDefault), value.toInt(), int(ReleaseOthers));
+    {
+        const int release = qBound(int(ReleaseGroupDefault), value.toInt(), int(ReleaseOthers));
+        if (release == opt.release)
+            return;
+        opt.release = release;
+    }
     else if (key == "protection")
-        opt.protection = qBound(int(ProtectNone), value.toInt(), int(ProtectOthers));
+    {
+        const int protection = qBound(int(ProtectNone), value.toInt(), int(ProtectOthers));
+        if (protection == opt.protection)
+            return;
+        opt.protection = protection;
+    }
     else if (key == "flash")
+    {
+        if (value.toBool() == opt.flash)
+            return;
         opt.flash = value.toBool();
+    }
     else if (key == "dimmer")
     {
-        opt.dimmer = qBound(0.0, value.toDouble(), 1.0);
+        const qreal dimmer = qBound(0.0, value.toDouble(), 1.0);
+        if (same(dimmer, opt.dimmer))
+            return;
+        opt.dimmer = dimmer;
         // live control: apply it right away to the running scene
         if (m_intensityOverrides.contains(fid))
             applyIntensity(fid);
     }
     else if (key == "speed")
     {
-        opt.speed = qBound(0.1, value.toDouble(), 10.0);
+        const qreal speed = qBound(0.1, value.toDouble(), 10.0);
+        if (same(speed, opt.speed))
+            return;
+        opt.speed = speed;
         Function *f = m_doc->function(fid);
         if (f != nullptr && m_active.contains(fid))
             f->setSpeedFactor(opt.speed);
     }
     else if (key == "phase")
     {
-        opt.phase = ((value.toInt() % 360) + 360) % 360;
+        const int phase = ((value.toInt() % 360) + 360) % 360;
+        if (phase == opt.phase)
+            return;
+        opt.phase = phase;
         applyLiveControls(fid);
     }
     else if (key == "size")
     {
-        opt.size = qBound(0.0, value.toDouble(), 2.0);
+        const qreal size = qBound(0.0, value.toDouble(), 2.0);
+        if (same(size, opt.size))
+            return;
+        opt.size = size;
         applyLiveControls(fid);
     }
     else if (key == "fadeSpeed")
     {
-        opt.fadeSpeed = qBound(0.1, value.toDouble(), 10.0);
+        const qreal fadeSpeed = qBound(0.1, value.toDouble(), 10.0);
+        if (same(fadeSpeed, opt.fadeSpeed))
+            return;
+        opt.fadeSpeed = fadeSpeed;
     }
     else
         return;

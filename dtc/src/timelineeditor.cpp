@@ -49,11 +49,19 @@ TimelineEditor::TimelineEditor(Doc *doc, Programmer *programmer, QObject *parent
     , m_playingId(-1)
     , m_position(0)
 {
-    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SIGNAL(changed()));
+    // (a show cleared: once, when it is, not for each of its functions)
+    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved()));
+    connect(m_doc, SIGNAL(cleared()), this, SIGNAL(changed()));
 }
 
 TimelineEditor::~TimelineEditor()
 {
+}
+
+void TimelineEditor::slotFunctionRemoved()
+{
+    if (m_doc->isClearing() == false)
+        emit changed();
 }
 
 int TimelineEditor::revision() const

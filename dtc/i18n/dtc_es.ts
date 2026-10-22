@@ -3022,6 +3022,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Abierto %1</translation>
     </message>
     <message>
+        <source>The screens are locked: another show can&apos;t be opened now</source>
+        <translation>Las pantallas están bloqueadas: ahora no se puede abrir otro show</translation>
+    </message>
+    <message>
         <source>Mapped: %1</source>
         <translation>Mapeado: %1</translation>
     </message>
@@ -3042,8 +3046,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Guardar show como</translation>
     </message>
     <message>
-        <source>autosaved %1</source>
-        <translation>autoguardado %1</translation>
+        <source>recovery copy %1</source>
+        <translation>copia de recuperación %1</translation>
     </message>
     <message>
         <source>New show (Ctrl+N)</source>
@@ -3220,8 +3224,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>¿Recuperar el show sin guardar?</translation>
     </message>
     <message>
-        <source>The application didn&apos;t close properly last time, and an autosaved copy of a show that was never saved is available.</source>
-        <translation>La aplicación no se cerró correctamente la última vez y hay una copia autoguardada de un show que nunca se llegó a guardar.</translation>
+        <source>The application didn&apos;t close properly last time. There is a recovery copy of “%1” from %2, with the changes that weren&apos;t saved.</source>
+        <translation>La aplicación no se cerró correctamente la última vez. Hay una copia de recuperación de «%1» del %2, con los cambios que no se guardaron.</translation>
     </message>
     <message>
         <source>Discard</source>
@@ -3624,6 +3628,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Search again</source>
         <translation>Buscar de nuevo</translation>
+    </message>
+    <message>
+        <source>Controllers and devices in use</source>
+        <translation>Controladores y dispositivos en uso</translation>
+    </message>
+    <message>
+        <source>DMX inputs: interfaces and network</source>
+        <translation>Entradas DMX: interfaces y red</translation>
     </message>
     <message>
         <source>universe %1</source>
@@ -4195,14 +4207,6 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Autoguardado</translation>
     </message>
     <message>
-        <source>Save automatically</source>
-        <translation>Guardar automáticamente</translation>
-    </message>
-    <message>
-        <source>Saved shows are overwritten (the previous version is kept as .bak). Untitled shows are kept apart and offered back after a crash.</source>
-        <translation>Los shows con nombre se sobrescriben (la versión anterior se guarda como .bak). Los shows sin título se guardan aparte y se ofrecen al reabrir tras un cierre inesperado.</translation>
-    </message>
-    <message>
         <source>Every (minutes)</source>
         <translation>Cada (minutos)</translation>
     </message>
@@ -4371,6 +4375,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Import…</source>
         <translation>Importar…</translation>
+    </message>
+    <message>
+        <source>Save a recovery copy</source>
+        <translation>Guardar una copia de recuperación</translation>
+    </message>
+    <message>
+        <source>A recovery copy of the changes, offered back after a crash. Only Save writes the show file (the version before the first save of each session is kept as .bak).</source>
+        <translation>Una copia de recuperación de los cambios, que se ofrece tras un cierre inesperado. Solo Guardar escribe el archivo del show (la versión anterior al primer guardado de cada sesión se conserva como .bak).</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s), downloaded on %1.</source>
@@ -6190,6 +6202,14 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>GROUP %1 en la línea de comandos</translation>
     </message>
     <message>
+        <source>Fewer</source>
+        <translation>Menos</translation>
+    </message>
+    <message>
+        <source>All the groups (%1)</source>
+        <translation>Todos los grupos (%1)</translation>
+    </message>
+    <message>
         <source>No fixtures patched yet.
 Add some on the Patch page.</source>
         <translation>Aún no hay fixtures patcheados.
@@ -7023,8 +7043,8 @@ Añádelos en la página Patch.</translation>
         <translation>Todas las cabezas móviles</translation>
     </message>
     <message>
-        <source>Select a section to set it up. Split it in half with the buttons in its title bar.</source>
-        <translation>Selecciona una sección para configurarla. Divídela en mitades con los botones de su barra de título.</translation>
+        <source>Select a section to set it up. Split it in half with the buttons at its top right (they show with the mouse over it).</source>
+        <translation>Selecciona una sección para configurarla. Divídela en mitades con los botones de su esquina de arriba a la derecha (salen al pasar el ratón por ella).</translation>
     </message>
     <message>
         <source>Section</source>

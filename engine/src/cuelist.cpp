@@ -1712,6 +1712,7 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
     if (timer != NULL && m_fxPlayer->isRunning())
     {
         m_fxPlayer->setSpeedFactor(speedFactor());
+        m_fxPlayer->setMotionSpeed(motionSpeed());
         m_fxPlayer->applyPriorityChange();
         m_fxPlayer->write(timer, universes);
     }
@@ -2255,4 +2256,9 @@ void Cuelist::updateFadersPriority()
 {
     Function::updateFadersPriority();
     m_fxPlayer->setParentPriority(playbackPriority());
+}
+
+qreal Cuelist::frameMotion() const
+{
+    return 1.0;
 }

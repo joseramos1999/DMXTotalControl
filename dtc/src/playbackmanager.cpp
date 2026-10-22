@@ -87,6 +87,7 @@ PlaybackManager::PlaybackManager(Doc *doc, Programmer *programmer, CuelistEditor
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
     connect(m_doc, SIGNAL(functionReplaced(quint32)), this, SLOT(slotFunctionReplaced(quint32)));
     connect(m_doc, SIGNAL(functionChanged(quint32)), this, SLOT(slotFunctionChanged(quint32)));
+    connect(m_doc, SIGNAL(cleared()), this, SLOT(slotDocCleared()));
     connect(m_doc->masterTimer(), SIGNAL(functionListChanged()), this, SLOT(slotFunctionListChanged()));
     // a GO inside a running cuelist (or a Follow) changes no running state: tell it at once
     connect(m_doc->masterTimer(), SIGNAL(cueStarted(quint32,quint32)),
@@ -1545,6 +1546,13 @@ void PlaybackManager::slotFunctionRemoved(quint32 id)
         fixSelection();
         emit assignmentsChanged();
     }
+    // (a show cleared: told once, when it is, not for each of its functions)
+    if (m_doc->isClearing() == false)
+        bump();
+}
+
+void PlaybackManager::slotDocCleared()
+{
     bump();
 }
 

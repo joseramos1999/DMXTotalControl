@@ -92,6 +92,8 @@ When it finishes, it tells you how many were converted and, if any could not be 
 
 For each mode, the first *DMX break* is used; virtual channels (without DMX) are left out.
 
+Some channels change their function with the value of another channel (for example, the prism rotation only turns with the prism on “rotation”). In them the functions that do nothing are left out and, where there are several, each range carries their names together (for example, “0 deg / Stop”). To see it on a fixture imported before, import its `.gdtf` again.
+
 ## Importing fixture files
 
 **Options › Import fixture files › “Import…”** accepts `.qxf` definitions (the QLC+ format), `.gdtf` files or a `.zip` that contains them. They are added to the library and it tells you how many are new.

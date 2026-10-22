@@ -44,6 +44,12 @@ Rectangle {
     readonly property var targets: Core.surface.faderTargets(item)
     readonly property var first: targets.length ? targets[0] : ({ target: "grandMaster" })
     readonly property bool isBpm: targets.length === 1 && first.target === "bpm"
+    /** A speed (of the movement, of a scene): x0.1 at the bottom, x1 in the middle, x10 at the top */
+    readonly property bool isSpeed: targets.length > 0 && targets.every(t => t.target === "moveSpeed" || t.target === "sceneSpeed")
+    function speedText(v) {
+        const factor = Math.pow(10, v * 2 - 1)
+        return "×" + factor.toLocaleString(Qt.locale(), 'f', factor < 1 ? 2 : 1)
+    }
     // where the fader is on its travel, and what its first target is at (the text)
     readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.level(item) }
     readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.value(item) }
@@ -112,14 +118,15 @@ Rectangle {
             from: 0
             to: 255
             // (the BPM: where 90 BPM is on its travel)
-            resetValue: cell.isBpm ? Core.surface.positionOf(cell.item, (90 - 20) / 280) * 255 : 0
+            resetValue: cell.isBpm ? Core.surface.positionOf(cell.item, (90 - 20) / 280) * 255
+                      : cell.isSpeed ? Core.surface.positionOf(cell.item, 0.5) * 255 : 0
             value: cell.level * 255
             onUserMoved: (v) => Core.surface.setLevel(cell.item, v / 255)
         }
         Text {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            text: cell.isBpm ? Math.round(20 + cell.value * 280) : Math.round(cell.value * 100) + "%"
+            text: cell.isBpm ? Math.round(20 + cell.value * 280) : cell.isSpeed ? cell.speedText(cell.value) : Math.round(cell.value * 100) + "%"
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: 10

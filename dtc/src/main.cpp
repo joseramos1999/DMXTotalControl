@@ -35,7 +35,10 @@
 #include <QUrl>
 #include <QKeySequence>
 #include <QQuickItem>
+#include <QStandardPaths>
+#include <QDir>
 #include <qpa/qwindowsysteminterface.h>
+#include <memory>
 
 #include "dtccore.h"
 #include "zonemanager.h"
@@ -53,6 +56,7 @@
 #include "livemixer.h"
 #include "controlmapper.h"
 #include "uiaudit.h"
+#include "singleinstance.h"
 #include "zone.h"
 #include "qlcconfig.h"
 
@@ -178,6 +182,34 @@ int main(int argc, char *argv[])
     parser.addOption(pageOption);
     parser.process(app);
 
+    // One program per user: a second launch (a show opened from the
+    // Explorer) gives its show to the one that runs, which comes to the
+    // front and opens it, and quits. Not for screenshots (--grab): they run
+    // beside the program, with settings and recovery copies of their own.
+    // Any other run shares those with the program, so it is the program
+    std::unique_ptr<SingleInstance> instance;
+    if (grabbing == false)
+    {
+        const QString file = parser.positionalArguments().isEmpty()
+                           ? QString() : QFileInfo(parser.positionalArguments().first()).absoluteFilePath();
+        const QString key = SingleInstance::defaultKey();
+        instance = std::make_unique<SingleInstance>(key, QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                                                             .filePath(QStringLiteral("instance.lock")));
+        if (instance->start() == false)
+        {
+            if (SingleInstance::sendToRunning(key, file))
+                return 0;
+            // the one there doesn't take it: it is quitting, or it crashed
+            // and the system still holds it. This one runs once it has gone,
+            // or as it can after a while
+            if (instance->start(10000) == false)
+            {
+                qWarning("Another instance runs, but it doesn't answer");
+                instance.reset();
+            }
+        }
+    }
+
     // The UI is written in English; other languages come from :/i18n
     QString language = parser.isSet(localeOption) ? parser.value(localeOption)
                                                    : QSettings().value("ui/language").toString();
@@ -244,6 +276,18 @@ int main(int argc, char *argv[])
 
     QQuickWindow *window = engine.rootObjects().isEmpty() ? nullptr :
                            qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    // a second launch: the window comes to the front, as it was (full
+    // screen, maximized), and opens the show it was given as File > Open
+    // does (the unsaved changes asked first)
+    if (window && instance)
+        QObject::connect(instance.get(), &SingleInstance::activationRequested, window, [window](const QString &file) {
+            if (window->windowStates() & Qt::WindowMinimized)
+                window->setWindowStates(window->windowStates() & ~Qt::WindowMinimized);
+            window->raise();
+            window->requestActivate();
+            if (file.isEmpty() == false)
+                QMetaObject::invokeMethod(window, "openFromOutside", Q_ARG(QVariant, QVariant(QUrl::fromLocalFile(file))));
+        });
     if (window && parser.isSet(pageOption))
         window->setProperty("currentPage", parser.value(pageOption).toInt());
     if (window && parser.isSet(sceneOption))

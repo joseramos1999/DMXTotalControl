@@ -37,9 +37,9 @@ Locked pages have a padlock in the sidebar. When you open one, it asks for the p
 
 ## Autosave
 
-- **Save automatically**, **Every (minutes)**: from 1 to 60.
+- **Save a recovery copy**, **Every (minutes)**: from 1 to 60.
 
-Shows with a name are overwritten and the previous version is saved as `.bak`. Untitled shows are saved separately and offered when you reopen the program after an unexpected close (“Recover the unsaved show?”). The top bar shows the time of the last autosave; if it fails (a full disk, a read-only file), a warning appears in red.
+The autosave doesn't touch the show file: every few minutes, if there are unsaved changes, it saves a recovery copy apart, and the dot **●** stays. Only **Save** writes the file; the version there was before the first save of each session is kept as `.bak`. The copy is deleted when you save, when you close (saving or not) and when you open another show. If the program closes unexpectedly, when you open it again it offers the copy (“Recover the unsaved show?”) with the name of the show and the time of the copy: recovering it opens that show with its changes, still unsaved; save it to keep them. Meanwhile the last show is already open as it was saved (with “Open the last show at startup”): “Discard” leaves it so. The top bar shows the time of the last copy (“recovery copy …”); if it fails (a full disk), a warning appears in red.
 
 ## Playback
 
@@ -49,7 +49,7 @@ Shows with a name are overwritten and the previous version is saved as `.bak`. U
   - **“Give the scene its channels back”**: the channels that the scene touches leave the programmer.
   - **“Always stay”**.
   - **“Are all reset”**: the programmer is cleared.
-- **Grand master acts on**: **“Intensity channels”** or **“All channels”**.
+- **Grand master acts on**: **“Intensity channels”** (the light: the dimmers and the colours of fixtures without a dimmer) or **“All channels”**.
 
 ## Audio
 

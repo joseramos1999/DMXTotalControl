@@ -42,7 +42,7 @@ Colonnes : case de sélection, **#** (numéro), **NOM**, **ADRESSE** (univers .
 
 Les outils de la barre agissent sur la sélection :
 
-- **Clic** sélectionne ; **Ctrl+clic** ajoute ou retire ; **Maj+clic** sélectionne tous les fixtures depuis le dernier sur lequel vous avez cliqué jusqu’à celui-ci (dans ce sens, qui est l’ordre de la sélection), et **Ctrl+Maj+clic** les ajoute. **« Tout »** et **« Aucun »**.
+- **Clic** sélectionne ; **Ctrl+clic** ajoute ou retire ; **Maj+clic** sélectionne tous les fixtures depuis le dernier sur lequel vous avez cliqué jusqu’à celui-ci (dans ce sens, qui est l’ordre de la sélection), et **Ctrl+Maj+clic** les ajoute. **« Tout »** et **« Aucun »**. La case d’une ligne ajoute ou retire son fixture (comme Ctrl+clic) ; avec Maj, elle ajoute tous ceux depuis le dernier sur lequel vous avez cliqué.
 - **« Identifier »** : les fixtures sélectionnés clignotent en blanc pour les repérer sur scène. **« Arrêter l’identification »** l’arrête (cela s’arrête aussi quand vous quittez la page). Le bouton de chaque ligne n’identifie que ce fixture. La liste reste là où elle était.
 - **Inverser le pan** et **inverser le tilt** (les icônes de flèches) : pour les fixtures qui en ont.
 - **« Limites »**, **« Modifier »**, **« Réadresser »**, **« Renuméroter »**, **« Créer un groupe »** et **« Supprimer »** : expliqués ci-dessous.
@@ -142,7 +142,7 @@ Sélectionnez des fixtures et appuyez sur **« Limites »** :
 Avec un seul fixture, la liste **Canaux** permet de décider pour chaque canal :
 
 - **Fondus** : s’il suit les temps de fondu. Désactivé, il saute directement à sa valeur (utile pour les roues de couleur et de gobos).
-- **Dimmer** : s’il est proportionnel au grand master, aux masters de groupe et aux dimmers de scène.
+- **Dimmer** : s’il est proportionnel au grand master, aux masters de groupe et aux dimmers de scène. Le grand master, en outre, ne règle que la lumière (voir [Masters](directo.md#masters)).
 
 Les limites agissent sur la sortie : les scènes, les effets et les modifications en direct gardent leurs valeurs, mais ce qui sort les respecte. Avec plusieurs fixtures, les valeurs affichées sont celles du premier qui a chaque contrôle, et ce que vous changez s’applique à tous ceux qui l’ont.
 

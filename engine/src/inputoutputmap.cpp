@@ -64,6 +64,8 @@ InputOutputMap::InputOutputMap(const Doc *doc, quint32 universes)
     connect(doc->ioPluginCache(), SIGNAL(pluginConfigurationChanged(QLCIOPlugin*)),
             this, SLOT(slotPluginConfigurationChanged(QLCIOPlugin*)));
     connect(doc->masterTimer(), SIGNAL(beat()), this, SLOT(slotMasterTimerBeat()));
+    // DMX Total Control: the universes are woken up from the timer thread
+    connect(doc->masterTimer(), SIGNAL(tickReady()), this, SLOT(slotMasterTimerTick()), Qt::DirectConnection);
 }
 
 InputOutputMap::~InputOutputMap()
@@ -163,14 +165,13 @@ bool InputOutputMap::addUniverse(quint32 id)
             while (id > universesCount())
             {
                 uni = new Universe(universesCount(), m_grandMaster);
-                connect(m_doc->masterTimer(), SIGNAL(tickReady()), uni, SLOT(tick()), Qt::QueuedConnection);
                 connect(uni, SIGNAL(universeWritten(quint32,QByteArray)), this, SIGNAL(universeWritten(quint32,QByteArray)));
                 m_universeArray.append(uni);
             }
         }
 
+        // (DMX Total Control: the timer ticks it, slotMasterTimerTick)
         uni = new Universe(id, m_grandMaster);
-        connect(m_doc->masterTimer(), SIGNAL(tickReady()), uni, SLOT(tick()), Qt::QueuedConnection);
         connect(uni, SIGNAL(universeWritten(quint32,QByteArray)), this, SIGNAL(universeWritten(quint32,QByteArray)));
         m_universeArray.append(uni);
     }
@@ -307,6 +308,23 @@ QList<Universe*> InputOutputMap::claimUniverses()
 void InputOutputMap::releaseUniverses(bool changed)
 {
     m_universeChanged = changed;
+    m_universeMutex.unlock();
+}
+
+void InputOutputMap::slotMasterTimerTick()
+{
+    // DMX Total Control: in the timer thread. Each universe only gets the
+    // go for its frame (it processes and sends it in its own thread). The
+    // lock keeps the list from changing (a universe added or deleted); if
+    // the GUI holds the universes right now (claimUniverses: a refresh of
+    // the channels), this frame is skipped rather than waiting for it: the
+    // universes write the next one, with the real time in between
+    if (m_universeMutex.tryLock() == false)
+        return;
+
+    for (Universe *universe : std::as_const(m_universeArray))
+        universe->tick();
+
     m_universeMutex.unlock();
 }
 

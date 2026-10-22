@@ -42,6 +42,7 @@ Encima de las fichas aparecen los [grupos de fixtures](patch.md#grupos-de-fixtur
 - **Clic** en un grupo: selecciona sus fixtures. **Ctrl+clic** o **Mayús+clic**: los añade.
 - La etiqueta se ilumina cuando todos sus fixtures están seleccionados. Al pasar el ratón se ve su número para la línea de comandos («GROUP 2 en la línea de comandos»).
 - Las **selecciones** de un grupo (partes ordenadas, con su icono) seleccionan sus fixtures en su orden.
+- Con muchos grupos se ven tres filas de etiquetas, que se desplazan con la rueda: **«Todos los grupos (N)»** las abre (hasta la mitad del panel) y **«Menos»** las recoge. Así las fichas de los fixtures siguen a la vista.
 
 ### Plano 2D
 

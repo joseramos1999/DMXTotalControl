@@ -771,6 +771,11 @@ bool Programmer::loadScene(quint32 sceneId)
 
 void Programmer::slotFixtureRemoved(quint32 fixtureId)
 {
+    // a show cleared: everything goes at once (slotDocCleared), not a
+    // fixture at a time, each one telling the selection, the values and
+    // the FX again
+    if (m_doc->isClearing())
+        return;
     m_keyCache.remove(fixtureId);
     m_valueKeys.remove(fixtureId);
     m_selection.removeAll(fixtureId);
@@ -1964,6 +1969,11 @@ void Programmer::removeFromFx(const QString &param, const QList<quint32> &fixtur
     }
     m_fxLayers.erase(std::remove_if(m_fxLayers.begin(), m_fxLayers.end(),
                                     [](const FXScene::Layer &l) { return l.fixtures.isEmpty(); }), m_fxLayers.end());
+}
+
+FXScene *Programmer::fxScene() const
+{
+    return m_fx;
 }
 
 QVariantList Programmer::fxLayers() const

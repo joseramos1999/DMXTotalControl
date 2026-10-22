@@ -37,9 +37,9 @@ Le pagine bloccate hanno un lucchetto nella barra laterale. Quando ne apri una, 
 
 ## Salvataggio automatico
 
-- **Salva automaticamente**, **Ogni (minuti)**: da 1 a 60.
+- **Salva una copia di recupero**, **Ogni (minuti)**: da 1 a 60.
 
-Gli show con un nome vengono sovrascritti e la versione precedente si salva come `.bak`. Gli show senza titolo si salvano a parte e vengono proposti quando riapri il programma dopo una chiusura inattesa («Recuperare lo show non salvato?»). Nella barra superiore si vede l'ora dell'ultimo salvataggio automatico; se non riesce (un disco pieno, un file di sola lettura), compare un avviso in rosso.
+Il salvataggio automatico non tocca il file dello show: ogni pochi minuti, se ci sono modifiche non salvate, salva a parte una copia di recupero, e il punto **●** resta. Solo **Salva** scrive il file; la versione che c'era prima del primo salvataggio di ogni sessione si conserva come `.bak`. La copia si cancella quando salvi, quando chiudi (salvando o no) e quando apri un altro show. Se il programma si chiude in modo inatteso, quando lo riapri ti propone la copia («Recuperare lo show non salvato?») con il nome dello show e l'ora della copia: recuperandola si apre quello show con le sue modifiche, ancora non salvate; salvalo per conservarle. Nel frattempo l'ultimo show è già aperto com'era salvato (con «Apri l'ultimo show all'avvio»): «Scarta» lo lascia così. Nella barra superiore si vede l'ora dell'ultima copia («copia di recupero…»); se non riesce (un disco pieno), compare un avviso in rosso.
 
 ## Riproduzione
 
@@ -49,7 +49,7 @@ Gli show con un nome vengono sovrascritti e la versione precedente si salva come
   - **«Restituiscono alla scena i suoi canali»**: i canali che la scena tocca escono dal programmatore.
   - **«Restano sempre»**.
   - **«Vengono tutte azzerate»**: il programmatore si svuota.
-- **Il grand master agisce su**: **«Canali di intensità»** o **«Tutti i canali»**.
+- **Il grand master agisce su**: **«Canali di intensità»** (la luce: i dimmer e i colori delle fixture senza dimmer) o **«Tutti i canali»**.
 
 ## Audio
 

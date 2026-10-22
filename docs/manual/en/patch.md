@@ -42,7 +42,7 @@ Columns: selection checkbox, **#** (number), **NAME**, **ADDRESS** (universe . a
 
 The tools of the bar work on the selection:
 
-- A **click** selects; **Ctrl+click** adds or removes; **Shift+click** selects all the fixtures from the last one you clicked to that one (in that direction, which is the order of the selection), and **Ctrl+Shift+click** adds them. **“All”** and **“None”**.
+- A **click** selects; **Ctrl+click** adds or removes; **Shift+click** selects all the fixtures from the last one you clicked to that one (in that direction, which is the order of the selection), and **Ctrl+Shift+click** adds them. **“All”** and **“None”**. The checkbox of a row adds or removes its fixture (like Ctrl+click); with Shift, it adds all of them from the last one you clicked.
 - **“Identify”**: the selected fixtures blink in white so you can find them on stage. **“Stop identifying”** stops it (it also stops when you leave the page). The button on each row identifies only that fixture. The list stays where it was.
 - **Invert pan** and **invert tilt** (the arrow icons): for the fixtures that have them.
 - **“Limits”**, **“Edit”**, **“Re-address”**, **“Renumber”**, **“Create group”** and **“Delete”**: explained below.
@@ -142,7 +142,7 @@ Select fixtures and press **“Limits”**:
 With a single fixture, the **Channels** list lets you decide for each channel:
 
 - **Fades**: whether it follows the fade times. Off, it jumps straight to its value (useful for colour wheels and gobos).
-- **Dimmer**: whether it is scaled by the grand master, the group masters and the scene dimmers.
+- **Dimmer**: whether it is scaled by the grand master, the group masters and the scene dimmers. The grand master, besides, only scales the light (see [Masters](directo.md#masters)).
 
 Limits act on the output: scenes, effects and live edits keep their values, but the output respects the limits. With several fixtures you see the values of the first one that has each control, and what you change is applied to all the ones that have it.
 

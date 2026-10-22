@@ -108,7 +108,7 @@ Der Fader des Playbacks ist seine Intensität: Ziehen Sie ihn von null hoch, sta
 1. Drücken Sie **Strg+S** (oder das Diskettensymbol in der oberen Leiste).
 2. Da es das erste Mal ist, wählen Sie Ordner und Namen: Die Show wird als `.qxw`-Datei gespeichert.
 
-Ab jetzt speichert Strg+S in dieselbe Datei. Ist das automatische Speichern aktiv (siehe [Optionen](opciones.md#automatisches-speichern)), speichert das Programm alle paar Minuten von selbst und behält die vorherige Version als `.bak`.
+Ab jetzt speichert Strg+S in dieselbe Datei und behält die Version vor dem ersten Speichern jeder Sitzung als `.bak`. Ist das automatische Speichern aktiv (siehe [Optionen](opciones.md#automatisches-speichern)), speichert das Programm alle paar Minuten eine separate Wiederherstellungskopie, ohne Ihre Datei anzutasten: Wird es unerwartet beendet, bietet es an, die Änderungen wiederherzustellen.
 
 ## Und jetzt…
 

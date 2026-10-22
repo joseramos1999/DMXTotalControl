@@ -18,6 +18,7 @@
 */
 
 #include <QtTest>
+#include <QElapsedTimer>
 #include <sys/time.h>
 
 #include "universe_test.h"
@@ -750,6 +751,36 @@ void Universe_Test::zeroIntensityChannelsEfficiency2()
         else
             QCOMPARE(quint8(m_uni->postGMValues()->at(i)), quint8(200));
     }
+}
+
+void Universe_Test::stopsAtOnce()
+{
+    // DMX Total Control: a running universe that goes stops at once, not at
+    // the end of its wait for a tick (two ticks, 40 ms: opening a show,
+    // which replaces all of them, froze the window 0.3 s for 8 universes)
+    QList<Universe *> universes;
+    for (quint32 i = 0; i < 24; i++)
+    {
+        Universe *uni = new Universe(i + 1, m_gm);
+        uni->start();
+        universes.append(uni);
+    }
+    // all of them in their loop, waiting for a tick (none comes)
+    QElapsedTimer started;
+    started.start();
+    for (Universe *uni : universes)
+    {
+        while (uni->m_running == false && started.elapsed() < 5000)
+            QThread::msleep(1);
+        QVERIFY(uni->m_running);
+    }
+    QThread::msleep(50);
+
+    QElapsedTimer timer;
+    timer.start();
+    qDeleteAll(universes);
+    // (before: 20 ms each on average, about 480 ms)
+    QVERIFY2(timer.elapsed() < 200, qPrintable(QString("%1 ms").arg(timer.elapsed())));
 }
 
 QTEST_APPLESS_MAIN(Universe_Test)

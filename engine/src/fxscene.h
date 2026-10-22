@@ -308,6 +308,13 @@ public:
      *  player of a cuelist) calls it itself */
     void setFadersPaused(bool paused);
 
+    /** DMX Total Control: a pan/tilt layer ("pantilt", "pan" or "tilt") */
+    static bool isMotion(const QString &param);
+
+protected:
+    /** The motion speed goes to the pan/tilt layers only */
+    qreal frameMotion() const override;
+
 private:
     /** A channel the scene plays */
     struct Target

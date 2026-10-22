@@ -491,9 +491,11 @@ uchar FadeChannel::calculateCurrent(uint fadeTime, uint elapsedTime)
     }
     else
     {
+        // DMX Total Control: rounded, not truncated: a fade cut short (a step
+        // shorter than its fade) still gets to its last unit
         bool rampUp = m_target > m_start ? true : false;
         m_current = rampUp ? m_target - m_start : m_start - m_target;
-        m_current = m_current * (qreal(elapsedTime) / qreal(fadeTime));
+        m_current = quint32(qRound64(qreal(m_current) * (qreal(elapsedTime) / qreal(fadeTime))));
         m_current = rampUp ? m_start + m_current : m_start - m_current;
         //qDebug() << "channel" << channel() << "start" << m_start << "target" << m_target << "current" << m_current << "fade" << fadeTime << "elapsed" << elapsedTime ;
     }

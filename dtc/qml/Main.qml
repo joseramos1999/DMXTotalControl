@@ -163,7 +163,7 @@ ApplicationWindow {
     function saveOrAsk(then) {
         if (Core.fileName.length === 0) {
             saveDialog.then = then || null
-            saveDialog.open()
+            saveDialog.start()
         } else if (Core.saveShow()) {
             showMessage(qsTr("Show saved"))
             if (then) then()
@@ -188,6 +188,16 @@ ApplicationWindow {
         } else {
             action()
         }
+    }
+
+    /** A second launch of the program (a show opened from the Explorer)
+     *  came here: the show opens as File > Open opens it. Not while the
+     *  SHOW or the setup is locked: it only says so */
+    function openFromOutside(url) {
+        if (window.locked || window.setupLocked)
+            showMessage(qsTr("The screens are locked: another show can't be opened now"), true)
+        else
+            whenSaved(() => window.openShow(url))
     }
 
     /** The example shows installed with the program */
@@ -233,6 +243,18 @@ ApplicationWindow {
         window.visibility = enable ? Window.FullScreen : Window.Windowed
     }
 
+    // the show given to open (or the last one) couldn't be opened, or it
+    // opened without some of its files: said once, false when all went well
+    function tellOpenProblems() {
+        if (Core.lastError.length > 0)
+            showMessage(Core.lastError, true)
+        else if (Core.missingFiles.length > 0)
+            missingFiles.notify()
+        else
+            return false
+        return true
+    }
+
     onClosing: (close) => {
         if (Core.modified && !closeConfirmed) {
             close.accepted = false
@@ -249,16 +271,13 @@ ApplicationWindow {
             if (Core.settings.startShowLocked)
                 locked = true
         }
+        // (the problems of the show opened wait for the answer: the copy may
+        // replace it)
         if (Core.hasRecovery)
             recoveryDialog.open()
-        // the show given to open (or the last one) couldn't be opened
-        else if (Core.lastError.length > 0)
-            showMessage(Core.lastError, true)
-        // ...or it opened without some of its files
-        else if (Core.missingFiles.length > 0)
-            missingFiles.notify()
         // the very first start: the first steps guide, once
-        else if (!Core.settings.guideShown && !Core.settings.startShowFullScreen && Core.settings.recentShows.length === 0)
+        else if (!tellOpenProblems() && !Core.settings.guideShown && !Core.settings.startShowFullScreen
+                 && Core.settings.recentShows.length === 0)
             firstSteps.start()
         Core.settings.guideShown = true
     }
@@ -267,8 +286,8 @@ ApplicationWindow {
      * Keyboard shortcuts
      * ****************************************************************/
     Shortcut { sequences: [StandardKey.Save]; enabled: !window.locked; onActivated: window.saveOrAsk() }
-    Shortcut { sequences: [StandardKey.SaveAs]; enabled: !window.locked && !window.setupLocked; onActivated: saveDialog.open() }
-    Shortcut { sequences: [StandardKey.Open]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => openDialog.open()) }
+    Shortcut { sequences: [StandardKey.SaveAs]; enabled: !window.locked && !window.setupLocked; onActivated: saveDialog.start() }
+    Shortcut { sequences: [StandardKey.Open]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => openDialog.start()) }
     Shortcut { sequences: [StandardKey.New]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => Core.newShow()) }
     Shortcut { sequence: "F1"; enabled: !window.locked; onActivated: window.currentPage = window.pageLive }
     Shortcut { sequence: "F2"; enabled: !window.locked; onActivated: window.currentPage = window.pageShow }
@@ -351,14 +370,14 @@ ApplicationWindow {
         function onOflUpdateFound() { window.showMessage(qsTr("New fixtures in the Open Fixture Library: update it in Options")) }
     }
 
-    FileDialog {
+    AppFileDialog {
         id: openDialog
         title: qsTr("Open show")
         nameFilters: [qsTr("Show files (*.qxw)"), qsTr("All files (*)")]
         onAccepted: window.openShow(selectedFile)
     }
 
-    FileDialog {
+    AppFileDialog {
         id: saveDialog
         property var then: null
         title: qsTr("Save show as")
@@ -422,7 +441,7 @@ ApplicationWindow {
                 Text {
                     Layout.fillWidth: true
                     text: (Core.modified ? "● " : "") + Core.showTitle
-                          + (Core.lastAutosave.length ? "  ·  " + qsTr("autosaved %1").arg(Core.lastAutosave) : "")
+                          + (Core.lastAutosave.length ? "  ·  " + qsTr("recovery copy %1").arg(Core.lastAutosave) : "")
                     font.pixelSize: Theme.fontSmall
                     color: Core.modified ? Theme.warning : Theme.textDim
                     elide: Text.ElideRight
@@ -434,7 +453,7 @@ ApplicationWindow {
                 spacing: 2
                 enabled: !window.setupLocked
                 AppButton { iconGlyph: Theme.iconFile; flat: true; ToolTip.text: qsTr("New show (Ctrl+N)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => Core.newShow()) }
-                AppButton { iconGlyph: Theme.iconOpen; flat: true; ToolTip.text: qsTr("Open (Ctrl+O)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => openDialog.open()) }
+                AppButton { iconGlyph: Theme.iconOpen; flat: true; ToolTip.text: qsTr("Open (Ctrl+O)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => openDialog.start()) }
                 AppButton {
                     text: "▾"
                     flat: true
@@ -486,7 +505,7 @@ ApplicationWindow {
                     ToolTip.text: qsTr("Save as… (Ctrl+Shift+S)")
                     ToolTip.visible: hovered
                     ToolTip.delay: window.compactBar ? 0 : 500
-                    onClicked: saveDialog.open()
+                    onClicked: saveDialog.start()
                 }
             }
 
@@ -1013,8 +1032,9 @@ ApplicationWindow {
     ConfirmPopup {
         id: recoveryDialog
         heading: qsTr("Recover the unsaved show?")
-        body: qsTr("The application didn't close properly last time, and an autosaved copy of a show that was never saved is available.")
-        AppButton { text: qsTr("Discard"); onClicked: { Core.discardRecovery(); recoveryDialog.close() } }
+        body: qsTr("The application didn't close properly last time. There is a recovery copy of “%1” from %2, with the changes that weren't saved.")
+              .arg(Core.recoveryShow).arg(Core.recoveryTime)
+        AppButton { text: qsTr("Discard"); onClicked: { Core.discardRecovery(); recoveryDialog.close(); window.tellOpenProblems() } }
         AppButton {
             text: qsTr("Recover")
             primary: true

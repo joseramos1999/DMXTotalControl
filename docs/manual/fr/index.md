@@ -10,7 +10,7 @@ Avec DMX Total Control, vous pouvez :
 - Les lancer dans Direct par groupes, sur les Playbacks avec GO ou depuis votre SHOW.
 - Sortir le DMX par des interfaces DMX USB, Art-Net ou sACN, et tout piloter depuis MIDI, OSC, une entrée DMX ou le clavier.
 
-Les shows sont enregistrés dans des fichiers `.qxw`, le même format que celui de QLC+ : vous pouvez donc ouvrir des shows faits avec QLC+.
+Les shows sont enregistrés dans des fichiers `.qxw`, le même format que celui de QLC+ : vous pouvez donc ouvrir des shows faits avec QLC+. Si le programme est déjà ouvert et que vous ouvrez un show depuis l’Explorateur (double-clic sur le fichier), il s’ouvre dans cette même fenêtre, qui passe au premier plan (il vous demande d’abord quoi faire des modifications non enregistrées).
 
 ## Comment ouvrir ce manuel
 
@@ -54,7 +54,7 @@ En bas de la barre latérale se trouvent la version du programme et le **CPU** q
 
 De gauche à droite :
 
-- **Le show** : son nom. Un point **●** devant indique des modifications non enregistrées ; si la sauvegarde automatique est active, l’heure de la dernière s’affiche aussi (« sauvegarde auto… »).
+- **Le show** : son nom. Un point **●** devant indique des modifications non enregistrées ; si la sauvegarde automatique est active, l’heure de la dernière copie de récupération s’affiche aussi (« copie de récupération… »).
 - **Fichier** : « Nouveau show (Ctrl+N) », « Ouvrir (Ctrl+O) », la flèche **▾** avec les shows récents et les « Exemples », « Enregistrer (Ctrl+S) » et « Enregistrer sous… » (Ctrl+Maj+S).
 - **Rythme** : **« GO »** et **« Stop »** changent ce que font les boutons des scènes (dans Direct, le SHOW, les mappages et le téléphone). Avec **GO** allumé, appuyer sur une scène la lance et les appuis suivants marquent son rythme, sans jamais l’arrêter ; avec **Stop** allumé, appuyer sur une scène l’arrête ; avec les deux éteints, comme d’habitude ([Direct](directo.md#rythme-dune-scène-à-pas)). Chaque bouton d’une scène à pas ou d’une cuelist en cours (dans Direct, le SHOW, les playbacks et le téléphone) contient une **barre coupée en deux** qui allume un côté puis l’autre à chaque pas : vous voyez ainsi le rythme de chacune. Ensuite, **« BeatGO »** (division suivante des scènes pilotées par BeatGO, aussi avec la touche G) et **« Pulsation »**, qui écoute l’entrée audio de l’ordinateur (choisie dans [Options](opciones.md#audio)) : chaque pic qui dépasse la ligne du vumètre fait avancer les scènes pilotées par Pulsation. Faites glisser la ligne du vumètre pour changer le seuil. Le tempo du show, celui des FX et des scènes en mode BPM, se change avec un fader ou un rotatif de BPM du [SHOW](show.md) ou avec les [mappages](mapeos.md).
 - **Le cadenas** : verrouille des écrans pour que rien ne change par erreur (voir [Options](opciones.md#show-et-verrouillage)).
@@ -71,7 +71,7 @@ Quand vous fermez le programme, ou que vous ouvrez ou créez un autre show, s’
 
 Si le show que vous ouvrez utilise des fichiers manquants (ses sons, vidéos ou images ; par exemple, un show venu d’un autre ordinateur), un avis en donne la liste. Le show fonctionne sans eux. Avec **« Chercher dans un dossier… »**, vous choisissez le dossier où ils se trouvent : ils sont recherchés par leur nom, y compris dans ses sous-dossiers, et le show les utilise désormais (enregistrez-le pour le garder ainsi).
 
-> **Conseil :** si le programme s’est fermé de façon inattendue alors que vous aviez un show non enregistré, il vous propose « Récupérer le show non enregistré ? » à la réouverture. Appuyez sur « Récupérer » et enregistrez-le sous un nom.
+> **Conseil :** si le programme s’est fermé de façon inattendue avec des modifications non enregistrées, il vous propose « Récupérer le show non enregistré ? » à la réouverture, avec le nom du show et l’heure de la copie. Appuyez sur « Récupérer » et enregistrez-le (un show sans titre, sous un nom).
 
 ## Comment ce manuel est organisé
 

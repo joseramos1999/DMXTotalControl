@@ -8,7 +8,7 @@ La page a trois onglets : **« Mappages »**, **« Appareils »** et **« 
 
 ## Appareils
 
-Dans **« Appareils »** apparaissent les appareils d’entrée que le programme trouve, avec leur type (MIDI, OSC ou DMX), leur nom et l’univers qu’ils utilisent.
+Dans **« Appareils »** apparaissent les appareils d’entrée que le programme trouve, avec leur type (MIDI, OSC ou DMX), leur nom et l’univers qu’ils utilisent. Les contrôleurs (MIDI et OSC) et les appareils que vous utilisez déjà viennent d’abord, sous **« Contrôleurs et appareils utilisés »** ; ensuite, sous **« Entrées DMX : interfaces et réseau »**, les autres entrées DMX, avec une ligne par carte réseau.
 
 1. Branchez le contrôleur et, s’il n’apparaît pas, appuyez sur **« Rechercher à nouveau »**.
 2. Activez son **« Entrée »**.

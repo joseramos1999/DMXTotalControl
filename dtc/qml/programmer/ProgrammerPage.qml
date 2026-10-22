@@ -347,77 +347,114 @@ Item {
                         AppButton { text: "▶"; implicitHeight: 26; flat: true; ToolTip.text: qsTr("Shift the selection right"); ToolTip.visible: hovered; onClicked: Core.programmer.shiftSelection(1) }
                     }
 
-                    // fixture groups: click selects, ctrl+click adds
-                    Flow {
+                    // fixture groups: click selects, ctrl+click adds. Many
+                    // groups keep to three rows that scroll ("All the groups"
+                    // opens them, up to half the panel): the fixtures stay in sight
+                    Item {
+                        id: groupsBox
+                        readonly property real collapsedHeight: 3 * 28 + 2 * groupsFlow.spacing
+                        readonly property bool overflows: groupsFlow.implicitHeight > collapsedHeight + 1
+                        property bool expanded: false
                         Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(groupsFlow.implicitHeight,
+                                                         expanded ? Math.max(collapsedHeight, fixturesPanel.height / 2) : collapsedHeight)
                         visible: Core.patch.groups.length > 0
-                        spacing: 6
-                        Repeater {
-                            model: Core.patch.groups
-                            delegate: Rectangle {
-                                required property var modelData
-                                required property int index
-                                readonly property bool allSelected: modelData.fixtures.length > 0 &&
-                                    modelData.fixtures.every(id => Core.programmer.selection.indexOf(id) >= 0)
-                                width: chipText.implicitWidth + 20
-                                height: 28
-                                radius: 14
-                                color: allSelected ? Theme.accentFill : (chipMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
-                                border.color: allSelected ? Theme.accentFill : Theme.border
-                                Text {
-                                    id: chipText
-                                    anchors.centerIn: parent
-                                    text: modelData.name
-                                    color: parent.allSelected ? Theme.accentText : Theme.text
-                                    font.pixelSize: Theme.fontSmall
-                                    font.weight: Font.DemiBold
+
+                        Flickable {
+                            id: groupsFlick
+                            anchors.fill: parent
+                            clip: true
+                            contentHeight: groupsFlow.implicitHeight
+                            interactive: contentHeight > height + 1
+                            boundsBehavior: Flickable.StopAtBounds
+                            ScrollBar.vertical: ScrollBar { policy: groupsFlick.interactive ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+
+                            Flow {
+                                id: groupsFlow
+                                // (room for the scroll bar)
+                                width: groupsFlick.width - 8
+                                spacing: 6
+                                Repeater {
+                                    model: Core.patch.groups
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        required property int index
+                                        readonly property bool allSelected: modelData.fixtures.length > 0 &&
+                                            modelData.fixtures.every(id => Core.programmer.selection.indexOf(id) >= 0)
+                                        width: chipText.implicitWidth + 20
+                                        height: 28
+                                        radius: 14
+                                        color: allSelected ? Theme.accentFill : (chipMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
+                                        border.color: allSelected ? Theme.accentFill : Theme.border
+                                        Text {
+                                            id: chipText
+                                            anchors.centerIn: parent
+                                            text: modelData.name
+                                            color: parent.allSelected ? Theme.accentText : Theme.text
+                                            font.pixelSize: Theme.fontSmall
+                                            font.weight: Font.DemiBold
+                                        }
+                                        MouseArea {
+                                            id: chipMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            ToolTip.visible: containsMouse
+                                            ToolTip.delay: 700
+                                            ToolTip.text: qsTr("GROUP %1 in the command line").arg(parent.index + 1)
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: (ev) => Core.programmer.selectFixtures(modelData.fixtures,
+                                                           (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                        }
+                                    }
                                 }
-                                MouseArea {
-                                    id: chipMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    ToolTip.visible: containsMouse
-                                    ToolTip.delay: 700
-                                    ToolTip.text: qsTr("GROUP %1 in the command line").arg(parent.index + 1)
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: (ev) => Core.programmer.selectFixtures(modelData.fixtures,
-                                                   (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                // the selections of the groups: their own order
+                                Repeater {
+                                    model: Core.patch.selections
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        readonly property bool active: JSON.stringify(Core.programmer.selection) === JSON.stringify(modelData.fixtures)
+                                        width: selectionText.implicitWidth + 34
+                                        height: 28
+                                        radius: 14
+                                        color: active ? Theme.accentFill : (selectionMouse.containsMouse ? Theme.surfaceHover : "transparent")
+                                        border.color: active ? Theme.accentFill : Theme.border
+                                        IconLabel {
+                                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                                            icon: Theme.iconSelect
+                                            size: 10
+                                            color: parent.active ? Theme.accentText : Theme.textDim
+                                        }
+                                        Text {
+                                            id: selectionText
+                                            anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }
+                                            text: modelData.name
+                                            color: parent.active ? Theme.accentText : Theme.text
+                                            font.pixelSize: Theme.fontSmall
+                                        }
+                                        MouseArea {
+                                            id: selectionMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: (ev) => Core.programmer.selectFixtures(modelData.fixtures,
+                                                           (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                        }
+                                    }
                                 }
                             }
                         }
-                        // the selections of the groups: their own order
-                        Repeater {
-                            model: Core.patch.selections
-                            delegate: Rectangle {
-                                required property var modelData
-                                readonly property bool active: JSON.stringify(Core.programmer.selection) === JSON.stringify(modelData.fixtures)
-                                width: selectionText.implicitWidth + 34
-                                height: 28
-                                radius: 14
-                                color: active ? Theme.accentFill : (selectionMouse.containsMouse ? Theme.surfaceHover : "transparent")
-                                border.color: active ? Theme.accentFill : Theme.border
-                                IconLabel {
-                                    anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                                    icon: Theme.iconSelect
-                                    size: 10
-                                    color: parent.active ? Theme.accentText : Theme.textDim
-                                }
-                                Text {
-                                    id: selectionText
-                                    anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }
-                                    text: modelData.name
-                                    color: parent.active ? Theme.accentText : Theme.text
-                                    font.pixelSize: Theme.fontSmall
-                                }
-                                MouseArea {
-                                    id: selectionMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: (ev) => Core.programmer.selectFixtures(modelData.fixtures,
-                                                   (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
-                                }
-                            }
+                    }
+                    AppButton {
+                        Layout.alignment: Qt.AlignRight
+                        Layout.topMargin: -4
+                        visible: groupsBox.visible && groupsBox.overflows
+                        flat: true
+                        implicitHeight: 22
+                        text: groupsBox.expanded ? qsTr("Fewer") : qsTr("All the groups (%1)").arg(Core.patch.groups.length)
+                        iconGlyph: groupsBox.expanded ? Theme.iconChevronUp : Theme.iconChevronDown
+                        onClicked: {
+                            groupsBox.expanded = !groupsBox.expanded
+                            groupsFlick.contentY = 0
                         }
                     }
 

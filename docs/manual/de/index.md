@@ -10,7 +10,7 @@ Mit DMX Total Control können Sie:
 - Sie unter Live in Gruppen starten, auf den Playbacks mit GO oder aus Ihrer SHOW.
 - DMX über DMX-USB-Interfaces, Art-Net oder sACN ausgeben und alles über MIDI, OSC, DMX-Eingang oder die Tastatur steuern.
 
-Shows werden in `.qxw`-Dateien gespeichert, demselben Format, das QLC+ verwendet. Sie können also mit QLC+ erstellte Shows öffnen.
+Shows werden in `.qxw`-Dateien gespeichert, demselben Format, das QLC+ verwendet. Sie können also mit QLC+ erstellte Shows öffnen. Ist das Programm schon geöffnet und öffnen Sie eine Show im Explorer (Doppelklick auf die Datei), öffnet sie sich im selben Fenster, das in den Vordergrund kommt (vorher wird nach den ungespeicherten Änderungen gefragt).
 
 ## So öffnen Sie dieses Handbuch
 
@@ -54,7 +54,7 @@ Unten in der Seitenleiste stehen die Programmversion und die **CPU**-Auslastung 
 
 Von links nach rechts:
 
-- **Die Show**: ihr Name. Ein Punkt **●** davor zeigt ungespeicherte Änderungen an; ist das automatische Speichern aktiv, sehen Sie auch die Uhrzeit des letzten Speicherns („automatisch gespeichert …“).
+- **Die Show**: ihr Name. Ein Punkt **●** davor zeigt ungespeicherte Änderungen an; ist das automatische Speichern aktiv, sehen Sie auch die Uhrzeit der letzten Wiederherstellungskopie („Wiederherstellungskopie …“).
 - **Datei**: „Neue Show (Strg+N)“, „Öffnen (Strg+O)“, der Pfeil **▾** mit den letzten Shows und „Beispiele“, „Speichern (Strg+S)“ und „Speichern unter…“ (Strg+Umschalt+S).
 - **Rhythmus**: **„GO“** und **„Stop“** ändern, was die Szenentasten tun (unter Live, in der SHOW, in den Zuordnungen und auf dem Smartphone). Mit **GO** an startet ein Druck auf eine Szene diese, und die folgenden Drücke geben ihren Rhythmus vor, ohne sie je zu stoppen; mit **Stop** an stoppt ein Druck auf eine Szene diese; sind beide aus, gilt das normale Verhalten ([Live](directo.md#rhythmus-einer-szene-mit-schritten)). Jede Taste einer Szene mit Schritten oder einer laufenden Cuelist (unter Live, in der SHOW, auf den Playbacks und auf dem Smartphone) enthält einen **zweigeteilten Balken**, der bei jedem Schritt erst die eine, dann die andere Hälfte aufleuchten lässt: So sehen Sie den Rhythmus jeder einzelnen. Danach kommen **„BeatGO“** (nächste Unterteilung der Szenen, die mit BeatGO laufen, auch mit der Taste G) und **„Puls“**, der den Audioeingang des Computers abhört (auswählbar unter [Optionen](opciones.md#audio)): Jede Spitze, die die Linie des Pegelmessers überschreitet, bewegt die Szenen, die mit Puls laufen. Ziehen Sie die Linie des Pegelmessers, um die Schwelle zu ändern. Das Tempo der Show, also das der FX und der Szenen im BPM-Modus, ändern Sie mit einem BPM-Fader oder -Drehregler der [SHOW](show.md) oder mit den [Zuordnungen](mapeos.md).
 - **Das Schloss**: sperrt Bildschirme, damit sich nichts versehentlich ändert (siehe [Optionen](opciones.md#show-und-sperre)).
@@ -71,7 +71,7 @@ Wenn Sie das Programm schließen oder eine andere Show öffnen oder anlegen und 
 
 Verwendet die Show, die Sie öffnen, fehlende Dateien (ihre Sounds, Videos oder Bilder; zum Beispiel bei einer Show von einem anderen Computer), erscheint ein Hinweis mit der Liste. Die Show läuft ohne sie. Mit **„In einem Ordner suchen…“** wählen Sie den Ordner, in dem sie liegen: Sie werden nach ihrem Namen gesucht, auch in den Unterordnern, und die Show verwendet sie dann (speichern Sie die Show, damit das so bleibt).
 
-> **Tipp:** Wurde das Programm unerwartet beendet und hatten Sie eine ungespeicherte Show, bietet es beim nächsten Start „Ungespeicherte Show wiederherstellen?“ an. Drücken Sie „Wiederherstellen“ und speichern Sie die Show unter einem Namen.
+> **Tipp:** Wurde das Programm mit ungespeicherten Änderungen unerwartet beendet, bietet es beim nächsten Start „Ungespeicherte Show wiederherstellen?“ an, mit dem Namen der Show und der Uhrzeit der Kopie. Drücken Sie „Wiederherstellen“ und speichern Sie die Show (eine unbenannte Show unter einem Namen).
 
 ## So ist dieses Handbuch aufgebaut
 

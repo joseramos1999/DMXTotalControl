@@ -42,7 +42,7 @@ Colunas: caixa de seleção, **#** (número), **NOME**, **ENDEREÇO** (universo 
 
 As ferramentas da barra trabalham sobre a seleção:
 
-- **Clique** seleciona; **Ctrl+clique** adiciona ou tira; **Shift+clique** seleciona todos os fixtures desde o último que você clicou até esse (nesse sentido, que é a ordem da seleção), e **Ctrl+Shift+clique** os adiciona. **“Todos”** e **“Nenhum”**.
+- **Clique** seleciona; **Ctrl+clique** adiciona ou tira; **Shift+clique** seleciona todos os fixtures desde o último que você clicou até esse (nesse sentido, que é a ordem da seleção), e **Ctrl+Shift+clique** os adiciona. **“Todos”** e **“Nenhum”**. A caixa de seleção de uma linha adiciona ou tira o fixture dela (como Ctrl+clique); com Shift, adiciona todos desde o último que você clicou.
 - **“Identificar”**: os fixtures selecionados piscam em branco para que você os encontre no palco. **“Parar de identificar”** interrompe isso (também para ao sair da página). O botão de cada linha identifica só esse fixture. A lista fica onde estava.
 - **Inverter pan** e **inverter tilt** (os ícones de setas): para os fixtures que os têm.
 - **“Limites”**, **“Editar”**, **“Reendereçar”**, **“Renumerar”**, **“Criar grupo”** e **“Excluir”**: são explicados a seguir.
@@ -142,7 +142,7 @@ Selecione fixtures e pressione **“Limites”**:
 Com um só fixture, a lista **Canais** permite decidir para cada canal:
 
 - **Fades**: se ele segue os tempos de fade. Desligado, salta direto para o valor (útil em rodas de cor e de gobos).
-- **Dimmer**: se o grand master, os masters de grupo e os dimmers de cena o escalam.
+- **Dimmer**: se o grand master, os masters de grupo e os dimmers de cena o escalam. O grand master, além disso, só escala a luz (veja [Masters](directo.md#masters)).
 
 Os limites atuam na saída: cenas, efeitos e edição ao vivo mantêm seus valores, mas o que sai os respeita. Com vários fixtures aparecem os valores do primeiro que tem cada controle, e o que você mudar é aplicado a todos os que o têm.
 

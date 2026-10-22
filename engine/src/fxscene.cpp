@@ -1342,6 +1342,16 @@ QSharedPointer<GenericFader> FXScene::getFader(Universe *universe)
     return fader;
 }
 
+bool FXScene::isMotion(const QString &param)
+{
+    return param == QLatin1String("pantilt") || param == QLatin1String("pan") || param == QLatin1String("tilt");
+}
+
+qreal FXScene::frameMotion() const
+{
+    return 1.0;
+}
+
 void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
 {
     // DMX Total Control: paused, the faders hold too (the base of a layer
@@ -1388,12 +1398,14 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
     const qreal phaseShift = getAttributeValue(Phase) / 360.0;
     const qreal dt = qreal(frameTick());
 
-    // each layer goes at its own speed; a new speed goes on from where it is
+    // each layer goes at its own speed; a new speed goes on from where it is.
+    // The pan/tilt layers, at the speed of the movement too
     for (int l = 0; l < m_layers.count(); l++)
     {
         const Layer &layer = m_layers.at(l);
         qreal bpm = layer.syncBpm ? qreal(timer->bpmNumber()) : layer.bpm;
-        m_layerPos[l] += dt / 60000.0 * qMax(0.0, bpm) * layer.multiplier;
+        const qreal motion = isMotion(layer.param) ? motionSpeed() : 1.0;
+        m_layerPos[l] += dt / 60000.0 * qMax(0.0, bpm) * layer.multiplier * motion;
     }
 
     // DMX Total Control: the layers that are a mirror (what the fixtures do

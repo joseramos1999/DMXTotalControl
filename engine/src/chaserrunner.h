@@ -80,11 +80,24 @@ private:
      * Speed
      ************************************************************************/
 private:
-    /** Get the currently active fade in value (See Chaser::SpeedMode) */
+    /** Get the currently active fade in value (See Chaser::SpeedMode).
+     *  DMX Total Control: as the function of the step takes it (stepFadeTime) */
     uint stepFadeIn(int stepIdx) const;
 
-    /** Get the currently active fade out value (See Chaser::SpeedMode) */
+    /** Get the currently active fade out value (See Chaser::SpeedMode).
+     *  DMX Total Control: as the function of the step takes it (stepFadeTime) */
     uint stepFadeOut(int stepIdx) const;
+
+    /** DMX Total Control: the fade $fade of the step $stepIdx, given by the
+     *  chaser or ($overridden) by the function that plays it, each in its
+     *  tempo. Beats become ms when the function of the step plays in time
+     *  (the bound scene of a sequence): a beat is the rhythm tapped on the
+     *  chaser (a step a beat), or else the beat of the show */
+    uint stepFadeTime(int stepIdx, uint fade, bool overridden) const;
+
+    /** DMX Total Control: the function of the step $stepIdx takes its fades
+     *  in ms (the chaser plays in time, or its beats become ms) */
+    bool stepFadesInTime(int stepIdx) const;
 
     /** Get the currently active duration value (See Chaser::SpeedMode) */
     uint stepDuration(int stepIdx) const;

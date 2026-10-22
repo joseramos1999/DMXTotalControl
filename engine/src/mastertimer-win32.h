@@ -24,6 +24,7 @@
 #include <Windows.h>
 
 class MasterTimer;
+class QThread;
 
 /** @addtogroup engine Engine
  * @{
@@ -42,10 +43,24 @@ public:
     void timerTick();
 
 private:
+    /** DMX Total Control: a high resolution waitable timer (Windows 10 1803
+     *  and later) in a thread of its own, on a fixed schedule: a tick every
+     *  period from the start, not on the 15.6 ms clock of the system.
+     *  False when the system has none (the timer queue does it then) */
+    bool startHighResolution();
+    void runHighResolution();
+
+private:
     MasterTimer* m_masterTimer;
     UINT m_systemTimerResolution;
     HANDLE m_phTimer;
     bool m_run;
+
+    // DMX Total Control: the high resolution timer, its thread, and the
+    // event that stops it
+    HANDLE m_waitableTimer;
+    HANDLE m_stopEvent;
+    QThread *m_thread;
 };
 
 /** @} */

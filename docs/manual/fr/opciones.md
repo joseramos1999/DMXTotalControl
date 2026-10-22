@@ -37,9 +37,9 @@ Les pages verrouillées portent un cadenas dans la barre latérale. Quand vous e
 
 ## Sauvegarde automatique
 
-- **Enregistrer automatiquement**, **Toutes les (minutes)** : de 1 à 60.
+- **Enregistrer une copie de récupération**, **Toutes les (minutes)** : de 1 à 60.
 
-Les shows qui ont un nom sont écrasés et la version précédente est gardée en `.bak`. Les shows sans titre sont gardés à part et proposés à la réouverture du programme après une fermeture inattendue (« Récupérer le show non enregistré ? »). La barre du haut affiche l’heure de la dernière sauvegarde automatique ; si elle échoue (un disque plein, un fichier en lecture seule), un avertissement apparaît en rouge.
+La sauvegarde automatique ne touche pas au fichier du show : toutes les quelques minutes, s’il y a des modifications non enregistrées, elle enregistre à part une copie de récupération, et le point **●** reste affiché. Seul **Enregistrer** écrit le fichier ; la version d’avant le premier enregistrement de chaque session est gardée en `.bak`. La copie est supprimée quand vous enregistrez, quand vous fermez (en enregistrant ou non) et quand vous ouvrez un autre show. Si le programme se ferme de façon inattendue, il vous propose la copie à la réouverture (« Récupérer le show non enregistré ? »), avec le nom du show et l’heure de la copie : la récupérer ouvre ce show avec ses modifications, toujours non enregistrées ; enregistrez-le pour les garder. Pendant ce temps, le dernier show est déjà ouvert tel qu’il était enregistré (avec « Ouvrir le dernier show au démarrage ») : « Abandonner » le laisse ainsi. La barre du haut affiche l’heure de la dernière copie (« copie de récupération… ») ; si elle échoue (un disque plein), un avertissement apparaît en rouge.
 
 ## Lecture
 
@@ -49,7 +49,7 @@ Les shows qui ont un nom sont écrasés et la version précédente est gardée e
   - **« Rendent ses canaux à la scène »** : les canaux que touche la scène ne sont plus dans le programmeur.
   - **« Restent toujours »**.
   - **« Sont toutes réinitialisées »** : le programmeur est vidé.
-- **Le grand master agit sur** : **« Canaux d’intensité »** ou **« Tous les canaux »**.
+- **Le grand master agit sur** : **« Canaux d’intensité »** (la lumière : les dimmers et les couleurs des fixtures sans dimmer) ou **« Tous les canaux »**.
 
 ## Audio
 

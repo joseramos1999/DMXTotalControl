@@ -8,7 +8,7 @@ The page has three tabs, **“Mappings”**, **“Devices”** and **“Monitor�
 
 ## Devices
 
-In **“Devices”** you see the input devices the program finds, with their type (MIDI, OSC or DMX), their name and the universe they use.
+In **“Devices”** you see the input devices the program finds, with their type (MIDI, OSC or DMX), their name and the universe they use. The controllers (MIDI and OSC) and the devices you already use come first, under **“Controllers and devices in use”**; then, under **“DMX inputs: interfaces and network”**, the other DMX inputs, with a line for each network card.
 
 1. Connect the controller and, if it does not appear, press **“Search again”**.
 2. Turn on its **“Input”**.

@@ -793,7 +793,44 @@ void Scene::processValue(MasterTimer *timer, QList<Universe*> ua, uint fadeIn, c
                 fc.setFadeTime(fadeIn);
             }
         }
+
+        // DMX Total Control: the scene started again (the next step of a
+        // sequence) with the value a fade is on its way to: that fade goes
+        // on, unless this one would get there sooner. Started again from
+        // here, a fade longer than its steps would never get there
+        auto running = m_runningFades.constFind(qMakePair(scv.fxi, scv.channel));
+        if (running != m_runningFades.constEnd() && fc.channelCount() == 1 &&
+            running->target == fc.target() && running->fadeTime - running->elapsed <= fc.fadeTime())
+        {
+            fc.setStart(running->start);
+            fc.setFadeTime(running->fadeTime);
+            fc.setElapsed(running->elapsed);
+        }
     });
+}
+
+void Scene::keepRunningFades()
+{
+    m_runningFades.clear();
+    foreach (QSharedPointer<GenericFader> fader, m_fadersMap)
+    {
+        if (fader.isNull() || fader->isFadingOut())
+            continue;
+
+        const QHash<quint32, FadeChannel> channels = fader->channels();
+        for (const FadeChannel &fc : channels)
+        {
+            if (fc.channelCount() > 1 || fc.fixture() == Fixture::invalidId() || fc.isReady() ||
+                fc.canFade() == false || fc.elapsed() >= fc.fadeTime())
+                continue;
+            RunningFade fade;
+            fade.start = fc.start();
+            fade.target = fc.target();
+            fade.fadeTime = fc.fadeTime();
+            fade.elapsed = fc.elapsed();
+            m_runningFades.insert(qMakePair(fc.fixture(), fc.channel()), fade);
+        }
+    }
 }
 
 void Scene::handleFadersEnd(MasterTimer *timer)
@@ -868,6 +905,7 @@ void Scene::write(MasterTimer *timer, QList<Universe*> ua)
             SceneValue scv(it.next().key());
             processValue(timer, ua, fadeIn, scv);
         }
+        m_runningFades.clear();
     }
 
     if (isPaused() == false)
@@ -880,6 +918,12 @@ void Scene::write(MasterTimer *timer, QList<Universe*> ua)
 
 void Scene::postRun(MasterTimer* timer, QList<Universe *> ua)
 {
+    // DMX Total Control: not stopped, started again (the next step of a
+    // sequence, Function::start): its fades on their way may go on
+    m_runningFades.clear();
+    if (stopped() == false)
+        keepRunningFades();
+
     // DMX Total Control: released while paused, the faders go on first: a
     // paused fader doesn't fade, so its fade out would hold the channels
     // where the pause left them, for good

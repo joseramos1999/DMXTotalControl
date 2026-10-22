@@ -49,8 +49,8 @@ Abaixo do cabeçalho fica o painel de reprodução. Ele mostra o que faz sentido
 - **“Fade in”** e **“Fade out”**.
 - **“Tempo de ciclo”** (ou **“Tempo por passo”** em um Colour FX) e **“Velocidade”** (de um ciclo por minuto a dez por segundo; clique duplo: um ciclo por segundo), com **×½** e **×2**.
 - **“Fade escalonado”** (estáticas e passos): cada fixture começa o fade este tempo depois do anterior, na ordem de seleção.
-- **“Comandado por”**: **“Duração”** (os tempos normais), **“BPM”** (os tempos passam a beats e seguem o tempo do show), **“BeatGO”** ou **“Pulso”** (avança com o botão BeatGO ou com os picos da entrada de áudio). Com BeatGO ou Pulso, **“Divisões”** (/2, ×2).
-- **“Ritmo marcado”** (sequências e chasers): o ritmo marcado tocando o botão dela várias vezes seguidas ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)), em BPM. Enquanto ela o tiver, os passos dela vão nesse ritmo e não pelos seus tempos. **“Remover”** volta aos tempos dela.
+- **“Comandado por”**: **“Duração”** (os tempos normais), **“BPM”** (os tempos passam a beats e seguem o tempo do show, também os fades de cada passo; o tempo de crossfade de um grupo do Ao vivo e os fades dos blocos de uma super cena continuam em segundos), **“BeatGO”** ou **“Pulso”** (avança com o botão BeatGO ou com os picos da entrada de áudio). Com BeatGO ou Pulso, **“Divisões”** (/2, ×2).
+- **“Ritmo marcado”** (sequências e chasers): o ritmo marcado tocando o botão dela várias vezes seguidas ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)), em BPM. Enquanto ela o tiver, os passos dela vão nesse ritmo e não pelos seus tempos. **“Remover”** volta aos tempos dela. Com “BPM”, um beat é um passo desse ritmo: um fade de 0,5 b dura meio passo.
 - **“Início”**: **“Reproduzindo”** ou **“Em pausa, pressione de novo para reproduzir”**.
 - **“Reproduz”**: **“Sempre”** ou **“N vezes”**, **“e depois”** **“Liberá-la”** ou **“Manter o último quadro”**, **“e reproduzir”** “Nada”, “Próxima cena do grupo”, “Cena anterior do grupo” ou qualquer outra cena.
 

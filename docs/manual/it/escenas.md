@@ -49,8 +49,8 @@ Sotto l'intestazione c'è il pannello di riproduzione. Mostra ciò che ha senso 
 - **«Entrata»** e **«Uscita»**.
 - **«Tempo di ciclo»** (o **«Tempo per passo»** in un Colour FX) e **«Velocità»** (da un ciclo al minuto a dieci al secondo; doppio clic: un ciclo al secondo), con **×½** e **×2**.
 - **«Entrata scaglionata»** (statiche e passi): ogni fixture inizia la sua dissolvenza questo tempo dopo la precedente, in ordine di selezione.
-- **«Guidata da»**: **«Durata»** (i tempi normali), **«BPM»** (i tempi diventano beat e seguono il tempo dello show), **«BeatGO»** o **«Impulso»** (avanza con il tasto BeatGO o con i picchi dell'ingresso audio). Con BeatGO o Impulso, **«Divisioni»** (/2, ×2).
-- **«Ritmo battuto»** (sequenze e chaser): il ritmo battuto premendo il suo tasto più volte di seguito ([Live](directo.md#ritmo-di-una-scena-a-passi)), in BPM. Finché ce l'ha, i suoi passi vanno a quel ritmo e non secondo i loro tempi. **«Rimuovi»** torna ai suoi tempi.
+- **«Guidata da»**: **«Durata»** (i tempi normali), **«BPM»** (i tempi diventano beat e seguono il tempo dello show, anche le dissolvenze di ogni passo; il tempo di dissolvenza incrociata di un gruppo di Live e le dissolvenze dei blocchi di una super scena restano in secondi), **«BeatGO»** o **«Impulso»** (avanza con il tasto BeatGO o con i picchi dell'ingresso audio). Con BeatGO o Impulso, **«Divisioni»** (/2, ×2).
+- **«Ritmo battuto»** (sequenze e chaser): il ritmo battuto premendo il suo tasto più volte di seguito ([Live](directo.md#ritmo-di-una-scena-a-passi)), in BPM. Finché ce l'ha, i suoi passi vanno a quel ritmo e non secondo i loro tempi. **«Rimuovi»** torna ai suoi tempi. Con «BPM», un beat è un passo di quel ritmo: una dissolvenza di 0,5 b dura mezzo passo.
 - **«Inizio»**: **«In riproduzione»** o **«In pausa, premi di nuovo per riprodurre»**.
 - **«Si riproduce»**: **«Sempre»** o **«N volte»**, **«poi»** **«Rilasciala»** o **«Mantieni l'ultimo fotogramma»**, **«e riproduci»** «Niente», «La scena successiva del gruppo», «La scena precedente del gruppo» o qualsiasi altra scena.
 

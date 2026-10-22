@@ -99,10 +99,10 @@ While it plays, each tile of a scene with steps or of a cuelist has a **rhythm b
 ## Masters
 
 - **Group master**: the “Master” slider at the foot of each column scales the intensity of all its scenes.
-- **Grand master**: the “GM” in the top bar scales the whole output. In Options you decide whether it acts only on the intensity channels or on all of them.
+- **Grand master**: the “GM” in the top bar scales the light of the whole output: the dimmers and, on fixtures without a dimmer, their colours. It leaves the colour mixing alone (cyan, magenta, yellow, hue and saturation), and the colours of a fixture or head with a dimmer of its own, which go down with that dimmer. In Options you decide whether it acts only on the intensity or on all channels.
 - **Live dimmer**: each scene also has its own dimmer, in its properties, on top of the group master.
 
-The masters and the grand master do not affect the channels that have the “Dimmer” option turned off in the [fixture limits](patch.md#limits).
+The masters and the grand master do not affect the channels that have the “Dimmer” option turned off in the [fixture limits](patch.md#limits). If it is the dimmer of a fixture, it no longer counts as a dimmer of its own: the grand master then lowers its colours.
 
 ## Scene properties
 
@@ -160,7 +160,7 @@ Each scene has a priority from 0 to 10; new ones take the one you set in [Option
 - **“Pause”** freezes everything that is playing. **“Resume”** continues it.
 - **“Release groups”** stops the scenes of all the groups; the square of each column, only those of that group.
 - **“Stop all”** (Esc), in the top bar, stops everything that is playing, also outside the groups. It does not clear the programmer.
-- **“Blackout”** (Ctrl+B) sends the output to black without stopping anything.
+- **“Blackout”** (Ctrl+B) sends the output to black without stopping anything. The heads don't move: pan, tilt, zoom, focus and the other channels that aren't light stay where they are.
 
 ## Mixer
 

@@ -17,8 +17,9 @@ Bei einer neuen Show ist die Seite leer und bietet zwei Tasten:
 
 Drücken Sie **„Bearbeiten“**, um den Bildschirm zu bauen, und **„Fertig“**, um ihn wieder zu benutzen. Im Bearbeitungsmodus:
 
-- Klicken Sie auf den Titel eines Bereichs (oder irgendwo in ihn), um ihn **auszuwählen**. Seine Eigenschaften erscheinen rechts unter **„Eigenschaften“**.
-- In der Titelleiste jedes Bereichs gibt es drei Tasten: **in zwei Hälften nebeneinander teilen**, **übereinander teilen** und **diesen Bereich entfernen**. Dieselben finden Sie in den Eigenschaften: „Nebeneinander“, „Übereinander“ und „Bereich entfernen“.
+- Klicken Sie auf einen Bereich, um ihn **auszuwählen** (bei einer Tabelle auf eine ihrer Zellen oder auf sein Etikett oben rechts). Seine Eigenschaften erscheinen rechts unter **„Eigenschaften“**.
+- Wenn die Maus über einem Bereich ist, und beim ausgewählten, erscheint oben rechts ein Etikett mit seinem Typ und drei Tasten: **in zwei Hälften nebeneinander teilen**, **übereinander teilen** und **diesen Bereich entfernen** (bei einem Bereich mit Titel stehen sie in seiner Titelleiste). Dieselben finden Sie in den Eigenschaften: „Nebeneinander“, „Übereinander“ und „Bereich entfernen“.
+- Die Bereiche behalten ihre Höhe: Beim Bearbeiten bekommen sie keine Leiste dazu. Mit den Eigenschaften rechts werden sie nur so weit schmaler, wie ihre Tabellen ohne Scrollen hineinpassen; reicht das nicht, scrollt die Seite mit der Leiste unten seitwärts (höchstens ist sie so breit wie ohne die Eigenschaften).
 - Ziehen Sie den **Trenner** zwischen zwei Hälften, um ihre Größe zu ändern. Er rastet von selbst bei Vierteln, Dritteln und Hälften ein.
 - Ein Bereich **„Leer“** zeigt Tasten mit allen Typen: Klicken Sie auf einen, um zu wählen, was er zeigt. Ist der Bereich klein und passen sie nicht hinein, bleibt eine einzige Taste, **„Was er zeigt ▾“**, mit der Liste.
 
@@ -49,7 +50,7 @@ Drücken Sie **„Bearbeiten“**, um den Bildschirm zu bauen, und **„Fertig�
 Je nach Typ zeigen die Eigenschaften:
 
 - **Zeigt**: den Bereichstyp.
-- **Titel**: den Text seiner Titelleiste. Ohne Titel ist die Leiste außerhalb des Bearbeitungsmodus nicht zu sehen.
+- **Titel**: den Text seiner Titelleiste. Ohne Titel hat der Bereich keine Leiste, auch nicht im Bearbeitungsmodus.
 - **Spalten** und **Zeilen**: die Größe der Tabelle (bis 32). Tasten, Fader und Drehregler füllen ihre Zellen. In einem Bereich, der für seine Tabelle zu klein ist, schrumpfen die Zellen nicht unter eine lesbare und bedienbare Größe: Die Tabelle lässt sich scrollen (mit dem Mausrad oder durch Ziehen).
 - **Mit den Szenen einer Gruppe füllen** (Tasten): legt auf einmal eine Taste für jede Szene dieser Gruppe an.
 - **Gruppe** (eine Gruppe): welche angezeigt wird.
@@ -110,8 +111,8 @@ Ein Fader der SHOW kann **mehrere Dinge gleichzeitig** steuern. In seinen Eigens
 | **Master einer Gruppe** | Der Master dieser Live-Gruppe. |
 | **Grand Master** | Der GM der oberen Leiste. |
 | **Dimmer von Fixtures** | Der Mischer-Dimmer aller Fixtures oder einer Fixture-Gruppe. |
-| **Bewegungstempo der Moving Heads** | Der Pan/Tilt-Geschwindigkeitskanal aller Moving Heads oder einer Gruppe (oben = schneller). |
-| **Tempo einer Szene** | Das Live-Tempo dieser Szene. |
+| **Bewegungstempo der Moving Heads** | Das Tempo dessen, was die Moving Heads bewegt (alle oder die einer Gruppe): ihre Pan/Tilt-FX, die des Programmers und die Schritte, die sie bewegen. Unten ×0,1, in der Mitte das normale Tempo (×1), oben ×10; der Fader zeigt den Faktor, ein Doppelklick setzt ihn auf ×1 zurück. Ein FX mit Pan/Tilt und Farbe ändert nur das Tempo der Bewegung, eine Cuelist das ihrer FX. Der Geschwindigkeitskanal der Motoren bleibt unberührt. |
+| **Tempo einer Szene** | Das Live-Tempo dieser Szene (×0,1 bis ×10, wie das Bewegungstempo). |
 | **BPM** | Das Tempo der Show, von 20 bis 300. |
 
 Der Unterschied zwischen den beiden Szenen-Elementen: **„Szene abspielen (ihre Intensität)“** ist die Szene selbst und startet und stoppt sie; **„Dimmer einer Szene (ohne sie abzuspielen)“** dimmt sie nur, auch wenn sie von woanders gestartet wird. Beide lassen sich zusammen verwenden: Mit dem Dimmer auf 50 % und dem startenden Fader auf 80 % läuft die Szene mit 40 %.
@@ -120,7 +121,7 @@ Drücken Sie **„Weiteres Element hinzufügen“**, um ein weiteres hinzuzufüg
 
 Mit **Bereich**, **Von** … **bis** … (von 0 bis 100 %) deckt der Weg des Faders nur diesen Teil dessen ab, was er steuert, bei all seinen Elementen. Zum Beispiel das Tempo einer Szene von 20 bis 80 % oder ein Dimmer von 0 bis 60 %, damit er nicht darüber geht. Ist „Von“ größer als „bis“, oder mit **„Invertieren“**, arbeitet der Fader umgekehrt. Ein Fader, der eine Szene startet, stoppt sie an dem Ende, an dem der Wert am niedrigsten ist (ganz unten; ganz oben, wenn er invertiert ist), auch wenn „Von“ nicht 0 ist.
 
-Der Text des Faders zeigt den tatsächlichen Wert (die % oder die BPM), nicht die Stellung des Faders. Bringt ein anderes Bedienelement den Wert außerhalb des Bereichs, bleibt der Fader am Ende stehen.
+Der Text des Faders zeigt den tatsächlichen Wert (die %, die BPM oder, wenn er nur Tempi steuert, den Faktor ×), nicht die Stellung des Faders. Bringt ein anderes Bedienelement den Wert außerhalb des Bereichs, bleibt der Fader am Ende stehen. Ein Fader, der nur Tempi steuert (der Bewegung oder von Szenen, eines oder mehrere), kehrt mit einem Doppelklick auf ×1 zurück.
 
 Unter jedem Fader gibt es eine Taste **„Flash“**: Sie bringt ihn ganz an das obere Ende seines Wegs, solange Sie sie drücken, und stellt beim Loslassen genau das wieder her, was vorher war. Sie wird mit dem Schalter „Flash-Taste: voll, solange gedrückt“ in seinen Eigenschaften ein- oder ausgeblendet.
 
@@ -130,7 +131,7 @@ Unter jedem Fader gibt es eine Taste **„Flash“**: Sie bringt ihn ganz an das
 
 Drehregler steuern dasselbe wie Fader (die Tabelle oben), mit demselben **Bereich**. Jeder Drehregler kann sein:
 
-- Ein **Drehregler**: durchläuft seinen ganzen Bereich in einer Dreivierteldrehung. Ein Doppelklick bringt ihn an den Anfang seines Wegs (den Wert von „Von“, oder den von „bis“, wenn er invertiert ist); steuert er die BPM, auf 90, oder auf das nächste Ende des Bereichs, wenn 90 außerhalb liegt.
+- Ein **Drehregler**: durchläuft seinen ganzen Bereich in einer Dreivierteldrehung. Ein Doppelklick bringt ihn an den Anfang seines Wegs (den Wert von „Von“, oder den von „bis“, wenn er invertiert ist); steuert er die BPM, auf 90, oder auf das nächste Ende des Bereichs, wenn 90 außerhalb liegt; steuert er nur Tempi, auf ×1.
 - Ein **inkrementelles Rad** („Inkrementelles Rad: dreht endlos, jede Raste addiert oder subtrahiert einen Schritt“): dreht endlos, und jede Raste addiert den **Schritt** (von 1 bis 25 %) zum aktuellen Wert oder subtrahiert ihn. Der Schritt ist ein % des Werts, nicht des Wegs, und das Rad verlässt den Bereich nicht; drehen Sie es bei gestoppter Szene nach oben, startet es sie bei „Von“. Der Bogen außen herum zeigt den Pegel.
 
 Zum Drehen ziehen Sie mit der Maus oder dem Finger um die Mitte herum, oder nahe der Mitte nach oben und unten. Jeder Schritt des Mausrads dreht ihn ein wenig (bei einem inkrementellen Rad eine Raste).

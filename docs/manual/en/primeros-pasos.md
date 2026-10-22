@@ -108,7 +108,7 @@ The playback fader is its intensity: if you raise it from zero, the cuelist star
 1. Press **Ctrl+S** (or the floppy disk in the top bar).
 2. As it is the first time, choose a folder and a name: it is saved as a `.qxw` file.
 
-From then on, Ctrl+S saves to the same file. With autosave on (see [Options](opciones.md#autosave)), the program saves by itself every few minutes and keeps the previous version as `.bak`.
+From then on, Ctrl+S saves to the same file and keeps the version there was before the first save of each session as `.bak`. With autosave on (see [Options](opciones.md#autosave)), the program saves a recovery copy apart every few minutes, without touching your file: if it closes unexpectedly, it offers to recover the changes.
 
 ## What next…
 

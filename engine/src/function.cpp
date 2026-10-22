@@ -1818,6 +1818,21 @@ qreal Function::speedFactor() const
     return m_speedFactor;
 }
 
+void Function::setMotionSpeed(qreal factor)
+{
+    m_motionSpeed = qBound(0.05, factor, 20.0);
+}
+
+qreal Function::motionSpeed() const
+{
+    return m_motionSpeed;
+}
+
+qreal Function::frameMotion() const
+{
+    return m_motionSpeed;
+}
+
 void Function::requestDivisionJump()
 {
     m_pendingJumps.fetchAndAddOrdered(1);
@@ -1831,7 +1846,7 @@ uint Function::frameTick() const
 void Function::advanceFrameTick()
 {
     // keep the fractions of a tick, so that slow speeds stay smooth
-    qreal tick = qreal(MasterTimer::tick()) * m_speedFactor + m_tickRemainder;
+    qreal tick = qreal(MasterTimer::tick()) * m_speedFactor * frameMotion() + m_tickRemainder;
     m_frameTick = uint(tick);
     m_tickRemainder = tick - qreal(m_frameTick);
 }

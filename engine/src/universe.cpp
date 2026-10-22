@@ -94,6 +94,10 @@ Universe::~Universe()
             usleep(10000);
 
         m_running = false;
+        // DMX Total Control: woken now, not at the end of its wait for a
+        // tick (two ticks: 40 ms for each universe, 0.3 s of a frozen
+        // window when a show with 8 universes was opened)
+        m_semaphore.release(1);
         if (!wait(2000))
         {
             qCritical() << Q_FUNC_INFO << "Universe" << m_id
@@ -449,6 +453,9 @@ void Universe::run()
             //qWarning() << "Semaphore not acquired on universe" << id();
             continue;
         }
+        // DMX Total Control: woken to stop (the destructor): no frame
+        if (m_running == false)
+            break;
 #if 0
         if (m_faders.count())
             qDebug() << "<<<<<<<< UNIVERSE TICK - id" << id() << "faders:" << m_faders.count();
@@ -554,7 +561,10 @@ void Universe::restUnwrittenChannels()
         if (mask[ch] == 0 || written[ch] || (m_channelsMask->at(ch) & HTP))
             continue;
 
+        // (in blackout too: also when it never left its rest value)
         char rest = m_restValues->at(ch);
+        if (m_blackoutValues->at(ch) != rest)
+            (*m_blackoutValues)[ch] = rest;
         if (m_preGMValues->at(ch) == rest)
             continue;
 
@@ -1009,6 +1019,13 @@ void Universe::setChannelCapability(ushort channel, QLCChannel::Group group, Cha
         }
     }
 
+    // DMX Total Control: in blackout an HTP channel sends 0, an LTP one
+    // stays where it is: at its rest value until a fader writes it
+    if ((m_channelsMask->at(channel) & HTP) == HTP)
+        (*m_blackoutValues)[channel] = 0;
+    else if (m_restMask->at(channel))
+        (*m_blackoutValues)[channel] = m_restValues->at(channel);
+
     // qDebug() << Q_FUNC_INFO << "Channel:" << channel << "mask:" << QString::number(m_channelsMask->at(channel), 16);
     if (channel >= m_totalChannels)
     {
@@ -1039,11 +1056,15 @@ void Universe::setChannelDefaultValue(ushort channel, uchar value)
     (*m_preGMValues)[channel] = value;
     updatePostGMValue(channel);
 
-    // DMX Total Control: where the channel goes back when no fader writes it
+    // DMX Total Control: where the channel goes back when no fader writes it,
+    // and where an LTP channel stays in blackout (pan, tilt, zoom...: the
+    // heads don't move when the light goes)
     if (channel < UNIVERSE_SIZE)
     {
         (*m_restValues)[channel] = char(value);
         (*m_restMask)[channel] = 1;
+        if ((m_channelsMask->at(channel) & HTP) == 0)
+            (*m_blackoutValues)[channel] = char(value);
     }
 }
 
@@ -1113,6 +1134,7 @@ void Universe::resetChannelCapabilities()
         (*m_modifiedZeroValues)[ch] = 0;
         setOutputSource(ushort(ch), -1);
         (*m_preGMValues)[ch] = 0;
+        (*m_blackoutValues)[ch] = 0;
         (*m_restMask)[ch] = 0;
         (*m_restValues)[ch] = 0;
         updatePostGMValue(ch);

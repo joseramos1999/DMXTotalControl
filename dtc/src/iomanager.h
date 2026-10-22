@@ -77,6 +77,8 @@ signals:
     void universeAboutToBeRemoved(int universe);
 
 private slots:
+    /** A universe added or removed (a show loading: told once it is loaded) */
+    void slotUniversesChanged();
     void slotPluginConfigurationChanged();
     void slotUniverseWritten(quint32 universe, const QByteArray &data);
 

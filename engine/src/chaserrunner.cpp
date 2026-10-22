@@ -154,7 +154,7 @@ uint ChaserRunner::stepFadeIn(int stepIdx) const
         }
     }
 
-    return speed;
+    return stepFadeTime(stepIdx, speed, m_chaser->overrideFadeInSpeed() != Function::defaultSpeed());
 }
 
 uint ChaserRunner::stepFadeOut(int stepIdx) const
@@ -190,7 +190,37 @@ uint ChaserRunner::stepFadeOut(int stepIdx) const
         }
     }
 
-    return speed;
+    return stepFadeTime(stepIdx, speed, m_chaser->overrideFadeOutSpeed() != Function::defaultSpeed());
+}
+
+uint ChaserRunner::stepFadeTime(int stepIdx, uint fade, bool overridden) const
+{
+    // (overridden fades are in the tempo of who gave them, as Function::start
+    // keeps it: the chaser that plays this one, Time from a zone or the
+    // timeline (ms), or this chaser's own when the caller says none)
+    const Function::TempoType tempo = overridden ? m_chaser->overrideTempoType() : m_chaser->tempoType();
+    if (tempo != Function::Beats || fade == Function::defaultSpeed() || fade == Function::infiniteSpeed() ||
+        stepIdx < 0 || stepIdx >= m_chaser->stepsCount())
+        return fade;
+
+    // a step in beats takes them as they are
+    const Function *func = m_doc->function(m_chaser->steps().at(stepIdx).fid);
+    if (func == NULL || func->tempoType() != Function::Time)
+        return fade;
+
+    const uint tap = m_chaser->tapPeriod();
+    const int beat = tap > 0 ? int(tap) : m_doc->masterTimer()->beatTimeDuration();
+    return Function::beatsToTime(fade, beat);
+}
+
+bool ChaserRunner::stepFadesInTime(int stepIdx) const
+{
+    if (m_chaser->tempoType() == Function::Time)
+        return true;
+    if (stepIdx < 0 || stepIdx >= m_chaser->stepsCount())
+        return false;
+    const Function *func = m_doc->function(m_chaser->steps().at(stepIdx).fid);
+    return func != NULL && func->tempoType() == Function::Time;
 }
 
 uint ChaserRunner::stepDuration(int stepIdx) const
@@ -604,13 +634,18 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
         break;
     }
 
-    // DMX Total Control: the live speed stretches or shortens the fades too
-    if (m_chaser->speedFactor() != 1.0 && m_chaser->tempoType() == Function::Time)
+    // DMX Total Control: the live speed (and the speed of the movement, of
+    // steps that move heads) stretches or shortens the fades too. In beats,
+    // only those of a tapped rhythm: it follows the speed, the show doesn't
+    const bool fadesInTime = stepFadesInTime(index);
+    const qreal speed = m_chaser->speedFactor() * m_chaser->motionSpeed();
+    if (speed != 1.0 && fadesInTime &&
+        (m_chaser->tempoType() == Function::Time || m_chaser->tapPeriod() > 0))
     {
         if (newStep->m_fadeIn != Function::defaultSpeed() && newStep->m_fadeIn != Function::infiniteSpeed())
-            newStep->m_fadeIn = uint(qreal(newStep->m_fadeIn) / m_chaser->speedFactor());
+            newStep->m_fadeIn = uint(qreal(newStep->m_fadeIn) / speed);
         if (newStep->m_fadeOut != Function::defaultSpeed() && newStep->m_fadeOut != Function::infiniteSpeed())
-            newStep->m_fadeOut = uint(qreal(newStep->m_fadeOut) / m_chaser->speedFactor());
+            newStep->m_fadeOut = uint(qreal(newStep->m_fadeOut) / speed);
     }
 
     newStep->m_duration = stepDuration(index);
@@ -655,8 +690,9 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
     func->setParentPriority(m_chaser->playbackPriority());
 
     // Start the fire up!
+    // (DMX Total Control: with the tempo its fades are in now)
     func->start(timer, functionParent(), 0, newStep->m_fadeIn, newStep->m_fadeOut,
-                func->defaultSpeed(), m_chaser->tempoType());
+                func->defaultSpeed(), fadesInTime ? Function::Time : m_chaser->tempoType());
     m_runnerSteps.append(newStep);
     m_roundTime->restart();
 }

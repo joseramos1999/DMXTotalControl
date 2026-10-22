@@ -71,6 +71,7 @@ Doc::Doc(QObject* parent, int universes)
     , m_mode(Design)
     , m_kiosk(false)
     , m_loadStatus(Cleared)
+    , m_clearing(false)
     , m_clipboard(new QLCClipboard(this))
     , m_fixturesListCacheUpToDate(false)
     , m_addressesOverlap(false)
@@ -123,6 +124,7 @@ Doc::~Doc()
 
 void Doc::clearContents()
 {
+    m_clearing = true;
     emit clearing();
 
     m_clipboard->resetContents();
@@ -196,6 +198,7 @@ void Doc::clearContents()
     m_addresses.clear();
     m_addressesOverlap = false;
     m_loadStatus = Cleared;
+    m_clearing = false;
 
     emit cleared();
 }
@@ -315,6 +318,16 @@ void Doc::setAudioInputCapture(QSharedPointer<AudioCapture> capture)
 Doc::LoadStatus Doc::loadStatus() const
 {
     return m_loadStatus;
+}
+
+bool Doc::isClearing() const
+{
+    return m_clearing;
+}
+
+bool Doc::isClearingOrLoading() const
+{
+    return m_clearing || m_loadStatus == Loading;
 }
 
 bool Doc::isModified() const
@@ -666,8 +679,10 @@ void Doc::applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &un
         ChannelModifier *mod = fixture->channelModifier(i);
         universe->setChannelModifier(addr, mod);
 
-        // DMX Total Control: dimmer follow and pan/tilt swap
-        universe->setChannelFollowsDimmer(addr, fixture->channelFollowsDimmer(int(i)));
+        // DMX Total Control: the grand master (only the amount of light) and
+        // the pan/tilt swap. (The masters of the groups and scenes follow
+        // channelFollowsDimmer, in the faders)
+        universe->setChannelFollowsDimmer(addr, fixture->channelFollowsGrandMaster(int(i)));
         if (crossUniverse == false)
         {
             quint32 out = fixture->outputChannel(i);

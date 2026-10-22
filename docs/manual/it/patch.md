@@ -42,7 +42,7 @@ Colonne: casella di selezione, **#** (numero), **NOME**, **INDIRIZZO** (universo
 
 Gli strumenti della barra lavorano sulla selezione:
 
-- Il **clic** seleziona; **Ctrl+clic** aggiunge o toglie; **Maiusc+clic** seleziona tutte le fixture dall'ultima che hai cliccato fino a quella (in quel senso, che è l'ordine della selezione), e **Ctrl+Maiusc+clic** le aggiunge. **«Tutte»** e **«Nessuno»**.
+- Il **clic** seleziona; **Ctrl+clic** aggiunge o toglie; **Maiusc+clic** seleziona tutte le fixture dall'ultima che hai cliccato fino a quella (in quel senso, che è l'ordine della selezione), e **Ctrl+Maiusc+clic** le aggiunge. **«Tutte»** e **«Nessuno»**. La casella di una riga aggiunge o toglie la sua fixture (come Ctrl+clic); con Maiusc, aggiunge tutte quelle dall'ultima che hai cliccato.
 - **«Identifica»**: le fixture selezionate lampeggiano in bianco per trovarle sul palco. **«Smetti di identificare»** lo ferma (si ferma anche quando esci dalla pagina). Il tasto di ogni riga identifica solo quella fixture. L'elenco resta dov'era.
 - **Inverti pan** e **inverti tilt** (le icone con le frecce): per le fixture che li hanno.
 - **«Limiti»**, **«Modifica»**, **«Reindirizza»**, **«Rinumera»**, **«Crea gruppo»** ed **«Elimina»**: sono spiegati più avanti.
@@ -142,7 +142,7 @@ Seleziona le fixture e premi **«Limiti»**:
 Con una sola fixture, l'elenco **Canali** permette di decidere per ogni canale:
 
 - **Dissolvenze**: se segue i tempi di dissolvenza. Se è spento, salta direttamente al suo valore (utile per ruote colori e gobo).
-- **Dimmer**: se lo scalano il grand master, i master di gruppo e i dimmer di scena.
+- **Dimmer**: se lo scalano il grand master, i master di gruppo e i dimmer di scena. Il grand master, inoltre, scala solo la luce (vedi [Master](directo.md#master)).
 
 I limiti agiscono sull'uscita: scene, effetti e modifiche dal vivo conservano i loro valori, ma ciò che esce li rispetta. Con più fixture si vedono i valori della prima che ha ciascun controllo, e ciò che cambi si applica a tutte quelle che lo hanno.
 

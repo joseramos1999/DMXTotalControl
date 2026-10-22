@@ -90,6 +90,14 @@ QVariantList LiveMixer::mixers() const
     return list;
 }
 
+QString LiveMixer::mixerName(int mixerId) const
+{
+    if (mixerId == -1)
+        return tr("All fixtures");
+    FixtureGroup *group = m_doc->fixtureGroup(quint32(mixerId));
+    return group != nullptr && isEffectGroup(group) == false ? group->name() : QString();
+}
+
 bool LiveMixer::isNeutral(const State &s) const
 {
     return qFuzzyCompare(s.dimmer, 1.0) && s.colour == false && s.strobe == false &&
@@ -167,6 +175,10 @@ void LiveMixer::reset()
 
 void LiveMixer::slotFixturesChanged()
 {
+    // a show cleared or loading: once, at the end (cleared(), loaded()).
+    // Each fixture and group made the mixers again, and their strips
+    if (m_doc->isClearingOrLoading())
+        return;
     // groups may be gone
     QList<int> ids = m_states.keys();
     for (int id : ids)

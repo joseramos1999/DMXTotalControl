@@ -277,6 +277,21 @@ private:
     /** Check whether a fade out is needed and cleanup faders */
     void handleFadersEnd(MasterTimer* timer);
 
+    /** DMX Total Control: the scene starts again (the next step of a
+     *  sequence): the fades on their way are kept, so that processValue
+     *  lets those that keep their value go on */
+    void keepRunningFades();
+
+    /** DMX Total Control: a fade on its way, by fixture and channel */
+    struct RunningFade
+    {
+        quint32 start;
+        quint32 target;
+        uint fadeTime;
+        uint elapsed;
+    };
+    QHash<QPair<quint32, quint32>, RunningFade> m_runningFades;
+
     /*********************************************************************
      * Attributes
      *********************************************************************/

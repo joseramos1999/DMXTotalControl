@@ -108,7 +108,7 @@ Il fader del playback è la sua intensità: se lo alzi da zero, la cuelist parte
 1. Premi **Ctrl+S** (o il dischetto della barra superiore).
 2. Essendo la prima volta, scegli cartella e nome: si salva come file `.qxw`.
 
-Da qui in poi, Ctrl+S salva nello stesso file. Con il salvataggio automatico attivo (vedi [Opzioni](opciones.md#salvataggio-automatico)), il programma salva da solo ogni pochi minuti e conserva la versione precedente come `.bak`.
+Da qui in poi, Ctrl+S salva nello stesso file e conserva come `.bak` la versione che c'era prima del primo salvataggio di ogni sessione. Con il salvataggio automatico attivo (vedi [Opzioni](opciones.md#salvataggio-automatico)), il programma salva ogni pochi minuti una copia di recupero a parte, senza toccare il tuo file: se si chiude in modo inatteso, ti propone di recuperare le modifiche.
 
 ## E adesso…
 

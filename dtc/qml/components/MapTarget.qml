@@ -44,7 +44,14 @@ Rectangle {
                 return false
         return true
     }
-    readonly property int count: { Core.mapping.mappings; return learning && visible ? Core.mapping.countFor(target) : 0 }
+    // (outside learn mode it follows nothing: hundreds of controls have one,
+    // and each was evaluated again on every change of the mappings)
+    readonly property int count: {
+        if (!learning || !visible)
+            return 0
+        Core.mapping.revision
+        return Core.mapping.countFor(target)
+    }
 
     readonly property bool learning: Core.mapping.learnMode
 

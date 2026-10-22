@@ -37,9 +37,9 @@ Las páginas bloqueadas llevan un candado en la barra lateral. Al abrir una, se 
 
 ## Autoguardado
 
-- **Guardar automáticamente**, **Cada (minutos)**: de 1 a 60.
+- **Guardar una copia de recuperación**, **Cada (minutos)**: de 1 a 60.
 
-Los shows con nombre se sobrescriben y la versión anterior se guarda como `.bak`. Los shows sin título se guardan aparte y se ofrecen al reabrir el programa tras un cierre inesperado («¿Recuperar el show sin guardar?»). En la barra superior se ve la hora del último autoguardado; si falla (un disco lleno, un archivo de solo lectura), aparece un aviso en rojo.
+El autoguardado no toca el archivo del show: cada pocos minutos, si hay cambios sin guardar, guarda aparte una copia de recuperación, y el punto **●** sigue ahí. Solo **Guardar** escribe el archivo; la versión que había antes del primer guardado de cada sesión se conserva como `.bak`. La copia se borra al guardar, al cerrar (guardando o no) y al abrir otro show. Si el programa se cierra de forma inesperada, al volver a abrirlo te ofrece la copia («¿Recuperar el show sin guardar?») con el nombre del show y la hora de la copia: al recuperarla se abre ese show con sus cambios, todavía sin guardar; guárdalo para conservarlos. Mientras decides, el último show ya está abierto tal como estaba guardado (con «Abrir el último show al arrancar»): «Descartar» lo deja así. En la barra superior se ve la hora de la última copia («copia de recuperación…»); si falla (un disco lleno), aparece un aviso en rojo.
 
 ## Reproducción
 
@@ -49,7 +49,7 @@ Los shows con nombre se sobrescriben y la versión anterior se guarda como `.bak
   - **«Le devuelven sus canales a la escena»**: los canales que toca la escena dejan de estar en el programador.
   - **«Se mantienen siempre»**.
   - **«Se restablecen todas»**: el programador se vacía.
-- **El grand master actúa sobre**: **«Canales de intensidad»** o **«Todos los canales»**.
+- **El grand master actúa sobre**: **«Canales de intensidad»** (la luz: los dimmers y los colores de los fixtures sin dimmer) o **«Todos los canales»**.
 
 ## Audio
 

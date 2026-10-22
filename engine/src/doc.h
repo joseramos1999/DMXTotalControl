@@ -216,6 +216,18 @@ public:
     /** Get the current Doc load status */
     LoadStatus loadStatus() const;
 
+    /** DMX Total Control: whether clearContents() is running (from
+     *  clearing() to cleared()) */
+    bool isClearing() const;
+
+    /**
+     * DMX Total Control: whether clearContents() or loadXML() is running.
+     * Both tell each function, fixture and group removed or added, one by
+     * one: what lists them can wait for cleared() or loaded() and be told
+     * once (a show of a few hundred items froze the UI for seconds)
+     */
+    bool isClearingOrLoading() const;
+
     /** Check, whether Doc has been modified (and is in need of saving) */
     bool isModified() const;
 
@@ -233,6 +245,8 @@ signals:
 protected:
     /** The current Doc load status */
     LoadStatus m_loadStatus;
+    /** DMX Total Control: from clearing() to cleared() */
+    bool m_clearing;
     bool m_modified;
     QTimer m_autosaveTimer;
 

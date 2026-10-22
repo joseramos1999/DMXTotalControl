@@ -330,11 +330,20 @@ public:
      *  Returns NULL if no modifier has been assigned */
     ChannelModifier *channelModifier(quint32 idx);
 
-    /** DMX Total Control: whether the master dimmers (grand master, group
-     *  masters, scene dimmer) scale the channel $idx. By default the
-     *  intensity channels (dimmer, colours) follow them, the others don't */
+    /** DMX Total Control: whether the master dimmers (group masters, scene
+     *  dimmer; the grand master, see channelFollowsGrandMaster) scale the
+     *  channel $idx. By default the intensity channels (dimmer, colours)
+     *  follow them, the others don't */
     void setChannelFollowsDimmer(int idx, bool follows);
     bool channelFollowsDimmer(int idx) const;
+
+    /** DMX Total Control: whether the grand master scales the channel $idx:
+     *  only the amount of light. Never a channel that doesn't follow the
+     *  dimmer, nor a colour mixing one (cyan, magenta, yellow, hue,
+     *  saturation), nor the colours of a head (or fixture) with a dimmer of
+     *  its own that follows the masters: its dimmer does it (the light
+     *  would go down twice) */
+    bool channelFollowsGrandMaster(int idx) const;
 
     /** DMX Total Control: swap pan and tilt at the output (a fixture hung
      *  turned by 90 degrees) */

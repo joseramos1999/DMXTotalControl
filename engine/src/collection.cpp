@@ -330,7 +330,9 @@ void Collection::preRun(MasterTimer *timer)
             //function->adjustAttribute(getAttributeValue(Function::Intensity), Function::Intensity);
             // DMX Total Control: the children play with the priority of the rack
             function->setParentPriority(playbackPriority());
-            function->start(timer, functionParent(), 0, overrideFadeInSpeed(), overrideFadeOutSpeed(), overrideDuration());
+            // DMX Total Control: the fades it was given, in the tempo they came in
+            function->start(timer, functionParent(), 0, overrideFadeInSpeed(), overrideFadeOutSpeed(), overrideDuration(),
+                            overrideTempoType());
         }
         m_tick = 1;
     }

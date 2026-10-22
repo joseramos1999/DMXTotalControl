@@ -8,7 +8,7 @@ Die Seite hat drei Tabs: **„Zuordnungen“**, **„Geräte“** und **„Monit
 
 ## Geräte
 
-Unter **„Geräte“** erscheinen die Eingabegeräte, die das Programm findet, mit ihrem Typ (MIDI, OSC oder DMX), ihrem Namen und dem Universum, das sie verwenden.
+Unter **„Geräte“** erscheinen die Eingabegeräte, die das Programm findet, mit ihrem Typ (MIDI, OSC oder DMX), ihrem Namen und dem Universum, das sie verwenden. Zuerst kommen die Controller (MIDI und OSC) und die Geräte, die Sie schon verwenden, unter **„Controller und verwendete Geräte“**; danach, unter **„DMX-Eingänge: Interfaces und Netzwerk“**, die übrigen DMX-Eingänge, mit einer Zeile pro Netzwerkkarte.
 
 1. Schließen Sie den Controller an und drücken Sie, falls er nicht erscheint, **„Erneut suchen“**.
 2. Aktivieren Sie seinen **„Eingang“**.

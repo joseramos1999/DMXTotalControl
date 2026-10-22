@@ -27,6 +27,7 @@
 #include <QKeyEvent>
 #include <QSet>
 #include <qmath.h>
+#include <algorithm>
 #include <functional>
 
 #include "controlmapper.h"
@@ -125,12 +126,16 @@ ControlMapper::ControlMapper(DtcCore *core, QObject *parent)
     , m_activity(0)
     , m_feedbackTimer(new QTimer(this))
     , m_namesPending(false)
+    , m_revision(0)
 {
+    // (first: QML reads the new revision)
+    connect(this, &ControlMapper::mappingsChanged, this, [this]() { m_revision++; });
+
     connect(m_core->doc()->inputOutputMap(), SIGNAL(inputValueChanged(quint32,quint32,uchar,QString)),
             this, SLOT(slotInputValueChanged(quint32,quint32,uchar,QString)));
-    connect(m_core->doc()->inputOutputMap(), SIGNAL(universeAdded(quint32)), this, SIGNAL(devicesChanged()));
+    connect(m_core->doc()->inputOutputMap(), SIGNAL(universeAdded(quint32)), this, SLOT(slotUniversesChanged()));
     // a removed universe takes the input of its device with it
-    connect(m_core->doc()->inputOutputMap(), SIGNAL(universeRemoved(quint32)), this, SIGNAL(devicesChanged()));
+    connect(m_core->doc()->inputOutputMap(), SIGNAL(universeRemoved(quint32)), this, SLOT(slotUniversesChanged()));
     connect(m_core->doc()->inputOutputMap(), SIGNAL(pluginConfigurationChanged(QString,bool)),
             this, SIGNAL(devicesChanged()));
     // opening a show adds its universes before it patches them: the devices
@@ -223,7 +228,35 @@ QVariantList ControlMapper::devices() const
             list.append(device);
         }
     }
-    return list;
+    return sortDevices(list);
+}
+
+QVariantList ControlMapper::sortDevices(const QVariantList &devices)
+{
+    auto rank = [](const QVariantMap &device) {
+        const QString kind = device.value("kind").toString();
+        return kind == "midi" ? 0 : kind == "osc" ? 1 : 2;
+    };
+    QList<QVariantMap> list;
+    for (const QVariant &v : devices)
+    {
+        QVariantMap device = v.toMap();
+        const bool controller = rank(device) < 2 || device.value("enabled").toBool();
+        device.insert("group", controller ? QStringLiteral("controllers") : QStringLiteral("dmx"));
+        list.append(device);
+    }
+    std::stable_sort(list.begin(), list.end(), [&rank](const QVariantMap &a, const QVariantMap &b) {
+        const bool aFirst = a.value("group").toString() == QLatin1String("controllers");
+        const bool bFirst = b.value("group").toString() == QLatin1String("controllers");
+        if (aFirst != bFirst)
+            return aFirst;
+        return aFirst && rank(a) < rank(b);
+    });
+
+    QVariantList sorted;
+    for (const QVariantMap &device : std::as_const(list))
+        sorted.append(device);
+    return sorted;
 }
 
 QString ControlMapper::controllerOf(const QString &deviceName)
@@ -586,6 +619,14 @@ void ControlMapper::setDeviceFeedback(const QString &key, bool enabled)
 
     QString plugin = key.section('|', 0, 0);
     QString name = key.section('|', 1);
+    // the feedback as it was: the show changes only when it does
+    auto feedback = [io, universe]() {
+        OutputPatch *patch = io->feedbackPatch(quint32(universe));
+        if (patch == nullptr || patch->output() == QLCIOPlugin::invalidLine())
+            return QString();
+        return QString("%1|%2").arg(patch->pluginName()).arg(patch->output());
+    };
+    const QString before = feedback();
     if (enabled)
     {
         int line = io->pluginOutputs(plugin).indexOf(name);
@@ -614,8 +655,16 @@ void ControlMapper::setDeviceFeedback(const QString &key, bool enabled)
     m_sentFeedback.clear();
     io->saveDefaults();
     // (saved in the show, as the input)
-    m_core->doc()->setModified();
+    if (feedback() != before)
+        m_core->doc()->setModified();
     emit devicesChanged();
+}
+
+void ControlMapper::slotUniversesChanged()
+{
+    // (a show loading: once, when it is loaded)
+    if (m_core->doc()->isClearingOrLoading() == false)
+        emit devicesChanged();
 }
 
 void ControlMapper::refreshDevices()
@@ -774,6 +823,11 @@ QVariantList ControlMapper::mappings() const
         list.append(item);
     }
     return list;
+}
+
+int ControlMapper::revision() const
+{
+    return m_revision;
 }
 
 int ControlMapper::addMapping(const QVariantMap &mapping)
@@ -1122,10 +1176,13 @@ QString ControlMapper::describeSource(const QVariantMap &m) const
 QString ControlMapper::describeTarget(const QVariantMap &m) const
 {
     QString target = m.value("target").toString();
-    QString name = target;
-    for (const QVariant &v : targets())
-        if (v.toMap().value("target").toString() == target)
-            name = v.toMap().value("name").toString();
+    // (the list of targets is made once, not for each mapping)
+    if (m_targetNames.isEmpty())
+    {
+        for (const QVariant &v : targets())
+            m_targetNames.insert(v.toMap().value("target").toString(), v.toMap().value("name").toString());
+    }
+    const QString name = m_targetNames.value(target, target);
 
     QString detail;
     if (Function *f = m_core->doc()->function(m.value("functionId").toUInt()))
@@ -1141,12 +1198,7 @@ QString ControlMapper::describeTarget(const QVariantMap &m) const
         detail = zone ? zone->name() : zoneId == ALL_GROUPS && target != "groupMaster" ? tr("all groups")
                                      : zoneId == DELETED_GROUP ? tr("no group") : QString();
     if (target.startsWith("mixer"))
-    {
-        int mixerId = m.value("mixerId").toInt();
-        for (const QVariant &v : m_core->mixer()->mixers())
-            if (v.toMap().value("id").toInt() == mixerId)
-                detail = v.toMap().value("name").toString();
-    }
+        detail = m_core->mixer()->mixerName(m.value("mixerId").toInt());
     if (target == "palette")
     {
         const QVariantMap palette = m_core->palettes()->palette(m.value("paletteId").toInt());
@@ -1360,6 +1412,9 @@ QString ControlMapper::keyName(int key)
 bool ControlMapper::eventFilter(QObject *obj, QEvent *event)
 {
     QEvent::Type type = event->type();
+    // (another translation: the names of the targets in it)
+    if (type == QEvent::LanguageChange)
+        m_targetNames.clear();
     if (type != QEvent::KeyPress && type != QEvent::KeyRelease && type != QEvent::ShortcutOverride)
         return false;
 

@@ -3009,6 +3009,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Aperto %1</translation>
     </message>
     <message>
+        <source>The screens are locked: another show can&apos;t be opened now</source>
+        <translation>Le schermate sono bloccate: ora non si può aprire un altro show</translation>
+    </message>
+    <message>
         <source>Mapped: %1</source>
         <translation>Mappato: %1</translation>
     </message>
@@ -3041,8 +3045,8 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Salva show come</translation>
     </message>
     <message>
-        <source>autosaved %1</source>
-        <translation>salvato automaticamente %1</translation>
+        <source>recovery copy %1</source>
+        <translation>copia di recupero %1</translation>
     </message>
     <message>
         <source>New show (Ctrl+N)</source>
@@ -3219,8 +3223,8 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Recuperare lo show non salvato?</translation>
     </message>
     <message>
-        <source>The application didn&apos;t close properly last time, and an autosaved copy of a show that was never saved is available.</source>
-        <translation>L&apos;ultima volta l&apos;applicazione non si è chiusa correttamente, ed è disponibile una copia salvata automaticamente di uno show mai salvato.</translation>
+        <source>The application didn&apos;t close properly last time. There is a recovery copy of “%1” from %2, with the changes that weren&apos;t saved.</source>
+        <translation>L&apos;ultima volta l&apos;applicazione non si è chiusa correttamente. C&apos;è una copia di recupero di «%1» del %2, con le modifiche non salvate.</translation>
     </message>
     <message>
         <source>Discard</source>
@@ -3623,6 +3627,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Search again</source>
         <translation>Cerca di nuovo</translation>
+    </message>
+    <message>
+        <source>Controllers and devices in use</source>
+        <translation>Controller e dispositivi in uso</translation>
+    </message>
+    <message>
+        <source>DMX inputs: interfaces and network</source>
+        <translation>Ingressi DMX: interfacce e rete</translation>
     </message>
     <message>
         <source>universe %1</source>
@@ -4194,14 +4206,6 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Salvataggio automatico</translation>
     </message>
     <message>
-        <source>Save automatically</source>
-        <translation>Salva automaticamente</translation>
-    </message>
-    <message>
-        <source>Saved shows are overwritten (the previous version is kept as .bak). Untitled shows are kept apart and offered back after a crash.</source>
-        <translation>Gli show salvati vengono sovrascritti (la versione precedente resta come .bak). Gli show senza titolo vengono conservati a parte e riproposti dopo un arresto anomalo.</translation>
-    </message>
-    <message>
         <source>Every (minutes)</source>
         <translation>Ogni (minuti)</translation>
     </message>
@@ -4343,6 +4347,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.</source>
         <translation>Migliaia di fixture aggiuntive da open-fixture-library.org (licenza MIT). Richiede internet.</translation>
+    </message>
+    <message>
+        <source>Save a recovery copy</source>
+        <translation>Salva una copia di recupero</translation>
+    </message>
+    <message>
+        <source>A recovery copy of the changes, offered back after a crash. Only Save writes the show file (the version before the first save of each session is kept as .bak).</source>
+        <translation>Una copia di recupero delle modifiche, riproposta dopo un arresto anomalo. Solo Salva scrive il file dello show (la versione precedente al primo salvataggio di ogni sessione resta come .bak).</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s), downloaded on %1.</source>
@@ -6189,6 +6201,14 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>GROUP %1 nella riga di comando</translation>
     </message>
     <message>
+        <source>Fewer</source>
+        <translation>Meno</translation>
+    </message>
+    <message>
+        <source>All the groups (%1)</source>
+        <translation>Tutti i gruppi (%1)</translation>
+    </message>
+    <message>
         <source>No fixtures patched yet.
 Add some on the Patch page.</source>
         <translation>Ancora nessuna fixture patchata.
@@ -7022,8 +7042,8 @@ Aggiungine alcune nella pagina Patch.</translation>
         <translation>Tutte le teste mobili</translation>
     </message>
     <message>
-        <source>Select a section to set it up. Split it in half with the buttons in its title bar.</source>
-        <translation>Seleziona una sezione per configurarla. Dividila a metà con i tasti nella sua barra del titolo.</translation>
+        <source>Select a section to set it up. Split it in half with the buttons at its top right (they show with the mouse over it).</source>
+        <translation>Seleziona una sezione per configurarla. Dividila a metà con i tasti in alto a destra (compaiono passandoci sopra con il mouse).</translation>
     </message>
     <message>
         <source>Section</source>

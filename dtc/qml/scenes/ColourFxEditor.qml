@@ -199,7 +199,7 @@ Panel {
                             color: editor.info.image ? Theme.text : Theme.textFaint
                             elide: Text.ElideMiddle
                         }
-                        AppButton { text: qsTr("Choose…"); iconGlyph: Theme.iconOpen; onClicked: imageDialog.open() }
+                        AppButton { text: qsTr("Choose…"); iconGlyph: Theme.iconOpen; onClicked: imageDialog.start() }
                     }
                     Text { text: qsTr("Animation"); color: Theme.textDim; visible: editor.info.image !== undefined }
                     ComboBox {
@@ -360,8 +360,9 @@ Panel {
         }
     }
 
-    FileDialog {
+    AppFileDialog {
         id: imageDialog
+        kind: "image"
         title: qsTr("Image for the effect")
         nameFilters: [qsTr("Images (*.png *.jpg *.jpeg *.gif *.bmp)")]
         onAccepted: editor.set("image", selectedFile.toString())

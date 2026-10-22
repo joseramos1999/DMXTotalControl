@@ -270,7 +270,7 @@ Item {
                 ToolTip.text: qsTr("An audio file on the selected track, at the cursor")
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
-                onClicked: audioDialog.open()
+                onClicked: audioDialog.start()
             }
             AppButton {
                 text: (editor.timeline.staticValues || 0) > 0 ? qsTr("Static values (%1)").arg(editor.timeline.staticValues) : qsTr("Static values")
@@ -629,8 +629,9 @@ Item {
         }
     }
 
-    FileDialog {
+    AppFileDialog {
         id: audioDialog
+        kind: "audio"
         title: qsTr("Add audio")
         nameFilters: [qsTr("Audio files (*.wav *.mp3 *.flac *.ogg *.aif *.aiff)"), qsTr("All files (*)")]
         onAccepted: editor.selectBlock(Core.timeline.addAudio(editor.showId, editor.targetTrack, selectedFile, editor.cursor), editor.targetTrack)

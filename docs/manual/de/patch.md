@@ -42,7 +42,7 @@ Spalten: Auswahlkästchen, **#** (Nummer), **NAME**, **ADRESSE** (Universum . Ad
 
 Die Werkzeuge der Leiste arbeiten mit der Auswahl:
 
-- **Klick** wählt aus; **Strg+Klick** fügt hinzu oder entfernt; **Umschalt+Klick** wählt alle Fixtures vom zuletzt angeklickten bis zu diesem aus (in dieser Richtung, die die Reihenfolge der Auswahl ist), und **Strg+Umschalt+Klick** fügt sie hinzu. **„Alle“** und **„Keine“**.
+- **Klick** wählt aus; **Strg+Klick** fügt hinzu oder entfernt; **Umschalt+Klick** wählt alle Fixtures vom zuletzt angeklickten bis zu diesem aus (in dieser Richtung, die die Reihenfolge der Auswahl ist), und **Strg+Umschalt+Klick** fügt sie hinzu. **„Alle“** und **„Keine“**. Das Kästchen einer Zeile fügt sein Fixture hinzu oder entfernt es (wie Strg+Klick); mit Umschalt fügt es alle ab dem zuletzt angeklickten hinzu.
 - **„Identifizieren“**: Die ausgewählten Fixtures blinken weiß, damit Sie sie auf der Bühne finden. **„Identifizieren beenden“** stoppt das (es stoppt auch, wenn Sie die Seite verlassen). Die Taste jeder Zeile identifiziert nur dieses Fixture. Die Liste bleibt, wo sie war.
 - **Pan invertieren** und **Tilt invertieren** (die Pfeilsymbole): für die Fixtures, die diese Achsen haben.
 - **„Grenzen“**, **„Bearbeiten“**, **„Neu adressieren“**, **„Nummerieren“**, **„Gruppe erstellen“** und **„Löschen“**: werden im Folgenden erklärt.
@@ -142,7 +142,7 @@ Wählen Sie Fixtures aus und drücken Sie **„Grenzen“**:
 Bei einem einzelnen Fixture legen Sie in der Liste **Kanäle** für jeden Kanal fest:
 
 - **Überblendungen**: ob er den Überblendzeiten folgt. Aus: Er springt direkt auf seinen Wert (nützlich bei Farb- und Goborädern).
-- **Dimmer**: ob ihn der Grand Master, die Gruppen-Master und die Szenen-Dimmer skalieren.
+- **Dimmer**: ob ihn der Grand Master, die Gruppen-Master und die Szenen-Dimmer skalieren. Der Grand Master skaliert außerdem nur das Licht (siehe [Master](directo.md#master)).
 
 Die Grenzen wirken auf die Ausgabe: Szenen, Effekte und Live-Änderungen behalten ihre Werte, aber die Ausgabe hält sich an die Grenzen. Bei mehreren Fixtures sehen Sie die Werte des ersten Fixtures, das den jeweiligen Regler hat, und was Sie ändern, gilt für alle, die ihn haben.
 

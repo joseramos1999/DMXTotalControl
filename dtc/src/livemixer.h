@@ -52,6 +52,8 @@ public:
     ~LiveMixer();
 
     QVariantList mixers() const;
+    /** The name of a mixer as mixers() gives it, empty for none */
+    QString mixerName(int mixerId) const;
     bool isActive() const;
 
     Q_INVOKABLE void set(int mixerId, const QString &key, const QVariant &value);

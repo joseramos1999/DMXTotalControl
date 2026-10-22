@@ -61,6 +61,8 @@ private slots:
     void zeroIntensityChannelsEfficiency();
     void zeroIntensityChannelsEfficiency2();
 
+    void stopsAtOnce();
+
 private:
 
     GrandMaster *m_gm;

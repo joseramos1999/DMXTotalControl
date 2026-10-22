@@ -783,6 +783,15 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
         {
             const QVariantList targets = ShowSurface::faderTargets(item);
             d.insert("bpm", targets.count() == 1 && targets.first().toMap().value("target").toString() == "bpm");
+            // a speed: x0.1 to x10 (x1 in the middle), when all its targets
+            // are speeds (of the movement, of scenes), as on the SHOW
+            bool speed = targets.isEmpty() == false;
+            for (const QVariant &t : targets)
+            {
+                const QString target = t.toMap().value("target").toString();
+                speed = speed && (target == "moveSpeed" || target == "sceneSpeed");
+            }
+            d.insert("speed", speed);
             d.insert("flash", type == "faders" && item.value("flash", true).toBool());
             d.insert("encoder", item.value("encoder", false));
             d.insert("step", item.value("step", 2));

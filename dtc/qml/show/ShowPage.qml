@@ -188,7 +188,7 @@ Item {
     }
 
     onLockedChanged: if (locked) editing = false
-    onEditingChanged: { selectedSection = ""; selectedCell = -1; if (editing) releaseAllKeys() }
+    onEditingChanged: { selectedSection = ""; selectedCell = -1; if (editing) releaseAllKeys(); else pageArea.contentX = 0 }
     // the surface knows it too: Alt+click puts things there
     onCurrentPageChanged: { selectedSection = ""; selectedCell = -1; Core.surface.currentPage = currentPage }
     onPagesChanged: if (currentPage >= pages.length) currentPage = Math.max(0, pages.length - 1)
@@ -372,6 +372,7 @@ Item {
         }
 
         RowLayout {
+            id: body
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 12
@@ -381,11 +382,55 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                SectionNode {
+                // in edit mode the properties take room: the page keeps the
+                // width its tables need (as wide as without the panel at
+                // most) and scrolls sideways
+                Flickable {
+                    id: pageArea
+                    readonly property bool scrolls: contentWidth > width + 1
                     anchors.fill: parent
-                    visible: Core.surface.pageCount > 0
-                    nodeData: page.rootNode
-                    surface: page
+                    contentWidth: page.editing ? Math.max(width, Math.min(rootSection.minimumWidth, body.width)) : width
+                    contentHeight: height
+                    // (not dragged: the cells, the dividers and the faders take
+                    // the drags; the bar and the wheel scroll it)
+                    interactive: false
+                    clip: scrolls
+                    boundsBehavior: Flickable.StopAtBounds
+                    function scrollBy(delta) {
+                        contentX = Math.max(0, Math.min(contentWidth - width, contentX - delta))
+                    }
+                    // (over the bottom edge of the sections: easy to see)
+                    ScrollBar.horizontal: ScrollBar {
+                        id: pageBar
+                        policy: pageArea.scrolls ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+                        contentItem: Rectangle {
+                            implicitHeight: 8
+                            radius: 4
+                            color: pageBar.pressed || pageBar.hovered ? Theme.accent : Theme.textFaint
+                            opacity: pageBar.policy === ScrollBar.AlwaysOn ? 0.8 : 0
+                        }
+                    }
+
+                    SectionNode {
+                        id: rootSection
+                        width: pageArea.contentWidth
+                        height: pageArea.contentHeight
+                        visible: Core.surface.pageCount > 0
+                        nodeData: page.rootNode
+                        surface: page
+                    }
+                }
+                // both wheels scroll it, and a touchpad sideways (a table that
+                // scrolls takes them first). Each handler gets only the events
+                // of its own direction
+                WheelHandler {
+                    enabled: pageArea.scrolls
+                    onWheel: (event) => pageArea.scrollBy(event.angleDelta.y)
+                }
+                WheelHandler {
+                    orientation: Qt.Horizontal
+                    enabled: pageArea.scrolls
+                    onWheel: (event) => pageArea.scrollBy(event.angleDelta.x)
                 }
 
                 // no page yet

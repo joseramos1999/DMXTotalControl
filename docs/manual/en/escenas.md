@@ -49,8 +49,8 @@ Under the header is the playback panel. It shows what makes sense for each type:
 - **“Fade in”** and **“Fade out”**.
 - **“Cycle time”** (or **“Step time”** on a Colour FX) and **“Speed”** (from one cycle a minute to ten a second; double click: one cycle a second), with **×½** and **×2**.
 - **“Staggered fade”** (static and steps): each fixture starts its fade this long after the previous one, in selection order.
-- **“Driven by”**: **“Duration”** (the normal times), **“BPM”** (the times become beats and follow the show tempo), **“BeatGO”** or **“Pulse”** (it advances with the BeatGO button or with the peaks of the audio input). With BeatGO or Pulse, **“Divisions”** (/2, ×2).
-- **“Tapped rhythm”** (sequences and chasers): the rhythm tapped by pressing its button several times in a row ([Live](directo.md#rhythm-of-a-scene-with-steps)), in BPM. While it has one, its steps go at that rhythm and not by their times. **“Clear”** goes back to its own times.
+- **“Driven by”**: **“Duration”** (the normal times), **“BPM”** (the times become beats and follow the show tempo, the fades of each step too; the crossfade time of a Live group and the fades of the blocks of a super scene stay in seconds), **“BeatGO”** or **“Pulse”** (it advances with the BeatGO button or with the peaks of the audio input). With BeatGO or Pulse, **“Divisions”** (/2, ×2).
+- **“Tapped rhythm”** (sequences and chasers): the rhythm tapped by pressing its button several times in a row ([Live](directo.md#rhythm-of-a-scene-with-steps)), in BPM. While it has one, its steps go at that rhythm and not by their times. **“Clear”** goes back to its own times. With “BPM”, a beat is a step of that rhythm: a 0.5 b fade lasts half a step.
 - **“Start”**: **“Playing”** or **“Paused, press again to play”**.
 - **“Plays”**: **“Always”** or **“N times”**, **“then”** **“Release it”** or **“Hold the last frame”**, **“and play”** “Nothing”, “Next scene of the group”, “Previous scene of the group” or any other scene.
 

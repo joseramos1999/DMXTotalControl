@@ -225,9 +225,9 @@ Item {
                 onClicked: importMenu.popup()
                 AppMenu {
                     id: importMenu
-                    MenuItem { text: qsTr("Patch of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = false; importDialog.open() } }
-                    MenuItem { text: qsTr("Scenes of another show…"); onTriggered: { importDialog.patch = false; importDialog.scenes = true; importDialog.open() } }
-                    MenuItem { text: qsTr("Patch and scenes of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = true; importDialog.open() } }
+                    MenuItem { text: qsTr("Patch of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = false; importDialog.start() } }
+                    MenuItem { text: qsTr("Scenes of another show…"); onTriggered: { importDialog.patch = false; importDialog.scenes = true; importDialog.start() } }
+                    MenuItem { text: qsTr("Patch and scenes of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = true; importDialog.start() } }
                 }
             }
             AppButton {
@@ -699,9 +699,15 @@ Item {
                                         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                                         spacing: 12
                                         CheckBox {
+                                            id: rowCheck
                                             Layout.preferredWidth: 20
                                             checked: parent.parent.selected
-                                            onClicked: { page.select([parent.parent.fx.id], true); page.anchorId = parent.parent.fx.id }
+                                            // a click on the box adds or takes away its fixture (as
+                                            // Ctrl+click); with Shift, the fixtures from the last one clicked
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: (ev) => page.clickFixture(rowCheck.parent.parent.fx.id, ev.modifiers | Qt.ControlModifier)
+                                            }
                                         }
                                         Text {
                                             Layout.preferredWidth: 34
@@ -1096,7 +1102,7 @@ Item {
     }
     TextPrompt { id: prompt }
 
-    FileDialog {
+    AppFileDialog {
         id: importDialog
         property bool patch: true
         property bool scenes: false

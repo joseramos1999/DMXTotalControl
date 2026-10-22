@@ -108,7 +108,7 @@ Le fader du playback est son intensité : si vous le montez depuis zéro, la cu
 1. Appuyez sur **Ctrl+S** (ou sur la disquette de la barre du haut).
 2. Comme c’est la première fois, choisissez un dossier et un nom : il est enregistré dans un fichier `.qxw`.
 
-À partir de là, Ctrl+S enregistre dans le même fichier. Avec la sauvegarde automatique active (voir [Options](opciones.md#sauvegarde-automatique)), le programme enregistre tout seul toutes les quelques minutes et garde la version précédente en `.bak`.
+À partir de là, Ctrl+S enregistre dans le même fichier et garde en `.bak` la version d’avant le premier enregistrement de chaque session. Avec la sauvegarde automatique active (voir [Options](opciones.md#sauvegarde-automatique)), le programme enregistre toutes les quelques minutes une copie de récupération à part, sans toucher à votre fichier : s’il se ferme de façon inattendue, il propose de récupérer les modifications.
 
 ## Et maintenant…
 

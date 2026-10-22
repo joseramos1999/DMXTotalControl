@@ -30,6 +30,7 @@
 #include <QWebSocket>
 #include <QTcpSocket>
 #include <QTcpServer>
+#include <QLocalSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -67,6 +68,7 @@
 #include "qlcfixturehead.h"
 #include "qlcphysical.h"
 #include "outputpatch.h"
+#include "singleinstance.h"
 #if __has_include(<QtCore/private/qzipwriter_p.h>)
 #include <QtCore/private/qzipwriter_p.h>
 #include <QtCore/private/qzipreader_p.h>
@@ -110,6 +112,7 @@
 #include "channelmodifier.h"
 #include "rgbscriptscache.h"
 #include "grandmaster.h"
+#include "fixturegroup.h"
 #include "universe.h"
 #include "fixture.h"
 #include "scene.h"
@@ -163,6 +166,7 @@ private slots:
     void demoSetupShow();
     void showFaders();
     void controllerTemplate();
+    void devicesControllersFirst();
     void planSnapAndShapes();
     void moveFxSymmetric();
     void strobeEffect();
@@ -204,6 +208,7 @@ private slots:
     void commandLine();
     void demoPalettesShow();
     void gdtfImport();
+    void gdtfModeMasters();
     void newShowClearsEverything();
     void closeStopsEverything();
     void genericFaderAutoRemove();
@@ -293,7 +298,7 @@ private slots:
     void sceneDimmerFader();
     void showFaderEdges();
     void remoteFaderRanges();
-    void moveSpeedFollowsPatchEdits();
+    void moveSpeedOfMovement();
     void pulseGoesOnWithNewShow();
     void audioInputSetting();
     void missingShowFiles();
@@ -369,6 +374,25 @@ private slots:
     void openFixtureLibraryUpdate();
     // the tests themselves: nothing of the user of the machine
     void isolatedFromTheUser();
+    // engine: the output doesn't wait for the GUI, blackout keeps the heads
+    // at rest, the grand master dims the light only, step fades in beats
+    void outputGoesOnWhileGuiBlocked();
+    void blackoutKeepsRestValues();
+    void grandMasterScalesLightOnly();
+    void beatStepFadesInBeats();
+    void msFadesOnBeatSequences();
+    void cutStepFadesReachTheirValues();
+    // opening a show: the lists are told once, not for each item
+    void openShowToldOnce();
+    void mappingRevisionAndNames();
+    // the show file: a value set again leaves it alone, the autosave is a
+    // recovery copy (Save writes the file), one program running, the
+    // folders the file dialogs start in
+    void sameValueLeavesShowUnmodified();
+    void autosaveKeepsNamedShow();
+    void recoveryOfNamedShow();
+    void singleInstanceMessages();
+    void dialogFolders();
 
 private:
     Doc *m_doc = nullptr;
@@ -399,6 +423,39 @@ struct ScopedTestSettings
     {
         QSettings().clear();
         QCoreApplication::setOrganizationName(organization);
+    }
+};
+
+/** The data folder of the application (the recovery copies of the
+ *  autosave) in the test mode of QStandardPaths, empty when it starts and
+ *  removed after it. Made after ScopedTestSettings: it is the folder of the
+ *  organization of the test */
+struct ScopedAppData
+{
+    QString path;
+    ScopedAppData()
+    {
+        QStandardPaths::setTestModeEnabled(true);
+        path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        QDir(path).removeRecursively();
+    }
+    ~ScopedAppData()
+    {
+        // (the folders of the test mode go too, when nothing else is in them)
+        QDir(path).removeRecursively();
+        QDir folder(path);
+        for (int i = 0; i < 2 && folder.cdUp(); i++)
+            QDir().rmdir(folder.absolutePath());
+        QStandardPaths::setTestModeEnabled(false);
+    }
+    /** The recovery copies of shows with a file */
+    QStringList copies() const
+    {
+        const QDir dir(path + "/autosave");
+        QStringList list;
+        for (const QString &name : dir.entryList({ "*.qxw" }, QDir::Files))
+            list.append(dir.filePath(name));
+        return list;
     }
 };
 
@@ -4579,10 +4636,12 @@ void Backend_Test::showFaders()
     // the scene starts in its group
     QVERIFY(zone->isActive(scene->id()));
     QCOMPARE(surface->level(item), 0.5);
-    // the pan/tilt speed channel goes from fast to slow: half way
-    QTRY_COMPARE_WITH_TIMEOUT(core.io()->channelValues(0).at(2).toInt(), 128, 3000);
+    // the movement of the heads: what moves them goes faster at the top (a
+    // static scene doesn't move them), the speed channel of the motors stays
     surface->setLevel(item, 1.0);
-    QTRY_COMPARE_WITH_TIMEOUT(core.io()->channelValues(0).at(2).toInt(), 0, 3000);
+    QCOMPARE(scene->motionSpeed(), 1.0);
+    QTest::qWait(100);
+    QCOMPARE(core.io()->channelValues(0).at(2).toInt(), 0);
 
     // down to zero: the scene stops
     surface->setLevel(item, 0.0);
@@ -4616,6 +4675,72 @@ void Backend_Test::showFaders()
     QVERIFY(zone->isActive(scene->id()));
     QVERIFY(core.mapping()->describeTarget(core.mapping()->mappings().last().toMap()).contains("1"));
     core.zones()->stopAll();
+}
+
+/** The devices page: the controllers are not buried under a line of each
+ *  network card for every DMX input over the network */
+void Backend_Test::devicesControllersFirst()
+{
+    auto device = [](const QString &plugin, const QString &name, const QString &kind, bool enabled) {
+        return QVariant(QVariantMap({ { "key", plugin + "|" + name }, { "plugin", plugin }, { "name", name },
+                                      { "kind", kind }, { "enabled", enabled } }));
+    };
+    // as the plugins list them: by plugin name
+    const QVariantList listed = {
+        device("ArtNet", "192.168.1.10", "dmx", false),
+        device("ArtNet", "10.0.0.2", "dmx", true),
+        device("ArtNet", "127.0.0.1", "dmx", false),
+        device("DMX USB", "Interface", "dmx", false),
+        device("E1.31", "192.168.1.10", "dmx", false),
+        device("MIDI", "APC mini mk2", "midi", true),
+        device("MIDI", "nanoKONTROL2", "midi", false),
+        device("OSC", "127.0.0.1", "osc", false),
+        device("OSC", "192.168.1.10", "osc", true),
+    };
+    const QVariantList sorted = ControlMapper::sortDevices(listed);
+    QStringList keys, groups;
+    for (const QVariant &v : sorted)
+    {
+        keys << v.toMap().value("key").toString();
+        groups << v.toMap().value("group").toString();
+    }
+    // MIDI, OSC, the DMX inputs in use; then the other DMX inputs as they were
+    QCOMPARE(keys, QStringList({ "MIDI|APC mini mk2", "MIDI|nanoKONTROL2", "OSC|127.0.0.1", "OSC|192.168.1.10",
+                                 "ArtNet|10.0.0.2",
+                                 "ArtNet|192.168.1.10", "ArtNet|127.0.0.1", "DMX USB|Interface", "E1.31|192.168.1.10" }));
+    QCOMPARE(groups, QStringList({ "controllers", "controllers", "controllers", "controllers", "controllers",
+                                   "dmx", "dmx", "dmx", "dmx" }));
+    // everything else of a device stays
+    QCOMPARE(sorted.first().toMap().value("enabled").toBool(), true);
+    QCOMPARE(sorted.first().toMap().value("plugin").toString(), QString("MIDI"));
+
+    // the list of the core, from real plugins (none next to the test: they
+    // are loaded here, the DMX ones first): the controllers come first, and
+    // each device says its group
+    DtcCore core;
+    core.doc()->ioPluginCache()->load(QDir(DTC_LOOPBACK_PLUGIN));
+    core.doc()->ioPluginCache()->load(QDir(DTC_OSC_PLUGIN));
+    QCOMPARE(core.doc()->inputOutputMap()->inputPluginNames(), QStringList({ "Loopback", "OSC" }));
+    const QVariantList devices = core.mapping()->devices();
+    int lastOsc = -1, firstLoopback = -1;
+    for (int i = 0; i < devices.count(); i++)
+    {
+        const QVariantMap d = devices.at(i).toMap();
+        if (d.value("plugin").toString() == "OSC")
+        {
+            QCOMPARE(d.value("group").toString(), QString("controllers"));
+            lastOsc = i;
+        }
+        else
+        {
+            QCOMPARE(d.value("plugin").toString(), QString("Loopback"));
+            QCOMPARE(d.value("group").toString(), QString("dmx"));
+            if (firstLoopback < 0)
+                firstLoopback = i;
+        }
+    }
+    QVERIFY2(lastOsc >= 0 && firstLoopback >= 0 && lastOsc < firstLoopback,
+             qPrintable(QString("last OSC %1, first Loopback %2").arg(lastOsc).arg(firstLoopback)));
 }
 
 void Backend_Test::controllerTemplate()
@@ -6242,6 +6367,124 @@ void Backend_Test::gdtfImport()
         keys.append(v.toMap().value("key").toString());
     for (const char *key : { "dimmer", "pan", "tilt", "colorwheel", "gobo", "shutter", "zoom" })
         QVERIFY2(keys.contains(key), key);
+}
+
+/** Channels whose functions depend on another channel (ModeMaster): the
+ *  rotation of a prism or a gobo means something else in each mode */
+void Backend_Test::gdtfModeMasters()
+{
+    const QByteArray description = R"(<?xml version="1.0" encoding="UTF-8"?>
+<GDTF DataVersion="1.2">
+  <FixtureType Name="Modes GDTF" Manufacturer="Test" FixtureTypeID="00000000-0000-0000-0000-000000000002">
+    <Geometries>
+      <Geometry Name="Base"><Beam Name="Beam"/></Geometry>
+    </Geometries>
+    <DMXModes>
+      <DMXMode Name="Standard" Geometry="Base">
+        <DMXChannels>
+          <DMXChannel DMXBreak="1" Offset="1" Geometry="Beam">
+            <LogicalChannel Attribute="Prism1">
+              <ChannelFunction Name="Prism1" Attribute="Prism1" DMXFrom="0/1">
+                <ChannelSet Name="Open" DMXFrom="0/1"/>
+                <ChannelSet Name="Prism index" DMXFrom="11/1"/>
+                <ChannelSet Name="Prism rotation" DMXFrom="139/1"/>
+              </ChannelFunction>
+            </LogicalChannel>
+          </DMXChannel>
+          <DMXChannel DMXBreak="1" Offset="2" Geometry="Beam" InitialFunction="Beam_Prism1PosRotate.Prism1PosRotate.Prism1PosRotate 1">
+            <LogicalChannel Attribute="Prism1PosRotate">
+              <ChannelFunction Name="NoFeature 1" Attribute="NoFeature" DMXFrom="0/1" Default="128/1"
+                               ModeMaster="Beam_Prism1" ModeFrom="0/1" ModeTo="138/1"/>
+              <ChannelFunction Name="Prism1PosRotate 1" Attribute="Prism1PosRotate" DMXFrom="0/1" Default="128/1"
+                               ModeMaster="Beam_Prism1" ModeFrom="139/1" ModeTo="255/1">
+                <ChannelSet Name="CW fast-slow" DMXFrom="0/1"/>
+                <ChannelSet Name="Stop" DMXFrom="127/1"/>
+                <ChannelSet Name="CCW slow-fast" DMXFrom="130/1"/>
+              </ChannelFunction>
+            </LogicalChannel>
+          </DMXChannel>
+          <DMXChannel DMXBreak="1" Offset="3" Geometry="Beam">
+            <LogicalChannel Attribute="Gobo1">
+              <ChannelFunction Name="Gobo1" Attribute="Gobo1" DMXFrom="0/1">
+                <ChannelSet Name="Open" DMXFrom="0/1"/>
+                <ChannelSet Name="Gobo 1" DMXFrom="10/1"/>
+                <ChannelSet Name="Gobo 1 rotating" DMXFrom="35/1"/>
+                <ChannelSet Name="Shake" DMXFrom="60/1"/>
+              </ChannelFunction>
+            </LogicalChannel>
+          </DMXChannel>
+          <DMXChannel DMXBreak="1" Offset="4,5" Geometry="Beam">
+            <LogicalChannel Attribute="Gobo1PosRotate">
+              <ChannelFunction Name="Gobo 1 Indexing" Attribute="Gobo1Pos" DMXFrom="0/2" Default="32768/2"
+                               ModeMaster="Beam_Gobo1" ModeFrom="0/1" ModeTo="34/1">
+                <ChannelSet Name="-197 deg" DMXFrom="0/2"/>
+                <ChannelSet DMXFrom="256/2"/>
+                <ChannelSet Name="0 deg" DMXFrom="32768/2"/>
+                <ChannelSet DMXFrom="33024/2"/>
+              </ChannelFunction>
+              <ChannelFunction Name="Gobo 1 Rotation" Attribute="Gobo1PosRotate" DMXFrom="0/2"
+                               ModeMaster="Beam_Gobo1" ModeFrom="35/1" ModeTo="59/1">
+                <ChannelSet Name="CW fast-slow" DMXFrom="0/2"/>
+                <ChannelSet Name="Stop" DMXFrom="32512/2"/>
+                <ChannelSet Name="CCW slow-fast" DMXFrom="33280/2"/>
+              </ChannelFunction>
+              <ChannelFunction Name="NoFeature 1" Attribute="NoFeature" DMXFrom="0/2"
+                               ModeMaster="Beam_Gobo1" ModeFrom="60/1" ModeTo="255/1"/>
+            </LogicalChannel>
+          </DMXChannel>
+          <DMXChannel DMXBreak="1" Offset="6" Geometry="Beam">
+            <LogicalChannel Attribute="AnimationWheel1PosRotate">
+              <ChannelFunction Name="NoFeature 1" Attribute="NoFeature" DMXFrom="0/1"
+                               ModeMaster="Beam_Prism1" ModeFrom="0/1" ModeTo="138/1"/>
+              <ChannelFunction Name="NoFeature 2" Attribute="NoFeature" DMXFrom="0/1"
+                               ModeMaster="Beam_Prism1" ModeFrom="139/1" ModeTo="255/1"/>
+            </LogicalChannel>
+          </DMXChannel>
+        </DMXChannels>
+      </DMXMode>
+    </DMXModes>
+  </FixtureType>
+</GDTF>
+)";
+    QString error;
+    QStringList warnings;
+    std::unique_ptr<QLCFixtureDef> def(GdtfImporter::read(description, &error, &warnings));
+    QVERIFY2(def != nullptr, qPrintable(error));
+    QLCFixtureMode *mode = def->modes().at(0);
+    QCOMPARE(mode->channels().count(), 6);
+
+    auto names = [](const QLCChannel *ch) {
+        QStringList list;
+        for (const QLCCapability *cap : ch->capabilities())
+            list << QString("%1-%2 %3").arg(cap->min()).arg(cap->max()).arg(cap->name());
+        return list;
+    };
+
+    // the master itself is as it was
+    QCOMPARE(names(mode->channel(0)), QStringList({ "0-10 Open", "11-138 Prism index", "139-255 Prism rotation" }));
+
+    // a mode with no function and one with: the one that does something
+    // (it read "No function" from 0 to 255)
+    const QLCChannel *prismRotation = mode->channel(1);
+    QCOMPARE(prismRotation->group(), QLCChannel::Prism);
+    QCOMPARE(names(prismRotation), QStringList({ "0-126 CW fast-slow", "127-129 Stop", "130-255 CCW slow-fast" }));
+    QCOMPARE(int(prismRotation->defaultValue()), 128);
+
+    // two modes that do something: both names, in steps of the coarse byte
+    // (it only had the indexing)
+    const QLCChannel *goboRotation = mode->channel(3);
+    QCOMPARE(goboRotation->controlByte(), QLCChannel::MSB);
+    QCOMPARE(names(goboRotation), QStringList({ "0-0 -197 deg / CW fast-slow",
+                                               "1-126 Gobo 1 Indexing / CW fast-slow",
+                                               "127-127 Gobo 1 Indexing / Stop",
+                                               "128-128 0 deg / Stop",
+                                               "129-129 Gobo 1 Indexing / Stop",
+                                               "130-255 Gobo 1 Indexing / CCW slow-fast" }));
+    QCOMPARE(int(goboRotation->defaultValue()), 128);
+    QCOMPARE(mode->channel(4)->controlByte(), QLCChannel::LSB);
+
+    // no mode does anything: still one capability
+    QCOMPARE(names(mode->channel(5)), QStringList({ "0-255 No function" }));
 }
 
 /** Listens to the removal of fixtures and checks the list the UI reads then */
@@ -16145,6 +16388,17 @@ void Backend_Test::remoteFaderRanges()
                                                                                   { "functionId", int(scene->id()) } }) }) } });
     surface->setItem(page, dials, 0, { { "targets", master }, { "min", 20 }, { "max", 80 }, { "invert", true },
                                        { "encoder", true }, { "step", 10 } });
+    // speeds: of one scene, of several, and a speed with a dimmer
+    Scene *other = new Scene(doc);
+    other->setName("Chase");
+    doc->addFunction(other);
+    auto target = [](const QString &kind, Function *f) {
+        return QVariantMap({ { "target", kind }, { "functionId", int(f->id()) } });
+    };
+    surface->setItem(page, dials, 1, { { "targets", QVariantList({ target("sceneSpeed", scene) }) } });
+    surface->setItem(page, dials, 2, { { "targets", QVariantList({ target("sceneSpeed", scene), target("sceneSpeed", other),
+                                                                   QVariantMap({ { "target", "moveSpeed" }, { "groupId", -1 } }) }) } });
+    surface->setItem(page, dials, 3, { { "targets", QVariantList({ target("sceneSpeed", scene), target("sceneDimmer", other) }) } });
 
     RemoteServer *remote = core.remote();
     remote->startOn(18887);
@@ -16214,6 +16468,13 @@ void Backend_Test::remoteFaderRanges()
     QCOMPARE_LEVEL(dimmer.value("min").toDouble(), 0.0);
     QCOMPARE_LEVEL(dimmer.value("max").toDouble(), 1.0);
     QCOMPARE(dimmer.value("label").toString(), QString("Dimmer of Wash"));
+    // a speed (x1 in the middle), as on the SHOW: when all its targets are
+    // speeds, of one scene or of several (and of the movement)
+    QVERIFY(layoutItem(dials, 1).value("speed").toBool());
+    QVERIFY(layoutItem(dials, 2).value("speed").toBool());
+    QVERIFY(layoutItem(dials, 3).value("speed").toBool() == false);
+    QVERIFY(fader.value("speed").toBool() == false);
+    QVERIFY(dimmer.value("speed").toBool() == false);
     // the state: the master at full, above the range (the top of the fader)
     QCOMPARE_LEVEL(stateItem(faders, 0).value("level").toDouble(), 1.0);
     QCOMPARE_LEVEL(stateItem(faders, 0).value("value").toDouble(), 1.0);
@@ -16410,33 +16671,100 @@ void Backend_Test::showFaderEdges()
 
 #undef QCOMPARE_LEVEL
 
-void Backend_Test::moveSpeedFollowsPatchEdits()
+void Backend_Test::moveSpeedOfMovement()
 {
-    // a movement speed fader, then the moving head changes mode: its speed
-    // is another channel now, the old one isn't forced any more
-    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
-    const quint32 spot = m_doc->fixtures().first()->id();
-    IOManager io(m_doc);
-    ZoneManager zones(m_doc);
-    ShowSurface surface(m_doc, &zones);
-    auto out = [&](int channel) { return io.channelValues(0).at(channel).toInt(); };
-    m_doc->inputOutputMap()->startUniverses();
-    m_doc->masterTimer()->start();
+    // the movement speed faders of the SHOW: what moves the heads of their
+    // group goes at x0.1 to x10 (an FX scene only its pan/tilt layers, the
+    // FX of the programmer, steps with positions); the rest at its own
+    // speed, and the speed channel of the motors is left alone
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 2), 2);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 100, 1), 1);
+    const QList<Fixture *> fixtures = core.doc()->fixtures();
+    const quint32 spot1 = fixtures.at(0)->id();
+    const quint32 spot2 = fixtures.at(1)->id();
+    const quint32 par = fixtures.at(2)->id();
+    const int group = core.patch()->createGroup("Spot 1", { spot1 });
 
-    const QVariantMap speed({ { "target", "moveSpeed" }, { "groupId", -1 } });
-    surface.setLevel(speed, 0.5);
-    // 9ch: the pan/tilt speed is the 3rd channel (fast to slow: half way)
-    QTRY_COMPARE_WITH_TIMEOUT(out(2), 128, 3000);
-    // 11ch: it is the 5th, the 3rd is the fine pan
-    QCOMPARE(m_patch->updateFixture(spot, "Spot", "11ch Standard", 0, 1), QString());
-    QTRY_COMPARE_WITH_TIMEOUT(out(4), 128, 3000);
-    QTRY_COMPARE_WITH_TIMEOUT(out(2), 0, 3000);
-    QCOMPARE(surface.level(speed), 0.5);
+    // an FX scene: a circle on both spots, a dimmer wave on the PAR
+    FXScene *fx = new FXScene(core.doc());
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.fixtures = { spot1, spot2 };
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.fixtures = { par };
+    fx->setLayers({ circle, wave });
+    QVERIFY(core.doc()->addFunction(fx));
+    // steps of colour only, and steps that move the second spot
+    Scene *red = new Scene(core.doc());
+    red->setValue(par, 1, 255);
+    QVERIFY(core.doc()->addFunction(red));
+    Chaser *colours = new Chaser(core.doc());
+    colours->addStep(ChaserStep(red->id()));
+    QVERIFY(core.doc()->addFunction(colours));
+    Scene *aim = new Scene(core.doc());
+    aim->setValue(spot2, 0, 200);
+    QVERIFY(core.doc()->addFunction(aim));
+    Chaser *moves = new Chaser(core.doc());
+    moves->addStep(ChaserStep(aim->id()));
+    QVERIFY(core.doc()->addFunction(moves));
 
-    // deleted: nothing stays forced at its address
-    m_patch->removeFixture(spot);
-    QTRY_COMPARE_WITH_TIMEOUT(out(4), 0, 3000);
-    m_doc->masterTimer()->stop();
+    ShowSurface *surface = core.surface();
+    const QVariantMap all({ { "target", "moveSpeed" }, { "groupId", -1 } });
+    const QVariantMap first({ { "target", "moveSpeed" }, { "groupId", group } });
+    QCOMPARE(surface->level(all), 0.5);
+    QCOMPARE(fx->motionSpeed(), 1.0);
+    surface->setLevel(all, 1.0);
+    QVERIFY(qFuzzyCompare(fx->motionSpeed(), 10.0));
+    QVERIFY(qFuzzyCompare(moves->motionSpeed(), 10.0));
+    QCOMPARE(colours->motionSpeed(), 1.0);
+    QCOMPARE(red->motionSpeed(), 1.0);
+    QCOMPARE(surface->level(all), 1.0);
+    // the fader of the first spot, moved last: what moves it goes at its speed
+    surface->setLevel(first, 0.0);
+    QVERIFY(qFuzzyCompare(fx->motionSpeed(), 0.1));
+    QVERIFY(qFuzzyCompare(moves->motionSpeed(), 10.0));
+    // a new function that moves them takes it at once
+    FXScene *other = new FXScene(core.doc());
+    other->setLayers({ circle });
+    QVERIFY(core.doc()->addFunction(other));
+    QVERIFY(qFuzzyCompare(other->motionSpeed(), 0.1));
+
+    // the FX of the programmer, played: x10 goes round, x0.1 hardly moves
+    surface->setLevel(all, 0.5);
+    core.programmer()->selectFixtures({ spot1 }, false);
+    core.programmer()->setFx("pantilt", { { "bpm", 30 }, { "swing", 100 } });
+    QVERIFY(core.programmer()->fxScene() != nullptr);
+    core.doc()->inputOutputMap()->startUniverses();
+    core.doc()->masterTimer()->start();
+    auto travel = [&](int channel) {
+        int low = 255, high = 0;
+        for (int i = 0; i < 25; i++)
+        {
+            QTest::qWait(20);
+            const int value = core.io()->channelValues(0).at(channel).toInt();
+            low = qMin(low, value);
+            high = qMax(high, value);
+        }
+        return high - low;
+    };
+    surface->setLevel(first, 1.0);
+    QVERIFY(qFuzzyCompare(core.programmer()->fxScene()->motionSpeed(), 10.0));
+    QTest::qWait(100);
+    const int fast = travel(0);
+    surface->setLevel(first, 0.0);
+    QTest::qWait(100);
+    const int slow = travel(0);
+    QVERIFY2(fast > 60 && slow < fast / 3, qPrintable(QString("pan travel x10 %1, x0.1 %2").arg(fast).arg(slow)));
+    // the speed channel of the motors (the 5th) is not touched
+    QCOMPARE(core.io()->channelValues(0).at(4).toInt(), 0);
+
+    // another show: everything at its own speed
+    core.newShow();
+    QCOMPARE(core.programmer()->fxScene()->motionSpeed(), 1.0);
+    core.doc()->masterTimer()->stop();
 }
 
 /** An audio input that opens no device: the test gives it its data */
@@ -17840,9 +18168,10 @@ void Backend_Test::recoveryKeepsImagePaths()
 
 void Backend_Test::autosaveStatusFollowsShow()
 {
-    // "autosaved hh:mm" belongs to the show that was autosaved; a failed
-    // autosave says so; a show from the recent list is opened by its path,
-    // whatever its name has ('#', '%')
+    // "recovery copy hh:mm" belongs to the show that was autosaved, and goes
+    // when it is saved; a failed autosave says so; a show from the recent
+    // list is opened by its path, whatever its name has ('#', '%')
+    ScopedAppData data;
     QTemporaryDir dir;
     const QString path = dir.filePath("Gira #2 100%25.qxw");
     DtcCore core;
@@ -17852,11 +18181,16 @@ void Backend_Test::autosaveStatusFollowsShow()
     core.addSceneFolder("Edited");
     QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
     QVERIFY(core.lastAutosave().isEmpty() == false);
-    QVERIFY(core.modified() == false);
-    // the version before is kept beside it, and only that
-    QVERIFY(QFile::exists(path + ".bak"));
-    QVERIFY(QFile::exists(path + ".bak.new") == false);
+    // a copy apart: the show is still to be saved, nothing beside it
+    QVERIFY(core.modified());
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files), QStringList({ "Gira #2 100%25.qxw" }));
     QCOMPARE(failed.count(), 0);
+    // saved: no copy, no time
+    QVERIFY(core.saveShow());
+    QVERIFY(core.lastAutosave().isEmpty());
+    core.addSceneFolder("Again");
+    QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+    QVERIFY(core.lastAutosave().isEmpty() == false);
 
     core.newShow();
     QVERIFY(core.lastAutosave().isEmpty());
@@ -17867,19 +18201,20 @@ void Backend_Test::autosaveStatusFollowsShow()
     QCOMPARE(core.fileName(), path);
     QVERIFY(core.lastAutosave().isEmpty());
 
-    // its folder gone: the autosave fails, and says so
-    {
-        QTemporaryDir gone;
-        const QString lost = gone.filePath("Lost.qxw");
-        QVERIFY(core.saveShow(QUrl::fromLocalFile(lost)));
-        QVERIFY(gone.remove());
-        core.addSceneFolder("Again");
-        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
-        QCOMPARE(failed.count(), 1);
-        QVERIFY(failed.first().first().toString().isEmpty() == false);
-        QVERIFY(core.modified());
-        QVERIFY(core.lastAutosave().isEmpty());
-    }
+    // the copy can't be written (a folder in its place): the autosave
+    // fails, and says so
+    core.addSceneFolder("Once more");
+    QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+    QCOMPARE(data.copies().count(), 1);
+    const QString copy = data.copies().first();
+    QVERIFY(QFile::remove(copy));
+    QVERIFY(QDir().mkpath(copy));
+    core.addSceneFolder("Blocked");
+    QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+    QCOMPARE(failed.count(), 1);
+    QVERIFY(failed.first().first().toString().isEmpty() == false);
+    QVERIFY(core.modified());
+    QVERIFY(QDir().rmdir(copy));
 }
 
 /** The user fixture folder in a folder of its own while it lives */
@@ -25025,6 +25360,1243 @@ void Backend_Test::convertFxStepsOwnChannels()
     held = spotChannels(circle);
     QVERIFY(held.contains(pan));
     QVERIFY(held.contains(tilt));
+}
+
+
+/** Counts the frames a universe writes, in the thread of the universe */
+class FrameCounter : public QObject
+{
+    Q_OBJECT
+public:
+    explicit FrameCounter(QObject *parent)
+        : QObject(parent)
+    {
+    }
+
+    std::atomic<int> frames { 0 };
+
+public slots:
+    void count(quint32, const QByteArray &)
+    {
+        frames++;
+    }
+};
+
+/** Runs a function when the signal it is connected to comes (with SIGNAL(),
+ *  the way the signals of the engine are connected here) */
+class SignalCall : public QObject
+{
+    Q_OBJECT
+public:
+    explicit SignalCall(std::function<void()> call, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_call(std::move(call))
+    {
+    }
+
+public slots:
+    void run()
+    {
+        m_call();
+    }
+
+private:
+    std::function<void()> m_call;
+};
+
+void Backend_Test::outputGoesOnWhileGuiBlocked()
+{
+    // the master timer wakes the universes up from its own thread: a GUI
+    // that runs no events for a while (a big show opening) doesn't stop the
+    // DMX. A long fade changes the output every frame
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(par, 0, 255);
+    scene->setFadeInSpeed(4000);
+    QVERIFY(m_doc->addFunction(scene));
+    Universe *universe = m_doc->inputOutputMap()->universes().first();
+    // (the universe owns it: it goes after its thread has stopped)
+    FrameCounter *counter = new FrameCounter(universe);
+    connect(universe, SIGNAL(universeWritten(quint32,QByteArray)), counter, SLOT(count(quint32,QByteArray)),
+            Qt::DirectConnection);
+
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(counter->frames.load() > 2, 3000);
+
+    // the GUI thread busy for 600 ms, without its events: some 30 frames
+    const int framesBefore = counter->frames.load();
+    const int redBefore = universe->preGMValue(0);
+    QThread::msleep(600);
+    const int frames = counter->frames.load() - framesBefore;
+    const int red = universe->preGMValue(0);
+    QVERIFY2(frames >= 15, qPrintable(QString::number(frames)));
+    QVERIFY2(red - redBefore >= 20, qPrintable(QString("%1 -> %2").arg(redBefore).arg(red)));
+
+    scene->stop(FunctionParent::master());
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::blackoutKeepsRestValues()
+{
+    // in blackout the light goes and the heads stay where they are: an LTP
+    // channel no function has written yet sends its default value (pan,
+    // tilt, gobo rotation, focus in the middle, the shutter open), not 0
+    QLCFixtureDef *def = m_doc->fixtureDefCache()->fixtureDef("Generic", "Moving Head Spot");
+    QVERIFY(def != nullptr);
+    const QStringList middle = { "Pan", "Tilt", "Gobo rotation", "Prism rotation", "Focus" };
+    for (QLCChannel *ch : def->channels())
+    {
+        if (middle.contains(ch->name()))
+            ch->setDefaultValue(128);
+        else if (ch->name() == "Shutter")
+            ch->setDefaultValue(30);
+    }
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 1, 1), 1);
+    Fixture *spot = m_doc->fixtures().first();
+    QHash<int, int> rest;
+    int dimmer = -1;
+    for (quint32 c = 0; c < spot->channels(); c++)
+    {
+        if (spot->channel(c)->defaultValue() > 0)
+            rest.insert(int(c), spot->channel(c)->defaultValue());
+        if (spot->channel(c)->group() == QLCChannel::Intensity)
+            dimmer = int(c);
+    }
+    QCOMPARE(rest.count(), middle.count() + 1);
+    QCOMPARE(rest.value(0), 128);
+    QVERIFY(dimmer >= 0);
+    Universe *universe = m_doc->inputOutputMap()->universes().first();
+
+    // what goes out in blackout: the light off, the rest as when it's on
+    auto check = [&](const QString &when, int pan) {
+        const QByteArray dark = universe->outputValues(true);
+        const QByteArray lit = universe->outputValues(false);
+        for (auto it = rest.cbegin(); it != rest.cend(); ++it)
+        {
+            const int expected = it.key() == 0 ? pan : it.value();
+            QVERIFY2(uchar(dark.at(it.key())) == expected && uchar(lit.at(it.key())) == expected,
+                     qPrintable(QString("%1: channel %2 sends %3 in blackout, %4 without, %5 expected")
+                                .arg(when).arg(it.key()).arg(uchar(dark.at(it.key()))).arg(uchar(lit.at(it.key())))
+                                .arg(expected)));
+        }
+        QVERIFY2(dark.at(dimmer) == 0, qPrintable(when));
+    };
+
+    // right after the patch, nothing played yet
+    check("patched", 128);
+    // in blackout before anything runs, the universes writing frames
+    m_doc->inputOutputMap()->setBlackout(true);
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    QTest::qWait(200);
+    check("blackout", 128);
+
+    // a scene moves the pan and lights it: in blackout the pan stays there
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot->id(), 0, 200);
+    scene->setValue(spot->id(), quint32(dimmer), 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(int(universe->preGMValue(0)), 200, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(int(universe->preGMValue(dimmer)), 255, 3000);
+    QTest::qWait(100);
+    check("scene", 200);
+    QCOMPARE(int(uchar(universe->outputValues(false).at(dimmer))), 255);
+
+    // released, the pan goes back to its rest value, in blackout too
+    scene->stop(FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(int(universe->preGMValue(0)), 128, 3000);
+    QTest::qWait(100);
+    check("released", 128);
+
+    m_doc->inputOutputMap()->setBlackout(false);
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::grandMasterScalesLightOnly()
+{
+    // the grand master dims the light: the dimmers, and the colours of the
+    // fixtures that have no dimmer. Not the colour mixing (cyan, magenta,
+    // yellow, hue, saturation: the colour would change), nor the colours of
+    // a fixture or head with a dimmer (its dimmer is scaled already: twice
+    // would give a quarter of the light at 50 %), nor a channel whose
+    // 'Dimmer' option is off (a dimmer with it off doesn't dim the colours:
+    // they go down instead). The masters of the groups and scene dimmers
+    // still scale every channel that follows the dimmer
+    auto addDef = [this](const QString &model, const QList<QPair<QString, QLCChannel::Preset>> &channels,
+                         const QList<QList<quint32>> &heads) {
+        QLCFixtureDef *def = new QLCFixtureDef();
+        def->setManufacturer("Test");
+        def->setModel(model);
+        def->setType(QLCFixtureDef::ColorChanger);
+        QLCFixtureMode *mode = new QLCFixtureMode(def);
+        mode->setName("Mode");
+        quint32 index = 0;
+        for (const QPair<QString, QLCChannel::Preset> &c : channels)
+        {
+            QLCChannel *ch = new QLCChannel();
+            ch->setName(c.first);
+            ch->setPreset(c.second);
+            def->addChannel(ch);
+            mode->insertChannel(ch, index++);
+        }
+        for (const QList<quint32> &channelsOfHead : heads)
+        {
+            QLCFixtureHead head;
+            for (quint32 c : channelsOfHead)
+                head.addChannel(c);
+            mode->insertHead(-1, head);
+        }
+        def->addMode(mode);
+        return m_doc->fixtureDefCache()->addFixtureDef(def);
+    };
+    QVERIFY(addDef("CMY spot", { { "Dimmer", QLCChannel::IntensityMasterDimmer },
+                                 { "Cyan", QLCChannel::IntensityCyan },
+                                 { "Magenta", QLCChannel::IntensityMagenta },
+                                 { "Yellow", QLCChannel::IntensityYellow },
+                                 { "Cyan fine", QLCChannel::IntensityCyanFine },
+                                 { "Pan", QLCChannel::PositionPan } }, {}));
+    QVERIFY(addDef("Bar", { { "Master", QLCChannel::IntensityMasterDimmer },
+                            { "Red 1", QLCChannel::IntensityRed }, { "Green 1", QLCChannel::IntensityGreen },
+                            { "Red 2", QLCChannel::IntensityRed }, { "Green 2", QLCChannel::IntensityGreen } },
+                   { { 1, 2 }, { 3, 4 } }));
+    QVERIFY(addDef("Two heads", { { "Dimmer 1", QLCChannel::IntensityDimmer }, { "Red 1", QLCChannel::IntensityRed },
+                                  { "Red 2", QLCChannel::IntensityRed } }, { { 0, 1 }, { 2 } }));
+    QVERIFY(addDef("HSV", { { "Hue", QLCChannel::IntensityHue }, { "Saturation", QLCChannel::IntensitySaturation },
+                            { "Value", QLCChannel::IntensityValue } }, {}));
+
+    QCOMPARE(m_patch->addFixtures("Test", "CMY spot", "Mode", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 11, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "LED", 0, 21, 2), 2);
+    QCOMPARE(m_patch->addFixtures("Test", "Bar", "Mode", "Bar", 0, 31, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Two heads", "Mode", "Heads", 0, 41, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "HSV", "Mode", "HSV", 0, 51, 1), 1);
+    Fixture *dim = new Fixture(m_doc);
+    QLCFixtureDef *dimDef = dim->genericDimmerDef(1);
+    dim->setFixtureDefinition(dimDef, dim->genericDimmerMode(dimDef, 1));
+    dim->setUniverse(0);
+    dim->setAddress(60);
+    QVERIFY(m_doc->addFixture(dim));
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par off", 0, 71, 1), 1);
+    const QList<Fixture *> fixtures = m_doc->fixtures();
+    QCOMPARE(fixtures.count(), 9);
+    // the red of the second RGB LED: its 'Dimmer' option off
+    Fixture *led2 = fixtures.at(3);
+    QCOMPARE(int(led2->address()), 23);
+    m_patch->setChannelOptions(led2->id(), 0, true, false);
+    // a par whose dimmer has its 'Dimmer' option off: that dimmer doesn't go
+    // down, its colours do
+    Fixture *parOff = nullptr;
+    for (Fixture *fxi : fixtures)
+        if (fxi->address() == 70)
+            parOff = fxi;
+    QVERIFY(parOff != nullptr);
+    m_patch->setChannelOptions(parOff->id(), 0, true, false);
+
+    // every channel at full, the grand master at 50 %
+    m_doc->inputOutputMap()->setGrandMasterValue(128);
+    QList<int> addresses;
+    for (Fixture *fxi : fixtures)
+        for (quint32 c = 0; c < fxi->channels(); c++)
+            addresses.append(int(fxi->address() + c));
+    Universe *universe = m_doc->inputOutputMap()->claimUniverses().first();
+    for (int address : std::as_const(addresses))
+        universe->write(address, 255);
+    const QByteArray out = universe->outputValues(false);
+    const QByteArray dark = universe->outputValues(true);
+    m_doc->inputOutputMap()->releaseUniverses(false);
+
+    const QHash<int, int> expected = {
+        // CMY spot: the dimmer only (CMY, its fine channel, the pan stay)
+        { 0, 128 }, { 1, 255 }, { 2, 255 }, { 3, 255 }, { 4, 255 }, { 5, 255 },
+        // RGBW par with a dimmer: the dimmer only
+        { 10, 128 }, { 11, 255 }, { 12, 255 }, { 13, 255 }, { 14, 255 },
+        // RGB LEDs: their colours; the red with 'Dimmer' off stays
+        { 20, 128 }, { 21, 128 }, { 22, 128 }, { 23, 255 }, { 24, 128 }, { 25, 128 },
+        // bar: a master dimmer outside its heads dims them all
+        { 30, 128 }, { 31, 255 }, { 32, 255 }, { 33, 255 }, { 34, 255 },
+        // a head with a dimmer and one without
+        { 40, 128 }, { 41, 255 }, { 42, 128 },
+        // hue and saturation choose the colour, the value is the light
+        { 50, 255 }, { 51, 255 }, { 52, 128 },
+        // a generic dimmer
+        { 60, 128 },
+        // the par whose dimmer doesn't follow the masters: its colours
+        { 70, 255 }, { 71, 128 }, { 72, 128 }, { 73, 128 }, { 74, 128 } };
+    for (auto it = expected.cbegin(); it != expected.cend(); ++it)
+    {
+        QVERIFY2(uchar(out.at(it.key())) == it.value(),
+                 qPrintable(QString("channel %1: %2, %3 expected").arg(it.key()).arg(uchar(out.at(it.key())))
+                            .arg(it.value())));
+    }
+    // blackout still darkens everything: the dimmers and the LEDs at 0
+    for (int address : { 0, 10, 20, 21, 22, 23, 30, 40, 42, 52, 60, 70, 71 })
+        QVERIFY2(dark.at(address) == 0, qPrintable(QString::number(address)));
+
+    // the masters of the groups and the scene dimmers: unchanged, they scale
+    // what follows the dimmer (the colours and the CMY included)
+    for (const QPair<int, quint32> &channel : QList<QPair<int, quint32>> { { 0, 1 }, { 1, 1 }, { 1, 0 }, { 2, 0 } })
+    {
+        FadeChannel fc(m_doc, fixtures.at(channel.first)->id(), channel.second);
+        QVERIFY(fc.flags() & FadeChannel::Intensity);
+    }
+    FadeChannel offRed(m_doc, led2->id(), 0);
+    QVERIFY((offRed.flags() & FadeChannel::Intensity) == 0);
+
+    m_doc->inputOutputMap()->setGrandMasterValue(255);
+}
+
+void Backend_Test::beatStepFadesInBeats()
+{
+    // the fades of the steps of a sequence in beats are beats too: 0.5 b at
+    // 120 BPM is 250 ms (they played as 500 ms). With a tapped rhythm a beat
+    // is the tapped step: 0.5 b of a 400 ms tap is 200 ms. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(120);
+    QCOMPARE(m_doc->masterTimer()->beatTimeDuration(), 500);
+    const int tick = int(MasterTimer::tick());
+    auto around = [&](int frames, int ms) { return frames > 0 && qAbs(frames * tick - ms) <= 2 * tick; };
+
+    Scene *bound = new Scene(m_doc);
+    bound->setVisible(false);
+    for (quint32 ch = 0; ch < 3; ch++)
+        bound->setValue(par, ch, 0);
+    QVERIFY(m_doc->addFunction(bound));
+    Sequence *seq = new Sequence(m_doc);
+    seq->setBoundSceneID(bound->id());
+    seq->setFadeInMode(Chaser::PerStep);
+    seq->setFadeOutMode(Chaser::PerStep);
+    seq->setDurationMode(Chaser::PerStep);
+    seq->setTempoType(Function::Beats);
+    QVERIFY(m_doc->addFunction(seq));
+    // fade in 0.5 b, then 4 b
+    ChaserStep step(bound->id(), 500, 4000, 0);
+    step.duration = 4500;
+    step.values << SceneValue(par, 0, 255) << SceneValue(par, 1, 0) << SceneValue(par, 2, 0);
+    QVERIFY(seq->addStep(step));
+
+    seq->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    int frames = framesUntil(m_doc, [&]() { return renderedValue(m_doc, 0) == 255; }, 100);
+    QVERIFY2(around(frames, 250), qPrintable(QString::number(frames)));
+    seq->stop(FunctionParent::master());
+    QVERIFY(framesUntil(m_doc, [&]() { return renderedValue(m_doc, 0) == 0; }, 100) >= 0);
+
+    // a beat of its tapped rhythm
+    seq->setTapPeriod(400);
+    seq->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    frames = framesUntil(m_doc, [&]() { return renderedValue(m_doc, 0) == 255; }, 100);
+    QVERIFY2(around(frames, 200), qPrintable(QString::number(frames)));
+    seq->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::msFadesOnBeatSequences()
+{
+    // the crossfade of a group of scenes and the fades of a block of a
+    // timeline are ms, on a sequence in beats too (in a collection as well,
+    // which gives them on): 1000 ms is a second at
+    // 120 BPM and with a tapped rhythm (they were taken as beats: half a
+    // second, or a fifth of a 200 ms tap). Without a crossfade the sequence
+    // keeps its own fades, in beats. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(120);
+    QCOMPARE(m_doc->masterTimer()->beatTimeDuration(), 500);
+    const int tick = int(MasterTimer::tick());
+    auto around = [&](int frames, int ms) { return frames > 0 && qAbs(frames * tick - ms) <= 2 * tick; };
+    auto reach = [&](int value) { return framesUntil(m_doc, [&]() { return renderedValue(m_doc, 0) == value; }, 200); };
+
+    Scene *bound = new Scene(m_doc);
+    bound->setVisible(false);
+    for (quint32 ch = 0; ch < 3; ch++)
+        bound->setValue(par, ch, 0);
+    QVERIFY(m_doc->addFunction(bound));
+    Sequence *seq = new Sequence(m_doc);
+    seq->setBoundSceneID(bound->id());
+    seq->setFadeInMode(Chaser::PerStep);
+    seq->setFadeOutMode(Chaser::PerStep);
+    seq->setDurationMode(Chaser::PerStep);
+    seq->setTempoType(Function::Beats);
+    QVERIFY(m_doc->addFunction(seq));
+    // its own fade in: 0.5 b; a long step
+    ChaserStep step(bound->id(), 500, 0, 0);
+    step.duration = 8000;
+    step.values << SceneValue(par, 0, 255) << SceneValue(par, 1, 0) << SceneValue(par, 2, 0);
+    QVERIFY(seq->addStep(step));
+
+    ZoneManager zones(m_doc);
+    Zone *zone = zones.addZone("Sequences");
+    zone->addFunction(seq->id());
+    zone->setFadeTime(1000);
+    zone->trigger(seq->id());
+    renderFrames(m_doc);
+    int frames = reach(255);
+    QVERIFY2(around(frames, 1000), qPrintable(QString::number(frames)));
+    zone->stop(seq->id());
+    QVERIFY(reach(0) >= 0);
+
+    // a tapped rhythm: still a second
+    seq->setTapPeriod(200);
+    zone->trigger(seq->id());
+    renderFrames(m_doc);
+    frames = reach(255);
+    QVERIFY2(around(frames, 1000), qPrintable(QString::number(frames)));
+    zone->stop(seq->id());
+    QVERIFY(reach(0) >= 0);
+    seq->setTapPeriod(0);
+
+    // in a collection: it gives them on as they came
+    Collection *rack = new Collection(m_doc);
+    QVERIFY(rack->addFunction(seq->id()));
+    QVERIFY(m_doc->addFunction(rack));
+    zone->addFunction(rack->id());
+    zone->trigger(rack->id());
+    renderFrames(m_doc);
+    frames = reach(255);
+    QVERIFY2(around(frames, 1000), qPrintable(QString::number(frames)));
+    zone->stop(rack->id());
+    QVERIFY(reach(0) >= 0);
+
+    // no crossfade in the group: the fades of the sequence, in beats
+    zone->setFadeTime(-1);
+    zone->trigger(seq->id());
+    renderFrames(m_doc);
+    frames = reach(255);
+    QVERIFY2(around(frames, 250), qPrintable(QString::number(frames)));
+    zone->stop(seq->id());
+    QVERIFY(reach(0) >= 0);
+
+    // a block of a timeline that fades in for a second
+    Show *show = new Show(m_doc);
+    show->setMsTimeline(true);
+    QVERIFY(m_doc->addFunction(show));
+    Track *track = new Track(Function::invalidId(), show);
+    show->addTrack(track);
+    ShowFunction *sf = track->createShowFunction(seq->id());
+    sf->setStartTime(0);
+    sf->setDuration(10000);
+    sf->setFadeIn(1000);
+    show->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    frames = reach(255);
+    QVERIFY2(around(frames, 1000), qPrintable(QString::number(frames)));
+    show->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cutStepFadesReachTheirValues()
+{
+    // steps shorter than their fades (a tapped rhythm faster than them): a
+    // channel with the same value in every step gets there exactly, and a
+    // dimmer that the next steps set to 0 gets to 0. They stopped one or
+    // two units short (each step started the fade again from where it was,
+    // and the last unit was cut off). Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "6ch DRGBW+Strobe", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    QCOMPARE(m_doc->fixtures().first()->channel(5)->group(), QLCChannel::Shutter);
+
+    Scene *bound = new Scene(m_doc);
+    bound->setVisible(false);
+    for (quint32 ch = 0; ch < 6; ch++)
+        bound->setValue(par, ch, 0);
+    QVERIFY(m_doc->addFunction(bound));
+    Sequence *seq = new Sequence(m_doc);
+    seq->setBoundSceneID(bound->id());
+    seq->setFadeInMode(Chaser::PerStep);
+    seq->setFadeOutMode(Chaser::PerStep);
+    seq->setDurationMode(Chaser::PerStep);
+    QVERIFY(m_doc->addFunction(seq));
+    // the dimmer up in the first step only; the red and the strobe the same
+    // in all of them. Fades in of 500 ms, a step every 200 ms (no fade
+    // out: what the step before leaves doesn't hold the channels up)
+    for (int i = 0; i < 4; i++)
+    {
+        ChaserStep step(bound->id(), 500, 0, 0);
+        step.duration = 500;
+        step.values << SceneValue(par, 0, i == 0 ? 255 : 0) << SceneValue(par, 1, 255) << SceneValue(par, 2, 0)
+                    << SceneValue(par, 3, 0) << SceneValue(par, 4, 0) << SceneValue(par, 5, 252);
+        QVERIFY(seq->addStep(step));
+    }
+    seq->setTapPeriod(200);
+
+    seq->start(m_doc->masterTimer(), FunctionParent::master());
+    QList<int> dimmer, red, strobe;
+    QList<int> steps;
+    for (int frame = 0; frame < 40; frame++)
+    {
+        renderFrames(m_doc);
+        dimmer.append(renderedValue(m_doc, 0));
+        red.append(renderedValue(m_doc, 1));
+        strobe.append(renderedValue(m_doc, 5));
+        steps.append(seq->currentStepIndex());
+    }
+    auto trace = [&](const QList<int> &values) {
+        QStringList text;
+        for (int i = 0; i < values.count(); i++)
+            text << QString("%1:%2").arg(steps.at(i)).arg(values.at(i));
+        return text.join(' ');
+    };
+    // the steps went round (they don't wait for their times)
+    QVERIFY2(steps.at(5) == 0 && steps.at(15) == 1 && steps.at(25) == 2 && steps.at(35) == 3, qPrintable(trace(dimmer)));
+    // the same value in every step: there in 500 ms, and it stays
+    for (int frame = 27; frame < 40; frame++)
+    {
+        QVERIFY2(strobe.at(frame) == 252, qPrintable(trace(strobe)));
+        QVERIFY2(red.at(frame) == 255, qPrintable(trace(red)));
+    }
+    // the dimmer at 0 from the second step on: there before the first step
+    // comes back
+    QVERIFY2(dimmer.at(5) > 0, qPrintable(trace(dimmer)));
+    QVERIFY2(dimmer.at(36) == 0 && dimmer.at(37) == 0, qPrintable(trace(dimmer)));
+
+    seq->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::openShowToldOnce()
+{
+    // a show opened is cleared and loaded one function, fixture and group
+    // at a time: what the UI reads whole (the functions, the groups, the
+    // mixers, the selection and values of the programmer, the SHOW...) was
+    // told for each one, twice, and the UI made its lists again each time
+    // (163 fixtures, 41 groups and 83 functions froze the window 10-20 s).
+    // Now as many times for a big show as for a small one
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    // $count fixtures and functions, half as many groups, a group of scenes
+    auto makeShow = [&dir](const QString &name, int count) {
+        DtcCore maker;
+        Doc *doc = maker.doc();
+        doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        if (maker.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, count) != count)
+            return QUrl();
+        QList<quint32> ids;
+        for (Fixture *f : doc->fixtures())
+            ids << f->id();
+        for (int g = 0; g < count / 2; g++)
+            maker.patch()->createGroup(QString("Group %1").arg(g), { ids.at(g), ids.at(g + count / 2) });
+        Zone *zone = maker.zones()->addZone("Front");
+        for (int i = 0; i < count; i++)
+        {
+            Scene *scene = new Scene(doc);
+            scene->setName(QString("Scene %1").arg(i));
+            scene->setValue(ids.at(i), 0, 255);
+            doc->addFunction(scene);
+            if (i < 10)
+                zone->addFunction(scene->id());
+        }
+        const QUrl url = QUrl::fromLocalFile(dir.filePath(name));
+        return maker.saveShow(url) ? url : QUrl();
+    };
+    const int count = 30;
+    const QUrl small = makeShow("small.qxw", 2);
+    const QUrl many = makeShow("many.qxw", count);
+    QVERIFY(small.isEmpty() == false && many.isEmpty() == false);
+
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+
+    // every signal of what Core is made of (not of Doc and the engine, which
+    // tell each item)
+    std::vector<std::unique_ptr<QSignalSpy>> spies;
+    QStringList names;
+    QList<QObject *> objects({ &core });
+    for (QObject *child : core.children())
+        if (child != doc && qobject_cast<QTimer *>(child) == nullptr)
+            objects.append(child);
+    for (QObject *object : std::as_const(objects))
+    {
+        const QMetaObject *meta = object->metaObject();
+        for (int i = QObject::staticMetaObject.methodCount(); i < meta->methodCount(); i++)
+        {
+            const QMetaMethod method = meta->method(i);
+            if (method.methodType() == QMetaMethod::Signal)
+            {
+                spies.push_back(std::make_unique<QSignalSpy>(object, method));
+                names << QString("%1::%2").arg(meta->className(), QString::fromLatin1(method.name()));
+            }
+        }
+    }
+    QSignalSpy removed(doc, SIGNAL(fixtureRemoved(quint32)));
+    QSignalSpy added(doc, SIGNAL(functionAdded(quint32)));
+    // what had been told when the loading began (the show cleared, its
+    // lists told empty): the lists of the show loaded must be told after it
+    QHash<QString, int> atLoading;
+    SignalCall loading([&]() {
+        for (size_t i = 0; i < spies.size(); i++)
+            atLoading[names.at(int(i))] = int(spies.at(i)->count());
+    });
+    QVERIFY(QObject::connect(doc, SIGNAL(loading()), &loading, SLOT(run())));
+    // File > Open on the show that is open: all of it goes, all of it comes
+    // (and what is told a moment later)
+    auto reopen = [&](const QUrl &url) {
+        QHash<QString, int> told;
+        if (core.openShow(url) == false)
+            return told;
+        for (const auto &spy : spies)
+            spy->clear();
+        removed.clear();
+        added.clear();
+        atLoading.clear();
+        if (core.openShow(url) == false)
+            return told;
+        QTest::qWait(50);
+        for (size_t i = 0; i < spies.size(); i++)
+            told[names.at(int(i))] += int(spies.at(i)->count());
+        return told;
+    };
+    // what the UI shows as lists: told once the show is loaded (told only
+    // when it was cleared, the UI would keep empty lists)
+    const QStringList lists({ "DtcCore::functionsChanged", "PatchManager::groupsChanged", "PatchManager::fixturesChanged",
+                              "LiveMixer::mixersChanged", "IOManager::universesChanged", "ControlMapper::devicesChanged",
+                              "ShowSurface::revisionChanged" });
+    auto toldAfterLoading = [&](const QHash<QString, int> &told) {
+        QStringList missing;
+        for (const QString &name : lists)
+        {
+            if (names.contains(name) == false || atLoading.contains(name) == false)
+                missing << name + " (not spied)";
+            else if (told.value(name) <= atLoading.value(name))
+                missing << QString("%1 (%2 before the loading, %3 in all)").arg(name).arg(atLoading.value(name))
+                                                                            .arg(told.value(name));
+        }
+        return missing.join(", ");
+    };
+    const QHash<QString, int> fromSmall = reopen(small);
+    QVERIFY(fromSmall.isEmpty() == false);
+    QVERIFY2(toldAfterLoading(fromSmall).isEmpty(), qPrintable(toldAfterLoading(fromSmall)));
+    const QHash<QString, int> fromMany = reopen(many);
+    QVERIFY(fromMany.isEmpty() == false);
+    QVERIFY2(toldAfterLoading(fromMany).isEmpty(), qPrintable(toldAfterLoading(fromMany)));
+    QCOMPARE(int(removed.count()), count);
+    QCOMPARE(int(added.count()), count);
+    QStringList storms;
+    for (auto it = fromMany.cbegin(); it != fromMany.cend(); ++it)
+        if (it.value() > fromSmall.value(it.key()) + 3)
+            storms << QString("%1 %2 (small show %3)").arg(it.key()).arg(it.value()).arg(fromSmall.value(it.key()));
+    QVERIFY2(storms.isEmpty(), qPrintable(storms.join(", ")));
+
+    // told once is enough: the lists are the new ones
+    QCOMPARE(core.functions().count(), count);
+    QCOMPARE(core.patch()->groups().count(), count / 2);
+    QCOMPARE(core.patch()->fixtures().count(), count);
+    QCOMPARE(core.mixer()->mixers().count(), count / 2 + 1);
+    QCOMPARE(core.zones()->count(), 1);
+    QVERIFY(core.programmer()->selection().isEmpty());
+    QVERIFY(core.modified() == false);
+    QCOMPARE(core.mixer()->mixerName(-1), core.mixer()->mixers().first().toMap().value("name").toString());
+
+    // outside a show cleared or loaded each change is told at once, as before
+    QList<quint32> ids;
+    for (Fixture *f : doc->fixtures())
+        ids << f->id();
+    QSignalSpy functionsChanged(&core, SIGNAL(functionsChanged()));
+    QSignalSpy modifiedChanged(&core, SIGNAL(modifiedChanged()));
+    QSignalSpy groupsChanged(core.patch(), SIGNAL(groupsChanged()));
+    QSignalSpy mixersChanged(core.mixer(), SIGNAL(mixersChanged()));
+    QSignalSpy universesChanged(core.io(), SIGNAL(universesChanged()));
+    QSignalSpy devicesChanged(core.mapping(), SIGNAL(devicesChanged()));
+    QSignalSpy timelineChanged(core.timeline(), SIGNAL(changed()));
+    QSignalSpy playbacksChanged(core.playbacks(), SIGNAL(stateChanged()));
+    QSignalSpy selectionChanged(core.programmer(), SIGNAL(selectionChanged()));
+
+    Scene *scene = new Scene(doc);
+    QVERIFY(doc->addFunction(scene));
+    QCOMPARE(functionsChanged.count(), 1);
+    QVERIFY(modifiedChanged.count() >= 1);
+    FixtureGroup *group = new FixtureGroup(doc);
+    group->setName("Side");
+    QVERIFY(doc->addFixtureGroup(group));
+    QCOMPARE(groupsChanged.count(), 1);
+    QCOMPARE(mixersChanged.count(), 1);
+    QCOMPARE(core.mixer()->mixerName(int(group->id())), QString("Side"));
+    QVERIFY(doc->deleteFunction(scene->id()));
+    QCOMPARE(functionsChanged.count(), 2);
+    QCOMPARE(timelineChanged.count(), 1);
+    QCOMPARE(playbacksChanged.count(), 1);
+    core.programmer()->selectFixtures({ ids.at(2) });
+    selectionChanged.clear();
+    core.patch()->removeFixture(ids.at(2));
+    QCOMPARE(selectionChanged.count(), 1);
+    QVERIFY(core.programmer()->selection().isEmpty());
+    QVERIFY(doc->inputOutputMap()->addUniverse());
+    QCOMPARE(universesChanged.count(), 1);
+    QCOMPARE(devicesChanged.count(), 1);
+}
+
+void Backend_Test::mappingRevisionAndNames()
+{
+    // the badges of learn mode count the mappings of their control: they
+    // follow the revision, not the list (each mapping described). The list
+    // names every target as targets() does, and the mixers by their groups
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    ControlMapper *mapper = core.mapping();
+    auto text = [&](int mid) {
+        for (const QVariant &v : mapper->mappings())
+            if (v.toMap().value("id").toInt() == mid)
+                return v.toMap().value("targetText").toString();
+        return QString();
+    };
+
+    int revision = mapper->revision();
+    QHash<int, QString> named;
+    for (const QVariant &v : mapper->targets())
+    {
+        const QVariantMap t = v.toMap();
+        const int id = mapper->addMapping({ { "source", "key" }, { "target", t.value("target") } });
+        QVERIFY(mapper->revision() > revision);
+        revision = mapper->revision();
+        named.insert(id, t.value("name").toString());
+    }
+    for (auto it = named.cbegin(); it != named.cend(); ++it)
+        QVERIFY2(text(it.key()).startsWith(it.value()), qPrintable(text(it.key()) + " / " + it.value()));
+
+    const int group = core.patch()->createGroup("Front", { doc->fixtures().first()->id() });
+    const int effect = core.patch()->createGroup("Front (FX)", { doc->fixtures().first()->id() });
+    const int all = mapper->addMapping({ { "source", "key" }, { "target", "mixerDimmer" }, { "mixerId", -1 } });
+    const int front = mapper->addMapping({ { "source", "key" }, { "target", "mixerFull" }, { "mixerId", group } });
+    const int fx = mapper->addMapping({ { "source", "key" }, { "target", "mixerFull" }, { "mixerId", effect } });
+    QCOMPARE(text(all), QString("Mixer: dimmer — All fixtures"));
+    QCOMPARE(text(front), QString("Mixer: full — Front"));
+    // (no mixer for the groups of colour effects)
+    QCOMPARE(text(fx), QString("Mixer: full"));
+
+    QSignalSpy changed(mapper, SIGNAL(mappingsChanged()));
+    revision = mapper->revision();
+    core.patch()->renameGroup(quint32(group), "Back");
+    QTRY_VERIFY_WITH_TIMEOUT(changed.count() > 0, 1000);
+    QVERIFY(mapper->revision() > revision);
+    QCOMPARE(text(front), QString("Mixer: full — Back"));
+    revision = mapper->revision();
+    mapper->removeMapping(fx);
+    QCOMPARE(mapper->revision(), revision + 1);
+}
+
+/*********************************************************************
+ * The show file: values set again, recovery copies, one program, dialogs
+ *********************************************************************/
+
+void Backend_Test::sameValueLeavesShowUnmodified()
+{
+    // a value set again as it is (a controller fader sends the position it
+    // has, an output chosen again) changes nothing: the show isn't marked as
+    // modified, and the autosave has nothing to copy
+    DtcCore core;
+    Doc *doc = core.doc();
+    Zone *zone = core.zones()->addZone("Group");
+    Scene *scene = new Scene(doc);
+    QVERIFY(doc->addFunction(scene));
+    zone->addFunction(scene->id());
+    const QList<QPair<QString, QVariant>> options({ { "speed", 0.897307 }, { "dimmer", 0.5 }, { "size", 0.0 },
+                                                    { "phase", 90 }, { "fadeSpeed", 2.0 },
+                                                    { "release", int(Zone::ReleaseOthers) },
+                                                    { "protection", int(Zone::ProtectOthers) }, { "flash", true } });
+    for (const auto &option : options)
+    {
+        doc->resetModified();
+        zone->setOption(scene->id(), option.first, option.second);
+        QVERIFY2(doc->isModified(), qPrintable(option.first));
+        doc->resetModified();
+        zone->setOption(scene->id(), option.first, option.second);
+        QVERIFY2(doc->isModified() == false, qPrintable(option.first));
+    }
+    // the speed of the scene from a SHOW fader, where it was
+    const QVariantMap fader({ { "targets", QVariantList({ QVariantMap({ { "target", "sceneSpeed" },
+                                                                        { "functionId", int(scene->id()) } }) }) } });
+    doc->resetModified();
+    core.surface()->setLevel(fader, 0.3);
+    QVERIFY(doc->isModified());
+    doc->resetModified();
+    core.surface()->setLevel(fader, 0.3);
+    QVERIFY(doc->isModified() == false);
+    // the master of the group
+    zone->setMaster(0.4);
+    doc->resetModified();
+    zone->setMaster(0.4);
+    QVERIFY(doc->isModified() == false);
+    // the size of the stage
+    doc->resetModified();
+    core.patch()->setStageSize(12000, 8000);
+    QVERIFY(doc->isModified());
+    doc->resetModified();
+    core.patch()->setStageSize(12000, 8000);
+    QVERIFY(doc->isModified() == false);
+    // no output, again
+    IOManager *io = core.io();
+    io->clearOutput(0);
+    QVERIFY(doc->isModified() == false);
+
+    // an output and a controller: OSC to this machine
+    doc->ioPluginCache()->load(QDir(DTC_OSC_PLUGIN));
+    QVariantMap output;
+    for (const QVariant &v : io->outputs())
+        if (v.toMap().value("name").toString() == "127.0.0.1")
+            output = v.toMap();
+    if (output.isEmpty())
+        QSKIP("the OSC plugin has no 127.0.0.1 line here");
+    const QString plugin = output.value("plugin").toString();
+    const int line = output.value("line").toInt();
+    io->setOutput(0, plugin, line);
+    QVERIFY(doc->isModified());
+    doc->resetModified();
+    io->setOutput(0, plugin, line);
+    QVERIFY(doc->isModified() == false);
+    io->clearOutput(0);
+    QVERIFY(doc->isModified());
+    doc->resetModified();
+    io->clearOutput(0);
+    QVERIFY(doc->isModified() == false);
+
+    ControlMapper *mapper = core.mapping();
+    QString device;
+    for (const QVariant &v : mapper->devices())
+        if (v.toMap().value("kind").toString() == "osc" && v.toMap().value("name").toString() == "127.0.0.1")
+            device = v.toMap().value("key").toString();
+    QVERIFY(device.isEmpty() == false);
+    mapper->setDeviceEnabled(device, true);
+    doc->resetModified();
+    // (its feedback is on already)
+    mapper->setDeviceFeedback(device, true);
+    QVERIFY(doc->isModified() == false);
+    mapper->setDeviceFeedback(device, false);
+    QVERIFY(doc->isModified());
+    doc->resetModified();
+    mapper->setDeviceFeedback(device, false);
+    QVERIFY(doc->isModified() == false);
+    mapper->setDeviceEnabled(device, false);
+}
+
+void Backend_Test::autosaveKeepsNamedShow()
+{
+    // the autosave of a show with a file is a recovery copy apart: the file
+    // stays as the user saved it, byte for byte, and the show is still
+    // modified (only Save writes it; "Don't save" leaves it as it was).
+    // Save keeps the version before the first save of the session as .bak,
+    // once, and the copy goes; so do New, Open and a clean exit
+    ScopedTestSettings settings;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Gira #2.qxw");
+    {
+        // a show this session makes has nothing to keep
+        DtcCore core;
+        core.addSceneFolder("First");
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        core.addSceneFolder("Second");
+        QVERIFY(core.saveShow());
+        QCOMPARE(QDir(dir.path()).entryList(QDir::Files), QStringList({ "Gira #2.qxw" }));
+    }
+    const QByteArray saved = fileBytes(path);
+    QVERIFY(saved.contains("Second"));
+
+    QString copy;
+    {
+        DtcCore core;
+        QSignalSpy failed(&core, SIGNAL(autosaveFailed(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        core.addSceneFolder("Edited");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(failed.count(), 0);
+        QVERIFY(core.lastAutosave().isEmpty() == false);
+        // the file as it was, the show still modified, nothing beside it
+        QCOMPARE(fileBytes(path), saved);
+        QVERIFY(core.modified());
+        QCOMPARE(QDir(dir.path()).entryList(QDir::Files), QStringList({ "Gira #2.qxw" }));
+        // the copy, apart, says which show it is
+        QCOMPARE(data.copies().count(), 1);
+        copy = data.copies().first();
+        QVERIFY2(QFileInfo(copy).fileName().startsWith("Gira #2-"), qPrintable(copy));
+        QVERIFY(fileBytes(copy).contains("Edited"));
+        QCOMPARE(QString::fromUtf8(fileBytes(copy + ".path")), path);
+        // the name is written before the copy: a copy is never left without
+        // it (a crash in between: nobody would offer it, the next start
+        // would delete it). Where the name can't be written, no copy
+        QVERIFY(QFile::remove(copy) && QFile::remove(copy + ".path"));
+        QVERIFY(QDir().mkpath(copy + ".path"));
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(failed.count(), 1);
+        QVERIFY(QFile::exists(copy) == false);
+        QVERIFY(QDir(copy + ".path").removeRecursively());
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(failed.count(), 1);
+        QVERIFY(fileBytes(copy).contains("Edited"));
+        QCOMPARE(QString::fromUtf8(fileBytes(copy + ".path")), path);
+        // the next autosave: the same copy
+        core.addSceneFolder("More");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(data.copies(), QStringList({ copy }));
+        QVERIFY(fileBytes(copy).contains("More"));
+        QCOMPARE(fileBytes(path), saved);
+
+        // Save: the version before it is kept, the copy goes
+        QVERIFY(core.saveShow());
+        QVERIFY(core.modified() == false);
+        QVERIFY(core.lastAutosave().isEmpty());
+        QVERIFY(QFile::exists(copy) == false);
+        QVERIFY(QFile::exists(copy + ".path") == false);
+        QCOMPARE(fileBytes(path + ".bak"), saved);
+        QVERIFY(fileBytes(path).contains("More"));
+        // saved again: the .bak is still the version before this session
+        core.addSceneFolder("Last");
+        QVERIFY(core.saveShow());
+        QCOMPARE(fileBytes(path + ".bak"), saved);
+        QCOMPARE(QDir(dir.path()).entryList(QDir::Files), QStringList({ "Gira #2.qxw", "Gira #2.qxw.bak" }));
+
+        // New and Open: the copy of the show left goes
+        core.addSceneFolder("Left");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QVERIFY(QFile::exists(copy));
+        core.newShow();
+        QVERIFY(QFile::exists(copy) == false);
+        QVERIFY(QFile::exists(copy + ".path") == false);
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        core.addSceneFolder("Left again");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QVERIFY(QFile::exists(copy));
+        const QString other = dir.filePath("Other.qxw");
+        QVERIFY(writeBytes(other, saved));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(other)));
+        QVERIFY(QFile::exists(copy) == false);
+        // a show that can't be opened leaves the one open, and its copy
+        core.addSceneFolder("Kept");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(data.copies().count(), 1);
+        QVERIFY(core.openShow(QUrl::fromLocalFile(dir.filePath("Missing.qxw"))) == false);
+        QCOMPARE(data.copies().count(), 1);
+        // the untitled show: its copy apart, as before
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        core.newShow();
+        QVERIFY(data.copies().isEmpty());
+        core.addSceneFolder("Untitled");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QVERIFY(QFile::exists(QDir(data.path).filePath("autosave.qxw")));
+        QVERIFY(core.modified());
+    }
+    // a clean exit (the show left unsaved): no copy is left
+    QVERIFY(data.copies().isEmpty());
+    QVERIFY(QFile::exists(QDir(data.path).filePath("autosave.qxw")) == false);
+    QVERIFY(QDir(data.path + "/autosave").entryList(QDir::Files).isEmpty());
+
+    // the next session: its .bak is the version before its own first save
+    const QByteArray before = fileBytes(path);
+    {
+        DtcCore core;
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        core.addSceneFolder("Next session");
+        QVERIFY(core.saveShow());
+        QCOMPARE(fileBytes(path + ".bak"), before);
+        // Save as over another show: that one is kept too
+        const QString other = dir.filePath("Other.qxw");
+        const QByteArray otherBefore = fileBytes(other);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(other)));
+        QCOMPARE(fileBytes(other + ".bak"), otherBefore);
+    }
+}
+
+void Backend_Test::recoveryOfNamedShow()
+{
+    // after a session that didn't end, the recovery copy of a show with a
+    // file is offered by its name and the time of the copy. Recovered, it is
+    // that show again (Save writes its file), modified, with its files found
+    // from its folder; the file was never touched. Discarded, or after a
+    // clean exit, it goes. The autosave doesn't write over a copy offered
+    ScopedTestSettings settings;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Concierto.qxw");
+    const QString imagePath = dir.filePath("picture.png");
+    QVERIFY(writeImage(imagePath, 4, 1, Qt::green));
+    QByteArray saved, copyBytes, copyNames;
+    QString copy;
+    int id = -1;
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+        core.programmer()->selectAll();
+        id = core.effects()->createColourFx("Picture");
+        QVERIFY(id >= 0);
+        core.effects()->setColourFx(quint32(id), "effect", "Image");
+        core.effects()->setColourFx(quint32(id), "image", QUrl::fromLocalFile(imagePath).toString());
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(data.copies().count(), 1);
+        copy = data.copies().first();
+        copyBytes = fileBytes(copy);
+        copyNames = fileBytes(copy + ".path");
+        // (the picture relative to the folder of the show, as Save writes it)
+        QVERIFY(copyBytes.contains("\"picture.png\"") || copyBytes.contains(">picture.png<"));
+    }
+    // the session crashed with the copy there (a clean exit removed it)
+    QVERIFY(QFile::exists(copy) == false);
+    auto crash = [&]() {
+        QVERIFY(writeBytes(copy, copyBytes));
+        QVERIFY(writeBytes(copy + ".path", copyNames));
+        AppSettings().setSessionRunning(true);
+    };
+    crash();
+    const QDateTime when = QFileInfo(copy).lastModified();
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.hasRecovery());
+        QCOMPARE(core.recoveryShow(), QString("Concierto"));
+        QCOMPARE(core.recoveryTime(), QLocale().toString(when, QLocale::ShortFormat));
+        // the show of the last session opens meanwhile, as it is in its file
+        // (a computer that starts on its own doesn't wait with nothing)
+        core.openStartupShow();
+        QCOMPARE(core.fileName(), path);
+        QVERIFY(core.modified() == false);
+        QVERIFY(core.hasRecovery());
+        QCOMPARE(fileBytes(copy), copyBytes);
+        // the autosave of this session doesn't write over it meanwhile
+        core.addSceneFolder("Meanwhile");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QCOMPARE(fileBytes(copy), copyBytes);
+
+        QVERIFY2(core.recoverShow(), qPrintable(core.lastError()));
+        QVERIFY(core.hasRecovery() == false);
+        QVERIFY(core.recoveryShow().isEmpty());
+        QCOMPARE(core.fileName(), path);
+        QCOMPARE(core.showTitle(), QString("Concierto"));
+        QVERIFY(core.modified());
+        RGBMatrix *matrix = qobject_cast<RGBMatrix *>(core.doc()->function(quint32(id)));
+        QVERIFY(matrix != nullptr && matrix->algorithm() != nullptr);
+        QCOMPARE(static_cast<RGBImage *>(matrix->algorithm())->filename(), imagePath);
+        // the file as it was until Save, the copy kept until then
+        QCOMPARE(fileBytes(path), saved);
+        QVERIFY(QFile::exists(copy));
+        QVERIFY(core.saveShow());
+        QVERIFY(QFile::exists(copy) == false);
+        QCOMPARE(fileBytes(path + ".bak"), saved);
+        QVERIFY(fileBytes(path).contains("picture.png"));
+    }
+
+    // offered again, and discarded: gone. The show of the last session
+    // stays open
+    crash();
+    const QByteArray recovered = fileBytes(path);
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.hasRecovery());
+        core.openStartupShow();
+        core.discardRecovery();
+        QVERIFY(core.hasRecovery() == false);
+        QVERIFY(QFile::exists(copy) == false);
+        QVERIFY(QFile::exists(copy + ".path") == false);
+        QCOMPARE(core.fileName(), path);
+        QVERIFY(core.modified() == false);
+        QCOMPARE(core.doc()->fixtures().count(), 2);
+    }
+    QCOMPARE(fileBytes(path), recovered);
+    // a copy there after a clean exit isn't offered: it goes
+    QVERIFY(writeBytes(copy, copyBytes));
+    QVERIFY(writeBytes(copy + ".path", copyNames));
+    {
+        DtcCore core;
+        QVERIFY(core.hasRecovery() == false);
+        QVERIFY(QFile::exists(copy) == false);
+    }
+
+    // two copies (an untitled show's, older): the newest is offered, the
+    // other goes with the answer
+    const QString untitled = QDir(data.path).filePath("autosave.qxw");
+    QVERIFY(writeBytes(untitled, saved));
+    {
+        QFile file(untitled);
+        QVERIFY(file.open(QIODevice::ReadWrite));
+        QVERIFY(file.setFileTime(QDateTime::currentDateTime().addSecs(-3600), QFileDevice::FileModificationTime));
+    }
+    crash();
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.hasRecovery());
+        QCOMPARE(core.recoveryShow(), QString("Concierto"));
+        QVERIFY(core.recoverShow());
+        QVERIFY(QFile::exists(untitled) == false);
+        QCOMPARE(core.fileName(), path);
+    }
+
+    // a damaged copy: what can be read comes back as an untitled show
+    // (nothing writes a part over the file), and the copy goes
+    const QByteArray damaged = copyBytes.left(copyBytes.indexOf("<DMXTotalControl>") + 40);
+    QVERIFY(damaged.size() > 40);
+    const QByteArray before = fileBytes(path);
+    QVERIFY(writeBytes(copy, damaged));
+    QVERIFY(writeBytes(copy + ".path", copyNames));
+    AppSettings().setSessionRunning(true);
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.hasRecovery());
+        QVERIFY(core.recoverShow() == false);
+        QVERIFY(core.lastError().isEmpty() == false);
+        QVERIFY(core.fileName().isEmpty());
+        QVERIFY(core.modified());
+        QCOMPARE(core.doc()->fixtures().count(), 2);
+        QVERIFY(QFile::exists(copy) == false);
+        QVERIFY(core.saveShow() == false);
+    }
+    QCOMPARE(fileBytes(path), before);
+}
+
+void Backend_Test::singleInstanceMessages()
+{
+    // one program per user: a second launch can't run, and gives the one
+    // running the show it was asked to open (or nothing: the window comes to
+    // the front). Its own name here, not the one of the program
+    QTemporaryDir dir;
+    const QString key = QString("DMXTotalControlTest-%1").arg(QCoreApplication::applicationPid())
+                      + QString::number(QRandomGenerator::global()->generate());
+    const QString lock = dir.filePath("instance/instance.lock");
+    // nothing runs: nobody to give it to
+    QVERIFY(SingleInstance::sendToRunning(key, "nothing", 300) == false);
+
+    auto first = std::make_unique<SingleInstance>(key, lock);
+    QVERIFY(first->start());
+    QVERIFY(QFile::exists(lock));
+    QSignalSpy asked(first.get(), &SingleInstance::activationRequested);
+    // a second one: it can't run
+    {
+        SingleInstance second(key, lock);
+        QVERIFY(second.start() == false);
+    }
+    // a launch is another process: here another thread, while this one
+    // runs the events of the first
+    auto launch = [&key](const QString &file) {
+        bool sent = false;
+        std::unique_ptr<QThread> thread(QThread::create([&]() { sent = SingleInstance::sendToRunning(key, file, 1000); }));
+        thread->start();
+        QElapsedTimer clock;
+        clock.start();
+        while (thread->isFinished() == false && clock.elapsed() < 20000)
+            QTest::qWait(10);
+        thread->wait();
+        return sent;
+    };
+    const QString show = dir.filePath("Gira ñ #2 100%.qxw");
+    QVERIFY(launch(show));
+    QTRY_COMPARE_WITH_TIMEOUT(asked.count(), 1, 3000);
+    QCOMPARE(asked.at(0).at(0).toString(), show);
+    // no show: just the window
+    QVERIFY(launch(QString()));
+    QTRY_COMPARE_WITH_TIMEOUT(asked.count(), 2, 3000);
+    QCOMPARE(asked.at(1).at(0).toString(), QString());
+    // something else that connects says nothing, and is let go
+    QLocalSocket other;
+    other.connectToServer(key);
+    QVERIFY(other.waitForConnected(1000));
+    other.write("hello\n");
+    QTRY_COMPARE_WITH_TIMEOUT(other.state(), QLocalSocket::UnconnectedState, 3000);
+    QCOMPARE(asked.count(), 2);
+
+    // the first one goes: the next one runs
+    first.reset();
+    QVERIFY(SingleInstance::sendToRunning(key, show, 300) == false);
+    auto third = std::make_unique<SingleInstance>(key, lock);
+    QVERIFY(third->start());
+
+    // one there that never reads (its events are over: it quits, or it
+    // crashed and the system still holds it): the launch is reached, but not
+    // taken. It doesn't quit as if it had been
+    bool sent = true;
+    std::unique_ptr<QThread> thread(QThread::create([&]() { sent = SingleInstance::sendToRunning(key, show, 1000); }));
+    thread->start();
+    QThread::msleep(1500);
+    third.reset();
+    QVERIFY(thread->wait(30000));
+    QVERIFY(sent == false);
+
+    // a program that quits takes no more shows, and keeps its lock until it
+    // has gone: a launch then waits for it, and runs
+    auto quitting = std::make_unique<SingleInstance>(key, lock);
+    QVERIFY(quitting->start());
+    quitting->stopListening();
+    QVERIFY(SingleInstance::sendToRunning(key, show, 300) == false);
+    SingleInstance next(key, lock);
+    QElapsedTimer waited;
+    waited.start();
+    QVERIFY(next.start(300) == false);
+    QVERIFY(waited.elapsed() >= 250);
+    quitting.reset();
+    QVERIFY(next.start(300));
+}
+
+void Backend_Test::dialogFolders()
+{
+    // the file dialogs start in a folder that makes sense: for shows, the
+    // folder of the show open, else of the most recent one, else
+    // Documents/DMXTotalControl (made if missing; here a folder of the
+    // test); for pictures and sounds the folder used last, while it is there
+    ScopedTestSettings settings;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString documents = dir.filePath("Documents/DMXTotalControl");
+    auto folderOf = [](const QUrl &url) { return url.toLocalFile(); };
+    {
+        DtcCore core;
+        core.setShowsFolder(documents);
+        QCOMPARE(folderOf(core.dialogFolder("show")), documents);
+        QVERIFY(QFileInfo(documents).isDir());
+        QCOMPARE(folderOf(core.dialogFolder("image")), documents);
+
+        // the most recent show
+        QVERIFY(QDir().mkpath(dir.filePath("Tours/2026")));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(dir.filePath("Tours/2026/Gira.qxw"))));
+        core.newShow();
+        QCOMPARE(folderOf(core.dialogFolder("show")), dir.filePath("Tours/2026"));
+        // the show open
+        QVERIFY(QDir().mkpath(dir.filePath("Other")));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(dir.filePath("Other/Show.qxw"))));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(dir.filePath("Tours/2026/Gira.qxw"))));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(dir.filePath("Other/Show.qxw"))));
+        QCOMPARE(folderOf(core.dialogFolder("show")), dir.filePath("Other"));
+        QCOMPARE(folderOf(core.dialogFolder("audio")), dir.filePath("Other"));
+
+        // a picture taken from somewhere: the next one starts there, the
+        // other kinds and the shows don't
+        QVERIFY(QDir().mkpath(dir.filePath("Pictures")));
+        core.dialogUsed("image", QUrl::fromLocalFile(dir.filePath("Pictures/logo.png")));
+        core.dialogUsed("show", QUrl::fromLocalFile(dir.filePath("Pictures/logo.png")));
+        QCOMPARE(folderOf(core.dialogFolder("image")), dir.filePath("Pictures"));
+        QCOMPARE(folderOf(core.dialogFolder("audio")), dir.filePath("Other"));
+        QCOMPARE(folderOf(core.dialogFolder("show")), dir.filePath("Other"));
+        // a folder chosen (the missing files): itself
+        QVERIFY(QDir().mkpath(dir.filePath("Sounds")));
+        core.dialogUsed("audio", QUrl::fromLocalFile(dir.filePath("Sounds")));
+        QCOMPARE(folderOf(core.dialogFolder("audio")), dir.filePath("Sounds"));
+
+        // an untitled show recovered isn't where the shows are
+        core.newShow();
+        core.addSceneFolder("Untitled");
+        QVERIFY(QMetaObject::invokeMethod(&core, "slotAutosave"));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(QDir(data.path).filePath("autosave.qxw"))));
+        QCOMPARE(folderOf(core.dialogFolder("show")), dir.filePath("Other"));
+        QVERIFY(core.settings()->recentShows().contains(QDir(data.path).filePath("autosave.qxw")) == false);
+    }
+    // remembered for the next session, while the folder is there
+    {
+        DtcCore core;
+        core.setShowsFolder(documents);
+        QCOMPARE(folderOf(core.dialogFolder("image")), dir.filePath("Pictures"));
+        QVERIFY(QDir(dir.filePath("Pictures")).removeRecursively());
+        QCOMPARE(folderOf(core.dialogFolder("image")), dir.filePath("Other"));
+    }
 }
 
 #include "backend_test.moc"

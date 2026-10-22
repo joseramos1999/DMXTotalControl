@@ -243,6 +243,8 @@ public:
      *********************************************************************/
     /** The FX of the programmer: [{ index, param, count, ...layer }] */
     QVariantList fxLayers() const;
+    /** The scene that plays them (the speed of the movement of the SHOW goes there too) */
+    FXScene *fxScene() const;
     /** The parameters of the selection an FX can move:
      *  [{ key, name, group, colour, active }], pan/tilt together first */
     QVariantList fxParams() const;

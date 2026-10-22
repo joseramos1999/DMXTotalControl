@@ -52,15 +52,36 @@ Item {
     function foldedSize(d) {
         if (horizontal)
             return 46
-        const header = (d && (d.title || "").length > 0) || (surface !== null && surface.editing) ? 26 : 0
+        // (a group section has a title bar only with a title, in edit mode too)
+        const header = d && (d.title || "").length > 0 ? 26 : 0
         return 50 + header
     }
     readonly property real span: (horizontal ? width : height) - gap
     readonly property real firstSpan: firstFolded ? foldedSize(nodeData.a)
                                     : secondFolded ? span - foldedSize(nodeData.b) : span * ratio
 
+    // The smallest width where no table of the node has to scroll, at the
+    // saved ratio (not the one of a divider being dragged): in edit mode the
+    // page widens to it (ShowPage), up to its width without the panel
+    readonly property real savedRatio: Math.max(0.05, Math.min(0.95, nodeData.ratio || 0.5))
+    function minimumSpan(a, b) {
+        if (firstFolded)
+            return foldedSize(nodeData.a) + gap + b
+        if (secondFolded)
+            return a + gap + foldedSize(nodeData.b)
+        return Math.max(a / savedRatio, b / (1 - savedRatio)) + gap
+    }
+    readonly property real minimumWidth: {
+        if (!isSplit)
+            return sectionLoader.item ? sectionLoader.item.minimumWidth : 0
+        const a = first.item ? first.item.minimumWidth : 0
+        const b = second.item ? second.item.minimumWidth : 0
+        return horizontal ? minimumSpan(a, b) : Math.max(a, b)
+    }
+
     // a section
     Loader {
+        id: sectionLoader
         anchors.fill: parent
         active: !node.isSplit
         sourceComponent: Component {

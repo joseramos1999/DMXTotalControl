@@ -50,7 +50,21 @@ Rectangle {
     readonly property var items: section.items || ({})
     /** A row of playbacks that follows the current playback page: its header pages */
     readonly property bool followsPlaybackPage: type === "playbacks" && (section.playbackPage === undefined || section.playbackPage < 0)
-    readonly property bool hasHeader: (section.title || "").length > 0 || editing || followsPlaybackPage
+    /** The title bar, the same in edit mode: without one, the tools of the
+     *  edit mode float over the section (the bar would take the room of its table) */
+    readonly property bool hasHeader: (section.title || "").length > 0 || followsPlaybackPage
+
+    /** The smallest cells of the tables, and the gap between them */
+    readonly property var minCell: ({ buttons: Qt.size(56, 36), faders: Qt.size(44, 0), dials: Qt.size(64, 76) })
+    readonly property int tableGap: 3
+    /** The width where its table doesn't have to scroll, with the margins
+     *  (only those for what fits anywhere): in edit mode the page widens to
+     *  it (SectionNode, ShowPage), up to its width without the panel */
+    readonly property real minimumWidth: {
+        const cell = minCell[type]
+        const cols = Math.max(1, section.cols || 1)
+        return (cell === undefined ? 0 : cols * cell.width + (cols - 1) * tableGap) + 8
+    }
 
     radius: Theme.radius
     color: type === "empty" && !editing ? "transparent" : Theme.surface
@@ -121,33 +135,77 @@ Rectangle {
                 MapTarget { target: ({ target: "playbackPageNext" }) }
             }
         }
-        Row {
+        EditTools {
             id: tools
             visible: view.editing
             anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
-            spacing: 2
-            component Tool: AppButton {
-                implicitHeight: 22
-                implicitWidth: 26
-                flat: true
-                ToolTip.visible: hovered
-                ToolTip.delay: 400
-            }
-            Tool {
-                iconGlyph: Theme.iconArrowsH
-                ToolTip.text: qsTr("Split in two halves, side by side")
-                onClicked: view.surface.split(view.sid, "h")
-            }
-            Tool {
-                iconGlyph: Theme.iconArrowsV
-                ToolTip.text: qsTr("Split in two halves, one above the other")
-                onClicked: view.surface.split(view.sid, "v")
-            }
-            Tool {
-                iconGlyph: Theme.iconClose
-                ToolTip.text: qsTr("Remove this section")
-                onClicked: view.surface.removeSection(view.sid)
-            }
+        }
+    }
+
+    // the tools of the edit mode: split the section in two, remove it
+    component Tool: AppButton {
+        implicitHeight: 22
+        implicitWidth: 26
+        flat: true
+        ToolTip.visible: hovered
+        ToolTip.delay: 400
+    }
+    component EditTools: Row {
+        spacing: 2
+        Tool {
+            iconGlyph: Theme.iconArrowsH
+            ToolTip.text: qsTr("Split in two halves, side by side")
+            onClicked: view.surface.split(view.sid, "h")
+        }
+        Tool {
+            iconGlyph: Theme.iconArrowsV
+            ToolTip.text: qsTr("Split in two halves, one above the other")
+            onClicked: view.surface.split(view.sid, "v")
+        }
+        Tool {
+            iconGlyph: Theme.iconClose
+            ToolTip.text: qsTr("Remove this section")
+            onClicked: view.surface.removeSection(view.sid)
+        }
+    }
+
+    // edit mode, no title bar: what it shows and its tools over its top
+    // right corner, while the mouse is over it or it is selected (not
+    // over the cell selected in it)
+    HoverHandler {
+        id: hover
+        enabled: view.editing
+    }
+    Rectangle {
+        id: editBadge
+        visible: view.editing && !view.hasHeader && (hover.hovered || (view.selected && view.surface.selectedCell < 0))
+        z: 10
+        anchors { top: parent.top; right: parent.right; topMargin: 2; rightMargin: 2 }
+        width: Math.min(badgeName.implicitWidth + badgeTools.implicitWidth + 20, parent.width - 4)
+        height: 24
+        radius: Theme.radiusSmall
+        color: view.selected ? Qt.tint(Theme.surfaceRaised, Qt.alpha(Theme.accent, 0.18)) : Theme.surfaceRaised
+        border.color: view.selected ? Theme.accent : Theme.borderStrong
+        // a click on it selects the section (a table: without a cell)
+        MouseArea {
+            anchors.fill: parent
+            onClicked: view.surface.selectSection(view.sid)
+        }
+        Text {
+            id: badgeName
+            anchors { left: parent.left; leftMargin: 8; right: badgeTools.left; rightMargin: 4; verticalCenter: parent.verticalCenter }
+            // (a narrow section: the tools only)
+            visible: width > 24
+            text: view.surface ? view.surface.typeName(view.type) : ""
+            color: Theme.textDim
+            font.pixelSize: Theme.fontSmall
+            font.weight: Font.Bold
+            font.capitalization: Font.AllUppercase
+            elide: Text.ElideRight
+        }
+        EditTools {
+            id: badgeTools
+            anchors { right: parent.right; rightMargin: 2; verticalCenter: parent.verticalCenter }
         }
     }
 
@@ -261,7 +319,7 @@ Rectangle {
         property real minCellHeight: 0
         property int cols: 1
         property int rows: 1
-        readonly property int gap: 3
+        readonly property int gap: view.tableGap
         readonly property real tableWidth: Math.max(width, cols * minCellWidth + (cols - 1) * gap)
         readonly property real tableHeight: Math.max(height, rows * minCellHeight + (rows - 1) * gap)
         clip: true
@@ -279,8 +337,8 @@ Rectangle {
             id: buttonsArea
             cols: Math.max(1, view.section.cols || 1)
             rows: Math.max(1, view.section.rows || 1)
-            minCellWidth: 56
-            minCellHeight: 36
+            minCellWidth: view.minCell.buttons.width
+            minCellHeight: view.minCell.buttons.height
             Grid {
                 id: grid
                 width: buttonsArea.tableWidth
@@ -309,7 +367,7 @@ Rectangle {
         TableArea {
             id: fadersArea
             cols: Math.max(1, view.section.cols || 1)
-            minCellWidth: 44
+            minCellWidth: view.minCell.faders.width
             Row {
                 id: row
                 width: fadersArea.tableWidth
@@ -341,8 +399,8 @@ Rectangle {
             id: dialsArea
             cols: Math.max(1, view.section.cols || 1)
             rows: Math.max(1, view.section.rows || 1)
-            minCellWidth: 64
-            minCellHeight: 76
+            minCellWidth: view.minCell.dials.width
+            minCellHeight: view.minCell.dials.height
             Grid {
                 id: dialGrid
                 width: dialsArea.tableWidth

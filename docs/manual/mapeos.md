@@ -8,7 +8,7 @@ La página tiene tres pestañas: **«Mapeos»**, **«Dispositivos»** y **«Moni
 
 ## Dispositivos
 
-En **«Dispositivos»** aparecen los dispositivos de entrada que el programa encuentra, con su tipo (MIDI, OSC o DMX), su nombre y el universo que usan.
+En **«Dispositivos»** aparecen los dispositivos de entrada que el programa encuentra, con su tipo (MIDI, OSC o DMX), su nombre y el universo que usan. Primero salen los controladores (MIDI y OSC) y los dispositivos que ya usas, en **«Controladores y dispositivos en uso»**; después, en **«Entradas DMX: interfaces y red»**, las demás entradas DMX, con una línea por cada tarjeta de red.
 
 1. Conecta el controlador y, si no aparece, pulsa **«Buscar de nuevo»**.
 2. Activa su **«Entrada»**.

@@ -8,7 +8,7 @@ La pagina ha tre schede: **«Mappature»**, **«Dispositivi»** e **«Monitor»*
 
 ## Dispositivi
 
-In **«Dispositivi»** compaiono i dispositivi di ingresso che il programma trova, con il loro tipo (MIDI, OSC o DMX), il loro nome e l'universo che usano.
+In **«Dispositivi»** compaiono i dispositivi di ingresso che il programma trova, con il loro tipo (MIDI, OSC o DMX), il loro nome e l'universo che usano. Prima vengono i controller (MIDI e OSC) e i dispositivi che usi già, sotto **«Controller e dispositivi in uso»**; poi, sotto **«Ingressi DMX: interfacce e rete»**, gli altri ingressi DMX, con una riga per ogni scheda di rete.
 
 1. Collega il controller e, se non compare, premi **«Cerca di nuovo»**.
 2. Attiva il suo **«Ingresso»**.

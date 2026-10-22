@@ -242,7 +242,7 @@ Item {
                     flat: true
                     ToolTip.text: qsTr("Export to a file, to load it in other shows")
                     ToolTip.visible: hovered
-                    onClicked: exportDialog.open()
+                    onClicked: exportDialog.start()
                 }
                 AppButton {
                     iconGlyph: Theme.iconCopy
@@ -391,19 +391,21 @@ Item {
         MenuItem { text: qsTr("Effect rack"); onTriggered: page.created(Core.effects.createRack("", [])) }
         MenuItem { text: qsTr("Super scene (timeline with audio)"); onTriggered: page.created(Core.effects.createSuperScene("")) }
         MenuSeparator {}
-        MenuItem { text: qsTr("Import from a file…"); onTriggered: importDialog.open() }
+        MenuItem { text: qsTr("Import from a file…"); onTriggered: importDialog.start() }
     }
 
-    FileDialog {
+    AppFileDialog {
         id: exportDialog
+        kind: "effects"
         title: qsTr("Export the scene")
         fileMode: FileDialog.SaveFile
         defaultSuffix: "dtcfx"
         nameFilters: [qsTr("DMX Total Control effects (*.dtcfx)")]
         onAccepted: Core.effects.exportEffect(page.currentId, selectedFile)
     }
-    FileDialog {
+    AppFileDialog {
         id: importDialog
+        kind: "effects"
         title: qsTr("Import scenes and effects")
         nameFilters: [qsTr("DMX Total Control effects (*.dtcfx)")]
         onAccepted: page.created(Core.effects.importEffect(selectedFile))

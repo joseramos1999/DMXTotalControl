@@ -42,7 +42,7 @@ Columnas: casilla de selección, **#** (número), **NOMBRE**, **DIRECCIÓN** (un
 
 Las herramientas de la barra trabajan sobre la selección:
 
-- **Clic** selecciona; **Ctrl+clic** añade o quita; **Mayús+clic** selecciona todos los fixtures desde el último que pulsaste hasta ese (en ese sentido, que es el orden de la selección), y **Ctrl+Mayús+clic** los añade. **«Todos»** y **«Ninguno»**.
+- **Clic** selecciona; **Ctrl+clic** añade o quita; **Mayús+clic** selecciona todos los fixtures desde el último que pulsaste hasta ese (en ese sentido, que es el orden de la selección), y **Ctrl+Mayús+clic** los añade. **«Todos»** y **«Ninguno»**. La casilla de una fila añade o quita su fixture (como Ctrl+clic); con Mayús, añade todos desde el último que pulsaste.
 - **«Identificar»**: los fixtures seleccionados parpadean en blanco para encontrarlos en el escenario. **«Dejar de identificar»** lo para (también se para al salir de la página). El botón de cada fila identifica solo ese fixture. La lista se queda donde estaba.
 - **Invertir pan** e **invertir tilt** (los iconos de flechas): para los fixtures que lo tienen.
 - **«Límites»**, **«Editar»**, **«Redireccionar»**, **«Numerar»**, **«Crear grupo»** y **«Eliminar»**: se explican a continuación.
@@ -142,7 +142,7 @@ Selecciona fixtures y pulsa **«Límites»**:
 Con un solo fixture, la lista **Canales** permite decidir para cada canal:
 
 - **Fundidos**: si sigue los tiempos de fundido. Apagado, salta directamente a su valor (útil en ruedas de color y gobos).
-- **Dimmer**: si lo escalan el gran master, los masters de grupo y los dimmers de escena.
+- **Dimmer**: si lo escalan el gran master, los masters de grupo y los dimmers de escena. El gran master, además, solo escala la luz (consulta [Masters](directo.md#masters)).
 
 Los límites actúan en la salida: escenas, efectos y edición en vivo conservan sus valores, pero lo que sale los respeta. Con varios fixtures se ven los valores del primero que tiene cada control, y lo que cambies se aplica a todos los que lo tienen.
 

@@ -273,6 +273,12 @@ signals:
     void universeRemoved(quint32 id);
     void universeWritten(quint32 index, const QByteArray& universesData);
 
+private slots:
+    /** DMX Total Control: the master timer ticked (in its own thread): every
+     *  universe writes its frame, in its own thread. Not through the event
+     *  loop of the GUI, so the output goes on while the GUI is busy */
+    void slotMasterTimerTick();
+
 private:
     /** The values of all universes */
     QList<Universe *> m_universeArray;

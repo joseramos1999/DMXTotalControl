@@ -10,7 +10,7 @@ With DMX Total Control you can:
 - Play them in Live by groups, on the Playbacks with GO or from your SHOW.
 - Send DMX out through DMX USB interfaces, Art-Net or sACN, and control everything from MIDI, OSC, DMX input or the keyboard.
 
-Shows are saved as `.qxw` files, the same format QLC+ uses, so you can open shows made with QLC+.
+Shows are saved as `.qxw` files, the same format QLC+ uses, so you can open shows made with QLC+. If the program is already open and you open a show from the Explorer (double-click on the file), it opens in that same window, which comes to the front (it asks about the unsaved changes first).
 
 ## How to open this manual
 
@@ -54,7 +54,7 @@ At the bottom of the sidebar are the program version and the **CPU** it uses (�
 
 From left to right:
 
-- **The show**: its name. A dot **●** in front warns you that there are unsaved changes; if autosave is on, you also see the time of the last one (“autosaved …”).
+- **The show**: its name. A dot **●** in front warns you that there are unsaved changes; if autosave is on, you also see the time of the last recovery copy (“recovery copy …”).
 - **File**: “New show (Ctrl+N)”, “Open (Ctrl+O)”, the **▾** arrow with the recent shows and the “Examples”, “Save (Ctrl+S)” and “Save as…” (Ctrl+Shift+S).
 - **Rhythm**: **“GO”** and **“Stop”** change what the scene buttons do (in Live, the SHOW, the mappings and the phone). With **GO** on, pressing a scene plays it and the next presses mark its rhythm, without ever stopping it; with **Stop** on, pressing a scene stops it; with both off, as usual ([Live](directo.md#rhythm-of-a-scene-with-steps)). Each button of a scene with steps or of a playing cuelist (in Live, the SHOW, the playbacks and the phone) holds a **bar split in two** that lights one side and then the other on each step: this way you see the rhythm of each one. Next come **“BeatGO”** (next division of the scenes driven by BeatGO, also with the G key) and **“Pulse”**, which listens to the audio input of the computer (chosen in [Options](opciones.md#audio)): each peak that crosses the line of the meter moves the scenes driven by Pulse. Drag the line of the meter to change the threshold. The show tempo, used by the FX and by the scenes in BPM mode, is changed with a BPM fader or dial in the [SHOW](show.md) or with the [mappings](mapeos.md).
 - **The padlock**: locks screens so that nothing changes by mistake (see [Options](opciones.md#show-and-lock)).
@@ -71,7 +71,7 @@ When you close the program, or open or create another show, if there are unsaved
 
 If the show you open uses files that are missing (its sounds, videos or images; for example, a show brought from another computer), you are warned with the list. The show plays without them. With **“Look in a folder…”** you choose the folder where they are: they are looked for by name, also in its subfolders, and the show starts using them (save it to keep it that way).
 
-> **Tip:** if the program closed unexpectedly and you had an unsaved show, when you open it again it offers “Recover the unsaved show?”. Press “Recover” and save it with a name.
+> **Tip:** if the program closed unexpectedly with unsaved changes, when you open it again it offers “Recover the unsaved show?”, with the name of the show and the time of the copy. Press “Recover” and save it (an untitled show, with a name).
 
 ## How this manual is organised
 

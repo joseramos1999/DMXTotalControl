@@ -92,6 +92,8 @@ Ao terminar, o programa indica quantos foram convertidos e, se algum não pôde 
 
 De cada modo é usado o primeiro *DMX break*; os canais virtuais (sem DMX) são omitidos.
 
+Alguns canais mudam de função conforme o valor de outro canal (por exemplo, a rotação do prisma só gira com o prisma em “rotação”). Neles são omitidas as funções que não fazem nada e, onde há várias, cada trecho leva os nomes delas juntos (por exemplo, “0 deg / Stop”). Para ver isso em um fixture importado antes, importe o `.gdtf` dele novamente.
+
 ## Importar arquivos de fixtures
 
 **Opções › Importar arquivos de fixtures › “Importar…”** aceita definições `.qxf` (o formato do QLC+), arquivos `.gdtf` ou um `.zip` que os contenha. Eles são adicionados à biblioteca e o programa indica quantos são novos.

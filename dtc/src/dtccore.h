@@ -24,6 +24,8 @@
 #include <QVariant>
 #include <QUrl>
 #include <QElapsedTimer>
+#include <QDateTime>
+#include <QSet>
 
 // complete types are needed by the QML properties below
 #include "patchmanager.h"
@@ -105,8 +107,14 @@ class DtcCore : public QObject
     Q_PROPERTY(CommandLine *commands READ commands CONSTANT)
     Q_PROPERTY(CuelistEditor *cuelists READ cuelists CONSTANT)
     Q_PROPERTY(PlaybackManager *playbacks READ playbacks CONSTANT)
-    /** An autosaved, never saved show from a session that crashed can be recovered */
+    /** A session that crashed left the recovery copy of a show (its changes
+     *  that weren't saved): it can be recovered. Of which show (its title)
+     *  and when the copy was made */
     Q_PROPERTY(bool hasRecovery READ hasRecovery NOTIFY hasRecoveryChanged)
+    Q_PROPERTY(QString recoveryShow READ recoveryShow NOTIFY hasRecoveryChanged)
+    Q_PROPERTY(QString recoveryTime READ recoveryTime NOTIFY hasRecoveryChanged)
+    /** When the autosave made the last recovery copy of the show (HH:mm),
+     *  empty when there is none */
     Q_PROPERTY(QString lastAutosave READ lastAutosave NOTIFY lastAutosaveChanged)
     /** The files the open show names that are not there: its sounds, videos
      *  and pictures (paths of this machine) */
@@ -190,9 +198,26 @@ public:
     void openStartupShow();
 
     bool hasRecovery() const;
+    QString recoveryShow() const;
+    QString recoveryTime() const;
+    /** Open the recovery copy: a show that had a file keeps its file name
+     *  (Save writes it), and it is modified */
     Q_INVOKABLE bool recoverShow();
     Q_INVOKABLE void discardRecovery();
     QString lastAutosave() const;
+
+    /** Where a file dialog of $kind starts. "show" (open, save, import from
+     *  a show): the folder of the show open, else of the most recent show,
+     *  else showsFolder(). Other kinds ("image", "audio"...): the folder
+     *  used last for that kind, else as for a show */
+    Q_INVOKABLE QUrl dialogFolder(const QString &kind) const;
+    /** $file (or folder) was chosen in a file dialog of $kind: the next one
+     *  of that kind starts in its folder */
+    Q_INVOKABLE void dialogUsed(const QString &kind, const QUrl &file);
+    /** Documents/DMXTotalControl, made if it isn't there */
+    QString showsFolder() const;
+    /** (tests: a folder of their own instead of the documents of the user) */
+    void setShowsFolder(const QString &folder);
 
     QStringList missingFiles() const;
     /** Look for the missing files by their name in $folder and below: the
@@ -277,10 +302,18 @@ private slots:
     void slotGrandMasterModeChanged();
     void slotLiveEditChanged();
     void slotFunctionRemoved(quint32 id);
+    /** functionsChanged and modifiedChanged, but not for each function a
+     *  show cleared or loading adds or removes: openShow and newShow tell
+     *  them once, at the end */
+    void slotFunctionsChanged();
+    void slotModified();
 
 private:
     void initDoc();
-    void clearShow();
+    /** An empty show; $restart: the output goes on (the stage at rest).
+     *  Opening a show doesn't restart it: a frame of the empty universes
+     *  would go out before the new show is loaded */
+    void clearShow(bool restart = true);
     /** Look at which files of the show are missing (missingFiles) */
     void checkFiles();
     bool loadWorkspace(QXmlStreamReader &reader);
@@ -291,7 +324,22 @@ private:
     void setFileName(const QString &fileName);
     void setLastError(const QString &error);
     bool writeWorkspace(const QString &path);
+    /** Open $file as the show $show (its file name; empty: untitled). The
+     *  files it names are relative to the folder of $show (of $file when
+     *  untitled) */
+    bool loadShow(const QString &file, const QString &show);
+    /** The recovery copy of the show open (see recoveryFileFor()) */
     QString recoveryFilePath() const;
+    /** Where the autosave puts the recovery copy of $show: autosave.qxw for
+     *  an untitled show, autosave/<name>-<hash of its path>.qxw beside it
+     *  for a show with a file (with a .path file that names the show) */
+    static QString recoveryFileFor(const QString &show);
+    /** Look for the recovery copy a session that crashed left */
+    void findRecovery();
+    /** Remove a recovery copy (and the file that names its show) */
+    static void removeRecovery(const QString &file);
+    /** Remove every recovery copy but the ones in $keep */
+    static void removeRecoveries(const QStringList &keep = QStringList());
 
 private:
     Doc *m_doc;
@@ -327,7 +375,19 @@ private:
     QStringList m_missingFiles;
     /** See setUiLanguage(): null until it is set */
     QString m_uiLanguage;
-    bool m_backupDone;
+    /** The shows (paths, see showKey) whose version before the first save
+     *  of this session is kept as .bak: once per show and session */
+    QSet<QString> m_backedUp;
+    /** The recovery copy of the show open, made by the autosave (or the one
+     *  recovered): it goes when the show is saved, closed or replaced */
+    QString m_recoveryFile;
+    /** The recovery copy a session that crashed left, its show (empty:
+     *  untitled) and when it was made, while it is offered (m_hasRecovery) */
+    QString m_pendingRecovery;
+    QString m_pendingShow;
+    QDateTime m_pendingTime;
+    /** See setShowsFolder() */
+    QString m_showsFolder;
     /** The show is being cleared (its functions all go) */
     bool m_clearing;
     QString m_lastAutosave;

@@ -240,6 +240,7 @@ private slots:
     void slotFunctionRunning(quint32 id);
     void slotFunctionStopped(quint32 id);
     void slotFunctionRemoved(quint32 id);
+    void slotDocCleared();
     void slotFunctionReplaced(quint32 id);
     /** A cuelist edited (its cues): the playbacks show it */
     void slotFunctionChanged(quint32 id);

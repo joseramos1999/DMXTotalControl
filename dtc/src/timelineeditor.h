@@ -130,6 +130,7 @@ signals:
     void message(const QString &text);
 
 private slots:
+    void slotFunctionRemoved();
     void slotTimeChanged(quint32 time);
     void slotShowStopped(quint32 id);
 

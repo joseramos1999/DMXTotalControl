@@ -25,6 +25,7 @@
 #include <QHash>
 #include <QSet>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -503,100 +504,206 @@ Piece piece(int from, int to, const QString &name, QLCCapability::Preset preset 
     return p;
 }
 
-/** The capabilities of a DMX channel, in steps of its coarse byte */
-QList<Piece> capabilitiesOf(Context &ctx, const Node *dmxChannel, int bytes, const Kind &kind)
+/** The capabilities of some functions of a channel, in steps of its coarse byte */
+QList<Piece> piecesOf(Context &ctx, const QList<const Node *> &functions, int bytes, const Kind &kind)
 {
     const quint64 maxValue = (quint64(1) << (8 * bytes)) - 1;
     QList<Piece> pieces;
+    int lastTo = -1;
+    for (int i = 0; i < functions.count(); i++)
+    {
+        const Node *f = functions.at(i);
+        const quint64 from = inResolution(parseDmx(f->attr("DMXFrom", "0/1")), bytes);
+        quint64 to = maxValue;
+        if (i + 1 < functions.count())
+        {
+            const quint64 next = inResolution(parseDmx(functions.at(i + 1)->attr("DMXFrom", "0/1")), bytes);
+            if (next > from)
+                to = next - 1;
+        }
 
+        const QString fname = functionName(f, kind);
+        const QString attribute = f->attr("Attribute");
+        const QList<Slot> slots_ = ctx.wheels.value(f->attr("Wheel"));
+        const bool colourWheel = attribute.startsWith(QLatin1String("Color"));
+
+        QList<Piece> parts;
+        const QList<const Node *> sets = f->all("ChannelSet");
+        quint64 cursor = from;
+        for (int s = 0; s < sets.count(); s++)
+        {
+            const Node *set = sets.at(s);
+            quint64 sFrom = inResolution(parseDmx(set->attr("DMXFrom", "0/1")), bytes);
+            if (sFrom < from)
+                sFrom = from;
+            quint64 sTo = to;
+            if (s + 1 < sets.count())
+            {
+                const quint64 next = inResolution(parseDmx(sets.at(s + 1)->attr("DMXFrom", "0/1")), bytes);
+                if (next > sFrom)
+                    sTo = qMin(to, next - 1);
+            }
+            // what comes before the first set is the function itself
+            if (sFrom > cursor)
+                parts.append(piece(coarse(cursor, bytes), coarse(sFrom - 1, bytes), fname));
+
+            Piece part = piece(coarse(sFrom, bytes), coarse(sTo, bytes), set->attr("Name").trimmed());
+            const int slotIndex = set->attr("WheelSlotIndex", "0").toInt();
+            if (slotIndex > 0 && slotIndex <= slots_.count())
+            {
+                const Slot &slot = slots_.at(slotIndex - 1);
+                if (part.name.isEmpty())
+                    part.name = slot.name;
+                const QString picture = mediaPath(ctx, slot.media);
+                if (picture.isEmpty() == false)
+                {
+                    part.preset = QLCCapability::GoboMacro;
+                    part.resource = picture;
+                }
+                else if (colourWheel && slot.color.isValid())
+                {
+                    part.preset = QLCCapability::ColorMacro;
+                    part.resource = slot.color;
+                }
+            }
+            if (part.name.isEmpty())
+                part.name = fname;
+            if (part.preset == QLCCapability::Custom)
+                part.preset = capabilityPreset(attribute, part.name, f);
+            parts.append(part);
+            cursor = sTo + 1;
+        }
+        if (sets.isEmpty())
+            parts.append(piece(coarse(from, bytes), coarse(to, bytes), fname, capabilityPreset(attribute, fname, f)));
+        else if (cursor <= to)
+            parts.append(piece(coarse(cursor, bytes), coarse(to, bytes), fname));
+
+        // in steps of the coarse byte: two values of a 16 bit channel can share one
+        for (Piece p : std::as_const(parts))
+        {
+            if (p.from <= lastTo)
+                p.from = lastTo + 1;
+            if (p.from > p.to)
+                continue;
+            lastTo = p.to;
+            pieces.append(p);
+        }
+    }
+    return pieces;
+}
+
+/** The functions of one mode of a mode master (all of them without one) */
+struct ModeFunctions
+{
+    QString key;
+    QList<Piece> pieces;
+    bool noFeature = true;   // none of them does anything
+};
+
+/** The capabilities of a DMX channel, in steps of its coarse byte. Its functions
+ *  can depend on the value of another channel (ModeMaster): each mode uses the
+ *  DMX values again. A mode that does nothing is left out, the names of the
+ *  others go together ("0 deg / Stop") and the presets are those of the first */
+QList<Piece> capabilitiesOf(Context &ctx, const Node *dmxChannel, int bytes, const Kind &kind)
+{
+    QList<ModeFunctions> modes;
     for (const Node *logical : dmxChannel->all("LogicalChannel"))
     {
-        const QList<const Node *> functions = logical->all("ChannelFunction");
-        int lastTo = -1;
-        quint64 lastFrom = 0;
-        for (int i = 0; i < functions.count(); i++)
+        // the functions of each mode, in the order of the file
+        QStringList keys;
+        QHash<QString, QList<const Node *>> functions;
+        for (const Node *f : logical->all("ChannelFunction"))
         {
-            const Node *f = functions.at(i);
-            const quint64 from = inResolution(parseDmx(f->attr("DMXFrom", "0/1")), bytes);
-            quint64 to = maxValue;
-            if (i + 1 < functions.count())
-            {
-                const quint64 next = inResolution(parseDmx(functions.at(i + 1)->attr("DMXFrom", "0/1")), bytes);
-                if (next > from)
-                    to = next - 1;
-            }
-            // the functions of another mode of a mode master start again from 0
-            if (i > 0 && from < lastFrom)
-                lastTo = -1;
-            lastFrom = from;
-
-            const QString fname = functionName(f, kind);
-            const QString attribute = f->attr("Attribute");
-            const QList<Slot> slots_ = ctx.wheels.value(f->attr("Wheel"));
-            const bool colourWheel = attribute.startsWith(QLatin1String("Color"));
-
-            QList<Piece> parts;
-            const QList<const Node *> sets = f->all("ChannelSet");
-            quint64 cursor = from;
-            for (int s = 0; s < sets.count(); s++)
-            {
-                const Node *set = sets.at(s);
-                quint64 sFrom = inResolution(parseDmx(set->attr("DMXFrom", "0/1")), bytes);
-                if (sFrom < from)
-                    sFrom = from;
-                quint64 sTo = to;
-                if (s + 1 < sets.count())
-                {
-                    const quint64 next = inResolution(parseDmx(sets.at(s + 1)->attr("DMXFrom", "0/1")), bytes);
-                    if (next > sFrom)
-                        sTo = qMin(to, next - 1);
-                }
-                // what comes before the first set is the function itself
-                if (sFrom > cursor)
-                    parts.append(piece(coarse(cursor, bytes), coarse(sFrom - 1, bytes), fname));
-
-                Piece part = piece(coarse(sFrom, bytes), coarse(sTo, bytes), set->attr("Name").trimmed());
-                const int slotIndex = set->attr("WheelSlotIndex", "0").toInt();
-                if (slotIndex > 0 && slotIndex <= slots_.count())
-                {
-                    const Slot &slot = slots_.at(slotIndex - 1);
-                    if (part.name.isEmpty())
-                        part.name = slot.name;
-                    const QString picture = mediaPath(ctx, slot.media);
-                    if (picture.isEmpty() == false)
-                    {
-                        part.preset = QLCCapability::GoboMacro;
-                        part.resource = picture;
-                    }
-                    else if (colourWheel && slot.color.isValid())
-                    {
-                        part.preset = QLCCapability::ColorMacro;
-                        part.resource = slot.color;
-                    }
-                }
-                if (part.name.isEmpty())
-                    part.name = fname;
-                if (part.preset == QLCCapability::Custom)
-                    part.preset = capabilityPreset(attribute, part.name, f);
-                parts.append(part);
-                cursor = sTo + 1;
-            }
-            if (sets.isEmpty())
-                parts.append(piece(coarse(from, bytes), coarse(to, bytes), fname, capabilityPreset(attribute, fname, f)));
-            else if (cursor <= to)
-                parts.append(piece(coarse(cursor, bytes), coarse(to, bytes), fname));
-
-            // in steps of the coarse byte: two values of a 16 bit channel can share one
-            for (Piece p : std::as_const(parts))
-            {
-                if (p.from <= lastTo)
-                    p.from = lastTo + 1;
-                if (p.from > p.to)
-                    continue;
-                lastTo = p.to;
-                pieces.append(p);
-            }
+            const QString master = f->attr("ModeMaster");
+            const QString key = master.isEmpty() ? QString()
+                              : master + '|' + f->attr("ModeFrom", "0/1") + '|' + f->attr("ModeTo", "0/1");
+            if (keys.contains(key) == false)
+                keys.append(key);
+            functions[key].append(f);
         }
+        for (const QString &key : std::as_const(keys))
+        {
+            auto mode = std::find_if(modes.begin(), modes.end(), [&key](const ModeFunctions &m) { return m.key == key; });
+            if (mode == modes.end())
+            {
+                modes.append(ModeFunctions());
+                mode = modes.end() - 1;
+                mode->key = key;
+            }
+            const QList<const Node *> list = functions.value(key);
+            mode->pieces.append(piecesOf(ctx, list, bytes, kind));
+            for (const Node *f : list)
+                mode->noFeature = mode->noFeature && f->attr("Attribute") == QLatin1String("NoFeature");
+        }
+    }
+
+    // values a mode has already (in another logical channel): left out, as the channel would
+    for (ModeFunctions &mode : modes)
+    {
+        QList<Piece> kept;
+        for (const Piece &p : std::as_const(mode.pieces))
+            if (std::none_of(kept.cbegin(), kept.cend(), [&p](const Piece &k) { return p.from <= k.to && k.from <= p.to; }))
+                kept.append(p);
+        mode.pieces = kept;
+    }
+
+    QList<const ModeFunctions *> used;
+    for (const ModeFunctions &mode : std::as_const(modes))
+        if (mode.noFeature == false)
+            used.append(&mode);
+    if (used.isEmpty())
+        for (const ModeFunctions &mode : std::as_const(modes))
+            used.append(&mode);
+    if (used.count() == 1)
+        return used.first()->pieces;
+
+    // several modes: cut where any of them changes
+    QList<int> cuts;
+    for (const ModeFunctions *mode : std::as_const(used))
+        for (const Piece &p : mode->pieces)
+            cuts << p.from << p.to + 1;
+    std::sort(cuts.begin(), cuts.end());
+    cuts.erase(std::unique(cuts.begin(), cuts.end()), cuts.end());
+
+    QList<Piece> pieces;
+    QList<int> lastOwners;
+    for (int c = 0; c + 1 < cuts.count(); c++)
+    {
+        const int from = cuts.at(c);
+        const int to = cuts.at(c + 1) - 1;
+        // the capability of each mode there
+        QList<int> owners;
+        QStringList names;
+        const Piece *first = nullptr;
+        for (const ModeFunctions *mode : std::as_const(used))
+        {
+            int owner = -1;
+            for (int i = 0; i < mode->pieces.count() && owner < 0; i++)
+                if (mode->pieces.at(i).from <= from && mode->pieces.at(i).to >= to)
+                    owner = i;
+            owners.append(owner);
+            if (owner < 0)
+                continue;
+            const Piece &p = mode->pieces.at(owner);
+            if (first == nullptr)
+                first = &p;
+            if (names.contains(p.name) == false)
+                names.append(p.name);
+        }
+        if (first == nullptr)
+            continue;
+        // the same capabilities as just before: one piece
+        if (owners == lastOwners && pieces.isEmpty() == false && pieces.last().to == from - 1)
+        {
+            pieces.last().to = to;
+            continue;
+        }
+        Piece p = *first;
+        p.from = from;
+        p.to = to;
+        p.name = names.join(QStringLiteral(" / "));
+        pieces.append(p);
+        lastOwners = owners;
     }
     return pieces;
 }
@@ -964,7 +1071,7 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
                                         cap->setResource(0, piece.resource);
                                 }
                                 if (ch->addCapability(cap) == false)
-                                    delete cap;   // a function of another mode master
+                                    delete cap;   // (overlaps one already there: capabilitiesOf leaves none)
                             }
                             if (ch->capabilities().isEmpty())
                                 ch->addCapability(new QLCCapability(0, 255, name));

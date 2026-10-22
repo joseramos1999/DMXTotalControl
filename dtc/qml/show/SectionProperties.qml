@@ -207,7 +207,7 @@ Flickable {
             visible: props.sid === ""
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: qsTr("Select a section to set it up. Split it in half with the buttons in its title bar.")
+            text: qsTr("Select a section to set it up. Split it in half with the buttons at its top right (they show with the mouse over it).")
             color: Theme.textFaint
         }
 
@@ -355,7 +355,7 @@ Flickable {
                 visible: props.type === "image"
                 text: props.section.image ? props.fileName(props.section.image) : qsTr("Choose an image…")
                 iconGlyph: Theme.iconFolder
-                onClicked: { imageDialog.forSection = true; imageDialog.open() }
+                onClicked: { imageDialog.forSection = true; imageDialog.start() }
             }
             ComboBox {
                 Layout.fillWidth: true
@@ -867,7 +867,7 @@ Flickable {
                         text: props.item && props.item.image ? props.fileName(props.item.image) : qsTr("Choose an image…")
                         iconGlyph: Theme.iconFolder
                         implicitHeight: 30
-                        onClicked: { imageDialog.forSection = false; imageDialog.open() }
+                        onClicked: { imageDialog.forSection = false; imageDialog.start() }
                     }
                     AppButton {
                         visible: !!(props.item && props.item.image)
@@ -891,8 +891,9 @@ Flickable {
     }
 
     // pictures for buttons and image sections (kept as file URLs)
-    FileDialog {
+    AppFileDialog {
         id: imageDialog
+        kind: "image"
         property bool forSection: false
         title: qsTr("Choose an image")
         nameFilters: [qsTr("Images (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)")]

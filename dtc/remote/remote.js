@@ -319,7 +319,13 @@ function rangeValue(item, v) {
   return min + (max - min) * (item.invert ? 1 - v : v);
 }
 function valueText(item, value) {
-  return item.bpm ? Math.round(20 + value * 280) : Math.round(value * 100) + "%";
+  if (item.bpm) return Math.round(20 + value * 280);
+  // a speed: x0.1 at the bottom, x1 in the middle, x10 at the top
+  if (item.speed) {
+    const factor = Math.pow(10, value * 2 - 1);
+    return "×" + factor.toFixed(factor < 1 ? 2 : 1);
+  }
+  return Math.round(value * 100) + "%";
 }
 // the value of the state (an older computer: from the position)
 function stateValue(item, st) {

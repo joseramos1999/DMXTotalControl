@@ -34,7 +34,7 @@ Item {
     property string tab: "mappings"
     signal message(string text, bool isError)
     property int selectedId: -1
-    readonly property var selected: { Core.mapping.mappings; return selectedId >= 0 ? Core.mapping.mapping(selectedId) : ({}) }
+    readonly property var selected: { Core.mapping.revision; return selectedId >= 0 ? Core.mapping.mapping(selectedId) : ({}) }
 
     function modeName(mode) {
         switch (mode) {
@@ -110,7 +110,7 @@ Item {
             Panel {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                title: qsTr("Mappings (%1)").arg(Core.mapping.mappings.length)
+                title: qsTr("Mappings (%1)").arg(list.count)
                 headerItems: [
                     AppButton {
                         text: qsTr("Add")
@@ -212,6 +212,23 @@ Item {
                 spacing: 3
                 model: Core.mapping.devices
                 ScrollBar.vertical: ScrollBar {}
+                // the controllers and what is in use first; the DMX inputs
+                // (a line for each network card) after
+                section.property: "group"
+                section.delegate: Text {
+                    required property string section
+                    width: devices.width
+                    topPadding: 8
+                    bottomPadding: 4
+                    leftPadding: 4
+                    text: section === "controllers" ? qsTr("Controllers and devices in use")
+                                                    : qsTr("DMX inputs: interfaces and network")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: Font.Bold
+                    font.capitalization: Font.AllUppercase
+                    elide: Text.ElideRight
+                }
                 delegate: Rectangle {
                     id: deviceRow
                     required property var modelData

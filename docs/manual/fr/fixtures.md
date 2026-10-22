@@ -92,6 +92,8 @@ GDTF est le format ouvert que les fabricants publient sur GDTF-Share (avec un co
 
 De chaque mode, seul le premier *DMX break* est utilisé ; les canaux virtuels (sans DMX) sont ignorés.
 
+Certains canaux changent de fonction selon la valeur d’un autre canal (par exemple, la rotation du prisme ne tourne qu’avec le prisme sur « rotation »). Les fonctions qui ne font rien y sont ignorées et, là où il y en a plusieurs, chaque plage porte leurs noms ensemble (par exemple « 0 deg / Stop »). Pour le voir sur un fixture importé avant, importez de nouveau son `.gdtf`.
+
 ## Importer des fichiers de fixtures
 
 **Options › Importer des fichiers de fixtures › « Importer… »** accepte des définitions `.qxf` (le format de QLC+), des fichiers `.gdtf` ou un `.zip` qui les contient. Ils sont ajoutés à la bibliothèque et le programme indique combien sont nouveaux.

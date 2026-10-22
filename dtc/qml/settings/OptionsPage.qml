@@ -72,15 +72,17 @@ Item {
         }
     }
 
-    FileDialog {
+    AppFileDialog {
         id: gdtfDialog
+        kind: "fixtures"
         title: qsTr("Import GDTF fixtures")
         fileMode: FileDialog.OpenFiles
         nameFilters: [qsTr("GDTF fixtures (*.gdtf *.zip)"), qsTr("All files (*)")]
         onAccepted: Core.library.importFiles(selectedFiles)
     }
-    FileDialog {
+    AppFileDialog {
         id: importDialog
+        kind: "fixtures"
         title: qsTr("Import fixture definitions")
         fileMode: FileDialog.OpenFiles
         nameFilters: [qsTr("Fixture definitions (*.qxf *.gdtf *.zip)"), qsTr("All files (*)")]
@@ -185,8 +187,8 @@ Item {
 
                         SectionTitle { text: qsTr("Autosave") }
                         OptionRow {
-                            label: qsTr("Save automatically")
-                            hint: qsTr("Saved shows are overwritten (the previous version is kept as .bak). Untitled shows are kept apart and offered back after a crash.")
+                            label: qsTr("Save a recovery copy")
+                            hint: qsTr("A recovery copy of the changes, offered back after a crash. Only Save writes the show file (the version before the first save of each session is kept as .bak).")
                             AppSwitch { checked: Core.settings.autosaveEnabled; onToggled: Core.settings.autosaveEnabled = checked }
                         }
                         OptionRow {
@@ -415,7 +417,7 @@ Item {
                             OptionRow {
                                 label: qsTr("Import fixture files")
                                 hint: qsTr(".qxf definitions (QLC+ format), .gdtf files, or a .zip with them")
-                                AppButton { text: qsTr("Import…"); iconGlyph: Theme.iconImport; onClicked: importDialog.open() }
+                                AppButton { text: qsTr("Import…"); iconGlyph: Theme.iconImport; onClicked: importDialog.start() }
                             }
                             OptionRow {
                                 label: qsTr("GDTF fixtures")
@@ -431,7 +433,7 @@ Item {
                                 AppButton {
                                     text: Core.library.importing ? qsTr("Stop") : qsTr("Import GDTF…")
                                     iconGlyph: Core.library.importing ? Theme.iconClose : Theme.iconImport
-                                    onClicked: Core.library.importing ? Core.library.cancelImport() : gdtfDialog.open()
+                                    onClicked: Core.library.importing ? Core.library.cancelImport() : gdtfDialog.start()
                                 }
                             }
                             ProgressBar {

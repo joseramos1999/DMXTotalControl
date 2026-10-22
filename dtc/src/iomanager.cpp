@@ -30,16 +30,22 @@ IOManager::IOManager(Doc *doc, QObject *parent)
     , m_doc(doc)
     , m_ioMap(doc->inputOutputMap())
 {
-    connect(m_ioMap, SIGNAL(universeAdded(quint32)), this, SIGNAL(universesChanged()));
-    connect(m_ioMap, SIGNAL(universeRemoved(quint32)), this, SIGNAL(universesChanged()));
     // opening a show adds each universe before it reads its name and patches:
-    // they are read again once the show is loaded
+    // they are read once the show is loaded
+    connect(m_ioMap, SIGNAL(universeAdded(quint32)), this, SLOT(slotUniversesChanged()));
+    connect(m_ioMap, SIGNAL(universeRemoved(quint32)), this, SLOT(slotUniversesChanged()));
     connect(m_doc, SIGNAL(loaded()), this, SIGNAL(universesChanged()));
     // Hot plugged devices make the plugins reconfigure themselves
     connect(m_ioMap, SIGNAL(pluginConfigurationChanged(QString,bool)),
             this, SLOT(slotPluginConfigurationChanged()));
     connect(m_ioMap, SIGNAL(universeWritten(quint32,QByteArray)),
             this, SLOT(slotUniverseWritten(quint32,QByteArray)));
+}
+
+void IOManager::slotUniversesChanged()
+{
+    if (m_doc->isClearingOrLoading() == false)
+        emit universesChanged();
 }
 
 QVariantList IOManager::universes() const
@@ -95,13 +101,26 @@ QVariantList IOManager::outputs() const
     return list;
 }
 
+/** The output of a universe as "plugin|line", empty for none */
+static QString outputOf(InputOutputMap *io, quint32 universe)
+{
+    OutputPatch *patch = io->outputPatch(universe);
+    if (patch == nullptr || patch->output() == QLCIOPlugin::invalidLine())
+        return QString();
+    return QString("%1|%2").arg(patch->pluginName()).arg(patch->output());
+}
+
 void IOManager::setOutput(int universe, const QString &plugin, int line)
 {
     if (universe < 0 || quint32(universe) >= m_ioMap->universesCount())
         return;
 
+    const QString before = outputOf(m_ioMap, quint32(universe));
     m_ioMap->setOutputPatch(universe, plugin, QString(), QString(), quint32(line));
     saveDefaults();
+    // (saved in the show too: the same output again changes nothing)
+    if (outputOf(m_ioMap, quint32(universe)) != before)
+        m_doc->setModified();
     emit universesChanged();
 }
 
@@ -110,8 +129,11 @@ void IOManager::clearOutput(int universe)
     if (universe < 0 || quint32(universe) >= m_ioMap->universesCount())
         return;
 
+    const QString before = outputOf(m_ioMap, quint32(universe));
     m_ioMap->setOutputPatch(universe, KOutputNone, QString(), QString(), QLCIOPlugin::invalidLine());
     saveDefaults();
+    if (outputOf(m_ioMap, quint32(universe)) != before)
+        m_doc->setModified();
     emit universesChanged();
 }
 
@@ -207,7 +229,6 @@ void IOManager::slotPluginConfigurationChanged()
 
 void IOManager::saveDefaults()
 {
-    // Remember the patch for the next session
+    // Remember the patch for the next session (the settings, not the show)
     m_ioMap->saveDefaults();
-    m_doc->setModified();
 }

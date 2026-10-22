@@ -42,6 +42,7 @@ Above the tiles, the [fixture groups](patch.md#fixture-groups) of the Patch appe
 - **Click** a group: selects its fixtures. **Ctrl+click** or **Shift+click**: adds them.
 - The label lights up when all its fixtures are selected. Hover over it to see its number for the command line (“GROUP 2 in the command line”).
 - The **selections** of a group (ordered parts, with their icon) select their fixtures in their order.
+- With many groups you see three rows of labels, which scroll with the wheel: **“All the groups (N)”** opens them (up to half the panel) and **“Fewer”** closes them. This keeps the fixture tiles in sight.
 
 ### 2D plan
 

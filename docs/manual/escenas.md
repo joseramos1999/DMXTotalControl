@@ -49,8 +49,8 @@ Debajo de la cabecera está el panel de reproducción. Muestra lo que tiene sent
 - **«Fundido de entrada»** y **«Fundido de salida»**.
 - **«Tiempo de ciclo»** (o **«Tiempo por paso»** en un Colour FX) y **«Velocidad»** (de un ciclo por minuto a diez por segundo; doble clic: un ciclo por segundo), con **×½** y **×2**.
 - **«Entrada gradual»** (estáticas y pasos): cada fixture empieza su fundido este tiempo después del anterior, en orden de selección.
-- **«Modo de conducción»**: **«Duración»** (los tiempos normales), **«BPM»** (los tiempos pasan a beats y siguen el tempo del show), **«BeatGO»** o **«Pulso»** (avanza con el botón BeatGO o con los picos de la entrada de audio). Con BeatGO o Pulso, **«Divisiones»** (/2, ×2).
-- **«Ritmo marcado»** (secuencias y chasers): el ritmo marcado pulsando su botón varias veces seguidas ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), en BPM. Mientras lo tiene, sus pasos van a ese ritmo y no por sus tiempos. **«Quitar»** vuelve a sus tiempos.
+- **«Modo de conducción»**: **«Duración»** (los tiempos normales), **«BPM»** (los tiempos pasan a beats y siguen el tempo del show, también los fundidos de cada paso; el tiempo de crossfade de un grupo de Directo y los fundidos de los bloques de una super escena siguen en segundos), **«BeatGO»** o **«Pulso»** (avanza con el botón BeatGO o con los picos de la entrada de audio). Con BeatGO o Pulso, **«Divisiones»** (/2, ×2).
+- **«Ritmo marcado»** (secuencias y chasers): el ritmo marcado pulsando su botón varias veces seguidas ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), en BPM. Mientras lo tiene, sus pasos van a ese ritmo y no por sus tiempos. **«Quitar»** vuelve a sus tiempos. Con «BPM», un beat es un paso de ese ritmo: un fundido de 0,5 b dura medio paso.
 - **«Inicio»**: **«Reproduciendo»** o **«En pausa, pulsar otra vez para reproducir»**.
 - **«Se reproduce»**: **«Siempre»** o **«N veces»**, **«y luego»** **«Liberarla»** o **«Mantener el último fotograma»**, **«y reproducir»** «Nada», «La siguiente escena del grupo», «La escena anterior del grupo» o cualquier otra escena.
 

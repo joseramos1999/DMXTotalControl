@@ -276,6 +276,12 @@ public:
 
     void clearSelections();
     bool loadXML(QXmlStreamReader &root);
+    /** A show loads, from its Doc to its last section (the plan, the
+     *  numbers, the order of the groups): the fixtures and the groups are
+     *  told once, by endLoading(), not by each part (each one made the
+     *  lists and plans of the UI again) */
+    void beginLoading();
+    void endLoading();
     bool saveXML(QXmlStreamWriter *doc) const;
 
 signals:
@@ -297,6 +303,11 @@ private slots:
     void slotFixturesDirty();
     /** Tell the list now (and not again later) */
     void notifyFixtures();
+    /** A group of Doc changed: the groups are told (a show cleared or
+     *  loaded: once, at the end) */
+    void slotGroupsChanged();
+    /** Tell the groups now (or at endLoading) */
+    void notifyGroups();
 
 private:
     bool isRangeFree(int universe, int address, int channels, quint32 ignoreId) const;
@@ -358,6 +369,10 @@ private:
     QHash<quint32, AimSetup> m_aims;
     /** The fixture numbers */
     QHash<quint32, int> m_numbers;
+    /** Between beginLoading and endLoading, and what to tell then */
+    bool m_loading = false;
+    bool m_fixturesHeld = false;
+    bool m_groupsHeld = false;
 };
 
 #endif

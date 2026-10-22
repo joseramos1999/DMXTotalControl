@@ -579,6 +579,78 @@ bool Fixture::channelFollowsDimmer(int idx) const
     return m_dimmerSwappedIndices.contains(idx) ? !byDefault : byDefault;
 }
 
+/** DMX Total Control: hue and saturation are intensity channels without a
+ *  colour, but they choose the colour, not the amount of light */
+static bool choosesColour(const QLCChannel *ch)
+{
+    switch (ch->preset())
+    {
+        case QLCChannel::IntensityHue:
+        case QLCChannel::IntensityHueFine:
+        case QLCChannel::IntensitySaturation:
+        case QLCChannel::IntensitySaturationFine:
+            return true;
+        default:
+            return false;
+    }
+}
+
+/** DMX Total Control: a dimmer: an intensity channel without a colour */
+static bool isDimmerChannel(const QLCChannel *ch)
+{
+    return ch != NULL && ch->group() == QLCChannel::Intensity &&
+           ch->colour() == QLCChannel::NoColour && choosesColour(ch) == false;
+}
+
+bool Fixture::channelFollowsGrandMaster(int idx) const
+{
+    // the 'Dimmer' option of the channel decides first
+    if (channelFollowsDimmer(idx) == false)
+        return false;
+
+    const QLCChannel *ch = channel(quint32(idx));
+    if (ch == NULL || ch->group() != QLCChannel::Intensity)
+        return true;
+
+    switch (ch->colour())
+    {
+        case QLCChannel::NoColour:
+            return choosesColour(ch) == false;
+        // subtractive: scaled down, the colour goes white
+        case QLCChannel::Cyan:
+        case QLCChannel::Magenta:
+        case QLCChannel::Yellow:
+            return false;
+        default:
+            break;
+    }
+
+    // an emitter (red, green, blue, white, amber, UV...): only when nothing
+    // else dims it: no dimmer in its head, nor a master dimmer outside the
+    // heads (a fixture without heads: any dimmer of the fixture). A dimmer
+    // whose 'Dimmer' option is off doesn't go down: it doesn't count
+    if (m_fixtureMode == NULL)
+        return true;
+    const QVector<QLCFixtureHead> &heads = m_fixtureMode->heads();
+    for (const QLCFixtureHead &head : heads)
+    {
+        const QList<quint32> headChannels = head.channels();
+        if (headChannels.contains(quint32(idx)) == false)
+            continue;
+        for (quint32 c : headChannels)
+        {
+            if (isDimmerChannel(channel(c)) && channelFollowsDimmer(int(c)))
+                return false;
+        }
+    }
+    for (quint32 c = 0; c < channels(); c++)
+    {
+        if (isDimmerChannel(channel(c)) && channelFollowsDimmer(int(c)) && m_fixtureMode->headForChannel(c) == -1)
+            return false;
+    }
+    return true;
+}
+
 void Fixture::setSwapPanTilt(bool swap)
 {
     m_swapPanTilt = swap;

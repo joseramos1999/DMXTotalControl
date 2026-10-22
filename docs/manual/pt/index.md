@@ -10,7 +10,7 @@ Com o DMX Total Control você pode:
 - Dispará-las na página Ao vivo por grupos, nos Playbacks com GO ou a partir do seu SHOW.
 - Enviar DMX por interfaces DMX USB, Art-Net ou sACN, e controlar tudo por MIDI, OSC, entrada DMX ou o teclado.
 
-Os shows são salvos em arquivos `.qxw`, o mesmo formato que o QLC+ usa, então você pode abrir shows feitos com o QLC+.
+Os shows são salvos em arquivos `.qxw`, o mesmo formato que o QLC+ usa, então você pode abrir shows feitos com o QLC+. Se o programa já estiver aberto e você abrir um show pelo Explorador de Arquivos (clique duplo no arquivo), ele abre nessa mesma janela, que vem para a frente (antes pergunta pelas alterações não salvas).
 
 ## Como abrir este manual
 
@@ -54,7 +54,7 @@ Na parte de baixo da barra lateral ficam a versão do programa e a **CPU** que e
 
 Da esquerda para a direita:
 
-- **O show**: o nome dele. Um ponto **●** na frente avisa que há alterações não salvas; se o salvamento automático estiver ativo, também aparece a hora do último (“salvo automaticamente…”).
+- **O show**: o nome dele. Um ponto **●** na frente avisa que há alterações não salvas; se o salvamento automático estiver ativo, também aparece a hora da última cópia de recuperação (“cópia de recuperação…”).
 - **Arquivo**: “Novo show (Ctrl+N)”, “Abrir (Ctrl+O)”, a seta **▾** com os shows recentes e os “Exemplos”, “Salvar (Ctrl+S)” e “Salvar como…” (Ctrl+Shift+S).
 - **Ritmo**: **“GO”** e **“Stop”** mudam o que os botões das cenas fazem (na página Ao vivo, no SHOW, nos mapeamentos e no celular). Com **GO** ligado, tocar uma cena a dispara e os toques seguintes marcam o ritmo dela, sem nunca pará-la; com **Stop** ligado, tocar uma cena a para; com os dois desligados, como sempre ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)). Cada botão de uma cena com passos ou de uma cuelist que está rodando (na página Ao vivo, no SHOW, nos playbacks e no celular) tem dentro uma **barra dividida em duas** que acende um lado e depois o outro a cada passo: assim você vê o ritmo de cada uma. Depois, **“BeatGO”** (próxima divisão das cenas comandadas pelo BeatGO, também com a tecla G) e **“Pulso”**, que escuta a entrada de áudio do computador (escolhida em [Opções](opciones.md#áudio)): cada pico que passa a linha do medidor avança as cenas comandadas pelo Pulso. Arraste a linha do medidor para mudar o limiar. O tempo do show, o dos FX e das cenas em modo BPM, é alterado com um fader ou um dial de BPM do [SHOW](show.md) ou com os [mapeamentos](mapeos.md).
 - **O cadeado**: bloqueia telas para que nada mude por engano (veja [Opções](opciones.md#show-e-bloqueio)).
@@ -71,7 +71,7 @@ Ao fechar o programa, ou ao abrir ou criar outro show, se houver alterações n�
 
 Se o show que você abre usa arquivos que não estão lá (os sons, vídeos ou imagens dele; por exemplo, um show trazido de outro computador), um aviso mostra a lista. O show funciona sem eles. Com **“Procurar em uma pasta…”** você escolhe a pasta onde eles estão: são procurados pelo nome, também nas subpastas, e o show passa a usá-los (salve-o para mantê-lo assim).
 
-> **Dica:** se o programa fechou de forma inesperada e você tinha um show não salvo, ao abri-lo de novo ele oferece “Recuperar o show não salvo?”. Pressione “Recuperar” e salve-o com um nome.
+> **Dica:** se o programa fechou de forma inesperada com alterações não salvas, ao abri-lo de novo ele oferece “Recuperar o show não salvo?”, com o nome do show e a hora da cópia. Pressione “Recuperar” e salve-o (um show sem título, com um nome).
 
 ## Como este manual está organizado
 

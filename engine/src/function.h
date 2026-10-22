@@ -1131,6 +1131,13 @@ public:
     void setSpeedFactor(qreal factor);
     qreal speedFactor() const;
 
+    /** DMX Total Control: the speed of the movement (the movement speed
+     *  faders of the SHOW), on top of the live speed: 2 moves twice as fast.
+     *  A function that moves pan and tilt goes at it: an FX scene only its
+     *  pan/tilt layers, a cuelist only its FX, the others all of it. Not saved */
+    void setMotionSpeed(qreal factor);
+    qreal motionSpeed() const;
+
     /** Jump to the next division of the cycle at the next frame (BeatGO, pulse) */
     void requestDivisionJump();
 
@@ -1159,6 +1166,9 @@ public:
 protected:
     /** Call once per write(): computes frameTick() */
     void advanceFrameTick();
+    /** The part of the motion speed in frameTick(): all of it, unless the
+     *  function applies it itself to what moves (FX scenes, cuelists) */
+    virtual qreal frameMotion() const;
     /** Pending division jumps, cleared */
     int takeDivisionJumps();
     /** The steps due at this frame: the division jumps, and the beats of its
@@ -1178,6 +1188,7 @@ private:
     uint m_stagger;
 
     qreal m_speedFactor;
+    qreal m_motionSpeed = 1.0;
     qreal m_tickRemainder;
     uint m_frameTick;
     int m_cyclesDone;

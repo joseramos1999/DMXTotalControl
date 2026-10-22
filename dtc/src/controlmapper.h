@@ -73,6 +73,9 @@ class ControlMapper : public QObject
 
     Q_PROPERTY(QVariantList devices READ devices NOTIFY devicesChanged)
     Q_PROPERTY(QVariantList mappings READ mappings NOTIFY mappingsChanged)
+    /** Changes with the mappings, without describing them all as mappings
+     *  does (the badges of learn mode, on hundreds of controls, count them) */
+    Q_PROPERTY(int revision READ revision NOTIFY mappingsChanged)
     /** The last messages in and out: { time, direction, device, text, value } */
     Q_PROPERTY(QVariantList monitor READ monitor NOTIFY monitorChanged)
     /** Learn mode: the mappable controls of the UI can be picked */
@@ -89,8 +92,13 @@ public:
     /*********************************************************************
      * Devices
      *********************************************************************/
-    /** [{ key, plugin, name, kind, enabled, feedback, canFeedback, universe }] */
+    /** [{ key, plugin, name, kind, enabled, feedback, canFeedback, universe, group }] */
     QVariantList devices() const;
+    /** The devices in the order of the page: first the controllers (MIDI,
+     *  OSC) and every device enabled (group "controllers"), then the other
+     *  DMX inputs, a line for each network card (group "dmx"). The rest of
+     *  the order is kept */
+    static QVariantList sortDevices(const QVariantList &devices);
     Q_INVOKABLE void setDeviceEnabled(const QString &key, bool enabled);
     Q_INVOKABLE void setDeviceFeedback(const QString &key, bool enabled);
     Q_INVOKABLE void refreshDevices();
@@ -143,6 +151,7 @@ public:
      * Mappings
      *********************************************************************/
     QVariantList mappings() const;
+    int revision() const;
     /** The targets that can be mapped: [{ target, kind: "button"|"fader", name, needs }] */
     Q_INVOKABLE QVariantList targets() const;
 
@@ -251,6 +260,8 @@ signals:
 
 private slots:
     void slotInputValueChanged(quint32 universe, quint32 channel, uchar value, const QString &key);
+    /** A universe added or removed: the devices */
+    void slotUniversesChanged();
     void slotFeedback();
     void slotPlaybackPagesRenumbered(const QList<int> &newIndexes, const QHash<int, quint32> &removedSlots);
     /** The LEDs of the device of a universe that goes are turned off first */
@@ -320,8 +331,13 @@ private:
     QHash<int, qreal> m_physical;
     /** Whether each target is a button (isButton runs for every mapping on every feedback tick) */
     mutable QHash<QString, bool> m_buttonKinds;
+    /** The name of each target (describeTarget, for every mapping), in the
+     *  language of the interface */
+    mutable QHash<QString, QString> m_targetNames;
     /** slotNamesChanged() already told the list to read the mappings again */
     bool m_namesPending;
+    /** Counts the changes of the mappings (revision) */
+    int m_revision;
 };
 
 #endif

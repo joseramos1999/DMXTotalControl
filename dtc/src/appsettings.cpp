@@ -35,6 +35,8 @@
 #define KSettingLiveRelease     QStringLiteral("playback/liveEditRelease")
 #define KSettingFavoriteColors  QStringLiteral("programmer/favoriteColors")
 #define KSettingRecent          QStringLiteral("files/recent")
+// (+ the kind of file: images, audio...)
+#define KSettingDialogFolder    QStringLiteral("files/folder-")
 #define KSettingSession         QStringLiteral("session/running")
 #define KSettingStartShowFull   QStringLiteral("startup/showFullScreen")
 #define KSettingStartShowLocked QStringLiteral("startup/showLocked")
@@ -165,6 +167,16 @@ void AppSettings::clearRecentShows()
 {
     m_settings.remove(KSettingRecent);
     emit recentShowsChanged();
+}
+
+QString AppSettings::dialogFolder(const QString &kind) const
+{
+    return m_settings.value(KSettingDialogFolder + kind).toString();
+}
+
+void AppSettings::setDialogFolder(const QString &kind, const QString &folder)
+{
+    m_settings.setValue(KSettingDialogFolder + kind, folder);
 }
 
 bool AppSettings::sessionRunning() const

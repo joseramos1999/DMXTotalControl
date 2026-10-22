@@ -17,8 +17,9 @@ Avec un nouveau show, la page est vide et propose deux boutons :
 
 Appuyez sur **« Modifier »** pour construire l’écran et sur **« Terminé »** pour revenir à son utilisation. En mode édition :
 
-- Cliquez sur le titre d’une section (ou n’importe où dedans) pour la **sélectionner**. Ses propriétés apparaissent dans le panneau **« Propriétés »** à droite.
-- Dans la barre de titre de chaque section, il y a trois boutons : **diviser en deux moitiés côte à côte**, **diviser l’une au-dessus de l’autre** et **retirer cette section**. Les mêmes se trouvent dans les propriétés : « Côte à côte », « Haut et bas » et « Retirer la section ».
+- Cliquez sur une section pour la **sélectionner** (dans un tableau, sur une de ses cellules ou sur son étiquette en haut à droite). Ses propriétés apparaissent dans le panneau **« Propriétés »** à droite.
+- Quand la souris passe sur une section, et sur la section sélectionnée, une étiquette avec son type et trois boutons apparaît en haut à droite : **diviser en deux moitiés côte à côte**, **diviser l’une au-dessus de l’autre** et **retirer cette section** (dans une section avec un titre, ils sont dans sa barre de titre). Les mêmes se trouvent dans les propriétés : « Côte à côte », « Haut et bas » et « Retirer la section ».
+- Les sections gardent leur hauteur : elles n’ont pas de barre en plus en édition. Avec le panneau des propriétés, elles ne se rétrécissent que jusqu’à la largeur où leurs tableaux tiennent sans défiler ; si cela ne suffit pas, la page défile sur les côtés avec la barre du bas (au plus, elle est aussi large que sans le panneau).
 - Faites glisser le **séparateur** entre deux moitiés pour changer leur taille. Il s’aimante aux quarts, aux tiers et aux moitiés.
 - Une section **« Vide »** affiche des boutons avec tous les types : cliquez sur l’un d’eux pour choisir ce qu’elle affiche. Si la section est petite et qu’ils ne tiennent pas, il ne reste qu’un bouton, **« Ce qu’elle affiche ▾ »**, avec la liste.
 
@@ -49,7 +50,7 @@ Appuyez sur **« Modifier »** pour construire l’écran et sur **« Termin�
 Selon le type, le panneau des propriétés affiche :
 
 - **Affiche** : le type de section.
-- **Titre** : le texte de sa barre de titre. Sans titre, la barre ne se voit pas hors du mode édition.
+- **Titre** : le texte de sa barre de titre. Sans titre, la section n’a pas de barre, en mode édition non plus.
 - **Colonnes** et **Lignes** : la taille du tableau (jusqu’à 32). Les boutons, faders et rotatifs remplissent leurs cellules. Dans une section trop petite pour son tableau, les cellules ne rétrécissent pas au-delà de ce qui se lit et se touche : le tableau défile (à la molette ou en faisant glisser).
 - **Remplir avec les scènes d’un groupe** (boutons) : place d’un coup un bouton pour chaque scène de ce groupe.
 - **Groupe** (un groupe) : lequel elle affiche.
@@ -110,8 +111,8 @@ Un fader du SHOW peut contrôler **plusieurs choses à la fois**. Dans ses propr
 | **Master d’un groupe** | Le master de ce groupe de Direct. |
 | **Grand master** | Le GM de la barre du haut. |
 | **Dimmer de fixtures** | Le dimmer du mixeur de tous les fixtures ou d’un groupe de fixtures. |
-| **Vitesse de mouvement des lyres** | Le canal de vitesse de pan/tilt de toutes les lyres ou d’un groupe (en haut = plus rapide). |
-| **Vitesse d’une scène** | La vitesse en direct de cette scène. |
+| **Vitesse de mouvement des lyres** | La vitesse de ce qui fait bouger les lyres (toutes ou celles d’un groupe) : leurs FX de pan/tilt, ceux du programmeur et les pas qui les déplacent. En bas ×0,1, au milieu la vitesse normale (×1), en haut ×10 ; le fader affiche le multiplicateur et un double-clic le remet à ×1. Un FX de pan/tilt et de couleur ne change que la vitesse du mouvement ; une cuelist, celle de ses FX. Le canal de vitesse des moteurs n’est pas touché. |
+| **Vitesse d’une scène** | La vitesse en direct de cette scène (×0,1 à ×10, comme celle du mouvement). |
 | **BPM** | Le tempo du show, de 20 à 300. |
 
 La différence entre les deux éléments de scène : **« Lancer une scène (son intensité) »** est la scène elle-même, et il la lance et l’arrête ; **« Dimmer d’une scène (sans la lancer) »** ne fait que l’atténuer, même quand elle est lancée d’ailleurs. Vous pouvez utiliser les deux en même temps : avec le dimmer à 50 % et le fader qui la lance à 80 %, la scène sort à 40 %.
@@ -120,7 +121,7 @@ Appuyez sur **« Ajouter un autre élément »** pour en ajouter un et sur l�
 
 Avec **Plage**, **De** … **à** … (de 0 à 100 %), la course du fader ne couvre que cette partie de ce qu’il pilote, pour tous ses éléments. Par exemple, la vitesse d’une scène de 20 à 80 %, ou un dimmer de 0 à 60 % pour qu’il ne dépasse pas cette valeur. Avec « De » au-dessus de « à », ou avec **« Inverser »**, le fader fonctionne à l’envers. Un fader qui lance une scène l’arrête à l’extrémité où la valeur est la plus basse (tout en bas ; tout en haut s’il est inversé), même si « De » n’est pas 0.
 
-Le texte du fader affiche la valeur réelle (le % ou le BPM), pas la position du fader. Si un autre contrôle amène la valeur hors de la plage, le fader reste à l’extrémité.
+Le texte du fader affiche la valeur réelle (le %, le BPM ou, s’il ne contrôle que des vitesses, le multiplicateur ×), pas la position du fader. Si un autre contrôle amène la valeur hors de la plage, le fader reste à l’extrémité. Un fader qui ne contrôle que des vitesses (du mouvement ou de scènes, une ou plusieurs) revient à ×1 avec un double-clic.
 
 Sous chaque fader, il y a un bouton **« Flash »** : il le porte tout en haut de sa course tant que vous appuyez et, quand vous relâchez, il rend exactement ce qu’il y avait. Il s’enlève ou se remet avec l’interrupteur « Bouton flash : à fond tant qu’on appuie » de ses propriétés.
 
@@ -130,7 +131,7 @@ Sous chaque fader, il y a un bouton **« Flash »** : il le porte tout en hau
 
 Les rotatifs contrôlent la même chose que les faders (le tableau ci-dessus), avec la même **Plage**. Chaque rotatif peut être :
 
-- Un **rotatif** : il parcourt toute sa plage en trois quarts de tour. Un double-clic le ramène au début de sa course (la valeur de « De », ou celle de « à » s’il est inversé) ; s’il contrôle le BPM, à 90, ou à l’extrémité de la plage la plus proche si 90 est en dehors.
+- Un **rotatif** : il parcourt toute sa plage en trois quarts de tour. Un double-clic le ramène au début de sa course (la valeur de « De », ou celle de « à » s’il est inversé) ; s’il contrôle le BPM, à 90, ou à l’extrémité de la plage la plus proche si 90 est en dehors ; s’il ne contrôle que des vitesses, à ×1.
 - Une **molette incrémentale** (« Molette incrémentale : tourne sans fin, chaque cran ajoute ou retire un pas ») : elle tourne sans fin, et chaque cran ajoute ou retire le **Pas** (de 1 à 25 %) à la valeur actuelle. Le pas est un % de la valeur, pas de la course, et la molette ne sort pas de la plage ; quand vous la tournez vers le haut avec la scène arrêtée, elle la lance sur « De ». L’arc qui l’entoure montre le niveau.
 
 Pour les tourner, faites glisser autour du centre avec la souris ou le doigt, ou de haut en bas près du centre. Chaque cran de la molette de la souris les tourne un peu (sur une molette incrémentale, d’un cran).

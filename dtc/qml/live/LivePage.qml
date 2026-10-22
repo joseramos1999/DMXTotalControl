@@ -31,6 +31,10 @@ Item {
     id: page
 
     property bool mixerView: false
+    // the mixer is made the first time it is shown, not at the start (a
+    // strip for each fixture group)
+    property bool mixerMade: false
+    onMixerViewChanged: if (mixerView) mixerMade = true
 
     signal editScene(int id)
     signal openScene(int id)
@@ -202,35 +206,38 @@ Item {
         }
 
         // the live mixer: all the fixtures, then each fixture group
-        RowLayout {
+        Loader {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: page.mixerView
-            spacing: 12
+            active: page.mixerView || page.mixerMade
+            sourceComponent: RowLayout {
+                spacing: 12
 
-            MixerRow {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-            }
-            ColumnLayout {
-                Layout.alignment: Qt.AlignTop
-                Layout.fillWidth: false
-                Layout.preferredWidth: 200
-                Layout.maximumWidth: 200
-                spacing: 8
-                AppButton {
-                    Layout.preferredWidth: 200
-                    text: qsTr("Reset the mixer")
-                    iconGlyph: Theme.iconRefresh
-                    enabled: Core.mixer.active
-                    onClicked: Core.mixer.reset()
+                MixerRow {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                 }
-                Text {
+                ColumnLayout {
+                    Layout.alignment: Qt.AlignTop
+                    Layout.fillWidth: false
                     Layout.preferredWidth: 200
-                    wrapMode: Text.WordWrap
-                    text: qsTr("The mixer works on what goes out, on top of every scene and live edit. Make fixture groups in Patch to get a mixer for each. Ctrl+click keeps a flash on.")
-                    color: Theme.textFaint
-                    font.pixelSize: Theme.fontSmall
+                    Layout.maximumWidth: 200
+                    spacing: 8
+                    AppButton {
+                        Layout.preferredWidth: 200
+                        text: qsTr("Reset the mixer")
+                        iconGlyph: Theme.iconRefresh
+                        enabled: Core.mixer.active
+                        onClicked: Core.mixer.reset()
+                    }
+                    Text {
+                        Layout.preferredWidth: 200
+                        wrapMode: Text.WordWrap
+                        text: qsTr("The mixer works on what goes out, on top of every scene and live edit. Make fixture groups in Patch to get a mixer for each. Ctrl+click keeps a flash on.")
+                        color: Theme.textFaint
+                        font.pixelSize: Theme.fontSmall
+                    }
                 }
             }
         }

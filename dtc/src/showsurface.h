@@ -24,6 +24,7 @@
 #include <QVariant>
 #include <QColor>
 #include <QHash>
+#include <QSet>
 #include <QList>
 #include <memory>
 #include <vector>
@@ -31,7 +32,6 @@
 class QXmlStreamReader;
 class QXmlStreamWriter;
 class ZoneManager;
-class GenericDMXSource;
 class LiveMixer;
 class DtcCore;
 class Function;
@@ -81,8 +81,9 @@ class Doc;
  * (functionId: up from zero starts it, down to zero stops it, in between its
  * intensity), "sceneDimmer" (functionId: the dimmer of the scene, whoever
  * plays it; it never starts or stops it), "sceneSpeed" (functionId),
- * "mixerDimmer" (mixerId), "moveSpeed" (groupId: the pan/tilt speed channel
- * of a fixture group, -1 all the moving heads), "bpm", "map" (map: a fader
+ * "mixerDimmer" (mixerId), "moveSpeed" (groupId: the speed of the movement
+ * of a fixture group, -1 all the moving heads: their pan/tilt FX and the
+ * steps that move them, x0.1 to x10), "bpm", "map" (map: a fader
  * target of the mappings). Older items have a single "target" with its keys.
  * "min", "max" (0-100 %) and "invert": the part of what it drives that the
  * travel covers (faders and dials). "flash": a button under the fader puts it
@@ -263,8 +264,11 @@ private slots:
      *  a super scene gives it to its new tracks and static values */
     void slotFunctionAdded(quint32 fid);
     void slotFunctionChanged(quint32 fid);
-    /** The patch changed: the movement speed faders on the channels of now */
+    /** The patch changed: the movement speed faders on the fixtures of now */
     void slotFixturesChanged();
+    /** What moves changed (a function, the FX of the programmer): the speed
+     *  of the movement goes there again */
+    void slotMotionChanged();
 
 private:
     struct Node
@@ -341,18 +345,20 @@ private:
 
     void setTargetLevel(const QVariantMap &target, qreal level);
     qreal targetLevel(const QVariantMap &target) const;
-    /** The pan/tilt speed channels of a fixture group (-1: every moving head):
-     *  fixture, channel and whether 0 is the fast end */
-    struct SpeedChannel { quint32 fixture; quint32 channel; bool fastFirst; };
-    QList<SpeedChannel> speedChannels(int groupId) const;
-    /** A movement speed fader on the speed channels of its group */
-    void applySpeed(int groupId, qreal level);
+    /** The fixtures of a movement speed fader: of its group, or every one
+     *  with pan or tilt (-1) */
+    QSet<quint32> motionFixtures(int groupId) const;
+    /** $f moves pan or tilt of one of $fixtures: an FX of pan/tilt, a Move
+     *  FX, steps with positions, a cuelist with an FX of pan/tilt */
+    bool movesHeads(Function *f, const QSet<quint32> &fixtures) const;
+    /** The speed of the movement of every fader on what moves its heads (the
+     *  last fader moved last); the rest at its own speed */
+    void applyMotion();
 
     LiveMixer *m_mixer;
     DtcCore *m_core;
     int m_currentPage;
-    /** Movement speed faders write the speed channels of the moving heads */
-    GenericDMXSource *m_speedSource;
+    /** Movement speed faders: the level of each group, x0.1 to x10 */
     QHash<int, qreal> m_speedLevels;
     /** The fixture groups of the speed faders moved, the last one moved last */
     QList<int> m_speedOrder;

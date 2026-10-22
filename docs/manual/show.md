@@ -17,8 +17,9 @@ Con un show nuevo la página está vacía y ofrece dos botones:
 
 Pulsa **«Editar»** para montar la pantalla y **«Hecho»** para volver a usarla. En el modo edición:
 
-- Haz clic en el título de una sección (o en cualquier parte de ella) para **seleccionarla**. Sus propiedades aparecen en el panel **«Propiedades»** de la derecha.
-- En la barra de título de cada sección hay tres botones: **dividir en dos mitades lado a lado**, **dividir una encima de otra** y **quitar esta sección**. Los mismos están en las propiedades: «Lado a lado», «Una encima» y «Quitar sección».
+- Haz clic en una sección para **seleccionarla** (en una tabla, en una de sus celdas o en su etiqueta de arriba a la derecha). Sus propiedades aparecen en el panel **«Propiedades»** de la derecha.
+- Al pasar el ratón por una sección, y en la seleccionada, aparece arriba a la derecha una etiqueta con su tipo y tres botones: **dividir en dos mitades lado a lado**, **dividir una encima de otra** y **quitar esta sección** (en una sección con título, están en su barra de título). Los mismos están en las propiedades: «Lado a lado», «Una encima» y «Quitar sección».
+- Las secciones conservan su altura: no ganan una barra al editar. Con el panel de propiedades, solo se estrechan hasta el ancho en que sus tablas caben sin desplazarse; si así no caben, la página se desplaza a los lados con la barra de abajo (como mucho, es tan ancha como sin el panel).
 - Arrastra el **separador** entre dos mitades para cambiar su tamaño. Se ajusta solo a cuartos, tercios y mitades.
 - Una sección **«Vacía»** muestra botones con todos los tipos: haz clic en uno para elegir qué muestra. Si la sección es pequeña y no caben, queda un solo botón, **«Qué muestra ▾»**, con la lista.
 
@@ -49,7 +50,7 @@ Pulsa **«Editar»** para montar la pantalla y **«Hecho»** para volver a usarl
 Según el tipo, el panel de propiedades muestra:
 
 - **Muestra**: el tipo de sección.
-- **Título**: el texto de su barra de título. Sin título, fuera del modo edición la barra no se ve.
+- **Título**: el texto de su barra de título. Sin título, la sección no tiene barra, tampoco en el modo edición.
 - **Columnas** y **Filas**: el tamaño de la tabla (hasta 32). Los botones, faders y diales llenan sus celdas. En una sección demasiado pequeña para su tabla, las celdas no se encogen más de lo que se puede leer y pulsar: la tabla se desplaza (con la rueda o arrastrando).
 - **Llenar con las escenas de un grupo** (botones): pone de una vez un botón por cada escena de ese grupo.
 - **Grupo** (un grupo): cuál muestra.
@@ -110,8 +111,8 @@ Un fader del SHOW puede controlar **varias cosas a la vez**. En sus propiedades,
 | **Master de un grupo** | El master de ese grupo de Directo. |
 | **Gran master** | El GM de la barra superior. |
 | **Dimmer de fixtures** | El dimmer del mezclador de todos los fixtures o de un grupo de fixtures. |
-| **Velocidad de movimiento de las cabezas móviles** | El canal de velocidad de pan/tilt de todas las cabezas móviles o de un grupo (arriba = más rápido). |
-| **Velocidad de una escena** | La velocidad en vivo de esa escena. |
+| **Velocidad de movimiento de las cabezas móviles** | La velocidad de lo que mueve las cabezas móviles (todas o las de un grupo): sus FX de pan/tilt, los del programador y los pasos que las mueven. Abajo ×0,1, en medio la normal (×1), arriba ×10; el fader muestra el multiplicador y un doble clic lo devuelve a ×1. Un FX de pan/tilt y de color solo cambia la velocidad del movimiento; una cuelist, la de sus FX. El canal de velocidad de los motores no se toca. |
+| **Velocidad de una escena** | La velocidad en vivo de esa escena (×0,1 a ×10, como la de movimiento). |
 | **BPM** | El tempo del show, de 20 a 300. |
 
 La diferencia entre los dos de escena: **«Lanzar una escena (su intensidad)»** es la escena misma, y la arranca y la para; **«Dimmer de una escena (sin lanzarla)»** solo la atenúa, también cuando la lanzan desde otro sitio. Se pueden usar a la vez: con el dimmer al 50 % y el fader que la lanza al 80 %, la escena sale al 40 %.
@@ -120,7 +121,7 @@ Pulsa **«Añadir otro elemento»** para sumar otro y el icono de la papelera pa
 
 Con **Rango**, **De** … **a** … (de 0 a 100 %), el recorrido del fader cubre solo esa parte de lo que mueve, en todos sus elementos. Por ejemplo, la velocidad de una escena de 20 a 80 %, o un dimmer de 0 a 60 % para que no pase de ahí. Con «De» mayor que «a», o con **«Invertir»**, el fader va al revés. Un fader que lanza una escena la para en el extremo donde el valor es más bajo (abajo del todo; arriba del todo si está invertido), aunque «De» no sea 0.
 
-El texto del fader muestra el valor real (el % o el BPM), no dónde está el fader. Si otro control lleva el valor fuera del rango, el fader se queda en el extremo.
+El texto del fader muestra el valor real (el %, el BPM o, si solo controla velocidades, el multiplicador ×), no dónde está el fader. Si otro control lleva el valor fuera del rango, el fader se queda en el extremo. Un fader que solo controla velocidades (de movimiento o de escenas, una o varias) vuelve a ×1 con un doble clic.
 
 Debajo de cada fader hay un botón **«Flash»**: lo lleva arriba del todo de su recorrido mientras lo pulsas y, al soltar, devuelve exactamente lo que había. Se quita o se pone con el interruptor «Botón flash: al máximo mientras se pulsa» de sus propiedades.
 
@@ -130,7 +131,7 @@ Debajo de cada fader hay un botón **«Flash»**: lo lleva arriba del todo de su
 
 Los diales controlan lo mismo que los faders (la tabla de arriba), con el mismo **Rango**. Cada dial puede ser:
 
-- Un **dial**: recorre todo su rango en tres cuartos de vuelta. Doble clic lo lleva al principio de su recorrido (el valor de «De», o el de «a» si está invertido); si controla el BPM, a 90, o al extremo del rango más cercano si 90 queda fuera.
+- Un **dial**: recorre todo su rango en tres cuartos de vuelta. Doble clic lo lleva al principio de su recorrido (el valor de «De», o el de «a» si está invertido); si controla el BPM, a 90, o al extremo del rango más cercano si 90 queda fuera; si solo controla velocidades, a ×1.
 - Una **rueda incremental** («Rueda incremental: gira sin fin y cada muesca suma o resta un paso»): gira sin fin, y cada muesca suma o resta el **Paso** (de 1 a 25 %) a donde esté el valor. El paso es un % del valor, no del recorrido, y la rueda no sale del rango; al girarla hacia arriba con la escena parada, la arranca en «De». El arco de alrededor muestra el nivel.
 
 Para girarlos, arrastra alrededor del centro con el ratón o el dedo, o arriba y abajo cerca del centro. Cada paso de la rueda del ratón lo gira un poco (en una rueda incremental, una muesca).

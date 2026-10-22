@@ -133,6 +133,10 @@ public:
     bool guideShown() const;
     void setGuideShown(bool shown);
 
+    /** The folder a file dialog of $kind (image, audio...) chose a file in last */
+    QString dialogFolder(const QString &kind) const;
+    void setDialogFolder(const QString &kind, const QString &folder);
+
     /** Set while the application runs: still set at startup means a crash */
     bool sessionRunning() const;
     void setSessionRunning(bool running);

@@ -99,10 +99,10 @@ Während sie läuft, trägt jede Kachel einer Szene mit Schritten oder einer Cue
 ## Master
 
 - **Gruppen-Master**: Der Schieberegler „Master“ unten in jeder Spalte skaliert die Intensität aller ihrer Szenen.
-- **Grand Master**: Der „GM“ in der oberen Leiste skaliert die ganze Ausgabe. Unter Optionen legen Sie fest, ob er nur auf die Intensitätskanäle wirkt oder auf alle.
+- **Grand Master**: Der „GM“ in der oberen Leiste skaliert das Licht der ganzen Ausgabe: die Dimmer und, bei Fixtures ohne Dimmer, deren Farben. Die Farbmischung (Cyan, Magenta, Gelb, Farbton und Sättigung) lässt er unberührt, ebenso die Farben eines Fixtures oder Kopfes mit eigenem Dimmer, die mit diesem Dimmer abnehmen. Unter Optionen legen Sie fest, ob er nur auf die Intensität wirkt oder auf alle Kanäle.
 - **Live-Dimmer**: Jede Szene hat außerdem ihren eigenen Dimmer, in ihren Eigenschaften, über dem Gruppen-Master.
 
-Die Master und der Grand Master wirken nicht auf Kanäle, bei denen die Option „Dimmer“ in den [Grenzen des Fixtures](patch.md#grenzen) ausgeschaltet ist.
+Die Master und der Grand Master wirken nicht auf Kanäle, bei denen die Option „Dimmer“ in den [Grenzen des Fixtures](patch.md#grenzen) ausgeschaltet ist. Ist es der Dimmer eines Fixtures, zählt er nicht mehr als dessen eigener Dimmer: Der Grand Master senkt dann seine Farben.
 
 ## Szeneneigenschaften
 
@@ -160,7 +160,7 @@ Jede Szene hat eine Priorität von 0 bis 10; neue Szenen bekommen die, die Sie u
 - **„Pause“** friert alles ein, was läuft. **„Fortsetzen“** setzt es fort.
 - **„Gruppen freigeben“** stoppt die Szenen aller Gruppen; das Quadrat jeder Spalte nur die dieser Gruppe.
 - **„Alles stoppen“** (Esc) in der oberen Leiste stoppt alles, was läuft, auch außerhalb der Gruppen. Den Programmer leert es nicht.
-- **„Blackout“** (Strg+B) schaltet die Ausgabe auf Schwarz, ohne etwas zu stoppen.
+- **„Blackout“** (Strg+B) schaltet die Ausgabe auf Schwarz, ohne etwas zu stoppen. Die Köpfe bewegen sich nicht: Pan, Tilt, Zoom, Fokus und die anderen Kanäle, die kein Licht sind, bleiben, wo sie sind.
 
 ## Mischer
 

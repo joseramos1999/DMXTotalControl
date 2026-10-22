@@ -42,6 +42,7 @@ Der Bereich **„Fixtures (N ausgew.)“** zeigt eine Kachel pro Fixture mit Nam
 - **Klick** auf eine Gruppe: wählt ihre Fixtures aus. **Strg+Klick** oder **Umschalt+Klick**: fügt sie hinzu.
 - Die Beschriftung leuchtet auf, wenn alle ihre Fixtures ausgewählt sind. Fahren Sie mit der Maus darüber, um ihre Nummer für die Befehlszeile zu sehen („GROUP 2 in der Befehlszeile“).
 - Die **Auswahlen** einer Gruppe (geordnete Teile, mit eigenem Symbol) wählen ihre Fixtures in ihrer Reihenfolge aus.
+- Bei vielen Gruppen sind drei Reihen von Beschriftungen zu sehen, die mit dem Mausrad scrollen: **„Alle Gruppen (N)“** öffnet sie (bis zur halben Höhe des Felds), **„Weniger“** klappt sie wieder ein. So bleiben die Kacheln der Fixtures im Blick.
 
 ### 2D-Plan
 

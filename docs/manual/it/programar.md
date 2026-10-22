@@ -42,6 +42,7 @@ Sopra i riquadri compaiono i [gruppi di fixture](patch.md#gruppi-di-fixture) del
 - **Clic** su un gruppo: seleziona le sue fixture. **Ctrl+clic** o **Maiusc+clic**: le aggiunge.
 - L'etichetta si illumina quando tutte le sue fixture sono selezionate. Passando il mouse si vede il suo numero per la riga di comando («GROUP 2 nella riga di comando»).
 - Le **selezioni** di un gruppo (parti ordinate, con la loro icona) selezionano le sue fixture nel loro ordine.
+- Con molti gruppi si vedono tre righe di etichette, che scorrono con la rotella: **«Tutti i gruppi (N)»** le apre (fino a metà del pannello) e **«Meno»** le richiude. Così i riquadri delle fixture restano in vista.
 
 ### Pianta 2D
 

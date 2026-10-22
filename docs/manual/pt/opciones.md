@@ -37,9 +37,9 @@ As páginas bloqueadas têm um cadeado na barra lateral. Ao abrir uma, a senha �
 
 ## Salvamento automático
 
-- **Salvar automaticamente**, **A cada (minutos)**: de 1 a 60.
+- **Salvar uma cópia de recuperação**, **A cada (minutos)**: de 1 a 60.
 
-Os shows com nome são sobrescritos e a versão anterior é salva como `.bak`. Os shows sem título são salvos à parte e oferecidos ao reabrir o programa depois de um fechamento inesperado (“Recuperar o show não salvo?”). Na barra superior aparece a hora do último salvamento automático; se ele falhar (um disco cheio, um arquivo somente leitura), aparece um aviso em vermelho.
+O salvamento automático não mexe no arquivo do show: a cada poucos minutos, se houver alterações não salvas, ele salva à parte uma cópia de recuperação, e o ponto **●** continua lá. Só **Salvar** grava o arquivo; a versão que havia antes do primeiro salvamento de cada sessão é mantida como `.bak`. A cópia é apagada quando você salva, quando fecha (salvando ou não) e quando abre outro show. Se o programa fechar de forma inesperada, ao abri-lo de novo ele oferece a cópia (“Recuperar o show não salvo?”) com o nome do show e a hora da cópia: ao recuperá-la, abre-se esse show com as alterações, ainda não salvas; salve-o para mantê-las. Enquanto você decide, o último show já está aberto como estava salvo (com “Abrir o último show ao iniciar”): “Descartar” o deixa assim. Na barra superior aparece a hora da última cópia (“cópia de recuperação…”); se ela falhar (um disco cheio), aparece um aviso em vermelho.
 
 ## Reprodução
 
@@ -49,7 +49,7 @@ Os shows com nome são sobrescritos e a versão anterior é salva como `.bak`. O
   - **“Devolvem os canais à cena”**: os canais que a cena toca deixam de estar no programador.
   - **“Ficam sempre”**.
   - **“São todas redefinidas”**: o programador é esvaziado.
-- **O grand master atua sobre**: **“Canais de intensidade”** ou **“Todos os canais”**.
+- **O grand master atua sobre**: **“Canais de intensidade”** (a luz: os dimmers e as cores dos fixtures sem dimmer) ou **“Todos os canais”**.
 
 ## Áudio
 

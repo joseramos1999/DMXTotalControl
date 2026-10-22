@@ -17,8 +17,9 @@ Con uno show nuovo la pagina è vuota e offre due tasti:
 
 Premi **«Modifica»** per costruire la schermata e **«Fatto»** per tornare a usarla. Nella modalità modifica:
 
-- Fai clic sul titolo di una sezione (o in qualsiasi suo punto) per **selezionarla**. Le sue proprietà compaiono nel pannello **«Proprietà»** a destra.
-- Nella barra del titolo di ogni sezione ci sono tre tasti: **dividi in due metà affiancate**, **dividi una sopra l'altra** e **rimuovi questa sezione**. Gli stessi sono nelle proprietà: «Affiancate», «Una sopra l'altra» e «Rimuovi sezione».
+- Fai clic su una sezione per **selezionarla** (in una tabella, su una delle sue celle o sulla sua etichetta in alto a destra). Le sue proprietà compaiono nel pannello **«Proprietà»** a destra.
+- Passando il mouse su una sezione, e su quella selezionata, compare in alto a destra un'etichetta con il suo tipo e tre tasti: **dividi in due metà affiancate**, **dividi una sopra l'altra** e **rimuovi questa sezione** (in una sezione con titolo, sono nella sua barra del titolo). Gli stessi sono nelle proprietà: «Affiancate», «Una sopra l'altra» e «Rimuovi sezione».
+- Le sezioni mantengono la loro altezza: non ricevono una barra mentre modifichi. Con il pannello delle proprietà, si restringono solo fino alla larghezza in cui le loro tabelle stanno senza scorrere; se così non ci stanno, la pagina scorre di lato con la barra in basso (al massimo è larga come senza il pannello).
 - Trascina il **separatore** tra due metà per cambiarne la dimensione. Si aggancia da solo a quarti, terzi e metà.
 - Una sezione **«Vuota»** mostra dei tasti con tutti i tipi: fai clic su uno per scegliere cosa mostra. Se la sezione è piccola e non ci stanno, resta un solo tasto, **«Cosa mostra ▾»**, con l'elenco.
 
@@ -49,7 +50,7 @@ Premi **«Modifica»** per costruire la schermata e **«Fatto»** per tornare a 
 A seconda del tipo, il pannello delle proprietà mostra:
 
 - **Mostra**: il tipo di sezione.
-- **Titolo**: il testo della sua barra del titolo. Senza titolo, fuori dalla modalità modifica la barra non si vede.
+- **Titolo**: il testo della sua barra del titolo. Senza titolo, la sezione non ha la barra, nemmeno in modalità modifica.
 - **Colonne** e **Righe**: la dimensione della tabella (fino a 32). Tasti, fader e manopole riempiono le loro celle. In una sezione troppo piccola per la sua tabella, le celle non si rimpiccioliscono oltre quanto si può leggere e premere: la tabella scorre (con la rotella o trascinando).
 - **Riempi con le scene di un gruppo** (tasti): mette in un colpo solo un tasto per ogni scena di quel gruppo.
 - **Gruppo** (un gruppo): quale mostra.
@@ -110,8 +111,8 @@ Un fader dello SHOW può controllare **più cose insieme**. Nelle sue proprietà
 | **Master di un gruppo** | Il master di quel gruppo di Live. |
 | **Grand master** | Il GM della barra superiore. |
 | **Dimmer di fixture** | Il dimmer del mixer di tutte le fixture o di un gruppo di fixture. |
-| **Velocità di movimento delle teste mobili** | Il canale di velocità pan/tilt di tutte le teste mobili o di un gruppo (in alto = più veloce). |
-| **Velocità di una scena** | La velocità dal vivo di quella scena. |
+| **Velocità di movimento delle teste mobili** | La velocità di ciò che muove le teste mobili (tutte o quelle di un gruppo): i loro FX di pan/tilt, quelli del programmatore e i passi che le muovono. In basso ×0,1, al centro quella normale (×1), in alto ×10; il fader mostra il moltiplicatore e un doppio clic lo riporta a ×1. Un FX di pan/tilt e di colore cambia solo la velocità del movimento; una cuelist, quella dei suoi FX. Il canale di velocità dei motori non viene toccato. |
+| **Velocità di una scena** | La velocità dal vivo di quella scena (da ×0,1 a ×10, come quella del movimento). |
 | **BPM** | Il tempo dello show, da 20 a 300. |
 
 La differenza tra i due di scena: **«Avvia una scena (la sua intensità)»** è la scena stessa, e la avvia e la ferma; **«Dimmer di una scena (senza avviarla)»** la attenua soltanto, anche quando viene avviata da un altro punto. Si possono usare insieme: con il dimmer al 50 % e il fader che la avvia all'80 %, la scena esce al 40 %.
@@ -120,7 +121,7 @@ Premi **«Aggiungi un altro elemento»** per aggiungerne un altro e l'icona del 
 
 Con **Intervallo**, **Da** … **a** … (da 0 a 100 %), la corsa del fader copre solo quella parte di ciò che muove, in tutti i suoi elementi. Per esempio, la velocità di una scena dal 20 all'80 %, o un dimmer da 0 a 60 % perché non vada oltre. Con «Da» maggiore di «a», o con **«Inverti»**, il fader va al contrario. Un fader che avvia una scena la ferma all'estremo dove il valore è più basso (in fondo; in cima se è invertito), anche se «Da» non è 0.
 
-Il testo del fader mostra il valore reale (la % o i BPM), non dove si trova il fader. Se un altro controllo porta il valore fuori dall'intervallo, il fader resta all'estremo.
+Il testo del fader mostra il valore reale (la %, i BPM o, se controlla solo velocità, il moltiplicatore ×), non dove si trova il fader. Se un altro controllo porta il valore fuori dall'intervallo, il fader resta all'estremo. Un fader che controlla solo velocità (del movimento o di scene, una o più) torna a ×1 con un doppio clic.
 
 Sotto ogni fader c'è un tasto **«Flash»**: lo porta in cima alla sua corsa finché lo premi e, quando lo rilasci, ripristina esattamente ciò che c'era. Si toglie o si mette con l'interruttore «Tasto flash: al massimo finché è premuto» nelle sue proprietà.
 
@@ -130,7 +131,7 @@ Sotto ogni fader c'è un tasto **«Flash»**: lo porta in cima alla sua corsa fi
 
 Le manopole controllano le stesse cose dei fader (la tabella sopra), con lo stesso **Intervallo**. Ogni manopola può essere:
 
-- Una **manopola**: percorre tutto il suo intervallo in tre quarti di giro. Il doppio clic la porta all'inizio della sua corsa (il valore di «Da», o quello di «a» se è invertita); se controlla i BPM, a 90, o all'estremo dell'intervallo più vicino se 90 resta fuori.
+- Una **manopola**: percorre tutto il suo intervallo in tre quarti di giro. Il doppio clic la porta all'inizio della sua corsa (il valore di «Da», o quello di «a» se è invertita); se controlla i BPM, a 90, o all'estremo dell'intervallo più vicino se 90 resta fuori; se controlla solo velocità, a ×1.
 - Una **rotella incrementale** («Rotella incrementale: gira all'infinito, ogni scatto aggiunge o toglie un passo»): gira all'infinito, e ogni scatto aggiunge o toglie il **Passo** (da 1 a 25 %) al punto in cui si trova il valore. Il passo è una % del valore, non della corsa, e la rotella non esce dall'intervallo; girandola verso l'alto con la scena ferma, la avvia su «Da». L'arco intorno mostra il livello.
 
 Per girarle, trascina intorno al centro con il mouse o con il dito, oppure su e giù vicino al centro. Ogni scatto della rotella del mouse le gira un po' (in una rotella incrementale, uno scatto).

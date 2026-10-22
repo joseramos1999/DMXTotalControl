@@ -99,10 +99,10 @@ Mientras suena, cada ficha de una escena con pasos o de una cuelist lleva abajo 
 ## Masters
 
 - **Master del grupo**: el deslizador «Master» al pie de cada columna escala la intensidad de todas sus escenas.
-- **Gran master**: el «GM» de la barra superior escala toda la salida. En Opciones decides si actúa solo sobre los canales de intensidad o sobre todos.
+- **Gran master**: el «GM» de la barra superior escala la luz de toda la salida: los dimmers y, en los fixtures sin dimmer, sus colores. No toca la mezcla de color (cian, magenta, amarillo, tono y saturación) ni los colores de un fixture o una cabeza con dimmer propio, que bajan con su dimmer. En Opciones decides si actúa solo sobre la intensidad o sobre todos los canales.
 - **Dimmer en vivo**: cada escena tiene además su propio dimmer, en sus propiedades, por encima del master del grupo.
 
-Los masters y el gran master no afectan a los canales que tienen desactivada la opción «Dimmer» en los [límites del fixture](patch.md#límites).
+Los masters y el gran master no afectan a los canales que tienen desactivada la opción «Dimmer» en los [límites del fixture](patch.md#límites). Si es el dimmer de un fixture, ya no cuenta como su dimmer propio: el gran master baja entonces sus colores.
 
 ## Propiedades de la escena
 
@@ -160,7 +160,7 @@ Cada escena tiene una prioridad de 0 a 10; las nuevas toman la que indiques en [
 - **«Pausa»** congela todo lo que suena. **«Reanudar»** lo continúa.
 - **«Liberar grupos»** para las escenas de todos los grupos; el cuadrado de cada columna, solo las de ese grupo.
 - **«Parar todo»** (Esc), en la barra superior, para todo lo que suena, también fuera de los grupos. No vacía el programador.
-- **«Blackout»** (Ctrl+B) saca la salida a negro sin parar nada.
+- **«Blackout»** (Ctrl+B) saca la salida a negro sin parar nada. Las cabezas no se mueven: el pan, el tilt, el zoom, el foco y los demás canales que no son luz se quedan donde están.
 
 ## Mezclador
 

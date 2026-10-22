@@ -49,8 +49,8 @@ Sous l’en-tête se trouve le panneau de lecture. Il affiche ce qui a du sens p
 - **« Montée »** et **« Descente »**.
 - **« Temps de cycle »** (ou **« Temps par pas »** dans un Colour FX) et **« Vitesse »** (d’un cycle par minute à dix par seconde ; double-clic : un cycle par seconde), avec **×½** et **×2**.
 - **« Fondu décalé »** (statiques et pas) : chaque fixture commence son fondu ce temps-là après le précédent, dans l’ordre de sélection.
-- **« Piloté par »** : **« Durée »** (les temps normaux), **« BPM »** (les temps passent en beats et suivent le tempo du show), **« BeatGO »** ou **« Pulsation »** (avance avec le bouton BeatGO ou avec les pics de l’entrée audio). Avec BeatGO ou Pulsation, **« Divisions »** (/2, ×2).
-- **« Rythme tapé »** (séquences et chenillards) : le rythme tapé en appuyant plusieurs fois de suite sur son bouton ([Direct](directo.md#rythme-dune-scène-à-pas)), en BPM. Tant qu’elle en a un, ses pas suivent ce rythme et non leurs temps. **« Retirer »** revient à ses temps.
+- **« Piloté par »** : **« Durée »** (les temps normaux), **« BPM »** (les temps passent en beats et suivent le tempo du show, les fondus de chaque pas aussi ; le temps de fondu enchaîné d’un groupe du Direct et les fondus des blocs d’une super scène restent en secondes), **« BeatGO »** ou **« Pulsation »** (avance avec le bouton BeatGO ou avec les pics de l’entrée audio). Avec BeatGO ou Pulsation, **« Divisions »** (/2, ×2).
+- **« Rythme tapé »** (séquences et chenillards) : le rythme tapé en appuyant plusieurs fois de suite sur son bouton ([Direct](directo.md#rythme-dune-scène-à-pas)), en BPM. Tant qu’elle en a un, ses pas suivent ce rythme et non leurs temps. **« Retirer »** revient à ses temps. Avec « BPM », un beat est un pas de ce rythme : un fondu de 0,5 b dure un demi-pas.
 - **« Début »** : **« En cours »** ou **« En pause, appuyez à nouveau pour jouer »**.
 - **« Joue »** : **« Toujours »** ou **« N fois »**, **« puis »** **« La libérer »** ou **« Garder la dernière image »**, **« et jouer »** « Rien », « La scène suivante du groupe », « La scène précédente du groupe » ou n’importe quelle autre scène.
 

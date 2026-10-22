@@ -8,7 +8,7 @@ A página tem três abas: **“Mapeamentos”**, **“Dispositivos”** e **“M
 
 ## Dispositivos
 
-Em **“Dispositivos”** aparecem os dispositivos de entrada que o programa encontra, com o tipo (MIDI, OSC ou DMX), o nome e o universo que eles usam.
+Em **“Dispositivos”** aparecem os dispositivos de entrada que o programa encontra, com o tipo (MIDI, OSC ou DMX), o nome e o universo que eles usam. Primeiro aparecem os controladores (MIDI e OSC) e os dispositivos que você já usa, em **“Controladores e dispositivos em uso”**; depois, em **“Entradas DMX: interfaces e rede”**, as demais entradas DMX, com uma linha para cada placa de rede.
 
 1. Conecte o controlador e, se ele não aparecer, pressione **“Buscar novamente”**.
 2. Ative a **“Entrada”** dele.

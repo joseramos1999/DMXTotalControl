@@ -99,10 +99,10 @@ Durante la riproduzione, ogni riquadro di una scena a passi o di una cuelist ha 
 ## Master
 
 - **Master del gruppo**: il cursore «Master» in fondo a ogni colonna scala l'intensità di tutte le sue scene.
-- **Grand master**: il «GM» della barra superiore scala tutta l'uscita. In Opzioni decidi se agisce solo sui canali di intensità o su tutti.
+- **Grand master**: il «GM» della barra superiore scala la luce di tutta l'uscita: i dimmer e, nelle fixture senza dimmer, i loro colori. Non tocca la miscelazione del colore (ciano, magenta, giallo, tinta e saturazione) né i colori di una fixture o di una testa con un dimmer proprio, che scendono con quel dimmer. In Opzioni decidi se agisce solo sull'intensità o su tutti i canali.
 - **Dimmer dal vivo**: ogni scena ha inoltre il suo dimmer, nelle sue proprietà, sopra il master del gruppo.
 
-I master e il grand master non influiscono sui canali che hanno disattivata l'opzione «Dimmer» nei [limiti della fixture](patch.md#limiti).
+I master e il grand master non influiscono sui canali che hanno disattivata l'opzione «Dimmer» nei [limiti della fixture](patch.md#limiti). Se è il dimmer di una fixture, non conta più come suo dimmer proprio: il grand master abbassa allora i suoi colori.
 
 ## Proprietà della scena
 
@@ -160,7 +160,7 @@ Ogni scena ha una priorità da 0 a 10; le nuove prendono quella che indichi in [
 - **«Pausa»** congela tutto ciò che è in riproduzione. **«Riprendi»** lo fa continuare.
 - **«Rilascia gruppi»** ferma le scene di tutti i gruppi; il quadrato di ogni colonna, solo quelle di quel gruppo.
 - **«Ferma tutto»** (Esc), nella barra superiore, ferma tutto ciò che è in riproduzione, anche fuori dai gruppi. Non svuota il programmatore.
-- **«Blackout»** (Ctrl+B) manda l'uscita al buio senza fermare niente.
+- **«Blackout»** (Ctrl+B) manda l'uscita al buio senza fermare niente. Le teste non si muovono: il pan, il tilt, lo zoom, il fuoco e gli altri canali che non sono luce restano dove sono.
 
 ## Mixer
 

@@ -46,7 +46,8 @@ Flickable {
     Component.onCompleted: sync()
     Connections {
         target: Core.mixer
-        function onMixersChanged() { row.sync() }
+        // (once for many changes: a show loading changes every mixer)
+        function onMixersChanged() { Qt.callLater(row.sync) }
     }
 
     clip: true

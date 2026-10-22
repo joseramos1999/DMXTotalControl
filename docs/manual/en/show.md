@@ -17,8 +17,9 @@ With a new show the page is empty and offers two buttons:
 
 Press **“Edit”** to build the screen and **“Done”** to use it again. In edit mode:
 
-- Click the title of a section (or anywhere in it) to **select it**. Its properties appear in the **“Properties”** panel on the right.
-- In the title bar of each section there are three buttons: **split into two halves side by side**, **split one above the other** and **remove this section**. The same ones are in the properties: “Side by side”, “Top and bottom” and “Remove section”.
+- Click a section to **select it** (in a table, one of its cells or its label at the top right). Its properties appear in the **“Properties”** panel on the right.
+- When the mouse is over a section, and on the selected one, a label with its type and three buttons appears at its top right: **split into two halves side by side**, **split one above the other** and **remove this section** (in a section with a title, they are in its title bar). The same ones are in the properties: “Side by side”, “Top and bottom” and “Remove section”.
+- The sections keep their height: they don't get a bar while editing. With the properties panel, they only get narrower down to the width where their tables fit without scrolling; if they don't fit that way, the page scrolls sideways with the bar at the bottom (at most it is as wide as without the panel).
 - Drag the **divider** between two halves to change their size. It snaps to quarters, thirds and halves.
 - An **“Empty”** section shows buttons with all the types: click one to choose what it shows. If the section is small and they don't fit, a single **“What it shows ▾”** button holds the list.
 
@@ -49,7 +50,7 @@ Press **“Edit”** to build the screen and **“Done”** to use it again. In 
 Depending on the type, the properties panel shows:
 
 - **Shows**: the section type.
-- **Title**: the text of its title bar. With no title, the bar is hidden outside edit mode.
+- **Title**: the text of its title bar. With no title, the section has no bar, in edit mode too.
 - **Columns** and **Rows**: the size of the table (up to 32). Buttons, faders and dials fill their cells. In a section too small for its table, the cells don't shrink below what can be read and pressed: the table scrolls (with the wheel or by dragging).
 - **Fill with the scenes of a group** (buttons): adds one button for each scene of that group in one go.
 - **Group** (a group): which one it shows.
@@ -110,8 +111,8 @@ A SHOW fader can control **several things at once**. In its properties, under **
 | **Master of a group** | The master of that Live group. |
 | **Grand master** | The GM in the top bar. |
 | **Dimmer of fixtures** | The mixer dimmer of all the fixtures or of a fixture group. |
-| **Movement speed of moving heads** | The pan/tilt speed channel of all the moving heads or of a group (up = faster). |
-| **Speed of a scene** | The live speed of that scene. |
+| **Movement speed of moving heads** | The speed of what moves the moving heads (all of them or those of a group): their pan/tilt FX, the programmer's, and the steps that move them. ×0.1 at the bottom, normal (×1) in the middle, ×10 at the top; the fader shows the multiplier and a double click puts it back to ×1. An FX of pan/tilt and colour only changes the speed of the movement; a cuelist, the speed of its FX. The speed channel of the motors is not touched. |
+| **Speed of a scene** | The live speed of that scene (×0.1 to ×10, like the movement speed). |
 | **BPM** | The show tempo, from 20 to 300. |
 
 The difference between the two scene elements: **“Play a scene (its intensity)”** is the scene itself, and it starts and stops it; **“Dimmer of a scene (does not play it)”** only dims it, also when it is played from somewhere else. You can use them together: with the dimmer at 50 % and the fader that plays it at 80 %, the scene comes out at 40 %.
@@ -120,7 +121,7 @@ Press **“Add another element”** to add another one and the bin icon to remov
 
 With **Range**, **From** … **to** … (from 0 to 100 %), the travel of the fader covers only that part of what it moves, on all its elements. For example, the speed of a scene from 20 to 80 %, or a dimmer from 0 to 60 % so that it never goes above that. With “From” greater than “to”, or with **“Invert”**, the fader works the other way round. A fader that plays a scene stops it at the end where the value is lowest (all the way down; all the way up if it is inverted), even if “From” is not 0.
 
-The fader text shows the real value (the % or the BPM), not where the fader is. If another control takes the value outside the range, the fader stays at the end.
+The fader text shows the real value (the %, the BPM or, if it only controls speeds, the × multiplier), not where the fader is. If another control takes the value outside the range, the fader stays at the end. A fader that only controls speeds (of the movement or of scenes, one or several) goes back to ×1 with a double click.
 
 Under each fader there is a **“Flash”** button: it takes the fader all the way up its travel while you press it and, when you let go, it gives back exactly what was there before. You remove it or add it with the “Flash button: full while pressed” switch in its properties.
 
@@ -130,7 +131,7 @@ Under each fader there is a **“Flash”** button: it takes the fader all the w
 
 Dials control the same things as faders (the table above), with the same **Range**. Each dial can be:
 
-- A **dial**: goes through its whole range in three quarters of a turn. A double click takes it to the start of its travel (the “From” value, or the “to” value if it is inverted); if it controls the BPM, to 90, or to the closest end of the range if 90 is outside it.
+- A **dial**: goes through its whole range in three quarters of a turn. A double click takes it to the start of its travel (the “From” value, or the “to” value if it is inverted); if it controls the BPM, to 90, or to the closest end of the range if 90 is outside it; if it only controls speeds, to ×1.
 - An **incremental wheel** (“Incremental wheel: turns forever, each notch adds or removes a step”): it turns forever, and each notch adds or subtracts the **Step** (from 1 to 25 %) from wherever the value is. The step is a % of the value, not of the travel, and the wheel does not leave the range; turning it up with the scene stopped starts it at “From”. The arc around it shows the level.
 
 To turn them, drag around the centre with the mouse or your finger, or up and down near the centre. Each step of the mouse wheel turns it a little (on an incremental wheel, one notch).

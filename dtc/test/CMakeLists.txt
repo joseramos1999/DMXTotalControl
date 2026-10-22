@@ -51,6 +51,7 @@ add_executable(dtc_backend_test
     ../src/controlmapper.cpp ../src/controlmapper.h
     ../src/dtccore.cpp ../src/dtccore.h
     ../src/appsettings.cpp ../src/appsettings.h
+    ../src/singleinstance.cpp ../src/singleinstance.h
 )
 
 target_include_directories(dtc_backend_test PRIVATE
@@ -65,6 +66,7 @@ target_compile_definitions(dtc_backend_test PRIVATE
     DTC_RGB_SCRIPTS="${CMAKE_CURRENT_SOURCE_DIR}/../../resources/rgbscripts"
     DTC_AUDIO_PLUGINS="${CMAKE_BINARY_DIR}/engine/audio/plugins/sndfile"
     DTC_OSC_PLUGIN="${CMAKE_BINARY_DIR}/plugins/osc"
+    DTC_LOOPBACK_PLUGIN="${CMAKE_BINARY_DIR}/plugins/loopback/src"
     DTC_ICONS="${CMAKE_CURRENT_SOURCE_DIR}/../icons"
 )
 # the MIDI plugin, when it is built (an APC connected here gets its LEDs ready)

@@ -42,6 +42,7 @@ Au-dessus des tuiles apparaissent les [groupes de fixtures](patch.md#groupes-de-
 - **Clic** sur un groupe : sélectionne ses fixtures. **Ctrl+clic** ou **Maj+clic** : les ajoute.
 - L’étiquette s’allume quand tous ses fixtures sont sélectionnés. Au survol, vous voyez son numéro pour la ligne de commande (« GROUP 2 dans la ligne de commande »).
 - Les **sélections** d’un groupe (parties ordonnées, avec leur icône) sélectionnent leurs fixtures dans leur ordre.
+- Avec beaucoup de groupes, trois rangées d’étiquettes sont visibles et défilent avec la molette : **« Tous les groupes (N) »** les ouvre (jusqu’à la moitié du panneau) et **« Moins »** les replie. Les tuiles des fixtures restent ainsi visibles.
 
 ### Plan 2D
 

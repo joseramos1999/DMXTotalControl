@@ -313,6 +313,8 @@ public:
 protected:
     /** The faders, and the FX player through its parent priority */
     void updateFadersPriority() override;
+    /** The motion speed goes to its FX only, not to the times of its cues */
+    qreal frameMotion() const override;
 
 private:
     enum ActionType { ActionGo = 0, ActionBack, ActionGoTo };

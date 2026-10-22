@@ -37,9 +37,9 @@ Gesperrte Seiten tragen in der Seitenleiste ein Schloss. Öffnen Sie eine, wird 
 
 ## Automatisches Speichern
 
-- **Automatisch speichern**, **Intervall (Minuten)**: von 1 bis 60.
+- **Wiederherstellungskopie speichern**, **Intervall (Minuten)**: von 1 bis 60.
 
-Shows mit Namen werden überschrieben, und die vorherige Version wird als `.bak` gespeichert. Unbenannte Shows werden separat gespeichert und beim erneuten Öffnen des Programms nach einem unerwarteten Beenden angeboten („Ungespeicherte Show wiederherstellen?“). In der oberen Leiste sehen Sie die Uhrzeit des letzten automatischen Speicherns; schlägt es fehl (volle Festplatte, schreibgeschützte Datei), erscheint ein Hinweis in Rot.
+Das automatische Speichern verändert die Show-Datei nicht: Alle paar Minuten speichert es bei ungespeicherten Änderungen eine separate Wiederherstellungskopie, und der Punkt **●** bleibt. Nur **Speichern** schreibt die Datei; die Version vor dem ersten Speichern jeder Sitzung bleibt als `.bak` erhalten. Die Kopie wird gelöscht, wenn Sie speichern, wenn Sie schließen (mit oder ohne Speichern) und wenn Sie eine andere Show öffnen. Wird das Programm unerwartet beendet, bietet es beim nächsten Start die Kopie an („Ungespeicherte Show wiederherstellen?“), mit dem Namen der Show und der Uhrzeit der Kopie: Beim Wiederherstellen öffnet sich diese Show mit ihren Änderungen, noch ungespeichert; speichern Sie sie, um sie zu behalten. Währenddessen ist die letzte Show schon so geöffnet, wie sie gespeichert war (mit „Letzte Show beim Start öffnen“): „Verwerfen“ lässt sie so. In der oberen Leiste sehen Sie die Uhrzeit der letzten Kopie („Wiederherstellungskopie …“); schlägt sie fehl (volle Festplatte), erscheint ein Hinweis in Rot.
 
 ## Wiedergabe
 
@@ -49,7 +49,7 @@ Shows mit Namen werden überschrieben, und die vorherige Version wird als `.bak`
   - **„Geben der Szene ihre Kanäle zurück“**: Die Kanäle, die die Szene berührt, sind nicht mehr im Programmer.
   - **„Bleiben immer“**.
   - **„Werden alle zurückgesetzt“**: Der Programmer wird geleert.
-- **Grand Master wirkt auf**: **„Intensitätskanäle“** oder **„Alle Kanäle“**.
+- **Grand Master wirkt auf**: **„Intensitätskanäle“** (das Licht: die Dimmer und die Farben der Fixtures ohne Dimmer) oder **„Alle Kanäle“**.
 
 ## Audio
 

@@ -38,7 +38,12 @@
 #include "drivecontrol.h"
 
 #include "functionparent.h"
-#include "genericdmxsource.h"
+#include "fxscene.h"
+#include "efx.h"
+#include "efxfixture.h"
+#include "chaser.h"
+#include "chaserstep.h"
+#include "scene.h"
 #include "fixturegroup.h"
 #include "qlcchannel.h"
 #include "fixture.h"
@@ -66,7 +71,6 @@ ShowSurface::ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent)
     , m_mixer(nullptr)
     , m_core(nullptr)
     , m_currentPage(0)
-    , m_speedSource(new GenericDMXSource(doc))
 {
     connect(m_doc->masterTimer(), SIGNAL(functionListChanged()), this, SLOT(slotChanged()));
     connect(m_zones, SIGNAL(countChanged()), this, SLOT(slotZonesChanged()));
@@ -84,13 +88,14 @@ ShowSurface::ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent)
     // (the dimmers of the scenes are the base of their intensity)
     connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotFunctionAdded(quint32)));
     connect(m_doc, SIGNAL(functionChanged(quint32)), this, SLOT(slotFunctionChanged(quint32)));
-    m_speedSource->setOutputEnabled(true);
+    // (and the movement speed faders on the functions that move heads)
+    connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotMotionChanged()));
+    connect(m_doc, SIGNAL(functionChanged(quint32)), this, SLOT(slotMotionChanged()));
     slotZonesChanged();
 }
 
 ShowSurface::~ShowSurface()
 {
-    delete m_speedSource;
 }
 
 void ShowSurface::setMixer(LiveMixer *mixer)
@@ -642,7 +647,8 @@ void ShowSurface::clear()
     m_lastId = 0;
     m_speedLevels.clear();
     m_speedOrder.clear();
-    m_speedSource->unsetAll();
+    // (what moves goes at its own speed again: the FX of the programmer)
+    applyMotion();
     emit cleared();
     emit pagesChanged();
 }
@@ -1114,7 +1120,7 @@ void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
         // (the last one moved goes last when they are given again)
         m_speedOrder.removeAll(groupId);
         m_speedOrder.append(groupId);
-        applySpeed(groupId, level);
+        applyMotion();
     }
     else if (target == "scene")
     {
@@ -1313,24 +1319,124 @@ bool ShowSurface::forgetFunctions(const std::function<bool(const QVariant &)> &g
     return any;
 }
 
-void ShowSurface::applySpeed(int groupId, qreal level)
+void ShowSurface::applyMotion()
 {
-    // the fader up: the heads move faster
-    for (const SpeedChannel &sc : speedChannels(groupId))
-        m_speedSource->set(sc.fixture, sc.channel, uchar(qRound((sc.fastFirst ? 1.0 - level : level) * 255)));
+    QList<Function *> functions = m_doc->functions();
+    // (the FX of the programmer is not in the show)
+    if (m_core != nullptr && m_core->programmer() != nullptr && m_core->programmer()->fxScene() != nullptr)
+        functions.append(m_core->programmer()->fxScene());
+
+    // x0.1 at the bottom, x1 in the middle, x10 at the top
+    QHash<Function *, qreal> speeds;
+    for (int groupId : std::as_const(m_speedOrder))
+    {
+        const QSet<quint32> fixtures = motionFixtures(groupId);
+        const qreal speed = std::pow(10.0, m_speedLevels.value(groupId, 0.5) * 2.0 - 1.0);
+        for (Function *f : std::as_const(functions))
+        {
+            if (movesHeads(f, fixtures))
+                speeds.insert(f, speed);
+        }
+    }
+    for (Function *f : std::as_const(functions))
+        f->setMotionSpeed(speeds.value(f, 1.0));
+}
+
+QSet<quint32> ShowSurface::motionFixtures(int groupId) const
+{
+    QSet<quint32> fixtures;
+    if (groupId >= 0)
+    {
+        if (FixtureGroup *group = m_doc->fixtureGroup(quint32(groupId)))
+            for (quint32 id : group->fixtureList())
+                fixtures.insert(id);
+        return fixtures;
+    }
+    for (Fixture *fxi : m_doc->fixtures())
+    {
+        for (quint32 c = 0; c < fxi->channels(); c++)
+        {
+            const QLCChannel *ch = fxi->channel(c);
+            if (ch != nullptr && (ch->group() == QLCChannel::Pan || ch->group() == QLCChannel::Tilt))
+            {
+                fixtures.insert(fxi->id());
+                break;
+            }
+        }
+    }
+    return fixtures;
+}
+
+bool ShowSurface::movesHeads(Function *f, const QSet<quint32> &fixtures) const
+{
+    if (f == nullptr || fixtures.isEmpty())
+        return false;
+
+    auto moving = [this](quint32 fixtureId, quint32 channel) {
+        Fixture *fxi = m_doc->fixture(fixtureId);
+        const QLCChannel *ch = fxi != nullptr ? fxi->channel(channel) : nullptr;
+        return ch != nullptr && (ch->group() == QLCChannel::Pan || ch->group() == QLCChannel::Tilt);
+    };
+    auto layersMove = [&fixtures](const QList<FXScene::Layer> &layers) {
+        for (const FXScene::Layer &layer : layers)
+        {
+            if (FXScene::isMotion(layer.param) == false)
+                continue;
+            for (quint32 id : layer.fixtures)
+                if (fixtures.contains(id))
+                    return true;
+        }
+        return false;
+    };
+    auto valuesMove = [&](const QList<SceneValue> &values) {
+        for (const SceneValue &v : values)
+            if (fixtures.contains(v.fxi) && moving(v.fxi, v.channel))
+                return true;
+        return false;
+    };
+
+    switch (f->type())
+    {
+    case Function::FXSceneType:
+        return layersMove(static_cast<FXScene *>(f)->layers());
+    case Function::EFXType:
+        for (EFXFixture *ef : static_cast<EFX *>(f)->fixtures())
+            if (fixtures.contains(ef->head().fxi))
+                return true;
+        return false;
+    case Function::ChaserType:
+    case Function::SequenceType:
+        // steps with positions: their own values, or the scenes they play
+        for (const ChaserStep &step : static_cast<Chaser *>(f)->steps())
+        {
+            if (valuesMove(step.values))
+                return true;
+            if (Scene *scene = qobject_cast<Scene *>(m_doc->function(step.fid)))
+                if (valuesMove(scene->values()))
+                    return true;
+        }
+        return false;
+    case Function::CuelistType:
+        // its FX only (the times of its cues stay)
+        for (const Cuelist::Cue &cue : static_cast<Cuelist *>(f)->cues())
+            if (layersMove(cue.fx))
+                return true;
+        return false;
+    default:
+        return false;
+    }
+}
+
+void ShowSurface::slotMotionChanged()
+{
+    if (m_speedOrder.isEmpty() == false)
+        applyMotion();
 }
 
 void ShowSurface::slotFixturesChanged()
 {
-    if (m_speedOrder.isEmpty())
-        return;
-
-    // the speed channels of before may be other channels now (a new mode, a
-    // fixture deleted and its ID given to a new one, another address): all
-    // of them go, with their faders, and the levels are given again
-    m_speedSource->unsetAll();
-    for (int groupId : std::as_const(m_speedOrder))
-        applySpeed(groupId, m_speedLevels.value(groupId, 0.5));
+    // the fixtures of a group, or the moving heads, may be others now
+    slotMotionChanged();
 }
 
 qreal ShowSurface::targetLevel(const QVariantMap &t) const
@@ -1389,45 +1495,6 @@ qreal ShowSurface::targetLevel(const QVariantMap &t) const
     return 0.0;
 }
 
-QList<ShowSurface::SpeedChannel> ShowSurface::speedChannels(int groupId) const
-{
-    QList<quint32> fixtures;
-    if (groupId >= 0)
-    {
-        if (FixtureGroup *group = m_doc->fixtureGroup(quint32(groupId)))
-            fixtures = group->fixtureList();
-    }
-    else
-    {
-        for (Fixture *fxi : m_doc->fixtures())
-            fixtures.append(fxi->id());
-    }
-
-    QList<SpeedChannel> list;
-    for (quint32 fid : fixtures)
-    {
-        Fixture *fxi = m_doc->fixture(fid);
-        if (fxi == nullptr)
-            continue;
-        for (quint32 c = 0; c < fxi->channels(); c++)
-        {
-            const QLCChannel *ch = fxi->channel(c);
-            if (ch == nullptr || ch->group() != QLCChannel::Speed || ch->controlByte() != QLCChannel::MSB)
-                continue;
-            // the speed of the movement, not of a wheel or an effect
-            QString name = ch->name().toLower();
-            bool movement = ch->preset() == QLCChannel::SpeedPanTiltFastSlow || ch->preset() == QLCChannel::SpeedPanTiltSlowFast ||
-                            name.contains("pan") || name.contains("tilt") || name.contains("p/t") ||
-                            name.contains("movement") || name.contains("vector");
-            if (movement == false)
-                continue;
-            // most fixtures go from fast to slow
-            bool fastFirst = ch->preset() != QLCChannel::SpeedPanTiltSlowFast;
-            list.append({ fid, c, fastFirst });
-        }
-    }
-    return list;
-}
 
 int ShowSurface::revision() const
 {
@@ -1950,6 +2017,9 @@ void ShowSurface::setCore(DtcCore *core)
     // (and the names of what the buttons drive: a renamed function)
     if (m_core != nullptr)
         connect(m_core, &DtcCore::functionsChanged, this, &ShowSurface::slotChanged);
+    // the FX of the programmer go at the speed of the movement too
+    if (m_core != nullptr && m_core->programmer() != nullptr)
+        connect(m_core->programmer(), &Programmer::fxChanged, this, &ShowSurface::slotMotionChanged);
 }
 
 void ShowSurface::slotPlaybackPagesRenumbered(const QList<int> &newIndexes, const QHash<int, quint32> &removedSlots)

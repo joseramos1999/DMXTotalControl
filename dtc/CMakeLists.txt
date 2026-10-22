@@ -14,6 +14,7 @@ set(SRC_FILES
     src/updatechecker.cpp src/updatechecker.h
     src/uiaudit.cpp src/uiaudit.h
     src/scenetaps.cpp src/scenetaps.h
+    src/singleinstance.cpp src/singleinstance.h
     src/aim.cpp src/aim.h
     src/cpuload.cpp src/cpuload.h
     src/palettemanager.cpp src/palettemanager.h
@@ -38,6 +39,7 @@ set(QML_FILES
     qml/Main.qml
     qml/Theme.qml
     qml/components/AppButton.qml
+    qml/components/AppFileDialog.qml
     qml/components/AppMenu.qml
     qml/components/AppSwitch.qml
     qml/components/HSlider.qml

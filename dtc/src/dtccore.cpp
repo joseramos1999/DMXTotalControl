@@ -27,6 +27,8 @@
 #include <QTimer>
 #include <QTime>
 #include <QSaveFile>
+#include <QCryptographicHash>
+#include <QLocale>
 #include <QFile>
 #include <QDir>
 #include <QDirIterator>
@@ -36,6 +38,7 @@
 #include <QTextDocument>
 #include <QCoreApplication>
 #include <QUrl>
+#include <QScopeGuard>
 #include <QDebug>
 
 #include "dtccore.h"
@@ -71,13 +74,39 @@
 #include "qlcfile.h"
 #include "doc.h"
 
+/** A file as one key, however its path is written (relative, '\' or '/',
+ *  upper or lower case on Windows) */
+static QString showKey(const QString &path)
+{
+    const QString key = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+#ifdef Q_OS_WIN
+    return key.toCaseFolded();
+#else
+    return key;
+#endif
+}
+
+/** Where the autosave keeps its recovery copies */
+static QString recoveryFolder()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+}
+
+/** A recovery copy of the autosave: not a show of the user (nor one of the
+ *  recent shows, nor where the file dialogs start) */
+static bool isRecoveryCopy(const QString &path)
+{
+    const QString folder = showKey(recoveryFolder());
+    const QString parent = showKey(QFileInfo(path).absolutePath());
+    return parent == folder || parent == folder + "/autosave";
+}
+
 DtcCore::DtcCore(QObject *parent)
     : QObject(parent)
     , m_doc(nullptr)
     , m_settings(new AppSettings(this))
     , m_library(nullptr)
     , m_hasRecovery(false)
-    , m_backupDone(false)
     , m_clearing(false)
 {
     initDoc();
@@ -127,12 +156,13 @@ DtcCore::DtcCore(QObject *parent)
     // Pulse listens to the audio input chosen in the options at once
     connect(m_settings, &AppSettings::audioInputChanged, m_drive, &DriveControl::restartInput);
 
-    // A session that didn't end cleanly may have left an autosave of an
-    // untitled show behind
-    if (m_settings->sessionRunning() && QFile::exists(recoveryFilePath()))
-        m_hasRecovery = true;
-    else
-        QFile::remove(recoveryFilePath());
+    // A session that didn't end cleanly may have left the recovery copy of
+    // the show it had open (its changes that weren't saved): it is offered.
+    // After a clean exit what is left there is of no use
+    if (m_settings->sessionRunning())
+        findRecovery();
+    if (m_hasRecovery == false)
+        removeRecoveries();
     m_settings->setSessionRunning(true);
 
     // the rhythm bars of the buttons: the steps of what plays, about every frame
@@ -210,9 +240,10 @@ DtcCore::~DtcCore()
     m_doc->masterTimer()->stop();
     m_doc->inputOutputMap()->saveDefaults();
 
-    // a clean exit: the recovery file is not needed any more
-    if (m_hasRecovery == false)
-        QFile::remove(recoveryFilePath());
+    // a clean exit (the show saved or not, as the user said): its recovery
+    // copy is not needed any more
+    if (m_recoveryFile.isEmpty() == false)
+        removeRecovery(m_recoveryFile);
     m_settings->setSessionRunning(false);
 }
 
@@ -221,12 +252,13 @@ void DtcCore::initDoc()
     Q_ASSERT(m_doc == nullptr);
     m_doc = new Doc(this);
 
-    connect(m_doc, SIGNAL(modified(bool)), this, SIGNAL(modifiedChanged()));
-    connect(m_doc, SIGNAL(functionAdded(quint32)), this, SIGNAL(functionsChanged()));
+    // (a show cleared or loading: told once, at the end)
+    connect(m_doc, SIGNAL(modified(bool)), this, SLOT(slotModified()));
+    connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotFunctionsChanged()));
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
-    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SIGNAL(functionsChanged()));
-    connect(m_doc, SIGNAL(functionNameChanged(quint32)), this, SIGNAL(functionsChanged()));
-    connect(m_doc, SIGNAL(functionReplaced(quint32)), this, SIGNAL(functionsChanged()));
+    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionsChanged()));
+    connect(m_doc, SIGNAL(functionNameChanged(quint32)), this, SLOT(slotFunctionsChanged()));
+    connect(m_doc, SIGNAL(functionReplaced(quint32)), this, SLOT(slotFunctionsChanged()));
     connect(m_doc->masterTimer(), SIGNAL(functionListChanged()),
             this, SIGNAL(runningFunctionsChanged()));
     connect(m_doc->inputOutputMap(), SIGNAL(blackoutChanged(bool)),
@@ -779,8 +811,9 @@ void DtcCore::releaseOutput()
         return;
 
     // their fade outs end (a second at most), and the outputs send the stage
-    // at rest for a few frames. (The universes write when the timer tells
-    // them, through the event loop: it runs while this waits)
+    // at rest for a few frames. (The universes write in their own threads
+    // when the timer tells them; the events run while this waits, for what
+    // the functions that stop signal)
     auto fading = [this]() {
         for (Universe *universe : m_doc->inputOutputMap()->universes())
             if (universe->hasFunctionFaders())
@@ -814,7 +847,7 @@ void DtcCore::stopAll()
  * Show files
  *********************************************************************/
 
-void DtcCore::clearShow()
+void DtcCore::clearShow(bool restart)
 {
     m_zones->clear();
     m_playbacks->clear();
@@ -837,9 +870,18 @@ void DtcCore::clearShow()
     // the files of a new show aren't relative to the folder of the last one
     m_doc->setWorkspacePath(QString());
     m_doc->resetModified();
-    m_doc->inputOutputMap()->startUniverses();
-    m_doc->masterTimer()->start();
+    if (restart)
+    {
+        m_doc->inputOutputMap()->startUniverses();
+        m_doc->masterTimer()->start();
+    }
     setFileName(QString());
+    // the recovery copy of the show that goes (saved or left, as the user said)
+    if (m_recoveryFile.isEmpty() == false)
+    {
+        removeRecovery(m_recoveryFile);
+        m_recoveryFile.clear();
+    }
     // this show was never autosaved
     if (m_lastAutosave.isEmpty() == false)
     {
@@ -884,7 +926,11 @@ bool DtcCore::openShow(const QUrl &url)
     QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
     if (path.isEmpty())
         return false;
+    return loadShow(path, path);
+}
 
+bool DtcCore::loadShow(const QString &path, const QString &show)
+{
     QXmlStreamReader *reader = QLCFile::getXMLReader(path);
     if (reader == nullptr || reader->device() == nullptr || reader->hasError())
     {
@@ -908,13 +954,22 @@ bool DtcCore::openShow(const QUrl &url)
         return false;
     }
 
-    clearShow();
+    // (the recovery copy opened as a file stays: it is the show now)
+    if (m_recoveryFile == path)
+        m_recoveryFile.clear();
+    // (the timer stays stopped: the universes are empty until it's loaded)
+    clearShow(false);
     // local resources (audio, video...) are relative to the show file
-    m_doc->setWorkspacePath(QFileInfo(path).absolutePath());
+    m_doc->setWorkspacePath(QFileInfo(show.isEmpty() ? path : show).absolutePath());
+
+    // the patch tells its fixtures and groups once, when all of the show is
+    // loaded (Doc, the plan, the numbers and the order of the groups each
+    // told them, and the UI made its lists and plans again for each)
+    m_patch->beginLoading();
+    const auto patchLoaded = qScopeGuard([this]() { m_patch->endLoading(); });
 
     // loading replaces the universes with the ones of the show: the new ones
     // must be started, or nothing reaches the outputs
-    m_doc->masterTimer()->stop();
     bool ok = loadWorkspace(*reader);
     // a damaged file (an XML error halfway, a truncated file) stops the
     // loading there without a word: what came after it is missing
@@ -930,6 +985,9 @@ bool DtcCore::openShow(const QUrl &url)
     if (ok == false)
     {
         setLastError(tr("Error while loading %1").arg(path));
+        // (what was cleared, and what was read)
+        emit functionsChanged();
+        emit modifiedChanged();
         return false;
     }
 
@@ -969,11 +1027,10 @@ bool DtcCore::openShow(const QUrl &url)
     }
 
     checkFiles();
-    setFileName(path);
+    setFileName(show);
     m_doc->resetModified();
-    m_backupDone = false;
-    if (path != recoveryFilePath())
-        m_settings->addRecentShow(path);
+    if (show.isEmpty() == false && isRecoveryCopy(show) == false)
+        m_settings->addRecentShow(show);
     emit functionsChanged();
     emit modifiedChanged();
     return true;
@@ -1284,23 +1341,54 @@ bool DtcCore::saveShow(const QUrl &url)
         path += KExtWorkspace;
 
     m_doc->setWorkspacePath(QFileInfo(path).absolutePath());
+
+    // the version before the first save of this session is kept beside it
+    // as .bak, once per show (the old backup goes only once the new one is
+    // there). A show this session made has none
+    const QString key = showKey(path);
+    if (m_backedUp.contains(key) == false)
+    {
+        m_backedUp.insert(key);
+        if (QFile::exists(path))
+        {
+            const QString backup = path + ".bak";
+            const QString fresh = backup + ".new";
+            QFile::remove(fresh);
+            if (QFile::copy(path, fresh))
+            {
+                QFile::remove(backup);
+                QFile::rename(fresh, backup);
+            }
+        }
+    }
+
     if (writeWorkspace(path) == false)
         return false;
 
-    if (path != m_fileName)
-        m_backupDone = false;
     setFileName(path);
     m_doc->resetModified();
     m_settings->addRecentShow(path);
 
-    // the show is safe on disk now
-    QFile::remove(recoveryFilePath());
+    // the show is safe on disk now: its recovery copy goes
+    if (m_recoveryFile.isEmpty() == false)
+    {
+        removeRecovery(m_recoveryFile);
+        m_recoveryFile.clear();
+    }
+    if (m_lastAutosave.isEmpty() == false)
+    {
+        m_lastAutosave.clear();
+        emit lastAutosaveChanged();
+    }
     return true;
 }
 
 void DtcCore::openStartupShow()
 {
-    if (m_hasRecovery || m_fileName.isEmpty() == false || m_settings->openLastShow() == false)
+    // (also with a recovery copy offered: Recover puts the copy in its place
+    // and Discard leaves it open, and the SHOW of a computer that starts on
+    // its own isn't empty meanwhile. The autosave doesn't write over the copy)
+    if (m_fileName.isEmpty() == false || m_settings->openLastShow() == false)
         return;
 
     QStringList recent = m_settings->recentShows();
@@ -1314,9 +1402,82 @@ void DtcCore::openStartupShow()
 
 QString DtcCore::recoveryFilePath() const
 {
-    QDir dir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
-    dir.mkpath(".");
-    return dir.filePath("autosave" + KExtWorkspace);
+    return recoveryFileFor(m_fileName);
+}
+
+QString DtcCore::recoveryFileFor(const QString &show)
+{
+    QDir dir(recoveryFolder());
+    if (show.isEmpty())
+    {
+        dir.mkpath(".");
+        return dir.filePath("autosave" + KExtWorkspace);
+    }
+    // its name (cut short) and its path: the shows of the same name in other
+    // folders have copies of their own
+    const QString hash = QString::fromLatin1(QCryptographicHash::hash(showKey(show).toUtf8(),
+                                                                      QCryptographicHash::Sha1).toHex().left(8));
+    dir.mkpath("autosave");
+    return dir.filePath(QString("autosave/%1-%2%3").arg(QFileInfo(show).completeBaseName().left(60), hash, KExtWorkspace));
+}
+
+void DtcCore::findRecovery()
+{
+    // (the newest one, if a session left more than one)
+    const QFileInfo untitled(recoveryFileFor(QString()));
+    QFileInfoList copies;
+    if (untitled.exists())
+        copies.append(untitled);
+    copies += QDir(recoveryFolder() + "/autosave").entryInfoList({ "*" + KExtWorkspace }, QDir::Files);
+    for (const QFileInfo &copy : std::as_const(copies))
+    {
+        // the show it is a copy of: named by the file beside it
+        QString show;
+        if (copy.absoluteFilePath() != untitled.absoluteFilePath())
+        {
+            QFile names(copy.absoluteFilePath() + ".path");
+            if (names.open(QIODevice::ReadOnly) == false)
+                continue;
+            show = QString::fromUtf8(names.readAll());
+            if (show.isEmpty())
+                continue;
+        }
+        if (m_hasRecovery && copy.lastModified() <= m_pendingTime)
+            continue;
+        m_hasRecovery = true;
+        m_pendingRecovery = copy.absoluteFilePath();
+        m_pendingShow = show;
+        m_pendingTime = copy.lastModified();
+    }
+}
+
+void DtcCore::removeRecovery(const QString &file)
+{
+    QFile::remove(file);
+    QFile::remove(file + ".path");
+}
+
+void DtcCore::removeRecoveries(const QStringList &keep)
+{
+    QSet<QString> kept;
+    for (const QString &file : keep)
+        if (file.isEmpty() == false)
+            kept.insert(showKey(file));
+
+    QStringList copies({ recoveryFileFor(QString()) });
+    const QDir dir(recoveryFolder() + "/autosave");
+    for (const QString &name : dir.entryList({ "*" + KExtWorkspace, "*" + KExtWorkspace + ".path" }, QDir::Files))
+    {
+        // (a name without its copy goes too)
+        QString copy = dir.filePath(name);
+        if (copy.endsWith(".path"))
+            copy.chop(5);
+        if (copies.contains(copy) == false)
+            copies.append(copy);
+    }
+    for (const QString &copy : std::as_const(copies))
+        if (kept.contains(showKey(copy)) == false)
+            removeRecovery(copy);
 }
 
 bool DtcCore::hasRecovery() const
@@ -1324,28 +1485,58 @@ bool DtcCore::hasRecovery() const
     return m_hasRecovery;
 }
 
+QString DtcCore::recoveryShow() const
+{
+    if (m_hasRecovery == false)
+        return QString();
+    return m_pendingShow.isEmpty() ? tr("Untitled show") : QFileInfo(m_pendingShow).completeBaseName();
+}
+
+QString DtcCore::recoveryTime() const
+{
+    if (m_hasRecovery == false)
+        return QString();
+    return QLocale().toString(m_pendingTime, QLocale::ShortFormat);
+}
+
 bool DtcCore::recoverShow()
 {
     if (m_hasRecovery == false)
         return false;
 
-    bool ok = openShow(QUrl::fromLocalFile(recoveryFilePath()));
+    const QString file = m_pendingRecovery;
+    const QString show = m_pendingShow;
     m_hasRecovery = false;
+    m_pendingRecovery.clear();
+    m_pendingShow.clear();
+    m_pendingTime = QDateTime();
     emit hasRecoveryChanged();
+    // (older copies are of no use)
+    removeRecoveries({ file, m_recoveryFile });
 
-    if (ok)
+    // the copy as the show it was: a show with a file keeps it (Save writes
+    // it there) and its files are found from its folder; an untitled show
+    // stays untitled. Either way it has changes to save
+    if (loadShow(file, show) == false)
     {
-        // it is still an untitled show, that needs to be saved
-        setFileName(QString());
-        m_doc->setModified();
+        // what could be read of a damaged copy is open, untitled and
+        // modified: the next autosave protects it
+        removeRecovery(file);
+        return false;
     }
-    return ok;
+    // (the copy stays until the show is saved or left)
+    m_recoveryFile = file;
+    m_doc->setModified();
+    return true;
 }
 
 void DtcCore::discardRecovery()
 {
-    QFile::remove(recoveryFilePath());
+    removeRecoveries({ m_recoveryFile });
     m_hasRecovery = false;
+    m_pendingRecovery.clear();
+    m_pendingShow.clear();
+    m_pendingTime = QDateTime();
     emit hasRecoveryChanged();
 }
 
@@ -1502,39 +1693,45 @@ void DtcCore::slotAutosave()
     if (m_doc->isModified() == false)
         return;
 
+    // a recovery copy of the show as it is, offered back after a crash. The
+    // show file is never written (only Save does it), and the show is still
+    // modified: closing without saving leaves the file as it was
+    const QString path = recoveryFilePath();
+    // (not over the copy a crashed session left, while it is offered)
+    if (m_hasRecovery && showKey(path) == showKey(m_pendingRecovery))
+        return;
+
     bool ok;
     if (m_fileName.isEmpty())
     {
-        // untitled shows go to a recovery file, offered back after a crash.
-        // Its files (images, audio) are saved relative to the recovery file,
-        // where they are found again (in memory they are absolute)
+        // the files of an untitled show (images, audio) are saved relative
+        // to the copy, where they are found again (in memory they are absolute)
         const QString workspace = m_doc->workspacePath();
-        m_doc->setWorkspacePath(QFileInfo(recoveryFilePath()).absolutePath());
-        ok = writeWorkspace(recoveryFilePath());
+        m_doc->setWorkspacePath(QFileInfo(path).absolutePath());
+        ok = writeWorkspace(path);
         m_doc->setWorkspacePath(workspace);
     }
     else
     {
-        // keep the version the user saved last, once per session (the old
-        // backup goes only once the new one is there)
-        if (m_backupDone == false)
-        {
-            const QString backup = m_fileName + ".bak";
-            const QString fresh = backup + ".new";
-            QFile::remove(fresh);
-            if (QFile::copy(m_fileName, fresh))
-            {
-                QFile::remove(backup);
-                m_backupDone = QFile::rename(fresh, backup);
-            }
-        }
-        ok = writeWorkspace(m_fileName);
-        if (ok)
-            m_doc->resetModified();
+        // the files of a show with a file stay relative to its folder: it is
+        // recovered as that show. The file beside the copy says which one,
+        // and it is written first: a copy is never there without it (a
+        // crash in between would leave a copy nobody offers), while a name
+        // without its copy is just cleaned up
+        QSaveFile names(path + ".path");
+        ok = names.open(QIODevice::WriteOnly) && names.write(m_fileName.toUtf8()) >= 0 && names.commit();
+        if (ok == false)
+            setLastError(tr("Unable to write %1 (%2)").arg(names.fileName(), names.errorString()));
+        else
+            ok = writeWorkspace(path);
     }
 
     if (ok)
     {
+        // (the copy of what the show was before: untitled, a damaged file)
+        if (m_recoveryFile.isEmpty() == false && showKey(m_recoveryFile) != showKey(path))
+            removeRecovery(m_recoveryFile);
+        m_recoveryFile = path;
         m_lastAutosave = QTime::currentTime().toString("HH:mm");
         emit lastAutosaveChanged();
     }
@@ -1543,6 +1740,21 @@ void DtcCore::slotAutosave()
         // nothing protects the show any more: the user must know
         emit autosaveFailed(m_lastError);
     }
+}
+
+void DtcCore::slotFunctionsChanged()
+{
+    // (Core.functions is read whole by many lists: once for a whole show)
+    if (m_doc->isClearingOrLoading())
+        return;
+    emit functionsChanged();
+}
+
+void DtcCore::slotModified()
+{
+    if (m_doc->isClearingOrLoading())
+        return;
+    emit modifiedChanged();
 }
 
 void DtcCore::slotFunctionRemoved(quint32 id)
@@ -1561,6 +1773,60 @@ void DtcCore::slotFunctionRemoved(quint32 id)
 QUrl DtcCore::localFileUrl(const QString &path) const
 {
     return QUrl::fromLocalFile(path);
+}
+
+/** The folder of a show of the user, empty for a recovery copy or a show
+ *  installed with the program (the examples) */
+static QString userShowFolder(const QString &show)
+{
+    if (show.isEmpty() || isRecoveryCopy(show))
+        return QString();
+    const QString folder = QFileInfo(show).absolutePath();
+    const QString examples = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("Examples"));
+    if (showKey(folder) == showKey(examples) || QFileInfo(folder).isDir() == false)
+        return QString();
+    return folder;
+}
+
+QUrl DtcCore::dialogFolder(const QString &kind) const
+{
+    // (pictures, sounds...: where they were taken from last, while it is there)
+    if (kind != QLatin1String("show"))
+    {
+        const QString used = m_settings->dialogFolder(kind);
+        if (used.isEmpty() == false && QFileInfo(used).isDir())
+            return QUrl::fromLocalFile(used);
+    }
+    QString folder = userShowFolder(m_fileName);
+    const QStringList recent = m_settings->recentShows();
+    for (int i = 0; folder.isEmpty() && i < recent.count(); i++)
+        folder = userShowFolder(recent.at(i));
+    if (folder.isEmpty())
+        folder = showsFolder();
+    return QUrl::fromLocalFile(folder);
+}
+
+void DtcCore::dialogUsed(const QString &kind, const QUrl &file)
+{
+    // (the dialogs of the shows start at the show)
+    if (kind == QLatin1String("show") || file.isLocalFile() == false)
+        return;
+    const QFileInfo info(file.toLocalFile());
+    m_settings->setDialogFolder(kind, info.isDir() ? info.absoluteFilePath() : info.absolutePath());
+}
+
+QString DtcCore::showsFolder() const
+{
+    const QString folder = m_showsFolder.isEmpty()
+                         ? QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath("DMXTotalControl")
+                         : m_showsFolder;
+    QDir().mkpath(folder);
+    return folder;
+}
+
+void DtcCore::setShowsFolder(const QString &folder)
+{
+    m_showsFolder = folder;
 }
 
 void DtcCore::slotGrandMasterModeChanged()

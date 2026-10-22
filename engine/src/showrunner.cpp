@@ -246,7 +246,10 @@ void ShowRunner::startBlock(ShowFunction *sf, Function *f, quint32 offset)
 
     uint fadeIn = sf->fadeIn() > 0 ? sf->fadeIn() : Function::defaultSpeed();
     uint fadeOut = sf->fadeOut() > 0 ? sf->fadeOut() : Function::defaultSpeed();
-    f->start(m_doc->masterTimer(), functionParent(), offset, fadeIn, fadeOut);
+    // DMX Total Control: the fades of a block are ms (a chaser in beats
+    // doesn't read them as beats)
+    f->start(m_doc->masterTimer(), functionParent(), offset, fadeIn, fadeOut,
+             Function::defaultSpeed(), Function::Time);
 
     // with a fade out, the block ends faded out
     rb.stopTime = sf->startTime() + duration;

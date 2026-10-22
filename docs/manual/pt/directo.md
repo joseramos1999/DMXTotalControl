@@ -99,10 +99,10 @@ Enquanto roda, cada cartão de uma cena com passos ou de uma cuelist tem embaixo
 ## Masters
 
 - **Master do grupo**: o controle deslizante “Master” no pé de cada coluna escala a intensidade de todas as suas cenas.
-- **Grand master**: o “GM” da barra superior escala toda a saída. Em Opções você decide se ele atua só sobre os canais de intensidade ou sobre todos.
+- **Grand master**: o “GM” da barra superior escala a luz de toda a saída: os dimmers e, nos fixtures sem dimmer, as cores deles. Não mexe na mistura de cor (ciano, magenta, amarelo, matiz e saturação) nem nas cores de um fixture ou de uma cabeça com dimmer próprio, que baixam com esse dimmer. Em Opções você decide se ele atua só sobre a intensidade ou sobre todos os canais.
 - **Dimmer ao vivo**: cada cena tem também seu próprio dimmer, nas propriedades dela, acima do master do grupo.
 
-Os masters e o grand master não afetam os canais que têm a opção “Dimmer” desativada nos [limites do fixture](patch.md#limites).
+Os masters e o grand master não afetam os canais que têm a opção “Dimmer” desativada nos [limites do fixture](patch.md#limites). Se for o dimmer de um fixture, ele deixa de contar como dimmer próprio: o grand master passa a baixar as cores dele.
 
 ## Propriedades da cena
 
@@ -160,7 +160,7 @@ Cada cena tem uma prioridade de 0 a 10; as novas recebem a que você indicar em 
 - **“Pausar”** congela tudo o que está rodando. **“Retomar”** o retoma.
 - **“Liberar grupos”** para as cenas de todos os grupos; o quadrado de cada coluna, só as desse grupo.
 - **“Parar tudo”** (Esc), na barra superior, para tudo o que está rodando, também fora dos grupos. Não esvazia o programador.
-- **“Blackout”** (Ctrl+B) leva a saída ao preto sem parar nada.
+- **“Blackout”** (Ctrl+B) leva a saída ao preto sem parar nada. As cabeças não se movem: o pan, o tilt, o zoom, o foco e os outros canais que não são luz ficam onde estão.
 
 ## Mixer
 

@@ -117,7 +117,11 @@ Popup {
                 text: qsTr("Look in a folder…")
                 iconGlyph: Theme.iconFolderOpen
                 primary: true
-                onClicked: folderDialog.open()
+                onClicked: {
+                    // (from the folder of the show)
+                    folderDialog.currentFolder = Core.dialogFolder("show")
+                    folderDialog.open()
+                }
             }
         }
     }

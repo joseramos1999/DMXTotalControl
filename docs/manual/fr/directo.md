@@ -99,10 +99,10 @@ Pendant qu’elle joue, chaque tuile d’une scène à pas ou d’une cuelist po
 ## Masters
 
 - **Master du groupe** : le curseur « Master » au pied de chaque colonne règle l’intensité de toutes ses scènes.
-- **Grand master** : le « GM » de la barre du haut règle toute la sortie. Dans Options, vous choisissez s’il agit seulement sur les canaux d’intensité ou sur tous.
+- **Grand master** : le « GM » de la barre du haut règle la lumière de toute la sortie : les dimmers et, sur les fixtures sans dimmer, leurs couleurs. Il ne touche ni au mélange de couleurs (cyan, magenta, jaune, teinte et saturation) ni aux couleurs d’un fixture ou d’une tête qui a son propre dimmer, qui baissent avec ce dimmer. Dans Options, vous choisissez s’il agit seulement sur l’intensité ou sur tous les canaux.
 - **Dimmer en direct** : chaque scène a en plus son propre dimmer, dans ses propriétés, par-dessus le master du groupe.
 
-Les masters et le grand master n’agissent pas sur les canaux dont l’option « Dimmer » est désactivée dans les [limites du fixture](patch.md#limites).
+Les masters et le grand master n’agissent pas sur les canaux dont l’option « Dimmer » est désactivée dans les [limites du fixture](patch.md#limites). Si c’est le dimmer d’un fixture, il ne compte plus comme son propre dimmer : le grand master baisse alors ses couleurs.
 
 ## Propriétés de la scène
 
@@ -160,7 +160,7 @@ Chaque scène a une priorité de 0 à 10 ; les nouvelles prennent celle que vou
 - **« Pause »** fige tout ce qui joue. **« Reprendre »** le relance.
 - **« Libérer les groupes »** arrête les scènes de tous les groupes ; le carré de chaque colonne, seulement celles de ce groupe.
 - **« Tout arrêter »** (Échap), dans la barre du haut, arrête tout ce qui joue, y compris hors des groupes. Il ne vide pas le programmeur.
-- **« Blackout »** (Ctrl+B) met la sortie au noir sans rien arrêter.
+- **« Blackout »** (Ctrl+B) met la sortie au noir sans rien arrêter. Les têtes ne bougent pas : le pan, le tilt, le zoom, le focus et les autres canaux qui ne sont pas de la lumière restent où ils sont.
 
 ## Mixeur
 

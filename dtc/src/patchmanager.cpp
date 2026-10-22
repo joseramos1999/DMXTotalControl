@@ -74,11 +74,13 @@ PatchManager::PatchManager(Doc *doc, QObject *parent)
     connect(m_doc, SIGNAL(loaded()), this, SLOT(notifyFixtures()));
     connect(m_doc, SIGNAL(cleared()), this, SLOT(notifyFixtures()));
 
-    connect(m_doc, SIGNAL(fixtureGroupAdded(quint32)), this, SIGNAL(groupsChanged()));
-    connect(m_doc, SIGNAL(fixtureGroupRemoved(quint32)), this, SIGNAL(groupsChanged()));
-    connect(m_doc, SIGNAL(fixtureGroupChanged(quint32)), this, SIGNAL(groupsChanged()));
-    connect(m_doc, SIGNAL(loaded()), this, SIGNAL(groupsChanged()));
-    connect(m_doc, SIGNAL(cleared()), this, SIGNAL(groupsChanged()));
+    // the groups too, but once when a show is cleared or loaded (each group
+    // made the lists of groups and their buttons again, for every group)
+    connect(m_doc, SIGNAL(fixtureGroupAdded(quint32)), this, SLOT(slotGroupsChanged()));
+    connect(m_doc, SIGNAL(fixtureGroupRemoved(quint32)), this, SLOT(slotGroupsChanged()));
+    connect(m_doc, SIGNAL(fixtureGroupChanged(quint32)), this, SLOT(slotGroupsChanged()));
+    connect(m_doc, SIGNAL(loaded()), this, SLOT(notifyGroups()));
+    connect(m_doc, SIGNAL(cleared()), this, SLOT(notifyGroups()));
     connect(m_doc, SIGNAL(loaded()), this, SIGNAL(stageSizeChanged()));
     connect(m_doc, SIGNAL(cleared()), this, SIGNAL(stageSizeChanged()));
 
@@ -107,7 +109,43 @@ void PatchManager::slotFixturesDirty()
 void PatchManager::notifyFixtures()
 {
     m_fixturesTimer->stop();
-    emit fixturesChanged();
+    if (m_loading)
+        m_fixturesHeld = true;
+    else
+        emit fixturesChanged();
+}
+
+void PatchManager::slotGroupsChanged()
+{
+    // (loaded() and cleared() tell them)
+    if (m_doc->isClearingOrLoading() == false)
+        notifyGroups();
+}
+
+void PatchManager::notifyGroups()
+{
+    if (m_loading)
+        m_groupsHeld = true;
+    else
+        emit groupsChanged();
+}
+
+void PatchManager::beginLoading()
+{
+    m_loading = true;
+}
+
+void PatchManager::endLoading()
+{
+    m_loading = false;
+    const bool fixtures = m_fixturesHeld;
+    const bool groups = m_groupsHeld;
+    m_fixturesHeld = false;
+    m_groupsHeld = false;
+    if (fixtures)
+        notifyFixtures();
+    if (groups)
+        notifyGroups();
 }
 
 void PatchManager::slotFixtureChanged(quint32 id)
@@ -816,6 +854,9 @@ void PatchManager::setStageSize(qreal width, qreal height)
     QVector3D grid = monitor->gridSize();
     grid.setX(qBound(1.0, width / 1000.0, 200.0));
     grid.setY(qBound(1.0, height / 1000.0, 200.0));
+    // (the same size again changes nothing)
+    if (qFuzzyCompare(grid, monitor->gridSize()))
+        return;
     monitor->setGridSize(grid);
     m_doc->setModified();
     emit stageSizeChanged();
@@ -1539,7 +1580,7 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
                 ids.append(id);
         }
         m_groupOrder = ids;
-        emit groupsChanged();
+        notifyGroups();
         return true;
     }
 
