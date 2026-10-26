@@ -35,7 +35,7 @@ Press **“Edit”** to build the screen and **“Done”** to use it again. In 
 | **Live mixer** | The [mixer](directo.md#mixer) of Live. |
 | **Clock** | The time, with optional seconds and date. |
 | **Timer** | A stopwatch or a countdown. |
-| **Rhythm: GO and Stop** | Big **GO** and **Stop**, like the ones in the top bar (they change what the scene buttons do), and **BeatGO**. The buttons of scenes with steps or of cuelists hold their rhythm bar. |
+| **Rhythm: GO and Stop** | Big **GO** and **Stop**, like the ones in the top bar (they change what the scene buttons do), and **BeatGO**. The buttons of scenes with steps, of cuelists or of FX at “BPM of the show” hold their rhythm bar. |
 | **Notes** | A text of your own, at the size you want. |
 | **Playing now** | What is playing, with a button to stop it. |
 | **Dials and wheels** | A table of dials or endless wheels. |
@@ -51,6 +51,8 @@ Depending on the type, the properties panel shows:
 
 - **Shows**: the section type.
 - **Title**: the text of its title bar. With no title, the section has no bar, in edit mode too.
+- **Background**: the background colour of the section, among the same colours as the buttons, or **∅** (the one of the theme). It shows as a tint, when editing, when playing and on the phone, and the text on it stays readable.
+- **Colour of all the buttons** (of all the faders, of all the dials): gives that colour to all of them in the table at once. Empty cells stay empty.
 - **Columns** and **Rows**: the size of the table (up to 32). Buttons, faders and dials fill their cells. In a section too small for its table, the cells don't shrink below what can be read and pressed: the table scrolls (with the wheel or by dragging).
 - **Fill with the scenes of a group** (buttons): adds one button for each scene of that group in one go.
 - **Group** (a group): which one it shows.
@@ -74,7 +76,7 @@ The fastest way to fill a table is to **drag scenes** from the list under the pr
 
 | Action | What it does |
 |---|---|
-| **Play a scene** | Plays the scene in its group (or on its own, if it is not in any group). Pressed several times in a row, it taps the [rhythm](directo.md#rhythm-of-a-scene-with-steps) of a scene with steps or of a cuelist. |
+| **Play a scene** | Plays the scene in its group (or on its own, if it is not in any group). Pressed several times in a row, it taps the [rhythm](directo.md#rhythm-of-a-scene-with-steps) of a scene with steps, of a cuelist or of an FX scene with FX at “BPM of the show”. With **Stop** in the top bar, it stops it. |
 | **Next scene of a group** / **Previous scene of a group** | In one group, or in “All groups”. |
 | **Release a group** | One group, or all of them. |
 | **Blackout** | Turns the blackout on or off. |
@@ -90,7 +92,7 @@ A button brought from another page with Alt+click shows “A control on another 
 ### Button options
 
 - **Label**: its text. Empty (“Automatic”), it shows the name of the scene, the palette or the action.
-- **Behaviour** (scene, blackout and palette): **“Toggle: on / off”** or **“Flash: while pressed”**. Flash buttons have a lightning bolt in the corner.
+- **Behaviour** (scene, blackout and palette): **“Toggle: on / off”** or **“Flash: while pressed”**. Flash buttons have a lightning bolt in the corner. On a scene, instead of “Toggle” it says **“Press: follows GO / Stop”**: it plays it or stops it as **GO** and **Stop** of the top bar say.
 - **Keyboard key**: a key on the keyboard that presses it while you are on the Show page. The letter shows in the corner of the button.
 - **Colour**, **Icon** and background **Image** (the image is dimmed while the button is off).
 
@@ -113,6 +115,7 @@ A SHOW fader can control **several things at once**. In its properties, under **
 | **Dimmer of fixtures** | The mixer dimmer of all the fixtures or of a fixture group. |
 | **Movement speed of moving heads** | The speed of what moves the moving heads (all of them or those of a group): their pan/tilt FX, the programmer's, and the steps that move them. ×0.1 at the bottom, normal (×1) in the middle, ×10 at the top; the fader shows the multiplier and a double click puts it back to ×1. An FX of pan/tilt and colour only changes the speed of the movement; a cuelist, the speed of its FX. The speed channel of the motors is not touched. |
 | **Speed of a scene** | The live speed of that scene (×0.1 to ×10, like the movement speed). |
+| **Play a scene (its speed)** | Like “Play a scene (its intensity)”, but the fader is its speed: all the way down the scene is stopped; when you raise it, it starts in its group (respecting whether it is exclusive) and the travel is its speed, ×0.1 just above the bottom, ×1 in the middle and ×10 at the top. The text says “Stopped” while it is not playing, and the fader follows the scene if it is stopped or played from somewhere else. The speed is for that run only: once stopped, the scene goes back to the speed it had (its Live speed does not change). A double click puts it at ×1 (and plays it if it was stopped). If a fader plays several scenes of the same exclusive group, they do not replace each other: the first one plays. |
 | **BPM** | The show tempo, from 20 to 300. |
 
 The difference between the two scene elements: **“Play a scene (its intensity)”** is the scene itself, and it starts and stops it; **“Dimmer of a scene (does not play it)”** only dims it, also when it is played from somewhere else. You can use them together: with the dimmer at 50 % and the fader that plays it at 80 %, the scene comes out at 40 %.

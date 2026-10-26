@@ -138,7 +138,7 @@ Rectangle {
         }
     }
 
-    // a scene with steps (a cuelist) that plays: its rhythm, a half a step
+    // a scene with steps (a cuelist, an FX at the BPM of the show) that plays: its rhythm, a half a step
     RhythmBar {
         functionId: button.item.action === "scene" && button.item.functionId !== undefined ? button.item.functionId : -1
         litColor: button.active ? Theme.textOn(button.litTint) : Theme.readable(button.tint, button.color)

@@ -183,7 +183,7 @@ In **FX** there are three areas: the parameters and the running FX on the left, 
 
 - **The figure or the mode** (the drawing on the left): click it to choose another one. For pan/tilt there are **12 figures** (circle, eight, square, triangle, diamond, pan line, tilt line, diagonal, leaf, lissajous, ballyhoo and cross). For the rest, **22 modes**: the dotted line is the base value and the wave goes above it, below it or on both sides; modes 9 to 12 are for chases, with a step.
 - **Swing** (from 0 to 250 %). On pan/tilt, **“Swing pan”** and **“Swing tilt”** separately.
-- **Speed**, in BPM. **½** and **×2** halve or double it. **“BPM of the show”** makes it follow the show tempo (a BPM fader or dial in the SHOW, or a BPM or Tap mapping). **“Multiplier”**: from ×¼ to ×8.
+- **Speed**, in BPM. **½** and **×2** halve or double it. **“BPM of the show”** makes it follow the show tempo (a BPM fader or dial in the SHOW, or a BPM or Tap mapping). Recorded in an FX scene, it follows instead the rhythm you tap by pressing the button of the scene, if it has one ([Live](directo.md#rhythm-of-a-scene-with-steps)). **“Multiplier”**: from ×¼ to ×8.
 - Pan/tilt only: **“Invert pan”**, **“Invert tilt”**, **“Backwards”** and **“Rotate”** (0–359°).
 
 ### FX timing

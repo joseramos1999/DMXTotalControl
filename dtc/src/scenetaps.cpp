@@ -23,6 +23,7 @@
 
 #include "scenetaps.h"
 #include "function.h"
+#include "fxscene.h"
 
 namespace
 {
@@ -52,8 +53,10 @@ qint64 clockMs()
 }
 
 /** A press of a running scene with steps: a beat when it comes in a row (a
- *  step now, and its rhythm from the second beat on). @return whether it
- *  was one; $always: a step now anyway (Go: each press is a step) */
+ *  step now, and its rhythm from the second beat on; an FX scene: its FX at
+ *  the BPM of the show go to the next beat, a cycle at x1 further). @return
+ *  whether it was one; $always: a step now anyway (Go: each press is a step;
+ *  the first of a row, an FX scene: those FX start their cycle again) */
 bool beat(Function *f, qint64 now, bool always)
 {
     Presses &p = presses()[f->id()];
@@ -68,9 +71,10 @@ bool beat(Function *f, qint64 now, bool always)
     if (inRow == false && always == false)
         return false;
 
-    // its step now (not while paused: it would come on resuming)...
+    // its step now (not while paused: it would come on resuming): the first
+    // of a row, or the next beat of the row...
     if (f->isPaused() == false)
-        f->tapBeat();
+        f->tapBeat(inRow);
     if (inRow == false)
         return true;
     // ...and the rhythm, the average of the last beats, in its own time:
@@ -107,8 +111,14 @@ SceneTaps::Mode SceneTaps::mode()
 
 bool SceneTaps::tappable(const Function *f)
 {
-    return f != nullptr && (f->type() == Function::ChaserType || f->type() == Function::SequenceType ||
-                            f->type() == Function::CuelistType);
+    if (f == nullptr)
+        return false;
+    // an FX scene with FX at the BPM of the show: a beat starts their cycle
+    // again, and the rhythm is theirs instead of that BPM
+    if (const FXScene *fx = qobject_cast<const FXScene *>(f))
+        return fx->hasSyncedLayer();
+    return f->type() == Function::ChaserType || f->type() == Function::SequenceType ||
+           f->type() == Function::CuelistType;
 }
 
 quint32 SceneTaps::focus()

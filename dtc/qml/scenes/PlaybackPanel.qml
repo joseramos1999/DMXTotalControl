@@ -213,20 +213,24 @@ Panel {
             }
         }
 
-        // its own rhythm: presses in a row of its button
+        // its own rhythm: presses in a row of its button (steps, and FX at
+        // the BPM of the show; a cuelist has it in its own options)
         RowLayout {
             Layout.columnSpan: 2
-            visible: panel.type === "Sequence" || panel.type === "Chaser"
+            visible: !!panel.info.tappable && !panel.cuelist
             spacing: 8
             Text {
                 text: qsTr("Tapped rhythm")
                 color: Theme.textDim
-                ToolTip.text: qsTr("Press its button several times in a row (Live, SHOW, a mapping): a step on each beat, at that rhythm")
+                ToolTip.text: panel.type === "FXScene"
+                              ? qsTr("Press its button several times in a row (Live, SHOW, a mapping): the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm")
+                              : qsTr("Press its button several times in a row (Live, SHOW, a mapping): a step on each beat, at that rhythm")
                 ToolTip.visible: tapMouse.containsMouse
                 ToolTip.delay: 500
                 MouseArea { id: tapMouse; anchors.fill: parent; hoverEnabled: true }
             }
             TapRhythm {
+                fx: panel.type === "FXScene"
                 period: panel.info.tap || 0
                 onEdited: (ms) => panel.set("tap", ms)
             }

@@ -212,10 +212,12 @@ button:active { background: var(--hover); }
   background: var(--raised); border: 1px solid var(--border); border-radius: 6px; padding: 4px;
 }
 .fader .label, .dial .label { font-size: 11px; font-weight: 600; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fader .value, .dial .value { font-size: 10px; color: var(--dim); font-family: ui-monospace, monospace; }
+.fader .value, .dial .value { font-size: 10px; color: var(--dim); font-family: ui-monospace, monospace; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track { flex: 1; width: min(48px, 80%); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; position: relative; touch-action: none; }
 .track .fill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--kind); border-radius: 5px; opacity: 0.85; }
 .track .knob { position: absolute; left: -4px; right: -4px; height: 14px; background: var(--knob); box-shadow: 0 0 0 1px var(--knob-edge); border-radius: 4px; transform: translateY(50%); }
+/* (the knob at the bottom hangs half out of the track: not over the value) */
+.fader .track { margin-bottom: 4px; }
 .fader button { width: 100%; min-height: 28px; font-size: 12px; }
 .fader button:active, .fader button.pressed { background: var(--warning); color: var(--on-tint); }
 
@@ -245,6 +247,11 @@ button:active { background: var(--hover); }
 .bpm .modes button { flex: 1; font-size: 1.2em; font-weight: 700; }
 .bpm .modes button.on.go { background: var(--success); border-color: var(--success); color: var(--on-success); }
 .bpm .modes button.on.stop { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+/* their signs, drawn (a triangle and a square, in the colour of the text) */
+.bpm .modes button::before { content: ""; display: inline-block; vertical-align: -0.05em; margin-right: 0.45em; }
+.bpm .modes button.go::before { border-style: solid; border-color: transparent transparent transparent currentColor;
+  border-width: 0.45em 0 0.45em 0.75em; }
+.bpm .modes button.stop::before { width: 0.8em; height: 0.8em; background: currentColor; border-radius: 0.1em; }
 /* the rhythm of a scene with steps inside its button: two halves, a step each */
 .rhythm { display: none; position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; gap: 3px; pointer-events: none; }
 .rhythm.on { display: flex; }

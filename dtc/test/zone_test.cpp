@@ -44,6 +44,7 @@ private slots:
     void deletedFunctionLeavesZone();
     void managerAddRemoveMove();
     void saveLoadRoundTrip();
+    void foldAll();
     void crossGroupRelease();
     void releaseProtection();
     void flashScenes();
@@ -248,6 +249,68 @@ void Zone_Test::saveLoadRoundTrip()
     QCOMPARE(w->functionIDs(), QList<quint32>() << m_scenes[2] << m_scenes[0]);
     QCOMPARE(loaded.zone(1)->name(), QString("FX"));
     QCOMPARE(loaded.zone(1)->functionIDs(), QList<quint32>() << m_scenes[1]);
+}
+
+void Zone_Test::foldAll()
+{
+    // the button of Live folds or unfolds every group at once; allFolded
+    // follows each group, the groups added and removed and a loaded show
+    ZoneManager manager(m_doc);
+    QSignalSpy changed(&manager, &ZoneManager::foldedChanged);
+    QCOMPARE(manager.allFolded(), false);   // no groups
+    Zone *a = manager.addZone("A");
+    Zone *b = manager.addZone("B");
+    Zone *c = manager.addZone("C");
+    QCOMPARE(changed.count(), 3);
+    b->setFolded(true);
+    QCOMPARE(changed.count(), 4);
+    QCOMPARE(manager.allFolded(), false);
+
+    m_doc->resetModified();
+    changed.clear();
+    manager.setAllFolded(true);
+    QVERIFY(a->folded() && b->folded() && c->folded());
+    QCOMPARE(manager.allFolded(), true);
+    QVERIFY(m_doc->isModified());
+    QCOMPARE(changed.count(), 2);           // A and C (B was folded)
+    m_doc->resetModified();
+    manager.setAllFolded(true);             // nothing to change
+    QCOMPARE(m_doc->isModified(), false);
+
+    // a new group comes unfolded; the last unfolded one removed: all folded
+    Zone *d = manager.addZone("D");
+    QCOMPARE(d->folded(), false);
+    QCOMPARE(manager.allFolded(), false);
+    manager.removeZone(3);
+    QCOMPARE(manager.allFolded(), true);
+
+    manager.setAllFolded(false);
+    QVERIFY(!a->folded() && !b->folded() && !c->folded());
+    QCOMPARE(manager.allFolded(), false);
+    manager.setAllFolded(true);
+
+    // saved and loaded: the groups loaded tell when they fold
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    writer.writeStartDocument();
+    QVERIFY(manager.saveXML(&writer));
+    writer.writeEndDocument();
+    buffer.close();
+    ZoneManager loaded(m_doc);
+    QSignalSpy loadedChanged(&loaded, &ZoneManager::foldedChanged);
+    buffer.open(QIODevice::ReadOnly);
+    QXmlStreamReader reader(&buffer);
+    QVERIFY(reader.readNextStartElement());
+    QVERIFY(loaded.loadXML(reader));
+    QCOMPARE(loaded.count(), 3);
+    QCOMPARE(loaded.allFolded(), true);
+    QCOMPARE(loadedChanged.count(), 1);     // the show loaded
+    loaded.zone(1)->setFolded(false);
+    QCOMPARE(loadedChanged.count(), 2);
+    QCOMPARE(loaded.allFolded(), false);
+    loaded.clear();
+    QCOMPARE(loaded.allFolded(), false);
 }
 
 void Zone_Test::crossGroupRelease()

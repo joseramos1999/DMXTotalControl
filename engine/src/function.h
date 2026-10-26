@@ -1143,11 +1143,17 @@ public:
 
     /** DMX Total Control: its own rhythm, tapped on its button (steps and
      *  cuelists): a step (a cue) every $ms, instead of their own times; 0 for
-     *  none. Saved with the function */
+     *  none. An FX scene: a cycle of its layers at the BPM of the show (at
+     *  x1) every $ms, instead of that BPM. Saved with the function */
     void setTapPeriod(uint ms);
     uint tapPeriod() const;
-    /** A beat of that rhythm: the next step now, the next beats from here */
-    void tapBeat();
+    /** A beat of that rhythm: the next step now, the next beats from here
+     *  (an FX scene: those layers start their cycle again). $inRow: the next
+     *  beat of a row of presses (an FX scene: those layers where they are at
+     *  it, a cycle at x1 a beat from the first one); less than half a beat
+     *  after a step of the rhythm itself, it is that step, tapped late: it
+     *  only times the next ones */
+    void tapBeat(bool inRow = false);
 
     /** The tick of the current frame, scaled by the speed factor */
     uint frameTick() const;
@@ -1174,6 +1180,11 @@ protected:
     /** The steps due at this frame: the division jumps, and the beats of its
      *  own rhythm (call after advanceFrameTick) */
     int takeRhythmSteps();
+    /** DMX Total Control: the beat tapped since the last call (tapBeat), with
+     *  a rhythm of its own or not: for what goes to it in its cycle (FX
+     *  scenes) instead of taking a step */
+    enum TappedBeat { NoBeatTapped, FirstBeatTapped, NextBeatTapped };
+    TappedBeat takeTapBeat();
 
     bool saveXMLPlayback(QXmlStreamWriter *doc) const;
     void loadXMLPlayback(const QXmlStreamAttributes &attrs);
@@ -1193,9 +1204,11 @@ private:
     uint m_frameTick;
     int m_cyclesDone;
     QAtomicInt m_pendingJumps;
-    // its own rhythm: the period (ms), the time since its last beat, a tap to come
+    // its own rhythm: the period (ms), the time since its last beat, whether
+    // that one was a step of the rhythm (not tapped), a tap to come (TappedBeat)
     QAtomicInt m_tapPeriod;
     uint m_tapElapsed = 0;
+    bool m_tapTimed = false;
     QAtomicInt m_tapRephase;
 };
 

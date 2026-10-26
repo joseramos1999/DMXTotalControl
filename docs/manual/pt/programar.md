@@ -183,7 +183,7 @@ Em **FX** há três zonas: os parâmetros e os FX rodando à esquerda, os contro
 
 - **A figura ou o modo** (o desenho da esquerda): clique nele para escolher outro. Para pan/tilt há **12 figuras** (círculo, oito, quadrado, triângulo, diamante, linha de pan, linha de tilt, diagonal, trevo, lissajous, ballyhoo e cruz). Para o resto, **22 modos**: a linha pontilhada é o valor base e a onda vai por cima, por baixo ou dos dois lados; os modos 9 a 12 são para perseguições, com passo.
 - **Amplitude** (de 0 a 250 %). Em pan/tilt, **“Amplitude pan”** e **“Amplitude tilt”** separadamente.
-- **Velocidade**, em BPM. **½** e **×2** a dividem ou a dobram. **“BPM do show”** faz com que ela siga o tempo do show (um fader ou dial de BPM do SHOW, ou um mapeamento de BPM ou Tap). **“Multiplicador”**: de ×¼ a ×8.
+- **Velocidade**, em BPM. **½** e **×2** a dividem ou a dobram. **“BPM do show”** faz com que ela siga o tempo do show (um fader ou dial de BPM do SHOW, ou um mapeamento de BPM ou Tap). Gravado em uma cena FX, ele segue em vez disso o ritmo que você marcar tocando o botão da cena, se ela tiver um ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)). **“Multiplicador”**: de ×¼ a ×8.
 - Só pan/tilt: **“Inverter pan”**, **“Inverter tilt”**, **“Ao contrário”** e **“Girar”** (0–359°).
 
 ### Timing do FX

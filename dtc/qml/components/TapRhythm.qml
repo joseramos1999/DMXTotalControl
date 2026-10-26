@@ -24,13 +24,17 @@ import DMXTotalControl
 
 /**
  * The rhythm of a scene with steps or of a cuelist, tapped on its own
- * button: shown in BPM, typed, or cleared (its own times again)
+ * button: shown in BPM, typed, or cleared (its own times again). The one of
+ * an FX scene: a cycle of its FX at the BPM of the show a beat (cleared,
+ * the BPM of the show again)
  */
 RowLayout {
     id: rhythm
 
     /** ms a step (a cue), 0: its own times */
     property int period: 0
+    /** The rhythm of an FX scene */
+    property bool fx: false
     signal edited(int period)
 
     spacing: 6
@@ -38,10 +42,21 @@ RowLayout {
     SpinBox {
         from: 0; to: 600
         editable: true
-        implicitWidth: 140
+        // (an FX: room for "BPM of the show")
+        implicitWidth: rhythm.fx ? 180 : 140
         implicitHeight: 28
         value: rhythm.period > 0 ? Math.round(60000 / rhythm.period) : 0
-        textFromValue: (v, locale) => v === 0 ? qsTr("Off") : v + " BPM"
+        textFromValue: rhythm.fx ? (v, locale) => v === 0 ? qsTr("BPM of the show") : v + " BPM"
+                                 : (v, locale) => v === 0 ? qsTr("Off") : v + " BPM"
+        // (a SpinBox writes its text again only when its value changes: a
+        // step there and back, for the text of an FX or of steps)
+        onTextFromValueChanged: {
+            if (value < to) {
+                increase(); decrease()
+            } else {
+                decrease(); increase()
+            }
+        }
         valueFromText: (text, locale) => { const n = parseInt(text); return isNaN(n) ? 0 : n }
         validator: RegularExpressionValidator { regularExpression: /.*/ }
         // (a step at most every 10 s)
@@ -52,7 +67,7 @@ RowLayout {
         text: qsTr("Clear")
         implicitHeight: 28
         flat: true
-        ToolTip.text: qsTr("Back to its own times")
+        ToolTip.text: rhythm.fx ? qsTr("Back to the BPM of the show") : qsTr("Back to its own times")
         ToolTip.visible: hovered
         ToolTip.delay: 500
         onClicked: rhythm.edited(0)

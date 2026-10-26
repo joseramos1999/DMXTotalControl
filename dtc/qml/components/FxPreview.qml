@@ -33,6 +33,9 @@ Canvas {
     onThemeNameChanged: requestPaint()
 
     property var fx: ({})
+    /** The BPM an FX at the BPM of the show goes at (the rhythm tapped on
+     *  the button of its scene, when it has one) */
+    property real showBpm: Core.bpm
     /** function(cyclePos) -> [{ value } or { x, y }] */
     property var sample: null
     property bool running: visible
@@ -47,7 +50,7 @@ Canvas {
         repeat: true
         running: preview.running && preview.sample !== null
         onTriggered: {
-            let bpm = preview.fx.syncBpm ? Core.bpm : (preview.fx.bpm || 0)
+            let bpm = preview.fx.syncBpm ? preview.showBpm : (preview.fx.bpm || 0)
             preview.cyclePos += 0.04 / 60 * bpm * (preview.fx.multiplier || 1)
             preview.items = preview.sample(preview.cyclePos) || []
             preview.requestPaint()

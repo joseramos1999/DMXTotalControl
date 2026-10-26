@@ -146,6 +146,7 @@ private slots:
     void releasedMoveGoesToRest();
     void sceneFolders();
     void feedbackLightsOff();
+    void ledDefaultChannels();
     void fxSceneEngine();
     void programmerFx();
     void surfaceTouch();
@@ -179,6 +180,7 @@ private slots:
     void moveFxRuns();
     void invertAndIdentify();
     void showSurface();
+    void sectionColours();
     void curveFx();
     void loopsAndEndActions();
     void speedAndDivisions();
@@ -200,6 +202,12 @@ private slots:
     void attributeKeys();
     void positionFeature();
     void tapRhythm();
+    void tapRhythmFx();
+    void tapRhythmFxRow();
+    void tapRhythmLateBeat();
+    void goPressSteps();
+    void fxSyncedWait();
+    void pressModeGoOrStop();
     void followAim();
     void stopBeforeFirstFrame();
     void convertFxStepsOwnChannels();
@@ -297,6 +305,7 @@ private slots:
     void showFaderRanges();
     void sceneDimmerFader();
     void showFaderEdges();
+    void sceneRunFader();
     void remoteFaderRanges();
     void moveSpeedOfMovement();
     void pulseGoesOnWithNewShow();
@@ -615,6 +624,11 @@ void Backend_Test::init()
     m_doc->rgbScriptsCache()->load(QDir(DTC_RGB_SCRIPTS));
     m_patch = new PatchManager(m_doc, this);
     m_library = new FixtureLibrary(m_doc, this);
+
+    // the buttons of the scenes as with no program around (a DtcCore of an
+    // earlier test put them in GO): groups alone start and stop them
+    SceneTaps::setMode(SceneTaps::Toggle);
+    SceneTaps::clear();
 }
 
 void Backend_Test::cleanup()
@@ -1395,6 +1409,128 @@ void Backend_Test::feedbackLightsOff()
     QCOMPARE(received.contains("/gm"), false);
 }
 
+void Backend_Test::ledDefaultChannels()
+{
+    // The RGB pads of an APC mini mk2: the MIDI channel of the state of an
+    // LED is its brightness. A state with no channel of its own lights "on"
+    // full (channel 7) and "off" dim (channel 1); "paused" stays dim, as it
+    // was. A channel chosen is kept; other controls keep the channel of the
+    // control. Never a real MIDI device: what the feedback would send
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const quint32 dimmer = core.doc()->fixtures().first()->id();
+    Scene *scene = new Scene(core.doc());
+    scene->setValue(dimmer, 0, 255);
+    core.doc()->addFunction(scene);
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(scene->id());
+
+    // pad 10 (a note on MIDI channel 1): green on, yellow off, orange paused
+    const QVariantMap leds = { { "source", "midi" }, { "target", "scene" }, { "functionId", int(scene->id()) },
+                               { "onValue", 21 }, { "offValue", 13 }, { "pausedValue", 9 } };
+    auto add = [&](const QVariantMap &more) {
+        QVariantMap m = leds;
+        for (auto it = more.cbegin(); it != more.cend(); ++it)
+            m.insert(it.key(), it.value());
+        return mapper->addMapping(m);
+    };
+    const int pad = add({ { "channel", 128 + 10 }, { "controller", "apcmini2" } });
+    const int chosen = add({ { "channel", 128 + 11 }, { "controller", "apcmini2" }, { "onChannel", 1 }, { "offChannel", 7 },
+                             { "pausedChannel", 10 } });
+    const int under = add({ { "channel", 128 + 100 }, { "controller", "apcmini2" } });  // a button with one LED
+    const int apc40 = add({ { "channel", 128 + 10 }, { "controller", "apc40mk2" } });
+    const int plain = add({ { "channel", 128 + 10 } });
+    const int otherChannel = add({ { "channel", (2 << 12) | (128 + 10) }, { "controller", "apcmini2" } });
+    const int osc = add({ { "source", "osc" }, { "key", "/pad" }, { "controller", "apcmini2" }, { "channel", 128 + 10 } });
+    for (int id : { pad, chosen, under, apc40, plain, otherChannel, osc })
+        QVERIFY(id > 0);
+    QCOMPARE(mapper->mapping(pad).value("onChannel").toInt(), 0);
+    QCOMPARE(mapper->mapping(pad).value("offChannel").toInt(), 0);
+
+    // what the feedback sends: "value@MIDI channel" (the note in the low bits)
+    auto sent = [&](int id) {
+        int value = -1, stateChannel = -1;
+        quint32 channel = 0;
+        mapper->feedbackOf(mapper->mapping(id), value, channel, stateChannel);
+        const int midi = value == 255 ? 127 : value >> 1;
+        return QString("%1@%2/%3").arg(midi).arg((channel >> 12) + 1).arg(channel & 0x0FFF);
+    };
+
+    // off
+    QCOMPARE(sent(pad), QString("13@1/138"));
+    QCOMPARE(sent(chosen), QString("13@7/139"));
+    QCOMPARE(sent(under), QString("13@1/228"));
+    QCOMPARE(sent(apc40), QString("13@1/138"));
+    QCOMPARE(sent(plain), QString("13@1/138"));
+    QCOMPARE(sent(otherChannel), QString("13@3/138"));
+    QCOMPARE(sent(osc), QString("13@1/138"));
+
+    // on: the pad full, the rest as before
+    zone->start(scene->id());
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    QCOMPARE(mapper->targetState(leds), 1);
+    QCOMPARE(sent(pad), QString("21@7/138"));
+    QCOMPARE(sent(chosen), QString("21@1/139"));
+    QCOMPARE(sent(under), QString("21@1/228"));
+    QCOMPARE(sent(apc40), QString("21@1/138"));
+    QCOMPARE(sent(plain), QString("21@1/138"));
+    QCOMPARE(sent(otherChannel), QString("21@3/138"));
+    QCOMPARE(sent(osc), QString("21@1/138"));
+
+    // paused: dim, as it always was
+    scene->setPause(true);
+    QTRY_COMPARE_WITH_TIMEOUT(mapper->targetState(leds), 2, 3000);
+    QCOMPARE(sent(pad), QString("9@1/138"));
+    QCOMPARE(sent(chosen), QString("9@10/139"));
+    QCOMPARE(sent(apc40), QString("9@1/138"));
+    scene->setPause(false);
+
+    // a brightness chosen in the editor is kept; back to none, the default
+    mapper->updateMapping(pad, { { "onChannel", 1 } });
+    QCOMPARE(sent(pad), QString("21@1/138"));
+    mapper->updateMapping(pad, { { "onChannel", 0 } });
+    QCOMPARE(sent(pad), QString("21@7/138"));
+
+    // what the editor shows for a state with no channel
+    QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(pad), "on"), 7);
+    QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(pad), "off"), 1);
+    QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(pad), "paused"), 1);
+    for (int id : { under, apc40, plain, otherChannel, osc })
+        QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(id), "on"), 0);
+
+    // the show keeps no channel where none was chosen: saved and loaded, the same
+    QBuffer buffer;
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QXmlStreamWriter writer(&buffer);
+    QVERIFY(mapper->saveXML(&writer));
+    buffer.close();
+    mapper->clear();
+    QXmlStreamReader reader(buffer.data());
+    reader.readNextStartElement();
+    QVERIFY(mapper->loadXML(reader));
+    QCOMPARE(mapper->mappings().count(), 7);
+    QVariantMap loaded;
+    for (const QVariant &v : mapper->mappings())
+        if (v.toMap().value("channel").toInt() == 128 + 10 && v.toMap().value("controller").toString() == "apcmini2"
+            && v.toMap().value("source").toString() == "midi")
+            loaded = v.toMap();
+    QCOMPARE(loaded.value("onChannel").toInt(), 0);
+    QCOMPARE(sent(loaded.value("id").toInt()), QString("21@7/138"));
+
+    // the monitor numbers its messages: the page adds only the new ones on top
+    mapper->clearMonitor();
+    mapper->handleInput("midi", QString(), 99, QString(), 10);
+    mapper->handleInput("midi", QString(), 99, QString(), 20);
+    const QVariantList monitor = mapper->monitor();
+    QCOMPARE(monitor.count(), 2);
+    QCOMPARE(monitor.at(0).toMap().value("serial").toInt(), monitor.at(1).toMap().value("serial").toInt() + 1);
+    QVERIFY(monitor.at(1).toMap().value("serial").toInt() > 0);
+
+    core.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning() == false, 3000);
+}
+
 void Backend_Test::fxSceneEngine()
 {
     // the shapes, the sets and the timing of the FX
@@ -1784,8 +1920,13 @@ void Backend_Test::surfaceTouch()
     surface->press(button);
     QVERIFY(zone->isActive(scene->id()));
     QVERIFY(surface->isActive(button));
+    // (in GO, as the program starts, a press again keeps it; with Stop it stops it)
+    surface->press(button);
+    QVERIFY(zone->isActive(scene->id()));
+    core.setPressMode("stop");
     surface->press(button);
     QVERIFY(zone->isActive(scene->id()) == false);
+    core.setPressMode("go");
     // a second button goes in the next cell of the same section
     QVariantMap at2 = surface->addFromTarget({ { "target", "blackout" } });
     QCOMPARE(at2.value("section").toString(), at.value("section").toString());
@@ -1859,6 +2000,104 @@ void Backend_Test::surfaceTouch()
     QCOMPARE(surface->section(0, xy).value("foldedGroups").toString(), QString("3,7"));
     QCOMPARE(surface->item(0, pauseAt.value("section").toString(), pauseAt.value("cell").toInt())
                  .value("map").toMap().value("target").toString(), QString("pauseAll"));
+}
+
+void Backend_Test::sectionColours()
+{
+    // A section of the SHOW has its own background (saved, kept when it
+    // changes kind, sent to the phone), and its buttons, faders or dials
+    // all take one colour in one go: one change of the show
+    DtcCore core;
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Colours", "buttons");
+    const QString buttons = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    const QString faders = surface->splitSection(page, buttons, "h");
+    surface->updateSection(page, faders, { { "type", "faders" } });
+    const QString dials = surface->splitSection(page, faders, "v");
+    surface->updateSection(page, dials, { { "type", "dials" } });
+    const QString clock = surface->splitSection(page, dials, "v");
+    surface->updateSection(page, clock, { { "type", "clock" } });
+    surface->setItem(page, buttons, 0, {});
+    surface->setItem(page, buttons, 3, { { "color", "#E5484D" } });
+    surface->setItem(page, buttons, 7, { { "label", "Seven" } });
+    surface->setItem(page, faders, 1, {});
+    surface->setItem(page, dials, 0, {});
+    surface->setItem(page, dials, 2, { { "color", "#30a46c" } });
+
+    // the background: none by default, a colour, none again
+    QVERIFY(surface->section(page, buttons).value("background").toString().isEmpty());
+    surface->updateSection(page, buttons, { { "background", "#ae3ec9" } });
+    surface->updateSection(page, clock, { { "background", "#f5a524" } });
+    QCOMPARE(surface->section(page, buttons).value("background").toString(), QString("#ae3ec9"));
+
+    // every button in one colour: one change, the empty cells stay empty
+    core.doc()->resetModified();
+    QSignalSpy changed(surface, SIGNAL(pagesChanged()));
+    QCOMPARE(surface->setItemsColour(page, buttons, "#17a2b8"), 3);
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(core.doc()->isModified());
+    const QVariantMap items = surface->section(page, buttons).value("items").toMap();
+    QCOMPARE(items.keys(), QStringList({ "0", "3", "7" }));
+    for (const QVariant &item : items)
+        QCOMPARE(item.toMap().value("color").toString(), QString("#17a2b8"));
+    QCOMPARE(items.value("7").toMap().value("label").toString(), QString("Seven"));
+    // the colour they already have (any case): nothing changes
+    core.doc()->resetModified();
+    QCOMPARE(surface->setItemsColour(page, buttons, "#17A2B8"), 0);
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(core.doc()->isModified() == false);
+    // faders and dials too; one that has it already is not counted
+    QCOMPARE(surface->setItemsColour(page, faders, "#e5484d"), 1);
+    QCOMPARE(surface->item(page, faders, 1).value("color").toString(), QString("#e5484d"));
+    QCOMPARE(surface->setItemsColour(page, dials, "#30a46c"), 1);
+    QCOMPARE(surface->item(page, dials, 0).value("color").toString(), QString("#30a46c"));
+    // not a table, not a colour, no such section: nothing
+    QCOMPARE(surface->setItemsColour(page, clock, "#e5484d"), 0);
+    QCOMPARE(surface->setItemsColour(page, buttons, "no colour"), 0);
+    QCOMPARE(surface->setItemsColour(page, "nothing", "#e5484d"), 0);
+    QCOMPARE(surface->setItemsColour(page + 1, buttons, "#e5484d"), 0);
+    QCOMPARE(changed.count(), 3);
+    // the colour wheel keeps its live colour apart from its background
+    surface->updateSection(page, clock, { { "type", "colour" } });
+    QCOMPARE(surface->section(page, clock).value("background").toString(), QString("#f5a524"));
+    QVERIFY(surface->colour(page, clock).isValid() == false);
+
+    // to the phone
+    const QVariantMap root = core.remote()->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap();
+    std::function<QVariantMap(const QVariantMap &, const QString &)> findNode =
+        [&](const QVariantMap &node, const QString &id) -> QVariantMap {
+            if (node.value("id").toString() == id)
+                return node;
+            for (const char *half : { "a", "b" })
+            {
+                const QVariantMap found = node.contains(half) ? findNode(node.value(half).toMap(), id) : QVariantMap();
+                if (found.isEmpty() == false)
+                    return found;
+            }
+            return QVariantMap();
+        };
+    QCOMPARE(findNode(root, buttons).value("background").toString(), QString("#ae3ec9"));
+    QCOMPARE(findNode(root, buttons).value("items").toMap().value("3").toMap().value("color").toString(), QString("#17a2b8"));
+    QVERIFY(findNode(root, faders).contains("background") == false);
+
+    // saved and loaded; then a kind of section changes and keeps it, and none
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    QVERIFY(surface->saveXML(&writer));
+    buffer.close();
+    QVERIFY(buffer.data().contains("background=\"#ae3ec9\""));
+    QXmlStreamReader reader(buffer.data());
+    reader.readNextStartElement();
+    surface->clear();
+    QVERIFY(surface->loadXML(reader));
+    QCOMPARE(surface->section(page, buttons).value("background").toString(), QString("#ae3ec9"));
+    QCOMPARE(surface->section(page, clock).value("background").toString(), QString("#f5a524"));
+    QCOMPARE(surface->item(page, buttons, 7).value("color").toString(), QString("#17a2b8"));
+    surface->updateSection(page, buttons, { { "type", "faders" } });
+    QCOMPARE(surface->section(page, buttons).value("background").toString(), QString("#ae3ec9"));
+    surface->updateSection(page, buttons, { { "background", "" } });
+    QVERIFY(surface->section(page, buttons).contains("background") == false);
 }
 
 void Backend_Test::appIcon()
@@ -2626,9 +2865,18 @@ void Backend_Test::remoteControl()
     QTRY_VERIFY_WITH_TIMEOUT(last("state").value("items").toMap().value(key).toMap().value("active").toBool(), 3000);
     sendJson({ { "cmd", "release" }, { "page", 0 }, { "section", sid }, { "cell", 0 } });
 
-    // the groups and the whole show
+    // the groups and the whole show (in GO a press of a scene that plays
+    // keeps it; Stop from the phone, and the press stops it)
+    sendJson({ { "cmd", "scene" }, { "zone", int(zone->id()) }, { "id", int(scene->id()) } });
+    QTest::qWait(200);
+    QVERIFY(zone->isActive(scene->id()));
+    sendJson({ { "cmd", "global" }, { "action", "pressStop" } });
+    QTRY_COMPARE_WITH_TIMEOUT(core.pressMode(), QString("stop"), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(last("state").value("pressMode").toString(), QString("stop"), 3000);
     sendJson({ { "cmd", "scene" }, { "zone", int(zone->id()) }, { "id", int(scene->id()) } });
     QTRY_VERIFY_WITH_TIMEOUT(zone->isActive(scene->id()) == false, 3000);
+    sendJson({ { "cmd", "global" }, { "action", "pressGo" } });
+    QTRY_COMPARE_WITH_TIMEOUT(core.pressMode(), QString("go"), 3000);
     sendJson({ { "cmd", "grandMaster" }, { "value", 0.5 } });
     QTRY_COMPARE_WITH_TIMEOUT(core.grandMaster(), 128, 3000);
     sendJson({ { "cmd", "global" }, { "action", "blackout" } });
@@ -4021,7 +4269,8 @@ void Backend_Test::mappings()
     const QString dev = "MIDI|Test controller";
     const quint32 note60 = 128 + 60;
 
-    // a note toggles a scene of a group
+    // a note plays a scene of a group (in GO, as the program starts: a
+    // second note keeps it; with Stop it stops it)
     int toggle = mapper->addMapping({ {"target", "scene"}, {"functionId", int(a->id())},
                                       {"source", "midi"}, {"channel", note60} });
     mapper->handleInput("midi", dev, note60, QString(), 254);
@@ -4029,8 +4278,13 @@ void Backend_Test::mappings()
     mapper->handleInput("midi", dev, note60, QString(), 0);
     QVERIFY(zone->isActive(a->id()));
     mapper->handleInput("midi", dev, note60, QString(), 254);
+    QVERIFY(zone->isActive(a->id()));
+    mapper->handleInput("midi", dev, note60, QString(), 0);
+    core.setPressMode("stop");
+    mapper->handleInput("midi", dev, note60, QString(), 254);
     QVERIFY(zone->isActive(a->id()) == false);
     mapper->handleInput("midi", dev, note60, QString(), 0);
+    core.setPressMode("go");
 
     // flash: only while held
     mapper->updateMapping(toggle, { {"mode", "flash"} });
@@ -4110,9 +4364,11 @@ void Backend_Test::mappings()
     // the keyboard
     mapper->addMapping({ {"target", "scene"}, {"functionId", int(b->id())}, {"source", "key"}, {"key", "q"} });
     QVERIFY(zone->isActive(b->id()));
+    core.setPressMode("stop");
     QVERIFY(mapper->keyEvent("Q", true));
     QVERIFY(mapper->keyEvent("Q", false));
     QVERIFY(zone->isActive(b->id()) == false);
+    core.setPressMode("go");
     QVERIFY(mapper->keyEvent("w", true) == false);
 
     // the keyboard of the whole app: only the mapped keys, without Ctrl, once
@@ -14063,7 +14319,7 @@ void Backend_Test::fxMirrorWave()
     for (int i = 0; i < 6; i++)
     {
         const FXScene::Shape shape = alternate.shapeOf(spots.at(i));
-        const QPointF expected = FXScene::panTiltPoint(shape, FXScene::positionOf(alternate, shape, 0.3, i, 6));
+        const QPointF expected = FXScene::panTiltPoint(shape, FXScene::positionOf(alternate, shape, 0.3, i, 6, alternate.bpm));
         QVERIFY(qAbs(preview.at(i).toMap().value("x").toDouble() - expected.x()) < 1e-6);
         QVERIFY(qAbs(preview.at(i).toMap().value("y").toDouble() - expected.y()) < 1e-6);
     }
@@ -16198,8 +16454,10 @@ void Backend_Test::sceneDimmerFader()
     surface->press(button);
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
     QTest::qWait(100);
+    core.setPressMode("stop");
     surface->press(button);
     QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    core.setPressMode("go");
     PlaybackManager *pb = core.playbacks();
     pb->assign(0, 0, int(looseId));
     pb->setLevel(0, 0, 0.5);
@@ -16667,6 +16925,362 @@ void Backend_Test::showFaderEdges()
     surface->removePage(page);
     QCOMPARE_LEVEL(surface->sceneDimmer(a->id()), 1.0);
     QCOMPARE_LEVEL(a->attributes().at(Function::Intensity).m_value, 1.0);
+}
+
+void Backend_Test::sceneRunFader()
+{
+    // "sceneRun": a fader that plays a scene at a speed. At the end of the
+    // travel that stops it the scene stops; up from there it plays (in its
+    // group, as a scene fader: exclusivity applies) and the position is its
+    // speed: x0.1 just above the bottom, x1 in the middle, x10 at the top,
+    // within the range of the fader
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    auto newScene = [&](int channel, const QString &name) {
+        Scene *s = new Scene(doc);
+        s->setName(name);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    Scene *loose = newScene(0, "Loose");
+    Scene *a = newScene(1, "A");
+    Scene *b = newScene(1, "B");
+    Zone *zone = core.zones()->addZone("Group");
+    QVERIFY(zone->exclusive());
+    zone->addFunction(a->id());
+    zone->addFunction(b->id());
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Run", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 8 } });
+    auto run = [](Function *f) { return QVariantMap({ { "target", "sceneRun" }, { "functionId", int(f->id()) } }); };
+    auto other = [](const QString &kind, Function *f) { return QVariantMap({ { "target", kind }, { "functionId", int(f->id()) } }); };
+    const qreal x316 = std::pow(10.0, 0.5);
+
+    /* a scene of no group: stopped at the bottom, up from there it plays at
+       its speed */
+    surface->setItem(page, sid, 0, { { "targets", QVariantList({ run(loose) }) } });
+    const QVariantMap fader = surface->item(page, sid, 0);
+    QVERIFY(ShowSurface::isSpeed(fader));
+    QCOMPARE_LEVEL(surface->level(fader), 0.0);
+    QVERIFY(surface->value(fader) == 0.0);
+    surface->setLevel(fader, 0.5);
+    QVERIFY(loose->stopped() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
+    QCOMPARE_LEVEL(surface->level(fader), 0.5);
+    surface->setLevel(fader, 0.25);
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0 / x316);
+    QCOMPARE_LEVEL(surface->level(fader), 0.25);
+    surface->setLevel(fader, 1.0);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    QCOMPARE_LEVEL(surface->level(fader), 1.0);
+    // x0.1 just above the bottom: it plays, and isn't shown stopped
+    surface->setLevel(fader, 0.0001);
+    QCOMPARE_LEVEL(loose->speedFactor(), 0.1);
+    QVERIFY(loose->stopped() == false);
+    QVERIFY(surface->value(fader) > 0.0);
+    // the bottom stops it, and its speed is again the one it had
+    surface->setLevel(fader, 0.0);
+    QVERIFY(loose->stopped());
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    QCOMPARE_LEVEL(surface->level(fader), 0.0);
+    QVERIFY(surface->value(fader) == 0.0);
+    // a double click: x1, and it plays
+    QCOMPARE_LEVEL(surface->resetLevel(fader), 0.5);
+    surface->setLevel(fader, surface->resetLevel(fader));
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
+    // stopped elsewhere: at the bottom, at the speed it had; started
+    // elsewhere: at its speed
+    surface->setLevel(fader, 0.25);
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0 / x316);
+    loose->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(loose->speedFactor(), 1.0, 3000);
+    QCOMPARE_LEVEL(surface->level(fader), 0.0);
+    loose->setSpeedFactor(2.0);
+    loose->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    QCOMPARE_LEVEL(surface->level(fader), (std::log10(2.0) + 1.0) / 2.0);
+    // a Flash: the top while held, then exactly what there was
+    const QVariantList held = surface->holdLevels(fader);
+    surface->setLevel(fader, 1.0);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    surface->restoreLevels(fader, held);
+    QCOMPARE_LEVEL(loose->speedFactor(), 2.0);
+    QVERIFY(loose->stopped() == false);
+    surface->setLevel(fader, 0.25);
+    surface->setLevel(fader, 0.0);
+    QCOMPARE_LEVEL(loose->speedFactor(), 2.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    // (a Flash of a stopped one stops it again, at the speed it had)
+    const QVariantList stopped = surface->holdLevels(fader);
+    surface->setLevel(fader, 1.0);
+    QVERIFY(loose->stopped() == false);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    surface->restoreLevels(fader, stopped);
+    QVERIFY(loose->stopped());
+    QCOMPARE_LEVEL(loose->speedFactor(), 2.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    QCOMPARE_LEVEL(loose->speedFactor(), 2.0);
+    loose->setSpeedFactor(1.0);
+    // another control gives it a speed while the fader plays it: that one
+    // stays when it stops
+    surface->setLevel(fader, 0.25);
+    surface->setLevel({ { "targets", QVariantList({ other("sceneSpeed", loose) }) } }, 0.75);
+    QCOMPARE_LEVEL(loose->speedFactor(), x316);
+    QCOMPARE_LEVEL(surface->level(fader), 0.75);
+    surface->setLevel(fader, 0.0);
+    QCOMPARE_LEVEL(loose->speedFactor(), x316);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    loose->setSpeedFactor(1.0);
+
+    /* a scene of an exclusive group: it plays in its group, at the speed of
+       the group for it, and replaces the scene that played there */
+    surface->setItem(page, sid, 1, { { "targets", QVariantList({ run(a) }) } });
+    QVariantMap grouped = surface->item(page, sid, 1);
+    zone->start(b->id());
+    QTRY_VERIFY_WITH_TIMEOUT(b->isRunning(), 3000);
+    surface->setLevel(grouped, 0.75);
+    QVERIFY(zone->isActive(a->id()));
+    QVERIFY(zone->isActive(b->id()) == false);
+    // (the speed of this run: its Live speed stays)
+    QCOMPARE_LEVEL(zone->speed(a->id()), x316);
+    QCOMPARE_LEVEL(zone->options(a->id()).value("speed").toDouble(), 1.0);
+    QCOMPARE_LEVEL(a->speedFactor(), x316);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() && b->isRunning() == false, 3000);
+    QCOMPARE_LEVEL(surface->level(grouped), 0.75);
+    surface->setLevel(grouped, 0.5);
+    QCOMPARE_LEVEL(a->speedFactor(), 1.0);
+    // another scene of its group replaces it: the fader shows it stopped
+    zone->start(b->id());
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(surface->level(grouped), 0.0);
+    // up again it plays (and replaces that one); the bottom stops it there
+    surface->setLevel(grouped, 0.25);
+    QVERIFY(zone->isActive(a->id()));
+    QVERIFY(zone->isActive(b->id()) == false);
+    QCOMPARE_LEVEL(a->speedFactor(), 1.0 / x316);
+    surface->setLevel(grouped, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false && b->isRunning() == false, 3000);
+
+    /* the speed lasts while the fader plays it: stopped, its Live speed is
+       the one it had, the next run (a press in Live) plays at it, and the
+       show isn't modified */
+    doc->resetModified();
+    surface->setLevel(grouped, 0.5);
+    surface->setLevel(grouped, 1.0 / 255);
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 2.0 / 255 - 1.0));
+    surface->setLevel(grouped, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(zone->speed(a->id()), 1.0);
+    QCOMPARE_LEVEL(zone->options(a->id()).value("speed").toDouble(), 1.0);
+    QVERIFY(doc->isModified() == false);
+    zone->trigger(a->id());
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), 1.0);
+    QCOMPARE_LEVEL(surface->level(grouped), 0.5);
+    zone->stop(a->id());
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+    // a Flash of the stopped fader: x10 while held, then stopped, at its speed
+    const QVariantList heldStopped = surface->holdLevels(grouped);
+    surface->setLevel(grouped, 1.0);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), 10.0);
+    surface->restoreLevels(grouped, heldStopped);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(zone->speed(a->id()), 1.0);
+    QVERIFY(doc->isModified() == false);
+    zone->trigger(a->id());
+    QCOMPARE_LEVEL(a->speedFactor(), 1.0);
+    zone->stop(a->id());
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+    // a "Speed of a scene" fader shows the speed of the run; the Live speed
+    // moved meanwhile takes over (and stays after)
+    const QVariantMap speedOfA({ { "targets", QVariantList({ other("sceneSpeed", a) }) } });
+    surface->setLevel(grouped, 0.75);
+    QCOMPARE_LEVEL(surface->level(speedOfA), 0.75);
+    zone->setOption(a->id(), "speed", 2.0);
+    QCOMPARE_LEVEL(a->speedFactor(), 2.0);
+    QCOMPARE_LEVEL(surface->level(grouped), (std::log10(2.0) + 1.0) / 2.0);
+    surface->setLevel(grouped, 0.0);
+    QCOMPARE_LEVEL(zone->speed(a->id()), 2.0);
+    zone->setOption(a->id(), "speed", 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+
+    /* its range: from 20 to 80 %, and the bottom still stops it */
+    surface->setItem(page, sid, 1, { { "min", 20 }, { "max", 80 } });
+    grouped = surface->item(page, sid, 1);
+    surface->setLevel(grouped, 0.5);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), 1.0);
+    surface->setLevel(grouped, 1.0);
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 0.6));
+    QCOMPARE_LEVEL(surface->value(grouped), 0.8);
+    QCOMPARE_LEVEL(surface->level(grouped), 1.0);
+    surface->setLevel(grouped, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(surface->level(grouped), 0.0);
+    // just above the bottom: its minimum
+    surface->setLevel(grouped, 0.0001);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, -0.6));
+    // upside down: the top stops it, the bottom is its maximum
+    surface->setItem(page, sid, 1, { { "invert", true } });
+    grouped = surface->item(page, sid, 1);
+    surface->setLevel(grouped, 1.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(surface->level(grouped), 1.0);
+    surface->setLevel(grouped, 0.0);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 0.6));
+    QCOMPARE_LEVEL(surface->level(grouped), 0.0);
+    // x1 out of its range (60 to 100 %): a double click plays it as near
+    // to x1 as it goes, not at the end that stops it
+    surface->setItem(page, sid, 1, { { "min", 60 }, { "max", 100 }, { "invert", false } });
+    grouped = surface->item(page, sid, 1);
+    surface->setLevel(grouped, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QVERIFY(surface->resetLevel(grouped) > 0.0);
+    surface->setLevel(grouped, surface->resetLevel(grouped));
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 0.2));
+    surface->setItem(page, sid, 1, { { "invert", true } });
+    grouped = surface->item(page, sid, 1);
+    surface->setLevel(grouped, 1.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QVERIFY(surface->resetLevel(grouped) < 1.0);
+    surface->setLevel(grouped, surface->resetLevel(grouped));
+    QVERIFY(zone->isActive(a->id()));
+    surface->setLevel(grouped, 1.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+
+    /* an encoder: turned up, a stopped scene plays; turned down to its
+       minimum, it stops */
+    surface->setItem(page, sid, 2, { { "targets", QVariantList({ run(loose) }) }, { "step", 10 } });
+    const QVariantMap wheel = surface->item(page, sid, 2);
+    surface->stepLevel(wheel, 1);
+    QVERIFY(loose->stopped() == false);
+    QCOMPARE_LEVEL(surface->value(wheel), 0.1);
+    QCOMPARE_LEVEL(loose->speedFactor(), std::pow(10.0, -0.8));
+    surface->stepLevel(wheel, -1);
+    QVERIFY(loose->stopped());
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+
+    /* several on one fader. Two scenes of one exclusive group don't replace
+       each other at every move: the first one plays */
+    surface->setItem(page, sid, 3, { { "targets", QVariantList({ run(a), run(b) }) } });
+    const QVariantMap both = surface->item(page, sid, 3);
+    QVERIFY(ShowSurface::isSpeed(both));
+    surface->setLevel(both, 0.5);
+    QVERIFY(zone->isActive(a->id()));
+    QVERIFY(zone->isActive(b->id()) == false);
+    QSignalSpy activity(zone, SIGNAL(activeChanged()));
+    surface->setLevel(both, 0.6);
+    surface->setLevel(both, 0.7);
+    QCOMPARE(activity.count(), 0);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 0.4));
+    QCOMPARE_LEVEL(surface->level(both), 0.7);
+    // (the one that waits is left as it was)
+    QCOMPARE_LEVEL(zone->speed(b->id()), 1.0);
+    QCOMPARE_LEVEL(zone->options(b->id()).value("speed").toDouble(), 1.0);
+    surface->setLevel(both, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QVERIFY(zone->isActive(b->id()) == false);
+    // a scene of no group and one of a group: both play, both stop
+    surface->setItem(page, sid, 4, { { "targets", QVariantList({ run(loose), run(a) }) } });
+    const QVariantMap together = surface->item(page, sid, 4);
+    surface->setLevel(together, 0.5);
+    QVERIFY(loose->stopped() == false);
+    QVERIFY(zone->isActive(a->id()));
+    surface->setLevel(together, 0.0);
+    QVERIFY(loose->stopped());
+    QVERIFY(zone->isActive(a->id()) == false);
+    // with the speed of another scene, which it doesn't play: a speed too
+    // (at the bottom that one is at x0.1)
+    surface->setItem(page, sid, 5, { { "targets", QVariantList({ run(a), other("sceneSpeed", loose) }) } });
+    const QVariantMap withSpeed = surface->item(page, sid, 5);
+    QVERIFY(ShowSurface::isSpeed(withSpeed));
+    QCOMPARE_LEVEL(surface->resetLevel(withSpeed), 0.5);
+    surface->setLevel(withSpeed, 0.75);
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(a->speedFactor(), x316);
+    QCOMPARE_LEVEL(loose->speedFactor(), x316);
+    QVERIFY(loose->stopped());
+    surface->setLevel(withSpeed, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QCOMPARE_LEVEL(loose->speedFactor(), 0.1);
+    loose->setSpeedFactor(1.0);
+    // with the intensity of a scene: not a speed (a %)
+    QVERIFY(ShowSurface::isSpeed({ { "targets", QVariantList({ run(a), other("scene", loose) }) } }) == false);
+    QCOMPARE_LEVEL(surface->resetLevel({ { "targets", QVariantList({ run(a), other("scene", loose) }) } }), 0.0);
+
+    /* a MIDI fader on it (a fader of the SHOW): the same */
+    ControlMapper *mapper = core.mapping();
+    QVERIFY(mapper->addMapping({ { "source", "midi" }, { "channel", 9 }, { "target", "surfaceFader" }, { "page", page },
+                                 { "section", sid }, { "cell", 0 } }) > 0);
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 255);
+    QVERIFY(loose->stopped() == false);
+    QCOMPARE_LEVEL(loose->speedFactor(), 10.0);
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 51);
+    QCOMPARE_LEVEL(loose->speedFactor(), std::pow(10.0, -0.6));
+    mapper->handleInput("midi", "MIDI|Test", 9, QString(), 0);
+    QVERIFY(loose->stopped());
+    QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+
+    /* the phone: a speed, that plays a scene (stopped at zero), named after it */
+    const QVariantMap layout = core.remote()->layoutMessage().value("pages").toList().at(page).toMap()
+                                   .value("root").toMap().value("items").toMap();
+    QVERIFY(layout.value("0").toMap().value("speed").toBool());
+    QVERIFY(layout.value("0").toMap().value("run").toBool());
+    QCOMPARE(layout.value("0").toMap().value("label").toString(), QString("Loose"));
+    QVERIFY(layout.value("3").toMap().value("speed").toBool());
+    QVERIFY(layout.value("5").toMap().value("speed").toBool());
+    QVERIFY(layout.value("5").toMap().value("run").toBool());
+    const QVariantMap state = core.remote()->stateMessage().value("items").toMap()
+                                  .value(QString("%1/%2/0").arg(page).arg(sid)).toMap();
+    QCOMPARE_LEVEL(state.value("level").toDouble(), 0.0);
+    QVERIFY(state.value("value").toDouble() == 0.0);
+
+    /* saved and loaded with the show */
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    QVERIFY(surface->saveXML(&writer));
+    buffer.close();
+    QVERIFY(buffer.data().contains("target=\"sceneRun\""));
+    QXmlStreamReader reader(buffer.data());
+    reader.readNextStartElement();
+    surface->clear();
+    QVERIFY(surface->loadXML(reader));
+    const QVariantMap loaded = surface->item(page, sid, 0);
+    const QVariantList loadedTargets = ShowSurface::faderTargets(loaded);
+    QCOMPARE(loadedTargets.count(), 1);
+    QCOMPARE(loadedTargets.first().toMap().value("target").toString(), QString("sceneRun"));
+    QCOMPARE(loadedTargets.first().toMap().value("functionId").toUInt(), loose->id());
+    QCOMPARE(ShowSurface::faderTargets(surface->item(page, sid, 5)).count(), 2);
+    surface->setLevel(loaded, 0.75);
+    QVERIFY(loose->stopped() == false);
+    QCOMPARE_LEVEL(loose->speedFactor(), x316);
+    surface->setLevel(loaded, 0.0);
+    QVERIFY(loose->stopped());
+
+    /* faders made buttons: a button that plays its scene */
+    surface->updateSection(page, sid, { { "type", "buttons" } });
+    const QVariantMap button = surface->item(page, sid, 0);
+    QCOMPARE(button.value("action").toString(), QString("scene"));
+    QCOMPARE(button.value("functionId").toUInt(), loose->id());
+    QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
 }
 
 #undef QCOMPARE_LEVEL
@@ -24979,8 +25593,11 @@ void Backend_Test::tapRhythm()
     };
     core.doc()->masterTimer()->start();
 
-    // a press starts it; one 400 ms later is a beat: it keeps running at
-    // about that rhythm; one after a pause stops it, and the rhythm stays
+    // the program starts in GO: a press starts it; one 400 ms later is a
+    // beat: it keeps running at about that rhythm; one after a pause is a
+    // step, and it still plays. With Stop a press stops it, and the rhythm
+    // stays
+    QCOMPARE(core.pressMode(), QString("go"));
     auto presses = [&](const std::function<void()> &press, Function *f, const std::function<bool()> &active) {
         press();
         QTRY_VERIFY_WITH_TIMEOUT(active(), 3000);
@@ -24992,7 +25609,12 @@ void Backend_Test::tapRhythm()
         QVERIFY(active());
         QTest::qWait(SceneTaps::window() + 200);
         press();
+        QTest::qWait(200);
+        QVERIFY(active());
+        core.setPressMode("stop");
+        press();
         QTRY_VERIFY_WITH_TIMEOUT(active() == false, 3000);
+        core.setPressMode("go");
         QVERIFY(f->tapPeriod() > 0);
     };
     Zone *zone = core.zones()->addZone("A");
@@ -25044,9 +25666,713 @@ void Backend_Test::tapRhythm()
     QTest::qWait(200);
     QVERIFY(grouped->isRunning() == false);
     QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(grouped->id()), -1, 3000);
+    // always GO or Stop: anything else is ignored
     core.setPressMode("toggle");
-    QCOMPARE(core.pressMode(), QString("toggle"));
+    QCOMPARE(core.pressMode(), QString("stop"));
+    core.setPressMode(QString());
+    QCOMPARE(core.pressMode(), QString("stop"));
     core.doc()->masterTimer()->stop();
+}
+
+void Backend_Test::goPressSteps()
+{
+    // GO: a press of a running scene with steps (a cuelist) that has no
+    // rhythm of its own is its step (its GO) now, as each press is; it takes
+    // no rhythm from it, and its own times go on from there
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    IOManager io(m_doc);
+    auto out = [&](int channel) { return io.channelValues(0).at(channel).toInt(); };
+
+    // steps of 60 s
+    Chaser *chaser = new Chaser(m_doc);
+    chaser->setDurationMode(Chaser::PerStep);
+    for (uchar value : { uchar(10), uchar(20), uchar(30) })
+    {
+        Scene *scene = new Scene(m_doc);
+        scene->setValue(par, 0, value);
+        QVERIFY(m_doc->addFunction(scene));
+        ChaserStep step(scene->id(), 0, 60000, 0);
+        step.duration = 60000;
+        chaser->addStep(step);
+    }
+    QVERIFY(m_doc->addFunction(chaser));
+    // a cuelist with no Follow: only GOs move it
+    typedef Cuelist::Key Key;
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    cl->addCue(testCue(1000, { { Key(par, 1), 10 } }));
+    cl->addCue(testCue(2000, { { Key(par, 1), 20 } }));
+
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    SceneTaps::clear();
+    SceneTaps::setMode(SceneTaps::Go);
+
+    QCOMPARE(SceneTaps::press(chaser, false, 1000), SceneTaps::StartIt);
+    chaser->start(m_doc->masterTimer(), FunctionParent::master());
+    QCOMPARE(SceneTaps::press(cl, false, 1000), SceneTaps::StartIt);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 10, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 10, 3000);
+
+    // a press after a pause: its next step, at once
+    QCOMPARE(SceneTaps::press(chaser, true, 5000), SceneTaps::Keep);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 20, 1000);
+    QCOMPARE(chaser->tapPeriod(), 0u);
+    QCOMPARE(SceneTaps::press(cl, true, 5000), SceneTaps::Keep);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 20, 1000);
+    QCOMPARE(cl->tapPeriod(), 0u);
+    // then its own times: it holds that step
+    QTest::qWait(500);
+    QCOMPARE(out(0), 20);
+    QCOMPARE(out(1), 20);
+    // and the next press, another step
+    QCOMPARE(SceneTaps::press(chaser, true, 9000), SceneTaps::Keep);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 30, 1000);
+
+    chaser->stop(FunctionParent::master());
+    cl->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(chaser->isRunning() == false && cl->isRunning() == false, 3000);
+    m_doc->masterTimer()->stop();
+    SceneTaps::setMode(SceneTaps::Toggle);
+    SceneTaps::clear();
+}
+
+void Backend_Test::tapRhythmFx()
+{
+    // an FX scene with an FX at the BPM of the show takes the rhythm tapped
+    // on its button as the scenes with steps do: a beat starts the cycle of
+    // those FX again (their position as at a start), and two in a row give
+    // them a tempo of their own (a cycle at x1 a beat, times their
+    // multiplier) instead of the BPM of the show. An FX at a fixed BPM goes
+    // on as it was. Offline frames of 20 ms
+    QCOMPARE(MasterTimer::tick(), 20u);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    const quint32 par = m_doc->fixtures().at(0)->id();
+    const quint32 other = m_doc->fixtures().at(1)->id();
+    m_doc->masterTimer()->requestBpmNumber(60);
+    auto dimmer = [&]() { return renderedValue(m_doc, 0); };
+    auto red = [&]() { return renderedValue(m_doc, 1); };
+    // how far a ramp went from $from to $to (past its end, round again)
+    auto went = [](int from, int to) { return to >= from ? to - from : to + 255 - from; };
+    // what a channel moves in $frames frames
+    auto travel = [&](const std::function<int()> &channel, int frames) {
+        const int from = channel();
+        renderFrames(m_doc, frames);
+        return went(from, channel());
+    };
+    auto about = [](int value, int expected, int slack) { return qAbs(value - expected) <= slack; };
+    auto text = [](int value, int expected) { return qPrintable(QString("%1, not %2").arg(value).arg(expected)); };
+
+    // a ramp over the whole range (mode 16: fade up, snap back): the output
+    // is where the FX is in its cycle. The dimmer at the BPM of the show x2
+    // (60 BPM: 2 cycles a second, 10.2 a frame), the red at 30 BPM (2.55)
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ par });
+    fx->setValue(par, 0, 0);
+    fx->setValue(par, 1, 0);
+    FXScene::Layer synced;
+    synced.param = "dimmer";
+    synced.mode = 16;
+    synced.swing = 200;
+    synced.syncBpm = true;
+    synced.multiplier = 2;
+    FXScene::Layer fixed = synced;
+    fixed.param = "red";
+    fixed.syncBpm = false;
+    fixed.bpm = 30;
+    fixed.multiplier = 1;
+    fx->setLayers({ synced, fixed });
+    QVERIFY(m_doc->addFunction(fx));
+    QVERIFY(fx->hasSyncedLayer());
+    QVERIFY(SceneTaps::tappable(fx));
+
+    // GO: the press that starts it is no beat
+    SceneTaps::setMode(SceneTaps::Go);
+    QCOMPARE(SceneTaps::press(fx, false, 1000), SceneTaps::StartIt);
+    QCOMPARE(SceneTaps::focus(), fx->id());
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 12);
+    QCOMPARE(fx->beats(), 0);
+    QVERIFY2(dimmer() > 100, qPrintable(QString::number(dimmer())));
+    int moved = travel(dimmer, 5);
+    QVERIFY2(about(moved, 51, 2), text(moved, 51));
+
+    // one press, after a pause: those FX start their cycle again, at the
+    // same tempo; the red goes on
+    QCOMPARE(SceneTaps::press(fx, true, 5000), SceneTaps::Keep);
+    QCOMPARE(fx->tapPeriod(), 0u);
+    int redBefore = red();
+    const int beatsBefore = fx->beats();
+    renderFrames(m_doc, 1);
+    QVERIFY2(dimmer() <= 12, qPrintable(QString::number(dimmer())));
+    QVERIFY2(about(went(redBefore, red()), 3, 1), text(went(redBefore, red()), 3));
+    // (the press is a beat of the rhythm bars)
+    QCOMPARE(fx->beats(), beatsBefore + 1);
+    moved = travel(dimmer, 5);
+    QVERIFY2(about(moved, 51, 2), text(moved, 51));
+
+    // a second one 500 ms later: its own tempo, 120 BPM (x2: 4 cycles a
+    // second, 20.4 a frame), from this beat; the red at its own speed
+    QCOMPARE(SceneTaps::press(fx, true, 5500), SceneTaps::Keep);
+    QCOMPARE(fx->tapPeriod(), 500u);
+    redBefore = red();
+    renderFrames(m_doc, 1);
+    QVERIFY2(about(dimmer(), 20, 2), text(dimmer(), 20));
+    QVERIFY2(about(went(redBefore, red()), 3, 1), text(went(redBefore, red()), 3));
+    moved = travel(dimmer, 5);
+    QVERIFY2(about(moved, 102, 3), text(moved, 102));
+    moved = travel(red, 5);
+    QVERIFY2(about(moved, 13, 2), text(moved, 13));
+    // the beats of the rhythm bars: one a beat of 500 ms (25 frames), the
+    // tapped one counted
+    const int beatsTapped = fx->beats();
+    QCOMPARE(beatsTapped, beatsBefore + 2);
+    renderFrames(m_doc, 8);
+    QCOMPARE(fx->beats(), beatsTapped);
+    renderFrames(m_doc, 10);
+    QCOMPARE(fx->beats(), beatsTapped + 1);
+    renderFrames(m_doc, 25);
+    QCOMPARE(fx->beats(), beatsTapped + 2);
+    // the BPM of the show doesn't move it any more
+    m_doc->masterTimer()->requestBpmNumber(90);
+    renderFrames(m_doc, 2);
+    moved = travel(dimmer, 2);
+    QVERIFY2(about(moved, 41, 2), text(moved, 41));
+    m_doc->masterTimer()->requestBpmNumber(60);
+
+    // cleared: the BPM of the show again, from where it is (no new cycle)
+    fx->setTapPeriod(0);
+    moved = travel(dimmer, 1);
+    QVERIFY2(about(moved, 10, 2), text(moved, 10));
+    renderFrames(m_doc, 2);
+    moved = travel(dimmer, 2);
+    QVERIFY2(about(moved, 20, 2), text(moved, 20));
+    m_doc->masterTimer()->requestBpmNumber(90);
+    renderFrames(m_doc, 2);
+    moved = travel(dimmer, 2);
+    QVERIFY2(about(moved, 31, 2), text(moved, 31));
+    m_doc->masterTimer()->requestBpmNumber(60);
+
+    // with a live speed, what was tapped plays (as steps): x2 and 500 ms
+    // between presses is a beat of 1000 ms in its own time, 4 cycles a
+    // second; the speed moved after it, the rhythm goes with it
+    fx->setSpeedFactor(2.0);
+    QCOMPARE(SceneTaps::press(fx, true, 9000), SceneTaps::Keep);
+    QCOMPARE(SceneTaps::press(fx, true, 9500), SceneTaps::Keep);
+    QCOMPARE(fx->tapPeriod(), 1000u);
+    renderFrames(m_doc, 1);
+    moved = travel(dimmer, 5);
+    QVERIFY2(about(moved, 102, 3), text(moved, 102));
+    fx->setSpeedFactor(1.0);
+    renderFrames(m_doc, 1);
+    moved = travel(dimmer, 5);
+    QVERIFY2(about(moved, 51, 2), text(moved, 51));
+    // paused, a press is no beat (it would come on resuming): it goes on
+    // from where it stopped
+    const int paused = dimmer();
+    fx->setPause(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(SceneTaps::press(fx, true, 15000), SceneTaps::Keep);
+    fx->setPause(false);
+    renderFrames(m_doc, 1);
+    QVERIFY2(about(went(paused, dimmer()), 10, 2), text(went(paused, dimmer()), 10));
+
+    // an FX with no FX at the BPM of the show takes no rhythm: a press of a
+    // running one in GO does nothing, as before
+    FXScene *plain = new FXScene(m_doc);
+    plain->setFixtures({ other });
+    plain->setValue(other, 0, 0);
+    FXScene::Layer own = fixed;
+    own.param = "dimmer";
+    plain->setLayers({ own });
+    QVERIFY(m_doc->addFunction(plain));
+    QVERIFY(plain->hasSyncedLayer() == false);
+    QVERIFY(SceneTaps::tappable(plain) == false);
+    plain->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 30);
+    auto otherDimmer = [&]() { return renderedValue(m_doc, 5); };
+    const int plainBefore = otherDimmer();
+    QVERIFY2(plainBefore > 60, qPrintable(QString::number(plainBefore)));
+    QCOMPARE(SceneTaps::press(plain, true, 20000), SceneTaps::Keep);
+    QCOMPARE(SceneTaps::press(plain, true, 20500), SceneTaps::Keep);
+    QCOMPARE(plain->tapPeriod(), 0u);
+    QCOMPARE(SceneTaps::focus(), fx->id());
+    renderFrames(m_doc, 1);
+    QVERIFY2(about(went(plainBefore, otherDimmer()), 3, 1), text(went(plainBefore, otherDimmer()), 3));
+    SceneTaps::setMode(SceneTaps::Toggle);
+    // (in a group alone, a press of it stops it, even in a row)
+    QCOMPARE(SceneTaps::press(plain, true, 21000), SceneTaps::ToggleIt);
+    plain->stop(FunctionParent::master());
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // a cycle: the FX at the BPM of the show at its tapped rhythm (120 BPM
+    // without one)
+    FXScene *alone = qobject_cast<FXScene *>(fx->createCopy(m_doc));
+    QVERIFY(alone != nullptr);
+    synced.multiplier = 1;
+    alone->setLayers({ synced });
+    alone->setTapPeriod(0);
+    QCOMPARE(alone->cycleDuration(), 500u);
+    alone->setTapPeriod(1000);
+    QCOMPARE(alone->cycleDuration(), 1000u);
+
+    // saved with the show, copied with the scene
+    fx->setTapPeriod(500);
+    QCOMPARE(qobject_cast<FXScene *>(fx->createCopy(m_doc))->tapPeriod(), 500u);
+    {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        Doc loaded(this);
+        loaded.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(loaded.loadXML(reader, false));
+        FXScene *back = qobject_cast<FXScene *>(loaded.function(fx->id()));
+        QVERIFY(back != nullptr);
+        QCOMPARE(back->tapPeriod(), 500u);
+        QVERIFY(SceneTaps::tappable(back));
+        QCOMPARE(loaded.function(plain->id())->tapPeriod(), 0u);
+        QCOMPARE(loaded.function(alone->id())->tapPeriod(), 1000u);
+    }
+
+    // in the program: a group in GO, the rhythm bar (the beats, looked at
+    // every 40 ms, a change a beat: no flood of changes), the properties and
+    // the phone; the FX of the programmer has no button and no bar
+    DtcCore core;
+    // (its frames offline, as above)
+    core.doc()->masterTimer()->stop();
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    const quint32 lamp = core.doc()->fixtures().at(0)->id();
+    const quint32 lamp2 = core.doc()->fixtures().at(1)->id();
+    QCOMPARE(core.doc()->masterTimer()->bpmNumber(), 120);
+    FXScene *beat = new FXScene(core.doc());
+    beat->setFixtures({ lamp });
+    beat->setValue(lamp, 0, 0);
+    FXScene::Layer wave = synced;
+    beat->setLayers({ wave });
+    QVERIFY(core.doc()->addFunction(beat));
+    FXScene *still = new FXScene(core.doc());
+    still->setFixtures({ lamp2 });
+    still->setValue(lamp2, 0, 0);
+    still->setLayers({ own });
+    QVERIFY(core.doc()->addFunction(still));
+    QCOMPARE(core.functionInfo(beat->id()).value("tappable").toBool(), true);
+    QCOMPARE(core.functionInfo(still->id()).value("tappable").toBool(), false);
+    QCOMPARE(core.effects()->info(beat->id()).value("tappable").toBool(), true);
+    QCOMPARE(core.effects()->info(still->id()).value("tappable").toBool(), false);
+
+    QCOMPARE(core.pressMode(), QString("go"));
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(beat->id());
+    QSignalSpy stepsMoved(&core, SIGNAL(stepsChanged()));
+    zone->trigger(beat->id());
+    renderFrames(core.doc(), 1);
+    QVERIFY(beat->isRunning());
+    QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(beat->id()), 0, 3000);
+    // a beat of 500 ms: 25 frames
+    renderFrames(core.doc(), 30);
+    QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(beat->id()), 1, 3000);
+    const int changes = stepsMoved.count();
+    QTest::qWait(300);
+    QCOMPARE(stepsMoved.count(), changes);
+    QCOMPARE(core.remote()->stateMessage().value("steps").toMap().value(QString::number(beat->id())).toInt(), 1);
+    // a press of the running one after a pause: a beat (its cycle again), no
+    // rhythm of its own yet; it still plays
+    QTest::qWait(SceneTaps::window() + 200);
+    zone->trigger(beat->id());
+    renderFrames(core.doc(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(beat->id()), 2, 3000);
+    QVERIFY(zone->isActive(beat->id()));
+    QCOMPARE(beat->tapPeriod(), 0u);
+    // the other one plays with no bar; clearing the BPM of the show of its FX
+    // takes the bar away
+    still->start(core.doc()->masterTimer(), FunctionParent::master());
+    renderFrames(core.doc(), 2);
+    QVERIFY(still->isRunning());
+    QTest::qWait(200);
+    QCOMPARE(core.stepOf(still->id()), -1);
+    // with a rhythm tapped: its tile and its properties show it. Clearing the
+    // BPM of the show of its FX takes it away too (no rhythm shown that does
+    // nothing and can't be cleared; the BPM of the show again later, not it)
+    beat->setTapPeriod(500);
+    auto tileTap = [&]() {
+        for (const QVariant &tile : zone->functionsInfo())
+        {
+            if (tile.toMap().value("id").toUInt() == beat->id())
+                return tile.toMap().value("tap").toInt();
+        }
+        return -1;
+    };
+    QCOMPARE(tileTap(), 500);
+    QCOMPARE(core.functionInfo(beat->id()).value("tap").toInt(), 500);
+    QCOMPARE(core.effects()->info(beat->id()).value("tap").toInt(), 500);
+    core.effects()->setFxLayer(beat->id(), 0, { { "syncBpm", false } });
+    QCOMPARE(core.functionInfo(beat->id()).value("tappable").toBool(), false);
+    QCOMPARE(beat->tapPeriod(), 0u);
+    QCOMPARE(tileTap(), 0);
+    QCOMPARE(core.functionInfo(beat->id()).value("tap").toInt(), 0);
+    QCOMPARE(core.effects()->info(beat->id()).value("tap").toInt(), 0);
+    // (one left from before, a show saved so: not shown either)
+    still->setTapPeriod(700);
+    QCOMPARE(core.functionInfo(still->id()).value("tap").toInt(), 0);
+    QCOMPARE(core.effects()->info(still->id()).value("tap").toInt(), 0);
+    still->setTapPeriod(0);
+    QTRY_COMPARE_WITH_TIMEOUT(core.stepOf(beat->id()), -1, 3000);
+    // Stop: the bars go
+    core.setPressMode("stop");
+    zone->trigger(beat->id());
+    still->stop(FunctionParent::master());
+    renderFrames(core.doc(), 3);
+    QVERIFY(beat->isRunning() == false && still->isRunning() == false);
+
+    // the FX of the programmer at the BPM of the show: no step of its own
+    core.programmer()->selectFixtures({ lamp }, false);
+    core.programmer()->setFx("dimmer", { { "syncBpm", true } });
+    QVERIFY(core.programmer()->fxScene() != nullptr);
+    renderFrames(core.doc(), 30);
+    QVERIFY(core.programmer()->fxScene()->isRunning());
+    QTest::qWait(200);
+    QVERIFY(core.steps().isEmpty());
+    core.programmer()->clear();
+    renderFrames(core.doc(), 3);
+}
+
+void Backend_Test::tapRhythmFxRow()
+{
+    // the presses of a row on an FX scene with FX at the BPM of the show: the
+    // first one starts their cycle again, each next one is the next beat, now:
+    // they go where they are at it, a cycle at x1 a beat from the first one.
+    // A chase over 4 fixtures goes on to the next one on each press (not back
+    // to the first), a layer at x1/4 a quarter further (not back to its
+    // start); a press late on a beat goes back to it. The rhythm bars: a
+    // press of a row late on a beat of its clock (less than half a beat)
+    // times it, it is no beat more. Offline frames of 20 ms, 120 BPM: a beat
+    // is 25 frames
+    QCOMPARE(MasterTimer::tick(), 20u);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 5), 5);
+    QList<quint32> pars;
+    for (Fixture *fixture : m_doc->fixtures())
+        pars.append(fixture->id());
+    m_doc->masterTimer()->requestBpmNumber(120);
+    // a ramp over the whole range (mode 16): each dimmer is where its
+    // fixture is in its cycle, 0 at rest
+    auto dimmer = [&](int i) { return renderedValue(m_doc, i * 5); };
+    auto lit = [&]() {
+        QList<int> on;
+        for (int i = 0; i < 4; i++)
+            if (dimmer(i) > 0)
+                on.append(i);
+        return on;
+    };
+    auto slow = [&]() { return dimmer(4); };
+    auto about = [](int value, int expected, int slack) { return qAbs(value - expected) <= slack; };
+    auto text = [](int value, int expected) { return QString("%1, not %2").arg(value).arg(expected).toUtf8(); };
+
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures(pars);
+    for (quint32 id : std::as_const(pars))
+        fx->setValue(id, 0, 0);
+    FXScene::Layer chase;
+    chase.param = "dimmer";
+    chase.mode = 16;
+    chase.swing = 200;
+    chase.syncBpm = true;
+    chase.step = -1;
+    chase.fixtures = pars.mid(0, 4);
+    FXScene::Layer quarter = chase;
+    quarter.step = 0;
+    quarter.multiplier = 0.25;
+    quarter.fixtures = { pars.at(4) };
+    fx->setLayers({ chase, quarter });
+    QVERIFY(m_doc->addFunction(fx));
+
+    // GO: started (no beat) and left to play, one fixture after the other
+    SceneTaps::setMode(SceneTaps::Go);
+    QCOMPARE(SceneTaps::press(fx, false, 1000), SceneTaps::StartIt);
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    renderFrames(m_doc, 25);
+    QCOMPARE(lit(), QList<int>({ 1 }));
+
+    // a row of presses a beat apart, each a little early (22 frames): the
+    // first one starts their cycle again; then the chase on the next fixture
+    // on each one, the x1/4 a quarter further each time. Each one is a beat
+    // of the rhythm bars
+    int beats = fx->beats();
+    QCOMPARE(SceneTaps::press(fx, true, 5000), SceneTaps::Keep);
+    renderFrames(m_doc, 1);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    QVERIFY2(about(dimmer(0), 10, 2), text(dimmer(0), 10).constData());
+    QVERIFY2(about(slow(), 3, 2), text(slow(), 3).constData());
+    QCOMPARE(fx->beats(), beats + 1);
+    for (int press = 1; press < 4; press++)
+    {
+        renderFrames(m_doc, 22);
+        beats = fx->beats();
+        QCOMPARE(SceneTaps::press(fx, true, 5000 + press * 500), SceneTaps::Keep);
+        renderFrames(m_doc, 1);
+        QCOMPARE(lit(), QList<int>({ press }));
+        QVERIFY2(about(dimmer(press), 10, 2), text(dimmer(press), 10).constData());
+        const int quarterOn = qRound(255 * (press * 0.25 + 0.01));
+        QVERIFY2(about(slow(), quarterOn, 2), text(slow(), quarterOn).constData());
+        QCOMPARE(fx->beats(), beats + 1);
+    }
+    QCOMPARE(fx->tapPeriod(), 500u);
+
+    // one late on the beat (27 frames: the clock counted it 2 frames ago):
+    // back to it, the first fixture again (round the chase), the x1/4 round
+    // to its start; no beat more
+    renderFrames(m_doc, 27);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    beats = fx->beats();
+    QCOMPARE(SceneTaps::press(fx, true, 7000), SceneTaps::Keep);
+    renderFrames(m_doc, 1);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    QVERIFY2(about(dimmer(0), 10, 2), text(dimmer(0), 10).constData());
+    QVERIFY2(about(slow(), 3, 2), text(slow(), 3).constData());
+    QCOMPARE(fx->beats(), beats);
+
+    // a beat of the clock: the next one of a row a frame after it is no beat
+    // more; past half a beat it is the next one; the first one of a row is
+    // a beat anyway (it starts their cycle again)
+    beats = fx->beats();
+    QVERIFY(framesUntil(m_doc, [&]() { return fx->beats() != beats; }, 30) > 0);
+    beats = fx->beats();
+    renderFrames(m_doc, 1);
+    fx->tapBeat(true);
+    renderFrames(m_doc, 1);
+    QCOMPARE(fx->beats(), beats);
+    QVERIFY(framesUntil(m_doc, [&]() { return fx->beats() != beats; }, 30) > 0);
+    beats = fx->beats();
+    renderFrames(m_doc, 13);
+    fx->tapBeat(true);
+    renderFrames(m_doc, 1);
+    QCOMPARE(fx->beats(), beats + 1);
+    QVERIFY(framesUntil(m_doc, [&]() { return fx->beats() != beats + 1; }, 30) > 0);
+    beats = fx->beats();
+    renderFrames(m_doc, 1);
+    fx->tapBeat();
+    renderFrames(m_doc, 1);
+    QCOMPARE(fx->beats(), beats + 1);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    QVERIFY2(about(dimmer(0), 10, 2), text(dimmer(0), 10).constData());
+
+    SceneTaps::setMode(SceneTaps::Toggle);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::tapRhythmLateBeat()
+{
+    // a chaser at a tapped rhythm of 500 ms (25 frames of 20 ms): a press of
+    // a row that comes just after one of its steps (less than half a beat) is
+    // that step, tapped late: it times the next ones and plays no step more
+    // (presses in time skipped a step on each late one). Past half a beat, or
+    // just after a press, it is the next step now; the first press of a row
+    // is a step now anyway
+    QCOMPARE(MasterTimer::tick(), 20u);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    Chaser *chaser = new Chaser(m_doc);
+    chaser->setDurationMode(Chaser::PerStep);
+    for (uchar value : { uchar(10), uchar(20), uchar(30), uchar(40) })
+    {
+        Scene *scene = new Scene(m_doc);
+        scene->setValue(par, 0, value);
+        QVERIFY(m_doc->addFunction(scene));
+        ChaserStep step(scene->id(), 0, 60000, 0);
+        step.duration = 60000;
+        chaser->addStep(step);
+    }
+    QVERIFY(m_doc->addFunction(chaser));
+    auto step = [&]() { return chaser->currentStepIndex(); };
+    auto onBeat = [](int frames, int expected) { return frames >= expected - 1 && frames <= expected + 1; };
+
+    chaser->setTapPeriod(500);
+    chaser->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(step(), 0);
+    QCOMPARE(renderedValue(m_doc, 0), 10);
+    // its step on the beat
+    int frames = framesUntil(m_doc, [&]() { return step() == 1; }, 40);
+    QVERIFY2(onBeat(frames, 23), qPrintable(QString::number(frames)));
+    // the next press of a row 2 frames later: that step, late; the next one
+    // a beat after the press
+    renderFrames(m_doc, 2);
+    chaser->tapBeat(true);
+    renderFrames(m_doc, 1);
+    QCOMPARE(step(), 1);
+    QCOMPARE(renderedValue(m_doc, 0), 20);
+    frames = framesUntil(m_doc, [&]() { return step() == 2; }, 40);
+    QVERIFY2(onBeat(frames, 25), qPrintable(QString::number(frames)));
+    // past half a beat (15 frames): the next step now
+    renderFrames(m_doc, 15);
+    chaser->tapBeat(true);
+    renderFrames(m_doc, 1);
+    QCOMPARE(step(), 3);
+    // just after a press (3 frames): the next step too (quick presses)
+    renderFrames(m_doc, 3);
+    chaser->tapBeat(true);
+    renderFrames(m_doc, 1);
+    QCOMPARE(step(), 0);
+    // the first press of a row just after a step of the rhythm: a step now
+    QVERIFY(framesUntil(m_doc, [&]() { return step() == 1; }, 40) > 0);
+    renderFrames(m_doc, 1);
+    chaser->tapBeat();
+    renderFrames(m_doc, 1);
+    QCOMPARE(step(), 2);
+    QCOMPARE(renderedValue(m_doc, 0), 30);
+    chaser->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxSyncedWait()
+{
+    // the wait of an FX at the BPM of the show is ms at the speed it goes at,
+    // the BPM of the show or its tapped rhythm, as for an FX at a BPM of its
+    // own (its own BPM, kept unused, doesn't count): 500 ms at 120 BPM is a
+    // rest of 25 frames of 20 ms after each cycle of 25. Also in its previews
+    QCOMPARE(MasterTimer::tick(), 20u);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    const quint32 a = m_doc->fixtures().at(0)->id();
+    const quint32 b = m_doc->fixtures().at(1)->id();
+    m_doc->masterTimer()->requestBpmNumber(120);
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ a, b });
+    fx->setValue(a, 0, 0);
+    fx->setValue(b, 0, 0);
+    // a ramp (mode 16) on each dimmer: at the BPM of the show (its own one,
+    // 30, unused), and at 120 BPM of its own
+    FXScene::Layer synced;
+    synced.param = "dimmer";
+    synced.mode = 16;
+    synced.swing = 200;
+    synced.wait = 500;
+    synced.bpm = 30;
+    synced.syncBpm = true;
+    synced.fixtures = { a };
+    FXScene::Layer own = synced;
+    own.syncBpm = false;
+    own.bpm = 120;
+    own.fixtures = { b };
+    fx->setLayers({ synced, own });
+    QVERIFY(m_doc->addFunction(fx));
+
+    // the longest rest at 0 of each dimmer over 150 frames (the start of a
+    // ramp is 0 too: a frame more)
+    auto rests = [&]() {
+        int longest[2] = { 0, 0 }, run[2] = { 0, 0 };
+        for (int i = 0; i < 150; i++)
+        {
+            renderFrames(m_doc, 1);
+            for (int f = 0; f < 2; f++)
+            {
+                run[f] = renderedValue(m_doc, f * 5) == 0 ? run[f] + 1 : 0;
+                longest[f] = qMax(longest[f], run[f]);
+            }
+        }
+        return QList<int>({ longest[0], longest[1] });
+    };
+    auto rested = [](const QList<int> &frames, int f) {
+        return frames.at(f) >= 25 && frames.at(f) <= 27;
+    };
+    auto text = [](const QList<int> &frames) { return QString("%1, %2").arg(frames.at(0)).arg(frames.at(1)).toUtf8(); };
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    QList<int> frames = rests();
+    QVERIFY2(rested(frames, 1), text(frames).constData());
+    QVERIFY2(rested(frames, 0), text(frames).constData());
+    // the BPM of the show at 60, a tapped rhythm of 500 ms: the same
+    m_doc->masterTimer()->requestBpmNumber(60);
+    fx->setTapPeriod(500);
+    renderFrames(m_doc, 80);
+    frames = rests();
+    QVERIFY2(rested(frames, 0), text(frames).constData());
+    // a tapped rhythm of 1000 ms: a cycle of 50 frames, the same rest
+    fx->setTapPeriod(1000);
+    renderFrames(m_doc, 80);
+    frames = rests();
+    QVERIFY2(rested(frames, 0), text(frames).constData());
+
+    // the previews: a cycle, then a cycle at rest at 120 BPM; at 60 BPM
+    // (tapped), half a cycle at rest
+    auto preview = [&](qreal cyclePos) { return fx->previewLayer(0, cyclePos).first().toMap().value("value").toDouble(); };
+    QCOMPARE(preview(1.25), 0.0);
+    QVERIFY2(qAbs(preview(1.6) - 0.1) < 1e-6, qPrintable(QString::number(preview(1.6))));
+    fx->setTapPeriod(0);
+    m_doc->masterTimer()->requestBpmNumber(120);
+    QVERIFY2(qAbs(preview(0.5) - 0.5) < 1e-6, qPrintable(QString::number(preview(0.5))));
+    QCOMPARE(preview(1.5), 0.0);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::pressModeGoOrStop()
+{
+    // GO or Stop, always one of them: GO each time the program starts (not
+    // remembered); the buttons of the top bar, their mappings and the phone
+    // choose one, and pressing the one that is on keeps it
+    {
+        DtcCore before;
+        before.setPressMode("stop");
+        QCOMPARE(before.pressMode(), QString("stop"));
+    }
+    DtcCore core;
+    QCOMPARE(core.pressMode(), QString("go"));
+    QSignalSpy changed(&core, SIGNAL(pressModeChanged()));
+    core.setPressMode("go");
+    QCOMPARE(changed.count(), 0);
+
+    // a mapping of each (with its LED): on the one that is on, nothing changes
+    ControlMapper *mapper = core.mapping();
+    const int goMapping = mapper->addMapping({ { "source", "key" }, { "key", "g" }, { "target", "pressGo" } });
+    const int stopMapping = mapper->addMapping({ { "source", "key" }, { "key", "s" }, { "target", "pressStop" } });
+    QVERIFY(goMapping > 0 && stopMapping > 0);
+    auto key = [&](const QString &k) {
+        QVERIFY(mapper->keyEvent(k, true));
+        QVERIFY(mapper->keyEvent(k, false));
+    };
+    QCOMPARE(mapper->targetState({ { "target", "pressGo" } }), 1);
+    QCOMPARE(mapper->targetState({ { "target", "pressStop" } }), 0);
+    key("G");
+    QCOMPARE(core.pressMode(), QString("go"));
+    key("S");
+    QCOMPARE(core.pressMode(), QString("stop"));
+    QCOMPARE(mapper->targetState({ { "target", "pressGo" } }), 0);
+    QCOMPARE(mapper->targetState({ { "target", "pressStop" } }), 1);
+    key("S");
+    QCOMPARE(core.pressMode(), QString("stop"));
+    key("G");
+    QCOMPARE(core.pressMode(), QString("go"));
+
+    // the phone, the same; its state says which one is on
+    RemoteServer *remote = core.remote();
+    QCOMPARE(remote->stateMessage().value("pressMode").toString(), QString("go"));
+    remote->handleCommand({ { "cmd", "global" }, { "action", "pressGo" } });
+    QCOMPARE(core.pressMode(), QString("go"));
+    remote->handleCommand({ { "cmd", "global" }, { "action", "pressStop" } });
+    QCOMPARE(core.pressMode(), QString("stop"));
+    remote->handleCommand({ { "cmd", "global" }, { "action", "pressStop" } });
+    QCOMPARE(core.pressMode(), QString("stop"));
+    QCOMPARE(remote->stateMessage().value("pressMode").toString(), QString("stop"));
+    remote->handleCommand({ { "cmd", "global" }, { "action", "pressGo" } });
+    QCOMPARE(core.pressMode(), QString("go"));
+    QCOMPARE(changed.count(), 4);
+
+    // a new show keeps it (it is of the program, not of the show)
+    core.setPressMode("stop");
+    core.newShow();
+    QCOMPARE(core.pressMode(), QString("stop"));
 }
 
 void Backend_Test::followAim()

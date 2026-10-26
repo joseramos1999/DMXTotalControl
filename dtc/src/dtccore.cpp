@@ -62,6 +62,7 @@
 #include "mastertimer.h"
 #include "qlcconfig.h"
 #include "function.h"
+#include "fxscene.h"
 #include "fixturegroup.h"
 #include "rgbmatrix.h"
 #include "rgbimage.h"
@@ -164,6 +165,9 @@ DtcCore::DtcCore(QObject *parent)
     if (m_hasRecovery == false)
         removeRecoveries();
     m_settings->setSessionRunning(true);
+
+    // the buttons of the scenes start them (GO) each time the program starts
+    SceneTaps::setMode(SceneTaps::Go);
 
     // the rhythm bars of the buttons: the steps of what plays, about every frame
     m_stepsTimer = new QTimer(this);
@@ -516,7 +520,10 @@ QString DtcCore::pressMode() const
 
 void DtcCore::setPressMode(const QString &mode)
 {
-    const SceneTaps::Mode wanted = mode == "go" ? SceneTaps::Go : mode == "stop" ? SceneTaps::Stop : SceneTaps::Toggle;
+    // GO or Stop, always one of them
+    if (mode != "go" && mode != "stop")
+        return;
+    const SceneTaps::Mode wanted = mode == "go" ? SceneTaps::Go : SceneTaps::Stop;
     if (wanted == SceneTaps::mode())
         return;
     SceneTaps::setMode(wanted);
@@ -526,17 +533,20 @@ void DtcCore::setPressMode(const QString &mode)
 void DtcCore::slotStepsTick()
 {
     // the step (cue) of every scene with steps that plays (a playing one with
-    // no step yet: 0, so its bar shows)
+    // no step yet: 0, so its bar shows); an FX scene at the BPM of the show,
+    // its beats
     QHash<quint32, int> now;
     for (Function *f : m_doc->functions())
     {
-        if (SceneTaps::tappable(f) == false || f->isRunning() == false)
+        if (f->isRunning() == false || SceneTaps::tappable(f) == false)
             continue;
         int step = 0;
         if (Chaser *chaser = qobject_cast<Chaser *>(f))
             step = chaser->currentStepIndex();
         else if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
             step = cuelist->status().current;
+        else if (FXScene *fx = qobject_cast<FXScene *>(f))
+            step = fx->beats();
         now.insert(f->id(), qMax(0, step));
     }
     if (now == m_steps)
@@ -626,7 +636,11 @@ QVariantMap DtcCore::functionInfo(quint32 id) const
     info.insert("fadeOut", f->fadeOutSpeed());
     info.insert("priority", f->priority());
     info.insert("running", f->isRunning());
-    info.insert("tap", f->tapPeriod());
+    // whether it takes a rhythm tapped on its button (steps, cuelists, FX at
+    // the BPM of the show), and that rhythm (ms a step, 0: none)
+    const bool tappable = SceneTaps::tappable(f);
+    info.insert("tap", tappable ? f->tapPeriod() : 0u);
+    info.insert("tappable", tappable);
     if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
         info.insert("cueCount", cuelist->cueCount());
     return info;

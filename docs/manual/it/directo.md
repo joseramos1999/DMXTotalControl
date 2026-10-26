@@ -9,6 +9,7 @@ Nell'intestazione della pagina trovi:
 - **◀ ▶**: scena precedente o successiva in ogni gruppo attivo (anche con Ctrl+← e Ctrl+→).
 - **«Pausa»** / **«Riprendi»**: congela tutto ciò che è in riproduzione e lo fa ripartire.
 - **«Rilascia gruppi»**: ferma le scene di tutti i gruppi.
+- **«Comprimi gruppi»** / **«Espandi gruppi»**: comprime tutte le colonne in una volta, per vederle tutte; quando sono già tutte compresse, le espande.
 - **«Mixer»**: passa alla vista del [mixer](directo.md#mixer). Un punto arancione avvisa che il mixer sta modificando l'uscita.
 - **«Nuovo gruppo»**: aggiunge una colonna.
 
@@ -21,7 +22,7 @@ Nell'intestazione della pagina trovi:
 
 Il tasto con l'ingranaggio di ogni colonna apre il suo menu: **«Cambia colore»** (passa al colore successivo), **«Sposta a sinistra»**, **«Sposta a destra»** e **«Elimina gruppo»**. Puoi anche trascinare il gruppo dalla maniglia a sinistra del suo nome e rilasciarlo su un altro gruppo per prenderne il posto.
 
-La freccia **‹** accanto al nome **comprime** il gruppo: diventa una striscia stretta con il suo nome e quante scene sono in riproduzione, per fare spazio agli altri. Le sue scene restano in riproduzione. La freccia **›** della striscia lo espande. Si salva con lo show.
+La freccia **‹** accanto al nome **comprime** il gruppo: diventa una striscia stretta con il suo nome e quante scene sono in riproduzione, per fare spazio agli altri. Le sue scene restano in riproduzione. La freccia **›** della striscia lo espande. Si salva con lo show. Per comprimerli o espanderli tutti in una volta, usa **«Comprimi gruppi»** / **«Espandi gruppi»** nell'intestazione.
 
 ### Aggiungere e ordinare le scene
 
@@ -35,14 +36,14 @@ Per riordinare, passa il mouse su un riquadro e trascinalo dalla sua maniglia (a
 
 ## Avviare le scene
 
-Fai clic su un riquadro per avviare la scena; fai di nuovo clic per rilasciarla. Il riquadro in riproduzione si colora con il colore del gruppo e ha un punto che pulsa.
+Fai clic su un riquadro per avviare la scena (con **GO**, la modalità con cui parte il programma). Per rilasciarla, premi il quadrato nell'intestazione del gruppo («Rilascia questo gruppo») o passa a **Stop** e premila. Il riquadro in riproduzione si colora con il colore del gruppo e ha un punto che pulsa.
 
 In ogni riquadro si vede:
 
 - Il **nome** e, sotto, il **tipo** di scena. In una cuelist in riproduzione, la cue in cui si trova («Q 3 · Strofa»). Dopo, il [ritmo battuto](directo.md#ritmo-di-una-scena-a-passi), se ce l'ha («120 BPM»).
 - **P7**, **P2**…: la priorità, solo quando non è quella normale (5). In arancione se è maggiore di 5.
 - Un **fulmine**: è una scena flash.
-- Una **barra divisa in due** in basso: una scena a passi o una cuelist in riproduzione; si alterna a ogni passo, al suo ritmo.
+- Una **barra divisa in due** in basso: una scena a passi, una cuelist o un FX in «BPM dello show» in riproduzione; si alterna a ogni passo (in un FX, a ogni battito), al suo ritmo.
 
 ### Esclusivo o mix
 
@@ -69,32 +70,33 @@ Una scena con **flash** è attiva solo finché tieni premuto il suo riquadro. Si
 
 ### Cuelist in un gruppo
 
-Una cuelist in un gruppo è un riquadro come gli altri: il clic la accende e la spegne. Il suo menu (clic destro) aggiunge **«GO (cue successiva)»**, **«Indietro (cue precedente)»** e **«Rilascia la cuelist»**. Per gestirla comodamente con GO, mettila su un [playback](playbacks.md).
+Una cuelist in un gruppo è un riquadro come gli altri: il clic la avvia (con **Stop**, la ferma). Il suo menu (clic destro) aggiunge **«GO (cue successiva)»**, **«Indietro (cue precedente)»** e **«Rilascia la cuelist»**. Per gestirla comodamente con GO, mettila su un [playback](playbacks.md).
 
 ### Ritmo di una scena a passi
 
-Le scene a passi (sequenze e chaser) e le cuelist seguono il ritmo con cui premi il loro riquadro:
+Le scene a passi (sequenze e chaser), le cuelist e le scene FX con degli FX in «BPM dello show» seguono il ritmo con cui premi il loro riquadro:
 
-- Un clic la avvia o la rilascia, come sempre.
-- Con la scena in riproduzione, premi il suo riquadro **più volte di seguito** a tempo di musica, con meno di 2 secondi tra una pressione e l'altra. Ogni pressione passa al passo successivo (in una cuelist, dà un GO) e la scena prosegue da sola a quel ritmo: un passo a ogni battito, al posto dei suoi tempi. Il ritmo è la media delle ultime pressioni.
+- Un clic la avvia (con **GO**, la modalità con cui parte il programma; vedi sotto).
+- Con la scena in riproduzione, premi il suo riquadro **più volte di seguito** a tempo di musica, con meno di 2 secondi tra una pressione e l'altra. Ogni pressione passa al passo successivo (in una cuelist, dà un GO) e la scena prosegue da sola a quel ritmo: un passo a ogni battito, al posto dei suoi tempi. Il ritmo è la media delle ultime pressioni. Una pressione che arriva un po' in ritardo, subito dopo il passo di quel battito (meno di mezzo battito), è quello stesso passo: non ne dà un altro, rimette solo a tempo il ritmo.
 - Contano solo le pressioni con la scena in riproduzione: quella che la avvia inizia il conteggio. Così, cambiare scena in un gruppo esclusivo e tornare indietro non dà un ritmo a nessuna.
-- Dopo una pausa di più di 2 secondi, un clic la rilascia. Per rilasciarla subito dopo aver battuto il ritmo, aspetta 2 secondi.
+- Dopo una pausa di più di 2 secondi, un clic dà un passo senza cambiarne il ritmo, e la scena continua a suonare. Per fermarla, passa a **Stop** e premila.
 - Si riproduce il ritmo che hai battuto, anche con una **velocità dal vivo** impostata; se poi muovi la velocità, il ritmo accelera o rallenta con essa. In pausa, le pressioni non fanno avanzare i passi.
 - Il ritmo si salva con la scena ed è suo: lo segue anche quando è in riproduzione in una super scena o su un playback. Nelle sue [proprietà](directo.md#proprietà-della-scena) (e in [Scene](escenas.md#come-si-riproduce-una-scena)) puoi scriverlo o premere **«Rimuovi»** perché torni ai suoi tempi.
+- In una **scena FX**, il ritmo è quello dei suoi FX in **«BPM dello show»**: la prima pressione di una serie fa ripartire il loro ciclo (come quando la avvii), e ognuna delle successive li porta al battito successivo, un ciclo più avanti per il loro moltiplicatore (un chase passa alla fixture successiva; a ×¼, avanzano di un quarto di ciclo). Più pressioni di seguito danno loro un ciclo a ogni battito (per il loro moltiplicatore), invece dei BPM dello show. Gli FX con una velocità propria non cambiano. Senza ritmo battuto, o dopo «Rimuovi», seguono i BPM dello show. Se disattivi «BPM dello show» in tutti i suoi FX, la scena perde il suo ritmo battuto.
 
 Funziona allo stesso modo con i suoi tasti dello [SHOW](show.md), con le sue mappature di controller e tasti in modalità «Commuta» e con il [controllo remoto](remoto.md).
 
 #### GO e Stop
 
-I tasti **GO** e **Stop** della barra superiore (e della sezione «Ritmo» dello SHOW) cambiano ciò che fa una pressione su qualsiasi scena, per chiunque la prema:
+I tasti **GO** e **Stop** della barra superiore (e della sezione «Ritmo» dello SHOW) decidono cosa fa una pressione su qualsiasi scena, per chiunque la prema. Uno dei due è sempre acceso: il programma parte sempre in **GO**, e premere l'altro cambia modalità:
 
-- **GO** acceso: premere una scena la **avvia**; in una già in riproduzione, ogni pressione fa avanzare un passo (in una cuelist, un GO) e più pressioni di seguito ne battono il ritmo. Non la ferma mai, anche se passano più di 2 secondi senza premere: così batti il tempo con calma.
+- **GO** acceso: premere una scena la **avvia**; in una già in riproduzione, ogni pressione fa avanzare un passo (in una cuelist, un GO; in una scena FX, la prima fa ripartire il ciclo dei suoi FX in «BPM dello show» e le successive li portano al battito successivo) e più pressioni di seguito ne battono il ritmo. Non la ferma mai, anche se passano più di 2 secondi senza premere: così batti il tempo con calma.
 - **Stop** acceso: premere una scena la **ferma**. Una che non è in riproduzione resta com'è.
-- Entrambi spenti (premi di nuovo quello acceso): come sempre, un clic la avvia o la rilascia.
+- Per rilasciare le scene di un gruppo senza cambiare modalità, premi il quadrato nella sua intestazione («Rilascia questo gruppo»); **«Ferma tutto»** (Esc) ferma tutto.
 
 Le scene flash continuano a funzionare finché le tieni premute, in qualsiasi modalità.
 
-Durante la riproduzione, ogni riquadro di una scena a passi o di una cuelist ha in basso una **barra del ritmo** divisa in due: si accende un lato e poi l'altro a ogni passo (in una cuelist, a ogni cue). Così vedi a che ritmo va ciascuna. Ce l'hanno anche i suoi tasti dello SHOW, le sue strisce di playback e i suoi tasti sul telefono.
+Durante la riproduzione, ogni riquadro di una scena a passi, di una cuelist o di una scena FX con degli FX in «BPM dello show» ha in basso una **barra del ritmo** divisa in due: si accende un lato e poi l'altro a ogni passo (in una cuelist, a ogni cue; in una scena FX, a ogni battito, un ciclo di quegli FX a ×1). Così vedi a che ritmo va ciascuna. Ce l'hanno anche i suoi tasti dello SHOW, le sue strisce di playback e i suoi tasti sul telefono.
 
 ## Master
 
@@ -117,7 +119,7 @@ Fai clic destro su un riquadro e scegli **«Proprietà…»**.
 | **Protetta dai rilasci di** | Quali rilasci ignora. |
 | **Flash (attiva finché è premuto)** | La trasforma in scena flash. |
 | **Dimmer dal vivo** | La sua intensità, sopra il master del gruppo. |
-| **Ritmo battuto** | Passi e cuelist: il [ritmo battuto](directo.md#ritmo-di-una-scena-a-passi) con il suo riquadro, in BPM. Scrivilo o premi «Rimuovi» per tornare ai suoi tempi. Agisce subito. |
+| **Ritmo battuto** | Passi, cuelist e scene FX con degli FX in «BPM dello show»: il [ritmo battuto](directo.md#ritmo-di-una-scena-a-passi) con il suo riquadro, in BPM. Scrivilo o premi «Rimuovi» per tornare ai suoi tempi (in una scena FX, ai BPM dello show). Agisce subito. |
 | **Velocità dal vivo** | Da ×0,1 a ×10 (scene che si muovono: passi, FX, cuelist…). |
 | **Fase dal vivo** / **Dimensione dal vivo** | La fase (0–359°) e la dimensione (0–200 %) degli FX. |
 | **Velocità di dissolvenza** | Accelera o rallenta le sue dissolvenze, da ×0,1 a ×10. |

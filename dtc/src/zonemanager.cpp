@@ -37,6 +37,8 @@ ZoneManager::ZoneManager(Doc *doc, QObject *parent)
     , m_paused(false)
     , m_nextZoneId(0)
 {
+    // (added, removed, a new show: allFolded too)
+    connect(this, SIGNAL(countChanged()), this, SIGNAL(foldedChanged()));
 }
 
 ZoneManager::~ZoneManager()
@@ -113,6 +115,7 @@ Zone *ZoneManager::addZone(const QString &name)
     const quint32 id = nextZoneId();
     m_nextZoneId = id + 1;
     Zone *zone = new Zone(m_doc, id, this);
+    follow(zone);
     zone->setName(name.isEmpty() ? tr("Group %1").arg(m_zones.count() + 1) : name);
     zone->setColor(QColor(s_zoneColors[m_zones.count() % (sizeof(s_zoneColors) / sizeof(s_zoneColors[0]))]));
 
@@ -225,34 +228,64 @@ void ZoneManager::resetPause()
     emit pausedChanged();
 }
 
+bool ZoneManager::allFolded() const
+{
+    if (m_zones.isEmpty())
+        return false;
+    for (Zone *zone : m_zones)
+    {
+        if (zone->folded() == false)
+            return false;
+    }
+    return true;
+}
+
+void ZoneManager::setAllFolded(bool folded)
+{
+    for (Zone *zone : m_zones)
+        zone->setFolded(folded);
+}
+
+void ZoneManager::follow(Zone *zone)
+{
+    connect(zone, SIGNAL(foldedChanged()), this, SIGNAL(foldedChanged()));
+}
+
 void ZoneManager::releaseFor(Zone *source, quint32 fid)
 {
-    Zone::ReleaseMode mode = source->effectiveRelease(fid);
-    if (mode == Zone::ReleaseNone)
+    if (source->effectiveRelease(fid) == Zone::ReleaseNone)
         return;
 
     for (Zone *zone : std::as_const(m_zones))
     {
-        bool same = (zone == source);
-        bool target = (mode == Zone::ReleaseAll) ||
-                      (mode == Zone::ReleaseGroup && same) ||
-                      (mode == Zone::ReleaseOthers && !same);
-        if (target == false)
-            continue;
-
         for (quint32 running : zone->activeFunctions())
         {
-            if (same && running == fid)
-                continue;
-
-            Zone::Protection p = zone->protection(running);
-            bool isProtected = (p == Zone::ProtectAll) ||
-                               (p == Zone::ProtectGroup && same) ||
-                               (p == Zone::ProtectOthers && !same);
-            if (isProtected == false)
+            if (releases(source, fid, zone, running))
                 zone->stop(running);
         }
     }
+}
+
+bool ZoneManager::releases(Zone *source, quint32 fid, Zone *zone, quint32 running) const
+{
+    if (source == nullptr || zone == nullptr)
+        return false;
+    const bool same = (zone == source);
+    if (same && running == fid)
+        return false;
+
+    const Zone::ReleaseMode mode = source->effectiveRelease(fid);
+    const bool target = (mode == Zone::ReleaseAll) ||
+                        (mode == Zone::ReleaseGroup && same) ||
+                        (mode == Zone::ReleaseOthers && !same);
+    if (target == false)
+        return false;
+
+    const Zone::Protection p = zone->protection(running);
+    const bool isProtected = (p == Zone::ProtectAll) ||
+                             (p == Zone::ProtectGroup && same) ||
+                             (p == Zone::ProtectOthers && !same);
+    return isProtected == false;
 }
 
 void ZoneManager::deleteZones()
@@ -309,6 +342,7 @@ bool ZoneManager::loadXML(QXmlStreamReader &root)
             Zone *zone = new Zone(m_doc, id, this);
             if (zone->loadXML(root))
             {
+                follow(zone);
                 m_zones.append(zone);
                 m_nextZoneId = qMax(m_nextZoneId, id + 1);
             }

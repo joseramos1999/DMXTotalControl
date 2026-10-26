@@ -35,7 +35,7 @@ Pressione **“Editar”** para montar a tela e **“Concluído”** para voltar
 | **Mixer ao vivo** | O [mixer](directo.md#mixer) de Ao vivo. |
 | **Relógio** | A hora, com segundos e data opcionais. |
 | **Temporizador** | Um cronômetro ou uma contagem regressiva. |
-| **Ritmo: GO e Stop** | **GO** e **Stop** grandes, como os da barra superior (mudam o que os botões das cenas fazem), e **BeatGO**. Os botões de cenas com passos ou cuelists têm dentro a barra do ritmo. |
+| **Ritmo: GO e Stop** | **GO** e **Stop** grandes, como os da barra superior (mudam o que os botões das cenas fazem), e **BeatGO**. Os botões de cenas com passos, cuelists ou FX em “BPM do show” têm dentro a barra do ritmo. |
 | **Notas** | Um texto seu, do tamanho que você quiser. |
 | **Rodando agora** | O que está rodando, com um botão para pará-lo. |
 | **Dials e rodas** | Uma tabela de dials ou rodas sem fim. |
@@ -51,6 +51,8 @@ Conforme o tipo, o painel de propriedades mostra:
 
 - **Mostra**: o tipo de seção.
 - **Título**: o texto da barra de título. Sem título, a seção não tem barra, nem no modo de edição.
+- **Fundo**: a cor de fundo da seção, entre as mesmas cores dos botões, ou **∅** (a do tema). Ela aparece como um tom, ao editar, ao tocar e no celular, e o texto em cima continua legível.
+- **Cor de todos os botões** (de todos os faders, de todos os dials): dá essa cor a todos os da tabela de uma vez. As células vazias continuam vazias.
 - **Colunas** e **Linhas**: o tamanho da tabela (até 32). Os botões, faders e dials preenchem as células. Em uma seção pequena demais para a tabela, as células não encolhem além do que dá para ler e tocar: a tabela rola (com a roda do mouse ou arrastando).
 - **Preencher com as cenas de um grupo** (botões): coloca de uma vez um botão para cada cena desse grupo.
 - **Grupo** (um grupo): qual ela mostra.
@@ -74,7 +76,7 @@ A forma mais rápida de preencher uma tabela é **arrastar cenas** da lista que 
 
 | Ação | O que faz |
 |---|---|
-| **Reproduzir uma cena** | Dispara a cena no grupo dela (ou sozinha, se ela não estiver em nenhum grupo). Pressionado várias vezes seguidas, marca o [ritmo](directo.md#ritmo-de-uma-cena-com-passos) de uma cena com passos ou de uma cuelist. |
+| **Reproduzir uma cena** | Dispara a cena no grupo dela (ou sozinha, se ela não estiver em nenhum grupo). Pressionado várias vezes seguidas, marca o [ritmo](directo.md#ritmo-de-uma-cena-com-passos) de uma cena com passos, de uma cuelist ou de uma cena FX com FX em “BPM do show”. Com **Stop** na barra superior, ele a para. |
 | **Próxima cena de um grupo** / **Cena anterior de um grupo** | Em um grupo, ou em “Todos os grupos”. |
 | **Liberar um grupo** | Um grupo, ou todos. |
 | **Blackout** | Ativa ou desativa o blackout. |
@@ -90,7 +92,7 @@ Um botão trazido de outra página com Alt+clique mostra “Um controle de outra
 ### Opções de um botão
 
 - **Rótulo**: o texto dele. Vazio (“Automático”), mostra o nome da cena, da paleta ou da ação.
-- **Comportamento** (cena, blackout e paleta): **“Alternar: liga / desliga”** ou **“Flash: enquanto pressionado”**. Os botões flash têm um raio no canto.
+- **Comportamento** (cena, blackout e paleta): **“Alternar: liga / desliga”** ou **“Flash: enquanto pressionado”**. Os botões flash têm um raio no canto. Em uma cena, no lugar de “Alternar” aparece **“Pressionar: conforme GO / Stop”**: ele a dispara ou a para conforme **GO** e **Stop** da barra superior.
 - **Tecla**: uma tecla do teclado que o pressiona enquanto você está na página Show. A letra aparece no canto do botão.
 - **Cor**, **Ícone** e **Imagem** de fundo (a imagem aparece atenuada enquanto o botão está desligado).
 
@@ -113,6 +115,7 @@ Um fader do SHOW pode controlar **várias coisas ao mesmo tempo**. Nas proprieda
 | **Dimmer de fixtures** | O dimmer do mixer de todos os fixtures ou de um grupo de fixtures. |
 | **Velocidade de movimento dos moving heads** | A velocidade do que move os moving heads (todos ou os de um grupo): os FX de pan/tilt deles, os do programador e os passos que os movem. Embaixo ×0,1, no meio a normal (×1), em cima ×10; o fader mostra o multiplicador e um clique duplo o volta para ×1. Um FX de pan/tilt e de cor só muda a velocidade do movimento; uma cuelist, a dos FX dela. O canal de velocidade dos motores não é tocado. |
 | **Velocidade de uma cena** | A velocidade ao vivo dessa cena (×0,1 a ×10, como a de movimento). |
+| **Disparar uma cena (sua velocidade)** | Como “Disparar uma cena (sua intensidade)”, mas o fader é a velocidade dela: embaixo de tudo a cena fica parada; ao subi-lo, ela inicia no grupo dela (respeitando se é exclusivo) e o curso é a velocidade dela, ×0,1 logo acima de embaixo, ×1 no meio e ×10 em cima. O texto diz “Parada” enquanto ela não toca, e o fader acompanha a cena se ela for parada ou disparada de outro lugar. A velocidade é só daquela vez: ao parar, a cena volta à velocidade que tinha (a do Ao vivo não muda). Um clique duplo a põe em ×1 (e a dispara se ela estava parada). Se um fader dispara várias cenas de um mesmo grupo exclusivo, elas não tiram o lugar uma da outra: toca a primeira. |
 | **BPM** | O tempo do show, de 20 a 300. |
 
 A diferença entre os dois de cena: **“Disparar uma cena (sua intensidade)”** é a própria cena, e a inicia e a para; **“Dimmer de uma cena (sem dispará-la)”** só a atenua, também quando ela é disparada de outro lugar. Os dois podem ser usados ao mesmo tempo: com o dimmer em 50 % e o fader que a dispara em 80 %, a cena sai a 40 %.

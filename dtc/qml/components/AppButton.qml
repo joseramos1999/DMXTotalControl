@@ -26,6 +26,9 @@ Button {
 
     /** FontAwesome glyph shown before the text */
     property string iconGlyph: ""
+    /** Sizes of the glyph and of the text (bigger buttons) */
+    property int iconSize: 13
+    property int textSize: Theme.fontNormal
     /** Background when highlighted/checked, or for "primary" buttons */
     property color accentColor: Theme.accent
     property bool primary: false
@@ -65,7 +68,7 @@ Button {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: control.iconGlyph.length > 0
                 icon: control.iconGlyph
-                size: 13
+                size: control.iconSize
                 color: control.lit ? control.litText : (control.enabled ? Theme.text : Theme.textFaint)
             }
             Text {
@@ -73,7 +76,7 @@ Button {
                 visible: control.text.length > 0
                 text: control.text
                 font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontNormal
+                font.pixelSize: control.textSize
                 font.weight: Font.DemiBold
                 color: control.lit ? control.litText : (control.enabled ? Theme.text : Theme.textFaint)
             }

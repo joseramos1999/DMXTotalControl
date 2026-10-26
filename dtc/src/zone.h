@@ -114,7 +114,9 @@ public:
     Q_INVOKABLE void removeFunction(quint32 fid);
     Q_INVOKABLE void moveFunction(int from, int to);
 
-    /** Start $fid, or stop it if this zone already started it */
+    /** A press of the button of $fid, in the mode of the buttons
+     *  (SceneTaps): GO starts it (a beat of one that plays), Stop stops it;
+     *  with no program around (Toggle), start it or stop it */
     Q_INVOKABLE void trigger(quint32 fid);
     Q_INVOKABLE void start(quint32 fid);
     Q_INVOKABLE void stop(quint32 fid);
@@ -145,6 +147,15 @@ public:
      *  intensity of the scene). It lasts while the scene plays (1.0 after) */
     void setSceneLevel(quint32 fid, qreal level);
     qreal sceneLevel(quint32 fid) const;
+    /** The speed a fader of the SHOW plays a scene of this group at (x0.1 -
+     *  x10), instead of its Live speed, which it doesn't change (nothing is
+     *  saved). It lasts while the scene plays; the Live speed moved meanwhile
+     *  takes over. A scene this group doesn't play: nothing */
+    void setRunSpeed(quint32 fid, qreal speed);
+    /** Start $fid at $speed for this run (setRunSpeed), from its first frame */
+    void startAt(quint32 fid, qreal speed);
+    /** The speed $fid plays at: that of its run, or its Live speed */
+    qreal speed(quint32 fid) const;
 
     /** $level (0.0 - 1.0) as the intensity of $f through the overrides $ids
      *  it was given (adjusted; those gone with a previous run, new ones). A
@@ -223,6 +234,8 @@ private:
     QSet<quint32> m_waiting;
     /** The levels of the SHOW faders on the scenes playing (setSceneLevel) */
     QHash<quint32, qreal> m_sceneLevels;
+    /** The speeds of the SHOW faders on the scenes playing (setRunSpeed) */
+    QHash<quint32, qreal> m_runSpeeds;
     /** The scene started last, for next/previous */
     quint32 m_lastStarted;
 };

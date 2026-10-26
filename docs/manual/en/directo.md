@@ -9,6 +9,7 @@ In the page header you have:
 - **◀ ▶**: previous or next scene in each playing group (also with Ctrl+← and Ctrl+→).
 - **“Pause”** / **“Resume”**: freezes everything that is playing and continues it.
 - **“Release groups”**: stops the scenes of all the groups.
+- **“Fold groups”** / **“Unfold groups”**: folds every column at once, to see them all; when they are all folded, it unfolds them.
 - **“Mixer”**: switches to the [mixer](directo.md#mixer) view. An orange dot warns you that the mixer is changing the output.
 - **“New group”**: adds a column.
 
@@ -21,7 +22,7 @@ In the page header you have:
 
 The gear button of each column opens its menu: **“Change colour”** (goes to the next colour), **“Move left”**, **“Move right”** and **“Delete group”**. You can also drag the group by the handle to the left of its name and drop it on another group to take its place.
 
-The **‹** arrow next to the name **folds** the group: it becomes a narrow strip with its name and how many scenes are playing, to make room for the others. Its scenes go on playing. The **›** arrow on the strip unfolds it. It is saved with the show.
+The **‹** arrow next to the name **folds** the group: it becomes a narrow strip with its name and how many scenes are playing, to make room for the others. Its scenes go on playing. The **›** arrow on the strip unfolds it. It is saved with the show. To fold or unfold them all at once, use **“Fold groups”** / **“Unfold groups”** in the header.
 
 ### Adding and ordering scenes
 
@@ -35,14 +36,14 @@ To reorder, hover over a tile and drag it by its handle (on the right of the til
 
 ## Playing scenes
 
-Click a tile to play the scene; click it again to release it. The playing tile takes the colour of the group and has a pulsing dot.
+Click a tile to play the scene (with **GO**, the mode the program starts in). To release it, press the square in the header of the group (“Release this group”) or switch to **Stop** and press it. The playing tile takes the colour of the group and has a pulsing dot.
 
 Each tile shows:
 
 - The **name** and, below it, the scene **type**. On a playing cuelist, the cue it is on (“Q 3 · Verse”). After that, the [tapped rhythm](directo.md#rhythm-of-a-scene-with-steps) if it has one (“120 BPM”).
 - **P7**, **P2**…: the priority, only when it is not the normal one (5). In orange if it is higher than 5.
 - A **lightning bolt**: it is a flash scene.
-- A **bar split in two** at the bottom: a scene with steps or a playing cuelist; it alternates on each step, at its rhythm.
+- A **bar split in two** at the bottom: a playing scene with steps, cuelist or FX at “BPM of the show”; it alternates on each step (on an FX, on each beat), at its rhythm.
 
 ### Exclusive or mix
 
@@ -69,32 +70,33 @@ A **flash** scene plays only while you hold its tile down. You turn this on in i
 
 ### Cuelists in a group
 
-A cuelist in a group is just another tile: a click turns it on and off. Its menu (right click) adds **“GO (next cue)”**, **“Back (cue before)”** and **“Release the cuelist”**. To run it comfortably with GO, put it on a [playback](playbacks.md).
+A cuelist in a group is just another tile: a click plays it (with **Stop**, it stops it). Its menu (right click) adds **“GO (next cue)”**, **“Back (cue before)”** and **“Release the cuelist”**. To run it comfortably with GO, put it on a [playback](playbacks.md).
 
 ### Rhythm of a scene with steps
 
-Scenes with steps (sequences and chasers) and cuelists follow the rhythm at which you press their tile:
+Scenes with steps (sequences and chasers), cuelists and FX scenes with FX at “BPM of the show” follow the rhythm at which you press their tile:
 
-- One click plays or releases it, as usual.
-- With the scene playing, press its tile **several times in a row** to the beat of the music, with less than 2 seconds between presses. Each press goes to the next step (on a cuelist, it gives a GO) and the scene carries on by itself at that rhythm: one step on each beat, instead of its own times. The rhythm is the average of the last presses.
+- One click plays it (with **GO**, the mode the program starts in; see below).
+- With the scene playing, press its tile **several times in a row** to the beat of the music, with less than 2 seconds between presses. Each press goes to the next step (on a cuelist, it gives a GO) and the scene carries on by itself at that rhythm: one step on each beat, instead of its own times. The rhythm is the average of the last presses. A press that comes a little late, just after the step of that beat (less than half a beat), is that same step: it gives no other one, it only puts the rhythm back in time.
 - Only the presses made while the scene is playing count: the one that plays it starts the count. So switching scenes in an exclusive group and coming back does not give a rhythm to either of them.
-- After a pause of more than 2 seconds, a click releases it. To release it right after tapping the rhythm, wait 2 seconds.
+- After a pause of more than 2 seconds, a click gives one step without changing its rhythm, and the scene keeps playing. To stop it, switch to **Stop** and press it.
 - The rhythm you tapped is played, also with a **live speed** set; if you then move the speed, the rhythm speeds up or slows down with it. While paused, presses do not give steps.
 - The rhythm is stored with the scene and belongs to it: it also follows it when it plays in a super scene or on a playback. In its [properties](directo.md#scene-properties) (and in [Scenes](escenas.md#how-a-scene-plays)) you can type it or press **“Clear”** to go back to its own times.
+- In an **FX scene**, the rhythm is that of its FX at **“BPM of the show”**: the first press of a row starts their cycle again (as when it is played), and each next one takes them to the next beat, one cycle further times their multiplier (a chase goes on to the next fixture; at ×¼, they go a quarter of a cycle further). Several in a row give them one cycle on each beat (times their multiplier), instead of the BPM of the show. The FX with a speed of their own do not change. With no tapped rhythm, or after “Clear”, they follow the BPM of the show. If you turn off “BPM of the show” on all its FX, the scene loses its tapped rhythm.
 
 It works the same with its [SHOW](show.md) buttons, with its controller and key mappings in “Toggle” mode and with the [remote control](remoto.md).
 
 #### GO and Stop
 
-The **GO** and **Stop** buttons of the top bar (and of the “Rhythm: GO and Stop” section of the SHOW) change what pressing any scene does, for everyone who presses it:
+The **GO** and **Stop** buttons of the top bar (and of the “Rhythm: GO and Stop” section of the SHOW) decide what pressing any scene does, for everyone who presses it. One of the two is always on: the program always starts in **GO**, and pressing the other one switches the mode:
 
-- **GO** on: pressing a scene **plays** it; on one that is already playing, each press gives a step (on a cuelist, a GO) and several in a row tap its rhythm. It never stops it, even if you go more than 2 seconds without pressing: this way you can tap the tempo calmly.
+- **GO** on: pressing a scene **plays** it; on one that is already playing, each press gives a step (on a cuelist, a GO; on an FX scene, the first one starts the cycle of its FX at “BPM of the show” again and the next ones take them to the next beat) and several in a row tap its rhythm. It never stops it, even if you go more than 2 seconds without pressing: this way you can tap the tempo calmly.
 - **Stop** on: pressing a scene **stops** it. One that is not playing stays as it is.
-- Both off (press the one that is on again): as usual, a click plays or releases it.
+- To release the scenes of a group without changing the mode, press the square in its header (“Release this group”); **“Stop all”** (Esc) stops everything.
 
 Flash scenes keep working while you hold them down, in any mode.
 
-While it plays, each tile of a scene with steps or of a cuelist has a **rhythm bar** split in two at the bottom: one side lights up and then the other on each step (on a cuelist, on each cue). This way you see the rhythm of each one. Its SHOW buttons, its playback strips and its buttons on the phone have it too.
+While it plays, each tile of a scene with steps, of a cuelist or of an FX scene with FX at “BPM of the show” has a **rhythm bar** split in two at the bottom: one side lights up and then the other on each step (on a cuelist, on each cue; on an FX scene, on each beat, a cycle of those FX at ×1). This way you see the rhythm of each one. Its SHOW buttons, its playback strips and its buttons on the phone have it too.
 
 ## Masters
 
@@ -117,7 +119,7 @@ Right click a tile and choose **“Properties…”**.
 | **Protected from releases by** | Which releases it ignores. |
 | **Flash (plays while pressed)** | Turns it into a flash scene. |
 | **Live dimmer** | Its intensity, on top of the group master. |
-| **Tapped rhythm** | Steps and cuelists: the [rhythm tapped](directo.md#rhythm-of-a-scene-with-steps) with its tile, in BPM. Type it or press “Clear” to go back to its own times. It acts at once. |
+| **Tapped rhythm** | Steps, cuelists and FX scenes with FX at “BPM of the show”: the [rhythm tapped](directo.md#rhythm-of-a-scene-with-steps) with its tile, in BPM. Type it or press “Clear” to go back to its own times (on an FX scene, to the BPM of the show). It acts at once. |
 | **Live speed** | From ×0.1 to ×10 (scenes that move: steps, FX, cuelists…). |
 | **Live phase** / **Live size** | The phase (0–359°) and the size (0–200 %) of the FX. |
 | **Fade speed** | Speeds up or slows down its fades, from ×0.1 to ×10. |

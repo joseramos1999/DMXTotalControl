@@ -67,7 +67,7 @@ Ce que fait le mappage. Les **boutons** :
 | Lancer une scène | La scène choisie, dans son groupe. |
 | Scène N d’un groupe | La scène qui occupe cette place dans le groupe (**Numéro de scène**). |
 | Libérer un groupe / Scène suivante d’un groupe / Scène précédente d’un groupe | Dans un groupe ou dans « Tous les groupes ». |
-| Blackout, Tout arrêter, Tout mettre en pause, Tap tempo, BeatGO, GO, Stop | Comme leurs boutons (GO et Stop s’allument et s’éteignent, comme dans la barre du haut). |
+| Blackout, Tout arrêter, Tout mettre en pause, Tap tempo, BeatGO, GO, Stop | Comme leurs boutons (GO et Stop choisissent le mode, comme dans la barre du haut : l’un des deux est toujours allumé). |
 | Palette | La palette sur ses propres fixtures ou sur un groupe de fixtures. |
 | Mixeur : full, blackout, flash, flash exclusif, full exclusif, stroboscope | Sur la bande choisie du mixeur. |
 | Playback : GO, retour, pause / retour, flash, libérer, sélectionner | Sur un playback. |
@@ -94,7 +94,7 @@ Pour les playbacks, vous choisissez la **page** (« Page actuelle (suit) », q
 
 Pour les **boutons** :
 
-- **« Bascule : chaque appui on / off »** : chaque appui allume ou éteint.
+- **« Bascule : chaque appui on / off »** : chaque appui allume ou éteint. Sur une scène, il s’appelle **« Appuyer : selon GO / Stop »** : il la lance ou l’arrête selon GO et Stop de la barre du haut.
 - **« Flash : tant qu’on appuie »**.
 - **« Allumer seulement »** / **« Éteindre seulement »**.
 
@@ -117,7 +117,7 @@ Pour les LED des boutons MIDI :
 
 1. Dans **« LED de »**, choisissez **« Tout contrôleur (numéros) »** ou votre contrôleur : **Akai APC mini**, **Akai APC mini mk2** ou **Akai APC40 mkII**.
 2. Pour **« Activé »**, **« Désactivé »** et **« En pause »**, choisissez la couleur dans les échantillons (sur une APC) ou tapez la valeur (0–127) pour tout autre contrôleur.
-3. Sur les pads RGB de l’APC mini mk2, choisissez aussi comment ils s’allument : **« Atténué »**, **« Plein »**, **« Pulsé »** ou **« Clignotant »** (sur l’APC40 mkII, **« Fixe »**).
+3. Sur les pads RGB de l’APC mini mk2, choisissez aussi comment ils s’allument : **« Atténué »**, **« Plein »**, **« Pulsé »** ou **« Clignotant »** (sur l’APC40 mkII, **« Fixe »**). Sans rien choisir, « Activé » s’allume en **« Plein »** et « Désactivé » en **« Atténué »**.
 
 Les LED du contrôleur s’éteignent quand vous fermez le programme, quand vous effacez un mappage ou le déplacez vers un autre contrôle, quand vous ouvrez un autre show ou quand vous désactivez l’appareil ou son feedback.
 

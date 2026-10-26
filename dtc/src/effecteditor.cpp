@@ -29,6 +29,7 @@
 #include "zonemanager.h"
 #include "programmer.h"
 #include "zone.h"
+#include "scenetaps.h"
 
 #include "rgbscriptv4.h"
 #include "fixturegroup.h"
@@ -169,8 +170,11 @@ QVariantMap EffectEditor::info(quint32 id) const
     map.insert("divisions", f->divisions());
     map.insert("startMode", f->startMode() == Function::StartPaused ? "paused" : "play");
     map.insert("stagger", f->stagger());
-    // its own rhythm, tapped on its button (ms a step, 0: none)
-    map.insert("tap", f->tapPeriod());
+    // its own rhythm, tapped on its button (ms a step, 0: none), and whether
+    // it takes one (steps, cuelists, FX at the BPM of the show)
+    const bool tappable = SceneTaps::tappable(f);
+    map.insert("tap", tappable ? f->tapPeriod() : 0u);
+    map.insert("tappable", tappable);
     map.insert("cycle", EffectExchange::cycleDuration(m_doc, id));
 
     if (Scene *scene = qobject_cast<Scene *>(f))

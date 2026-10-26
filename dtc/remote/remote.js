@@ -12,7 +12,8 @@ const STRINGS = {
     release: "Liberar", centre: "Centro", flash: "Flash", tap: "Tap", nothing: "No suena nada",
     onComputer: "Solo en el ordenador", master: "Master", noGroup: "Sin grupo",
     go: "GO", back: "Atrás", empty: "Vacío", page: "Página", playbacks: "Playbacks",
-    released: "Liberada", on: "Encendida", off: "Apagada", paused: "En pausa"
+    released: "Liberada", on: "Encendida", off: "Apagada", paused: "En pausa",
+    stopped: "Parada"
   },
   en: {
     connecting: "Connecting…", offline: "No connection with DMX Total Control. Trying again…",
@@ -20,7 +21,8 @@ const STRINGS = {
     release: "Release", centre: "Centre", flash: "Flash", tap: "Tap", nothing: "Nothing plays",
     onComputer: "On the computer only", master: "Master", noGroup: "No group",
     go: "GO", back: "Back", empty: "Empty", page: "Page", playbacks: "Playbacks",
-    released: "Released", on: "On", off: "Off", paused: "Paused"
+    released: "Released", on: "On", off: "Off", paused: "Paused",
+    stopped: "Stopped"
   },
   pt: {
     connecting: "Conectando…", offline: "Sem conexão com o DMX Total Control. Tentando de novo…",
@@ -28,7 +30,8 @@ const STRINGS = {
     release: "Liberar", centre: "Centro", flash: "Flash", tap: "Tap", nothing: "Nada tocando",
     onComputer: "Só no computador", master: "Master", noGroup: "Sem grupo",
     go: "GO", back: "Voltar", empty: "Vazio", page: "Página", playbacks: "Playbacks",
-    released: "Liberada", on: "Ligada", off: "Desligada", paused: "Em pausa"
+    released: "Liberada", on: "Ligada", off: "Desligada", paused: "Em pausa",
+    stopped: "Parada"
   },
   fr: {
     connecting: "Connexion…", offline: "Pas de connexion avec DMX Total Control. Nouvel essai…",
@@ -36,7 +39,8 @@ const STRINGS = {
     release: "Libérer", centre: "Centre", flash: "Flash", tap: "Tap", nothing: "Rien ne joue",
     onComputer: "Sur l'ordinateur seulement", master: "Master", noGroup: "Sans groupe",
     go: "GO", back: "Retour", empty: "Vide", page: "Page", playbacks: "Playbacks",
-    released: "Libérée", on: "Allumée", off: "Éteinte", paused: "En pause"
+    released: "Libérée", on: "Allumée", off: "Éteinte", paused: "En pause",
+    stopped: "Arrêtée"
   },
   it: {
     connecting: "Connessione…", offline: "Nessuna connessione con DMX Total Control. Nuovo tentativo…",
@@ -44,7 +48,8 @@ const STRINGS = {
     release: "Rilascia", centre: "Centro", flash: "Flash", tap: "Tap", nothing: "Non suona niente",
     onComputer: "Solo sul computer", master: "Master", noGroup: "Nessun gruppo",
     go: "GO", back: "Indietro", empty: "Vuoto", page: "Pagina", playbacks: "Playback",
-    released: "Rilasciata", on: "Accesa", off: "Spenta", paused: "In pausa"
+    released: "Rilasciata", on: "Accesa", off: "Spenta", paused: "In pausa",
+    stopped: "Ferma"
   },
   de: {
     connecting: "Verbinden…", offline: "Keine Verbindung mit DMX Total Control. Neuer Versuch…",
@@ -52,7 +57,8 @@ const STRINGS = {
     release: "Freigeben", centre: "Mitte", flash: "Flash", tap: "Tap", nothing: "Nichts läuft",
     onComputer: "Nur am Computer", master: "Master", noGroup: "Keine Gruppe",
     go: "GO", back: "Zurück", empty: "Leer", page: "Seite", playbacks: "Playbacks",
-    released: "Freigegeben", on: "An", off: "Aus", paused: "Pausiert"
+    released: "Freigegeben", on: "An", off: "Aus", paused: "Pausiert",
+    stopped: "Gestoppt"
   }
 };
 // the language of the phone, if the remote has it
@@ -234,6 +240,50 @@ function hexToHsv(hex) {
   return { h: h, s: max === 0 ? 0 : d / max, v: max };
 }
 
+/* A section with its own background (as on the computer): a tint of the
+   surface, 35 % of the colour (dimmed at night, as the colours of the
+   buttons); its texts keep reading (WCAG 4.5, else the text of the theme or
+   the opposite of it: no white glare at night) */
+function rgbOf(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function luminance(rgb) {
+  const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2]);
+}
+function contrast(a, b) {
+  const x = luminance(a), y = luminance(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+function tintSection(section, colour) {
+  const css = getComputedStyle(document.documentElement);
+  const surface = rgbOf(css.getPropertyValue("--surface")), tint = rgbOf(colour);
+  if (!surface || !tint) return;
+  const level = (parseFloat(css.getPropertyValue("--category")) || 100) / 100;
+  // 35 %, less where the faintest text of the theme wouldn't read (2:1),
+  // as the program does (SectionView)
+  const mixAt = (t) => surface.map((s, i) => Math.round(s + (tint[i] * level - s) * t));
+  const faint = rgbOf(css.getPropertyValue("--faint"));
+  let t = 0.35, bg = mixAt(t);
+  while (faint && contrast(faint, bg) < 2.0 && t > 0.1) {
+    t -= 0.05;
+    bg = mixAt(t);
+  }
+  section.style.background = "rgb(" + bg.join(",") + ")";
+  const text = rgbOf(css.getPropertyValue("--text"));
+  if (!text) return;
+  const other = luminance(text) > 0.18 ? [17, 17, 17] : [255, 255, 255];
+  const best = contrast(text, bg) >= contrast(other, bg) ? text : other;
+  for (const name of ["--text", "--dim", "--faint"]) {
+    const c = rgbOf(css.getPropertyValue(name));
+    if (c && contrast(c, bg) < 4.5)
+      section.style.setProperty(name, "rgb(" + best.join(",") + ")");
+  }
+}
+
 function sizeCanvas(canvas) {
   const ratio = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -295,7 +345,9 @@ function buildNode(node) {
     box.appendChild(b);
     return box;
   }
-  const section = el("div", "section" + (node.type === "empty" ? " empty" : ""));
+  const section = el("div", "section" + (node.type === "empty" && !node.background ? " empty" : ""));
+  if (node.background)
+    tintSection(section, node.background);
   if (node.title)
     section.appendChild(el("div", "sectionTitle", node.title));
   const content = el("div", "content");
@@ -315,13 +367,26 @@ function key(node, cell) {
 /* A SHOW fader or dial: the value at a position of its travel (its range,
    0..1; an older computer sends none) and its text, % or BPM */
 function rangeValue(item, v) {
+  // (a fader that plays a scene at a speed stops it at the end of its travel)
+  if (item.run && (item.invert ? v >= 1 : v <= 0)) return 0;
   const min = item.min !== undefined ? item.min : 0, max = item.max !== undefined ? item.max : 1;
   return min + (max - min) * (item.invert ? 1 - v : v);
 }
+/* The text of a value under a fader or dial: smaller where a long word
+   («Stopped») doesn't fit a narrow cell, as the program does */
+function setValueText(el, text) {
+  if (el.textContent === String(text)) return;
+  el.textContent = text;
+  el.style.fontSize = "";
+  if (el.clientWidth > 0 && el.scrollWidth > el.clientWidth)
+    el.style.fontSize = Math.max(7, Math.floor(10 * el.clientWidth / el.scrollWidth)) + "px";
+}
 function valueText(item, value) {
   if (item.bpm) return Math.round(20 + value * 280);
-  // a speed: x0.1 at the bottom, x1 in the middle, x10 at the top
+  // a speed: x0.1 at the bottom, x1 in the middle, x10 at the top (a scene
+  // played at a speed: stopped at zero)
   if (item.speed) {
+    if (item.run && value <= 0) return tr("stopped");
     const factor = Math.pow(10, value * 2 - 1);
     return "×" + factor.toFixed(factor < 1 ? 2 : 1);
   }
@@ -444,7 +509,8 @@ function playbackStrip(node, slot, pbPage) {
 }
 
 // the rhythm of a scene with steps (a cuelist) inside its button: two halves
-// that light one after the other, a step each; only while it plays
+// that light one after the other, a step each (an FX at the BPM of the show:
+// a beat each); only while it plays
 function rhythmBar(button, functionId) {
   const bar = el("div", "rhythm"), halves = [el("div", "half"), el("div", "half")];
   halves.forEach((half) => bar.appendChild(half));
@@ -522,7 +588,7 @@ const BUILDERS = {
         const show = (v, raw) => {
           fill.style.height = (v * 100) + "%";
           knob.style.bottom = (v * 100) + "%";
-          value.textContent = valueText(item, raw);
+          setValueText(value, valueText(item, raw));
         };
         drag(track, (e) => {
           dragging = true;
@@ -619,7 +685,7 @@ const BUILDERS = {
             ctx.lineTo(cx + Math.cos(a) * r * 0.65, cy + Math.sin(a) * r * 0.65);
             ctx.stroke();
           }
-          value.textContent = valueText(item, raw);
+          setValueText(value, valueText(item, raw));
         };
         // up and down with the finger: a dial moves its whole range in 200 px, a wheel a notch every 12 px
         drag(canvas, (e, first) => {
@@ -756,7 +822,8 @@ const BUILDERS = {
   },
 
   // the rhythm: GO (a press of a scene starts it and marks its rhythm) and
-  // Stop (a press stops it), BeatGO (each scene button shows its own rhythm)
+  // Stop (a press stops it), always one of the two, and BeatGO (each scene
+  // button shows its own rhythm)
   bpm(content) {
     const box = el("div", "bpm"), modes = el("div", "row modes"), row = el("div", "row");
     const go = el("button", "go", "GO"), stop = el("button", "stop", "Stop"), beat = el("button", "", "BeatGO");

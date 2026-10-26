@@ -84,7 +84,7 @@ Before going to Live, press **“Reset all”** to clear the programmer. While t
 2. Press **Red**: the tile lights up with the colour of the group and the PARs go red.
 3. Press **Blue**: the group crossfades from red to blue in 2 seconds.
 4. Move the **Master** of the column to lower the intensity of the whole group.
-5. Press **Blue** again to release it, or press the square in the column header (“Release this group”).
+5. To release it, press the square in the column header (“Release this group”), or switch to **Stop** in the top bar, press **Blue** and go back to **GO**.
 
 More in [Live](directo.md).
 

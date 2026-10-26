@@ -1127,6 +1127,7 @@ void Function::preRun(MasterTimer *timer)
     m_frameTick = MasterTimer::tick();
     m_pendingJumps.storeRelaxed(0);
     m_tapElapsed = 0;
+    m_tapTimed = false;
     m_tapRephase.storeRelaxed(0);
 
     emit running(m_id);
@@ -1875,9 +1876,18 @@ uint Function::tapPeriod() const
     return uint(m_tapPeriod.loadAcquire());
 }
 
-void Function::tapBeat()
+void Function::tapBeat(bool inRow)
 {
-    m_tapRephase.storeRelease(1);
+    // (a first one still to come stays first)
+    if (inRow)
+        m_tapRephase.testAndSetOrdered(NoBeatTapped, NextBeatTapped);
+    else
+        m_tapRephase.storeRelease(FirstBeatTapped);
+}
+
+Function::TappedBeat Function::takeTapBeat()
+{
+    return TappedBeat(m_tapRephase.fetchAndStoreOrdered(NoBeatTapped));
 }
 
 int Function::takeRhythmSteps()
@@ -1886,15 +1896,25 @@ int Function::takeRhythmSteps()
     const uint period = tapPeriod();
     if (period == 0)
     {
+        // no rhythm of its own (yet): a press is still its step now (GO),
+        // and its own times go on from there
         m_tapElapsed = 0;
-        m_tapRephase.storeRelaxed(0);
+        m_tapTimed = false;
+        if (takeTapBeat() != NoBeatTapped)
+            steps++;
         return steps;
     }
-    // a tap: its step now, the next beats from here
-    if (m_tapRephase.fetchAndStoreOrdered(0) != 0)
+    // a tap: its step now, the next beats from here. The next one of a row
+    // less than half a beat after a step of the rhythm is that step, tapped
+    // late: it only times the next ones (taps in time come a little before
+    // or after the steps they time: a step more on each late one skipped one)
+    const TappedBeat tapped = takeTapBeat();
+    if (tapped != NoBeatTapped)
     {
+        const bool late = tapped == NextBeatTapped && m_tapTimed && m_tapElapsed < period / 2;
         m_tapElapsed = 0;
-        return steps + 1;
+        m_tapTimed = false;
+        return late ? steps : steps + 1;
     }
     // (with the live speed, as its own times would; a step a frame at most,
     // and what is left over a beat doesn't pile up: no burst of steps when
@@ -1903,6 +1923,7 @@ int Function::takeRhythmSteps()
     if (m_tapElapsed >= period)
     {
         m_tapElapsed %= period;
+        m_tapTimed = true;
         steps++;
     }
     return steps;

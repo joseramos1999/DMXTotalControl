@@ -193,10 +193,22 @@ public:
     QHash<QPair<quint32, quint32>, uchar> values() const;
     void setValue(quint32 fixture, quint32 channel, uchar value);
 
+    /** The layers. DMX Total Control: with none that follows the BPM any
+     *  more, the scene has no tapped rhythm (setTapPeriod(0)) */
     void setLayers(const QList<Layer> &layers);
     QList<Layer> layers() const;
 
-    /** The duration of one run of the slowest layer, in ms */
+    /** DMX Total Control: whether a layer follows the BPM of the show. The
+     *  scene then takes a rhythm tapped on its button, as steps do: those
+     *  layers go at it (a cycle at x1 a beat, setTapPeriod) instead of the
+     *  BPM of the show. The first beat of a row of presses (tapBeat) starts
+     *  their cycle again; each next one puts them where they are at it (a
+     *  cycle at x1 a beat from the first: a chase on its next set, x1/4 a
+     *  quarter further) */
+    bool hasSyncedLayer() const;
+
+    /** The duration of one run of the slowest layer, in ms (the layers that
+     *  follow the BPM, at its tapped rhythm or else at 120 BPM) */
     uint cycleDuration() const;
 
     /*********************************************************************
@@ -232,10 +244,15 @@ public:
     static QList<quint32> orderedFixtures(const Layer &layer, const QList<quint32> &fixtures);
 
     /** Where in the wave (0..1) the set $set of $sets is at $cyclePos (cycles since the start),
-     *  or -1 when it rests at its base (step, wait) */
+     *  or -1 when it rests at its base (step, wait); at the BPM of the layer */
     static qreal positionOf(const Layer &layer, qreal cyclePos, int set, int sets);
-    /** The same for a fixture of the layer with $shape (its phase, its mode) */
-    static qreal positionOf(const Layer &layer, const Shape &shape, qreal cyclePos, int set, int sets);
+    /** The same for a fixture of the layer with $shape (its phase, its mode). DMX Total
+     *  Control: the layer going at $bpm (x1), which turns its wait (ms) into cycles: for
+     *  a layer that follows the BPM, the BPM of the show or its tapped rhythm (syncedBpm) */
+    static qreal positionOf(const Layer &layer, const Shape &shape, qreal cyclePos, int set, int sets, qreal bpm);
+    /** DMX Total Control: the BPM the layers that follow it go at: its tapped rhythm,
+     *  or else the BPM of the show */
+    qreal syncedBpm() const;
     /** The point (each axis -1..1) a pan/tilt layer with $shape is at, at $pos:
      *  the figure, its direction, rotation and inversions */
     static QPointF panTiltPoint(const Shape &shape, qreal pos);
@@ -311,6 +328,14 @@ public:
     /** DMX Total Control: a pan/tilt layer ("pantilt", "pan" or "tilt") */
     static bool isMotion(const QString &param);
 
+    /** DMX Total Control: the beats since it started: a cycle at x1 of the
+     *  layers that follow the BPM, at its tapped rhythm or at the BPM of the
+     *  show, and each tapped beat but the next one of a row less than half a
+     *  beat after a beat of that clock, which only times the next ones (the
+     *  rhythm bars of its buttons). Counts round past the largest int, never
+     *  below 0 */
+    int beats() const;
+
 protected:
     /** The motion speed goes to the pan/tilt layers only */
     qreal frameMotion() const override;
@@ -354,6 +379,15 @@ private:
     bool m_fadersPaused;
     /** DMX Total Control: the faders of its last stops, while they fade out */
     QList<QSharedPointer<GenericFader>> m_fadingOut;
+    /** DMX Total Control: where in its beat it is (timer thread), whether
+     *  its last beat was one of that clock (not tapped), and the beats so far
+     *  (beats(), read by the UI) */
+    qreal m_beatPos = 0.0;
+    bool m_beatTimed = false;
+    QAtomicInt m_beats;
+    /** DMX Total Control: the beats of a row of presses since its first one
+     *  (timer thread) */
+    int m_tapIndex = 0;
 };
 
 /** @} */

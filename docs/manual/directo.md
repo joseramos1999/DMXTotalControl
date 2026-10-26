@@ -9,6 +9,7 @@ En la cabecera de la página tienes:
 - **◀ ▶**: escena anterior o siguiente en cada grupo que suena (también con Ctrl+← y Ctrl+→).
 - **«Pausa»** / **«Reanudar»**: congela todo lo que suena y lo continúa.
 - **«Liberar grupos»**: para las escenas de todos los grupos.
+- **«Plegar grupos»** / **«Desplegar grupos»**: pliega todas las columnas a la vez para verlas todas; cuando ya están todas plegadas, las despliega.
 - **«Mezclador»**: cambia a la vista del [mezclador](directo.md#mezclador). Un punto naranja avisa de que el mezclador está cambiando la salida.
 - **«Nuevo grupo»**: añade una columna.
 
@@ -21,7 +22,7 @@ En la cabecera de la página tienes:
 
 El botón del engranaje de cada columna abre su menú: **«Cambiar color»** (pasa al siguiente color), **«Mover a la izquierda»**, **«Mover a la derecha»** y **«Eliminar grupo»**. También puedes arrastrar el grupo por el asa que hay a la izquierda de su nombre y soltarlo sobre otro grupo para ocupar su lugar.
 
-La flecha **‹** junto al nombre **pliega** el grupo: queda una tira estrecha con su nombre y cuántas escenas suenan, para dejar sitio a los demás. Sus escenas siguen sonando. La flecha **›** de la tira lo despliega. Se guarda con el show.
+La flecha **‹** junto al nombre **pliega** el grupo: queda una tira estrecha con su nombre y cuántas escenas suenan, para dejar sitio a los demás. Sus escenas siguen sonando. La flecha **›** de la tira lo despliega. Se guarda con el show. Para plegarlos o desplegarlos todos a la vez, usa **«Plegar grupos»** / **«Desplegar grupos»** en la cabecera.
 
 ### Añadir y ordenar escenas
 
@@ -35,14 +36,14 @@ Para reordenar, pasa el ratón por una ficha y arrástrala por su asa (a la dere
 
 ## Lanzar escenas
 
-Haz clic en una ficha para lanzar la escena; vuelve a hacer clic para liberarla. La ficha que suena se colorea con el color del grupo y tiene un punto que late.
+Haz clic en una ficha para lanzar la escena (con **GO**, el modo en el que arranca el programa). Para liberarla, pulsa el cuadrado de la cabecera del grupo («Liberar este grupo») o cambia a **Stop** y púlsala. La ficha que suena se colorea con el color del grupo y tiene un punto que late.
 
 En cada ficha se ve:
 
 - El **nombre** y, debajo, el **tipo** de escena. En una cuelist que suena, la cue en la que está («Q 3 · Verso»). Detrás, el [ritmo marcado](directo.md#ritmo-de-una-escena-con-pasos) si lo tiene («120 BPM»).
 - **P7**, **P2**…: la prioridad, solo cuando no es la normal (5). En naranja si es mayor que 5.
 - Un **rayo**: es una escena flash.
-- Una **barra partida en dos** abajo: una escena con pasos o una cuelist que suena; alterna en cada paso, a su ritmo.
+- Una **barra partida en dos** abajo: una escena con pasos, una cuelist o un FX en «BPM del show» que suena; alterna en cada paso (en un FX, en cada pulso), a su ritmo.
 
 ### Exclusiva o mezcla
 
@@ -69,32 +70,33 @@ Una escena con **flash** suena solo mientras mantienes pulsada su ficha. Se acti
 
 ### Cuelists en un grupo
 
-Una cuelist en un grupo es una ficha más: el clic la enciende y la apaga. Su menú (clic derecho) añade **«GO (cue siguiente)»**, **«Atrás (cue anterior)»** y **«Liberar la cuelist»**. Para operarla con GO cómodamente, ponla en un [playback](playbacks.md).
+Una cuelist en un grupo es una ficha más: el clic la lanza (con **Stop**, la para). Su menú (clic derecho) añade **«GO (cue siguiente)»**, **«Atrás (cue anterior)»** y **«Liberar la cuelist»**. Para operarla con GO cómodamente, ponla en un [playback](playbacks.md).
 
 ### Ritmo de una escena con pasos
 
-Las escenas con pasos (secuencias y chasers) y las cuelists siguen el ritmo al que pulsas su ficha:
+Las escenas con pasos (secuencias y chasers), las cuelists y las escenas FX con FX en «BPM del show» siguen el ritmo al que pulsas su ficha:
 
-- Un clic la lanza o la libera, como siempre.
-- Con la escena sonando, pulsa su ficha **varias veces seguidas** al ritmo de la música, con menos de 2 segundos entre pulsaciones. Cada pulsación pasa al paso siguiente (en una cuelist, da un GO) y la escena sigue sola a ese ritmo: un paso en cada pulso, en lugar de sus propios tiempos. El ritmo es la media de las últimas pulsaciones.
+- Un clic la lanza (con **GO**, el modo en el que arranca el programa; ver más abajo).
+- Con la escena sonando, pulsa su ficha **varias veces seguidas** al ritmo de la música, con menos de 2 segundos entre pulsaciones. Cada pulsación pasa al paso siguiente (en una cuelist, da un GO) y la escena sigue sola a ese ritmo: un paso en cada pulso, en lugar de sus propios tiempos. El ritmo es la media de las últimas pulsaciones. Una pulsación que llega un poco tarde, justo después del paso de ese pulso (menos de medio pulso), es ese mismo paso: no da otro, solo pone el ritmo a tiempo.
 - Solo cuentan las pulsaciones con la escena sonando: la que la lanza empieza la cuenta. Así, cambiar de escena en un grupo exclusivo y volver no le pone ritmo a ninguna.
-- Tras una pausa de más de 2 segundos, un clic la libera. Para liberarla justo después de marcar el ritmo, espera 2 segundos.
+- Tras una pausa de más de 2 segundos, un clic da un paso sin cambiar su ritmo, y la escena sigue sonando. Para pararla, cambia a **Stop** y púlsala.
 - Se reproduce el ritmo que marcaste, también con una **velocidad en vivo** puesta; si luego mueves la velocidad, el ritmo se acelera o se frena con ella. En pausa, las pulsaciones no dan pasos.
 - El ritmo se guarda con la escena y es suyo: también lo sigue cuando suena en una super escena o en un playback. En sus [propiedades](directo.md#propiedades-de-la-escena) (y en [Escenas](escenas.md#cómo-suena-una-escena)) puedes escribirlo o pulsar **«Quitar»** para que vuelva a sus tiempos.
+- En una **escena FX**, el ritmo es el de sus FX en **«BPM del show»**: la primera pulsación de una serie vuelve a empezar su ciclo (como al lanzarla), y cada una de las siguientes los lleva al pulso siguiente, un ciclo más allá por su multiplicador (una persecución pasa al fixture siguiente; a ×¼, avanzan un cuarto de ciclo). Varias seguidas les dan un ciclo en cada pulso (por su multiplicador), en lugar del BPM del show. Los FX con una velocidad propia no cambian. Sin ritmo marcado, o tras «Quitar», siguen el BPM del show. Si quitas «BPM del show» a todos sus FX, la escena pierde su ritmo marcado.
 
 Funciona igual con sus botones del [SHOW](show.md), con sus mapeos de controladores y teclas en modo «Alternar» y con el [control remoto](remoto.md).
 
 #### GO y Stop
 
-Los botones **GO** y **Stop** de la barra superior (y de la sección «Ritmo» del SHOW) cambian lo que hace una pulsación de cualquier escena, para todo el que la pulse:
+Los botones **GO** y **Stop** de la barra superior (y de la sección «Ritmo» del SHOW) deciden lo que hace una pulsación de cualquier escena, para todo el que la pulse. Siempre hay uno de los dos encendido: el programa arranca siempre en **GO**, y al pulsar el otro cambia de modo:
 
-- **GO** encendido: pulsar una escena la **lanza**; en una que ya suena, cada pulsación da un paso (en una cuelist, un GO) y varias seguidas marcan su ritmo. Nunca la para, aunque pases más de 2 segundos sin pulsar: así marcas el tiempo tranquilo.
+- **GO** encendido: pulsar una escena la **lanza**; en una que ya suena, cada pulsación da un paso (en una cuelist, un GO; en una escena FX, la primera vuelve a empezar el ciclo de sus FX en «BPM del show» y las siguientes los llevan al pulso siguiente) y varias seguidas marcan su ritmo. Nunca la para, aunque pases más de 2 segundos sin pulsar: así marcas el tiempo tranquilo.
 - **Stop** encendido: pulsar una escena la **para**. Una que no suena se queda como está.
-- Los dos apagados (vuelve a pulsar el que está encendido): como siempre, un clic la lanza o la libera.
+- Para liberar las escenas de un grupo sin cambiar de modo, pulsa el cuadrado de su cabecera («Liberar este grupo»); **«Parar todo»** (Esc) lo para todo.
 
 Las escenas flash siguen funcionando mientras las mantienes pulsadas, en cualquier modo.
 
-Mientras suena, cada ficha de una escena con pasos o de una cuelist lleva abajo una **barra del ritmo** partida en dos: se enciende un lado y luego el otro en cada paso (en una cuelist, en cada cue). Así ves a qué ritmo va cada una. La llevan también sus botones del SHOW, sus tiras de playback y sus botones en el móvil.
+Mientras suena, cada ficha de una escena con pasos, de una cuelist o de una escena FX con FX en «BPM del show» lleva abajo una **barra del ritmo** partida en dos: se enciende un lado y luego el otro en cada paso (en una cuelist, en cada cue; en una escena FX, en cada pulso, un ciclo de esos FX a ×1). Así ves a qué ritmo va cada una. La llevan también sus botones del SHOW, sus tiras de playback y sus botones en el móvil.
 
 ## Masters
 
@@ -117,7 +119,7 @@ Haz clic derecho en una ficha y elige **«Propiedades…»**.
 | **Protegida de liberaciones de** | Qué liberaciones ignora. |
 | **Flash (suena mientras se pulsa)** | La convierte en escena flash. |
 | **Dimmer en vivo** | Su intensidad, encima del master del grupo. |
-| **Ritmo marcado** | Pasos y cuelists: el [ritmo marcado](directo.md#ritmo-de-una-escena-con-pasos) con su ficha, en BPM. Escríbelo o pulsa «Quitar» para volver a sus tiempos. Actúa al momento. |
+| **Ritmo marcado** | Pasos, cuelists y escenas FX con FX en «BPM del show»: el [ritmo marcado](directo.md#ritmo-de-una-escena-con-pasos) con su ficha, en BPM. Escríbelo o pulsa «Quitar» para volver a sus tiempos (en una escena FX, al BPM del show). Actúa al momento. |
 | **Velocidad en vivo** | De ×0,1 a ×10 (escenas que se mueven: pasos, FX, cuelists…). |
 | **Fase en vivo** / **Tamaño en vivo** | La fase (0–359°) y el tamaño (0–200 %) de los FX. |
 | **Velocidad de fundido** | Acelera o frena sus fundidos, de ×0,1 a ×10. |

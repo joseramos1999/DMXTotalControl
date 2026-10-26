@@ -50,7 +50,7 @@ Debajo de la cabecera está el panel de reproducción. Muestra lo que tiene sent
 - **«Tiempo de ciclo»** (o **«Tiempo por paso»** en un Colour FX) y **«Velocidad»** (de un ciclo por minuto a diez por segundo; doble clic: un ciclo por segundo), con **×½** y **×2**.
 - **«Entrada gradual»** (estáticas y pasos): cada fixture empieza su fundido este tiempo después del anterior, en orden de selección.
 - **«Modo de conducción»**: **«Duración»** (los tiempos normales), **«BPM»** (los tiempos pasan a beats y siguen el tempo del show, también los fundidos de cada paso; el tiempo de crossfade de un grupo de Directo y los fundidos de los bloques de una super escena siguen en segundos), **«BeatGO»** o **«Pulso»** (avanza con el botón BeatGO o con los picos de la entrada de audio). Con BeatGO o Pulso, **«Divisiones»** (/2, ×2).
-- **«Ritmo marcado»** (secuencias y chasers): el ritmo marcado pulsando su botón varias veces seguidas ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), en BPM. Mientras lo tiene, sus pasos van a ese ritmo y no por sus tiempos. **«Quitar»** vuelve a sus tiempos. Con «BPM», un beat es un paso de ese ritmo: un fundido de 0,5 b dura medio paso.
+- **«Ritmo marcado»** (secuencias, chasers y escenas FX con FX en «BPM del show»): el ritmo marcado pulsando su botón varias veces seguidas ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), en BPM. Mientras lo tiene, sus pasos van a ese ritmo y no por sus tiempos; en una escena FX, sus FX en «BPM del show» dan un ciclo en cada pulso en lugar de seguir el BPM del show. **«Quitar»** vuelve a sus tiempos (o al BPM del show). Con «BPM», un beat es un paso de ese ritmo: un fundido de 0,5 b dura medio paso.
 - **«Inicio»**: **«Reproduciendo»** o **«En pausa, pulsar otra vez para reproducir»**.
 - **«Se reproduce»**: **«Siempre»** o **«N veces»**, **«y luego»** **«Liberarla»** o **«Mantener el último fotograma»**, **«y reproducir»** «Nada», «La siguiente escena del grupo», «La escena anterior del grupo» o cualquier otra escena.
 
@@ -84,7 +84,7 @@ Una sucesión de looks, cada uno con su **fundido de entrada**, su **espera** y 
 
 Una escena FX tiene **valores base** y una o varias **capas de FX**. Se crea grabando desde el programador con FX (consulta [FX](programar.md#fx)).
 
-- A la izquierda, la lista de FX: parámetro, fixtures y velocidad. La papelera quita una capa.
+- A la izquierda, la lista de FX: parámetro, fixtures y velocidad (en «BPM del show», el ritmo marcado de la escena si lo tiene). La papelera quita una capa.
 - A la derecha, los controles de la capa elegida (los mismos que en Programar) y su vista previa animada. Los cambios se oyen en directo mientras la escena suena.
 - **«Enlazar»**: las capas enlazadas comparten velocidad y timing.
 - Si algunas luminarias hacen el FX a su manera, se avisa: si cambias aquí la forma, el tamaño, el sentido o la fase, todas harán lo mismo.

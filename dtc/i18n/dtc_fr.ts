@@ -2365,8 +2365,8 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>BPM du show</translation>
     </message>
     <message>
-        <source>The speed follows the BPM (tap, BeatGO)</source>
-        <translation>La vitesse suit le BPM (tap, BeatGO)</translation>
+        <source>The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene</source>
+        <translation>La vitesse suit le BPM (tap, BeatGO), ou le rythme tapé sur le bouton de sa scène</translation>
     </message>
     <message>
         <source>Multiplier</source>
@@ -2742,6 +2742,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         </translation>
     </message>
     <message>
+        <source>Tapped: %1 BPM</source>
+        <translation>Tapé&#xa0;: %1 BPM</translation>
+    </message>
+    <message>
         <source>BPM of the show</source>
         <translation>BPM du show</translation>
     </message>
@@ -2897,6 +2901,22 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Release groups</source>
         <translation>Libérer les groupes</translation>
+    </message>
+    <message>
+        <source>Unfold groups</source>
+        <translation>Déplier les groupes</translation>
+    </message>
+    <message>
+        <source>Fold groups</source>
+        <translation>Replier les groupes</translation>
+    </message>
+    <message>
+        <source>Unfold every group</source>
+        <translation>Déplier tous les groupes</translation>
+    </message>
+    <message>
+        <source>Fold every group to a strip with its name, to see them all. Their scenes go on playing</source>
+        <translation>Replier tous les groupes en une bande avec leur nom, pour les voir tous. Leurs scènes continuent de jouer</translation>
     </message>
     <message>
         <source>Mixer</source>
@@ -3077,16 +3097,16 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Enregistrer sous… (Ctrl+Maj+S)</translation>
     </message>
     <message>
-        <source>GO: a press of a scene starts it, and the next ones mark its rhythm (it doesn&apos;t stop). Click again to go back to normal</source>
-        <translation>GO : appuyer sur une scène la lance, et les appuis suivants marquent son rythme (elle ne s’arrête pas). Cliquez à nouveau pour revenir à la normale</translation>
-    </message>
-    <message>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <source>Stop: a press of a scene stops it. Click again to go back to normal</source>
-        <translation>Stop : appuyer sur une scène l’arrête. Cliquez à nouveau pour revenir à la normale</translation>
+        <source>GO: a press of a scene starts it, and the next ones mark its rhythm (it never stops it)</source>
+        <translation>GO&#xa0;: appuyer sur une scène la lance, et les appuis suivants marquent son rythme (elle ne s’arrête jamais)</translation>
+    </message>
+    <message>
+        <source>Stop: a press of a scene stops it</source>
+        <translation>Stop&#xa0;: appuyer sur une scène l’arrête</translation>
     </message>
     <message>
         <source>Next division of the scenes driven by BeatGO (G)</source>
@@ -3458,6 +3478,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Flash&#xa0;: tant qu’on appuie</translation>
     </message>
     <message>
+        <source>Press: follows GO / Stop</source>
+        <translation>Appuyer&#xa0;: selon GO / Stop</translation>
+    </message>
+    <message>
         <source>Only on</source>
         <translation>Allumer seulement</translation>
     </message>
@@ -3547,6 +3571,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Toggle</source>
         <translation>Bascule</translation>
+    </message>
+    <message>
+        <source>Press</source>
+        <translation>Appuyer</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -5577,6 +5605,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Rythme tapé</translation>
     </message>
     <message>
+        <source>Press its button several times in a row (Live, SHOW, a mapping): the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm</source>
+        <translation>Appuyez plusieurs fois de suite sur son bouton (Direct, SHOW, un mappage)&#xa0;: le premier appui relance le cycle de ses FX au BPM du show, chacun des suivants les amène au battement suivant, et ils font un cycle à chaque battement, à ce rythme</translation>
+    </message>
+    <message>
         <source>Press its button several times in a row (Live, SHOW, a mapping): a step on each beat, at that rhythm</source>
         <translation>Appuyez plusieurs fois de suite sur son bouton (Direct, SHOW, un mappage) : un pas à chaque battement, à ce rythme</translation>
     </message>
@@ -6756,6 +6788,10 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Rythme tapé</translation>
     </message>
     <message>
+        <source>Press its button several times in a row: the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm</source>
+        <translation>Appuyez plusieurs fois de suite sur son bouton&#xa0;: le premier appui relance le cycle de ses FX au BPM du show, chacun des suivants les amène au battement suivant, et ils font un cycle à chaque battement, à ce rythme</translation>
+    </message>
+    <message>
         <source>Press its button several times in a row: a step (a GO) on each beat, at that rhythm</source>
         <translation>Appuyez plusieurs fois de suite sur son bouton : un pas (un GO) à chaque battement, à ce rythme</translation>
     </message>
@@ -7038,6 +7074,10 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>BPM</translation>
     </message>
     <message>
+        <source>Play a scene (its speed)</source>
+        <translation>Lancer une scène (sa vitesse)</translation>
+    </message>
+    <message>
         <source>All the moving heads</source>
         <translation>Toutes les lyres</translation>
     </message>
@@ -7060,6 +7100,26 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>No title</source>
         <translation>Sans titre</translation>
+    </message>
+    <message>
+        <source>Background</source>
+        <translation>Fond</translation>
+    </message>
+    <message>
+        <source>None: the colour of the theme</source>
+        <translation>Aucun&#xa0;: la couleur du thème</translation>
+    </message>
+    <message>
+        <source>Colour of all the faders</source>
+        <translation>Couleur de tous les faders</translation>
+    </message>
+    <message>
+        <source>Colour of all the dials</source>
+        <translation>Couleur de tous les rotatifs</translation>
+    </message>
+    <message>
+        <source>Colour of all the buttons</source>
+        <translation>Couleur de tous les boutons</translation>
     </message>
     <message>
         <source>Playbacks</source>
@@ -7332,6 +7392,10 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Toggle: on / off</source>
         <translation>Bascule&#xa0;: on / off</translation>
+    </message>
+    <message>
+        <source>Press: follows GO / Stop</source>
+        <translation>Appuyer&#xa0;: selon GO / Stop</translation>
     </message>
     <message>
         <source>Flash: while pressed</source>
@@ -8108,6 +8172,10 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Dimmer de %1</translation>
     </message>
     <message>
+        <source>Stopped</source>
+        <translation>Arrêtée</translation>
+    </message>
+    <message>
         <source>Movement speed</source>
         <translation>Vitesse de mouvement</translation>
     </message>
@@ -8139,6 +8207,10 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Dimmer de %1</translation>
     </message>
     <message>
+        <source>Stopped</source>
+        <translation>Arrêtée</translation>
+    </message>
+    <message>
         <source>Movement speed</source>
         <translation>Vitesse de mouvement</translation>
     </message>
@@ -8154,12 +8226,20 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Désactivé</translation>
     </message>
     <message>
+        <source>BPM of the show</source>
+        <translation>BPM du show</translation>
+    </message>
+    <message>
         <source>Clear</source>
         <translation>Retirer</translation>
     </message>
     <message>
         <source>Back to its own times</source>
         <translation>Revenir à ses propres temps</translation>
+    </message>
+    <message>
+        <source>Back to the BPM of the show</source>
+        <translation>Revenir au BPM du show</translation>
     </message>
 </context>
 <context>

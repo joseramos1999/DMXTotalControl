@@ -38,7 +38,7 @@ Below it, the page with its sections, as on the computer:
 - **Groups**: their scenes as buttons and their master.
 - **Playbacks**: the strips with their name, the cue that plays and the next one, **GO**, **Back**, their fader and **Flash**. The sections that follow the current page have ◀ ▶ to change it.
 - **Colour wheel** and **XY grid**, with their **Release** and **Centre** buttons.
-- **Clock**, **Rhythm** (**GO**, **Stop** and **BeatGO**; the buttons of scenes with steps or of cuelists hold their rhythm bar), **notes**, **playing now** and **image**.
+- **Clock**, **Rhythm** (**GO**, **Stop** and **BeatGO**; the buttons of scenes with steps, of cuelists or of FX at “BPM of the show” hold their rhythm bar), **notes**, **playing now** and **image**.
 
 **Timers**, the **live mixer** and the **DMX levels** appear as “On the computer only”.
 

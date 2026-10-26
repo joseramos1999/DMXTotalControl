@@ -445,6 +445,8 @@ void ShowSurface::updateSection(int page, const QString &sectionId, const QVaria
         QString type = props.value("type").toString();
         QVariantMap fresh = sectionDefaults(type);
         fresh.insert("title", node->props.value("title"));
+        if (node->props.contains("background"))
+            fresh.insert("background", node->props.value("background"));
         // faders and dials are the same items: they go as they are
         const bool levels = (type == "faders" || type == "dials") && (oldType == "faders" || oldType == "dials");
         bool tables = (type == "buttons" || type == "faders" || type == "dials") &&
@@ -475,6 +477,12 @@ void ShowSurface::updateSection(int page, const QString &sectionId, const QVaria
         QVariant value = it.value();
         if (it.key() == "cols" || it.key() == "rows")
             value = qBound(1, value.toInt(), 32);
+        // no background: the one of the theme (nothing saved)
+        if (it.key() == "background" && value.toString().isEmpty())
+        {
+            node->props.remove("background");
+            continue;
+        }
         node->props.insert(it.key(), value);
     }
     changed();
@@ -491,7 +499,8 @@ QVariantMap ShowSurface::convertItem(const QVariantMap &item, const QString &typ
         for (const QVariant &v : faderTargets(item))
         {
             const QVariantMap t = v.toMap();
-            if (t.value("target").toString() == "scene" && t.value("functionId", -1).toInt() >= 0)
+            const QString kind = t.value("target").toString();
+            if ((kind == "scene" || kind == "sceneRun") && t.value("functionId", -1).toInt() >= 0)
             {
                 converted.insert("functionId", t.value("functionId"));
                 converted.insert("label", item.value("label"));
@@ -583,6 +592,32 @@ QVariantMap ShowSurface::item(int page, const QString &sectionId, int cell) cons
     return node->props.value("items").toMap().value(QString::number(cell)).toMap();
 }
 
+int ShowSurface::setItemsColour(int page, const QString &sectionId, const QString &color)
+{
+    Node *node = findSection(page, sectionId);
+    const QString type = node != nullptr ? node->props.value("type").toString() : QString();
+    if ((type != "buttons" && type != "faders" && type != "dials") || QColor(color).isValid() == false)
+        return 0;
+
+    const QString name = QColor(color).name();
+    QVariantMap items = node->props.value("items").toMap();
+    int count = 0;
+    for (auto it = items.begin(); it != items.end(); ++it)
+    {
+        QVariantMap item = it.value().toMap();
+        if (item.value("color").toString().compare(name, Qt::CaseInsensitive) == 0)
+            continue;
+        item.insert("color", name);
+        it.value() = item;
+        count++;
+    }
+    if (count == 0)
+        return 0;
+    node->props.insert("items", items);
+    changed();
+    return count;
+}
+
 int ShowSurface::fillWithGroup(int page, const QString &sectionId, quint32 zoneId)
 {
     Node *node = findSection(page, sectionId);
@@ -643,6 +678,9 @@ void ShowSurface::clear()
     m_pages.clear();
     m_overrides.clear();
     m_levels.clear();
+    // (the scenes still there at the speed they had)
+    for (const quint32 fid : m_runSpeeds.keys())
+        restoreRunSpeed(fid);
     clearSceneDimmers();
     m_lastId = 0;
     m_speedLevels.clear();
@@ -749,8 +787,8 @@ void ShowSurface::press(const QVariantMap &item)
         else
         {
             // (started or stopped just before, it changes at the next tick:
-            // the toggle goes by what was asked). In the mode of the buttons
-            // (GO, Stop or as always): start, stop, or a beat of its rhythm
+            // the press goes by what was asked). In the mode of the buttons
+            // (GO or Stop): start, stop, or a beat of its rhythm
             const bool active = f->stopped() == false;
             switch (SceneTaps::press(f, active))
             {
@@ -921,10 +959,72 @@ QVariantList ShowSurface::faderTargets(const QVariantMap &item)
     return targets;
 }
 
+bool ShowSurface::isSpeed(const QVariantMap &item)
+{
+    const QVariantList targets = faderTargets(item);
+    for (const QVariant &v : targets)
+    {
+        const QString kind = v.toMap().value("target").toString();
+        if (kind != "moveSpeed" && kind != "sceneSpeed" && kind != "sceneRun")
+            return false;
+    }
+    return targets.isEmpty() == false;
+}
+
+qreal ShowSurface::resetLevel(const QVariantMap &item) const
+{
+    const QVariantList targets = faderTargets(item);
+    if (targets.count() == 1 && targets.first().toMap().value("target").toString() == "bpm")
+        return positionOf(item, (90 - 20) / 280.0);
+    if (isSpeed(item) == false)
+        return 0.0;
+
+    qreal position = positionOf(item, 0.5);
+    // x1 plays a scene that is stopped: not at the end that stops it (x1
+    // below the range: as near to it as the travel goes)
+    if (startedScenes(targets).isEmpty() == false)
+    {
+        qreal min, max;
+        bool invert;
+        ControlMapper::rangeOf(item, min, max, invert);
+        const qreal nudge = 1e-6;
+        position = invert ? qMin(position, 1.0 - nudge) : qMax(position, nudge);
+    }
+    return position;
+}
+
 bool ShowSurface::bottomStops(const QVariantMap &target)
 {
     const QString kind = target.value("target").toString();
-    return kind == "scene" || (kind == "map" && target.value("map").toMap().value("target").toString() == "playbackFader");
+    return kind == "scene" || kind == "sceneRun" ||
+           (kind == "map" && target.value("map").toMap().value("target").toString() == "playbackFader");
+}
+
+QList<quint32> ShowSurface::startedScenes(const QVariantList &targets)
+{
+    QList<quint32> scenes;
+    for (const QVariant &v : targets)
+    {
+        const QVariantMap t = v.toMap();
+        const QString kind = t.value("target").toString();
+        if ((kind == "scene" || kind == "sceneRun") && t.value("functionId", -1).toInt() >= 0)
+            scenes.append(t.value("functionId").toUInt());
+    }
+    return scenes;
+}
+
+bool ShowSurface::releasesOther(quint32 fid, const QList<quint32> &others) const
+{
+    Zone *source = zoneFor(fid);
+    if (source == nullptr)
+        return false;
+    for (quint32 other : others)
+    {
+        Zone *zone = zoneFor(other);
+        if (other != fid && zone != nullptr && zone->isActive(other) && m_zones->releases(source, fid, zone, other))
+            return true;
+    }
+    return false;
 }
 
 void ShowSurface::setLevel(const QVariantMap &item, qreal level)
@@ -938,10 +1038,12 @@ void ShowSurface::setLevel(const QVariantMap &item, qreal level)
     // bottom; the top when inverted), whatever the minimum: there its fader
     // shows it stopped (level())
     const bool atStop = invert ? level >= 1.0 : level <= 0.0;
-    for (const QVariant &v : faderTargets(item))
+    const QVariantList targets = faderTargets(item);
+    const QList<quint32> together = startedScenes(targets);
+    for (const QVariant &v : targets)
     {
         const QVariantMap target = v.toMap();
-        setTargetLevel(target, atStop && bottomStops(target) ? 0.0 : value);
+        setTargetLevel(target, atStop && bottomStops(target) ? 0.0 : value, together);
     }
     slotChanged();
 }
@@ -1011,12 +1113,13 @@ QVariantList ShowSurface::holdLevels(const QVariantMap &item) const
 void ShowSurface::restoreLevels(const QVariantMap &item, const QVariantList &levels)
 {
     const QVariantList targets = faderTargets(item);
+    const QList<quint32> together = startedScenes(targets);
     for (int i = 0; i < targets.count() && i < levels.count(); i++)
     {
         bool ok = false;
         const qreal level = levels.at(i).toDouble(&ok);
         if (ok && qIsFinite(level))
-            setTargetLevel(targets.at(i).toMap(), qBound(0.0, level, 1.0));
+            setTargetLevel(targets.at(i).toMap(), qBound(0.0, level, 1.0), together);
     }
     slotChanged();
 }
@@ -1069,7 +1172,7 @@ void ShowSurface::applySceneDimmer(Function *f, qreal dimmer)
     f->adjustAttribute(dimmer, Function::Intensity);
 }
 
-void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
+void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level, const QList<quint32> &together)
 {
     QString target = t.value("target").toString();
 
@@ -1107,6 +1210,53 @@ void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
         // a scene in no group: its live speed (not saved with the show)
         else if (Function *f = m_doc->function(fid))
             f->setSpeedFactor(speed);
+    }
+    else if (target == "sceneRun")
+    {
+        // a scene and its speed: zero stops it; up from there it plays (in
+        // its group, if it has one, as a scene fader starts it) at x0.1 ..
+        // x10, x1 in the middle
+        quint32 fid = t.value("functionId").toUInt();
+        Function *f = m_doc->function(fid);
+        if (f == nullptr)
+            return;
+        Zone *owner = zoneFor(fid);
+        if (level <= 0.0)
+        {
+            // (its group forgets the speed of the run)
+            if (owner != nullptr)
+                owner->stop(fid);
+            else if (f->isRunning() || f->stopped() == false)
+                f->stop(FunctionParent::master());
+            restoreRunSpeed(fid);
+            return;
+        }
+        // the speed of this run only (its Live speed and the show stay as
+        // they are), given first, so it plays at it from its first frame. A
+        // scene that would stop another one of the same control (an
+        // exclusive group) waits, untouched: they would replace each other
+        // at every move
+        const qreal speed = std::pow(10.0, level * 2.0 - 1.0);
+        const bool start = releasesOther(fid, together) == false;
+        if (owner != nullptr)
+        {
+            if (owner->isActive(fid))
+                owner->setRunSpeed(fid, speed);
+            else if (start)
+                owner->startAt(fid, speed);
+        }
+        else
+        {
+            // the speed it had goes back when it stops (slotFunctionStopped)
+            connect(f, SIGNAL(stopped(quint32)), this, SLOT(slotFunctionStopped(quint32)), Qt::UniqueConnection);
+            if (m_runSpeeds.contains(fid) == false)
+                m_runSpeeds.insert(fid, RunSpeed{ f->speedFactor(), speed });
+            m_runSpeeds[fid].given = speed;
+            f->setSpeedFactor(speed);
+            // (a scene just stopped still runs until the next tick: it starts again)
+            if (f->stopped())
+                f->start(m_doc->masterTimer(), FunctionParent::master());
+        }
     }
     else if (target == "mixerDimmer")
     {
@@ -1198,9 +1348,22 @@ void ShowSurface::slotFunctionStopped(quint32 fid)
         return;
 
     // stopped, whoever stopped it: the next run, whoever starts it, is at full
+    // (and at the speed it had before a "sceneRun" fader played it)
     m_levels.remove(fid);
     m_overrides.remove(fid);
+    restoreRunSpeed(fid);
     slotChanged();
+}
+
+void ShowSurface::restoreRunSpeed(quint32 fid)
+{
+    if (m_runSpeeds.contains(fid) == false)
+        return;
+    const RunSpeed run = m_runSpeeds.take(fid);
+    // (another control gave it a speed meanwhile: that one stays)
+    Function *f = m_doc->function(fid);
+    if (f != nullptr && qFuzzyCompare(1.0 + f->speedFactor(), 1.0 + run.given))
+        f->setSpeedFactor(run.before);
 }
 
 void ShowSurface::slotFunctionGone(quint32 fid)
@@ -1208,6 +1371,7 @@ void ShowSurface::slotFunctionGone(quint32 fid)
     // deleted, or another function with its ID (an effect made an FX)
     m_levels.remove(fid);
     m_overrides.remove(fid);
+    m_runSpeeds.remove(fid);
 }
 
 void ShowSurface::slotFunctionRemoved(quint32 fid)
@@ -1459,11 +1623,28 @@ qreal ShowSurface::targetLevel(const QVariantMap &t) const
     {
         quint32 fid = t.value("functionId").toUInt();
         qreal speed = 1.0;
+        // (in its group: the speed it plays at, that of a "sceneRun" fader)
         if (Zone *owner = zoneFor(fid))
-            speed = owner->options(fid).value("speed", 1.0).toDouble();
+            speed = owner->speed(fid);
         else if (Function *f = m_doc->function(fid))
             speed = f->speedFactor();
         return qBound(0.0, (std::log10(speed) + 1.0) / 2.0, 1.0);
+    }
+    if (target == "sceneRun")
+    {
+        // stopped (or stopping): zero; playing: the speed it plays at (in
+        // its group, that of its run there), above zero also at x0.1, so it
+        // isn't shown stopped
+        quint32 fid = t.value("functionId").toUInt();
+        Function *f = m_doc->function(fid);
+        if (f == nullptr)
+            return 0.0;
+        Zone *owner = zoneFor(fid);
+        const bool inGroup = owner != nullptr && owner->isActive(fid);
+        if (inGroup == false && f->stopped())
+            return 0.0;
+        const qreal speed = inGroup ? owner->speed(fid) : f->speedFactor();
+        return qBound(1e-6, (std::log10(speed) + 1.0) / 2.0, 1.0);
     }
     if (target == "mixerDimmer")
     {
@@ -1604,7 +1785,8 @@ static QVariant fromXmlValue(const QString &key, const QString &text)
     if (key == "map")
         return QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap();
     // texts stay texts even when they look like numbers
-    if (key == "label" || key == "title" || key == "text" || key == "key" || key == "color" || key == "icon" || key == "image")
+    if (key == "label" || key == "title" || key == "text" || key == "key" || key == "color" || key == "icon" || key == "image" ||
+        key == "background")
         return text;
     bool ok = false;
     int number = text.toInt(&ok);

@@ -84,7 +84,7 @@ Antes de ir para a página Ao vivo, pressione **“Redefinir tudo”** para esva
 2. Pressione **Vermelho**: o cartão se ilumina com a cor do grupo e os PAR entram em vermelho.
 3. Pressione **Azul**: o grupo faz um crossfade de 2 segundos de vermelho para azul.
 4. Mova o **Master** da coluna para baixar a intensidade de todo o grupo.
-5. Pressione **Azul** de novo para liberá-la, ou pressione o quadrado do cabeçalho da coluna (“Liberar este grupo”).
+5. Para liberá-la, pressione o quadrado do cabeçalho da coluna (“Liberar este grupo”), ou mude para **Stop** na barra superior, pressione **Azul** e volte para **GO**.
 
 Mais em [Ao vivo](directo.md).
 

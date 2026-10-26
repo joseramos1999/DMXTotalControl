@@ -67,7 +67,7 @@ Was die Zuordnung tut. Die **Tasten**:
 | Szene starten | Die gewählte Szene, in ihrer Gruppe. |
 | Szene N einer Gruppe | Die Szene, die an dieser Stelle der Gruppe steht (**Szenennummer**). |
 | Gruppe freigeben / Nächste Szene einer Gruppe / Vorherige Szene einer Gruppe | In einer Gruppe oder in „Alle Gruppen“. |
-| Blackout, Alles stoppen, Alles pausieren, Tap-Tempo, BeatGO, GO, Stop | Wie ihre Tasten (GO und Stop schalten sich ein und aus, wie in der oberen Leiste). |
+| Blackout, Alles stoppen, Alles pausieren, Tap-Tempo, BeatGO, GO, Stop | Wie ihre Tasten (GO und Stop wählen den Modus, wie in der oberen Leiste: Eine der beiden ist immer an). |
 | Palette | Die Palette auf ihren eigenen Fixtures oder auf einer Fixture-Gruppe. |
 | Mischer: Voll, Blackout, Flash, Flash exklusiv, Voll exklusiv, Stroboskop | Im gewählten Kanalzug des Mischers. |
 | Playback: GO, Zurück, Pause / Zurück, Flash, Freigeben, Auswählen | Auf einem Playback. |
@@ -94,7 +94,7 @@ Für die Playbacks wählen Sie die **Seite** („Aktuelle Seite (folgt)“, die 
 
 Bei den **Tasten**:
 
-- **„Umschalten: jeder Druck an / aus“**: Jeder Druck schaltet ein oder aus.
+- **„Umschalten: jeder Druck an / aus“**: Jeder Druck schaltet ein oder aus. Bei einer Szene heißt dieser Modus **„Drücken: je nach GO / Stop“** und startet oder stoppt sie je nach GO und Stop in der oberen Leiste.
 - **„Flash: solange gedrückt“**.
 - **„Nur an“** / **„Nur aus“**.
 
@@ -117,7 +117,7 @@ Für die LEDs der MIDI-Tasten:
 
 1. Wählen Sie unter **„LEDs von“** **„Beliebiger Controller (Zahlen)“** oder Ihren Controller: **Akai APC mini**, **Akai APC mini mk2** oder **Akai APC40 mkII**.
 2. Wählen Sie für **„An“**, **„Aus“** und **„Pausiert“** die Farbe in den Farbfeldern (bei einer APC) oder geben Sie bei jedem anderen Controller den Wert ein (0–127).
-3. Wählen Sie bei den RGB-Pads der APC mini mk2 auch, wie sie leuchten: **„Gedimmt“**, **„Voll“**, **„Pulsierend“** oder **„Blinkend“** (bei der APC40 mkII **„Dauerhaft“**).
+3. Wählen Sie bei den RGB-Pads der APC mini mk2 auch, wie sie leuchten: **„Gedimmt“**, **„Voll“**, **„Pulsierend“** oder **„Blinkend“** (bei der APC40 mkII **„Dauerhaft“**). Ohne Auswahl leuchtet „An“ **„Voll“** und „Aus“ **„Gedimmt“**.
 
 Die LEDs des Controllers gehen aus, wenn Sie das Programm schließen, eine Zuordnung löschen oder einem anderen Bedienelement zuweisen, eine andere Show öffnen oder das Gerät oder sein Feedback deaktivieren.
 

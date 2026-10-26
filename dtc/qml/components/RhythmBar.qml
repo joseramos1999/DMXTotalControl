@@ -24,7 +24,8 @@ import DMXTotalControl.Backend
 /**
  * The rhythm of a scene with steps (or a cuelist) inside its button: a bar
  * in two halves that light one after the other, a step (a cue) each, like a
- * metronome. Only while it plays.
+ * metronome; of an FX at the BPM of the show, a beat each. Only while it
+ * plays.
  */
 Item {
     id: bar

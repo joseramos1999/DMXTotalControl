@@ -183,7 +183,7 @@ Unter **FX** gibt es drei Zonen: links die Parameter und die laufenden FX, in de
 
 - **Die Figur oder der Modus** (die Zeichnung links): Klicken Sie darauf, um eine andere zu wählen. Für Pan/Tilt gibt es **12 Figuren** (Kreis, Acht, Quadrat, Dreieck, Diamant, Pan-Linie, Tilt-Linie, Diagonale, Kleeblatt, Lissajous, Ballyhoo und Kreuz). Für alles andere **22 Modi**: Die gepunktete Linie ist der Grundwert, und die Welle geht darüber, darunter oder zu beiden Seiten; die Modi 9 bis 12 sind für Lauflichter, mit Schritt.
 - **Amplitude** (von 0 bis 250 %). Bei Pan/Tilt **„Pan-Amplitude“** und **„Tilt-Amplitude“** getrennt.
-- **Tempo**, in BPM. **½** und **×2** halbieren oder verdoppeln es. **„BPM der Show“** lässt es dem Tempo der Show folgen (ein BPM-Fader oder -Drehregler der SHOW oder eine BPM- oder Tap-Zuordnung). **„Multiplikator“**: von ×¼ bis ×8.
+- **Tempo**, in BPM. **½** und **×2** halbieren oder verdoppeln es. **„BPM der Show“** lässt es dem Tempo der Show folgen (ein BPM-Fader oder -Drehregler der SHOW oder eine BPM- oder Tap-Zuordnung). In einer FX-Szene aufgenommen, folgt es stattdessen dem Rhythmus, den Sie mit der Taste der Szene vorgeben, wenn sie einen hat ([Live](directo.md#rhythmus-einer-szene-mit-schritten)). **„Multiplikator“**: von ×¼ bis ×8.
 - Nur Pan/Tilt: **„Pan invertieren“**, **„Tilt invertieren“**, **„Rückwärts“** und **„Drehen“** (0–359°).
 
 ### FX-Timing

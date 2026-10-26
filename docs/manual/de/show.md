@@ -35,7 +35,7 @@ Drücken Sie **„Bearbeiten“**, um den Bildschirm zu bauen, und **„Fertig�
 | **Live-Mischer** | Der [Mischer](directo.md#mischer) von Live. |
 | **Uhr** | Die Uhrzeit, wahlweise mit Sekunden und Datum. |
 | **Timer** | Eine Stoppuhr oder ein Countdown. |
-| **Rhythmus: GO und Stop** | Große Tasten **GO** und **Stop** wie die in der oberen Leiste (sie ändern, was die Szenentasten tun), und **BeatGO**. Die Tasten von Szenen mit Schritten oder Cuelists enthalten ihren Rhythmusbalken. |
+| **Rhythmus: GO und Stop** | Große Tasten **GO** und **Stop** wie die in der oberen Leiste (sie ändern, was die Szenentasten tun), und **BeatGO**. Die Tasten von Szenen mit Schritten, Cuelists oder FX auf „BPM der Show“ enthalten ihren Rhythmusbalken. |
 | **Notizen** | Ein Text von Ihnen, in beliebiger Größe. |
 | **Läuft gerade** | Was gerade läuft, mit einer Taste zum Stoppen. |
 | **Drehregler und Räder** | Eine Tabelle mit Drehreglern oder Endlosrädern. |
@@ -51,6 +51,8 @@ Je nach Typ zeigen die Eigenschaften:
 
 - **Zeigt**: den Bereichstyp.
 - **Titel**: den Text seiner Titelleiste. Ohne Titel hat der Bereich keine Leiste, auch nicht im Bearbeitungsmodus.
+- **Hintergrund**: die Hintergrundfarbe des Bereichs, aus denselben Farben wie die Tasten, oder **∅** (die des Designs). Sie erscheint als Tönung, beim Bearbeiten, beim Spielen und auf dem Handy, und der Text darauf bleibt lesbar.
+- **Farbe aller Tasten** (aller Fader, aller Drehregler): gibt allen in der Tabelle auf einmal diese Farbe. Leere Zellen bleiben leer.
 - **Spalten** und **Zeilen**: die Größe der Tabelle (bis 32). Tasten, Fader und Drehregler füllen ihre Zellen. In einem Bereich, der für seine Tabelle zu klein ist, schrumpfen die Zellen nicht unter eine lesbare und bedienbare Größe: Die Tabelle lässt sich scrollen (mit dem Mausrad oder durch Ziehen).
 - **Mit den Szenen einer Gruppe füllen** (Tasten): legt auf einmal eine Taste für jede Szene dieser Gruppe an.
 - **Gruppe** (eine Gruppe): welche angezeigt wird.
@@ -74,7 +76,7 @@ Am schnellsten füllen Sie eine Tabelle, indem Sie **Szenen** aus der Liste unte
 
 | Aktion | Was sie tut |
 |---|---|
-| **Szene abspielen** | Startet die Szene in ihrer Gruppe (oder allein, wenn sie in keiner Gruppe ist). Mehrmals hintereinander gedrückt, gibt sie den [Rhythmus](directo.md#rhythmus-einer-szene-mit-schritten) einer Szene mit Schritten oder einer Cuelist vor. |
+| **Szene abspielen** | Startet die Szene in ihrer Gruppe (oder allein, wenn sie in keiner Gruppe ist). Mehrmals hintereinander gedrückt, gibt sie den [Rhythmus](directo.md#rhythmus-einer-szene-mit-schritten) einer Szene mit Schritten, einer Cuelist oder einer FX-Szene mit FX auf „BPM der Show“ vor. Mit **Stop** in der oberen Leiste stoppt sie die Szene. |
 | **Nächste Szene einer Gruppe** / **Vorherige Szene einer Gruppe** | In einer Gruppe oder in „Alle Gruppen“. |
 | **Gruppe freigeben** | Eine Gruppe oder alle. |
 | **Blackout** | Schaltet den Blackout ein oder aus. |
@@ -90,7 +92,7 @@ Eine mit Alt+Klick von einer anderen Seite geholte Taste zeigt „Ein Element au
 ### Optionen einer Taste
 
 - **Beschriftung**: ihr Text. Ist sie leer („Automatisch“), zeigt die Taste den Namen der Szene, der Palette oder der Aktion.
-- **Verhalten** (Szene, Blackout und Palette): **„Umschalten: an / aus“** oder **„Flash: solange gedrückt“**. Flash-Tasten tragen einen Blitz in der Ecke.
+- **Verhalten** (Szene, Blackout und Palette): **„Umschalten: an / aus“** oder **„Flash: solange gedrückt“**. Flash-Tasten tragen einen Blitz in der Ecke. Bei einer Szene steht statt „Umschalten“ **„Drücken: je nach GO / Stop“**: Die Taste startet oder stoppt sie je nach **GO** und **Stop** in der oberen Leiste.
 - **Tastaturtaste**: eine Taste der Tastatur, die sie drückt, solange Sie auf der Seite Show sind. Der Buchstabe steht in der Ecke der Taste.
 - **Farbe**, **Symbol** und **Bild** als Hintergrund (das Bild erscheint abgedunkelt, solange die Taste aus ist).
 
@@ -113,6 +115,7 @@ Ein Fader der SHOW kann **mehrere Dinge gleichzeitig** steuern. In seinen Eigens
 | **Dimmer von Fixtures** | Der Mischer-Dimmer aller Fixtures oder einer Fixture-Gruppe. |
 | **Bewegungstempo der Moving Heads** | Das Tempo dessen, was die Moving Heads bewegt (alle oder die einer Gruppe): ihre Pan/Tilt-FX, die des Programmers und die Schritte, die sie bewegen. Unten ×0,1, in der Mitte das normale Tempo (×1), oben ×10; der Fader zeigt den Faktor, ein Doppelklick setzt ihn auf ×1 zurück. Ein FX mit Pan/Tilt und Farbe ändert nur das Tempo der Bewegung, eine Cuelist das ihrer FX. Der Geschwindigkeitskanal der Motoren bleibt unberührt. |
 | **Tempo einer Szene** | Das Live-Tempo dieser Szene (×0,1 bis ×10, wie das Bewegungstempo). |
+| **Szene abspielen (ihr Tempo)** | Wie „Szene abspielen (ihre Intensität)“, aber der Fader ist ihr Tempo: Ganz unten ist die Szene gestoppt; beim Hochziehen startet sie in ihrer Gruppe (unter Beachtung, ob diese exklusiv ist), und der Weg ist ihr Tempo, ×0,1 knapp über unten, ×1 in der Mitte und ×10 oben. Der Text zeigt „Gestoppt“, solange sie nicht läuft, und der Fader folgt der Szene, wenn sie anderswo gestoppt oder gestartet wird. Das Tempo gilt nur für diesen Durchlauf: Gestoppt kehrt die Szene zu ihrem vorherigen Tempo zurück (das Tempo in Live ändert sich nicht). Ein Doppelklick setzt sie auf ×1 (und startet sie, wenn sie gestoppt war). Startet ein Fader mehrere Szenen derselben exklusiven Gruppe, verdrängen sie sich nicht gegenseitig: Die erste läuft. |
 | **BPM** | Das Tempo der Show, von 20 bis 300. |
 
 Der Unterschied zwischen den beiden Szenen-Elementen: **„Szene abspielen (ihre Intensität)“** ist die Szene selbst und startet und stoppt sie; **„Dimmer einer Szene (ohne sie abzuspielen)“** dimmt sie nur, auch wenn sie von woanders gestartet wird. Beide lassen sich zusammen verwenden: Mit dem Dimmer auf 50 % und dem startenden Fader auf 80 % läuft die Szene mit 40 %.

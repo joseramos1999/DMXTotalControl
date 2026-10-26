@@ -36,8 +36,30 @@ Item {
     property bool mixerMade: false
     onMixerViewChanged: if (mixerView) mixerMade = true
 
+    // the width of an unfolded group
+    readonly property int columnWidth: 300
+
     signal editScene(int id)
     signal openScene(int id)
+
+    /** Fold or unfold every group. The group at the left edge stays there, as
+     *  far as the list goes (all the columns are then as wide) */
+    function foldAll(fold) {
+        if (zonesRepeater.count === 0)
+            return
+        let first = 0
+        for (let i = 0; i < zonesRepeater.count; i++) {
+            const item = zonesRepeater.itemAt(i)
+            if (item && item.x + item.width > flick.contentX) {
+                first = i
+                break
+            }
+        }
+        Core.zones.setAllFolded(fold)
+        const step = (fold ? zonesRepeater.itemAt(first).foldedSize : page.columnWidth) + zonesRow.spacing
+        const total = zonesRepeater.count * step + addZoneTile.width
+        flick.contentX = Math.max(0, Math.min(first * step, total - flick.width))
+    }
 
     ColumnLayout {
         anchors { fill: parent; margins: 16 }
@@ -104,6 +126,23 @@ Item {
                 onClicked: Core.zones.stopAll()
                 MapTarget { target: ({ target: "groupRelease", zoneId: -1 }) }
             }
+            // every group folded or unfolded at once (what it does next)
+            AppButton {
+                readonly property bool unfold: Core.zones.allFolded
+                text: unfold ? qsTr("Unfold groups") : qsTr("Fold groups")
+                iconGlyph: unfold ? Theme.iconExpand : Theme.iconCompress
+                enabled: Core.zones.count > 0 && !page.mixerView
+                ToolTip.text: unfold ? qsTr("Unfold every group")
+                                     : qsTr("Fold every group to a strip with its name, to see them all. Their scenes go on playing")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+                onClicked: {
+                    page.foldAll(!unfold)
+                    // the tooltip of the press would show the text of before: shown again
+                    ToolTip.visible = false
+                    ToolTip.visible = Qt.binding(() => hovered)
+                }
+            }
             // live mixer: by fixture group, on top of the scenes
             AppButton {
                 text: qsTr("Mixer")
@@ -147,6 +186,7 @@ Item {
                 spacing: 12
 
                 Repeater {
+                    id: zonesRepeater
                     model: Core.zones
                     delegate: ZoneColumn {
                         required property var zone
@@ -157,7 +197,7 @@ Item {
                         // folded: a strip with its name, saved with the show
                         folded: zone.folded
                         canFold: true
-                        width: folded ? foldedSize : 300
+                        width: folded ? foldedSize : page.columnWidth
                         onFoldToggled: zone.folded = !zone.folded
                         dragProxy: dragItem
                         onEditScene: (id) => page.editScene(id)
@@ -167,6 +207,7 @@ Item {
 
                 // add zone placeholder
                 Rectangle {
+                    id: addZoneTile
                     width: 200
                     height: zonesRow.height
                     radius: Theme.radius

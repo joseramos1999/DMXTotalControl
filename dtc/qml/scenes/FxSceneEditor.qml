@@ -35,6 +35,9 @@ RowLayout {
     property int current: 0
     readonly property var layers: info.layers || []
     readonly property var currentLayer: layers.length > 0 ? layers[Math.min(current, layers.length - 1)] : ({})
+    /** The rhythm tapped on its button (BPM), 0: none: its FX at the BPM of
+     *  the show go at it */
+    readonly property real tappedBpm: (info.tap || 0) > 0 ? 60000 / info.tap : 0
 
     signal editInProgrammer(int id)
     signal saved()
@@ -96,7 +99,9 @@ RowLayout {
                             Text {
                                 width: parent.width
                                 text: qsTr("%n fixture(s)", "", row.modelData.count) + " · " +
-                                      (row.modelData.syncBpm ? qsTr("BPM of the show") : Math.round(row.modelData.bpm) + " BPM")
+                                      (!row.modelData.syncBpm ? Math.round(row.modelData.bpm) + " BPM"
+                                       : editor.tappedBpm > 0 ? qsTr("Tapped: %1 BPM").arg(Math.round(editor.tappedBpm))
+                                       : qsTr("BPM of the show"))
                                 color: Theme.textDim
                                 font.pixelSize: Theme.fontSmall
                                 elide: Text.ElideRight
@@ -211,6 +216,7 @@ RowLayout {
                     width: parent.width - 12
                     fx: editor.currentLayer
                     sets: editor.currentLayer.sets || 1
+                    tappedBpm: editor.tappedBpm
                     onEdit: (props) => Core.effects.setFxLayer(editor.info.id, editor.current, props)
                 }
             }
@@ -219,6 +225,7 @@ RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: editor.currentLayer.panTilt ? 130 : 80
                 fx: editor.currentLayer
+                showBpm: editor.tappedBpm > 0 ? editor.tappedBpm : Core.bpm
                 sample: (pos) => Core.effects.fxPreview(editor.info.id, editor.current, pos)
             }
         }

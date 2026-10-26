@@ -43,6 +43,14 @@ Flickable {
                                   "", "", "", "", "", "", "", ""]
     function fileName(path) { return decodeURIComponent(String(path).split(/[\\/]/).pop()) }
     readonly property var item: isTable && cell >= 0 ? (section.items || {})[String(cell)] : undefined
+    // the buttons, faders or dials of a table, and the colour they all have ("": they differ)
+    readonly property int itemCount: Object.keys(section.items || {}).length
+    readonly property string itemsColour: {
+        const list = Object.values(section.items || {})
+        if (list.length === 0 || !list[0].color)
+            return ""
+        return list.every(i => !!i.color && Qt.colorEqual(i.color, list[0].color)) ? list[0].color : ""
+    }
 
     readonly property var swatches: ["#3d8bfd", "#30a46c", "#e5484d", "#f5a524", "#ae3ec9",
                                      "#17a2b8", "#d6336c", "#f76707", "#e7e9ef", "#5d6475"]
@@ -125,10 +133,11 @@ Flickable {
         const index = Core.mapping.cueIndexOf(item.map)
         return index < cueList.length ? index : -1
     }
-    readonly property var targets: ["scene", "sceneDimmer", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "bpm"]
+    readonly property var targets: ["scene", "sceneDimmer", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "sceneRun", "bpm"]
     readonly property var targetNames: [qsTr("Play a scene (its intensity)"), qsTr("Dimmer of a scene (does not play it)"),
                                         qsTr("Master of a group"), qsTr("Grand master"), qsTr("Dimmer of fixtures"),
-                                        qsTr("Movement speed of moving heads"), qsTr("Speed of a scene"), qsTr("BPM")]
+                                        qsTr("Movement speed of moving heads"), qsTr("Speed of a scene"),
+                                        qsTr("Play a scene (its speed)"), qsTr("BPM")]
     readonly property var fixtureGroupChoices: [{ id: -1, name: qsTr("All the moving heads") }].concat(Core.patch.groups)
 
     // the elements of a fader
@@ -140,7 +149,7 @@ Flickable {
         if (values.target !== undefined && values.target !== t.target) {
             // a new kind of element: start from its first choice
             t = { target: values.target }
-            if (values.target === "scene" || values.target === "sceneDimmer" || values.target === "sceneSpeed")
+            if (["scene", "sceneDimmer", "sceneSpeed", "sceneRun"].indexOf(values.target) >= 0)
                 t.functionId = functionList.length ? functionList[0].id : -1
             else if (values.target === "group")
                 t.zoneId = zoneList.length ? zoneList[0].id : -1
@@ -237,6 +246,70 @@ Flickable {
                 text: props.section.title || ""
                 placeholderText: qsTr("No title")
                 onEditingFinished: if (text !== (props.section.title || "")) props.setSection({ title: text })
+            }
+
+            // its background: a colour of the buttons, or the one of the theme
+            Caption { text: qsTr("Background") }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 5
+                Rectangle {
+                    readonly property bool chosen: !props.section.background
+                    width: 24
+                    height: 24
+                    radius: 12
+                    color: Theme.surface
+                    border.color: chosen ? Theme.text : Theme.borderStrong
+                    border.width: chosen ? 2 : 1
+                    Text { anchors.centerIn: parent; text: "∅"; color: Theme.textDim; font.pixelSize: 12 }
+                    ToolTip.text: qsTr("None: the colour of the theme")
+                    ToolTip.visible: noBackgroundMouse.containsMouse
+                    ToolTip.delay: 300
+                    MouseArea { id: noBackgroundMouse; anchors.fill: parent; hoverEnabled: true; onClicked: props.setSection({ background: "" }) }
+                }
+                Repeater {
+                    model: props.swatches
+                    Rectangle {
+                        required property string modelData
+                        width: 24
+                        height: 24
+                        radius: 12
+                        color: modelData
+                        opacity: Theme.lightLevel
+                        border.color: Theme.text
+                        border.width: !!props.section.background && Qt.colorEqual(props.section.background, modelData) ? 2 : 0
+                        MouseArea { anchors.fill: parent; onClicked: props.setSection({ background: parent.modelData }) }
+                    }
+                }
+            }
+
+            // every button, fader or dial of the table in one colour, in one go
+            Caption {
+                visible: props.isTable && props.itemCount > 0
+                text: props.type === "faders" ? qsTr("Colour of all the faders")
+                    : props.type === "dials" ? qsTr("Colour of all the dials") : qsTr("Colour of all the buttons")
+            }
+            Flow {
+                Layout.fillWidth: true
+                visible: props.isTable && props.itemCount > 0
+                spacing: 5
+                Repeater {
+                    model: props.swatches
+                    Rectangle {
+                        required property string modelData
+                        width: 24
+                        height: 24
+                        radius: 12
+                        color: modelData
+                        opacity: Theme.lightLevel
+                        border.color: Theme.text
+                        border.width: props.itemsColour.length > 0 && Qt.colorEqual(props.itemsColour, modelData) ? 2 : 0
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: Core.surface.setItemsColour(props.surface.currentPage, props.sid, parent.modelData)
+                        }
+                    }
+                }
             }
 
             RowLayout {
@@ -583,7 +656,7 @@ Flickable {
                             }
                             ComboBox {
                                 Layout.fillWidth: true
-                                visible: ["scene", "sceneDimmer", "sceneSpeed"].indexOf(targetBox.modelData.target) >= 0
+                                visible: ["scene", "sceneDimmer", "sceneSpeed", "sceneRun"].indexOf(targetBox.modelData.target) >= 0
                                 textRole: "name"
                                 model: props.functionList
                                 displayText: currentIndex < 0 ? qsTr("Choose a scene…") : currentText
@@ -778,7 +851,9 @@ Flickable {
                 ComboBox {
                     Layout.fillWidth: true
                     visible: parent.hasMode
-                    model: [qsTr("Toggle: on / off"), qsTr("Flash: while pressed")]
+                    // (a scene: "toggle" is a press in the mode of the top bar)
+                    model: [props.item && props.item.action === "scene" ? qsTr("Press: follows GO / Stop") : qsTr("Toggle: on / off"),
+                            qsTr("Flash: while pressed")]
                     currentIndex: props.item && props.item.mode === "flash" ? 1 : 0
                     onActivated: (i) => props.setItemKey("mode", i === 1 ? "flash" : "toggle")
                 }

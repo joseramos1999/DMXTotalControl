@@ -77,9 +77,10 @@ class DtcCore : public QObject
     Q_PROPERTY(int grandMaster READ grandMaster WRITE setGrandMaster NOTIFY grandMasterChanged)
     Q_PROPERTY(int runningFunctions READ runningFunctions NOTIFY runningFunctionsChanged)
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
-    /** How the buttons of the scenes act: "toggle" (as always), "go" or "stop" */
+    /** How the buttons of the scenes act: "go" or "stop" (always one of them) */
     Q_PROPERTY(QString pressMode READ pressMode WRITE setPressMode NOTIFY pressModeChanged)
-    /** Changes when a scene with steps that plays moves to another step (stepOf) */
+    /** Changes when a scene with steps that plays moves to another step, or
+     *  an FX at the BPM of the show to another beat (stepOf) */
     Q_PROPERTY(int stepsRevision READ stepsRevision NOTIFY stepsChanged)
     /** The processor this application uses, in percent of the whole machine
      *  (all of its cores), looked at every two seconds. -1: unknown */
@@ -168,15 +169,17 @@ public:
     /** Tap tempo: the BPM follows the spacing of the taps */
     Q_INVOKABLE void tapTempo();
 
-    /** The buttons of the scenes (Live, SHOW, mappings, the phone): "toggle"
-     *  (a press starts or stops it; presses in a row of one with steps mark
-     *  its rhythm), "go" (a press starts it, the next ones mark its rhythm)
-     *  or "stop" (a press stops it). Not saved: "toggle" when it opens */
+    /** The buttons of the scenes (Live, SHOW, mappings, the phone): "go" (a
+     *  press starts it, the next ones mark its rhythm; it never stops it) or
+     *  "stop" (a press stops it), one of the two always. Not saved: "go" each
+     *  time the program starts. Anything else is ignored (the toggle of a
+     *  group alone, SceneTaps::Toggle, isn't a mode of the program) */
     QString pressMode() const;
     void setPressMode(const QString &mode);
-    /** The step (or cue) each scene with steps that plays is on: the rhythm
-     *  bar of its buttons alternates when it moves. -1: it doesn't play, or
-     *  has no steps. stepsChanged when one moves, starts or stops */
+    /** The step (or cue) each scene with steps that plays is on, or the beats
+     *  of an FX scene at the BPM of the show (FXScene::beats): the rhythm bar
+     *  of its buttons alternates when it moves. -1: it doesn't play, or takes
+     *  no rhythm. stepsChanged when one moves, starts or stops */
     Q_INVOKABLE int stepOf(quint32 id) const;
     int stepsRevision() const;
     int cpuLoad() const;
@@ -363,7 +366,8 @@ private:
     CuelistEditor *m_cuelists;
     PlaybackManager *m_playbacks;
     QTimer *m_autosaveTimer;
-    /** The steps of the scenes with steps that play, looked at every frame or so */
+    /** The steps of the scenes with steps that play (the beats of the FX at
+     *  the BPM of the show), looked at every frame or so */
     QTimer *m_stepsTimer = nullptr;
     QHash<quint32, int> m_steps;
     int m_stepsRevision = 0;

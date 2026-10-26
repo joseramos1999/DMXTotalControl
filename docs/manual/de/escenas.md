@@ -50,7 +50,7 @@ Unter dem Kopf liegt der Wiedergabebereich. Er zeigt, was für den jeweiligen Ty
 - **„Zykluszeit“** (oder **„Schrittzeit“** bei einem Colour FX) und **„Tempo“** (von einem Zyklus pro Minute bis zehn pro Sekunde; Doppelklick: ein Zyklus pro Sekunde), mit **×½** und **×2**.
 - **„Staffelung“** (statische Szenen und Schritte): Jedes Fixture beginnt seine Überblendung so viel später als das vorherige, in Auswahlreihenfolge.
 - **„Gesteuert durch“**: **„Dauer“** (die normalen Zeiten), **„BPM“** (die Zeiten werden zu Beats und folgen dem Tempo der Show, auch die Überblendungen jedes Schritts; die Überblendzeit einer Gruppe in Live und die Ein- und Ausblendungen der Blöcke einer Superszene bleiben in Sekunden), **„BeatGO“** oder **„Puls“** (schaltet mit der Taste BeatGO oder mit den Spitzen des Audioeingangs weiter). Mit BeatGO oder Puls: **„Unterteilungen“** (/2, ×2).
-- **„Tap-Rhythmus“** (Sequenzen und Chaser): der Rhythmus, den Sie durch mehrmaliges Drücken ihrer Taste vorgegeben haben ([Live](directo.md#rhythmus-einer-szene-mit-schritten)), in BPM. Solange sie ihn hat, laufen ihre Schritte in diesem Rhythmus statt nach ihren Zeiten. **„Entfernen“** kehrt zu ihren Zeiten zurück. Mit „BPM“ ist ein Beat ein Schritt dieses Rhythmus: Eine Überblendung von 0,5 b dauert einen halben Schritt.
+- **„Tap-Rhythmus“** (Sequenzen, Chaser und FX-Szenen mit FX auf „BPM der Show“): der Rhythmus, den Sie durch mehrmaliges Drücken ihrer Taste vorgegeben haben ([Live](directo.md#rhythmus-einer-szene-mit-schritten)), in BPM. Solange sie ihn hat, laufen ihre Schritte in diesem Rhythmus statt nach ihren Zeiten; bei einer FX-Szene machen ihre FX auf „BPM der Show“ einen Zyklus auf jeden Schlag, statt den BPM der Show zu folgen. **„Entfernen“** kehrt zu ihren Zeiten zurück (oder zu den BPM der Show). Mit „BPM“ ist ein Beat ein Schritt dieses Rhythmus: Eine Überblendung von 0,5 b dauert einen halben Schritt.
 - **„Start“**: **„Läuft“** oder **„Pausiert, erneut drücken zum Abspielen“**.
 - **„Läuft“**: **„Immer“** oder **„N-mal“**, **„dann“** **„Freigeben“** oder **„Letztes Bild halten“**, **„und abspielen“** „Nichts“, „Nächste Szene der Gruppe“, „Vorherige Szene der Gruppe“ oder jede andere Szene.
 
@@ -84,7 +84,7 @@ Eine Folge von Looks, jeder mit seiner **Einblendung**, seiner **Haltezeit** und
 
 Eine FX-Szene hat **Grundwerte** und eine oder mehrere **FX-Ebenen**. Sie entsteht, wenn Sie aus dem Programmer mit FX aufnehmen (siehe [FX](programar.md#fx)).
 
-- Links die Liste der FX: Parameter, Fixtures und Tempo. Der Papierkorb entfernt eine Ebene.
+- Links die Liste der FX: Parameter, Fixtures und Tempo (auf „BPM der Show“ der Tap-Rhythmus der Szene, wenn sie einen hat). Der Papierkorb entfernt eine Ebene.
 - Rechts die Regler der gewählten Ebene (dieselben wie unter Programmieren) und ihre animierte Vorschau. Änderungen wirken live, während die Szene läuft.
 - **„Verknüpfen“**: Verknüpfte Ebenen teilen Tempo und Timing.
 - Machen einige Fixtures den FX auf eigene Weise, erscheint ein Hinweis: Ändern Sie hier Form, Größe, Richtung oder Phase, tun danach alle dasselbe.

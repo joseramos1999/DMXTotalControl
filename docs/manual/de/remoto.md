@@ -38,7 +38,7 @@ Darunter die Seite mit ihren Bereichen, wie auf dem Computer:
 - **Gruppen**: ihre Szenen als Tasten und ihr Master.
 - **Playbacks**: die Streifen mit Name, laufendem und nächstem Cue, **GO**, **Zurück**, Fader und **Flash**. Bereiche, die der aktuellen Seite folgen, haben ◀ ▶ zum Wechseln.
 - **Farbrad** und **XY-Feld**, mit ihren Tasten **Freigeben** und **Mitte**.
-- **Uhr**, **Rhythmus** (**GO**, **Stop** und **BeatGO**; die Tasten von Szenen mit Schritten oder Cuelists enthalten ihren Rhythmusbalken), **Notizen**, **Läuft gerade** und **Bild**.
+- **Uhr**, **Rhythmus** (**GO**, **Stop** und **BeatGO**; die Tasten von Szenen mit Schritten, Cuelists oder FX auf „BPM der Show“ enthalten ihren Rhythmusbalken), **Notizen**, **Läuft gerade** und **Bild**.
 
 **Timer**, **Live-Mischer** und **DMX-Pegel** erscheinen als „Nur am Computer“.
 

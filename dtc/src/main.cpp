@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     parser.addOption(pbDialogOption);
     QCommandLineOption pbNextOption("pb-next", "Developer: 1.7 seconds after start (after --pb-go), Next on a cue of a playback of the current page (slot:cue index).", "slot:cue");
     parser.addOption(pbNextOption);
-    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), drag:x1,y1,x2,y2 drags. Steps separated by ';'.", "steps");
+    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), rclick:x,y clicks the right button, drag:x1,y1,x2,y2 drags. Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
     QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
     parser.addOption(guideOption);
@@ -478,6 +478,14 @@ int main(int argc, char *argv[])
                                                      : held == QLatin1String("ctrl") ? Qt::ControlModifier : Qt::NoModifier;
                     WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress, mods);
                     WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease, mods);
+                }
+                else if (step.startsWith(QLatin1String("rclick:")))
+                {
+                    // the right button: context menus
+                    const QPointF local(arg.section(QLatin1Char(','), 0, 0).toDouble(), arg.section(QLatin1Char(','), 1, 1).toDouble());
+                    const QPointF global = window->mapToGlobal(local);
+                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::RightButton, Qt::RightButton, QEvent::MouseButtonPress);
+                    WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, global, Qt::NoButton, Qt::RightButton, QEvent::MouseButtonRelease);
                 }
                 else if (step.startsWith(QLatin1String("drag:")))
                 {

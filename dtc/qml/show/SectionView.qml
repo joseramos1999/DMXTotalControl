@@ -66,8 +66,30 @@ Rectangle {
         return (cell === undefined ? 0 : cols * cell.width + (cols - 1) * tableGap) + 8
     }
 
+    /** Its own background (section.background): a tint of the surface, so
+     *  the buttons on it stand out and the text keeps reading. 35 %, less
+     *  where the faintest text of the theme (the icons of disabled buttons,
+     *  drawn straight on it) wouldn't read (2:1); the same in remote.js */
+    readonly property bool tinted: !!section.background
+    readonly property color backgroundColor: {
+        if (!tinted)
+            return Theme.surface
+        const tint = Theme.category(section.background)
+        let t = 0.35
+        let c = Theme.mix(Theme.surface, tint, t)
+        while (Theme.contrast(Theme.textFaint, c) < 2.0 && t > 0.1) {
+            t -= 0.05
+            c = Theme.mix(Theme.surface, tint, t)
+        }
+        return c
+    }
+    /** The text straight on it: the colours of the theme, or those that read */
+    readonly property color textColor: tinted ? Theme.readableOn(Theme.text, backgroundColor) : Theme.text
+    readonly property color textDimColor: tinted ? Theme.readableOn(Theme.textDim, backgroundColor) : Theme.textDim
+    readonly property color textFaintColor: tinted ? Theme.readableOn(Theme.textFaint, backgroundColor) : Theme.textFaint
+
     radius: Theme.radius
-    color: type === "empty" && !editing ? "transparent" : Theme.surface
+    color: type === "empty" && !editing && !tinted ? "transparent" : backgroundColor
     border.color: selected ? Theme.accent : (editing ? Theme.borderStrong : Theme.border)
     border.width: selected ? 2 : 1
     clip: true
@@ -84,7 +106,7 @@ Rectangle {
         Text {
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter; right: pager.visible ? pager.left : tools.left; rightMargin: 6 }
             text: (view.section.title || "").length ? view.section.title : view.surface ? view.surface.typeName(view.type) : ""
-            color: (view.section.title || "").length ? Theme.text : Theme.textDim
+            color: (view.section.title || "").length ? view.textColor : view.textDimColor
             font.pixelSize: Theme.fontSmall
             font.weight: Font.Bold
             font.capitalization: Font.AllUppercase
@@ -117,7 +139,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(implicitWidth, Math.max(40, header.width / 3))
                 text: Core.playbacks.pageNames[Core.playbacks.currentPage] || ""
-                color: Theme.text
+                color: view.textColor
                 font.pixelSize: Theme.fontSmall
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
@@ -277,7 +299,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: cell.item === undefined
                 text: "+"
-                color: Theme.textFaint
+                color: view.textFaintColor
                 font.pixelSize: Math.min(22, parent.height / 3)
             }
         }
@@ -641,7 +663,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: !view.section.image
                 text: qsTr("Choose an image in the properties")
-                color: Theme.textFaint
+                color: view.textFaintColor
             }
         }
     }
@@ -671,7 +693,7 @@ Rectangle {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 text: qsTr("Choose a group in the properties")
-                color: Theme.textFaint
+                color: view.textFaintColor
             }
         }
     }
@@ -716,7 +738,7 @@ Rectangle {
             Text {
                 visible: Core.zones.count === 0
                 text: qsTr("No groups yet. Create them on the Live page.")
-                color: Theme.textFaint
+                color: view.textFaintColor
             }
         }
     }
@@ -733,7 +755,7 @@ Rectangle {
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: Qt.formatTime(clockItem.now, view.section.seconds === false ? "HH:mm" : "HH:mm:ss")
-                    color: Theme.text
+                    color: view.textColor
                     font.family: Theme.monoFamily
                     font.pixelSize: Math.max(14, Math.min(view.height / 2.6, view.width / (view.section.seconds === false ? 3.4 : 5.2)))
                 }
@@ -748,7 +770,7 @@ Rectangle {
                     fontSizeMode: Text.HorizontalFit
                     minimumPixelSize: 8
                     elide: Text.ElideRight
-                    color: Theme.textDim
+                    color: view.textDimColor
                     font.pixelSize: Math.max(10, Math.min(18, view.height / 10))
                 }
             }
@@ -784,7 +806,7 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                     text: timerItem.format(timerItem.shown)
                     color: timerItem.countdown && timerItem.shown <= 0 ? Theme.danger
-                         : timerItem.countdown && timerItem.shown < 60000 ? Theme.warning : Theme.text
+                         : timerItem.countdown && timerItem.shown < 60000 ? Theme.warning : view.textColor
                     font.family: Theme.monoFamily
                     font.pixelSize: Math.max(14, Math.min(view.height / 3, view.width / 6))
                 }
@@ -825,20 +847,27 @@ Rectangle {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 1
                     text: "GO"
+                    iconGlyph: Theme.iconPlay
+                    iconSize: 15
+                    textSize: Theme.fontLarge
                     highlighted: Core.pressMode === "go"
                     accentColor: Theme.success
                     enabled: !view.editing
-                    onClicked: Core.pressMode = Core.pressMode === "go" ? "toggle" : "go"
+                    // (always GO or Stop: the one that is on stays on)
+                    onClicked: Core.pressMode = "go"
                 }
                 AppButton {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.preferredWidth: 1
                     text: qsTr("Stop")
+                    iconGlyph: Theme.iconStop
+                    iconSize: 15
+                    textSize: Theme.fontLarge
                     highlighted: Core.pressMode === "stop"
                     accentColor: Theme.danger
                     enabled: !view.editing
-                    onClicked: Core.pressMode = Core.pressMode === "stop" ? "toggle" : "stop"
+                    onClicked: Core.pressMode = "stop"
                 }
             }
             AppButton {
@@ -863,7 +892,7 @@ Rectangle {
                 width: parent.width
                 text: (view.section.text || "").length ? view.section.text
                       : view.editing ? qsTr("Write the notes in the properties") : ""
-                color: (view.section.text || "").length ? Theme.text : Theme.textFaint
+                color: (view.section.text || "").length ? view.textColor : view.textFaintColor
                 font.pixelSize: view.section.fontSize || 20
                 wrapMode: Text.Wrap
                 padding: 6
@@ -910,7 +939,7 @@ Rectangle {
                 anchors.centerIn: parent
                 visible: runningList.count === 0
                 text: qsTr("Nothing is playing")
-                color: Theme.textFaint
+                color: view.textFaintColor
             }
         }
     }
@@ -928,7 +957,7 @@ Rectangle {
             Text {
                 id: monitorTitle
                 text: qsTr("Universe %1").arg(monitor.universe + 1)
-                color: Theme.textDim
+                color: view.textDimColor
                 font.pixelSize: 10
             }
             Grid {

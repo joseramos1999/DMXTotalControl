@@ -511,9 +511,58 @@ ApplicationWindow {
 
             Item { Layout.fillWidth: true }
 
-            // the beat: how the buttons of the scenes act (GO: they start them
-            // and mark their rhythm; Stop: they stop them; each button shows
-            // the rhythm of its scene with steps), BeatGO and the audio pulses
+            // how the buttons of the scenes act, always one of the two (GO
+            // when the program starts): GO starts them and marks their
+            // rhythm (each button shows the rhythm of its scene with steps),
+            // Stop stops them
+            Rectangle {
+                Layout.preferredHeight: 46
+                Layout.preferredWidth: pressRow.implicitWidth + 10
+                radius: Theme.radiusSmall
+                color: Theme.surfaceRaised
+                border.color: Theme.border
+
+                Row {
+                    id: pressRow
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    AppButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "GO"
+                        iconGlyph: Theme.iconPlay
+                        iconSize: 15
+                        textSize: Theme.fontLarge
+                        implicitHeight: 38
+                        implicitWidth: Math.max(78, implicitContentWidth + leftPadding + rightPadding)
+                        highlighted: Core.pressMode === "go"
+                        accentColor: Theme.success
+                        onClicked: Core.pressMode = "go"
+                        MapTarget { target: ({ target: "pressGo" }) }
+                        ToolTip.text: qsTr("GO: a press of a scene starts it, and the next ones mark its rhythm (it never stops it)")
+                        ToolTip.visible: hovered
+                        ToolTip.delay: 500
+                    }
+                    AppButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Stop")
+                        iconGlyph: Theme.iconStop
+                        iconSize: 15
+                        textSize: Theme.fontLarge
+                        implicitHeight: 38
+                        implicitWidth: Math.max(78, implicitContentWidth + leftPadding + rightPadding)
+                        highlighted: Core.pressMode === "stop"
+                        accentColor: Theme.danger
+                        onClicked: Core.pressMode = "stop"
+                        MapTarget { target: ({ target: "pressStop" }) }
+                        ToolTip.text: qsTr("Stop: a press of a scene stops it")
+                        ToolTip.visible: hovered
+                        ToolTip.delay: 500
+                    }
+                }
+            }
+
+            // BeatGO and the audio pulses
             Rectangle {
                 Layout.preferredHeight: 36
                 Layout.preferredWidth: beatRow.implicitWidth + 16
@@ -525,32 +574,6 @@ ApplicationWindow {
                     id: beatRow
                     anchors.centerIn: parent
                     spacing: 8
-
-                    AppButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "GO"
-                        implicitHeight: 28
-                        highlighted: Core.pressMode === "go"
-                        accentColor: Theme.success
-                        onClicked: Core.pressMode = Core.pressMode === "go" ? "toggle" : "go"
-                        MapTarget { target: ({ target: "pressGo" }) }
-                        ToolTip.text: qsTr("GO: a press of a scene starts it, and the next ones mark its rhythm (it doesn't stop). Click again to go back to normal")
-                        ToolTip.visible: hovered
-                        ToolTip.delay: 500
-                    }
-                    AppButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Stop")
-                        implicitHeight: 28
-                        highlighted: Core.pressMode === "stop"
-                        accentColor: Theme.danger
-                        onClicked: Core.pressMode = Core.pressMode === "stop" ? "toggle" : "stop"
-                        MapTarget { target: ({ target: "pressStop" }) }
-                        ToolTip.text: qsTr("Stop: a press of a scene stops it. Click again to go back to normal")
-                        ToolTip.visible: hovered
-                        ToolTip.delay: 500
-                    }
-                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 1; height: 20; color: Theme.border }
 
                     // BeatGO: scenes driven by BeatGO go to their next division
                     AppButton {

@@ -67,7 +67,7 @@ Ciò che fa la mappatura. I **tasti**:
 | Avvia una scena | La scena scelta, nel suo gruppo. |
 | Scena N di un gruppo | La scena che si trova in quella posizione del gruppo (**Numero di scena**). |
 | Rilascia un gruppo / Scena successiva di un gruppo / Scena precedente di un gruppo | In un gruppo o in «Tutti i gruppi». |
-| Blackout, Ferma tutto, Metti tutto in pausa, Tap tempo, BeatGO, GO, Stop | Come i loro tasti (GO e Stop si accendono e si spengono, come nella barra superiore). |
+| Blackout, Ferma tutto, Metti tutto in pausa, Tap tempo, BeatGO, GO, Stop | Come i loro tasti (GO e Stop scelgono la modalità, come nella barra superiore: uno dei due è sempre acceso). |
 | Palette | La palette sulle sue fixture o su un gruppo di fixture. |
 | Mixer: full, blackout, flash, flash esclusivo, full esclusivo, strobo | Nella striscia scelta del mixer. |
 | Playback: GO, indietro, pausa / indietro, flash, rilascia, seleziona | Su un playback. |
@@ -94,7 +94,7 @@ Per i playback si sceglie la **pagina** («Pagina attuale (segue)», che segue l
 
 Nei **tasti**:
 
-- **«Commuta: ogni pressione on / off»**: ogni pressione accende o spegne.
+- **«Commuta: ogni pressione on / off»**: ogni pressione accende o spegne. Su una scena si chiama **«Premi: secondo GO / Stop»**: la avvia o la ferma secondo GO e Stop della barra superiore.
 - **«Flash: finché è premuto»**.
 - **«Solo accensione»** / **«Solo spegnimento»**.
 
@@ -117,7 +117,7 @@ Per i LED dei tasti MIDI:
 
 1. In **«LED di»**, scegli **«Qualsiasi controller (numeri)»** o il tuo controller: **Akai APC mini**, **Akai APC mini mk2** o **Akai APC40 mkII**.
 2. Per **«Acceso»**, **«Spento»** e **«In pausa»**, scegli il colore tra i campioni (su una APC) o scrivi il valore (0–127) per qualsiasi altro controller.
-3. Nei pad RGB della APC mini mk2, scegli anche come si accendono: **«Tenue»**, **«Pieno»**, **«Pulsante»** o **«Lampeggiante»** (sulla APC40 mkII, **«Fisso»**).
+3. Nei pad RGB della APC mini mk2, scegli anche come si accendono: **«Tenue»**, **«Pieno»**, **«Pulsante»** o **«Lampeggiante»** (sulla APC40 mkII, **«Fisso»**). Se non scegli nulla, «Acceso» si accende in **«Pieno»** e «Spento» in **«Tenue»**.
 
 I LED del controller si spengono quando chiudi il programma, quando elimini una mappatura o la sposti su un altro controllo, quando apri un altro show o quando disattivi il dispositivo o il suo feedback.
 

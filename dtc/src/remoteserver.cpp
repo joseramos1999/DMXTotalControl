@@ -727,7 +727,7 @@ QString RemoteServer::itemLabel(const QVariantMap &item, const QString &sectionT
             Zone *zone = m_core->zones()->zoneById(t.value("zoneId").toUInt());
             names.append(zone != nullptr ? zone->name() : QString());
         }
-        else if (target == "scene") names.append(functionName(t.value("functionId")));
+        else if (target == "scene" || target == "sceneRun") names.append(functionName(t.value("functionId")));
         else if (target == "sceneDimmer") names.append(tr("Dimmer of %1").arg(functionName(t.value("functionId"))));
         else if (target == "sceneSpeed") names.append(tr("Speed of %1").arg(functionName(t.value("functionId"))));
         else if (target == "mixerDimmer") names.append(tr("Dimmer"));
@@ -757,7 +757,7 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
     out.insert("type", type);
     out.insert("title", node.value("title"));
     for (const char *key : { "cols", "rows", "text", "fontSize", "seconds", "date", "fit", "mode", "minutes",
-                             "playbackPage", "first", "showBack", "showFlash", "showCue" })
+                             "playbackPage", "first", "showBack", "showFlash", "showCue", "background" })
         if (node.contains(key))
             out.insert(key, node.value(key));
 
@@ -784,14 +784,11 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
             const QVariantList targets = ShowSurface::faderTargets(item);
             d.insert("bpm", targets.count() == 1 && targets.first().toMap().value("target").toString() == "bpm");
             // a speed: x0.1 to x10 (x1 in the middle), when all its targets
-            // are speeds (of the movement, of scenes), as on the SHOW
-            bool speed = targets.isEmpty() == false;
-            for (const QVariant &t : targets)
-            {
-                const QString target = t.toMap().value("target").toString();
-                speed = speed && (target == "moveSpeed" || target == "sceneSpeed");
-            }
-            d.insert("speed", speed);
+            // are speeds (of the movement, of scenes, scenes played at a
+            // speed), as on the SHOW; one that plays a scene first shows it
+            // stopped at the end that stops it
+            d.insert("speed", ShowSurface::isSpeed(item));
+            d.insert("run", targets.isEmpty() == false && targets.first().toMap().value("target").toString() == "sceneRun");
             d.insert("flash", type == "faders" && item.value("flash", true).toBool());
             d.insert("encoder", item.value("encoder", false));
             d.insert("step", item.value("step", 2));
@@ -1070,11 +1067,9 @@ void RemoteServer::handleCommand(const QVariantMap &message)
             m_core->tapTempo();
         else if (action == "beatgo")
             m_core->drive()->beatGo();
+        // (always GO or Stop: pressing the one that is on keeps it)
         else if (action == "pressGo" || action == "pressStop")
-        {
-            const QString wanted = action == "pressGo" ? "go" : "stop";
-            m_core->setPressMode(m_core->pressMode() == wanted ? "toggle" : wanted);
-        }
+            m_core->setPressMode(action == "pressGo" ? "go" : "stop");
     }
     else if (cmd == "playback")
     {

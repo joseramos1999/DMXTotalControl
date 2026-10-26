@@ -9,6 +9,7 @@ Dans l’en-tête de la page, vous avez :
 - **◀ ▶** : scène précédente ou suivante dans chaque groupe qui joue (aussi avec Ctrl+← et Ctrl+→).
 - **« Pause »** / **« Reprendre »** : fige tout ce qui joue et le relance.
 - **« Libérer les groupes »** : arrête les scènes de tous les groupes.
+- **« Replier les groupes »** / **« Déplier les groupes »** : replie toutes les colonnes d’un coup, pour les voir toutes ; quand elles sont toutes repliées, les déplie.
 - **« Mixeur »** : passe à la vue du [mixeur](directo.md#mixeur). Un point orange indique que le mixeur modifie la sortie.
 - **« Nouveau groupe »** : ajoute une colonne.
 
@@ -21,7 +22,7 @@ Dans l’en-tête de la page, vous avez :
 
 Le bouton en forme d’engrenage de chaque colonne ouvre son menu : **« Changer de couleur »** (passe à la couleur suivante), **« Déplacer à gauche »**, **« Déplacer à droite »** et **« Supprimer le groupe »**. Vous pouvez aussi faire glisser le groupe par la poignée à gauche de son nom et le déposer sur un autre groupe pour prendre sa place.
 
-La flèche **‹** à côté du nom **replie** le groupe : il devient une bande étroite avec son nom et le nombre de scènes qui jouent, pour laisser de la place aux autres. Ses scènes continuent de jouer. La flèche **›** de la bande le déplie. C’est enregistré avec le show.
+La flèche **‹** à côté du nom **replie** le groupe : il devient une bande étroite avec son nom et le nombre de scènes qui jouent, pour laisser de la place aux autres. Ses scènes continuent de jouer. La flèche **›** de la bande le déplie. C’est enregistré avec le show. Pour les replier ou les déplier tous d’un coup, utilisez **« Replier les groupes »** / **« Déplier les groupes »** dans l’en-tête.
 
 ### Ajouter et ordonner des scènes
 
@@ -35,14 +36,14 @@ Pour réordonner, survolez une tuile et faites-la glisser par sa poignée (à dr
 
 ## Lancer des scènes
 
-Cliquez sur une tuile pour lancer la scène ; cliquez à nouveau pour la libérer. La tuile qui joue prend la couleur du groupe et affiche un point qui bat.
+Cliquez sur une tuile pour lancer la scène (avec **GO**, le mode dans lequel démarre le programme). Pour la libérer, appuyez sur le carré de l’en-tête du groupe (« Libérer ce groupe ») ou passez sur **Stop** et appuyez dessus. La tuile qui joue prend la couleur du groupe et affiche un point qui bat.
 
 Sur chaque tuile, vous voyez :
 
 - Le **nom** et, en dessous, le **type** de scène. Pour une cuelist en cours, la cue où elle se trouve (« Q 3 · Couplet »). Derrière, le [rythme tapé](directo.md#rythme-dune-scène-à-pas) s’il y en a un (« 120 BPM »).
 - **P7**, **P2**… : la priorité, seulement quand ce n’est pas la normale (5). En orange si elle est supérieure à 5.
 - Un **éclair** : c’est une scène flash.
-- Une **barre coupée en deux** en bas : une scène à pas ou une cuelist en cours ; elle alterne à chaque pas, à son rythme.
+- Une **barre coupée en deux** en bas : une scène à pas, une cuelist ou un FX en « BPM du show » en cours ; elle alterne à chaque pas (dans un FX, à chaque battement), à son rythme.
 
 ### Exclusif ou mélange
 
@@ -69,32 +70,33 @@ Une scène **flash** ne joue que tant que vous maintenez sa tuile enfoncée. Ell
 
 ### Cuelists dans un groupe
 
-Une cuelist dans un groupe est une tuile comme les autres : le clic l’allume et l’éteint. Son menu (clic droit) ajoute **« GO (cue suivante) »**, **« Retour (cue précédente) »** et **« Libérer la cuelist »**. Pour l’envoyer confortablement avec GO, mettez-la sur un [playback](playbacks.md).
+Une cuelist dans un groupe est une tuile comme les autres : le clic la lance (avec **Stop**, l’arrête). Son menu (clic droit) ajoute **« GO (cue suivante) »**, **« Retour (cue précédente) »** et **« Libérer la cuelist »**. Pour l’envoyer confortablement avec GO, mettez-la sur un [playback](playbacks.md).
 
 ### Rythme d’une scène à pas
 
-Les scènes à pas (séquences et chenillards) et les cuelists suivent le rythme auquel vous appuyez sur leur tuile :
+Les scènes à pas (séquences et chenillards), les cuelists et les scènes FX avec des FX en « BPM du show » suivent le rythme auquel vous appuyez sur leur tuile :
 
-- Un clic la lance ou la libère, comme d’habitude.
-- Pendant que la scène joue, appuyez sur sa tuile **plusieurs fois de suite** au rythme de la musique, avec moins de 2 secondes entre les appuis. Chaque appui passe au pas suivant (dans une cuelist, il donne un GO) et la scène continue seule à ce rythme : un pas à chaque battement, au lieu de ses propres temps. Le rythme est la moyenne des derniers appuis.
+- Un clic la lance (avec **GO**, le mode dans lequel démarre le programme ; voir plus bas).
+- Pendant que la scène joue, appuyez sur sa tuile **plusieurs fois de suite** au rythme de la musique, avec moins de 2 secondes entre les appuis. Chaque appui passe au pas suivant (dans une cuelist, il donne un GO) et la scène continue seule à ce rythme : un pas à chaque battement, au lieu de ses propres temps. Le rythme est la moyenne des derniers appuis. Un appui qui arrive un peu en retard, juste après le pas de ce battement (moins d’un demi-battement), est ce même pas : il n’en donne pas d’autre, il remet seulement le rythme en place.
 - Seuls comptent les appuis pendant que la scène joue : celui qui la lance commence le compte. Ainsi, changer de scène dans un groupe exclusif puis revenir ne donne de rythme à aucune.
-- Après une pause de plus de 2 secondes, un clic la libère. Pour la libérer juste après avoir tapé le rythme, attendez 2 secondes.
+- Après une pause de plus de 2 secondes, un clic donne un pas sans changer son rythme, et la scène continue de jouer. Pour l’arrêter, passez sur **Stop** et appuyez dessus.
 - Le rythme tapé est joué même avec une **vitesse en direct** réglée ; si vous changez ensuite la vitesse, le rythme accélère ou ralentit avec elle. En pause, les appuis ne font pas avancer les pas.
 - Le rythme est enregistré avec la scène et lui appartient : elle le suit aussi quand elle joue dans une super scène ou sur un playback. Dans ses [propriétés](directo.md#propriétés-de-la-scène) (et dans [Scènes](escenas.md#comment-joue-une-scène)), vous pouvez le saisir ou appuyer sur **« Retirer »** pour revenir à ses temps.
+- Dans une **scène FX**, le rythme est celui de ses FX en **« BPM du show »** : le premier appui d’une série relance leur cycle (comme au lancement), et chacun des suivants les amène au battement suivant, un cycle plus loin fois leur multiplicateur (un chenillard passe au fixture suivant ; à ×¼, ils avancent d’un quart de cycle). Plusieurs de suite leur donnent un cycle à chaque battement (fois leur multiplicateur), au lieu du BPM du show. Les FX à vitesse propre ne changent pas. Sans rythme tapé, ou après « Retirer », ils suivent le BPM du show. Si vous désactivez « BPM du show » sur tous ses FX, la scène perd son rythme tapé.
 
 Cela fonctionne de la même façon avec ses boutons du [SHOW](show.md), avec ses mappages de contrôleurs et de touches en mode « Bascule » et avec la [télécommande](remoto.md).
 
 #### GO et Stop
 
-Les boutons **GO** et **Stop** de la barre du haut (et de la section « Rythme » du SHOW) changent l’effet d’un appui sur n’importe quelle scène, pour tous ceux qui appuient :
+Les boutons **GO** et **Stop** de la barre du haut (et de la section « Rythme » du SHOW) décident de l’effet d’un appui sur n’importe quelle scène, pour tous ceux qui appuient. L’un des deux est toujours allumé : le programme démarre toujours en **GO**, et appuyer sur l’autre change de mode :
 
-- **GO** allumé : appuyer sur une scène la **lance** ; sur une scène qui joue déjà, chaque appui avance d’un pas (dans une cuelist, un GO) et plusieurs appuis de suite marquent son rythme. Elle ne s’arrête jamais, même si vous restez plus de 2 secondes sans appuyer : vous marquez ainsi le tempo tranquillement.
+- **GO** allumé : appuyer sur une scène la **lance** ; sur une scène qui joue déjà, chaque appui avance d’un pas (dans une cuelist, un GO ; dans une scène FX, le premier relance le cycle de ses FX en « BPM du show » et les suivants les amènent au battement suivant) et plusieurs appuis de suite marquent son rythme. Elle ne s’arrête jamais, même si vous restez plus de 2 secondes sans appuyer : vous marquez ainsi le tempo tranquillement.
 - **Stop** allumé : appuyer sur une scène l’**arrête**. Une scène qui ne joue pas reste telle quelle.
-- Les deux éteints (appuyez à nouveau sur celui qui est allumé) : comme d’habitude, un clic la lance ou la libère.
+- Pour libérer les scènes d’un groupe sans changer de mode, appuyez sur le carré de son en-tête (« Libérer ce groupe ») ; **« Tout arrêter »** (Échap) arrête tout.
 
 Les scènes flash continuent de fonctionner tant que vous les maintenez enfoncées, dans n’importe quel mode.
 
-Pendant qu’elle joue, chaque tuile d’une scène à pas ou d’une cuelist porte en bas une **barre de rythme** coupée en deux : un côté s’allume puis l’autre à chaque pas (dans une cuelist, à chaque cue). Vous voyez ainsi à quel rythme va chacune. Ses boutons du SHOW, ses bandes de playback et ses boutons sur le téléphone la portent aussi.
+Pendant qu’elle joue, chaque tuile d’une scène à pas, d’une cuelist ou d’une scène FX avec des FX en « BPM du show » porte en bas une **barre de rythme** coupée en deux : un côté s’allume puis l’autre à chaque pas (dans une cuelist, à chaque cue ; dans une scène FX, à chaque battement, un cycle de ces FX à ×1). Vous voyez ainsi à quel rythme va chacune. Ses boutons du SHOW, ses bandes de playback et ses boutons sur le téléphone la portent aussi.
 
 ## Masters
 
@@ -117,7 +119,7 @@ Faites un clic droit sur une tuile et choisissez **« Propriétés… »**.
 | **Protégée des libérations par** | Les libérations qu’elle ignore. |
 | **Flash (joue tant qu’on appuie)** | En fait une scène flash. |
 | **Dimmer en direct** | Son intensité, par-dessus le master du groupe. |
-| **Rythme tapé** | Pas et cuelists : le [rythme tapé](directo.md#rythme-dune-scène-à-pas) sur sa tuile, en BPM. Saisissez-le ou appuyez sur « Retirer » pour revenir à ses temps. Agit immédiatement. |
+| **Rythme tapé** | Pas, cuelists et scènes FX avec des FX en « BPM du show » : le [rythme tapé](directo.md#rythme-dune-scène-à-pas) sur sa tuile, en BPM. Saisissez-le ou appuyez sur « Retirer » pour revenir à ses temps (dans une scène FX, au BPM du show). Agit immédiatement. |
 | **Vitesse en direct** | De ×0,1 à ×10 (scènes qui bougent : pas, FX, cuelists…). |
 | **Phase en direct** / **Taille en direct** | La phase (0–359°) et la taille (0–200 %) des FX. |
 | **Vitesse de fondu** | Accélère ou ralentit ses fondus, de ×0,1 à ×10. |

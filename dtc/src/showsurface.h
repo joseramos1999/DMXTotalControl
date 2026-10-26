@@ -66,6 +66,9 @@ class Doc;
  *             lines (showBack, showFlash, showCue)
  *  "empty"    nothing yet
  *
+ * Any section can have a "background", a colour "#rrggbb" (none or empty: the
+ * one of the theme): the SHOW and the phone tint the section with it.
+ *
  * Pages are given to QML as trees of maps: a split is
  * { id, split: "h"|"v", ratio, a, b }, a section is { id, split: "none",
  * type, title, ..., items: { "<cell>": item } }.
@@ -81,6 +84,9 @@ class Doc;
  * (functionId: up from zero starts it, down to zero stops it, in between its
  * intensity), "sceneDimmer" (functionId: the dimmer of the scene, whoever
  * plays it; it never starts or stops it), "sceneSpeed" (functionId),
+ * "sceneRun" (functionId: a scene and its speed: up from the end that stops
+ * it starts it, as a scene fader does, and the travel is its speed, x0.1 to
+ * x10, for that run only: stopped, it plays at its own speed again),
  * "mixerDimmer" (mixerId), "moveSpeed" (groupId: the speed of the movement
  * of a fixture group, -1 all the moving heads: their pan/tilt FX and the
  * steps that move them, x0.1 to x10), "bpm", "map" (map: a fader
@@ -139,6 +145,9 @@ public:
     /** Swap the items of two cells of a section */
     Q_INVOKABLE void moveItem(int page, const QString &sectionId, int from, int to);
     Q_INVOKABLE QVariantMap item(int page, const QString &sectionId, int cell) const;
+    /** One colour for every button, fader or dial of a table section, in one
+     *  change (its empty cells stay empty). @return how many items changed */
+    Q_INVOKABLE int setItemsColour(int page, const QString &sectionId, const QString &color);
 
     /** Fill a buttons section with the scenes of a group, in order. @return how many */
     Q_INVOKABLE int fillWithGroup(int page, const QString &sectionId, quint32 zoneId);
@@ -186,6 +195,13 @@ public:
     Q_INVOKABLE void restoreLevels(const QVariantMap &item, const QVariantList &levels);
     /** The targets of a fader item (older items: their single target) */
     Q_INVOKABLE static QVariantList faderTargets(const QVariantMap &item);
+    /** A fader or dial whose targets are all speeds (of the movement, of
+     *  scenes, scenes and their speed): x0.1 to x10, x1 in the middle */
+    Q_INVOKABLE static bool isSpeed(const QVariantMap &item);
+    /** Where a double click puts a fader or a dial (0..1): the BPM at 90, a
+     *  speed at x1 (or the nearest end of its range; one that plays a scene
+     *  plays it, off the end that stops it), anything else at the bottom */
+    Q_INVOKABLE qreal resetLevel(const QVariantMap &item) const;
 
     /** The dimmer of a scene ("sceneDimmer" targets), 0..1: it scales the
      *  scene whoever plays it (its group, a playback, a button, a super
@@ -328,6 +344,17 @@ private:
     QHash<quint32, qreal> m_levels;
     /** The level of the fader on a scene of no group as its intensity */
     void applySceneLevel(Function *f);
+    /** "sceneRun" faders on scenes of no group (a group keeps the speed of
+     *  the run, Zone::setRunSpeed): the speed each had before the fader gave
+     *  it one, and the one it gave. Given back when it stops, whoever stops
+     *  it, unless something else changed its speed meanwhile */
+    struct RunSpeed
+    {
+        qreal before = 1.0;
+        qreal given = 1.0;
+    };
+    QHash<quint32, RunSpeed> m_runSpeeds;
+    void restoreRunSpeed(quint32 fid);
 
     /** The dimmers of the scenes (setSceneDimmer), below 1 only */
     QHash<quint32, qreal> m_sceneDimmers;
@@ -342,8 +369,14 @@ private:
     void pruneSceneDimmers();
     /** At the bottom of the travel, a scene or a playback fader stops it */
     static bool bottomStops(const QVariantMap &target);
+    /** The scenes the targets of a control start ("scene", "sceneRun") */
+    static QList<quint32> startedScenes(const QVariantList &targets);
+    /** Whether $fid starting in its group stops one of $others that plays:
+     *  the scenes of one control don't replace each other at every move */
+    bool releasesOther(quint32 fid, const QList<quint32> &others) const;
 
-    void setTargetLevel(const QVariantMap &target, qreal level);
+    /** $together: the scenes the other targets of the control start */
+    void setTargetLevel(const QVariantMap &target, qreal level, const QList<quint32> &together = QList<quint32>());
     qreal targetLevel(const QVariantMap &target) const;
     /** The fixtures of a movement speed fader: of its group, or every one
      *  with pan or tilt (-1) */

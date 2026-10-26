@@ -123,6 +123,7 @@ ControlMapper::ControlMapper(DtcCore *core, QObject *parent)
     , m_lastId(0)
     , m_learnMode(false)
     , m_learnSourceOf(-1)
+    , m_monitorSerial(0)
     , m_activity(0)
     , m_feedbackTimer(new QTimer(this))
     , m_namesPending(false)
@@ -784,8 +785,9 @@ QVariantMap ControlMapper::defaultsFor(const QString &target) const
     m.insert("onValue", 127);
     m.insert("offValue", 0);
     m.insert("pausedValue", 64);
-    // the MIDI channel of each state (0: the one of the control): on some
-    // controllers (APC mini mk2) it sets the brightness or the blinking
+    // the MIDI channel of each state (0: the default of the state, see
+    // defaultLedChannel): on some controllers (APC mini mk2) it sets the
+    // brightness or the blinking
     m.insert("onChannel", 0);
     m.insert("offChannel", 0);
     m.insert("pausedChannel", 0);
@@ -1336,6 +1338,7 @@ void ControlMapper::log(const QString &direction, const QString &device, const Q
     entry.insert("device", device.section('|', 1));
     entry.insert("text", text);
     entry.insert("value", value);
+    entry.insert("serial", ++m_monitorSerial);
     m_monitor.prepend(entry);
     while (m_monitor.count() > MONITOR_SIZE)
         m_monitor.removeLast();
@@ -1699,12 +1702,10 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
             m_core->tapTempo();
         else if (target == "beatgo")
             m_core->drive()->beatGo();
-        // the mode of the scene buttons, on and off as in the top bar
+        // the mode of the scene buttons, as in the top bar (always GO or
+        // Stop: pressing the one that is on keeps it)
         else if (target == "pressGo" || target == "pressStop")
-        {
-            const QString wanted = target == "pressGo" ? "go" : "stop";
-            m_core->setPressMode(m_core->pressMode() == wanted ? "toggle" : wanted);
-        }
+            m_core->setPressMode(target == "pressGo" ? "go" : "stop");
         else if (target == "groupRelease")
             allZones ? zones->stopAll() : (zone ? zone->stopAll() : void());
         else if (target == "groupNext")
@@ -1747,8 +1748,8 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
         }
         else if (mode == "toggle")
         {
-            // in the mode of the buttons (GO, Stop or as always): start,
-            // stop, or a beat of its own rhythm
+            // in the mode of the buttons (GO or Stop): start, stop, or a
+            // beat of its own rhythm
             const bool running = f->isRunning();
             const SceneTaps::Outcome outcome = SceneTaps::press(f, running);
             if (outcome == SceneTaps::StartIt || (outcome == SceneTaps::ToggleIt && next && running == false))
@@ -2012,8 +2013,9 @@ qreal ControlMapper::faderValue(const QVariantMap &m) const
         QVariantMap opts = owner->options(fid);
         if (target == "sceneDimmer")
             return opts.value("dimmer", 1.0).toDouble();
-        // speed x0.1 .. x10 on a logarithmic fader, x1 in the middle
-        return (std::log10(opts.value("speed", 1.0).toDouble()) + 1.0) / 2.0;
+        // speed x0.1 .. x10 on a logarithmic fader, x1 in the middle (the
+        // speed it plays at: that of a SHOW fader on this run, if any)
+        return (std::log10(owner->speed(fid)) + 1.0) / 2.0;
     }
     if (target == "bpm")
         return (m_core->bpm() - 20) / 280.0;
@@ -2095,6 +2097,57 @@ void ControlMapper::applyFader(const QVariantMap &m, qreal value)
  * Feedback
  *********************************************************************/
 
+int ControlMapper::defaultLedChannel(const QVariantMap &mapping, const QString &state)
+{
+    // the RGB pads of the APC mini mk2: notes 0-63 on MIDI channel 1, where
+    // the MIDI channel of a state is its brightness (1 dim, 7 full)
+    const quint32 channel = mapping.value("channel").toUInt();
+    const quint32 code = channel & 0x0FFF;
+    const bool pad = mapping.value("controller").toString() == "apcmini2" && mapping.value("source").toString() == "midi"
+                     && (channel >> 12) == 0 && code >= 128 && code <= 128 + 63;
+    if (pad == false)
+        return 0;
+    return state == "on" ? 7 : 1;
+}
+
+void ControlMapper::feedbackOf(const QVariantMap &m, int &value, quint32 &channel, int &stateChannel) const
+{
+    // what it shows: the state of a button (with the MIDI channel of the
+    // state, 0 for the one of the control), the position of a fader
+    value = 0;
+    stateChannel = 0;
+    if (isButton(m.value("target").toString()))
+    {
+        int state = buttonState(m);
+        QString key = state == 1 ? "on" : state == 2 ? "paused" : "off";
+        // no scene there: the LED is off
+        int midi = state < 0 ? 0 : m.value(key + "Value").toInt();
+        if (state >= 0)
+        {
+            stateChannel = qBound(0, m.value(key + "Channel").toInt(), 16);
+            if (stateChannel == 0)
+                stateChannel = defaultLedChannel(m, key);
+        }
+        value = dmxFromMidi(midi);
+    }
+    else
+    {
+        // (From above To: inverted, as the fader drives it)
+        qreal min, max;
+        bool invert;
+        rangeOf(m, min, max, invert);
+        qreal f = max > min ? (faderValue(m) - min) / (max - min) : 0.0;
+        if (invert)
+            f = 1.0 - f;
+        value = qRound(qBound(0.0, f, 1.0) * 255);
+    }
+
+    // the MIDI channel is in the top bits of the QLC+ channel
+    channel = m.value("channel").toUInt();
+    if (m.value("source").toString() == "midi" && stateChannel > 0)
+        channel = (quint32(stateChannel - 1) << 12) | (channel & 0x0FFF);
+}
+
 void ControlMapper::slotFeedback()
 {
     for (const QVariantMap &m : std::as_const(m_mappings))
@@ -2103,41 +2156,16 @@ void ControlMapper::slotFeedback()
         if (m.value("feedback").toBool() == false || (source != "midi" && source != "osc"))
             continue;
 
-        // what it shows: the state of a button (with the MIDI channel of the
-        // state, 0 for the one of the control), the position of a fader
         int value = 0;
         int stateChannel = 0;
-        if (isButton(m.value("target").toString()))
-        {
-            int state = buttonState(m);
-            QString key = state == 1 ? "on" : state == 2 ? "paused" : "off";
-            // no scene there: the LED is off
-            int midi = state < 0 ? 0 : m.value(key + "Value").toInt();
-            stateChannel = state < 0 ? 0 : qBound(0, m.value(key + "Channel").toInt(), 16);
-            value = dmxFromMidi(midi);
-        }
-        else
-        {
-            // (From above To: inverted, as the fader drives it)
-            qreal min, max;
-            bool invert;
-            rangeOf(m, min, max, invert);
-            qreal f = max > min ? (faderValue(m) - min) / (max - min) : 0.0;
-            if (invert)
-                f = 1.0 - f;
-            value = qRound(qBound(0.0, f, 1.0) * 255);
-        }
+        quint32 channel = 0;
+        feedbackOf(m, value, channel, stateChannel);
 
         int id = m.value("id").toInt();
         int sent = value | (stateChannel << 16);
         if (m_sentFeedback.value(id, -1) == sent)
             continue;
         m_sentFeedback.insert(id, sent);
-
-        // the MIDI channel is in the top bits of the QLC+ channel
-        quint32 channel = m.value("channel").toUInt();
-        if (source == "midi" && stateChannel > 0)
-            channel = (quint32(stateChannel - 1) << 12) | (channel & 0x0FFF);
 
         sendToDevices(m, channel, value);
     }

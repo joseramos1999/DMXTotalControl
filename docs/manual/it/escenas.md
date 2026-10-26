@@ -50,7 +50,7 @@ Sotto l'intestazione c'è il pannello di riproduzione. Mostra ciò che ha senso 
 - **«Tempo di ciclo»** (o **«Tempo per passo»** in un Colour FX) e **«Velocità»** (da un ciclo al minuto a dieci al secondo; doppio clic: un ciclo al secondo), con **×½** e **×2**.
 - **«Entrata scaglionata»** (statiche e passi): ogni fixture inizia la sua dissolvenza questo tempo dopo la precedente, in ordine di selezione.
 - **«Guidata da»**: **«Durata»** (i tempi normali), **«BPM»** (i tempi diventano beat e seguono il tempo dello show, anche le dissolvenze di ogni passo; il tempo di dissolvenza incrociata di un gruppo di Live e le dissolvenze dei blocchi di una super scena restano in secondi), **«BeatGO»** o **«Impulso»** (avanza con il tasto BeatGO o con i picchi dell'ingresso audio). Con BeatGO o Impulso, **«Divisioni»** (/2, ×2).
-- **«Ritmo battuto»** (sequenze e chaser): il ritmo battuto premendo il suo tasto più volte di seguito ([Live](directo.md#ritmo-di-una-scena-a-passi)), in BPM. Finché ce l'ha, i suoi passi vanno a quel ritmo e non secondo i loro tempi. **«Rimuovi»** torna ai suoi tempi. Con «BPM», un beat è un passo di quel ritmo: una dissolvenza di 0,5 b dura mezzo passo.
+- **«Ritmo battuto»** (sequenze, chaser e scene FX con degli FX in «BPM dello show»): il ritmo battuto premendo il suo tasto più volte di seguito ([Live](directo.md#ritmo-di-una-scena-a-passi)), in BPM. Finché ce l'ha, i suoi passi vanno a quel ritmo e non secondo i loro tempi; in una scena FX, i suoi FX in «BPM dello show» fanno un ciclo a ogni battito invece di seguire i BPM dello show. **«Rimuovi»** torna ai suoi tempi (o ai BPM dello show). Con «BPM», un beat è un passo di quel ritmo: una dissolvenza di 0,5 b dura mezzo passo.
 - **«Inizio»**: **«In riproduzione»** o **«In pausa, premi di nuovo per riprodurre»**.
 - **«Si riproduce»**: **«Sempre»** o **«N volte»**, **«poi»** **«Rilasciala»** o **«Mantieni l'ultimo fotogramma»**, **«e riproduci»** «Niente», «La scena successiva del gruppo», «La scena precedente del gruppo» o qualsiasi altra scena.
 
@@ -84,7 +84,7 @@ Una successione di look, ognuno con la sua **dissolvenza in entrata**, la sua **
 
 Una scena FX ha dei **valori base** e uno o più **livelli di FX**. Si crea registrando dal programmatore con degli FX (vedi [FX](programar.md#fx)).
 
-- A sinistra, l'elenco degli FX: parametro, fixture e velocità. Il cestino rimuove un livello.
+- A sinistra, l'elenco degli FX: parametro, fixture e velocità (in «BPM dello show», il ritmo battuto della scena se ce l'ha). Il cestino rimuove un livello.
 - A destra, i controlli del livello scelto (gli stessi di Programma) e la sua anteprima animata. Le modifiche si vedono dal vivo mentre la scena è in riproduzione.
 - **«Collega»**: i livelli collegati condividono velocità e timing.
 - Se alcune fixture fanno l'FX a modo loro, viene segnalato: se qui cambi la forma, la dimensione, la direzione o la fase, tutte faranno lo stesso.

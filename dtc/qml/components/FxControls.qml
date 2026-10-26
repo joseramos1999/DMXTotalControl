@@ -38,6 +38,9 @@ ColumnLayout {
     /** Only some fixtures of the FX are edited: their shape is theirs, the
      *  speed and the timing are the whole FX's */
     property bool partial: false
+    /** The rhythm tapped on the button of its scene (BPM), 0: none. At the
+     *  BPM of the show, the FX goes at it */
+    property real tappedBpm: 0
 
     /** The user changed something */
     signal edit(var props)
@@ -145,7 +148,8 @@ ColumnLayout {
             Value {
                 Layout.preferredWidth: 62
                 Layout.minimumWidth: 62
-                text: controls.fx.syncBpm ? qsTr("show") : (controls.fx.bpm || 0) === 0 ? qsTr("stop") : Math.round(controls.fx.bpm || 0) + " BPM"
+                text: controls.fx.syncBpm ? (controls.tappedBpm > 0 ? Math.round(controls.tappedBpm) + " BPM" : qsTr("show"))
+                                          : (controls.fx.bpm || 0) === 0 ? qsTr("stop") : Math.round(controls.fx.bpm || 0) + " BPM"
             }
         }
     }
@@ -173,7 +177,7 @@ ColumnLayout {
             implicitHeight: 28
             checkable: true
             checked: !!controls.fx.syncBpm
-            ToolTip.text: qsTr("The speed follows the BPM (tap, BeatGO)"); ToolTip.visible: hovered
+            ToolTip.text: qsTr("The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene"); ToolTip.visible: hovered
             onClicked: controls.edit({ syncBpm: checked })
         }
         Text { text: qsTr("Multiplier"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; height: 28; verticalAlignment: Text.AlignVCenter }

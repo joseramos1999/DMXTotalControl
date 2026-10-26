@@ -9,6 +9,7 @@ No cabeçalho da página você tem:
 - **◀ ▶**: cena anterior ou próxima em cada grupo que está rodando (também com Ctrl+← e Ctrl+→).
 - **“Pausar”** / **“Retomar”**: congela tudo o que está rodando e o retoma.
 - **“Liberar grupos”**: para as cenas de todos os grupos.
+- **“Recolher grupos”** / **“Expandir grupos”**: recolhe todas as colunas de uma vez, para ver todas; quando já estão todas recolhidas, expande todas.
 - **“Mixer”**: muda para a vista do [mixer](directo.md#mixer). Um ponto laranja avisa que o mixer está alterando a saída.
 - **“Novo grupo”**: adiciona uma coluna.
 
@@ -21,7 +22,7 @@ No cabeçalho da página você tem:
 
 O botão da engrenagem de cada coluna abre o menu dela: **“Mudar cor”** (passa para a próxima cor), **“Mover para a esquerda”**, **“Mover para a direita”** e **“Excluir grupo”**. Você também pode arrastar o grupo pela alça que fica à esquerda do nome e soltá-lo sobre outro grupo para ocupar o lugar dele.
 
-A seta **‹** ao lado do nome **recolhe** o grupo: ele vira uma faixa estreita com o nome e quantas cenas estão rodando, para dar espaço aos outros. As cenas dele continuam rodando. A seta **›** da faixa o expande. Isso é salvo com o show.
+A seta **‹** ao lado do nome **recolhe** o grupo: ele vira uma faixa estreita com o nome e quantas cenas estão rodando, para dar espaço aos outros. As cenas dele continuam rodando. A seta **›** da faixa o expande. Isso é salvo com o show. Para recolher ou expandir todos de uma vez, use **“Recolher grupos”** / **“Expandir grupos”** no cabeçalho.
 
 ### Adicionar e ordenar cenas
 
@@ -35,14 +36,14 @@ Para reordenar, passe o mouse sobre um cartão e arraste-o pela alça (à direit
 
 ## Disparar cenas
 
-Clique em um cartão para disparar a cena; clique de novo para liberá-la. O cartão que está rodando fica com a cor do grupo e tem um ponto que pulsa.
+Clique em um cartão para disparar a cena (com **GO**, o modo em que o programa inicia). Para liberá-la, pressione o quadrado do cabeçalho do grupo (“Liberar este grupo”) ou mude para **Stop** e pressione-a. O cartão que está rodando fica com a cor do grupo e tem um ponto que pulsa.
 
 Em cada cartão aparecem:
 
 - O **nome** e, embaixo, o **tipo** de cena. Em uma cuelist que está rodando, a cue em que ela está (“Q 3 · Verso”). Depois, o [ritmo marcado](directo.md#ritmo-de-uma-cena-com-passos), se houver (“120 BPM”).
 - **P7**, **P2**…: a prioridade, só quando não é a normal (5). Em laranja se for maior que 5.
 - Um **raio**: é uma cena flash.
-- Uma **barra dividida em duas** embaixo: uma cena com passos ou uma cuelist que está rodando; alterna a cada passo, no ritmo dela.
+- Uma **barra dividida em duas** embaixo: uma cena com passos, uma cuelist ou um FX em “BPM do show” que está rodando; alterna a cada passo (em um FX, a cada batida), no ritmo dela.
 
 ### Exclusivo ou mistura
 
@@ -69,32 +70,33 @@ Uma cena com **flash** roda só enquanto você mantém o cartão dela pressionad
 
 ### Cuelists em um grupo
 
-Uma cuelist em um grupo é mais um cartão: o clique a liga e a desliga. O menu dela (botão direito) acrescenta **“GO (próxima cue)”**, **“Voltar (cue anterior)”** e **“Liberar a cuelist”**. Para operá-la com GO confortavelmente, coloque-a em um [playback](playbacks.md).
+Uma cuelist em um grupo é mais um cartão: o clique a dispara (com **Stop**, a para). O menu dela (botão direito) acrescenta **“GO (próxima cue)”**, **“Voltar (cue anterior)”** e **“Liberar a cuelist”**. Para operá-la com GO confortavelmente, coloque-a em um [playback](playbacks.md).
 
 ### Ritmo de uma cena com passos
 
-As cenas com passos (sequências e chasers) e as cuelists seguem o ritmo em que você toca o cartão delas:
+As cenas com passos (sequências e chasers), as cuelists e as cenas FX com FX em “BPM do show” seguem o ritmo em que você toca o cartão delas:
 
-- Um clique a dispara ou a libera, como sempre.
-- Com a cena rodando, toque o cartão dela **várias vezes seguidas** no ritmo da música, com menos de 2 segundos entre os toques. Cada toque passa para o próximo passo (em uma cuelist, dá um GO) e a cena continua sozinha nesse ritmo: um passo em cada batida, no lugar dos seus próprios tempos. O ritmo é a média dos últimos toques.
+- Um clique a dispara (com **GO**, o modo em que o programa inicia; veja abaixo).
+- Com a cena rodando, toque o cartão dela **várias vezes seguidas** no ritmo da música, com menos de 2 segundos entre os toques. Cada toque passa para o próximo passo (em uma cuelist, dá um GO) e a cena continua sozinha nesse ritmo: um passo em cada batida, no lugar dos seus próprios tempos. O ritmo é a média dos últimos toques. Um toque que chega um pouco atrasado, logo depois do passo dessa batida (menos de meia batida), é esse mesmo passo: não dá outro, só acerta o ritmo.
 - Só contam os toques com a cena rodando: o toque que a dispara começa a contagem. Assim, mudar de cena em um grupo exclusivo e voltar não dá ritmo a nenhuma.
-- Depois de uma pausa de mais de 2 segundos, um clique a libera. Para liberá-la logo depois de marcar o ritmo, espere 2 segundos.
+- Depois de uma pausa de mais de 2 segundos, um clique dá um passo sem mudar o ritmo dela, e a cena continua tocando. Para pará-la, mude para **Stop** e pressione-a.
 - O ritmo que você marcou é reproduzido, também com uma **velocidade ao vivo** definida; se depois você mexe na velocidade, o ritmo acelera ou desacelera com ela. Em pausa, os toques não dão passos.
 - O ritmo é salvo com a cena e é dela: ela também o segue quando roda em uma super cena ou em um playback. Nas [propriedades](directo.md#propriedades-da-cena) dela (e em [Cenas](escenas.md#como-a-cena-é-reproduzida)) você pode digitá-lo ou pressionar **“Remover”** para que ela volte aos seus tempos.
+- Em uma **cena FX**, o ritmo é o dos FX dela em **“BPM do show”**: o primeiro toque de uma série recomeça o ciclo deles (como ao dispará-la), e cada um dos seguintes os leva à batida seguinte, um ciclo adiante vezes o multiplicador (uma sequência passa para o fixture seguinte; em ×¼, eles avançam um quarto de ciclo). Vários seguidos dão a eles um ciclo a cada batida (vezes o multiplicador), em vez do BPM do show. Os FX com uma velocidade própria não mudam. Sem ritmo marcado, ou depois de “Remover”, eles seguem o BPM do show. Se você desligar “BPM do show” em todos os FX dela, a cena perde o ritmo marcado.
 
 Funciona igual com os botões dela no [SHOW](show.md), com os mapeamentos de controladores e teclas no modo “Alternar” e com o [controle remoto](remoto.md).
 
 #### GO e Stop
 
-Os botões **GO** e **Stop** da barra superior (e da seção “Ritmo” do SHOW) mudam o que um toque em qualquer cena faz, para qualquer pessoa que a toque:
+Os botões **GO** e **Stop** da barra superior (e da seção “Ritmo” do SHOW) decidem o que um toque em qualquer cena faz, para qualquer pessoa que a toque. Sempre há um dos dois ligado: o programa sempre inicia em **GO**, e pressionar o outro muda o modo:
 
-- **GO** ligado: tocar uma cena a **dispara**; em uma que já está rodando, cada toque dá um passo (em uma cuelist, um GO) e vários seguidos marcam o ritmo dela. Nunca a para, mesmo que você passe mais de 2 segundos sem tocar: assim você marca o tempo com calma.
+- **GO** ligado: tocar uma cena a **dispara**; em uma que já está rodando, cada toque dá um passo (em uma cuelist, um GO; em uma cena FX, o primeiro recomeça o ciclo dos FX dela em “BPM do show” e os seguintes os levam à batida seguinte) e vários seguidos marcam o ritmo dela. Nunca a para, mesmo que você passe mais de 2 segundos sem tocar: assim você marca o tempo com calma.
 - **Stop** ligado: tocar uma cena a **para**. Uma que não está rodando fica como está.
-- Os dois desligados (pressione de novo o que está ligado): como sempre, um clique a dispara ou a libera.
+- Para liberar as cenas de um grupo sem mudar o modo, pressione o quadrado do cabeçalho dele (“Liberar este grupo”); **“Parar tudo”** (Esc) para tudo.
 
 As cenas flash continuam funcionando enquanto você as mantém pressionadas, em qualquer modo.
 
-Enquanto roda, cada cartão de uma cena com passos ou de uma cuelist tem embaixo uma **barra do ritmo** dividida em duas: acende um lado e depois o outro a cada passo (em uma cuelist, a cada cue). Assim você vê em que ritmo cada uma vai. Os botões dela no SHOW, as tiras de playback e os botões no celular também têm essa barra.
+Enquanto roda, cada cartão de uma cena com passos, de uma cuelist ou de uma cena FX com FX em “BPM do show” tem embaixo uma **barra do ritmo** dividida em duas: acende um lado e depois o outro a cada passo (em uma cuelist, a cada cue; em uma cena FX, a cada batida, um ciclo desses FX a ×1). Assim você vê em que ritmo cada uma vai. Os botões dela no SHOW, as tiras de playback e os botões no celular também têm essa barra.
 
 ## Masters
 
@@ -117,7 +119,7 @@ Clique com o botão direito em um cartão e escolha **“Propriedades…”**.
 | **Protegida de liberações por** | Quais liberações ela ignora. |
 | **Flash (roda enquanto pressionado)** | Transforma-a em cena flash. |
 | **Dimmer ao vivo** | A intensidade dela, acima do master do grupo. |
-| **Ritmo marcado** | Passos e cuelists: o [ritmo marcado](directo.md#ritmo-de-uma-cena-com-passos) com o cartão dela, em BPM. Digite-o ou pressione “Remover” para voltar aos tempos dela. Atua na hora. |
+| **Ritmo marcado** | Passos, cuelists e cenas FX com FX em “BPM do show”: o [ritmo marcado](directo.md#ritmo-de-uma-cena-com-passos) com o cartão dela, em BPM. Digite-o ou pressione “Remover” para voltar aos tempos dela (em uma cena FX, ao BPM do show). Atua na hora. |
 | **Velocidade ao vivo** | De ×0,1 a ×10 (cenas que se movem: passos, FX, cuelists…). |
 | **Fase ao vivo** / **Tamanho ao vivo** | A fase (0–359°) e o tamanho (0–200 %) dos FX. |
 | **Velocidade do fade** | Acelera ou desacelera os fades dela, de ×0,1 a ×10. |

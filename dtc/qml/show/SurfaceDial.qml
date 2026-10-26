@@ -39,9 +39,12 @@ Rectangle {
     readonly property var first: targets.length ? targets[0] : ({ target: "grandMaster" })
     readonly property bool encoder: !!item.encoder
     readonly property bool isBpm: targets.length === 1 && first.target === "bpm"
-    /** A speed (of the movement, of a scene): x0.1 at the bottom, x1 in the middle, x10 at the top */
-    readonly property bool isSpeed: targets.length > 0 && targets.every(t => t.target === "moveSpeed" || t.target === "sceneSpeed")
+    /** A speed (of the movement, of a scene, a scene played at a speed): x0.1 at the bottom, x1 in the middle, x10 at the top */
+    readonly property bool isSpeed: Core.surface.isSpeed(item)
     function speedText(v) {
+        // (a scene played at a speed: stopped at zero)
+        if (first.target === "sceneRun" && v <= 0)
+            return qsTr("Stopped")
         const factor = Math.pow(10, v * 2 - 1)
         return "×" + factor.toLocaleString(Qt.locale(), 'f', factor < 1 ? 2 : 1)
     }
@@ -65,6 +68,7 @@ Rectangle {
         case "scene": return Core.functionInfo(t.functionId).name || qsTr("Choose a scene")
         case "sceneDimmer": return qsTr("Dimmer of %1").arg(Core.functionInfo(t.functionId).name || "?")
         case "sceneSpeed": return qsTr("Speed of %1").arg(Core.functionInfo(t.functionId).name || "?")
+        case "sceneRun": return Core.functionInfo(t.functionId).name || qsTr("Choose a scene")
         case "mixerDimmer": {
             let m = Core.mixer.mixers.find(x => x.id === (t.mixerId !== undefined ? t.mixerId : -1))
             return qsTr("Dimmer of %1").arg(m ? m.name : "?")
@@ -197,12 +201,11 @@ Rectangle {
                     cell.turn(d)
                 }
                 onWheel: (ev) => cell.turn(ev.angleDelta.y > 0 ? 15 : -15)
-                // (the BPM: back to 90, where it is on the travel)
+                // (the BPM: back to 90, where it is on the travel; a speed: x1)
                 onDoubleClicked: {
                     if (cell.encoder)
                         return
-                    const reset = cell.isBpm ? Core.surface.positionOf(cell.item, 70 / 280)
-                                : cell.isSpeed ? Core.surface.positionOf(cell.item, 0.5) : 0
+                    const reset = Core.surface.resetLevel(cell.item)
                     cell.setLevel(reset)
                     // (a move before the button is let go goes on from there)
                     cell.held = reset
@@ -217,6 +220,10 @@ Rectangle {
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: 10
+            // (a long word, «Stopped», in a narrow cell: smaller, not over the next one)
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 7
+            elide: Text.ElideRight
         }
     }
 }

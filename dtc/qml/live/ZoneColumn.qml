@@ -576,11 +576,10 @@ Rectangle {
             title: qsTr("Priority: %1").arg(tileMenu.functionPriority)
             Instantiator {
                 model: 11
-                delegate: MenuItem {
+                delegate: CheckMenuItem {
                     required property int index
                     text: index === 5 ? qsTr("%1 (normal)").arg(index) : index
-                    checkable: true
-                    checked: tileMenu.functionPriority === index
+                    selected: tileMenu.functionPriority === index
                     onTriggered: Core.setFunctionPriority(tileMenu.functionId, index)
                 }
                 onObjectAdded: (index, object) => priorityMenu.insertItem(index, object)

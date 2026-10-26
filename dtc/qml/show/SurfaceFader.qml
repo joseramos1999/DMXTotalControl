@@ -44,9 +44,12 @@ Rectangle {
     readonly property var targets: Core.surface.faderTargets(item)
     readonly property var first: targets.length ? targets[0] : ({ target: "grandMaster" })
     readonly property bool isBpm: targets.length === 1 && first.target === "bpm"
-    /** A speed (of the movement, of a scene): x0.1 at the bottom, x1 in the middle, x10 at the top */
-    readonly property bool isSpeed: targets.length > 0 && targets.every(t => t.target === "moveSpeed" || t.target === "sceneSpeed")
+    /** A speed (of the movement, of a scene, a scene played at a speed): x0.1 at the bottom, x1 in the middle, x10 at the top */
+    readonly property bool isSpeed: Core.surface.isSpeed(item)
     function speedText(v) {
+        // (a scene played at a speed: stopped at zero)
+        if (first.target === "sceneRun" && v <= 0)
+            return qsTr("Stopped")
         const factor = Math.pow(10, v * 2 - 1)
         return "×" + factor.toLocaleString(Qt.locale(), 'f', factor < 1 ? 2 : 1)
     }
@@ -73,6 +76,10 @@ Rectangle {
         case "sceneSpeed": {
             let info = Core.functionInfo(t.functionId)
             return qsTr("Speed of %1").arg(info.name || "?")
+        }
+        case "sceneRun": {
+            let info = Core.functionInfo(t.functionId)
+            return info.name || qsTr("Choose a scene")
         }
         case "mixerDimmer": {
             let m = Core.mixer.mixers.find(x => x.id === (t.mixerId !== undefined ? t.mixerId : -1))
@@ -117,9 +124,8 @@ Rectangle {
             fillColor: cell.item.color ? Theme.category(cell.item.color) : Theme.accent
             from: 0
             to: 255
-            // (the BPM: where 90 BPM is on its travel)
-            resetValue: cell.isBpm ? Core.surface.positionOf(cell.item, (90 - 20) / 280) * 255
-                      : cell.isSpeed ? Core.surface.positionOf(cell.item, 0.5) * 255 : 0
+            // (the BPM: where 90 BPM is on its travel; a speed: x1)
+            resetValue: Core.surface.resetLevel(cell.item) * 255
             value: cell.level * 255
             onUserMoved: (v) => Core.surface.setLevel(cell.item, v / 255)
         }
@@ -130,6 +136,10 @@ Rectangle {
             color: Theme.textDim
             font.family: Theme.monoFamily
             font.pixelSize: 10
+            // (a long word, «Stopped», in a narrow cell: smaller, not over the next one)
+            fontSizeMode: Text.HorizontalFit
+            minimumPixelSize: 7
+            elide: Text.ElideRight
         }
         // the top of its travel while pressed, then each target back to what it was
         AppButton {

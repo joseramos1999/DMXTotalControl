@@ -67,7 +67,7 @@ Lo que hace el mapeo. Los **botones**:
 | Lanzar una escena | La escena elegida, en su grupo. |
 | Escena N de un grupo | La escena que está en ese puesto del grupo (**Número de escena**). |
 | Liberar un grupo / Escena siguiente de un grupo / Escena anterior de un grupo | En un grupo o en «Todos los grupos». |
-| Blackout, Parar todo, Pausar todo, Tap tempo, BeatGO, GO, Stop | Como sus botones (GO y Stop se encienden y se apagan, como en la barra superior). |
+| Blackout, Parar todo, Pausar todo, Tap tempo, BeatGO, GO, Stop | Como sus botones (GO y Stop eligen el modo, como en la barra superior: siempre hay uno encendido). |
 | Paleta | La paleta en sus propias fixtures o en un grupo de fixtures. |
 | Mezclador: full, blackout, flash, flash exclusivo, full exclusivo, estrobo | En la tira elegida del mezclador. |
 | Playback: GO, atrás, pausa / atrás, flash, liberar, seleccionar | En un playback. |
@@ -94,7 +94,7 @@ Para los playbacks se elige la **página** («Página actual (sigue)», que sigu
 
 En los **botones**:
 
-- **«Alternar: on / off»**: cada pulsación enciende o apaga.
+- **«Alternar: on / off»**: cada pulsación enciende o apaga. En una escena se llama **«Pulsar: según GO / Stop»**: la lanza o la para según GO y Stop de la barra superior.
 - **«Flash: mientras se pulsa»**.
 - **«Solo encender»** / **«Solo apagar»**.
 
@@ -117,7 +117,7 @@ Para los LEDs de los botones MIDI:
 
 1. En **«LEDs de»**, elige **«Cualquier controlador (números)»** o tu controlador: **Akai APC mini**, **Akai APC mini mk2** o **Akai APC40 mkII**.
 2. Para **«Encendido»**, **«Apagado»** y **«En pausa»**, elige el color en las muestras (en una APC) o escribe el valor (0–127) para cualquier otro controlador.
-3. En los pads RGB de la APC mini mk2, elige también cómo se encienden: **«Tenue»**, **«Pleno»**, **«Pulsando»** o **«Parpadeo»** (en la APC40 mkII, **«Fijo»**).
+3. En los pads RGB de la APC mini mk2, elige también cómo se encienden: **«Tenue»**, **«Pleno»**, **«Pulsando»** o **«Parpadeo»** (en la APC40 mkII, **«Fijo»**). Sin elegir nada, «Encendido» luce en **«Pleno»** y «Apagado» en **«Tenue»**.
 
 Los LEDs del controlador se apagan al cerrar el programa, al borrar un mapeo o moverlo a otro control, al abrir otro show o al desactivar el dispositivo o su feedback.
 

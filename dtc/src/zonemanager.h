@@ -41,6 +41,8 @@ class ZoneManager : public QAbstractListModel
 
     Q_PROPERTY(int count READ count NOTIFY countChanged)
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
+    /** Every group is folded in Live (false without groups) */
+    Q_PROPERTY(bool allFolded READ allFolded NOTIFY foldedChanged)
 
 public:
     enum Roles
@@ -80,8 +82,16 @@ public:
     bool paused() const;
     void setPaused(bool paused);
 
+    bool allFolded() const;
+    /** Fold or unfold every group in Live (the button of the page: it folds
+     *  them all while one is unfolded, else unfolds them all) */
+    Q_INVOKABLE void setAllFolded(bool folded);
+
     /** Apply the release mode of a scene about to start in a group to all the groups */
     void releaseFor(Zone *source, quint32 fid);
+    /** Whether $fid starting in $source stops $running, which $zone plays
+     *  (the release mode of $fid, the protection of $running) */
+    bool releases(Zone *source, quint32 fid, Zone *zone, quint32 running) const;
 
     void clear();
 
@@ -91,6 +101,8 @@ public:
 signals:
     void countChanged();
     void pausedChanged();
+    /** A group folded or unfolded, or the groups changed (allFolded) */
+    void foldedChanged();
 
 private:
     /** IDs are never given twice in a show (deleted groups included) */
@@ -98,6 +110,8 @@ private:
     /** Stop and delete every zone (inside a model reset) */
     void deleteZones();
     void resetPause();
+    /** A new group tells when it folds */
+    void follow(Zone *zone);
 
 private:
     Doc *m_doc;

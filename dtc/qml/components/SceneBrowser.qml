@@ -629,11 +629,10 @@ Item {
             title: qsTr("Move to folder")
             Instantiator {
                 model: Core.sceneFolders
-                delegate: MenuItem {
+                delegate: CheckMenuItem {
                     required property string modelData
                     text: modelData
-                    checkable: true
-                    checked: {
+                    selected: {
                         if (sceneMenu.ids.length !== 1)
                             return false
                         let f = (browser.functions || []).find(x => x.id === sceneMenu.ids[0])

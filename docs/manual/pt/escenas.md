@@ -50,7 +50,7 @@ Abaixo do cabeçalho fica o painel de reprodução. Ele mostra o que faz sentido
 - **“Tempo de ciclo”** (ou **“Tempo por passo”** em um Colour FX) e **“Velocidade”** (de um ciclo por minuto a dez por segundo; clique duplo: um ciclo por segundo), com **×½** e **×2**.
 - **“Fade escalonado”** (estáticas e passos): cada fixture começa o fade este tempo depois do anterior, na ordem de seleção.
 - **“Comandado por”**: **“Duração”** (os tempos normais), **“BPM”** (os tempos passam a beats e seguem o tempo do show, também os fades de cada passo; o tempo de crossfade de um grupo do Ao vivo e os fades dos blocos de uma super cena continuam em segundos), **“BeatGO”** ou **“Pulso”** (avança com o botão BeatGO ou com os picos da entrada de áudio). Com BeatGO ou Pulso, **“Divisões”** (/2, ×2).
-- **“Ritmo marcado”** (sequências e chasers): o ritmo marcado tocando o botão dela várias vezes seguidas ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)), em BPM. Enquanto ela o tiver, os passos dela vão nesse ritmo e não pelos seus tempos. **“Remover”** volta aos tempos dela. Com “BPM”, um beat é um passo desse ritmo: um fade de 0,5 b dura meio passo.
+- **“Ritmo marcado”** (sequências, chasers e cenas FX com FX em “BPM do show”): o ritmo marcado tocando o botão dela várias vezes seguidas ([Ao vivo](directo.md#ritmo-de-uma-cena-com-passos)), em BPM. Enquanto ela o tiver, os passos dela vão nesse ritmo e não pelos seus tempos; em uma cena FX, os FX dela em “BPM do show” fazem um ciclo a cada batida em vez de seguir o BPM do show. **“Remover”** volta aos tempos dela (ou ao BPM do show). Com “BPM”, um beat é um passo desse ritmo: um fade de 0,5 b dura meio passo.
 - **“Início”**: **“Reproduzindo”** ou **“Em pausa, pressione de novo para reproduzir”**.
 - **“Reproduz”**: **“Sempre”** ou **“N vezes”**, **“e depois”** **“Liberá-la”** ou **“Manter o último quadro”**, **“e reproduzir”** “Nada”, “Próxima cena do grupo”, “Cena anterior do grupo” ou qualquer outra cena.
 
@@ -84,7 +84,7 @@ Uma sucessão de visuais, cada um com seu **fade in**, sua **espera** e seu **fa
 
 Uma cena FX tem **valores base** e uma ou várias **camadas de FX**. Ela é criada gravando a partir do programador com FX (veja [FX](programar.md#fx)).
 
-- À esquerda, a lista de FX: parâmetro, fixtures e velocidade. A lixeira remove uma camada.
+- À esquerda, a lista de FX: parâmetro, fixtures e velocidade (em “BPM do show”, o ritmo marcado da cena, se ela tiver um). A lixeira remove uma camada.
 - À direita, os controles da camada escolhida (os mesmos que em Programar) e a prévia animada dela. As mudanças aparecem ao vivo enquanto a cena roda.
 - **“Vincular”**: as camadas vinculadas compartilham velocidade e timing.
 - Se alguns fixtures fazem o FX do seu jeito, há um aviso: se você mudar aqui a forma, o tamanho, o sentido ou a fase, todos farão o mesmo.

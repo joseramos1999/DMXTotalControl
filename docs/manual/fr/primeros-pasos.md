@@ -84,7 +84,7 @@ Avant d’aller dans Direct, appuyez sur **« Tout réinitialiser »** pour vi
 2. Appuyez sur **Rouge** : la tuile s’allume avec la couleur du groupe et les PAR passent au rouge.
 3. Appuyez sur **Bleu** : le groupe fait un fondu enchaîné de 2 secondes du rouge au bleu.
 4. Bougez le **Master** de la colonne pour baisser l’intensité de tout le groupe.
-5. Appuyez à nouveau sur **Bleu** pour la libérer, ou appuyez sur le carré de l’en-tête de la colonne (« Libérer ce groupe »).
+5. Pour la libérer, appuyez sur le carré de l’en-tête de la colonne (« Libérer ce groupe »), ou passez sur **Stop** dans la barre du haut, appuyez sur **Bleu** et revenez sur **GO**.
 
 Plus de détails dans [Direct](directo.md).
 

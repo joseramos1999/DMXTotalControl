@@ -314,7 +314,7 @@ Rectangle {
                     font.pixelSize: Theme.fontSmall
                     font.weight: Font.Bold
                 }
-                // a scene with steps (a cuelist) that plays: its rhythm, a half a step
+                // a scene with steps (a cuelist, an FX at the BPM of the show) that plays: its rhythm, a half a step
                 RhythmBar {
                     functionId: !strip.empty && strip.info.functionId !== undefined ? strip.info.functionId : -1
                     litColor: Theme.textOn(Theme.fill(strip.tint))

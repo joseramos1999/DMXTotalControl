@@ -84,7 +84,7 @@ Prima di andare in Live, premi **«Azzera tutto»** per svuotare il programmator
 2. Premi **Rosso**: il riquadro si illumina con il colore del gruppo e i PAR entrano in rosso.
 3. Premi **Blu**: il gruppo fa una dissolvenza incrociata di 2 secondi dal rosso al blu.
 4. Muovi il **Master** della colonna per abbassare l'intensità di tutto il gruppo.
-5. Premi di nuovo **Blu** per rilasciarla, o premi il quadrato nell'intestazione della colonna («Rilascia questo gruppo»).
+5. Per rilasciarla, premi il quadrato nell'intestazione della colonna («Rilascia questo gruppo»), o passa a **Stop** nella barra superiore, premi **Blu** e torna a **GO**.
 
 Altro in [Live](directo.md).
 

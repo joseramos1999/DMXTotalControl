@@ -392,8 +392,11 @@ Flickable {
                 Layout.fillWidth: true
                 visible: !editor.momentaryPlayback
                 readonly property var modes: editor.button ? ["toggle", "flash", "on", "off"] : ["absolute", "incremental", "relative", "relative2c"]
+                // (a scene: "toggle" is a press in the mode of the top bar)
+                readonly property bool scene: ["scene", "sceneIndex"].indexOf(editor.mapping.target || "scene") >= 0
                 model: editor.button
-                       ? [qsTr("Toggle: each press on / off"), qsTr("Flash: while pressed"), qsTr("Only on"), qsTr("Only off")]
+                       ? [scene ? qsTr("Press: follows GO / Stop") : qsTr("Toggle: each press on / off"), qsTr("Flash: while pressed"),
+                          qsTr("Only on"), qsTr("Only off")]
                        : [qsTr("Absolute: follows the fader"), qsTr("Incremental: each press one step"), qsTr("Relative: endless encoder"),
                           qsTr("Relative: encoder, 1 up and 127 down")]
                 currentIndex: Math.max(0, modes.indexOf(editor.mapping.mode))
@@ -496,6 +499,8 @@ Flickable {
                     required property var modelData
                     readonly property int current: editor.mapping[modelData.key + "Value"] !== undefined ? editor.mapping[modelData.key + "Value"] : 0
                     readonly property int channel: editor.mapping[modelData.key + "Channel"] || 0
+                    // what it lights with: its own channel, else the default of the state (APC mini mk2: on full, off dim)
+                    readonly property int shownChannel: channel !== 0 ? channel : (Core.mapping.defaultLedChannel(editor.mapping, modelData.key) || 1)
                     Layout.fillWidth: true
                     spacing: 3
                     RowLayout {
@@ -513,8 +518,8 @@ Flickable {
                             Layout.fillWidth: true
                             visible: editor.rgbPad
                             model: editor.ledChannelNames
-                            currentIndex: Math.max(0, editor.ledChannels.indexOf(ledRow.channel === 0 ? 1 : ledRow.channel))
-                            onModelChanged: currentIndex = Qt.binding(() => Math.max(0, editor.ledChannels.indexOf(ledRow.channel === 0 ? 1 : ledRow.channel)))
+                            currentIndex: Math.max(0, editor.ledChannels.indexOf(ledRow.shownChannel))
+                            onModelChanged: currentIndex = Qt.binding(() => Math.max(0, editor.ledChannels.indexOf(ledRow.shownChannel)))
                             onActivated: (i) => editor.set(ledRow.modelData.key + "Channel", editor.ledChannels[i])
                         }
                         Item { Layout.fillWidth: true; visible: !editor.rgbPad }
@@ -552,9 +557,11 @@ Flickable {
                                     onClicked: {
                                         let v = {}
                                         v[ledRow.modelData.key + "Value"] = parent.modelData.value
-                                        // the RGB pads need a channel for their brightness (APC40: solid)
-                                        if (editor.rgbPad && ledRow.channel === 0)
-                                            v[ledRow.modelData.key + "Channel"] = editor.mapping.controller === "apcmini2" ? 7 : 1
+                                        // (no channel: on lights full and off dim, their defaults; a colour
+                                        // for "paused" on an APC mini mk2 pad lights full, as it always did)
+                                        if (editor.rgbPad && ledRow.channel === 0 && ledRow.modelData.key === "paused"
+                                                && editor.mapping.controller === "apcmini2")
+                                            v.pausedChannel = 7
                                         Core.mapping.updateMapping(editor.mid, v)
                                     }
                                 }

@@ -37,8 +37,9 @@ Popup {
     readonly property bool dynamic: ["Sequence", "Chaser", "EFX", "RGBMatrix", "CurveFX", "FXScene", "Cuelist"].indexOf(functionType) >= 0
     /** Scenes with a shape: the live phase and size apply */
     readonly property bool shaped: functionType === "EFX" || functionType === "CurveFX" || functionType === "FXScene"
-    /** Steps and cuelists: they take the rhythm tapped on their button */
-    readonly property bool tappable: ["Sequence", "Chaser", "Cuelist"].indexOf(functionType) >= 0
+    /** Steps, cuelists and FX at the BPM of the show: they take the rhythm
+     *  tapped on their button */
+    property bool tappable: false
     property int tapPeriod: 0
 
     // combo index -> Zone::ReleaseMode / Zone::Protection
@@ -62,6 +63,7 @@ Popup {
         flashSwitch.checked = opts.flash
         dimmerSlider.value = opts.dimmer !== undefined ? opts.dimmer : 1
         functionType = info.type || ""
+        tappable = !!info.tappable
         tapPeriod = info.tap || 0
         speedSlider.value = Math.log10(opts.speed || 1)
         phaseSlider.value = opts.phase || 0
@@ -184,13 +186,16 @@ Popup {
                 text: qsTr("Tapped rhythm")
                 color: Theme.textDim
                 visible: dialog.tappable
-                ToolTip.text: qsTr("Press its button several times in a row: a step (a GO) on each beat, at that rhythm")
+                ToolTip.text: dialog.functionType === "FXScene"
+                              ? qsTr("Press its button several times in a row: the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm")
+                              : qsTr("Press its button several times in a row: a step (a GO) on each beat, at that rhythm")
                 ToolTip.visible: tapMouse.containsMouse
                 ToolTip.delay: 500
                 MouseArea { id: tapMouse; anchors.fill: parent; hoverEnabled: true }
             }
             TapRhythm {
                 visible: dialog.tappable
+                fx: dialog.functionType === "FXScene"
                 period: dialog.tapPeriod
                 // a live setting: applied at once
                 onEdited: (ms) => {

@@ -67,7 +67,7 @@ What the mapping does. The **buttons**:
 | Play a scene | The chosen scene, in its group. |
 | Scene N of a group | The scene that is in that position in the group (**Scene number**). |
 | Release a group / Next scene of a group / Previous scene of a group | In one group or in “All groups”. |
-| Blackout, Stop all, Pause all, Tap tempo, BeatGO, GO, Stop | Like their buttons (GO and Stop turn on and off, as in the top bar). |
+| Blackout, Stop all, Pause all, Tap tempo, BeatGO, GO, Stop | Like their buttons (GO and Stop choose the mode, as in the top bar: one of them is always on). |
 | Palette | The palette on its own fixtures or on a fixture group. |
 | Mixer: full, blackout, flash, exclusive flash, exclusive full, strobe | On the chosen mixer strip. |
 | Playback: GO, back, pause / back, flash, release, select | On a playback. |
@@ -94,7 +94,7 @@ For playbacks you choose the **page** (“Current page (follows)”, which follo
 
 On **buttons**:
 
-- **“Toggle: each press on / off”**: each press turns it on or off.
+- **“Toggle: each press on / off”**: each press turns it on or off. On a scene it is called **“Press: follows GO / Stop”**: it plays it or stops it as GO and Stop of the top bar say.
 - **“Flash: while pressed”**.
 - **“Only on”** / **“Only off”**.
 
@@ -117,7 +117,7 @@ For the LEDs of MIDI buttons:
 
 1. In **“LEDs of”**, choose **“Any controller (numbers)”** or your controller: **Akai APC mini**, **Akai APC mini mk2** or **Akai APC40 mkII**.
 2. For **“On”**, **“Off”** and **“Paused”**, choose the colour from the swatches (on an APC) or type the value (0–127) for any other controller.
-3. On the RGB pads of the APC mini mk2, also choose how they light up: **“Dim”**, **“Full”**, **“Pulsing”** or **“Blinking”** (on the APC40 mkII, **“Solid”**).
+3. On the RGB pads of the APC mini mk2, also choose how they light up: **“Dim”**, **“Full”**, **“Pulsing”** or **“Blinking”** (on the APC40 mkII, **“Solid”**). If you choose nothing, “On” lights **“Full”** and “Off” **“Dim”**.
 
 The controller LEDs turn off when you close the program, delete a mapping or move it to another control, open another show or turn off the device or its feedback.
 

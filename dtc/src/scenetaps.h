@@ -29,16 +29,24 @@ class Function;
  * the SHOW, a mapping, the phone), and the rhythm of a scene with steps or
  * of a cuelist, tapped on that button.
  *
- * The buttons work in one of three modes (the GO and Stop of the top bar):
- * - Toggle: a press starts it or stops it; presses of a running scene with
- *   steps less than window() apart are beats instead (no stop);
+ * The buttons work in one of three modes:
  * - Go: a press starts it, and the presses of a running one are beats; it
  *   never stops it;
- * - Stop: a press stops it.
+ * - Stop: a press stops it;
+ * - Toggle: a press starts it or stops it; presses of a running scene with
+ *   steps less than window() apart are beats instead (no stop).
+ * The program works in Go or Stop, the GO and Stop of its top bar (always
+ * one of them, Go when it starts: DtcCore); Toggle is the mode of groups
+ * with no program around them (Zone::trigger starts or stops a scene).
  * A beat plays its step (a cue) now; from two beats in a row it plays a
  * step a beat, the average of the last ones (Function::setTapPeriod, saved
- * with it). Only presses of a running scene are beats: the one that starts
- * it starts the count.
+ * with it); a beat of a row less than half a beat after a step of that
+ * rhythm is that step, tapped late (Function::tapBeat). An FX scene with
+ * FX at the BPM of the show takes a rhythm too: the first beat of a row
+ * starts the cycle of those FX again, each next one puts them a cycle (at
+ * x1) further (a chase on its next set), and from two in a row they do a
+ * cycle a beat instead of following that BPM. Only presses of a running
+ * scene are beats: the one that starts it starts the count.
  */
 class SceneTaps
 {
@@ -50,7 +58,7 @@ public:
     /** What the caller does with the press */
     enum Outcome
     {
-        ToggleIt,   ///< as always: start it, or stop it
+        ToggleIt,   ///< Toggle: start it, or stop it
         StartIt,    ///< start it (it doesn't play)
         StopIt,     ///< stop it (it plays)
         Keep        ///< nothing: a beat, or nothing to do in this mode
@@ -60,7 +68,8 @@ public:
      *  the clock) */
     static Outcome press(Function *f, bool active, qint64 now = -1);
 
-    /** Whether $f takes a rhythm: steps and cuelists */
+    /** Whether $f takes a rhythm: steps, cuelists, and FX scenes with an FX
+     *  at the BPM of the show (FXScene::hasSyncedLayer) */
     static bool tappable(const Function *f);
 
     /** The scene with steps whose button was pressed last (the rhythm bar

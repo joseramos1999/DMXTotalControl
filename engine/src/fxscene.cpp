@@ -325,6 +325,11 @@ void FXScene::setLayers(const QList<Layer> &layers)
         if (sameTargets == false)
             m_targetsDirty = true;
     }
+    // DMX Total Control: a tapped rhythm is for the layers that follow the
+    // BPM: with none any more it goes (else it would show on its buttons
+    // with no way to clear it, and come back unseen with a new one)
+    if (tapPeriod() > 0 && hasSyncedLayer() == false)
+        setTapPeriod(0);
     emit changed(id());
 }
 
@@ -334,13 +339,27 @@ QList<FXScene::Layer> FXScene::layers() const
     return m_layers;
 }
 
+bool FXScene::hasSyncedLayer() const
+{
+    QMutexLocker locker(&m_mutex);
+    for (const Layer &layer : m_layers)
+    {
+        if (layer.syncBpm)
+            return true;
+    }
+    return false;
+}
+
 uint FXScene::cycleDuration() const
 {
+    // DMX Total Control: the layers that follow the BPM go at its tapped rhythm
+    const uint tap = tapPeriod();
+    const qreal synced = tap > 0 ? 60000.0 / qreal(tap) : 120.0;
     QMutexLocker locker(&m_mutex);
     qreal longest = 0;
     for (const Layer &layer : m_layers)
     {
-        qreal bpm = (layer.syncBpm ? 120.0 : layer.bpm) * layer.multiplier;
+        qreal bpm = (layer.syncBpm ? synced : layer.bpm) * layer.multiplier;
         if (bpm <= 0)
             continue;
         qreal cycle = 60000.0 / bpm;
@@ -763,11 +782,22 @@ QList<quint32> FXScene::orderedFixtures(const Layer &layer, const QList<quint32>
 
 qreal FXScene::positionOf(const Layer &layer, qreal cyclePos, int set, int sets)
 {
-    return positionOf(layer, layer.shape(), cyclePos, set, sets);
+    return positionOf(layer, layer.shape(), cyclePos, set, sets, layer.bpm);
 }
 
-qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos, int set, int sets)
+qreal FXScene::syncedBpm() const
 {
+    const uint tap = tapPeriod();
+    if (tap > 0)
+        return 60000.0 / qreal(tap);
+    return doc() != nullptr ? qMax(0.0, qreal(doc()->masterTimer()->bpmNumber())) : 120.0;
+}
+
+qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos, int set, int sets, qreal bpm)
+{
+    // DMX Total Control: its wait (ms) in cycles at the BPM it goes at (one
+    // that follows the BPM kept its own, unused, in layer.bpm)
+    bpm = qMax(0.0, bpm);
     cyclePos += qreal(shape.phase) / 360.0;
     sets = qMax(1, sets);
     // from the last to the first set
@@ -783,7 +813,7 @@ qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos
         // one set after the other: each one does the whole shape, then rests
         const int slotCount = step;
         const int slot = set % slotCount;
-        qreal waitCycles = layer.wait > 0 ? qreal(layer.wait) / 1000.0 * layer.bpm * layer.multiplier / 60.0 : 0.0;
+        qreal waitCycles = layer.wait > 0 ? qreal(layer.wait) / 1000.0 * bpm * layer.multiplier / 60.0 : 0.0;
         qreal period = slotCount + waitCycles;
         qreal s = cyclePos - std::floor(cyclePos / period) * period;
         qreal local = s - slot;
@@ -798,7 +828,7 @@ qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos
     {
         // the whole run (the last set included), then the wait at the base
         qreal run = 1.0 + (wave > 0 ? qreal(wave - 1) / qreal(wave) : 0.0);
-        qreal waitCycles = qreal(layer.wait) / 1000.0 * qMax(0.0, layer.bpm) * layer.multiplier / 60.0;
+        qreal waitCycles = qreal(layer.wait) / 1000.0 * bpm * layer.multiplier / 60.0;
         qreal period = run + waitCycles;
         qreal s = cyclePos - std::floor(cyclePos / period) * period;
         qreal local = s - offset;
@@ -826,11 +856,14 @@ QVariantList FXScene::previewLayer(int index, qreal cyclePos) const
         scale = qMax(scale, qMax(it->swing.value_or(0), it->swingTilt.value_or(0)));
     // a mirror: the ones on the other side go with their twins
     const QList<bool> twins = mirrorTwins(layer, order);
+    // DMX Total Control: its wait as it plays (at the BPM of the show or its
+    // tapped rhythm, for a layer that follows the BPM)
+    const qreal bpm = layer.syncBpm ? syncedBpm() : layer.bpm;
     for (int i = 0; i < order.count(); i++)
     {
         const Shape shape = layer.shapeOf(order.at(i));
         const int set = i < twins.count() && twins.at(i) ? setOf.at(order.count() - 1 - i) : setOf.at(i);
-        qreal pos = positionOf(layer, shape, cyclePos, set, sets);
+        qreal pos = positionOf(layer, shape, cyclePos, set, sets, bpm);
         if (layer.isPanTilt())
         {
             // as the layer moves it
@@ -1315,6 +1348,11 @@ void FXScene::preRun(MasterTimer *timer)
         m_targetsDirty = true;
         m_valuesStarted = false;
     }
+    // DMX Total Control: its beats count from the start
+    m_beatPos = 0.0;
+    m_beatTimed = false;
+    m_beats.storeRelaxed(0);
+    m_tapIndex = 0;
     // DMX Total Control: a start in the middle (a super-scene block) is
     // already that far into its fade (start() sets elapsed(), in real ms)
     m_fadeElapsed = elapsed();
@@ -1350,6 +1388,11 @@ bool FXScene::isMotion(const QString &param)
 qreal FXScene::frameMotion() const
 {
     return 1.0;
+}
+
+int FXScene::beats() const
+{
+    return m_beats.loadRelaxed() & 0x7fffffff;
 }
 
 void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
@@ -1398,13 +1441,45 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
     const qreal phaseShift = getAttributeValue(Phase) / 360.0;
     const qreal dt = qreal(frameTick());
 
+    // DMX Total Control: the layers that follow the BPM of the show go at the
+    // rhythm tapped on its button when it has one (a cycle at x1 a beat). The
+    // first tapped beat of a row starts their cycle again, as a start does
+    // (their phase and wave stay); each next one of the row puts them where
+    // they are at it, going at that rhythm from the first one (a chase on its
+    // next set, x1/4 a quarter further): a press is the next beat, now
+    const uint tap = tapPeriod();
+    const qreal syncedBpm = qMax(0.0, tap > 0 ? 60000.0 / qreal(tap) : qreal(timer->bpmNumber()));
+    const TappedBeat tapped = takeTapBeat();
+    if (tapped != NoBeatTapped)
+    {
+        // a beat of its own; but the next one of a row less than half a beat
+        // after a beat of the clock is that beat, tapped late: it only times
+        // the next ones (taps in time come a little before or after them)
+        const bool late = tapped == NextBeatTapped && m_beatTimed && m_beatPos < 0.5;
+        if (late == false)
+            m_beats.fetchAndAddRelaxed(1);
+        m_beatTimed = false;
+        m_beatPos = 0.0;
+        m_tapIndex = tapped == NextBeatTapped ? m_tapIndex + 1 : 0;
+    }
+    m_beatPos += dt / 60000.0 * syncedBpm;
+    if (m_beatPos >= 1.0)
+    {
+        const int whole = int(m_beatPos);
+        m_beatPos -= whole;
+        m_beatTimed = true;
+        m_beats.fetchAndAddRelaxed(whole);
+    }
+
     // each layer goes at its own speed; a new speed goes on from where it is.
     // The pan/tilt layers, at the speed of the movement too
     for (int l = 0; l < m_layers.count(); l++)
     {
         const Layer &layer = m_layers.at(l);
-        qreal bpm = layer.syncBpm ? qreal(timer->bpmNumber()) : layer.bpm;
+        qreal bpm = layer.syncBpm ? syncedBpm : layer.bpm;
         const qreal motion = isMotion(layer.param) ? motionSpeed() : 1.0;
+        if (tapped != NoBeatTapped && layer.syncBpm)
+            m_layerPos[l] = qreal(m_tapIndex) * layer.multiplier * motion;
         m_layerPos[l] += dt / 60000.0 * qMax(0.0, bpm) * layer.multiplier * motion;
     }
 
@@ -1450,7 +1525,8 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
         // in a mirror, the place in the wave of its twin
         const QList<bool> &mirror = twins.at(t.layer);
         const int set = t.index < mirror.count() && mirror.at(t.index) ? t.twinSet : t.set;
-        qreal pos = positionOf(layer, shape, m_layerPos.at(t.layer) + phaseShift, set, t.sets);
+        qreal pos = positionOf(layer, shape, m_layerPos.at(t.layer) + phaseShift, set, t.sets,
+                               layer.syncBpm ? syncedBpm : layer.bpm);
         qreal level = 0.0;
         int swing = shape.swing;
         if (pos >= 0.0)

@@ -2366,8 +2366,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>BPM del show</translation>
     </message>
     <message>
-        <source>The speed follows the BPM (tap, BeatGO)</source>
-        <translation>La velocidad sigue al BPM (tap, BeatGO)</translation>
+        <source>The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene</source>
+        <translation>La velocidad sigue al BPM (tap, BeatGO), o al ritmo marcado en el botón de su escena</translation>
     </message>
     <message>
         <source>Multiplier</source>
@@ -2743,6 +2743,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         </translation>
     </message>
     <message>
+        <source>Tapped: %1 BPM</source>
+        <translation>Marcado: %1 BPM</translation>
+    </message>
+    <message>
         <source>BPM of the show</source>
         <translation>BPM del show</translation>
     </message>
@@ -2898,6 +2902,22 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Release groups</source>
         <translation>Liberar grupos</translation>
+    </message>
+    <message>
+        <source>Unfold groups</source>
+        <translation>Desplegar grupos</translation>
+    </message>
+    <message>
+        <source>Fold groups</source>
+        <translation>Plegar grupos</translation>
+    </message>
+    <message>
+        <source>Unfold every group</source>
+        <translation>Desplegar todos los grupos</translation>
+    </message>
+    <message>
+        <source>Fold every group to a strip with its name, to see them all. Their scenes go on playing</source>
+        <translation>Plegar todos los grupos en una tira con su nombre, para verlos todos. Sus escenas siguen sonando</translation>
     </message>
     <message>
         <source>Mixer</source>
@@ -3078,16 +3098,16 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Guardar como… (Ctrl+Mayús+S)</translation>
     </message>
     <message>
-        <source>GO: a press of a scene starts it, and the next ones mark its rhythm (it doesn&apos;t stop). Click again to go back to normal</source>
-        <translation>GO: pulsar una escena la lanza, y las pulsaciones siguientes marcan su ritmo (no la para). Vuelve a pulsar para volver a lo normal</translation>
-    </message>
-    <message>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
     <message>
-        <source>Stop: a press of a scene stops it. Click again to go back to normal</source>
-        <translation>Stop: pulsar una escena la para. Vuelve a pulsar para volver a lo normal</translation>
+        <source>GO: a press of a scene starts it, and the next ones mark its rhythm (it never stops it)</source>
+        <translation>GO: pulsar una escena la lanza, y las pulsaciones siguientes marcan su ritmo (nunca la para)</translation>
+    </message>
+    <message>
+        <source>Stop: a press of a scene stops it</source>
+        <translation>Stop: pulsar una escena la para</translation>
     </message>
     <message>
         <source>Next division of the scenes driven by BeatGO (G)</source>
@@ -3347,6 +3367,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Flash: mientras se pulsa</translation>
     </message>
     <message>
+        <source>Press: follows GO / Stop</source>
+        <translation>Pulsar: según GO / Stop</translation>
+    </message>
+    <message>
         <source>Only on</source>
         <translation>Solo encender</translation>
     </message>
@@ -3548,6 +3572,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Toggle</source>
         <translation>Alternar</translation>
+    </message>
+    <message>
+        <source>Press</source>
+        <translation>Pulsar</translation>
     </message>
     <message>
         <source>Flash</source>
@@ -5546,6 +5574,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>El doble de rápido</translation>
     </message>
     <message>
+        <source>Press its button several times in a row (Live, SHOW, a mapping): the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm</source>
+        <translation>Pulsa su botón varias veces seguidas (Directo, SHOW, un mapeo): la primera pulsación vuelve a empezar el ciclo de sus FX en BPM del show, cada una de las siguientes los lleva al pulso siguiente, y dan un ciclo en cada pulso, a ese ritmo</translation>
+    </message>
+    <message>
         <source>Staggered fade</source>
         <translation>Entrada gradual</translation>
     </message>
@@ -6757,6 +6789,10 @@ Añádelos en la página Patch.</translation>
         <translation>Ritmo marcado</translation>
     </message>
     <message>
+        <source>Press its button several times in a row: the first press starts the cycle of its FX at the BPM of the show again, each next one takes them to the next beat, and they do a cycle on each beat, at that rhythm</source>
+        <translation>Pulsa su botón varias veces seguidas: la primera pulsación vuelve a empezar el ciclo de sus FX en BPM del show, cada una de las siguientes los lleva al pulso siguiente, y dan un ciclo en cada pulso, a ese ritmo</translation>
+    </message>
+    <message>
         <source>Press its button several times in a row: a step (a GO) on each beat, at that rhythm</source>
         <translation>Pulsa su botón varias veces seguidas: un paso (un GO) en cada pulso, a ese ritmo</translation>
     </message>
@@ -7039,6 +7075,10 @@ Añádelos en la página Patch.</translation>
         <translation>Velocidad de una escena</translation>
     </message>
     <message>
+        <source>Play a scene (its speed)</source>
+        <translation>Lanzar una escena (su velocidad)</translation>
+    </message>
+    <message>
         <source>All the moving heads</source>
         <translation>Todas las cabezas móviles</translation>
     </message>
@@ -7061,6 +7101,26 @@ Añádelos en la página Patch.</translation>
     <message>
         <source>No title</source>
         <translation>Sin título</translation>
+    </message>
+    <message>
+        <source>Background</source>
+        <translation>Fondo</translation>
+    </message>
+    <message>
+        <source>None: the colour of the theme</source>
+        <translation>Ninguno: el color del tema</translation>
+    </message>
+    <message>
+        <source>Colour of all the faders</source>
+        <translation>Color de todos los faders</translation>
+    </message>
+    <message>
+        <source>Colour of all the dials</source>
+        <translation>Color de todos los diales</translation>
+    </message>
+    <message>
+        <source>Colour of all the buttons</source>
+        <translation>Color de todos los botones</translation>
     </message>
     <message>
         <source>Columns</source>
@@ -7333,6 +7393,10 @@ Añádelos en la página Patch.</translation>
     <message>
         <source>Toggle: on / off</source>
         <translation>Alternar: encender / apagar</translation>
+    </message>
+    <message>
+        <source>Press: follows GO / Stop</source>
+        <translation>Pulsar: según GO / Stop</translation>
     </message>
     <message>
         <source>Flash: while pressed</source>
@@ -8109,6 +8173,10 @@ Añádelos en la página Patch.</translation>
         <translation>Dimmer de %1</translation>
     </message>
     <message>
+        <source>Stopped</source>
+        <translation>Parada</translation>
+    </message>
+    <message>
         <source>Movement speed</source>
         <translation>Velocidad de movimiento</translation>
     </message>
@@ -8140,6 +8208,10 @@ Añádelos en la página Patch.</translation>
         <translation>Dimmer de %1</translation>
     </message>
     <message>
+        <source>Stopped</source>
+        <translation>Parada</translation>
+    </message>
+    <message>
         <source>Movement speed</source>
         <translation>Velocidad de movimiento</translation>
     </message>
@@ -8155,12 +8227,20 @@ Añádelos en la página Patch.</translation>
         <translation>No</translation>
     </message>
     <message>
+        <source>BPM of the show</source>
+        <translation>BPM del show</translation>
+    </message>
+    <message>
         <source>Clear</source>
         <translation>Quitar</translation>
     </message>
     <message>
         <source>Back to its own times</source>
         <translation>Volver a sus propios tiempos</translation>
+    </message>
+    <message>
+        <source>Back to the BPM of the show</source>
+        <translation>Volver al BPM del show</translation>
     </message>
 </context>
 <context>

@@ -38,7 +38,7 @@ Sotto, la pagina con le sue sezioni, come sul computer:
 - **Gruppi**: le loro scene come tasti e il loro master.
 - **Playback**: le strisce con il loro nome, la cue in riproduzione e la successiva, **GO**, **Indietro**, il loro fader e **Flash**. Le sezioni che seguono la pagina attuale hanno ◀ ▶ per cambiarla.
 - **Ruota dei colori** e **griglia XY**, con i loro tasti **Rilascia** e **Centro**.
-- **Orologio**, **Ritmo** (**GO**, **Stop** e **BeatGO**; i tasti di scene a passi o di cuelist contengono la loro barra del ritmo), **note**, **in riproduzione ora** e **immagine**.
+- **Orologio**, **Ritmo** (**GO**, **Stop** e **BeatGO**; i tasti di scene a passi, di cuelist o di FX in «BPM dello show» contengono la loro barra del ritmo), **note**, **in riproduzione ora** e **immagine**.
 
 I **timer**, il **mixer dal vivo** e i **livelli DMX** compaiono come «Solo sul computer».
 

@@ -238,8 +238,9 @@ QVariantList Zone::functionsInfo() const
         info.insert("type", Function::typeToString(f->type()));
         info.insert("active", m_active.contains(fid));
         info.insert("priority", f->priority());
-        // its own rhythm, tapped on its button (ms a step, 0: none)
-        info.insert("tap", f->tapPeriod());
+        // its own rhythm, tapped on its button (ms a step, 0: none; only
+        // where it takes one: not an FX scene with no FX at the BPM of the show)
+        info.insert("tap", SceneTaps::tappable(f) ? f->tapPeriod() : 0u);
         Options opt = m_options.value(fid);
         info.insert("release", opt.release);
         info.insert("protection", opt.protection);
@@ -340,9 +341,9 @@ void Zone::trigger(quint32 fid)
         return;
     }
 
-    // what its button does in the mode of the buttons (GO, Stop or as
-    // always): start it, stop it, or a beat of its own rhythm (a new rhythm
-    // changes the function, and so the list)
+    // what its button does in the mode of the buttons (GO or Stop; a group
+    // with no program: as always): start it, stop it, or a beat of its own
+    // rhythm (a new rhythm changes the function, and so the list)
     switch (SceneTaps::press(m_doc->function(fid), active))
     {
         case SceneTaps::StartIt:
@@ -396,7 +397,7 @@ void Zone::start(quint32 fid)
         out = uint(qreal(out == Function::defaultSpeed() ? f->fadeOutSpeed() : out) / opt.fadeSpeed);
     }
 
-    f->setSpeedFactor(opt.speed);
+    f->setSpeedFactor(speed(fid));
     if (f->startMode() == Function::StartPaused)
         m_waiting.insert(fid);
 
@@ -428,6 +429,7 @@ void Zone::stop(quint32 fid)
     m_active.remove(fid);
     m_intensityOverrides.remove(fid);
     m_sceneLevels.remove(fid);
+    m_runSpeeds.remove(fid);
     emit activeChanged();
     emit functionsChanged();
 }
@@ -551,6 +553,8 @@ void Zone::setOption(quint32 fid, const QString &key, const QVariant &value)
         if (same(speed, opt.speed))
             return;
         opt.speed = speed;
+        // (it takes over from the speed of a SHOW fader on this run)
+        m_runSpeeds.remove(fid);
         Function *f = m_doc->function(fid);
         if (f != nullptr && m_active.contains(fid))
             f->setSpeedFactor(opt.speed);
@@ -625,6 +629,31 @@ qreal Zone::sceneLevel(quint32 fid) const
     return m_sceneLevels.value(fid, 1.0);
 }
 
+void Zone::setRunSpeed(quint32 fid, qreal speed)
+{
+    // (a scene this group doesn't play: its next run is at its Live speed)
+    if (m_active.contains(fid) == false)
+        return;
+    speed = qBound(0.1, speed, 10.0);
+    m_runSpeeds.insert(fid, speed);
+    if (Function *f = m_doc->function(fid))
+        f->setSpeedFactor(speed);
+}
+
+void Zone::startAt(quint32 fid, qreal speed)
+{
+    if (m_doc->function(fid) == nullptr || m_functions.contains(fid) == false)
+        return;
+    // (start gives it to the function before it runs)
+    m_runSpeeds.insert(fid, qBound(0.1, speed, 10.0));
+    start(fid);
+}
+
+qreal Zone::speed(quint32 fid) const
+{
+    return m_runSpeeds.contains(fid) ? m_runSpeeds.value(fid) : m_options.value(fid).speed;
+}
+
 void Zone::slotFunctionRunning(quint32 fid)
 {
     if (m_active.contains(fid) == false)
@@ -641,7 +670,7 @@ void Zone::slotFunctionRunning(quint32 fid)
 
     // the live controls, and the pause of a scene that starts paused
     m_liveOverrides.remove(fid);
-    f->setSpeedFactor(m_options.value(fid).speed);
+    f->setSpeedFactor(speed(fid));
     applyLiveControls(fid);
     if (m_waiting.contains(fid))
     {
@@ -677,6 +706,7 @@ void Zone::slotFunctionStopped(quint32 fid)
     {
         m_active.remove(fid);
         m_sceneLevels.remove(fid);
+        m_runSpeeds.remove(fid);
         emit activeChanged();
         emit functionsChanged();
     }
@@ -690,6 +720,7 @@ void Zone::slotFunctionReplaced(quint32 fid)
         m_active.remove(fid);
         m_intensityOverrides.remove(fid);
         m_sceneLevels.remove(fid);
+        m_runSpeeds.remove(fid);
         connectFunction(fid);
         emit activeChanged();
         emit functionsChanged();
@@ -703,6 +734,7 @@ void Zone::slotFunctionRemoved(quint32 fid)
         m_active.remove(fid);
         m_intensityOverrides.remove(fid);
         m_sceneLevels.remove(fid);
+        m_runSpeeds.remove(fid);
         emit activeChanged();
         emit functionsChanged();
     }

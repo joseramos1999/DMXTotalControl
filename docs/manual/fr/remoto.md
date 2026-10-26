@@ -38,7 +38,7 @@ En dessous, la page avec ses sections, comme sur l’ordinateur :
 - **Groupes** : leurs scènes en boutons et leur master.
 - **Playbacks** : les bandes avec leur nom, la cue en cours et la suivante, **GO**, **Retour**, leur fader et **Flash**. Les sections qui suivent la page actuelle ont ◀ ▶ pour la changer.
 - **Roue de couleur** et **grille XY**, avec leurs boutons **Libérer** et **Centre**.
-- **Horloge**, **Rythme** (**GO**, **Stop** et **BeatGO** ; les boutons de scènes à pas ou de cuelists contiennent leur barre de rythme), **notes**, **en cours** et **image**.
+- **Horloge**, **Rythme** (**GO**, **Stop** et **BeatGO** ; les boutons de scènes à pas, de cuelists ou de FX en « BPM du show » contiennent leur barre de rythme), **notes**, **en cours** et **image**.
 
 Les **minuteurs**, le **mixeur en direct** et les **niveaux DMX** apparaissent comme « Sur l'ordinateur seulement ».
 

@@ -67,7 +67,7 @@ O que o mapeamento faz. Os **botões**:
 | Disparar uma cena | A cena escolhida, no grupo dela. |
 | Cena N de um grupo | A cena que está nessa posição do grupo (**Número da cena**). |
 | Liberar um grupo / Próxima cena de um grupo / Cena anterior de um grupo | Em um grupo ou em “Todos os grupos”. |
-| Blackout, Parar tudo, Pausar tudo, Tap tempo, BeatGO, GO, Stop | Como os botões deles (GO e Stop ligam e desligam, como na barra superior). |
+| Blackout, Parar tudo, Pausar tudo, Tap tempo, BeatGO, GO, Stop | Como os botões deles (GO e Stop escolhem o modo, como na barra superior: sempre há um ligado). |
 | Paleta | A paleta nos próprios fixtures dela ou em um grupo de fixtures. |
 | Mixer: full, blackout, flash, flash exclusivo, full exclusivo, strobo | Na tira escolhida do mixer. |
 | Playback: GO, voltar, pausa / voltar, flash, liberar, selecionar | Em um playback. |
@@ -94,7 +94,7 @@ Para os playbacks escolhe-se a **página** (“Página atual (acompanha)”, que
 
 Nos **botões**:
 
-- **“Alternar: cada toque liga / desliga”**: cada toque liga ou desliga.
+- **“Alternar: cada toque liga / desliga”**: cada toque liga ou desliga. Em uma cena, ele se chama **“Pressionar: conforme GO / Stop”**: ele a dispara ou a para conforme GO e Stop da barra superior.
 - **“Flash: enquanto pressionado”**.
 - **“Só ligar”** / **“Só desligar”**.
 
@@ -117,7 +117,7 @@ Para os LEDs dos botões MIDI:
 
 1. Em **“LEDs de”**, escolha **“Qualquer controlador (números)”** ou o seu controlador: **Akai APC mini**, **Akai APC mini mk2** ou **Akai APC40 mkII**.
 2. Para **“Ligado”**, **“Desligado”** e **“Em pausa”**, escolha a cor nas amostras (em uma APC) ou digite o valor (0–127) para qualquer outro controlador.
-3. Nos pads RGB da APC mini mk2, escolha também como eles acendem: **“Fraco”**, **“Máximo”**, **“Pulsando”** ou **“Piscando”** (na APC40 mkII, **“Fixo”**).
+3. Nos pads RGB da APC mini mk2, escolha também como eles acendem: **“Fraco”**, **“Máximo”**, **“Pulsando”** ou **“Piscando”** (na APC40 mkII, **“Fixo”**). Sem escolher nada, “Ligado” acende em **“Máximo”** e “Desligado” em **“Fraco”**.
 
 Os LEDs do controlador se apagam ao fechar o programa, ao apagar um mapeamento ou movê-lo para outro controle, ao abrir outro show ou ao desativar o dispositivo ou o feedback dele.
 

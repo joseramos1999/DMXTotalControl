@@ -93,7 +93,7 @@ Rectangle {
         color: tile.active ? Theme.textOn(tile.fillColor) : tile.cueText.length > 0 ? Theme.success : Theme.textFaint
     }
 
-    // a scene with steps (a cuelist) that plays: its rhythm, a half a step
+    // a scene with steps (a cuelist, an FX at the BPM of the show) that plays: its rhythm, a half a step
     RhythmBar {
         functionId: tile.functionId
         litColor: tile.active ? Theme.textOn(tile.fillColor) : Theme.accent

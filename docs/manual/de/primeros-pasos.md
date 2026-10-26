@@ -84,7 +84,7 @@ Bevor Sie zu Live wechseln, drücken Sie **„Alles zurücksetzen“**, um den P
 2. Drücken Sie **Rot**: Die Kachel leuchtet in der Farbe der Gruppe, und die PARs werden rot.
 3. Drücken Sie **Blau**: Die Gruppe blendet in 2 Sekunden von Rot nach Blau über.
 4. Bewegen Sie den **Master** der Spalte, um die Intensität der ganzen Gruppe zu senken.
-5. Drücken Sie erneut **Blau**, um die Szene freizugeben, oder drücken Sie das Quadrat im Kopf der Spalte („Diese Gruppe freigeben“).
+5. Um die Szene freizugeben, drücken Sie das Quadrat im Kopf der Spalte („Diese Gruppe freigeben“), oder wechseln Sie in der oberen Leiste zu **Stop**, drücken Sie **Blau** und kehren Sie zu **GO** zurück.
 
 Mehr unter [Live](directo.md).
 

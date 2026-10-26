@@ -35,7 +35,7 @@ Premi **«Modifica»** per costruire la schermata e **«Fatto»** per tornare a 
 | **Mixer dal vivo** | Il [mixer](directo.md#mixer) di Live. |
 | **Orologio** | L'ora, con secondi e data facoltativi. |
 | **Timer** | Un cronometro o un conto alla rovescia. |
-| **Ritmo: GO e Stop** | **GO** e **Stop** grandi, come quelli della barra superiore (cambiano ciò che fanno i tasti delle scene), e **BeatGO**. I tasti di scene a passi o di cuelist contengono la loro barra del ritmo. |
+| **Ritmo: GO e Stop** | **GO** e **Stop** grandi, come quelli della barra superiore (cambiano ciò che fanno i tasti delle scene), e **BeatGO**. I tasti di scene a passi, di cuelist o di FX in «BPM dello show» contengono la loro barra del ritmo. |
 | **Note** | Un tuo testo, della dimensione che vuoi. |
 | **In riproduzione ora** | Ciò che è in riproduzione, con un tasto per fermarlo. |
 | **Manopole e ruote** | Una tabella di manopole o di rotelle infinite. |
@@ -51,6 +51,8 @@ A seconda del tipo, il pannello delle proprietà mostra:
 
 - **Mostra**: il tipo di sezione.
 - **Titolo**: il testo della sua barra del titolo. Senza titolo, la sezione non ha la barra, nemmeno in modalità modifica.
+- **Sfondo**: il colore di sfondo della sezione, tra gli stessi colori dei tasti, oppure **∅** (quello del tema). Si vede come una tinta, in modifica, quando suoni e sul telefono, e il testo sopra resta leggibile.
+- **Colore di tutti i tasti** (di tutti i fader, di tutte le manopole): dà quel colore a tutti quelli della tabella in una volta. Le celle vuote restano vuote.
 - **Colonne** e **Righe**: la dimensione della tabella (fino a 32). Tasti, fader e manopole riempiono le loro celle. In una sezione troppo piccola per la sua tabella, le celle non si rimpiccioliscono oltre quanto si può leggere e premere: la tabella scorre (con la rotella o trascinando).
 - **Riempi con le scene di un gruppo** (tasti): mette in un colpo solo un tasto per ogni scena di quel gruppo.
 - **Gruppo** (un gruppo): quale mostra.
@@ -74,7 +76,7 @@ Il modo più rapido per riempire una tabella è **trascinare le scene** dall'ele
 
 | Azione | Cosa fa |
 |---|---|
-| **Riproduci una scena** | Avvia la scena nel suo gruppo (o da sola, se non è in nessun gruppo). Premuto più volte di seguito, batte il [ritmo](directo.md#ritmo-di-una-scena-a-passi) di una scena a passi o di una cuelist. |
+| **Riproduci una scena** | Avvia la scena nel suo gruppo (o da sola, se non è in nessun gruppo). Premuto più volte di seguito, batte il [ritmo](directo.md#ritmo-di-una-scena-a-passi) di una scena a passi, di una cuelist o di una scena FX con degli FX in «BPM dello show». Con **Stop** nella barra superiore, la ferma. |
 | **Scena successiva di un gruppo** / **Scena precedente di un gruppo** | In un gruppo, o in «Tutti i gruppi». |
 | **Rilascia un gruppo** | Un gruppo, o tutti. |
 | **Blackout** | Attiva o toglie il blackout. |
@@ -90,7 +92,7 @@ Un tasto portato da un'altra pagina con Alt+clic mostra «Un controllo su un'alt
 ### Opzioni di un tasto
 
 - **Etichetta**: il suo testo. Vuota («Automatica»), mostra il nome della scena, della palette o dell'azione.
-- **Comportamento** (scena, blackout e palette): **«Commuta: acceso / spento»** o **«Flash: finché è premuto»**. I tasti flash hanno un fulmine nell'angolo.
+- **Comportamento** (scena, blackout e palette): **«Commuta: acceso / spento»** o **«Flash: finché è premuto»**. I tasti flash hanno un fulmine nell'angolo. Su una scena, al posto di «Commuta» c'è **«Premi: secondo GO / Stop»**: la avvia o la ferma secondo **GO** e **Stop** della barra superiore.
 - **Tasto della tastiera**: un tasto della tastiera che lo preme mentre sei nella pagina Show. La lettera si vede nell'angolo del tasto.
 - **Colore**, **Icona** e **Immagine** di sfondo (l'immagine appare attenuata mentre il tasto è spento).
 
@@ -113,6 +115,7 @@ Un fader dello SHOW può controllare **più cose insieme**. Nelle sue proprietà
 | **Dimmer di fixture** | Il dimmer del mixer di tutte le fixture o di un gruppo di fixture. |
 | **Velocità di movimento delle teste mobili** | La velocità di ciò che muove le teste mobili (tutte o quelle di un gruppo): i loro FX di pan/tilt, quelli del programmatore e i passi che le muovono. In basso ×0,1, al centro quella normale (×1), in alto ×10; il fader mostra il moltiplicatore e un doppio clic lo riporta a ×1. Un FX di pan/tilt e di colore cambia solo la velocità del movimento; una cuelist, quella dei suoi FX. Il canale di velocità dei motori non viene toccato. |
 | **Velocità di una scena** | La velocità dal vivo di quella scena (da ×0,1 a ×10, come quella del movimento). |
+| **Avvia una scena (la sua velocità)** | Come «Avvia una scena (la sua intensità)», ma il fader è la sua velocità: in fondo la scena è ferma; alzandolo, parte nel suo gruppo (rispettando se è esclusivo) e la corsa è la sua velocità, ×0,1 appena sopra il fondo, ×1 a metà e ×10 in cima. Il testo dice «Ferma» finché non suona, e il fader segue la scena se la si ferma o la si avvia da un'altra parte. La velocità vale solo per quella volta: una volta ferma, la scena torna alla velocità che aveva (quella del Live non cambia). Un doppio clic la porta a ×1 (e la avvia se era ferma). Se un fader avvia più scene di uno stesso gruppo esclusivo, non si sostituiscono a vicenda: suona la prima. |
 | **BPM** | Il tempo dello show, da 20 a 300. |
 
 La differenza tra i due di scena: **«Avvia una scena (la sua intensità)»** è la scena stessa, e la avvia e la ferma; **«Dimmer di una scena (senza avviarla)»** la attenua soltanto, anche quando viene avviata da un altro punto. Si possono usare insieme: con il dimmer al 50 % e il fader che la avvia all'80 %, la scena esce al 40 %.

@@ -9,6 +9,7 @@ Im Kopf der Seite finden Sie:
 - **◀ ▶**: vorherige oder nächste Szene in jeder laufenden Gruppe (auch mit Strg+← und Strg+→).
 - **„Pause“** / **„Fortsetzen“**: friert alles ein, was läuft, und setzt es fort.
 - **„Gruppen freigeben“**: stoppt die Szenen aller Gruppen.
+- **„Gruppen einklappen“** / **„Gruppen ausklappen“**: klappt alle Spalten auf einmal ein, um alle zu sehen; sind schon alle eingeklappt, klappt es sie aus.
 - **„Mischer“**: wechselt zur Ansicht des [Mischers](directo.md#mischer). Ein orangefarbener Punkt zeigt an, dass der Mischer die Ausgabe verändert.
 - **„Neue Gruppe“**: fügt eine Spalte hinzu.
 
@@ -21,7 +22,7 @@ Im Kopf der Seite finden Sie:
 
 Die Zahnradtaste jeder Spalte öffnet ihr Menü: **„Farbe ändern“** (wechselt zur nächsten Farbe), **„Nach links“**, **„Nach rechts“** und **„Gruppe löschen“**. Sie können die Gruppe auch am Griff links neben ihrem Namen ziehen und auf einer anderen Gruppe ablegen, um deren Platz einzunehmen.
 
-Der Pfeil **‹** neben dem Namen **klappt** die Gruppe **ein**: Sie wird zu einem schmalen Streifen mit ihrem Namen und der Zahl der laufenden Szenen, um Platz für die anderen zu schaffen. Ihre Szenen laufen weiter. Der Pfeil **›** auf dem Streifen klappt sie wieder auf. Das wird mit der Show gespeichert.
+Der Pfeil **‹** neben dem Namen **klappt** die Gruppe **ein**: Sie wird zu einem schmalen Streifen mit ihrem Namen und der Zahl der laufenden Szenen, um Platz für die anderen zu schaffen. Ihre Szenen laufen weiter. Der Pfeil **›** auf dem Streifen klappt sie wieder auf. Das wird mit der Show gespeichert. Um alle auf einmal ein- oder auszuklappen, nutzen Sie **„Gruppen einklappen“** / **„Gruppen ausklappen“** in der Kopfzeile.
 
 ### Szenen hinzufügen und ordnen
 
@@ -35,14 +36,14 @@ Zum Umordnen fahren Sie mit der Maus über eine Kachel und ziehen sie an ihrem G
 
 ## Szenen starten
 
-Klicken Sie auf eine Kachel, um die Szene zu starten; klicken Sie erneut, um sie freizugeben. Die laufende Kachel färbt sich in der Farbe der Gruppe und hat einen pulsierenden Punkt.
+Klicken Sie auf eine Kachel, um die Szene zu starten (mit **GO**, dem Modus, in dem das Programm startet). Um sie freizugeben, drücken Sie das Quadrat im Kopf der Gruppe („Diese Gruppe freigeben“) oder wechseln Sie zu **Stop** und drücken Sie sie. Die laufende Kachel färbt sich in der Farbe der Gruppe und hat einen pulsierenden Punkt.
 
 Auf jeder Kachel sehen Sie:
 
 - Den **Namen** und darunter den **Typ** der Szene. Bei einer laufenden Cuelist den aktuellen Cue („Q 3 · Strophe“). Dahinter den [Tap-Rhythmus](directo.md#rhythmus-einer-szene-mit-schritten), falls vorhanden („120 BPM“).
 - **P7**, **P2**…: die Priorität, nur wenn sie nicht die normale ist (5). In Orange, wenn sie höher als 5 ist.
 - Einen **Blitz**: Es ist eine Flash-Szene.
-- Einen **zweigeteilten Balken** unten: eine Szene mit Schritten oder eine laufende Cuelist; er wechselt bei jedem Schritt, in ihrem Rhythmus.
+- Einen **zweigeteilten Balken** unten: eine laufende Szene mit Schritten, Cuelist oder FX auf „BPM der Show“; er wechselt bei jedem Schritt (bei einem FX bei jedem Schlag), in ihrem Rhythmus.
 
 ### Exklusiv oder mischen
 
@@ -69,32 +70,33 @@ Eine Szene mit **Flash** läuft nur, solange Sie ihre Kachel gedrückt halten. S
 
 ### Cuelists in einer Gruppe
 
-Eine Cuelist in einer Gruppe ist eine Kachel wie jede andere: Ein Klick schaltet sie ein und aus. Ihr Menü (Rechtsklick) bietet zusätzlich **„GO (nächster Cue)“**, **„Zurück (Cue davor)“** und **„Cuelist freigeben“**. Um sie bequem mit GO zu bedienen, legen Sie sie auf ein [Playback](playbacks.md).
+Eine Cuelist in einer Gruppe ist eine Kachel wie jede andere: Ein Klick startet sie (mit **Stop** stoppt er sie). Ihr Menü (Rechtsklick) bietet zusätzlich **„GO (nächster Cue)“**, **„Zurück (Cue davor)“** und **„Cuelist freigeben“**. Um sie bequem mit GO zu bedienen, legen Sie sie auf ein [Playback](playbacks.md).
 
 ### Rhythmus einer Szene mit Schritten
 
-Szenen mit Schritten (Sequenzen und Chaser) und Cuelists folgen dem Rhythmus, in dem Sie ihre Kachel drücken:
+Szenen mit Schritten (Sequenzen und Chaser), Cuelists und FX-Szenen mit FX auf „BPM der Show“ folgen dem Rhythmus, in dem Sie ihre Kachel drücken:
 
-- Ein Klick startet sie oder gibt sie frei, wie immer.
-- Drücken Sie bei laufender Szene ihre Kachel **mehrmals hintereinander** im Takt der Musik, mit weniger als 2 Sekunden zwischen den Drücken. Jeder Druck geht zum nächsten Schritt (bei einer Cuelist gibt er ein GO), und die Szene läuft danach von selbst in diesem Rhythmus weiter: ein Schritt auf jeden Schlag, statt ihrer eigenen Zeiten. Der Rhythmus ist der Durchschnitt der letzten Drücke.
+- Ein Klick startet sie (mit **GO**, dem Modus, in dem das Programm startet; siehe unten).
+- Drücken Sie bei laufender Szene ihre Kachel **mehrmals hintereinander** im Takt der Musik, mit weniger als 2 Sekunden zwischen den Drücken. Jeder Druck geht zum nächsten Schritt (bei einer Cuelist gibt er ein GO), und die Szene läuft danach von selbst in diesem Rhythmus weiter: ein Schritt auf jeden Schlag, statt ihrer eigenen Zeiten. Der Rhythmus ist der Durchschnitt der letzten Drücke. Ein Druck, der etwas zu spät kommt, kurz nach dem Schritt dieses Schlags (weniger als ein halber Schlag), ist genau dieser Schritt: Er gibt keinen weiteren, er bringt nur den Rhythmus wieder in den Takt.
 - Es zählen nur Drücke bei laufender Szene: Der Druck, der sie startet, beginnt die Zählung. So bekommt keine Szene einen Rhythmus, wenn Sie in einer exklusiven Gruppe die Szene wechseln und zurückkehren.
-- Nach einer Pause von mehr als 2 Sekunden gibt ein Klick sie frei. Um sie direkt nach dem Vorgeben des Rhythmus freizugeben, warten Sie 2 Sekunden.
+- Nach einer Pause von mehr als 2 Sekunden gibt ein Klick einen Schritt, ohne ihren Rhythmus zu ändern, und die Szene läuft weiter. Um sie zu stoppen, wechseln Sie zu **Stop** und drücken Sie sie.
 - Abgespielt wird der Rhythmus, den Sie vorgegeben haben, auch bei gesetztem **Live-Tempo**; ändern Sie danach das Tempo, wird der Rhythmus mit ihm schneller oder langsamer. In Pause geben die Drücke keine Schritte.
 - Der Rhythmus wird mit der Szene gespeichert und gehört zu ihr: Sie folgt ihm auch, wenn sie in einer Superszene oder auf einem Playback läuft. In ihren [Eigenschaften](directo.md#szeneneigenschaften) (und unter [Szenen](escenas.md#wie-eine-szene-läuft)) können Sie ihn eintippen oder **„Entfernen“** drücken, damit sie zu ihren Zeiten zurückkehrt.
+- Bei einer **FX-Szene** ist es der Rhythmus ihrer FX auf **„BPM der Show“**: Der erste Druck einer Reihe startet ihren Zyklus neu (wie beim Starten), und jeder weitere bringt sie zum nächsten Schlag, einen Zyklus weiter mal ihrem Multiplikator (ein Lauflicht geht zum nächsten Fixture; bei ×¼ einen Viertelzyklus weiter). Mehrere hintereinander geben ihnen einen Zyklus auf jeden Schlag (mal ihrem Multiplikator) statt der BPM der Show. FX mit einem eigenen Tempo ändern sich nicht. Ohne Tap-Rhythmus oder nach „Entfernen“ folgen sie den BPM der Show. Wenn Sie „BPM der Show“ bei allen ihren FX ausschalten, verliert die Szene ihren Tap-Rhythmus.
 
 Das funktioniert genauso mit ihren Tasten in der [SHOW](show.md), mit ihren Zuordnungen von Controllern und Tasten im Verhalten „Umschalten“ und mit der [Fernsteuerung](remoto.md).
 
 #### GO und Stop
 
-Die Tasten **GO** und **Stop** in der oberen Leiste (und im Bereich „Rhythmus“ der SHOW) ändern, was ein Druck auf eine beliebige Szene bewirkt, für jeden, der sie drückt:
+Die Tasten **GO** und **Stop** in der oberen Leiste (und im Bereich „Rhythmus“ der SHOW) legen fest, was ein Druck auf eine beliebige Szene bewirkt, für jeden, der sie drückt. Eine der beiden ist immer eingeschaltet: Das Programm startet immer in **GO**, und ein Druck auf die andere wechselt den Modus:
 
-- **GO** an: Ein Druck auf eine Szene **startet** sie; bei einer schon laufenden gibt jeder Druck einen Schritt (bei einer Cuelist ein GO), und mehrere hintereinander geben ihren Rhythmus vor. Sie wird nie gestoppt, auch wenn Sie länger als 2 Sekunden nicht drücken: So geben Sie das Tempo in Ruhe vor.
+- **GO** an: Ein Druck auf eine Szene **startet** sie; bei einer schon laufenden gibt jeder Druck einen Schritt (bei einer Cuelist ein GO; bei einer FX-Szene startet der erste den Zyklus ihrer FX auf „BPM der Show“ neu, und die weiteren bringen sie zum nächsten Schlag), und mehrere hintereinander geben ihren Rhythmus vor. Sie wird nie gestoppt, auch wenn Sie länger als 2 Sekunden nicht drücken: So geben Sie das Tempo in Ruhe vor.
 - **Stop** an: Ein Druck auf eine Szene **stoppt** sie. Eine Szene, die nicht läuft, bleibt, wie sie ist.
-- Beide aus (drücken Sie die eingeschaltete Taste erneut): wie immer, ein Klick startet die Szene oder gibt sie frei.
+- Um die Szenen einer Gruppe freizugeben, ohne den Modus zu wechseln, drücken Sie das Quadrat in ihrem Kopf („Diese Gruppe freigeben“); **„Alles stoppen“** (Esc) stoppt alles.
 
 Flash-Szenen funktionieren weiter, solange Sie sie gedrückt halten, in jedem Modus.
 
-Während sie läuft, trägt jede Kachel einer Szene mit Schritten oder einer Cuelist unten einen zweigeteilten **Rhythmusbalken**: Bei jedem Schritt leuchtet erst die eine, dann die andere Hälfte auf (bei einer Cuelist bei jedem Cue). So sehen Sie, in welchem Rhythmus jede läuft. Ihn tragen auch ihre SHOW-Tasten, ihre Playback-Streifen und ihre Tasten auf dem Smartphone.
+Während sie läuft, trägt jede Kachel einer Szene mit Schritten, einer Cuelist oder einer FX-Szene mit FX auf „BPM der Show“ unten einen zweigeteilten **Rhythmusbalken**: Bei jedem Schritt leuchtet erst die eine, dann die andere Hälfte auf (bei einer Cuelist bei jedem Cue; bei einer FX-Szene bei jedem Schlag, einem Zyklus dieser FX bei ×1). So sehen Sie, in welchem Rhythmus jede läuft. Ihn tragen auch ihre SHOW-Tasten, ihre Playback-Streifen und ihre Tasten auf dem Smartphone.
 
 ## Master
 
@@ -117,7 +119,7 @@ Klicken Sie mit der rechten Maustaste auf eine Kachel und wählen Sie **„Eigen
 | **Geschützt vor Freigaben durch** | Welche Freigaben sie ignoriert. |
 | **Flash (läuft, solange gedrückt)** | Macht sie zur Flash-Szene. |
 | **Live-Dimmer** | Ihre Intensität, über dem Gruppen-Master. |
-| **Tap-Rhythmus** | Schritte und Cuelists: der mit ihrer Kachel vorgegebene [Rhythmus](directo.md#rhythmus-einer-szene-mit-schritten), in BPM. Tippen Sie ihn ein oder drücken Sie „Entfernen“, um zu ihren Zeiten zurückzukehren. Wirkt sofort. |
+| **Tap-Rhythmus** | Schritte, Cuelists und FX-Szenen mit FX auf „BPM der Show“: der mit ihrer Kachel vorgegebene [Rhythmus](directo.md#rhythmus-einer-szene-mit-schritten), in BPM. Tippen Sie ihn ein oder drücken Sie „Entfernen“, um zu ihren Zeiten zurückzukehren (bei einer FX-Szene zu den BPM der Show). Wirkt sofort. |
 | **Live-Tempo** | Von ×0,1 bis ×10 (Szenen, die sich bewegen: Schritte, FX, Cuelists…). |
 | **Live-Phase** / **Live-Größe** | Die Phase (0–359°) und die Größe (0–200 %) der FX. |
 | **Überblendtempo** | Beschleunigt oder verlangsamt ihre Überblendungen, von ×0,1 bis ×10. |

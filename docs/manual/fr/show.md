@@ -35,7 +35,7 @@ Appuyez sur **« Modifier »** pour construire l’écran et sur **« Termin�
 | **Mixeur en direct** | Le [mixeur](directo.md#mixeur) de Direct. |
 | **Horloge** | L’heure, avec secondes et date en option. |
 | **Minuteur** | Un chronomètre ou un compte à rebours. |
-| **Rythme : GO et Stop** | De grands **GO** et **Stop**, comme ceux de la barre du haut (ils changent ce que font les boutons des scènes), et **BeatGO**. Les boutons de scènes à pas ou de cuelists contiennent leur barre de rythme. |
+| **Rythme : GO et Stop** | De grands **GO** et **Stop**, comme ceux de la barre du haut (ils changent ce que font les boutons des scènes), et **BeatGO**. Les boutons de scènes à pas, de cuelists ou de FX en « BPM du show » contiennent leur barre de rythme. |
 | **Notes** | Un texte à vous, de la taille que vous voulez. |
 | **En cours** | Ce qui joue, avec un bouton pour l’arrêter. |
 | **Rotatifs et roues** | Un tableau de rotatifs ou de molettes sans fin. |
@@ -51,6 +51,8 @@ Selon le type, le panneau des propriétés affiche :
 
 - **Affiche** : le type de section.
 - **Titre** : le texte de sa barre de titre. Sans titre, la section n’a pas de barre, en mode édition non plus.
+- **Fond** : la couleur de fond de la section, parmi les mêmes couleurs que les boutons, ou **∅** (celle du thème). Elle apparaît comme une teinte, en édition, en jeu et sur le téléphone, et le texte posé dessus reste lisible.
+- **Couleur de tous les boutons** (de tous les faders, de tous les rotatifs) : leur donne cette couleur à tous dans le tableau d’un coup. Les cellules vides restent vides.
 - **Colonnes** et **Lignes** : la taille du tableau (jusqu’à 32). Les boutons, faders et rotatifs remplissent leurs cellules. Dans une section trop petite pour son tableau, les cellules ne rétrécissent pas au-delà de ce qui se lit et se touche : le tableau défile (à la molette ou en faisant glisser).
 - **Remplir avec les scènes d’un groupe** (boutons) : place d’un coup un bouton pour chaque scène de ce groupe.
 - **Groupe** (un groupe) : lequel elle affiche.
@@ -74,7 +76,7 @@ Le moyen le plus rapide de remplir un tableau est de **faire glisser des scènes
 
 | Action | Ce qu’il fait |
 |---|---|
-| **Lancer une scène** | Lance la scène dans son groupe (ou seule, si elle n’est dans aucun groupe). Appuyé plusieurs fois de suite, il marque le [rythme](directo.md#rythme-dune-scène-à-pas) d’une scène à pas ou d’une cuelist. |
+| **Lancer une scène** | Lance la scène dans son groupe (ou seule, si elle n’est dans aucun groupe). Appuyé plusieurs fois de suite, il marque le [rythme](directo.md#rythme-dune-scène-à-pas) d’une scène à pas, d’une cuelist ou d’une scène FX avec des FX en « BPM du show ». Avec **Stop** dans la barre du haut, il l’arrête. |
 | **Scène suivante d’un groupe** / **Scène précédente d’un groupe** | Dans un groupe, ou dans « Tous les groupes ». |
 | **Libérer un groupe** | Un groupe, ou tous. |
 | **Blackout** | Active ou retire le blackout. |
@@ -90,7 +92,7 @@ Un bouton apporté d’une autre page avec Alt+clic affiche « Un contrôle sur
 ### Options d’un bouton
 
 - **Étiquette** : son texte. Vide (« Automatique »), elle affiche le nom de la scène, de la palette ou de l’action.
-- **Comportement** (scène, blackout et palette) : **« Bascule : on / off »** ou **« Flash : tant qu’on appuie »**. Les boutons flash portent un éclair dans le coin.
+- **Comportement** (scène, blackout et palette) : **« Bascule : on / off »** ou **« Flash : tant qu’on appuie »**. Les boutons flash portent un éclair dans le coin. Sur une scène, à la place de « Bascule » s’affiche **« Appuyer : selon GO / Stop »** : il la lance ou l’arrête selon **GO** et **Stop** de la barre du haut.
 - **Touche du clavier** : une touche du clavier qui l’actionne tant que vous êtes sur la page Show. La lettre s’affiche dans le coin du bouton.
 - **Couleur**, **Icône** et **Image** de fond (l’image est atténuée tant que le bouton est éteint).
 
@@ -113,6 +115,7 @@ Un fader du SHOW peut contrôler **plusieurs choses à la fois**. Dans ses propr
 | **Dimmer de fixtures** | Le dimmer du mixeur de tous les fixtures ou d’un groupe de fixtures. |
 | **Vitesse de mouvement des lyres** | La vitesse de ce qui fait bouger les lyres (toutes ou celles d’un groupe) : leurs FX de pan/tilt, ceux du programmeur et les pas qui les déplacent. En bas ×0,1, au milieu la vitesse normale (×1), en haut ×10 ; le fader affiche le multiplicateur et un double-clic le remet à ×1. Un FX de pan/tilt et de couleur ne change que la vitesse du mouvement ; une cuelist, celle de ses FX. Le canal de vitesse des moteurs n’est pas touché. |
 | **Vitesse d’une scène** | La vitesse en direct de cette scène (×0,1 à ×10, comme celle du mouvement). |
+| **Lancer une scène (sa vitesse)** | Comme « Lancer une scène (son intensité) », mais le fader est sa vitesse : tout en bas la scène est arrêtée ; en le montant, elle démarre dans son groupe (en respectant s’il est exclusif) et la course est sa vitesse, ×0,1 juste au-dessus du bas, ×1 au milieu et ×10 en haut. Le texte affiche « Arrêtée » tant qu’elle ne joue pas, et le fader suit la scène si on l’arrête ou la lance d’ailleurs. La vitesse ne vaut que pour cette fois : une fois arrêtée, la scène reprend la vitesse qu’elle avait (celle du Direct ne change pas). Un double-clic la met à ×1 (et la lance si elle était arrêtée). Si un fader lance plusieurs scènes d’un même groupe exclusif, elles ne se remplacent pas : la première joue. |
 | **BPM** | Le tempo du show, de 20 à 300. |
 
 La différence entre les deux éléments de scène : **« Lancer une scène (son intensité) »** est la scène elle-même, et il la lance et l’arrête ; **« Dimmer d’une scène (sans la lancer) »** ne fait que l’atténuer, même quand elle est lancée d’ailleurs. Vous pouvez utiliser les deux en même temps : avec le dimmer à 50 % et le fader qui la lance à 80 %, la scène sort à 40 %.

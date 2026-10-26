@@ -196,6 +196,17 @@ public:
      *  as with Invert. The faders of the SHOW have one too */
     static void rangeOf(const QVariantMap &m, qreal &min, qreal &max, bool &invert);
 
+    /** The MIDI channel (1-based) of a state of the LED of a button ("on",
+     *  "off", "paused") when the mapping has none of its own (its
+     *  "<state>Channel" is 0). 0: the channel of the control. The RGB pads of
+     *  the APC mini mk2 light "on" full (7) and "off" and "paused" dim (1) */
+    Q_INVOKABLE static int defaultLedChannel(const QVariantMap &mapping, const QString &state);
+    /** What the feedback of mapping $m sends now (also used by the tests):
+     *  $value 0-255 on the QLC+ $channel (the MIDI channel of the state of
+     *  an LED in its top bits), $stateChannel that MIDI channel (1-based,
+     *  0: the one of the control) */
+    void feedbackOf(const QVariantMap &m, int &value, quint32 &channel, int &stateChannel) const;
+
     /** Forget every mapping (their LEDs go off) */
     void clear();
 
@@ -236,6 +247,8 @@ public:
     void handleInput(const QString &source, const QString &device, quint32 channel,
                      const QString &key, uchar value);
 
+    /** The last messages in and out, newest first: { time, direction, device,
+     *  text, value, serial } (serial: a number that grows with each message) */
     QVariantList monitor() const;
     Q_INVOKABLE void clearMonitor();
     int activity() const;
@@ -317,6 +330,8 @@ private:
     int m_learnSourceOf;
 
     QList<QVariantMap> m_monitor;
+    /** Numbers the messages of the monitor ("serial"): the list adds the new ones only */
+    int m_monitorSerial;
     int m_activity;
 
     QTimer *m_feedbackTimer;

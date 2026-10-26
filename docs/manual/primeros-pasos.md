@@ -84,7 +84,7 @@ Antes de ir a Directo, pulsa **«Restablecer todo»** para vaciar el programador
 2. Pulsa **Rojo**: la ficha se ilumina con el color del grupo y los PAR entran en rojo.
 3. Pulsa **Azul**: el grupo hace un crossfade de 2 segundos de rojo a azul.
 4. Mueve el **Master** de la columna para bajar la intensidad de todo el grupo.
-5. Vuelve a pulsar **Azul** para liberarla, o pulsa el cuadrado de la cabecera de la columna («Liberar este grupo»).
+5. Para liberarla, pulsa el cuadrado de la cabecera de la columna («Liberar este grupo»), o cambia a **Stop** en la barra superior, pulsa **Azul** y vuelve a **GO**.
 
 Más en [Directo](directo.md).
 
