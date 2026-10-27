@@ -1,13 +1,17 @@
 name: Release
 
-# Publica DMX Total Control para Windows al empujar una etiqueta v* (p. ej. v0.13.0):
+# Publica DMX Total Control para Windows al empujar una etiqueta v* (p. ej. v1.0.0):
 # compila sin la marca "GIT" de las compilaciones de desarrollo, pasa las pruebas,
 # crea el instalador y lo adjunta a una Release.
 #
 # Lo que se adjunta a una Release se descarga con un enlace directo, sin cuenta de
 # GitHub. GitHub publica además la huella SHA-256 de cada archivo: el programa la
 # comprueba antes de instalar una actualización (Opciones › Actualizaciones).
-# Una etiqueta con guion (v0.14.0-beta.1) es una versión de prueba.
+# Una etiqueta con guion (v1.1.0-beta.1) es una versión de prueba.
+#
+# Las notas de la Release son las novedades de la versión (docs/novedades/vX.Y.Z.md,
+# si las hay) y cómo descargarla (.github/release-download.md); el programa las
+# muestra al avisar de la versión.
 on:
   push:
     tags: [ 'v*' ]
@@ -72,26 +76,19 @@ jobs:
           path: build/dtc/test/*.txt
           if-no-files-found: ignore
 
+      # (las de una versión de prueba, las de su versión: v1.1.0-beta.1, v1.1.0.md)
+      - name: Notas de la versión
+        run: |
+          NOTES="docs/novedades/${GITHUB_REF_NAME%%-*}.md"
+          {
+            if [ -f "$NOTES" ]; then cat "$NOTES"; echo; fi
+            cat .github/release-download.md
+          } > build/release-notes.md
+
       - name: Crear la Release
         uses: softprops/action-gh-release@v2
         with:
           files: build/installer/DMXTotalControl-Setup-*.exe
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
-          body: |
-            ## Descarga
-
-            **Windows 10/11 (64 bits)**: descarga el instalador `DMXTotalControl-Setup-….exe` de la lista
-            de abajo y ejecútalo. Se instala para tu usuario sin pedir permisos de administrador; el
-            asistente deja elegir instalarlo para todos.
-
-            Si ya tienes DMX Total Control, el programa avisa de esta versión y la instala él mismo
-            (Opciones › Actualizaciones): comprueba antes la huella SHA-256 que GitHub publica del instalador.
-
-            ### Primera vez
-
-            El instalador no está firmado, así que Windows SmartScreen puede avisar de que es una
-            aplicación desconocida: **Más información** → **Ejecutar de todas formas**.
-
-            Las interfaces DMX USB de FTDI (Enttec Open DMX, USB Pro…) necesitan su driver; Windows
-            suele instalarlo solo al conectarlas, y si no, el instalador ofrece la página de FTDI.
+          body_path: build/release-notes.md

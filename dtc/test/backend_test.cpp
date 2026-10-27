@@ -2679,7 +2679,11 @@ void Backend_Test::lookSettings()
 void Backend_Test::manualPages()
 {
     // the manual is built in: its pages by name, never a path; as HTML its
-    // pictures fit the help panel
+    // pictures fit the help panel. In Spanish, the original, whatever the
+    // language of the system (the CI runs in English)
+    const QLocale before;
+    auto restore = qScopeGuard([before]() { QLocale::setDefault(before); });
+    QLocale::setDefault(QLocale("es_ES"));
     DtcCore core;
     const QString index = core.manualPage("index");
     QVERIFY(index.isEmpty() == false);
@@ -2715,9 +2719,6 @@ void Backend_Test::manualPages()
     // the translations: the manual in the language of the app, every page
     // of it, with the pictures of the original; Spanish and a language
     // without a translation show the original
-    const QLocale before;
-    auto restore = qScopeGuard([before]() { QLocale::setDefault(before); });
-    QLocale::setDefault(QLocale("es_ES"));
     QCOMPARE(core.manualLanguage(), QString());
     QLocale::setDefault(QLocale("ja_JP"));
     QCOMPARE(core.manualLanguage(), QString());

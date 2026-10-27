@@ -13,7 +13,7 @@ Software de control de iluminación DMX, libre y de código abierto, con una int
 
 Los shows se guardan en formato `.qxw`, compatible con QLC+: puedes abrir shows de QLC+, y QLC+ puede leer la parte del motor de los nuestros.
 
-> Estado: **en desarrollo**. Consulta la [hoja de ruta](ROADMAP.md).
+> Estado: **versión 1.0**, la primera publicada. Lo que viene después, en la [hoja de ruta](ROADMAP.md).
 
 ## Descargar
 
@@ -79,8 +79,8 @@ Necesitas Qt 6 (base, declarative, 3d, multimedia, serialport, websockets, svg, 
 
 ## Publicar una versión
 
-1. Sube la versión en `variables.cmake` (`APPVERSION`, la de DMX Total Control) y anota la versión en el [ROADMAP](ROADMAP.md).
-2. Crea y sube la etiqueta: `git tag v0.14.0 && git push origin v0.14.0`. Con guion (`v0.14.0-beta.1`) es una versión de prueba.
+1. Sube la versión en `variables.cmake` (`APPVERSION`, la de DMX Total Control), anota la versión en el [ROADMAP](ROADMAP.md) y escribe sus novedades en `docs/novedades/vX.Y.Z.md`: son las notas de la Release y lo que el programa muestra al avisar de ella.
+2. Crea y sube la etiqueta: `git tag v1.1.0 && git push origin v1.1.0`. Con guion (`v1.1.0-beta.1`) es una versión de prueba.
 3. GitHub Actions (`.github/workflows/release.yml`) compila sin la marca «GIT», pasa las pruebas, crea el instalador y lo publica en una Release. Los programas instalados la encuentran solos.
 
 ## Sincronizar con upstream

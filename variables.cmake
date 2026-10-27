@@ -51,7 +51,7 @@ endif()
 if(dtcui)
     # DMX Total Control builds the engine in its QML (QLC+ 5) flavour
     add_definitions(-DQMLUI)
-    set(APPVERSION "0.13.0")
+    set(APPVERSION "1.0.0")
     set(APPBINARY "dmxtotalcontrol")
     set(PLUGINSUBDIR "dmxtotalcontrol")
 elseif(qmlui)
