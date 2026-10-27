@@ -107,7 +107,8 @@ Root: HKA; Subkey: "Software\Classes\.qxw"; ValueType: string; ValueName: ""; Va
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 ; Actualización desde el programa: lo lanza en silencio con /RELAUNCH=1 y se cierra, así que se vuelve a abrir.
-Filename: "{app}\{#AppExe}"; Flags: nowait; Check: IsUpdateRelaunch
+; Como el usuario que lo usaba, no como administrador (una instalación para todos pide permisos).
+Filename: "{app}\{#AppExe}"; Flags: nowait runasoriginaluser; Check: IsUpdateRelaunch
 ; Las interfaces DMX USB de FTDI necesitan su driver (Windows suele instalarlo solo al conectarlas).
 Filename: "https://ftdichip.com/drivers/d2xx-drivers/"; Description: "{cm:FtdiDrivers}"; Flags: postinstall shellexec skipifsilent unchecked; Check: not FtdiDriverInstalled
 

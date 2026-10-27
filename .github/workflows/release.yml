@@ -90,5 +90,4 @@ jobs:
         with:
           files: build/installer/DMXTotalControl-Setup-*.exe
           prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
           body_path: build/release-notes.md

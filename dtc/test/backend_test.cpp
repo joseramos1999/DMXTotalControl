@@ -2271,7 +2271,8 @@ void Backend_Test::updateChecker()
     // the command line of the installer: silent, over this installation
     QStringList args = updates.installerArguments(true);
     QVERIFY(args.contains("/SILENT") && args.contains("/RELAUNCH=1") && args.contains("/SUPPRESSMSGBOXES"));
-    QVERIFY(args.contains("/CURRENTUSER") || args.contains("/ALLUSERS"));
+    // (the installer keeps the mode of the installation it finds)
+    QVERIFY(args.contains("/CURRENTUSER") == false && args.contains("/ALLUSERS") == false);
     QVERIFY(updates.installerArguments(false).contains("/RELAUNCH=1") == false);
 
     // a file that isn't the one GitHub publishes is not kept

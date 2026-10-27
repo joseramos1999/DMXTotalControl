@@ -483,17 +483,14 @@ void UpdateChecker::finishDownload(QNetworkReply *reply)
 
 QStringList UpdateChecker::installerArguments(bool relaunch) const
 {
-    // over the installation of this program: for the user (in the user's
-    // programs folder) or for everyone
-    const QString appDir = QDir::fromNativeSeparators(QCoreApplication::applicationDirPath());
-    const QString userDir = QDir::fromNativeSeparators(qEnvironmentVariable("LOCALAPPDATA"));
-    const bool perUser = userDir.isEmpty() == false && appDir.startsWith(userDir, Qt::CaseInsensitive);
-
+    // over the installation of this program: the installer finds it and
+    // keeps its mode, for the user or for everyone, wherever its folder is
+    // (UsePreviousPrivileges); without one, for the user. Never /ALLUSERS or
+    // /CURRENTUSER: they choose the mode and it would install a second copy
     QStringList args = { QStringLiteral("/SILENT"), QStringLiteral("/SUPPRESSMSGBOXES"), QStringLiteral("/NORESTART"),
                          QStringLiteral("/CLOSEAPPLICATIONS"), QStringLiteral("/NORESTARTAPPLICATIONS") };
     if (relaunch)
         args.append(QStringLiteral("/RELAUNCH=1"));
-    args.append(perUser ? QStringLiteral("/CURRENTUSER") : QStringLiteral("/ALLUSERS"));
     return args;
 }
 

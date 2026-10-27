@@ -2,7 +2,7 @@
 name: Idea
 about: Una función nueva o una mejora
 title: ''
-labels: idea
+labels: enhancement
 assignees: ''
 
 ---

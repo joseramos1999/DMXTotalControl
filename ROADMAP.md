@@ -351,6 +351,13 @@ Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con e
 - [x] **Versión 1.0.0** (`APPVERSION`), etiqueta `v1.0.0`: la primera Release en GitHub, con el instalador para Windows. Las compilaciones de desarrollo dicen «1.0.0 GIT».
 - [x] **Notas de cada versión**: sus novedades van en `docs/novedades/vX.Y.Z.md` (también para sus versiones de prueba) y `release.yml` les añade cómo descargarla (`.github/release-download.md`); son el texto de la Release y lo que el programa muestra al avisar de ella.
 - [x] **CI en verde** (fallo de una prueba): `manualPages` leía el índice del manual en el idioma del sistema antes de fijar el suyo; en un Windows en inglés, como el de GitHub, lo comparaba con el original en español y fallaba desde el manual en seis idiomas. Ahora fija el español al empezar. Comprobado simulando un sistema en inglés.
+- [x] **Revisión antes de publicar** (el flujo de release nunca se había ejecutado): compilación en UCRT64, Inno Setup del servidor, comprobación de la versión, instalador, actualizaciones desde la 0.13 y textos publicados. Arreglado lo que encontró:
+  - La Release ya no añade al final el «Full Changelog» en inglés de GitHub, que el programa mostraba en sus novedades.
+  - Actualizaciones: el instalador sigue el modo de la instalación que encuentra (para el usuario o para todos, esté donde esté su carpeta). Antes el programa lo elegía por la carpeta, y una instalación para el usuario fuera de `%LOCALAPPDATA%` recibía una segunda copia para todos. Tras actualizar una instalación para todos, el programa se vuelve a abrir como el usuario y no como administrador.
+  - `SUPPORT.md` y `CONTRIBUTING.md`, que GitHub enlaza al abrir un fallo, eran los del proyecto original y mandaban los fallos allí: ahora son los nuestros, en español.
+  - Las plantillas de fallo e idea usan las etiquetas que existen en el repositorio (`bug`, `enhancement`).
+  - El README ya no cita Velleman entre las interfaces (su plugin no se compila en Windows).
+  - Prueba `updateChecker` al día.
 
 ## v1.1 — Hardware y bibliotecas (pendiente)
 
@@ -363,6 +370,7 @@ Nueva página **Escenas** (F4): biblioteca de todas las escenas y efectos, con e
 - [ ] Mappings de **vídeo** sobre el plano 2D (el motor solo reproduce vídeo en pantalla, no lo lleva a los fixtures).
 - [ ] Capturas del manual en cada idioma (ahora todas las traducciones usan las de la versión en español).
 - [ ] Firmar el instalador para que SmartScreen no avise (hace falta un certificado de firma de código).
+- [ ] Versiones de prueba (`v1.1.0-beta.1`) con su sufijo en la versión del programa: ahora llevan el número de la versión final, así que quien instala una no recibe después la final ni la siguiente de prueba. Antes de publicar la primera.
 
 ## Fuera de alcance
 

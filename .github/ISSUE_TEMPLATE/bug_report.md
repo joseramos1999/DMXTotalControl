@@ -2,7 +2,7 @@
 name: Fallo
 about: Algo no funciona como debería
 title: ''
-labels: fallo
+labels: bug
 assignees: ''
 
 ---
