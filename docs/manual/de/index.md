@@ -62,7 +62,7 @@ Von links nach rechts:
 - **„N laufen“**: wie viele Szenen und Effekte gerade laufen.
 - **GM**: der Grand Master. Unter 100 % wird er orange.
 - **„Blackout“** (Strg+B): schaltet alles auf Schwarz, solange er an ist.
-- **„Alles stoppen“** (Esc): stoppt alles, was läuft. Der Programmer wird nicht geleert.
+- **„Alles stoppen“** (Esc): stoppt alles, was läuft. Der Programmer wird nicht geleert. Die Szenen, die ein hochgezogener Fader des SHOW hält, laufen weiter: Nur das Herunterziehen dieses Faders stoppt sie.
 - **„?“**: öffnet dieses Handbuch (F12).
 
 In einem schmalen Fenster oder auf einem kleinen Bildschirm wird die Leiste kompakter: Der Showname wird gekürzt, „Speichern unter…“ erscheint nur als Symbol, „N laufen“ nur als Zahl, und in den schmalsten Fenstern zeigen „Blackout“ und „Alles stoppen“ nur ihr Symbol. Fahren Sie mit der Maus über ein Symbol, um zu sehen, was es ist. Wirkt alles zu klein oder zu groß, ändern Sie die **Größe der Oberfläche** unter [Optionen](opciones.md#allgemein).

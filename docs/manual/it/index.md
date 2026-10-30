@@ -62,7 +62,7 @@ Da sinistra a destra:
 - **«N in esecuzione»**: quante scene ed effetti sono in riproduzione.
 - **GM**: il grand master. Sotto il 100 % diventa arancione.
 - **«Blackout»** (Ctrl+B): manda tutto al buio finché è acceso.
-- **«Ferma tutto»** (Esc): ferma tutto ciò che è in riproduzione. Il programmatore non viene svuotato.
+- **«Ferma tutto»** (Esc): ferma tutto ciò che è in riproduzione. Il programmatore non viene svuotato. Le scene che un fader dello SHOW alzato trattiene continuano: solo abbassare quel fader le ferma.
 - **«?»**: apre questo manuale (F12).
 
 In una finestra stretta o su uno schermo piccolo, la barra si compatta: il nome dello show viene accorciato, «Salva come…» resta come icona, «N in esecuzione» si riduce al numero e, nelle più strette, «Blackout» e «Ferma tutto» restano solo con la loro icona. Passa il mouse sopra un'icona per vedere cos'è. Se tutto appare piccolo o grande, cambia la **Dimensione dell'interfaccia** in [Opzioni](opciones.md#generale).

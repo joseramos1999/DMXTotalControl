@@ -7513,6 +7513,10 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Rien ne joue</translation>
     </message>
     <message>
+        <source>A fader holds it up: lower it to stop it</source>
+        <translation>Un fader la retient : descendez-le pour l’arrêter</translation>
+    </message>
+    <message>
         <source>Universe %1</source>
         <translation>Univers %1</translation>
     </message>

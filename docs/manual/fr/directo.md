@@ -49,7 +49,7 @@ Sur chaque tuile, vous voyez :
 
 Le bouton de chaque colonne alterne entre :
 
-- **« Exclusif »** : une seule scène joue à la fois. Quand vous en lancez une autre, il fait un fondu enchaîné vers la nouvelle.
+- **« Exclusif »** : une seule scène joue à la fois. Quand vous en lancez une autre, il fait un fondu enchaîné vers la nouvelle. Les [faders du SHOW](show.md#faders) qui lancent des scènes sont l’exception : ils ajoutent la leur, vous pouvez donc en monter plusieurs du même groupe à la fois.
 - **« Mélange »** : les scènes s’additionnent ; plusieurs peuvent jouer en même temps.
 
 ### Temps de fondu enchaîné
@@ -148,6 +148,8 @@ Chaque scène a une priorité de 0 à 10 ; les nouvelles prennent celle que vou
 - **« Toutes les scènes »** : toutes les autres.
 - **« Les autres groupes »** : les scènes des autres groupes.
 
+Quand un [fader du SHOW](show.md#faders) la lance, elle ne libère rien, quel que soit son mode : elle s’ajoute aux autres. Avec son bouton, elle libère comme d’habitude. Et tant que ce fader est monté, rien ne l’arrête, sauf le descendre tout en bas.
+
 **Protégée des libérations par** fait que la scène ignore ces libérations :
 
 - **« Aucun »** : elle se libère comme d’habitude.
@@ -161,7 +163,7 @@ Chaque scène a une priorité de 0 à 10 ; les nouvelles prennent celle que vou
 
 - **« Pause »** fige tout ce qui joue. **« Reprendre »** le relance.
 - **« Libérer les groupes »** arrête les scènes de tous les groupes ; le carré de chaque colonne, seulement celles de ce groupe.
-- **« Tout arrêter »** (Échap), dans la barre du haut, arrête tout ce qui joue, y compris hors des groupes. Il ne vide pas le programmeur.
+- **« Tout arrêter »** (Échap), dans la barre du haut, arrête tout ce qui joue, y compris hors des groupes. Il ne vide pas le programmeur. Ni « Tout arrêter » ni « Libérer les groupes » n’arrêtent les scènes qu’un [fader du SHOW](show.md#faders) monté retient : seulement le descendre tout en bas.
 - **« Blackout »** (Ctrl+B) met la sortie au noir sans rien arrêter. Les têtes ne bougent pas : le pan, le tilt, le zoom, le focus et les autres canaux qui ne sont pas de la lumière restent où ils sont.
 
 ## Mixeur

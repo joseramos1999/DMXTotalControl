@@ -76,6 +76,11 @@ void EffectEditor::setSettings(AppSettings *settings)
     m_settings = settings;
 }
 
+void EffectEditor::setHeldByFader(const std::function<bool(quint32)> &held)
+{
+    m_heldByFader = held;
+}
+
 void EffectEditor::touch(quint32 id)
 {
     m_doc->setModified();
@@ -367,7 +372,9 @@ void EffectEditor::togglePreview(quint32 id)
 
     if (f->isRunning())
     {
-        f->stop(FunctionParent::master());
+        // (one a fader of the SHOW holds up: only that fader stops it)
+        if (m_heldByFader == nullptr || m_heldByFader(id) == false)
+            f->stop(FunctionParent::master());
         return;
     }
 

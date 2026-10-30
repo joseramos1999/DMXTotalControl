@@ -313,6 +313,8 @@ private:
     void applyPlaybackButton(const QVariantMap &m, bool pressed);
     quint32 functionOf(const QVariantMap &m) const;
     Zone *zoneOwning(quint32 functionId) const;
+    /** A scene of no group a fader of the SHOW holds up: only the fader stops it */
+    bool heldByFader(quint32 functionId) const;
     QVariantMap defaultsFor(const QString &target) const;
 
     /** Send a feedback value of a mapping to its device(s), or only to $onlyDevice */

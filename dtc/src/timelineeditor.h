@@ -24,6 +24,7 @@
 #include <QVariant>
 #include <QHash>
 #include <QUrl>
+#include <functional>
 
 class ShowFunction;
 class Programmer;
@@ -55,6 +56,10 @@ class TimelineEditor : public QObject
 public:
     TimelineEditor(Doc *doc, Programmer *programmer, QObject *parent = nullptr);
     ~TimelineEditor();
+
+    /** A super scene a fader of the SHOW holds up: stop() here doesn't stop
+     *  it (only that fader stops it) */
+    void setHeldByFader(const std::function<bool(quint32)> &held);
 
     int revision() const;
     int playingId() const;
@@ -143,6 +148,7 @@ private:
 private:
     Doc *m_doc;
     Programmer *m_programmer;
+    std::function<bool(quint32)> m_heldByFader;
     int m_revision;
     int m_playingId;
     int m_position;

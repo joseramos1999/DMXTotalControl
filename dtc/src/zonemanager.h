@@ -70,8 +70,11 @@ public:
     /** Move a scene to position $toIndex of a group (the same or another one), with its options */
     Q_INVOKABLE void moveScene(int fromZone, quint32 functionId, int toZone, int toIndex);
 
-    /** Stop every function started by any zone */
-    Q_INVOKABLE void stopAll();
+    /** Stop every function started by any zone, but those faders of the
+     *  SHOW hold up; $held: those too (the show closes) */
+    Q_INVOKABLE void stopAll(bool held = false);
+    /** Whether a fader of the SHOW holds $fid up in any group (Zone::hold) */
+    bool isHeld(quint32 fid) const;
 
     /** Every group with a running scene jumps to its next/previous scene */
     Q_INVOKABLE void nextAll();

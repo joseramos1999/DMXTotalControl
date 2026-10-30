@@ -62,7 +62,7 @@ De gauche à droite :
 - **« N en cours »** : le nombre de scènes et d’effets en cours.
 - **GM** : le grand master. En dessous de 100 %, il devient orange.
 - **« Blackout »** (Ctrl+B) : met toute la sortie au noir tant qu’il est allumé.
-- **« Tout arrêter »** (Échap) : arrête tout ce qui joue. Le programmeur n’est pas vidé.
+- **« Tout arrêter »** (Échap) : arrête tout ce qui joue. Le programmeur n’est pas vidé. Les scènes qu’un fader du SHOW monté retient continuent : seul le fait de descendre ce fader les arrête.
 - **« ? »** : ouvre ce manuel (F12).
 
 Dans une fenêtre étroite ou sur un petit écran, la barre se compacte : le nom du show est raccourci, « Enregistrer sous… » devient une icône, « N en cours » se réduit au nombre et, dans les plus étroites, « Blackout » et « Tout arrêter » n’affichent que leur icône. Survolez une icône avec la souris pour voir ce que c’est. Si tout paraît petit ou grand, changez la **Taille de l’interface** dans [Options](opciones.md#général).

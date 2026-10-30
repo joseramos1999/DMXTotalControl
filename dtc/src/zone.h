@@ -118,10 +118,27 @@ public:
      *  (SceneTaps): GO starts it (a beat of one that plays), Stop stops it;
      *  with no program around (Toggle), start it or stop it */
     Q_INVOKABLE void trigger(quint32 fid);
+    /** Start $fid, releasing the scenes it replaces (its group, if
+     *  exclusive, and its release mode), but those faders hold (hold()) */
     Q_INVOKABLE void start(quint32 fid);
+    /** Stop $fid; not one a fader holds up: only its fader stops it */
     Q_INVOKABLE void stop(quint32 fid);
-    Q_INVOKABLE void stopAll();
+    /** Release the group: every scene, but those faders hold up. $held:
+     *  those too (the show closes) */
+    Q_INVOKABLE void stopAll(bool held = false);
     Q_INVOKABLE bool isActive(quint32 fid) const;
+
+    /** A fader of the SHOW up on $fid: it plays, added to what plays (it
+     *  releases nothing), and nothing else stops it (other scenes, buttons,
+     *  releasing the group, Stop all) until its fader lets it go: letGo(). A
+     *  $speed above 0 is the speed of this run (setRunSpeed) */
+    void hold(quint32 fid, qreal speed = 0.0);
+    /** The fader of $fid at the bottom: it stops */
+    void letGo(quint32 fid);
+    /** No fader is on $fid any more: it plays on, as any other scene */
+    void dropHold(quint32 fid);
+    bool isHeld(quint32 fid) const;
+    QList<quint32> heldFunctions() const;
 
     /** Flash scenes play while pressed */
     Q_INVOKABLE void press(quint32 fid);
@@ -152,8 +169,6 @@ public:
      *  saved). It lasts while the scene plays; the Live speed moved meanwhile
      *  takes over. A scene this group doesn't play: nothing */
     void setRunSpeed(quint32 fid, qreal speed);
-    /** Start $fid at $speed for this run (setRunSpeed), from its first frame */
-    void startAt(quint32 fid, qreal speed);
     /** The speed $fid plays at: that of its run, or its Live speed */
     qreal speed(quint32 fid) const;
 
@@ -194,6 +209,12 @@ private:
     void step(int direction);
     /** Apply speed, phase and size to a running scene */
     void applyLiveControls(quint32 fid);
+    /** start(), releasing the scenes it replaces or not ($release) */
+    void startScene(quint32 fid, bool release);
+    /** stop(), held or not */
+    void stopScene(quint32 fid);
+    /** What this group keeps of a scene it played, gone (stopped or not) */
+    void forgetScene(quint32 fid);
 
 private:
     Doc *m_doc;
@@ -236,6 +257,8 @@ private:
     QHash<quint32, qreal> m_sceneLevels;
     /** The speeds of the SHOW faders on the scenes playing (setRunSpeed) */
     QHash<quint32, qreal> m_runSpeeds;
+    /** The scenes faders of the SHOW hold up (hold()) */
+    QSet<quint32> m_held;
     /** The scene started last, for next/previous */
     quint32 m_lastStarted;
 };

@@ -927,12 +927,16 @@ Rectangle {
                 }
                 AppButton {
                     id: stopButton
+                    // (one a fader of the SHOW holds up: only that fader stops it)
+                    readonly property bool held: Core.surface.holds(parent.modelData.id)
                     anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
                     implicitHeight: 24
-                    iconGlyph: Theme.iconStop
+                    iconGlyph: held ? Theme.iconSliders : Theme.iconStop
                     flat: true
                     enabled: !view.editing
-                    onClicked: view.surface.stopScene(parent.modelData.id)
+                    ToolTip.text: qsTr("A fader holds it up: lower it to stop it")
+                    ToolTip.visible: hovered && held
+                    onClicked: if (!held) view.surface.stopScene(parent.modelData.id)
                 }
             }
             Text {

@@ -306,6 +306,8 @@ private slots:
     void sceneDimmerFader();
     void showFaderEdges();
     void sceneRunFader();
+    void fadersOfOneGroup();
+    void faderHoldEdges();
     void remoteFaderRanges();
     void moveSpeedOfMovement();
     void pulseGoesOnWithNewShow();
@@ -15969,14 +15971,20 @@ void Backend_Test::sceneFaderLevels()
     m_doc->inputOutputMap()->startUniverses();
     m_doc->masterTimer()->start();
 
-    // a scene of no group: half way on a fader, then stopped and started
-    // again by a button. That run is at full, and the fader drives it
+    // a scene of no group: half way on a fader. Its button doesn't stop it
+    // (the fader holds it up); down to zero it stops, and started again by
+    // its button, that run is at full, and the fader drives it
     const QVariantMap fader({ { "target", "scene" }, { "functionId", int(loose->id()) } });
     const QVariantMap button({ { "action", "scene" }, { "functionId", int(loose->id()) }, { "mode", "toggle" } });
     surface.setLevel(fader, 0.5);
     QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
     QCOMPARE(surface.level(fader), 0.5);
     surface.press(button);
+    QTest::qWait(100);
+    QVERIFY(loose->isRunning());
+    QCOMPARE(out(0), 100);
+    QCOMPARE(surface.level(fader), 0.5);
+    surface.setLevel(fader, 0.0);
     QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
     QCOMPARE(surface.level(fader), 0.0);
     // (the second press comes later)
@@ -16024,14 +16032,23 @@ void Backend_Test::sceneFaderLevels()
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 200, 3000);
     surface.setLevel(groupFader, 0.5);
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
-    // stopped and started again by its group: at full, and the fader says so
+    // its button doesn't stop it: the fader holds it up
     zone->trigger(grouped->id());
-    QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning() == false, 3000);
-    QCOMPARE(surface.level(groupFader), 0.0);
+    QVERIFY(zone->isActive(grouped->id()));
+    QTest::qWait(100);
+    QVERIFY(grouped->isRunning());
+    QCOMPARE(surface.level(groupFader), 0.5);
+    // down to zero: it stops in its group
+    surface.setLevel(groupFader, 0.0);
+    QVERIFY(zone->isActive(grouped->id()) == false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 0, 3000);
+    // started by its group: at full, and the fader says so
     zone->trigger(grouped->id());
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 200, 3000);
     QCOMPARE(surface.level(groupFader), 1.0);
-    // down to zero: it stops in its group
+    // moved, the fader has it, and down to zero it stops it
+    surface.setLevel(groupFader, 0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
     surface.setLevel(groupFader, 0.0);
     QVERIFY(zone->isActive(grouped->id()) == false);
     QTRY_COMPARE_WITH_TIMEOUT(out(1), 0, 3000);
@@ -16435,8 +16452,9 @@ void Backend_Test::sceneDimmerFader()
     QCOMPARE_LEVEL(surface->level(groupedDimmer), 0.5);
     surface->setLevel(player, 1.0);
     QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
-    // stopped and started again: still dimmed
-    zone->stop(groupedId);
+    // stopped (its fader down: only the fader stops it) and started again:
+    // still dimmed
+    surface->setLevel(player, 0.0);
     QTRY_VERIFY_WITH_TIMEOUT(grouped->isRunning() == false, 3000);
     QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
     QCOMPARE_LEVEL(surface->sceneDimmer(groupedId), 0.5);
@@ -17044,33 +17062,36 @@ void Backend_Test::sceneRunFader()
     loose->setSpeedFactor(1.0);
 
     /* a scene of an exclusive group: it plays in its group, at the speed of
-       the group for it, and replaces the scene that played there */
+       the group for it. A fader adds its scene: the one that played there
+       goes on (fadersOfOneGroup) */
     surface->setItem(page, sid, 1, { { "targets", QVariantList({ run(a) }) } });
     QVariantMap grouped = surface->item(page, sid, 1);
     zone->start(b->id());
     QTRY_VERIFY_WITH_TIMEOUT(b->isRunning(), 3000);
     surface->setLevel(grouped, 0.75);
     QVERIFY(zone->isActive(a->id()));
-    QVERIFY(zone->isActive(b->id()) == false);
+    QVERIFY(zone->isActive(b->id()));
     // (the speed of this run: its Live speed stays)
     QCOMPARE_LEVEL(zone->speed(a->id()), x316);
     QCOMPARE_LEVEL(zone->options(a->id()).value("speed").toDouble(), 1.0);
     QCOMPARE_LEVEL(a->speedFactor(), x316);
-    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() && b->isRunning() == false, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() && b->isRunning(), 3000);
     QCOMPARE_LEVEL(surface->level(grouped), 0.75);
     surface->setLevel(grouped, 0.5);
     QCOMPARE_LEVEL(a->speedFactor(), 1.0);
-    // another scene of its group replaces it: the fader shows it stopped
+    // a button of its group doesn't replace it: the fader holds it up
+    zone->stop(b->id());
     zone->start(b->id());
-    QVERIFY(zone->isActive(a->id()) == false);
-    QCOMPARE_LEVEL(surface->level(grouped), 0.0);
-    // up again it plays (and replaces that one); the bottom stops it there
+    QVERIFY(zone->isActive(a->id()));
+    QCOMPARE_LEVEL(surface->level(grouped), 0.5);
     surface->setLevel(grouped, 0.25);
     QVERIFY(zone->isActive(a->id()));
-    QVERIFY(zone->isActive(b->id()) == false);
+    QVERIFY(zone->isActive(b->id()));
     QCOMPARE_LEVEL(a->speedFactor(), 1.0 / x316);
+    // the bottom stops it there
     surface->setLevel(grouped, 0.0);
     QVERIFY(zone->isActive(a->id()) == false);
+    zone->stop(b->id());
     QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false && b->isRunning() == false, 3000);
 
     /* the speed lasts while the fader plays it: stopped, its Live speed is
@@ -17177,23 +17198,23 @@ void Backend_Test::sceneRunFader()
     QCOMPARE_LEVEL(loose->speedFactor(), 1.0);
     QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
 
-    /* several on one fader. Two scenes of one exclusive group don't replace
-       each other at every move: the first one plays */
+    /* several on one fader. Two scenes of one exclusive group both play,
+       and don't replace each other at every move */
     surface->setItem(page, sid, 3, { { "targets", QVariantList({ run(a), run(b) }) } });
     const QVariantMap both = surface->item(page, sid, 3);
     QVERIFY(ShowSurface::isSpeed(both));
     surface->setLevel(both, 0.5);
     QVERIFY(zone->isActive(a->id()));
-    QVERIFY(zone->isActive(b->id()) == false);
+    QVERIFY(zone->isActive(b->id()));
     QSignalSpy activity(zone, SIGNAL(activeChanged()));
     surface->setLevel(both, 0.6);
     surface->setLevel(both, 0.7);
     QCOMPARE(activity.count(), 0);
-    QVERIFY(zone->isActive(a->id()));
+    QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()));
     QCOMPARE_LEVEL(a->speedFactor(), std::pow(10.0, 0.4));
+    QCOMPARE_LEVEL(b->speedFactor(), std::pow(10.0, 0.4));
     QCOMPARE_LEVEL(surface->level(both), 0.7);
-    // (the one that waits is left as it was)
-    QCOMPARE_LEVEL(zone->speed(b->id()), 1.0);
+    // (their Live speeds stay)
     QCOMPARE_LEVEL(zone->options(b->id()).value("speed").toDouble(), 1.0);
     surface->setLevel(both, 0.0);
     QVERIFY(zone->isActive(a->id()) == false);
@@ -17282,6 +17303,262 @@ void Backend_Test::sceneRunFader()
     const QVariantMap button = surface->item(page, sid, 0);
     QCOMPARE(button.value("action").toString(), QString("scene"));
     QCOMPARE(button.value("functionId").toUInt(), loose->id());
+    QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
+}
+
+void Backend_Test::fadersOfOneGroup()
+{
+    // faders of the SHOW on scenes of one exclusive group, moved at the same
+    // time (two faders of a controller): each one adds its scene, and none
+    // replaces the other. They replaced each other at every move: the scene
+    // of one never played and the other started over, frozen at its start
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = doc->fixtures().first()->id();
+    auto newScene = [&](int channel, int value, const QString &name) {
+        Scene *s = new Scene(doc);
+        s->setName(name);
+        s->setValue(spot, quint32(channel), uchar(value));
+        doc->addFunction(s);
+        return s;
+    };
+    // (dimmer: the highest; colour wheel: the latest)
+    Scene *a = newScene(3, 200, "Strobe");
+    Scene *b = newScene(5, 50, "Colour");
+    Scene *c = newScene(5, 150, "Other colour");
+    Zone *zone = core.zones()->addZone("Group");
+    QVERIFY(zone->exclusive());
+    zone->addFunction(a->id());
+    zone->addFunction(b->id());
+    zone->addFunction(c->id());
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Faders", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 3 } });
+    auto fader = [&](int cell, const QString &kind, Function *f) {
+        surface->setItem(page, sid, cell, { { "targets", QVariantList({ QVariantMap({ { "target", kind },
+                                                                                      { "functionId", int(f->id()) } }) }) } });
+        return surface->item(page, sid, cell);
+    };
+    // a scene fader and a speed fader
+    const QVariantMap strobe = fader(0, "scene", a);
+    const QVariantMap colour = fader(1, "sceneRun", b);
+    const QVariantMap other = fader(2, "scene", c);
+    auto out = [&](int channel) { return core.io()->channelValues(0).at(channel).toInt(); };
+    QSignalSpy runsA(a, SIGNAL(running(quint32)));
+    QSignalSpy runsB(b, SIGNAL(running(quint32)));
+
+    surface->setLevel(strobe, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 200, 3000);
+    surface->setLevel(colour, 1.0);
+    QVERIFY(zone->isActive(a->id()));
+    QVERIFY(zone->isActive(b->id()));
+    // both moved at the same time: both play, neither starts over
+    qreal level = 1.0;
+    for (int i = 0; i < 12; i++)
+    {
+        level -= 0.03;
+        surface->setLevel(strobe, level);
+        surface->setLevel(colour, level);
+        QTest::qWait(20);
+        QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()));
+    }
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() && b->isRunning(), 3000);
+    QCOMPARE(runsA.count(), 1);
+    QCOMPARE(runsB.count(), 1);
+    QCOMPARE_LEVEL(surface->level(strobe), level);
+    QCOMPARE_LEVEL(surface->level(colour), level);
+    QCOMPARE_LEVEL(b->speedFactor(), std::pow(10.0, level * 2.0 - 1.0));
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), qRound(200 * level), 3000);
+    QCOMPARE(out(5), 50);
+
+    // on a channel they share, the last one up gives its value; down, the
+    // other one again
+    surface->setLevel(other, 1.0);
+    QVERIFY(zone->isActive(b->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(5), 150, 3000);
+    surface->setLevel(other, 0.0);
+    QVERIFY(zone->isActive(c->id()) == false);
+    QVERIFY(zone->isActive(b->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(5), 50, 3000);
+
+    // a fader up holds its scene up: only the fader at the bottom stops it.
+    // A button of the group replaces the others only
+    zone->start(c->id());
+    QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()) && zone->isActive(c->id()));
+    QVERIFY(zone->isHeld(a->id()) && zone->isHeld(b->id()));
+    QVERIFY(zone->isHeld(c->id()) == false);
+    QCOMPARE_LEVEL(surface->level(strobe), level);
+    QCOMPARE_LEVEL(surface->level(colour), level);
+    QTRY_COMPARE_WITH_TIMEOUT(out(5), 150, 3000);
+    // releasing the group stops that one only
+    zone->stopAll();
+    QVERIFY(zone->isActive(c->id()) == false);
+    QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()));
+    core.zones()->stopAll();
+    QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(5), 50, 3000);
+    // nor its own button, with Stop
+    const SceneTaps::Mode mode = SceneTaps::mode();
+    SceneTaps::setMode(SceneTaps::Stop);
+    zone->trigger(a->id());
+    zone->stop(b->id());
+    QVERIFY(zone->isActive(a->id()) && zone->isActive(b->id()));
+    // nor Stop all: they go on, without starting over (the others stop)
+    zone->start(c->id());
+    core.stopAll();
+    QVERIFY(zone->isActive(c->id()) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(c->isRunning() == false, 3000);
+    QTest::qWait(100);
+    QVERIFY(a->isRunning() && b->isRunning());
+    QCOMPARE(runsA.count(), 1);
+    QCOMPARE(runsB.count(), 1);
+    QCOMPARE(out(3), qRound(200 * level));
+    QTRY_COMPARE_WITH_TIMEOUT(out(5), 50, 3000);
+    // the bottom stops it, and only its own
+    surface->setLevel(strobe, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QVERIFY(zone->isActive(b->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 0, 3000);
+    // a fader deleted lets its scene go: it plays on, as any other
+    surface->clearItem(page, sid, 1);
+    QVERIFY(zone->isActive(b->id()));
+    QVERIFY(zone->isHeld(b->id()) == false);
+    zone->stopAll();
+    QVERIFY(zone->isActive(b->id()) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
+
+    /* a scene of no group, the same: its button, Stop all, only the fader */
+    Scene *loose = newScene(4, 100, "Loose");
+    const QVariantMap looseFader = fader(2, "scene", loose);
+    surface->setLevel(looseFader, 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    QVERIFY(surface->holds(loose->id()));
+    surface->press({ { "action", "scene" }, { "functionId", int(loose->id()) } });
+    core.stopAll();
+    QTest::qWait(150);
+    QVERIFY(loose->isRunning());
+    QCOMPARE(out(4), 100);
+    SceneTaps::setMode(mode);
+    surface->setLevel(looseFader, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    QVERIFY(surface->holds(loose->id()) == false);
+
+    /* closing the show stops them too */
+    surface->setLevel(strobe, 0.5);
+    QVERIFY(zone->isHeld(a->id()));
+    core.zones()->stopAll(true);
+    QVERIFY(zone->isActive(a->id()) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
+}
+
+void Backend_Test::faderHoldEdges()
+{
+    // a scene a fader of the SHOW holds up, by the other ways it could stop
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 4), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    auto newScene = [&](int channel, const QString &name) {
+        Scene *s = new Scene(doc);
+        s->setName(name);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    Scene *a = newScene(0, "A");
+    Scene *b = newScene(1, "B");
+    Scene *loose = newScene(2, "Loose");
+    Zone *first = core.zones()->addZone("First");
+    Zone *second = core.zones()->addZone("Second");
+    first->addFunction(a->id());
+    first->addFunction(b->id());
+    second->addFunction(a->id());
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Faders", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "cols", 4 } });
+    auto fader = [&](int cell, Function *f) {
+        surface->setItem(page, sid, cell, { { "targets", QVariantList({ QVariantMap({ { "target", "scene" },
+                                                                                      { "functionId", int(f->id()) } }) }) } });
+        return surface->item(page, sid, cell);
+    };
+    const QVariantMap faderA = fader(0, a);
+    const QVariantMap faderLoose = fader(1, loose);
+    const QVariantMap faderB = fader(3, b);
+    auto out = [&](int channel) { return core.io()->channelValues(0).at(channel).toInt(); };
+    auto plays = [&](Function *f) {
+        QTest::qWait(100);
+        return f->isRunning() && f->stopped() == false;
+    };
+
+    /* a playback releasing it: it plays on */
+    surface->setLevel(faderA, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, int(a->id()));
+    pb->releaseFunction(int(a->id()));
+    pb->releaseAll();
+    QVERIFY(plays(a));
+    QVERIFY(surface->holds(a->id()));
+
+    /* trying it in Scenes: it plays on */
+    core.effects()->togglePreview(a->id());
+    QVERIFY(plays(a));
+
+    /* in two groups: the one where its fader doesn't hold it lets it go only */
+    second->start(a->id());
+    QVERIFY(second->isActive(a->id()));
+    second->stopAll();
+    QVERIFY(second->isActive(a->id()) == false);
+    second->start(a->id());
+    core.zones()->stopAll();
+    core.stopAll();
+    QVERIFY(plays(a));
+    QVERIFY(first->isActive(a->id()) && first->isHeld(a->id()));
+    QCOMPARE(out(0), 200);
+    // its fader at the bottom stops it
+    surface->setLevel(faderA, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+
+    /* a scene of no group put into a group while its fader is up: the fader
+       still stops it, and it isn't held in its group (Stop all stops it) */
+    surface->setLevel(faderLoose, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 200, 3000);
+    second->addFunction(loose->id());
+    QVERIFY(surface->holds(loose->id()) == false);
+    QVERIFY(surface->heldScenes().contains(loose->id()) == false);
+    surface->setLevel(faderLoose, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+    second->removeFunction(loose->id());
+
+    /* a fader out of its table, made smaller: its scene is let go */
+    surface->setLevel(faderB, 1.0);
+    QVERIFY(first->isHeld(b->id()));
+    surface->updateSection(page, sid, { { "cols", 3 } });
+    QVERIFY(first->isHeld(b->id()) == false);
+    QVERIFY(first->isActive(b->id()));
+    first->stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(b->isRunning() == false, 3000);
+    surface->updateSection(page, sid, { { "cols", 4 } });
+
+    /* the Flash of a fader on a scene a button started: back as it was, not
+       held (its button stops it) */
+    first->start(b->id());
+    const QVariantMap faderB2 = surface->item(page, sid, 3);
+    const QVariantList saved = surface->holdLevels(faderB2);
+    surface->setLevel(faderB2, 1.0);
+    QVERIFY(first->isHeld(b->id()));
+    surface->restoreLevels(faderB2, saved);
+    QVERIFY(first->isActive(b->id()));
+    QVERIFY(first->isHeld(b->id()) == false);
+    first->stop(b->id());
+    QVERIFY(first->isActive(b->id()) == false);
+
+    core.zones()->stopAll(true);
     QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
 }
 

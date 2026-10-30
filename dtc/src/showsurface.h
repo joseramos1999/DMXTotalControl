@@ -210,6 +210,13 @@ public:
     void setSceneDimmer(quint32 functionId, qreal dimmer);
     qreal sceneDimmer(quint32 functionId) const;
 
+    /** Whether a fader or dial of the SHOW holds $fid up ("scene",
+     *  "sceneRun"): only that fader, at the bottom, stops it (not its group,
+     *  its button, releasing the groups or Stop all) */
+    Q_INVOKABLE bool holds(quint32 fid) const;
+    /** The scenes faders hold up, in their groups or on their own */
+    QSet<quint32> heldScenes() const;
+
     /** Something the controls show changed with no signal of its own (the
      *  speed of a scene in no group, from a mapping): they read it again */
     void refresh();
@@ -367,16 +374,19 @@ private:
     /** The dimmers no "sceneDimmer" fader or dial is on any more go (their
      *  scenes back to full): a dimmer lives with its controls */
     void pruneSceneDimmers();
+    /** The scenes no "scene" or "sceneRun" fader or dial is on any more are
+     *  let go (they play on): a hold lives with its controls */
+    void pruneHolds();
+    /** The scenes the faders and dials of every page have as targets of
+     *  the $kinds ("sceneDimmer", "scene"…); $shownOnly: only those of
+     *  faders and dials drawn (not out of their table, made smaller) */
+    QSet<quint32> controlledScenes(const QStringList &kinds, bool shownOnly = false) const;
     /** At the bottom of the travel, a scene or a playback fader stops it */
     static bool bottomStops(const QVariantMap &target);
     /** The scenes the targets of a control start ("scene", "sceneRun") */
     static QList<quint32> startedScenes(const QVariantList &targets);
-    /** Whether $fid starting in its group stops one of $others that plays:
-     *  the scenes of one control don't replace each other at every move */
-    bool releasesOther(quint32 fid, const QList<quint32> &others) const;
 
-    /** $together: the scenes the other targets of the control start */
-    void setTargetLevel(const QVariantMap &target, qreal level, const QList<quint32> &together = QList<quint32>());
+    void setTargetLevel(const QVariantMap &target, qreal level);
     qreal targetLevel(const QVariantMap &target) const;
     /** The fixtures of a movement speed fader: of its group, or every one
      *  with pan or tilt (-1) */

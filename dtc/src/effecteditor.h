@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QUrl>
+#include <functional>
 
 class ZoneManager;
 class Programmer;
@@ -50,6 +51,9 @@ public:
 
     /** The settings with the default priority of new scenes (none: the engine default) */
     void setSettings(AppSettings *settings);
+    /** A function a fader of the SHOW holds up: trying it doesn't stop it
+     *  (only that fader stops it) */
+    void setHeldByFader(const std::function<bool(quint32)> &held);
 
     /*********************************************************************
      * Common
@@ -215,6 +219,7 @@ private:
     Programmer *m_programmer;
     ZoneManager *m_zones;
     AppSettings *m_settings;
+    std::function<bool(quint32)> m_heldByFader;
 };
 
 #endif

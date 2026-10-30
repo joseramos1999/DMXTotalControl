@@ -156,10 +156,20 @@ void ZoneManager::moveZone(int from, int to)
     m_doc->setModified();
 }
 
-void ZoneManager::stopAll()
+void ZoneManager::stopAll(bool held)
 {
     for (Zone *zone : std::as_const(m_zones))
-        zone->stopAll();
+        zone->stopAll(held);
+}
+
+bool ZoneManager::isHeld(quint32 fid) const
+{
+    for (const Zone *zone : std::as_const(m_zones))
+    {
+        if (zone->isHeld(fid))
+            return true;
+    }
+    return false;
 }
 
 void ZoneManager::nextAll()
@@ -292,8 +302,9 @@ void ZoneManager::deleteZones()
 {
     // Every group stops while all of them are still alive and listed: a stop
     // tells the SHOW right away, and what it shows reads the groups again
+    // (those faders hold up too)
     for (Zone *zone : std::as_const(m_zones))
-        zone->stopAll();
+        zone->stopAll(true);
 
     // then they leave the list before they go (nothing finds a deleted one)
     const QList<Zone *> old = std::exchange(m_zones, QList<Zone *>());

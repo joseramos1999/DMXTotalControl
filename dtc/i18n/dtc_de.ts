@@ -7513,6 +7513,10 @@ Fügen Sie welche auf der Seite Patch hinzu.</translation>
         <translation>Nichts läuft</translation>
     </message>
     <message>
+        <source>A fader holds it up: lower it to stop it</source>
+        <translation>Ein Fader hält sie: Ziehen Sie ihn herunter, um sie zu stoppen</translation>
+    </message>
+    <message>
         <source>Universe %1</source>
         <translation>Universum %1</translation>
     </message>

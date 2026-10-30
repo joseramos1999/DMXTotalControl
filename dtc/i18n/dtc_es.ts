@@ -7514,6 +7514,10 @@ Añádelos en la página Patch.</translation>
         <translation>No suena nada</translation>
     </message>
     <message>
+        <source>A fader holds it up: lower it to stop it</source>
+        <translation>La sujeta un fader: bájalo para pararla</translation>
+    </message>
+    <message>
         <source>Universe %1</source>
         <translation>Universo %1</translation>
     </message>

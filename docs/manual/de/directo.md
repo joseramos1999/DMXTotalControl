@@ -49,7 +49,7 @@ Auf jeder Kachel sehen Sie:
 
 Die Taste jeder Spalte wechselt zwischen:
 
-- **„Exklusiv“**: Es läuft immer nur eine Szene. Starten Sie eine andere, wird zur neuen übergeblendet.
+- **„Exklusiv“**: Es läuft immer nur eine Szene. Starten Sie eine andere, wird zur neuen übergeblendet. Die [Fader des SHOW](show.md#fader), die Szenen abspielen, sind die Ausnahme: Sie fügen ihre hinzu, Sie können also mehrere derselben Gruppe gleichzeitig hochziehen.
 - **„Mischen“**: Die Szenen addieren sich; mehrere können gleichzeitig laufen.
 
 ### Überblendzeit
@@ -148,6 +148,8 @@ Jede Szene hat eine Priorität von 0 bis 10; neue Szenen bekommen die, die Sie u
 - **„Alle Szenen“**: alle anderen.
 - **„Die anderen Gruppen“**: die Szenen der anderen Gruppen.
 
+Startet ein [Fader des SHOW](show.md#fader) sie, gibt sie nichts frei, egal in welchem Modus: Sie kommt hinzu. Mit ihrer Taste gibt sie wie gewohnt frei. Und solange dieser Fader oben ist, stoppt sie nichts außer ihn ganz herunterzuziehen.
+
 **Geschützt vor Freigaben durch** lässt die Szene diese Freigaben ignorieren:
 
 - **„Keine“**: Sie wird wie immer freigegeben.
@@ -161,7 +163,7 @@ Jede Szene hat eine Priorität von 0 bis 10; neue Szenen bekommen die, die Sie u
 
 - **„Pause“** friert alles ein, was läuft. **„Fortsetzen“** setzt es fort.
 - **„Gruppen freigeben“** stoppt die Szenen aller Gruppen; das Quadrat jeder Spalte nur die dieser Gruppe.
-- **„Alles stoppen“** (Esc) in der oberen Leiste stoppt alles, was läuft, auch außerhalb der Gruppen. Den Programmer leert es nicht.
+- **„Alles stoppen“** (Esc) in der oberen Leiste stoppt alles, was läuft, auch außerhalb der Gruppen. Den Programmer leert es nicht. Weder „Alles stoppen“ noch „Gruppen freigeben“ stoppt die Szenen, die ein hochgezogener [Fader des SHOW](show.md#fader) hält: nur ihn ganz herunterzuziehen.
 - **„Blackout“** (Strg+B) schaltet die Ausgabe auf Schwarz, ohne etwas zu stoppen. Die Köpfe bewegen sich nicht: Pan, Tilt, Zoom, Fokus und die anderen Kanäle, die kein Licht sind, bleiben, wo sie sind.
 
 ## Mischer

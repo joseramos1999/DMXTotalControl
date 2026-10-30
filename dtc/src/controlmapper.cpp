@@ -1563,6 +1563,11 @@ Zone *ControlMapper::zoneOwning(quint32 functionId) const
     return nullptr;
 }
 
+bool ControlMapper::heldByFader(quint32 functionId) const
+{
+    return m_core->surface() != nullptr && m_core->surface()->holds(functionId);
+}
+
 quint32 ControlMapper::functionOf(const QVariantMap &m) const
 {
     if (m.value("target").toString() == "sceneIndex")
@@ -1754,14 +1759,15 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
             const SceneTaps::Outcome outcome = SceneTaps::press(f, running);
             if (outcome == SceneTaps::StartIt || (outcome == SceneTaps::ToggleIt && next && running == false))
                 f->start(m_core->doc()->masterTimer(), FunctionParent::master());
-            else if (outcome == SceneTaps::StopIt || (outcome == SceneTaps::ToggleIt && next == false && running))
+            else if ((outcome == SceneTaps::StopIt || (outcome == SceneTaps::ToggleIt && next == false && running)) &&
+                     heldByFader(fid) == false)
                 f->stop(FunctionParent::master());
         }
         else if (next && f->isRunning() == false)
         {
             f->start(m_core->doc()->masterTimer(), FunctionParent::master());
         }
-        else if (next == false && f->isRunning())
+        else if (next == false && f->isRunning() && heldByFader(fid) == false)
         {
             f->stop(FunctionParent::master());
         }

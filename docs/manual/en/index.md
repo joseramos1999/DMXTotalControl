@@ -62,7 +62,7 @@ From left to right:
 - **“N running”**: how many scenes and effects are playing.
 - **GM**: the grand master. Below 100 % it turns orange.
 - **“Blackout”** (Ctrl+B): sends everything to black while it is on.
-- **“Stop all”** (Esc): stops everything that is playing. The programmer is not cleared.
+- **“Stop all”** (Esc): stops everything that is playing. The programmer is not cleared. The scenes a raised SHOW fader holds go on: only lowering that fader stops them.
 - **“?”**: opens this manual (F12).
 
 In a narrow window or on a small screen, the bar becomes compact: the show name is cut short, “Save as…” becomes an icon, “N running” keeps only the number and, in the narrowest ones, “Blackout” and “Stop all” keep only their icon. Hover over an icon to see what it is. If everything looks too small or too big, change the **Size of the interface** in [Options](opciones.md#general).

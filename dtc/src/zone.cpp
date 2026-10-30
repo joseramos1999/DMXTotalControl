@@ -66,7 +66,7 @@ Zone::Zone(Doc *doc, quint32 id, QObject *parent)
 
 Zone::~Zone()
 {
-    stopAll();
+    stopAll(true);
 }
 
 quint32 Zone::id() const
@@ -272,7 +272,8 @@ void Zone::removeFunction(quint32 fid)
     if (m_functions.contains(fid) == false)
         return;
 
-    stop(fid);
+    // (out of the group, held up or not)
+    stopScene(fid);
     disconnectFunction(fid);
     m_functions.removeAll(fid);
     m_options.remove(fid);
@@ -365,18 +366,24 @@ void Zone::trigger(quint32 fid)
 
 void Zone::start(quint32 fid)
 {
+    startScene(fid, true);
+}
+
+void Zone::startScene(quint32 fid, bool release)
+{
     Function *f = m_doc->function(fid);
     if (f == nullptr || m_functions.contains(fid) == false)
         return;
 
-    // release the scenes this one replaces. Releases across groups need
-    // the manager; a standalone zone only handles its own scenes
+    // release the scenes this one replaces, but those faders of the SHOW
+    // hold up (stop() leaves them). Releases across groups need the
+    // manager; a standalone zone only handles its own scenes
     ZoneManager *manager = qobject_cast<ZoneManager *>(parent());
-    if (manager != nullptr)
+    if (release && manager != nullptr)
     {
         manager->releaseFor(this, fid);
     }
-    else if (effectiveRelease(fid) == ReleaseGroup)
+    else if (release && effectiveRelease(fid) == ReleaseGroup)
     {
         const QList<quint32> running = m_active.values();
         for (quint32 other : running)
@@ -417,13 +424,41 @@ void Zone::start(quint32 fid)
 
 void Zone::stop(quint32 fid)
 {
+    // a scene a fader of the SHOW holds up: only its fader stops it
+    if (m_held.contains(fid))
+        return;
+    // held up by a fader in another group it is in too: this group only
+    // lets it go, its levels with it, and it plays on there
+    ZoneManager *manager = qobject_cast<ZoneManager *>(parent());
+    if (manager != nullptr && m_active.contains(fid) && manager->isHeld(fid))
+    {
+        if (Function *f = m_doc->function(fid))
+        {
+            for (const int id : m_intensityOverrides.value(fid))
+                f->releaseAttributeOverride(id);
+            for (const int id : m_liveOverrides.value(fid))
+                f->releaseAttributeOverride(id);
+        }
+        forgetScene(fid);
+        return;
+    }
+    stopScene(fid);
+}
+
+void Zone::stopScene(quint32 fid)
+{
+    m_held.remove(fid);
     if (m_active.contains(fid) == false)
         return;
 
     Function *f = m_doc->function(fid);
     if (f != nullptr)
         f->stop(FunctionParent(FunctionParent::ManualVCWidget, m_id));
+    forgetScene(fid);
+}
 
+void Zone::forgetScene(quint32 fid)
+{
     m_waiting.remove(fid);
     m_liveOverrides.remove(fid);
     m_active.remove(fid);
@@ -434,11 +469,59 @@ void Zone::stop(quint32 fid)
     emit functionsChanged();
 }
 
-void Zone::stopAll()
+void Zone::stopAll(bool held)
 {
     const QList<quint32> running = m_active.values();
     for (quint32 fid : running)
-        stop(fid);
+    {
+        if (held)
+            stopScene(fid);
+        else
+            stop(fid);
+    }
+}
+
+void Zone::hold(quint32 fid, qreal speed)
+{
+    if (m_doc->function(fid) == nullptr || m_functions.contains(fid) == false)
+        return;
+
+    if (m_active.contains(fid))
+    {
+        // (started by a button, or by this fader before: the fader has it)
+        if (speed > 0.0)
+            setRunSpeed(fid, speed);
+    }
+    else
+    {
+        // (start gives the speed of this run to the function before it runs)
+        if (speed > 0.0)
+            m_runSpeeds.insert(fid, qBound(0.1, speed, 10.0));
+        // added to what plays: two faders up on scenes of an exclusive group
+        // would replace each other at every move, and start over
+        startScene(fid, false);
+    }
+    m_held.insert(fid);
+}
+
+void Zone::letGo(quint32 fid)
+{
+    stopScene(fid);
+}
+
+void Zone::dropHold(quint32 fid)
+{
+    m_held.remove(fid);
+}
+
+bool Zone::isHeld(quint32 fid) const
+{
+    return m_held.contains(fid);
+}
+
+QList<quint32> Zone::heldFunctions() const
+{
+    return m_held.values();
 }
 
 bool Zone::isActive(quint32 fid) const
@@ -640,15 +723,6 @@ void Zone::setRunSpeed(quint32 fid, qreal speed)
         f->setSpeedFactor(speed);
 }
 
-void Zone::startAt(quint32 fid, qreal speed)
-{
-    if (m_doc->function(fid) == nullptr || m_functions.contains(fid) == false)
-        return;
-    // (start gives it to the function before it runs)
-    m_runSpeeds.insert(fid, qBound(0.1, speed, 10.0));
-    start(fid);
-}
-
 qreal Zone::speed(quint32 fid) const
 {
     return m_runSpeeds.contains(fid) ? m_runSpeeds.value(fid) : m_options.value(fid).speed;
@@ -705,6 +779,7 @@ void Zone::slotFunctionStopped(quint32 fid)
     if (m_active.contains(fid) && (f == nullptr || f->isRunning() == false || restarted))
     {
         m_active.remove(fid);
+        m_held.remove(fid);
         m_sceneLevels.remove(fid);
         m_runSpeeds.remove(fid);
         emit activeChanged();
@@ -718,6 +793,7 @@ void Zone::slotFunctionReplaced(quint32 fid)
     if (m_functions.contains(fid))
     {
         m_active.remove(fid);
+        m_held.remove(fid);
         m_intensityOverrides.remove(fid);
         m_sceneLevels.remove(fid);
         m_runSpeeds.remove(fid);
@@ -732,6 +808,7 @@ void Zone::slotFunctionRemoved(quint32 fid)
     if (m_functions.removeAll(fid) > 0)
     {
         m_active.remove(fid);
+        m_held.remove(fid);
         m_intensityOverrides.remove(fid);
         m_sceneLevels.remove(fid);
         m_runSpeeds.remove(fid);

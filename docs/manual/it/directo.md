@@ -49,7 +49,7 @@ In ogni riquadro si vede:
 
 Il tasto di ogni colonna alterna tra:
 
-- **«Esclusivo»**: è attiva una sola scena alla volta. Quando ne avvii un'altra, fa una dissolvenza incrociata verso la nuova.
+- **«Esclusivo»**: è attiva una sola scena alla volta. Quando ne avvii un'altra, fa una dissolvenza incrociata verso la nuova. I [fader dello SHOW](show.md#fader) che avviano scene sono l'eccezione: aggiungono la loro, quindi puoi alzarne diversi dello stesso gruppo insieme.
 - **«Mix»**: le scene si sommano; puoi averne diverse in riproduzione contemporaneamente.
 
 ### Tempo di dissolvenza incrociata
@@ -148,6 +148,8 @@ Ogni scena ha una priorità da 0 a 10; le nuove prendono quella che indichi in [
 - **«Tutte le scene»**: tutte le altre.
 - **«Gli altri gruppi»**: le scene degli altri gruppi.
 
+Quando la avvia un [fader dello SHOW](show.md#fader), non rilascia niente, qualunque sia la sua modalità: si aggiunge alle altre. Con il suo pulsante, rilascia come sempre. E finché quel fader è alzato, niente la ferma, se non abbassarlo fino in fondo.
+
 **Protetta dai rilasci di** fa sì che la scena ignori quei rilasci:
 
 - **«Nessuno»**: viene rilasciata come sempre.
@@ -161,7 +163,7 @@ Ogni scena ha una priorità da 0 a 10; le nuove prendono quella che indichi in [
 
 - **«Pausa»** congela tutto ciò che è in riproduzione. **«Riprendi»** lo fa continuare.
 - **«Rilascia gruppi»** ferma le scene di tutti i gruppi; il quadrato di ogni colonna, solo quelle di quel gruppo.
-- **«Ferma tutto»** (Esc), nella barra superiore, ferma tutto ciò che è in riproduzione, anche fuori dai gruppi. Non svuota il programmatore.
+- **«Ferma tutto»** (Esc), nella barra superiore, ferma tutto ciò che è in riproduzione, anche fuori dai gruppi. Non svuota il programmatore. Né «Ferma tutto» né «Rilascia gruppi» fermano le scene che un [fader dello SHOW](show.md#fader) alzato trattiene: solo abbassarlo fino in fondo.
 - **«Blackout»** (Ctrl+B) manda l'uscita al buio senza fermare niente. Le teste non si muovono: il pan, il tilt, lo zoom, il fuoco e gli altri canali che non sono luce restano dove sono.
 
 ## Mixer

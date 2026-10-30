@@ -7513,6 +7513,10 @@ Aggiungine alcune nella pagina Patch.</translation>
         <translation>Niente in riproduzione</translation>
     </message>
     <message>
+        <source>A fader holds it up: lower it to stop it</source>
+        <translation>La trattiene un fader: abbassalo per fermarla</translation>
+    </message>
+    <message>
         <source>Universe %1</source>
         <translation>Universo %1</translation>
     </message>

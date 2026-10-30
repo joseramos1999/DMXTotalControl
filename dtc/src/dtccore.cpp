@@ -136,6 +136,12 @@ DtcCore::DtcCore(QObject *parent)
     // (PB 3 selects a playback; GO and BACK go through the playbacks)
     m_commands->setPlaybacks(m_playbacks);
     m_surface = new ShowSurface(m_doc, m_zones, this);
+    // a scene a fader of the SHOW holds up: only that fader stops it, not
+    // a playback releasing it, nor trying it or stopping it in the editors
+    auto heldByFader = [this](quint32 id) { return m_surface->holds(id); };
+    m_playbacks->setHeldByFader(heldByFader);
+    m_effects->setHeldByFader(heldByFader);
+    m_timeline->setHeldByFader(heldByFader);
     m_drive = new DriveControl(m_doc, this);
     m_mixer = new LiveMixer(m_doc, this);
     m_surface->setMixer(m_mixer);
@@ -814,10 +820,11 @@ void DtcCore::releaseOutput()
     const bool live = m_doc->masterTimer()->runningFunctions() > 0 || m_programmer->hasValues() ||
                       m_patch->identified().isEmpty() == false;
 
-    // the scenes, the playbacks and their flashes stop, the programmer and the
-    // identify let their channels go (the FX of the programmer too)
+    // the scenes (those faders hold up too), the playbacks and their flashes
+    // stop, the programmer and the identify let their channels go (the FX of
+    // the programmer too)
     m_playbacks->resetLive();
-    m_zones->stopAll();
+    m_zones->stopAll(true);
     m_doc->masterTimer()->stopAllFunctions();
     m_patch->stopIdentify();
     m_programmer->clear();
@@ -852,6 +859,24 @@ void DtcCore::stopAll()
     // the flashes held on playbacks are let go (their levels stay)
     m_playbacks->resetLive();
     m_zones->stopAll();
+
+    // the scenes faders of the SHOW hold up go on: only their fader stops
+    // them. Then each other one stops (what they play stops with them: their
+    // steps, the tracks of a super scene, are their children; one also
+    // started on its own, by a button or a playback, stops too)
+    const QSet<quint32> held = m_surface->heldScenes();
+    if (held.isEmpty() == false)
+    {
+        for (Function *f : m_doc->functions())
+        {
+            const bool own = f->startedAsChild() == false || f->isStartedBy(FunctionParent::master()) ||
+                             f->isStartedBy(PlaybackManager::playbackParent());
+            if (f->stopped() == false && own && held.contains(f->id()) == false)
+                f->stop(FunctionParent::master());
+        }
+        return;
+    }
+
     m_doc->masterTimer()->stopAllFunctions();
     // the FX of the programmer are live edits, not a playback: they go on
     m_programmer->restartFx();

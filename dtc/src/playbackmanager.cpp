@@ -775,9 +775,16 @@ void PlaybackManager::levelUpForGo(quint32 functionId)
         m_levels.insert(functionId, 1.0);
 }
 
+void PlaybackManager::setHeldByFader(const std::function<bool(quint32)> &held)
+{
+    m_heldByFader = held;
+}
+
 void PlaybackManager::releaseIt(Function *f)
 {
-    f->stop(playbackParent());
+    // (one a fader of the SHOW holds up plays on: only that fader stops it)
+    if (m_heldByFader == nullptr || m_heldByFader(f->id()) == false)
+        f->stop(playbackParent());
     dropFlashHolds(f->id());
     m_startedByFlash.remove(f->id());
     m_held.remove(f->id());

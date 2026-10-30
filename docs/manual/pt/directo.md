@@ -49,7 +49,7 @@ Em cada cartão aparecem:
 
 O botão de cada coluna alterna entre:
 
-- **“Exclusivo”**: só uma cena roda por vez. Ao disparar outra, faz crossfade para a nova.
+- **“Exclusivo”**: só uma cena roda por vez. Ao disparar outra, faz crossfade para a nova. Os [faders do SHOW](show.md#faders) que disparam cenas são a exceção: somam a deles, então você pode subir vários do mesmo grupo ao mesmo tempo.
 - **“Mistura”**: as cenas se somam; você pode ter várias rodando ao mesmo tempo.
 
 ### Tempo de crossfade
@@ -148,6 +148,8 @@ Cada cena tem uma prioridade de 0 a 10; as novas recebem a que você indicar em 
 - **“Todas as cenas”**: todas as outras.
 - **“Os outros grupos”**: as cenas dos outros grupos.
 
+Quando um [fader do SHOW](show.md#faders) a dispara, ela não libera nada, seja qual for o modo: soma-se às outras. Com o botão dela, libera como sempre. E enquanto esse fader está levantado, nada a para, a não ser descê-lo até o fim.
+
 **Protegida de liberações por** faz a cena ignorar essas liberações:
 
 - **“Nenhum”**: ela é liberada como sempre.
@@ -161,7 +163,7 @@ Cada cena tem uma prioridade de 0 a 10; as novas recebem a que você indicar em 
 
 - **“Pausar”** congela tudo o que está rodando. **“Retomar”** o retoma.
 - **“Liberar grupos”** para as cenas de todos os grupos; o quadrado de cada coluna, só as desse grupo.
-- **“Parar tudo”** (Esc), na barra superior, para tudo o que está rodando, também fora dos grupos. Não esvazia o programador.
+- **“Parar tudo”** (Esc), na barra superior, para tudo o que está rodando, também fora dos grupos. Não esvazia o programador. Nem “Parar tudo” nem “Liberar grupos” param as cenas que um [fader do SHOW](show.md#faders) levantado segura: só descê-lo até o fim.
 - **“Blackout”** (Ctrl+B) leva a saída ao preto sem parar nada. As cabeças não se movem: o pan, o tilt, o zoom, o foco e os outros canais que não são luz ficam onde estão.
 
 ## Mixer

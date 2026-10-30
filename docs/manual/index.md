@@ -62,7 +62,7 @@ De izquierda a derecha:
 - **«N en marcha»**: cuántas escenas y efectos están sonando.
 - **GM**: el gran master. Por debajo del 100 % se pone naranja.
 - **«Blackout»** (Ctrl+B): saca todo a negro mientras está encendido.
-- **«Parar todo»** (Esc): para todo lo que suena. El programador no se limpia.
+- **«Parar todo»** (Esc): para todo lo que suena. El programador no se limpia. Las escenas que sujeta un fader del SHOW subido siguen: solo las para bajar ese fader.
 - **«?»**: abre este manual (F12).
 
 En una ventana estrecha o una pantalla pequeña, la barra se compacta: el nombre del show se recorta, «Guardar como…» queda como un icono, «N en marcha» se queda en el número y, en las más estrechas, «Blackout» y «Parar todo» quedan solo con su icono. Pasa el ratón por encima de un icono para ver qué es. Si todo se ve pequeño o grande, cambia el **Tamaño de la interfaz** en [Opciones](opciones.md#general).

@@ -62,7 +62,7 @@ Da esquerda para a direita:
 - **“N rodando”**: quantas cenas e efeitos estão rodando.
 - **GM**: o grand master. Abaixo de 100 % ele fica laranja.
 - **“Blackout”** (Ctrl+B): leva tudo ao preto enquanto está ligado.
-- **“Parar tudo”** (Esc): para tudo o que está rodando. O programador não é limpo.
+- **“Parar tudo”** (Esc): para tudo o que está rodando. O programador não é limpo. As cenas que um fader do SHOW levantado segura continuam: só descer esse fader as para.
 - **“?”**: abre este manual (F12).
 
 Em uma janela estreita ou uma tela pequena, a barra fica compacta: o nome do show é cortado, “Salvar como…” vira um ícone, “N rodando” fica só no número e, nas mais estreitas, “Blackout” e “Parar tudo” ficam só com o ícone. Passe o mouse sobre um ícone para ver o que ele é. Se tudo parecer pequeno ou grande, mude o **Tamanho da interface** em [Opções](opciones.md#geral).

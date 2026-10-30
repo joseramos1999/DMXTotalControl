@@ -49,7 +49,7 @@ Each tile shows:
 
 The button of each column switches between:
 
-- **“Exclusive”**: only one scene plays at a time. When you play another one, it crossfades to the new one.
+- **“Exclusive”**: only one scene plays at a time. When you play another one, it crossfades to the new one. The [SHOW faders](show.md#faders) that play scenes are the exception: they add theirs, so you can raise several of the same group at once.
 - **“Mix”**: scenes add up; you can have several playing at the same time.
 
 ### Crossfade time
@@ -148,6 +148,8 @@ Each scene has a priority from 0 to 10; new ones take the one you set in [Option
 - **“All the scenes”**: all the others.
 - **“The other groups”**: the scenes of the other groups.
 
+When a [SHOW fader](show.md#faders) plays it, it releases nothing, whatever its mode: it adds itself. With its button, it releases as usual. And while that fader is up, nothing stops it but lowering it all the way.
+
 **Protected from releases by** makes the scene ignore those releases:
 
 - **“None”**: it is released as usual.
@@ -161,7 +163,7 @@ Each scene has a priority from 0 to 10; new ones take the one you set in [Option
 
 - **“Pause”** freezes everything that is playing. **“Resume”** continues it.
 - **“Release groups”** stops the scenes of all the groups; the square of each column, only those of that group.
-- **“Stop all”** (Esc), in the top bar, stops everything that is playing, also outside the groups. It does not clear the programmer.
+- **“Stop all”** (Esc), in the top bar, stops everything that is playing, also outside the groups. It does not clear the programmer. Neither “Stop all” nor “Release groups” stops the scenes a raised [SHOW fader](show.md#faders) holds: only lowering it all the way.
 - **“Blackout”** (Ctrl+B) sends the output to black without stopping anything. The heads don't move: pan, tilt, zoom, focus and the other channels that aren't light stay where they are.
 
 ## Mixer

@@ -49,7 +49,7 @@ En cada ficha se ve:
 
 El botón de cada columna alterna entre:
 
-- **«Exclusiva»**: solo suena una escena a la vez. Al lanzar otra, hace crossfade a la nueva.
+- **«Exclusiva»**: solo suena una escena a la vez. Al lanzar otra, hace crossfade a la nueva. Los [faders del SHOW](show.md#faders) que lanzan escenas son la excepción: suman la suya, así que puedes subir varios del mismo grupo a la vez.
 - **«Mezcla»**: las escenas se suman; puedes tener varias sonando a la vez.
 
 ### Tiempo de crossfade
@@ -148,6 +148,8 @@ Cada escena tiene una prioridad de 0 a 10; las nuevas toman la que indiques en [
 - **«Todas las escenas»**: todas las demás.
 - **«Los demás grupos»**: las escenas de los otros grupos.
 
+Cuando la lanza un [fader del SHOW](show.md#faders), no libera nada, sea cual sea su modo: suma la suya. Con su botón, libera como siempre. Y mientras ese fader está subido, nada la para salvo bajarlo del todo.
+
 **Protegida de liberaciones de** hace que la escena ignore esas liberaciones:
 
 - **«Ninguno»**: se libera como siempre.
@@ -161,7 +163,7 @@ Cada escena tiene una prioridad de 0 a 10; las nuevas toman la que indiques en [
 
 - **«Pausa»** congela todo lo que suena. **«Reanudar»** lo continúa.
 - **«Liberar grupos»** para las escenas de todos los grupos; el cuadrado de cada columna, solo las de ese grupo.
-- **«Parar todo»** (Esc), en la barra superior, para todo lo que suena, también fuera de los grupos. No vacía el programador.
+- **«Parar todo»** (Esc), en la barra superior, para todo lo que suena, también fuera de los grupos. No vacía el programador. Ni «Parar todo» ni «Liberar grupos» paran las escenas que sujeta un [fader del SHOW](show.md#faders) subido: solo bajarlo del todo.
 - **«Blackout»** (Ctrl+B) saca la salida a negro sin parar nada. Las cabezas no se mueven: el pan, el tilt, el zoom, el foco y los demás canales que no son luz se quedan donde están.
 
 ## Mezclador

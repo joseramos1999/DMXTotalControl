@@ -29,6 +29,7 @@
 #include <QSet>
 
 #include <tuple>
+#include <functional>
 
 #include "functionparent.h"
 
@@ -82,6 +83,10 @@ public:
     PlaybackManager(Doc *doc, Programmer *programmer, CuelistEditor *cuelists, AppSettings *settings,
                     QObject *parent = nullptr);
     ~PlaybackManager();
+
+    /** A function a fader of the SHOW holds up: a playback releasing it
+     *  lets it go, but it plays on (only that fader stops it) */
+    void setHeldByFader(const std::function<bool(quint32)> &held);
 
     /** The parent of the functions the playbacks start (not parent(): QObject has one) */
     static FunctionParent playbackParent() { return FunctionParent(FunctionParent::ManualVCWidget, 0x50420000); }
@@ -323,6 +328,7 @@ private:
     Programmer *m_programmer;
     CuelistEditor *m_cuelists;
     AppSettings *m_settings;
+    std::function<bool(quint32)> m_heldByFader;
 
     QList<Page> m_pages;
     int m_currentPage;

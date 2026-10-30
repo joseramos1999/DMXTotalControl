@@ -58,6 +58,11 @@ TimelineEditor::~TimelineEditor()
 {
 }
 
+void TimelineEditor::setHeldByFader(const std::function<bool(quint32)> &held)
+{
+    m_heldByFader = held;
+}
+
 void TimelineEditor::slotFunctionRemoved()
 {
     if (m_doc->isClearing() == false)
@@ -514,7 +519,9 @@ void TimelineEditor::stop()
         return;
     if (Show *show = showOf(quint32(m_playingId)))
     {
-        show->stop(FunctionParent::master());
+        // (one a fader of the SHOW holds up: only that fader stops it)
+        if (m_heldByFader == nullptr || m_heldByFader(show->id()) == false)
+            show->stop(FunctionParent::master());
         // (played elsewhere later, it doesn't move the playhead)
         disconnect(show, SIGNAL(timeChanged(quint32)), this, SLOT(slotTimeChanged(quint32)));
     }

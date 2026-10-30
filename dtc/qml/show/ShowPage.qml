@@ -120,6 +120,9 @@ Item {
         selectCell(id, to)
     }
     function stopScene(fid) {
+        // (one a fader holds up: only that fader stops it)
+        if (Core.surface.holds(fid))
+            return
         for (let i = 0; i < Core.zones.count; i++) {
             let zone = Core.zones.zone(i)
             if (zone.isActive(fid)) {
