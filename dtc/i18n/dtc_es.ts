@@ -4622,6 +4622,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Buscar de nuevo</translation>
     </message>
     <message>
+        <source>Waiting for %1</source>
+        <translation>Esperando a %1</translation>
+    </message>
+    <message>
         <source>Remove universe</source>
         <translation>Quitar universo</translation>
     </message>

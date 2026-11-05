@@ -753,7 +753,7 @@ bool Universe::setInputPatch(QLCIOPlugin *plugin,
     return true;
 }
 
-bool Universe::setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index)
+bool Universe::setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index, const QString &expectedName)
 {
     if (index < 0)
         return false;
@@ -774,7 +774,7 @@ bool Universe::setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index)
         }
 
         OutputPatch *patch = m_outputPatchList.at(index);
-        bool result = patch->set(plugin, output);
+        bool result = patch->set(plugin, output, expectedName);
         emit outputPatchChanged();
         return result;
     }
@@ -785,7 +785,7 @@ bool Universe::setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index)
 
         // add a new patch
         OutputPatch *patch = new OutputPatch(m_id, this);
-        bool result = patch->set(plugin, output);
+        bool result = patch->set(plugin, output, expectedName);
         m_outputPatchList.append(patch);
         emit outputPatchesCountChanged();
         return result;

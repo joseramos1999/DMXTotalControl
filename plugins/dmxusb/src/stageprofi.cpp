@@ -109,6 +109,7 @@ bool Stageprofi::open(quint32 line, bool input)
     }
 
     // start the output thread
+    m_running = true;
     start();
 
     return true;
@@ -191,7 +192,8 @@ void Stageprofi::run()
 
     QElapsedTimer timer;
 
-    m_running = true;
+    // (DMX Total Control: running from open(), before start(): a stop() right
+    // after the start would otherwise be undone here, and wait() never return)
 
     if (m_portsInfo[0].m_compareData.size() == 0)
         m_portsInfo[0].m_compareData.fill(0, 512);

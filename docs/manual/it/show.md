@@ -89,6 +89,8 @@ Il modo più rapido per riempire una tabella è **trascinare le scene** dall'ele
 
 Un tasto portato da un'altra pagina con Alt+clic mostra «Un controllo su un'altra pagina» e sotto ciò che fa («Fa: …»).
 
+**Clic destro** su un tasto: ferma ciò che avvia, anche con **GO** nella barra superiore (con GO, premere una scena che suona non la ferma). La sua scena si ferma; i tasti successiva, precedente e rilascia rilasciano il loro gruppo; quelli di una cuelist o di un playback lo rilasciano; quello di una palette la spegne. Una scena che un fader alzato trattiene continua: solo il suo fader la ferma. Gli altri (blackout, ferma tutto, tap, BeatGO) non fanno niente. Su uno schermo touch, usa **Stop** nella barra superiore.
+
 ### Opzioni di un tasto
 
 - **Etichetta**: il suo testo. Vuota («Automatica»), mostra il nome della scena, della palette o dell'azione.

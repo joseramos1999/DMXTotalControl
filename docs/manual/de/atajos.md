@@ -105,4 +105,5 @@ Nachdem Sie auf einen Fader oder Schieberegler geklickt haben:
 | Mausrad | 2D-Plan | Zoom |
 | Ziehen mit der rechten oder mittleren Maustaste | 2D-Plan | Verschiebt die Ansicht (Doppelklick: zentriert sie) |
 | Rechtsklick | Taste 15° im 2D-Plan | Dreht andersherum |
+| Rechtsklick | Taste des SHOW (live) | Stoppt, was sie abspielt (ihre Szene, Gruppe, ihr Playback oder ihre Palette), auch mit GO |
 | „Entsperren“ gedrückt halten | Gesperrte SHOW | Entsperrt |

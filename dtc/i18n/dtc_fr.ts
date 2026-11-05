@@ -4629,6 +4629,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Actualiser</translation>
     </message>
     <message>
+        <source>Waiting for %1</source>
+        <translation>En attente de %1</translation>
+    </message>
+    <message>
         <source>Remove universe</source>
         <translation>Retirer l’univers</translation>
     </message>

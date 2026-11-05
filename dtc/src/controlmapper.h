@@ -172,6 +172,10 @@ public:
      *  target is pressed or released (its "mode" as in a mapping: toggle
      *  by default), a fader target gets a level 0..1 */
     Q_INVOKABLE void pressTarget(const QVariantMap &target, bool pressed);
+    /** What a button target plays stops, whatever the mode of the buttons
+     *  (a right click on a SHOW button): a scene (not one a fader of the
+     *  SHOW holds up), a group, a playback, a palette. The others: nothing */
+    Q_INVOKABLE void stopTarget(const QVariantMap &target);
     Q_INVOKABLE void setTargetLevel(const QVariantMap &target, qreal level);
     /** -1: nothing there, 0 off, 1 on, 2 paused */
     Q_INVOKABLE int targetState(const QVariantMap &target) const;

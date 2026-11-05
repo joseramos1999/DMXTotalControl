@@ -105,4 +105,5 @@ Después de hacer clic en un fader o un deslizador:
 | Rueda | Plano 2D | Zoom |
 | Arrastrar con el botón derecho o central | Plano 2D | Mueve la vista (doble clic: la centra) |
 | Clic derecho | Botón 15° del plano 2D | Gira hacia el otro lado |
+| Clic derecho | Botón del SHOW (en directo) | Para lo que lanza (su escena, su grupo, su playback o su paleta), también con GO |
 | Mantener pulsado «Desbloquear» | Show bloqueado | Desbloquea |

@@ -28,6 +28,12 @@
 #include "enttecdmxusbopen.h"
 #include "euroliteusbdmxpro.h"
 #include "dmxusb.h"
+#if defined(FTD2XX)
+#include "ftd2xx-interface.h"
+#endif
+#if defined(QTSERIAL)
+#include "qtserial-interface.h"
+#endif
 
 /****************************************************************************
  * Initialization
@@ -57,25 +63,45 @@ int DMXUSB::capabilities() const
 
 bool DMXUSB::rescanWidgets()
 {
+    // DMX Total Control: the old widgets leave the lists under the lock (no
+    // universe writes to them any more) and are deleted outside it, closing
+    // their devices before the new ones are probed. (What is present is
+    // listed first: a device that comes during the probe changes it again)
+    const QStringList present = presentInterfaces();
     int linesCount = m_inputs.count() + m_outputs.count();
-    m_inputs.clear();
-    m_outputs.clear();
-
-    while (m_widgets.isEmpty() == false)
-        delete m_widgets.takeFirst();
-
-    m_widgets = DMXUSBWidget::widgets();
-
-    foreach (DMXUSBWidget* widget, m_widgets)
+    QList <DMXUSBWidget*> old;
     {
-        for (int o = 0; o < widget->outputsNumber(); o++)
-            m_outputs.append(widget);
-
-        for (int i = 0; i < widget->inputsNumber(); i++)
-            m_inputs.append(widget);
+        QMutexLocker locker(&m_widgetsMutex);
+        m_inputs.clear();
+        m_outputs.clear();
+        m_freshOutputs.clear();
+        m_openedOutputs.clear();
+        old.swap(m_widgets);
     }
+    qDeleteAll(old);
 
-    if (m_inputs.count() + m_outputs.count() != linesCount)
+    QList <DMXUSBWidget*> found = DMXUSBWidget::widgets();
+    {
+        QMutexLocker locker(&m_widgetsMutex);
+        m_widgets = found;
+
+        foreach (DMXUSBWidget* widget, m_widgets)
+        {
+            for (int o = 0; o < widget->outputsNumber(); o++)
+                m_outputs.append(widget);
+
+            for (int i = 0; i < widget->inputsNumber(); i++)
+                m_inputs.append(widget);
+        }
+    }
+#if !defined(LIBFTDI) && !defined(LIBFTDI1)
+    m_present = present;
+    m_presentKnown = true;
+#endif
+
+    // DMX Total Control: the lines there were are closed with their widgets:
+    // their patches open them again, also when the count is the same
+    if (linesCount > 0 || m_inputs.count() + m_outputs.count() != linesCount)
         emit configurationChanged();
 
     return true;
@@ -84,6 +110,19 @@ bool DMXUSB::rescanWidgets()
 QList <DMXUSBWidget*> DMXUSB::widgets() const
 {
     return m_widgets;
+}
+
+QStringList DMXUSB::presentInterfaces() const
+{
+    // (libFTDI lists them opening them: there every event rescans)
+    QStringList present;
+#if defined(FTD2XX)
+    present << FTD2XXInterface::present();
+#endif
+#if defined(QTSERIAL)
+    present << QtSerialInterface::present();
+#endif
+    return present;
 }
 
 /****************************************************************************
@@ -102,7 +141,16 @@ bool DMXUSB::openOutput(quint32 output, quint32 universe)
                     this, SIGNAL(rdmValueChanged(quint32, quint32, QVariantMap)), Qt::QueuedConnection);
         }
         addToMap(universe, output, Output);
-        return m_outputs.at(output)->open(output, false);
+        const bool opened = m_outputs.at(output)->open(output, false);
+        // DMX Total Control: its first write gives the whole universe, and
+        // only this universe writes there
+        if (opened)
+        {
+            QMutexLocker locker(&m_widgetsMutex);
+            m_freshOutputs.insert(output);
+            m_openedOutputs.insert(output, universe);
+        }
+        return opened;
     }
     return false;
 }
@@ -111,6 +159,24 @@ void DMXUSB::closeOutput(quint32 output, quint32 universe)
 {
     if (output < quint32(m_outputs.size()))
     {
+        // DMX Total Control: a line another universe opened (this one had its
+        // number before a rescan) stays open for it
+        bool othersLine = false;
+        {
+            QMutexLocker locker(&m_widgetsMutex);
+            const quint32 owner = m_openedOutputs.value(output, UINT_MAX);
+            othersLine = owner != UINT_MAX && owner != universe;
+            if (othersLine == false)
+            {
+                m_openedOutputs.remove(output);
+                m_freshOutputs.remove(output);
+            }
+        }
+        if (othersLine)
+        {
+            removeFromMap(output, universe, Output);
+            return;
+        }
         DMXUSBWidget *widget = m_outputs.at(output);
         if (widget->supportRDM())
         {
@@ -195,8 +261,16 @@ QString DMXUSB::outputInfo(quint32 output)
 
 void DMXUSB::writeUniverse(quint32 universe, quint32 output, const QByteArray &data, bool dataChanged)
 {
-    if (output < quint32(m_outputs.size()))
-        m_outputs.at(output)->writeUniverse(universe, output, data, dataChanged);
+    // (from the thread of the universe: not while a rescan replaces the widgets)
+    QMutexLocker locker(&m_widgetsMutex);
+    // (a universe that didn't open this line: one that still has the number
+    // the line had before a rescan)
+    if (output < quint32(m_outputs.size()) && m_openedOutputs.value(output, UINT_MAX) == universe)
+    {
+        // (just opened: the whole universe, even if it didn't change)
+        const bool fresh = m_freshOutputs.remove(output);
+        m_outputs.at(output)->writeUniverse(universe, output, data, dataChanged || fresh);
+    }
 }
 
 /****************************************************************************
@@ -334,6 +408,12 @@ void DMXUSB::slotDeviceAdded(uint vid, uint pid)
         qDebug() << Q_FUNC_INFO << "Invalid DMX USB device, nothing to do";
         return;
     }
+    // DMX Total Control: the same interfaces present: nothing to close and open again
+    if (m_presentKnown && presentInterfaces() == m_present)
+    {
+        qDebug() << Q_FUNC_INFO << "The same DMX USB interfaces, nothing to do";
+        return;
+    }
 
     rescanWidgets();
 }
@@ -344,6 +424,11 @@ void DMXUSB::slotDeviceRemoved(uint vid, uint pid)
     if (!DMXInterface::validInterface(vid, pid))
     {
         qDebug() << Q_FUNC_INFO << "Invalid DMX USB device, nothing to do";
+        return;
+    }
+    if (m_presentKnown && presentInterfaces() == m_present)
+    {
+        qDebug() << Q_FUNC_INFO << "The same DMX USB interfaces, nothing to do";
         return;
     }
 

@@ -105,4 +105,5 @@ Depois de clicar em um fader ou um controle deslizante:
 | Roda do mouse | Plano 2D | Zoom |
 | Arrastar com o botão direito ou o do meio | Plano 2D | Move a vista (clique duplo: centraliza-a) |
 | Clique com o botão direito | Botão 15° do plano 2D | Gira para o outro lado |
+| Clique com o botão direito | Botão do SHOW (ao vivo) | Para o que ele dispara (a cena, o grupo, o playback ou a paleta dele), também com GO |
 | Manter pressionado “Desbloquear” | Show bloqueado | Desbloqueia |

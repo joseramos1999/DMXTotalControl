@@ -89,6 +89,8 @@ Am schnellsten füllen Sie eine Tabelle, indem Sie **Szenen** aus der Liste unte
 
 Eine mit Alt+Klick von einer anderen Seite geholte Taste zeigt „Ein Element auf einer anderen Seite“ und darunter, was sie tut („Macht: …“).
 
+**Rechtsklick** auf eine Taste: Sie stoppt, was sie abspielt, auch mit **GO** in der oberen Leiste (mit GO stoppt ein Druck auf eine laufende Szene sie nicht). Ihre Szene stoppt; Tasten für nächste, vorherige und Freigeben geben ihre Gruppe frei; die einer Cuelist oder eines Playbacks geben es frei; die einer Palette schaltet sie aus. Eine Szene, die ein hochgezogener Fader hält, läuft weiter: Nur ihr Fader stoppt sie. Die anderen (Blackout, Alles stoppen, Tap, BeatGO) tun nichts. Auf einem Touchscreen nutzen Sie **Stop** in der oberen Leiste.
+
 ### Optionen einer Taste
 
 - **Beschriftung**: ihr Text. Ist sie leer („Automatisch“), zeigt die Taste den Namen der Szene, der Palette oder der Aktion.

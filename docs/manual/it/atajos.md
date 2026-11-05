@@ -105,4 +105,5 @@ Dopo aver fatto clic su un fader o un cursore:
 | Rotella | Pianta 2D | Zoom |
 | Trascinare con il tasto destro o centrale | Pianta 2D | Sposta la vista (doppio clic: la centra) |
 | Clic destro | Tasto 15° della pianta 2D | Ruota nell'altro senso |
+| Clic destro | Tasto dello SHOW (dal vivo) | Ferma ciò che avvia (la sua scena, il suo gruppo, il suo playback o la sua palette), anche con GO |
 | Tenere premuto «Sblocca» | Show bloccato | Sblocca |

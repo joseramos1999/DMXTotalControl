@@ -546,8 +546,10 @@ bool InputOutputMap::setOutputPatch(quint32 universe, const QString &pluginName,
         }
     }
 
+    // DMX Total Control: the name given goes with the patch (a plugin with
+    // KPluginLinesByName waits for that line, OutputPatch::set())
     if (isFeedback == false)
-        return m_universeArray.at(universe)->setOutputPatch(plugin, output, index);
+        return m_universeArray.at(universe)->setOutputPatch(plugin, output, index, outputName);
     else
         return m_universeArray.at(universe)->setFeedbackPatch(plugin, output);
 
@@ -1337,6 +1339,11 @@ void InputOutputMap::loadDefaults()
         key = QString("/outputmap/universe%1/output/").arg(i);
         output = settings.value(key).toString();
 
+        /* DMX Total Control: the name of its line (the number can change
+         * when interfaces are plugged in or out) */
+        key = QString("/outputmap/universe%1/outputname/").arg(i);
+        const QString outputName = settings.value(key).toString();
+
         /* Feedback plugin name */
         key = QString("/outputmap/universe%1/feedbackplugin/").arg(i);
         fb_plugin = settings.value(key).toString();
@@ -1346,7 +1353,7 @@ void InputOutputMap::loadDefaults()
         feedback = settings.value(key).toString();
 
         if (plugin != KOutputNone && output != KOutputNone)
-            setOutputPatch(i, plugin, "", "", output.toUInt());
+            setOutputPatch(i, plugin, "", outputName, output.toUInt());
 
         if (fb_plugin != KOutputNone && feedback != KOutputNone)
             setOutputPatch(i, fb_plugin, "", "", feedback.toUInt(), true);
@@ -1414,6 +1421,13 @@ void InputOutputMap::saveDefaults() const
             settings.setValue(key, outPatch->output());
         else
             settings.setValue(key, KOutputNone);
+
+        /* DMX Total Control: the name of its line (one waited for too) */
+        key = QString("/outputmap/universe%1/outputname/").arg(i);
+        if (outPatch != NULL)
+            settings.setValue(key, outPatch->outputName());
+        else
+            settings.remove(key);
 
         key = QString("/outputmap/universe%1/feedbackplugin/").arg(i);
 

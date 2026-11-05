@@ -17,13 +17,23 @@
   limitations under the License.
 */
 
+#include <QTimer>
+
 #include "iomanager.h"
 #include "inputoutputmap.h"
 #include "outputpatch.h"
 #include "inputpatch.h"
 #include "qlcioplugin.h"
+#include "ioplugincache.h"
+#include "hotplugmonitor.h"
 #include "fixture.h"
 #include "doc.h"
+
+/** The plugin of the DMX USB interfaces (FTDI: Enttec, Eurolite, DMXKing…) */
+static const char *KDmxUsbPlugin = "DMX USB";
+/** The VID and PID of an FTDI interface: a rescan asked as if one came */
+static const uint KFtdiVid = 0x0403;
+static const uint KFtdiPid = 0x6001;
 
 IOManager::IOManager(Doc *doc, QObject *parent)
     : QObject(parent)
@@ -40,6 +50,54 @@ IOManager::IOManager(Doc *doc, QObject *parent)
             this, SLOT(slotPluginConfigurationChanged()));
     connect(m_ioMap, SIGNAL(universeWritten(quint32,QByteArray)),
             this, SLOT(slotUniverseWritten(quint32,QByteArray)));
+    // an interface plugged in while the program runs (the engine connects the
+    // plugins only with a setting this program doesn't have)
+    HotPlugMonitor::connectListener(this);
+}
+
+bool IOManager::tellDmxUsb(uint vid, uint pid, bool added)
+{
+    // (the plugin checks the VID and PID: another device changes nothing. It
+    // lists every FTDI chip, but knows the PID of a few: all of them count)
+    QLCIOPlugin *plugin = m_doc->ioPluginCache()->plugin(KDmxUsbPlugin);
+    if (plugin == nullptr)
+        return false;
+    if (vid == KFtdiVid)
+        pid = KFtdiPid;
+    QMetaObject::invokeMethod(plugin, added ? "slotDeviceAdded" : "slotDeviceRemoved",
+                              Q_ARG(uint, vid), Q_ARG(uint, pid));
+    return true;
+}
+
+int IOManager::dmxUsbLines() const
+{
+    QLCIOPlugin *plugin = m_doc->ioPluginCache()->plugin(KDmxUsbPlugin);
+    return plugin == nullptr ? 0 : int(plugin->inputs().count() + plugin->outputs().count());
+}
+
+void IOManager::slotDeviceAdded(uint vid, uint pid)
+{
+    // the driver of an FTDI interface may still be loading when the device
+    // arrives: if nothing new turned up, once more a moment later
+    const int lines = dmxUsbLines();
+    if (tellDmxUsb(vid, pid, true) == false || dmxUsbLines() != lines)
+        return;
+    QTimer::singleShot(2000, this, [this, vid, pid, lines]() {
+        if (dmxUsbLines() == lines)
+            tellDmxUsb(vid, pid, true);
+    });
+}
+
+void IOManager::slotDeviceRemoved(uint vid, uint pid)
+{
+    tellDmxUsb(vid, pid, false);
+}
+
+void IOManager::lookForInterfaces()
+{
+    // (the plugin compares what is present with what it found: nothing new,
+    // nothing is closed)
+    slotDeviceAdded(KFtdiVid, KFtdiPid);
 }
 
 void IOManager::slotUniversesChanged()
@@ -63,7 +121,15 @@ QVariantList IOManager::universes() const
         info.insert("name", name == defaultName ? tr("Universe %1").arg(i + 1) : name);
 
         OutputPatch *patch = m_ioMap->outputPatch(i);
-        if (patch != nullptr && patch->output() != QLCIOPlugin::invalidLine())
+        if (patch != nullptr && patch->lineGone())
+        {
+            // its interface unplugged: it waits for it (and goes back to it)
+            info.insert("plugin", patch->pluginName());
+            info.insert("line", -1);
+            info.insert("outputName", patch->outputName());
+            info.insert("waiting", true);
+        }
+        else if (patch != nullptr && patch->output() != QLCIOPlugin::invalidLine())
         {
             info.insert("plugin", patch->pluginName());
             info.insert("line", patch->output());
@@ -107,6 +173,9 @@ static QString outputOf(InputOutputMap *io, quint32 universe)
     OutputPatch *patch = io->outputPatch(universe);
     if (patch == nullptr || patch->output() == QLCIOPlugin::invalidLine())
         return QString();
+    // (waiting for its interface: not the line that took its number)
+    if (patch->lineGone())
+        return QString("%1|waiting|%2").arg(patch->pluginName(), patch->outputName());
     return QString("%1|%2").arg(patch->pluginName()).arg(patch->output());
 }
 
@@ -202,6 +271,10 @@ bool IOManager::removeLastUniverse()
 
 void IOManager::refresh()
 {
+    // asked: the plugin probes them all again, also when the same devices are
+    // there (one that didn't answer in time, a DMXKing that was busy)
+    if (QLCIOPlugin *plugin = m_doc->ioPluginCache()->plugin(KDmxUsbPlugin))
+        QMetaObject::invokeMethod(plugin, "rescanWidgets");
     emit outputsChanged();
     emit universesChanged();
 }

@@ -129,6 +129,7 @@ bool EuroliteUSBDMXPro::open(quint32 line, bool input)
 #endif
 
     // start the output thread
+    m_running = true;
     start();
 
     return true;
@@ -226,7 +227,8 @@ void EuroliteUSBDMXPro::run()
     QElapsedTimer timer;
     QByteArray request;
 
-    m_running = true;
+    // (DMX Total Control: running from open(), before start(): a stop() right
+    // after the start would otherwise be undone here, and wait() never return)
     while (m_running == true)
     {
         timer.restart();

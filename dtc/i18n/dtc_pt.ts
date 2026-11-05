@@ -4629,6 +4629,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Buscar novamente</translation>
     </message>
     <message>
+        <source>Waiting for %1</source>
+        <translation>Aguardando %1</translation>
+    </message>
+    <message>
         <source>Remove universe</source>
         <translation>Remover universo</translation>
     </message>

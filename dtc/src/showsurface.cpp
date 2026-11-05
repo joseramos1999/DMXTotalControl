@@ -955,6 +955,40 @@ void ShowSurface::release(const QVariantMap &item)
     slotChanged();
 }
 
+void ShowSurface::stop(const QVariantMap &item)
+{
+    const QString action = item.value("action").toString();
+    if (action == "scene")
+    {
+        const quint32 fid = item.value("functionId").toUInt();
+        Function *f = m_doc->function(fid);
+        if (f == nullptr)
+            return;
+        // (in its group, as a press with Stop; one a fader holds up goes on)
+        if (Zone *owner = zoneFor(fid))
+            owner->stop(fid);
+        else if ((f->isRunning() || f->stopped() == false) && holds(fid) == false)
+            f->stop(FunctionParent::master());
+    }
+    else if (action == "next" || action == "previous" || action == "release")
+    {
+        // its group released, or all of them
+        if (item.value("zoneId").toInt() < 0)
+            m_zones->stopAll();
+        else if (Zone *zone = m_zones->zoneById(item.value("zoneId").toUInt()))
+            zone->stopAll();
+    }
+    else if (m_core != nullptr && action == "palette")
+    {
+        m_core->mapping()->stopTarget(paletteTarget(item));
+    }
+    else if (m_core != nullptr && action == "map")
+    {
+        m_core->mapping()->stopTarget(item.value("map").toMap());
+    }
+    slotChanged();
+}
+
 bool ShowSurface::isActive(const QVariantMap &item) const
 {
     QString action = item.value("action").toString();

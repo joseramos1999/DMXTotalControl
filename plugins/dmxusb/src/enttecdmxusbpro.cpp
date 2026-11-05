@@ -18,6 +18,7 @@
 */
 
 #include <QDebug>
+#include <QHash>
 
 #include "enttecdmxusbpro.h"
 #include "midiprotocol.h"
@@ -85,11 +86,24 @@ EnttecDMXUSBPro::EnttecDMXUSBPro(DMXInterface *iface, quint32 outputLine, quint3
     // then attempt to extract
     // the vendor serial number
     extractSerial();
+
+    // DMX Total Control: the same one at every rescan (a hot plugged device):
+    // a probe without an answer in time would give the FTDI one, and the name
+    // of its line would change, so its universe would wait for it
+    static QHash<QString, QString> known;
+    if (m_proSerial != serial())
+        known.insert(serial(), m_proSerial);
+    else if (known.contains(serial()))
+        m_proSerial = known.value(serial());
 }
 
 EnttecDMXUSBPro::~EnttecDMXUSBPro()
 {
     qDebug() << Q_FUNC_INFO;
+    // DMX Total Control: a rescan (a hot plugged device) deletes the widget
+    // with its lines open: its thread stops whatever lines are open (the
+    // closes below stop it only when one line is left)
+    stopThread();
     close(m_inputBaseLine, true);
     close(m_outputBaseLine, false);
 
@@ -383,9 +397,15 @@ bool EnttecDMXUSBPro::open(quint32 line, bool input)
     cmd.param2 = input;
     m_actionsQueue.append(cmd);
 
-    // if needed, start the input/output thread
-    if (m_isThreadRunning == false)
+    // if needed, start the input/output thread. DMX Total Control: running
+    // from here, before start() (a stopThread() right after would be undone
+    // in run(), and the thread never stop); one ending on an error finishes first
+    if (m_isThreadRunning == false || isRunning() == false)
+    {
+        wait();
+        m_isThreadRunning = true;
         start();
+    }
 
     return true;
 }
@@ -684,7 +704,7 @@ void EnttecDMXUSBPro::run()
      *  should read input data as well */
     bool readInput = false;
 
-    m_isThreadRunning = true;
+    // (running from open(): DMX Total Control)
 
     while (m_isThreadRunning == true)
     {
@@ -1034,11 +1054,10 @@ void EnttecDMXUSBPro::stopThread()
 {
     qDebug() << Q_FUNC_INFO;
 
-    if (m_isThreadRunning == true)
-    {
-        m_isThreadRunning = false;
+    // (DMX Total Control: also a thread just started, or ending on an error)
+    m_isThreadRunning = false;
+    if (isRunning() == true)
         wait();
-    }
 }
 
 /********************************************************************

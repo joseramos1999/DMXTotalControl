@@ -148,11 +148,20 @@ Rectangle {
 
     MouseArea {
         id: mouse
+        // a right click stops what the button plays, in GO as in Stop
+        property bool stopping: false
         anchors.fill: parent
         enabled: !button.editing
-        onPressed: button.down()
-        onReleased: button.up()
-        onCanceled: button.up()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: (event) => {
+            stopping = event.button === Qt.RightButton
+            if (stopping)
+                Core.surface.stop(button.item)
+            else
+                button.down()
+        }
+        onReleased: if (!stopping) button.up()
+        onCanceled: if (!stopping) button.up()
     }
 
     // learn mode: map the same action to a device

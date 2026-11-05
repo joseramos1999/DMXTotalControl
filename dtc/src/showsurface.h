@@ -166,6 +166,11 @@ public:
      *********************************************************************/
     Q_INVOKABLE void press(const QVariantMap &item);
     Q_INVOKABLE void release(const QVariantMap &item);
+    /** A right click on a button: what it plays stops, whatever the mode of
+     *  the buttons (GO or Stop): its scene (not one a fader holds up), its
+     *  group (next, previous, release), its playback, its palette. The
+     *  others (blackout, Stop all, tap, BeatGO) do nothing */
+    Q_INVOKABLE void stop(const QVariantMap &item);
     /** Whether a button is lit: its scene runs */
     Q_INVOKABLE bool isActive(const QVariantMap &item) const;
     /** The automatic label of a "map" button: "GO · Song 1", "Song 1 · cue

@@ -308,6 +308,9 @@ private slots:
     void sceneRunFader();
     void fadersOfOneGroup();
     void faderHoldEdges();
+    void surfaceButtonStop();
+    void outputPatchLinesByName();
+    void ioHotPlug();
     void remoteFaderRanges();
     void moveSpeedOfMovement();
     void pulseGoesOnWithNewShow();
@@ -17559,6 +17562,223 @@ void Backend_Test::faderHoldEdges()
     QVERIFY(first->isActive(b->id()) == false);
 
     core.zones()->stopAll(true);
+    QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
+}
+
+/** A plugin whose lines a test changes, as a rescan does (interfaces
+ *  plugged in or out), and that tells what was written where */
+class LinesPlugin final : public QLCIOPlugin
+{
+public:
+    void init() override {}
+    QString name() const override { return QStringLiteral("Lines"); }
+    int capabilities() const override { return QLCIOPlugin::Output; }
+    QString pluginInfo() const override { return QString(); }
+    QStringList outputs() override { return lines; }
+    bool openOutput(quint32 output, quint32 universe) override
+    {
+        Q_UNUSED(universe)
+        return output < quint32(lines.size());
+    }
+    void closeOutput(quint32 output, quint32 universe) override
+    {
+        Q_UNUSED(output)
+        Q_UNUSED(universe)
+    }
+    void writeUniverse(quint32 universe, quint32 output, const QByteArray &data, bool dataChanged) override
+    {
+        Q_UNUSED(data)
+        Q_UNUSED(dataChanged)
+        written << QString("%1>%2").arg(universe).arg(output);
+    }
+    QStringList lines;
+    QStringList written;
+};
+
+void Backend_Test::outputPatchLinesByName()
+{
+    // the DMX USB plugin numbers its lines anew when an interface comes or
+    // goes. With KPluginLinesByName each patch goes back to its interface
+    // by the name of its line, never to the one that took its number, and
+    // waits for it, writing nowhere
+    LinesPlugin plugin;
+    plugin.setProperty(KPluginLinesByName, true);
+    plugin.lines = { "A (S/N: 1)", "B (S/N: 2)" };
+    OutputPatch first(0u), second(1u);
+    QVERIFY(first.set(&plugin, 0));
+    QVERIFY(second.set(&plugin, 1));
+    const QByteArray data(512, char(10));
+
+    // A unplugged: B is line 0 now
+    plugin.lines = { "B (S/N: 2)" };
+    QVERIFY(first.reconnect() == false);
+    QVERIFY(first.lineGone());
+    QCOMPARE(first.outputName(), QString("A (S/N: 1)"));
+    QVERIFY(second.reconnect());
+    QCOMPARE(second.output(), 0u);
+    first.dump(0, data, true);
+    second.dump(1, data, true);
+    QCOMPARE(plugin.written, QStringList({ "1>0" }));
+    // back, at another number: each one on its own again
+    plugin.lines = { "B (S/N: 2)", "A (S/N: 1)" };
+    QVERIFY(first.reconnect());
+    QVERIFY(first.lineGone() == false);
+    QCOMPARE(first.output(), 1u);
+    QVERIFY(second.reconnect());
+    QCOMPARE(second.output(), 0u);
+    QCOMPARE(first.outputName(), QString("A (S/N: 1)"));
+
+    // identical interfaces (one name): the one it was among them
+    LinesPlugin same;
+    same.setProperty(KPluginLinesByName, true);
+    same.lines = { "X", "X" };
+    OutputPatch one(0u), two(1u);
+    QVERIFY(one.set(&same, 0));
+    QVERIFY(two.set(&same, 1));
+    same.lines = { "X" };
+    QVERIFY(one.reconnect());
+    QCOMPARE(one.output(), 0u);
+    QVERIFY(two.reconnect() == false);
+    QVERIFY(two.lineGone());
+
+    // opened with the name saved (a show, the defaults) and its interface
+    // not there: it waits for that one, whatever has its number
+    LinesPlugin saved;
+    saved.setProperty(KPluginLinesByName, true);
+    OutputPatch fromShow(3u);
+    QVERIFY(fromShow.set(&saved, 0, "A (S/N: 1)") == false);
+    QVERIFY(fromShow.lineGone());
+    QCOMPARE(fromShow.outputName(), QString("A (S/N: 1)"));
+    saved.lines = { "B (S/N: 2)" };
+    QVERIFY(fromShow.reconnect() == false);
+    QVERIFY(fromShow.lineGone());
+    fromShow.dump(3, data, true);
+    saved.lines = { "B (S/N: 2)", "A (S/N: 1)" };
+    QVERIFY(fromShow.reconnect());
+    QCOMPARE(fromShow.output(), 1u);
+    QVERIFY(saved.written.isEmpty());
+    // (there: on it)
+    OutputPatch there(4u);
+    QVERIFY(there.set(&saved, 0, "B (S/N: 2)"));
+    QVERIFY(there.lineGone() == false);
+
+    // set with no name while its interface isn't there: by number, and it
+    // learns the name of its line once it opens
+    same.lines = {};
+    OutputPatch later(2u);
+    QVERIFY(later.set(&same, 0) == false);
+    same.lines = { "Y", "X" };
+    QVERIFY(later.reconnect());
+    same.lines = { "X", "Y" };
+    QVERIFY(later.reconnect());
+    QCOMPARE(later.output(), 1u);
+
+    // a plugin without it: by number, as always (also with a name)
+    LinesPlugin plain;
+    plain.lines = { "A", "B" };
+    OutputPatch byNumber(0u);
+    QVERIFY(byNumber.set(&plain, 1, "Z"));
+    plain.lines = { "B" };
+    QVERIFY(byNumber.reconnect() == false);
+    QVERIFY(byNumber.lineGone() == false);
+    QCOMPARE(byNumber.output(), 1u);
+}
+
+void Backend_Test::ioHotPlug()
+{
+    // a USB device plugged in or out goes to the DMX USB plugin (the tests
+    // don't load it: never the interfaces of this computer), and "Rescan"
+    // asks it to look again: without it, nothing happens, and the lists are
+    // read again
+    DtcCore core;
+    IOManager *io = core.io();
+    QVERIFY(core.doc()->ioPluginCache()->plugin("DMX USB") == nullptr);
+    QSignalSpy outputs(io, SIGNAL(outputsChanged()));
+    io->slotDeviceAdded(0x0403, 0x6001);
+    io->slotDeviceRemoved(0x0403, 0x6001);
+    QCOMPARE(outputs.count(), 0);
+    io->refresh();
+    QCOMPARE(outputs.count(), 1);
+    // (the second look, a moment later, finds no plugin either)
+    QTest::qWait(2200);
+}
+
+void Backend_Test::surfaceButtonStop()
+{
+    // a right click on a button of the SHOW: what it plays stops, in GO as
+    // in Stop (with GO, a press of a scene that plays never stops it)
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 4), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    auto newScene = [&](int channel, const QString &name) {
+        Scene *s = new Scene(doc);
+        s->setName(name);
+        s->setValue(dim, quint32(channel), 200);
+        doc->addFunction(s);
+        return s;
+    };
+    Scene *a = newScene(0, "A");
+    Scene *b = newScene(1, "B");
+    Scene *loose = newScene(2, "Loose");
+    Scene *played = newScene(3, "Played");
+    Zone *zone = core.zones()->addZone("Group");
+    zone->addFunction(a->id());
+    zone->addFunction(b->id());
+    core.setPressMode("go");
+    ShowSurface *surface = core.surface();
+    auto button = [](Function *f) { return QVariantMap({ { "action", "scene" }, { "functionId", int(f->id()) } }); };
+
+    /* a scene of a group: a press plays it, another one is a beat of its
+       rhythm (GO), the right click stops it */
+    surface->press(button(a));
+    QVERIFY(zone->isActive(a->id()));
+    surface->press(button(a));
+    QVERIFY(zone->isActive(a->id()));
+    surface->stop(button(a));
+    QVERIFY(zone->isActive(a->id()) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(a->isRunning() == false, 3000);
+
+    /* a scene of no group, the same */
+    surface->press(button(loose));
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning(), 3000);
+    surface->stop(button(loose));
+    QTRY_VERIFY_WITH_TIMEOUT(loose->isRunning() == false, 3000);
+
+    /* one a fader holds up goes on: only its fader stops it */
+    const int page = surface->addPage("Faders", "faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->setItem(page, sid, 0, { { "targets", QVariantList({ QVariantMap({ { "target", "scene" },
+                                                                               { "functionId", int(a->id()) } }) }) } });
+    const QVariantMap fader = surface->item(page, sid, 0);
+    surface->setLevel(fader, 1.0);
+    surface->stop(button(a));
+    QVERIFY(zone->isActive(a->id()));
+    surface->setLevel(fader, 0.0);
+    QVERIFY(zone->isActive(a->id()) == false);
+
+    /* the buttons of a group (next, previous, release): it is released */
+    zone->start(b->id());
+    surface->stop({ { "action", "next" }, { "zoneId", int(zone->id()) } });
+    QVERIFY(zone->isActive(b->id()) == false);
+    zone->start(b->id());
+    surface->stop({ { "action", "previous" }, { "zoneId", -1 } });
+    QVERIFY(zone->isActive(b->id()) == false);
+
+    /* a playback (a button that maps one): it is released */
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, int(played->id()));
+    pb->go(0, 0);
+    QTRY_VERIFY_WITH_TIMEOUT(played->isRunning(), 3000);
+    surface->stop({ { "action", "map" }, { "map", QVariantMap({ { "target", "playbackGo" }, { "slot", 0 } }) } });
+    QTRY_VERIFY_WITH_TIMEOUT(played->isRunning() == false, 3000);
+
+    /* the others do nothing: the blackout stays */
+    core.setBlackout(true);
+    surface->stop({ { "action", "blackout" } });
+    QVERIFY(core.blackout());
+    core.setBlackout(false);
     QTRY_VERIFY_WITH_TIMEOUT(doc->masterTimer()->runningFunctions() == 0, 3000);
 }
 

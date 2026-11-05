@@ -91,6 +91,7 @@ bool EnttecDMXUSBOpen::open(quint32 line, bool input)
         if (iface()->clearRts() == false)
             return close(line);
     }
+    m_running = true;
     start(QThread::TimeCriticalPriority);
     return true;
 }
@@ -187,7 +188,8 @@ void EnttecDMXUSBOpen::run()
         }
     }
 
-    m_running = true;
+    // (DMX Total Control: running from open(), before start(): a stop() right
+    // after the start would otherwise be undone here, and wait() never return)
     while (m_running == true)
     {
         // Measure how much time passes during these calls

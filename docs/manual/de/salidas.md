@@ -18,6 +18,8 @@ Im Kopf:
 
 Jeder Ausgang erscheint mit dem Namen seines Typs und dem des Interfaces oder Netzwerks: „DMX USB — …“, „ArtNet — …“, „E1.31 — …“ (E1.31 ist sACN). Das verbundene Universum wird grün markiert. Zum Trennen wählen Sie „Nicht verbunden“.
 
+DMX-USB-Interfaces (FTDI-Interfaces wie Enttec, Eurolite oder DMXKing sowie serielle) werden automatisch erkannt, wenn Sie sie bei laufendem Programm anschließen oder abziehen. Ziehen Sie das eines Universums ab, wartet das Universum auf genau dieses Interface („Warte auf …“) und kehrt beim Wiederanschließen zu ihm zurück, auch in anderer Reihenfolge: Es wechselt nie zu einem anderen. Nur zwei identische Interfaces mit derselben Seriennummer (manche Klone) lassen sich nicht unterscheiden. Ändern sich die Interfaces, schließen und öffnen sich die offenen DMX-USB-Ausgänge kurz. uDMX- und Peperoni-Interfaces, die bei laufendem Programm angeschlossen werden, erscheinen nach einem Neustart.
+
 Die Verbindung wird für den nächsten Programmstart gespeichert.
 
 > **Tipp:** DMX-USB-Interfaces mit FTDI-Chips brauchen deren Treiber. Haben Sie sie nicht, bietet der Installer des Programms am Ende die Seite zum Herunterladen an.

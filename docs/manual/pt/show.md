@@ -89,6 +89,8 @@ A forma mais rápida de preencher uma tabela é **arrastar cenas** da lista que 
 
 Um botão trazido de outra página com Alt+clique mostra “Um controle de outra página” e, embaixo, o que ele faz (“Faz: …”).
 
+**Clique com o botão direito** em um botão: para o que ele dispara, também com **GO** na barra superior (com GO, pressionar uma cena que está tocando não a para). A cena dele para; os de próxima, anterior e liberar liberam o grupo; os de uma cuelist ou de um playback o liberam; o de uma paleta a desliga. Uma cena que um fader levantado segura continua: só o fader dela a para. Os outros (blackout, parar tudo, tap, BeatGO) não fazem nada. Em uma tela de toque, use **Stop** na barra superior.
+
 ### Opções de um botão
 
 - **Rótulo**: o texto dele. Vazio (“Automático”), mostra o nome da cena, da paleta ou da ação.

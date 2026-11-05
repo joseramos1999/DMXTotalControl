@@ -68,6 +68,7 @@ bool VinceUSBDMX512::open(quint32 line, bool input)
     if (iface()->write(startSequence) == false)
         qWarning() << Q_FUNC_INFO << name() << "START command failed";
 
+    m_running = true;
     start();
 
     return true;
@@ -181,7 +182,8 @@ void VinceUSBDMX512::run()
 
     QElapsedTimer timer;
 
-    m_running = true;
+    // (DMX Total Control: running from open(), before start(): a stop() right
+    // after the start would otherwise be undone here, and wait() never return)
 
     while (m_running == true)
     {

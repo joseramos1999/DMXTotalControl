@@ -51,6 +51,21 @@ QString QtSerialInterface::typeString() const
     return "QtSerialPort";
 }
 
+QStringList QtSerialInterface::present()
+{
+    // (the same ones interfaces() takes)
+    QStringList list;
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+    {
+        if (validInterface(info.vendorIdentifier(), info.productIdentifier()) == false ||
+            info.vendorIdentifier() == DMXInterface::FTDIVID)
+            continue;
+        list << QString("%1|%2|%3").arg(info.portName(), info.serialNumber(), info.description());
+    }
+    list.sort();
+    return list;
+}
+
 QList<DMXInterface *> QtSerialInterface::interfaces(QList<DMXInterface *> discoveredList)
 {
     QList <DMXInterface*> interfacesList;

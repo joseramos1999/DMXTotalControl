@@ -18,6 +18,9 @@
   limitations under the License.
 */
 
+#include <QVector>
+#include <QStringList>
+
 #include "ftd2xx-interface.h"
 #include "enttecdmxusbpro.h"
 
@@ -132,6 +135,25 @@ DMXInterface::Type FTD2XXInterface::type() const
 QString FTD2XXInterface::typeString() const
 {
     return "FTD2xx";
+}
+
+QStringList FTD2XXInterface::present()
+{
+    QStringList list;
+    DWORD num = 0;
+    if (FT_CreateDeviceInfoList(&num) != FT_OK || num == 0)
+        return list;
+
+    // (one VID/PID per device: the location, the serial number and the
+    // description are blank while a device is open, by this program too)
+    QVector<FT_DEVICE_LIST_INFO_NODE> devInfo(static_cast<int>(num));
+    if (FT_GetDeviceInfoList(devInfo.data(), &num) == FT_OK)
+    {
+        for (DWORD i = 0; i < num && i < DWORD(devInfo.size()); i++)
+            list << QString::number(devInfo[i].ID, 16).rightJustified(8, QChar('0'));
+    }
+    list.sort();
+    return list;
 }
 
 QList<DMXInterface *> FTD2XXInterface::interfaces(QList<DMXInterface *> discoveredList)

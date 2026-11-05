@@ -105,4 +105,5 @@ Après avoir cliqué sur un fader ou un curseur :
 | Molette | Plan 2D | Zoom |
 | Glisser avec le bouton droit ou celui du milieu | Plan 2D | Déplace la vue (double-clic : la recentre) |
 | Clic droit | Bouton 15° du plan 2D | Tourne dans l’autre sens |
+| Clic droit | Bouton du SHOW (en direct) | Arrête ce qu’il lance (sa scène, son groupe, son playback ou sa palette), même avec GO |
 | Maintenir « Déverrouiller » enfoncé | Show verrouillé | Déverrouille |

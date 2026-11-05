@@ -60,6 +60,29 @@
 #include "zone.h"
 #include "qlcconfig.h"
 
+#if defined(Q_OS_WIN)
+#include <QAbstractNativeEventFilter>
+#include "hotplugmonitor.h"
+
+/** The device changes Windows sends the window (a USB device plugged in or
+ *  out), on to the hot plug monitor: the DMX USB interfaces (IOManager) */
+class HotPlugFilter final : public QAbstractNativeEventFilter
+{
+public:
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override
+    {
+        Q_UNUSED(result)
+        if (eventType == "windows_generic_MSG")
+        {
+            long handled = 0;
+            HotPlugMonitor::parseWinEvent(message, &handled);
+        }
+        // (Qt handles every message as always)
+        return false;
+    }
+};
+#endif
+
 #define DTC_QML_BACKEND "DMXTotalControl.Backend"
 
 int main(int argc, char *argv[])
@@ -276,6 +299,17 @@ int main(int argc, char *argv[])
 
     QQuickWindow *window = engine.rootObjects().isEmpty() ? nullptr :
                            qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+#if defined(Q_OS_WIN)
+    // the window is told of the USB devices plugged in or out
+    HotPlugFilter hotPlugFilter;
+    if (window)
+    {
+        app.installNativeEventFilter(&hotPlugFilter);
+        HotPlugMonitor::setWinId(window->winId());
+        // (one that came while the program started: before this, no one was told)
+        core.io()->lookForInterfaces();
+    }
+#endif
     // a second launch: the window comes to the front, as it was (full
     // screen, maximized), and opens the show it was given as File > Open
     // does (the unsaved changes asked first)

@@ -23,6 +23,8 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 
+#include <QStringList>
+
 #include "dmxinterface.h"
 
 class QtSerialInterface final : public DMXInterface
@@ -35,6 +37,10 @@ public:
     virtual ~QtSerialInterface();
 
     static QList<DMXInterface *> interfaces(QList<DMXInterface *> discoveredList);
+
+    /** DMX Total Control: the serial ports of the devices interfaces() takes
+     *  (name, serial number and description), without opening any */
+    static QStringList present();
 
     void setInfo(QSerialPortInfo info);
 

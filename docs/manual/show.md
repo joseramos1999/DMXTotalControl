@@ -89,6 +89,8 @@ La forma más rápida de llenar una tabla es **arrastrar escenas** desde la list
 
 Un botón traído de otra página con Alt+clic muestra «Un control de otra página» y debajo lo que hace («Hace: …»).
 
+**Clic derecho** en un botón: para lo que lanza, también con **GO** en la barra superior (con GO, pulsar una escena que suena no la para). Su escena se para; los de siguiente, anterior y liberar liberan su grupo; los de una cuelist o un playback lo liberan; el de una paleta la quita. Una escena que sujeta un fader subido sigue: solo la para su fader. Los demás (blackout, parar todo, tap, BeatGO) no hacen nada. En una pantalla táctil, usa **Stop** de la barra superior.
+
 ### Opciones de un botón
 
 - **Etiqueta**: su texto. Vacía («Automática»), muestra el nombre de la escena, de la paleta o de la acción.

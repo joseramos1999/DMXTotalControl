@@ -247,8 +247,10 @@ public:
     bool setInputPatch(QLCIOPlugin *plugin, quint32 input,
                        QLCInputProfile *profile = NULL);
 
-    /** Add/Remove/Replace an output patch on this Universe */
-    bool setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index = 0);
+    /** Add/Remove/Replace an output patch on this Universe. DMX Total
+     *  Control: $expectedName as in OutputPatch::set() */
+    bool setOutputPatch(QLCIOPlugin *plugin, quint32 output, int index = 0,
+                        const QString &expectedName = QString());
 
     /** Sets a feedback patch for this Universe */
     bool setFeedbackPatch(QLCIOPlugin *plugin, quint32 output);

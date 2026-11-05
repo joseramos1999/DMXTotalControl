@@ -59,6 +59,8 @@
 #include "rgbscriptscache.h"
 #include "inputoutputmap.h"
 #include "ioplugincache.h"
+#include "qlcioplugin.h"
+#include "outputpatch.h"
 #include "mastertimer.h"
 #include "qlcconfig.h"
 #include "function.h"
@@ -292,6 +294,10 @@ void DtcCore::initDoc()
 
     /* I/O plugins: DMX USB, Art-Net, E1.31, MIDI, OSC... */
     m_doc->ioPluginCache()->load(IOPluginCache::systemPluginDirectory());
+    // the DMX USB interfaces come and go (IOManager, hot plug): each universe
+    // goes back to its interface by the name of its line, never to another one
+    if (QLCIOPlugin *usb = m_doc->ioPluginCache()->plugin("DMX USB"))
+        usb->setProperty(KPluginLinesByName, true);
     m_doc->audioPluginCache()->load(QLCFile::systemDirectory(AUDIOPLUGINDIR, KExtPlugin));
 
     m_doc->inputOutputMap()->loadProfiles(InputOutputMap::userProfileDirectory());

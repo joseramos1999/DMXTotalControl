@@ -31,6 +31,12 @@ class QLCIOPlugin;
 
 #define KOutputNone QObject::tr("None")
 
+/** DMX Total Control: a plugin with this property (true) numbers its lines
+ *  anew when it rescans its devices (DMX USB: an interface plugged in or
+ *  out): its patches find their line again by its name, never the line that
+ *  took its number, and wait while it isn't there */
+#define KPluginLinesByName "linesByName"
+
 #define KXMLQLCOutputPatch          QStringLiteral("Patch")
 #define KXMLQLCOutputPatchUniverse  QStringLiteral("Universe")
 #define KXMLQLCOutputPatchPlugin    QStringLiteral("Plugin")
@@ -59,9 +65,13 @@ public:
      ********************************************************************/
 public:
     /**
-     * Set the plugin to use and the plugin line number to output data on
+     * Set the plugin to use and the plugin line number to output data on.
+     * DMX Total Control: $expectedName, the name of the line saved with it
+     * (a show, the defaults): with a plugin with KPluginLinesByName, a line
+     * of that name that isn't there is waited for (lineGone()), and the
+     * line with that number isn't opened
      */
-    bool set(QLCIOPlugin* plugin, quint32 output);
+    bool set(QLCIOPlugin* plugin, quint32 output, const QString &expectedName = QString());
 
     /**
      * If a valid plugin and line have been set, close
@@ -97,6 +107,12 @@ signals:
     void outputNameChanged();
     void pluginNameChanged();
 
+public:
+    /** DMX Total Control: its line is gone (a plugin with KPluginLinesByName
+     *  rescanned without it: an interface unplugged). It writes nowhere, and
+     *  outputName() is the name of that line, until reconnect() finds it */
+    bool lineGone() const;
+
 private:
     /** The reference of the plugin associated by this Output patch */
     QLCIOPlugin* m_plugin;
@@ -106,6 +122,13 @@ private:
     quint32 m_universe;
     /** The patch parameters cache */
     QMap<QString, QVariant>m_parametersCache;
+
+    /** DMX Total Control: the name of the line, and which one of the lines
+     *  with that name it is (identical interfaces), for reconnect() */
+    QString m_lineName;
+    int m_lineNameIndex;
+    bool m_lineGone;
+    void rememberLineName();
 
     /********************************************************************
      * Value dump

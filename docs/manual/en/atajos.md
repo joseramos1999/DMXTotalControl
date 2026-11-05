@@ -105,4 +105,5 @@ After you click a fader or a slider:
 | Wheel | 2D plan | Zoom |
 | Drag with the right or middle button | 2D plan | Moves the view (double click: centres it) |
 | Right click | 15° button of the 2D plan | Rotates the other way |
+| Right click | SHOW button (live) | Stops what it plays (its scene, its group, its playback or its palette), also with GO |
 | Hold down “Unlock” | Locked Show | Unlocks |

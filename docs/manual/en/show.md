@@ -89,6 +89,8 @@ The fastest way to fill a table is to **drag scenes** from the list under the pr
 
 A button brought from another page with Alt+click shows “A control on another page” and, below that, what it does (“Does: …”).
 
+**Right click** on a button: it stops what it plays, also with **GO** in the top bar (with GO, pressing a scene that plays doesn't stop it). Its scene stops; next, previous and release buttons release their group; those of a cuelist or a playback release it; a palette button turns it off. A scene a raised fader holds goes on: only its fader stops it. The others (blackout, stop all, tap, BeatGO) do nothing. On a touch screen, use **Stop** in the top bar.
+
 ### Button options
 
 - **Label**: its text. Empty (“Automatic”), it shows the name of the scene, the palette or the action.

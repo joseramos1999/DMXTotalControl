@@ -20,6 +20,8 @@
 #ifndef FTD2XXINTERFACE_H
 #define FTD2XXINTERFACE_H
 
+#include <QStringList>
+
 #include "dmxinterface.h"
 
 typedef void *PVOID;
@@ -35,6 +37,11 @@ public:
     virtual ~FTD2XXInterface();
 
     static QList<DMXInterface *> interfaces(QList<DMXInterface *> discoveredList);
+
+    /** DMX Total Control: the devices the driver lists (the VID/PID of
+     *  each), without opening any: whether a hot plug event changed
+     *  something */
+    static QStringList present();
 
     /************************************************************************
      * DMX/Serial Interface Methods

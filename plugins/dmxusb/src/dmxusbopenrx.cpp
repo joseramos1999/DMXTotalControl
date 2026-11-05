@@ -98,6 +98,7 @@ bool DMXUSBOpenRx::open(quint32 line, bool input)
             return close(line);
     }
     qDebug() << "Starting Open RX";
+    m_running = true;
     start(QThread::TimeCriticalPriority);
     qDebug() << "Open RX started";
     return true;
@@ -250,7 +251,8 @@ void DMXUSBOpenRx::run()
         }
     }
 
-    m_running = true;
+    // (DMX Total Control: running from open(), before start(): a stop() right
+    // after the start would otherwise be undone here, and wait() never return)
 
     QByteArray payload;
     QByteArray& last_payload = m_portsInfo[0].m_compareData;

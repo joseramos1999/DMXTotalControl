@@ -64,7 +64,10 @@ public:
      *  @return whether it was removed */
     Q_INVOKABLE bool removeLastUniverse();
 
-    /** Re-scan the plugins for hot plugged devices */
+    /** "Rescan": the DMX USB plugin probes its interfaces again (one plugged
+     *  in since, one that didn't answer the first time), and the lists are
+     *  read again. The DMX USB lines open are closed and opened again by
+     *  their patches (a moment), each one on its interface */
     Q_INVOKABLE void refresh();
 
     /** Last output values of a universe (512 values, after the grand master) */
@@ -76,6 +79,19 @@ signals:
     /** The last universe goes now: what it patches can still be reached */
     void universeAboutToBeRemoved(int universe);
 
+public slots:
+    /** A USB device plugged in or out (HotPlugMonitor; on Windows the window
+     *  passes it the device changes, main.cpp): the DMX USB plugin looks
+     *  again, if it is one of its interfaces. Only that plugin: the MIDI one
+     *  would open its controllers again at every USB device */
+    void slotDeviceAdded(uint vid, uint pid);
+    void slotDeviceRemoved(uint vid, uint pid);
+
+public:
+    /** A DMX USB interface that came since the plugin's first search (at the
+     *  start, before the window was told of the devices: main.cpp) */
+    void lookForInterfaces();
+
 private slots:
     /** A universe added or removed (a show loading: told once it is loaded) */
     void slotUniversesChanged();
@@ -84,6 +100,11 @@ private slots:
 
 private:
     void saveDefaults();
+    /** The DMX USB plugin told of a device ($added or removed); false
+     *  without the plugin */
+    bool tellDmxUsb(uint vid, uint pid, bool added);
+    /** Its inputs and outputs, to see whether a rescan found something */
+    int dmxUsbLines() const;
 
 private:
     Doc *m_doc;

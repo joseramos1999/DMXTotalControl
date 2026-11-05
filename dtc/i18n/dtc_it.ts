@@ -4629,6 +4629,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Cerca di nuovo</translation>
     </message>
     <message>
+        <source>Waiting for %1</source>
+        <translation>In attesa di %1</translation>
+    </message>
+    <message>
         <source>Remove universe</source>
         <translation>Rimuovi universo</translation>
     </message>

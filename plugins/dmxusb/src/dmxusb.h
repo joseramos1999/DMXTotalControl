@@ -21,6 +21,10 @@
 #ifndef DMXUSB_H
 #define DMXUSB_H
 
+#include <QMutex>
+#include <QSet>
+#include <QHash>
+
 #include "qlcioplugin.h"
 
 class DMXUSBWidget;
@@ -51,7 +55,7 @@ public:
     QString pluginInfo() const override;
 
     /** Find out what kinds of widgets there are currently connected */
-    bool rescanWidgets();
+    Q_INVOKABLE bool rescanWidgets();
 
     /** Get currently connected widgets (input & output) */
     QList <DMXUSBWidget*> widgets() const;
@@ -59,6 +63,30 @@ public:
 private:
     /** List of references to the discovered USB widgets */
     QList <DMXUSBWidget*> m_widgets;
+
+    /** DMX Total Control: the universes write from their own threads while
+     *  a rescan (a hot plugged device) replaces the widgets: the lists of
+     *  widgets and lines change under this lock, and writeUniverse() reads
+     *  them under it */
+    QMutex m_widgetsMutex;
+
+    /** DMX Total Control: the outputs opened since their last write: the
+     *  first one gives the whole universe (a widget made by a rescan starts
+     *  dark, and a look that doesn't change would never reach it) */
+    QSet <quint32> m_freshOutputs;
+
+    /** DMX Total Control: the universe that opened each output line: only
+     *  that one writes there (after a rescan renumbers the lines, a patch
+     *  that still has the old number until it reconnects writes nowhere) */
+    QHash <quint32, quint32> m_openedOutputs;
+
+    /** DMX Total Control: the interfaces present at the last rescan, listed
+     *  without opening any: a hot plug event that changes nothing (the same
+     *  device twice, its driver still loading, another USB device) doesn't
+     *  close and open the lines again. Empty where they can't be listed so */
+    QStringList presentInterfaces() const;
+    QStringList m_present;
+    bool m_presentKnown = false;
 
     /************************************************************************
      * Outputs

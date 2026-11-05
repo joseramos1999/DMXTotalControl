@@ -18,6 +18,8 @@ Dans l’en-tête :
 
 Chaque sortie apparaît avec le nom de son type et celui de l’interface ou du réseau : « DMX USB — … », « ArtNet — … », « E1.31 — … » (E1.31 est sACN). L’univers connecté est marqué en vert. Pour le déconnecter, choisissez « Non connecté ».
 
+Les interfaces DMX USB (les FTDI, comme Enttec, Eurolite ou DMXKing, et les série) sont détectées toutes seules quand vous les branchez ou les débranchez programme ouvert. Si vous débranchez celle d’un univers, l’univers attend cette même interface (« En attente de … ») et y revient quand vous la rebranchez, même dans un autre ordre : il ne passe jamais sur une autre. Seules deux interfaces identiques avec le même numéro de série (certains clones) ne se distinguent pas. Quand les interfaces changent, les sorties DMX USB ouvertes se ferment et se rouvrent un instant. Les interfaces uDMX et Peperoni branchées programme ouvert apparaissent au redémarrage du programme.
+
 La connexion est mémorisée pour la prochaine fois que vous ouvrez le programme.
 
 > **Conseil :** les interfaces DMX USB basées sur des puces FTDI ont besoin de leurs pilotes. Si vous ne les avez pas, l’installateur du programme propose à la fin la page pour les télécharger.

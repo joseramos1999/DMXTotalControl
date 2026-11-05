@@ -89,6 +89,8 @@ Le moyen le plus rapide de remplir un tableau est de **faire glisser des scènes
 
 Un bouton apporté d’une autre page avec Alt+clic affiche « Un contrôle sur une autre page » et, en dessous, ce qu’il fait (« Fait : … »).
 
+**Clic droit** sur un bouton : il arrête ce qu’il lance, même avec **GO** dans la barre du haut (avec GO, appuyer sur une scène qui joue ne l’arrête pas). Sa scène s’arrête ; les boutons suivante, précédente et libérer libèrent leur groupe ; ceux d’une cuelist ou d’un playback le libèrent ; celui d’une palette l’éteint. Une scène qu’un fader monté retient continue : seul son fader l’arrête. Les autres (blackout, tout arrêter, tap, BeatGO) ne font rien. Sur un écran tactile, utilisez **Stop** dans la barre du haut.
+
 ### Options d’un bouton
 
 - **Étiquette** : son texte. Vide (« Automatique »), elle affiche le nom de la scène, de la palette ou de l’action.

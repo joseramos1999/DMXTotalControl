@@ -104,7 +104,9 @@ Item {
                         color: Theme.surfaceRaised
                         border.color: modelData.line >= 0 ? Qt.alpha(Theme.success, 0.5) : Theme.border
 
+                        // (its interface unplugged: it waits for it, and goes back to it)
                         readonly property var outputChoices: [{ key: "", label: qsTr("Not connected") }].concat(
+                            modelData.waiting ? [{ key: "waiting", label: qsTr("Waiting for %1").arg(modelData.outputName) }] : [],
                             Core.io.outputs.map(o => ({ key: o.key, label: o.plugin + " — " + o.name })))
 
                         RowLayout {
@@ -141,13 +143,16 @@ Item {
                                 textRole: "label"
                                 model: uniRow.outputChoices
                                 currentIndex: {
-                                    let key = uniRow.modelData.line >= 0 ? uniRow.modelData.plugin + "|" + uniRow.modelData.line : ""
+                                    let key = uniRow.modelData.waiting ? "waiting"
+                                            : uniRow.modelData.line >= 0 ? uniRow.modelData.plugin + "|" + uniRow.modelData.line : ""
                                     let idx = uniRow.outputChoices.findIndex(c => c.key === key)
                                     return Math.max(0, idx)
                                 }
                                 onActivated: (i) => {
                                     let key = uniRow.outputChoices[i].key
-                                    if (key.length === 0) {
+                                    if (key === "waiting") {
+                                        return
+                                    } else if (key.length === 0) {
                                         Core.io.clearOutput(uniRow.modelData.index)
                                     } else {
                                         let sep = key.lastIndexOf("|")

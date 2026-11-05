@@ -2348,6 +2348,50 @@ void ControlMapper::pressTarget(const QVariantMap &target, bool pressed)
     applyButton(m, pressed);
 }
 
+void ControlMapper::stopTarget(const QVariantMap &target)
+{
+    QVariantMap m = defaultsFor(target.value("target").toString());
+    for (auto it = target.cbegin(); it != target.cend(); ++it)
+        m.insert(it.key(), it.value());
+
+    const QString kind = m.value("target").toString();
+    if (kind == "scene" || kind == "sceneIndex")
+    {
+        const quint32 fid = functionOf(m);
+        Function *f = m_core->doc()->function(fid);
+        if (f == nullptr)
+            return;
+        // (in its group, as a press with Stop)
+        if (Zone *owner = zoneOwning(fid))
+            owner->stop(fid);
+        else if ((f->isRunning() || f->stopped() == false) && heldByFader(fid) == false)
+            f->stop(FunctionParent::master());
+    }
+    else if (kind == "groupRelease" || kind == "groupNext" || kind == "groupPrevious")
+    {
+        // its group released, or all of them (a deleted group: none)
+        ZoneManager *zones = m_core->zones();
+        if (m.value("zoneId").toInt() == ALL_GROUPS)
+            zones->stopAll();
+        else if (Zone *zone = zones->zoneById(m.value("zoneId").toUInt()))
+            zone->stopAll();
+    }
+    else if (isSlotTarget(kind) && kind != "playbackFader")
+    {
+        // the playback released (a function: wherever it is)
+        PlaybackManager *pb = m_core->playbacks();
+        const int fid = isFunctionTarget(kind) ? m.value("functionId", -1).toInt() : -1;
+        if (fid >= 0)
+            pb->releaseFunction(fid);
+        else
+            pb->release(m.value("pbPage", -1).toInt(), m.value("slot").toInt());
+    }
+    else if (kind == "palette")
+    {
+        m_core->palettes()->setLive(m.value("paletteId").toInt(), m.value("groupId", -1).toInt(), false);
+    }
+}
+
 void ControlMapper::setTargetLevel(const QVariantMap &target, qreal level)
 {
     QVariantMap m = defaultsFor(target.value("target").toString());
