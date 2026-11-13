@@ -96,8 +96,15 @@ Item {
         options.columns = columnsSpin.value
         Core.patch.arrange(selectedIds, shape, options)
     }
-    /** Developer option --patch-view: list, grid, plan, live, limits, matrix */
+    /** Developer option --patch-view: list, grid, plan, live, limits, matrix,
+     *  add (Add fixtures), share (its GDTF-Share browser) */
     function devOpen(what) {
+        if (what === "add" || what === "share") {
+            addDialog.open()
+            if (what === "share")
+                addDialog.openShare()
+            return
+        }
         if (what === "limits" || what === "matrix") {
             selectedIds = fixtures.filter(f => f.hasPan).slice(0, 1).map(f => f.id)
             if (what === "limits") optionsDialog.openFor(selectedIds)

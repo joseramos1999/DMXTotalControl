@@ -36,6 +36,16 @@ private slots:
     void writeZeroFade();
     void writeLoop();
     void adjustIntensity();
+    // DMX Total Control: an FX channel dimmed by a virtual dimmer
+    void writeModulatedScale();
+    // DMX Total Control: a fade out is linear
+    void fadeOutIsLinear();
+    // DMX Total Control: a copy of one of its channels
+    void channelCopy();
+    // DMX Total Control: a channel mixed with what's below (Override cuelists)
+    void mixBelow();
+    // DMX Total Control: a channel a hand crossfade sets (the A/B fader)
+    void manualChannel();
 
 private:
     Doc* m_doc;

@@ -22,14 +22,16 @@ In the header you choose the view and you have the tools to add things:
    - **Universe** and **Address**: the address is set automatically to the first free one in the universe.
    - **Gap**: free channels between one fixture and the next.
    - With more than one, **“Make a group with them”** and the name of the **Group**.
-4. Below, you see which addresses they will use (“Uses addresses 1 to 20”). If they do not fit in what is left of the universe, they go on to the next one.
+4. Below, you see which addresses they will use (“Uses addresses 1 to 20”). If they do not fit in what is left of the universe, they go on to the next one. If the mode has more *DMX breaks* (a GDTF fixture with two DMX inputs), a note asks you to patch its “(DMX break 2)” mode too, at its own address.
 5. Press **“Patch fixture”** or **“Patch N fixtures”**.
 
 The window stays open so you can keep adding, with the address already at the next free one. If something cannot be patched (the addresses are taken, for example), the reason appears in red at the bottom. Press **“Close”** when you finish.
 
 For single dimmers, choose **Generic › Generic Dimmer**: instead of a mode, you ask for a number of **Channels**.
 
-> **Tip:** if you cannot find your fixture, download the [Open Fixture Library](fixtures.md#open-fixture-library), import its GDTF or create it on the [Fixtures](fixtures.md) page.
+**“Search GDTF-Share…”**, at the bottom, opens [GDTF-Share](fixtures.md#gdtf-share): download the fixture and press **“Patch it”** to have it chosen here.
+
+> **Tip:** if you cannot find your fixture, search GDTF-Share, download the [Open Fixture Library](fixtures.md#open-fixture-library), import its GDTF or create it on the [Fixtures](fixtures.md) page.
 
 ## The list
 

@@ -135,9 +135,9 @@ In the command line bar:
 
 ## Palettes
 
-A **palette** stores an intensity, position, colour or beam value for each fixture. Scenes and cues recorded with a palette use it **by reference**: if you update the palette, they change by themselves (live edits too).
+A **palette** stores an intensity, position, colour or beam value for each fixture, or **all** of them at once. Scenes, cues and steps recorded with a palette use it **by reference**: if you update the palette, they change by themselves (live edits too).
 
-In **Palettes** there are four columns: **Intensity**, **Position**, **Colour** and **Beam**.
+In **Palettes** there are five columns: **Intensity**, **Position**, **Colour**, **Beam** and **All**.
 
 ### Recording a palette
 
@@ -146,11 +146,25 @@ In **Palettes** there are four columns: **Intensity**, **Position**, **Colour** 
 
 The palette is created with a name and a number (“Colour 1”, COL 1). From then on, whatever you record with it follows it.
 
+### “All” palettes
+
+The **All** column records at once every value the selection has in the programmer (dimmer, colour, position, gobos, zoom…), except the maintenance channels (lamp, reset). It is created as “All 1”, PAL 1. Values that came from another palette (for example from POS 1) now come from this one: a palette doesn’t keep other palettes.
+
+Applying it puts all of that. On another type of fixture, it mixes its colour and the rest goes by attribute, like the other palettes. In the command line it is `PAL 1` (or PALETTE 1), because `ALL` and `TODO` already select every fixture.
+
 ### Using a palette
 
-Select fixtures and click the palette: it is applied to the selection. A palette is marked when it is set on the selection (brighter if it is set on all of it). On a fixture that was not recorded in the palette, it uses the values of another fixture of the same type or its attributes: a colour is mixed in RGB or CMY, or goes to the closest slot of the colour wheel.
+Select fixtures and click the palette: it is applied to the selection. A palette is marked when it is set on the selection (brighter if it is set on all of it). On a fixture that was not recorded in the palette, it uses the values of another fixture of the same type (spread out if it is a fan, see below) or its attributes: a colour is mixed in RGB or CMY, or goes to the closest slot of the colour wheel.
 
-You can also type `COL 2`, `POS 1`, `BEAM 3` or `INT 4` in the command line.
+You can also type `COL 2`, `POS 1`, `BEAM 3`, `INT 4` or `PAL 5` (the “All” one) in the command line.
+
+### A fan in a palette
+
+If you record a palette with different values on each fixture (a position fan, a dimmer ramp, a rainbow), the palette keeps the order you selected them in. When you apply it to fixtures that were not recorded, the fan **is spread over them in the order of the selection**: the first one takes the values of the first recorded fixture, the last one those of the last, and the ones in between, what lies between them. Pan, tilt, dimmer, colours and zoom change smoothly; wheels and gobos take the value of the nearest recorded fixture. On another type of fixture, the colour is the blend at its place and the rest comes from the nearest recorded fixture.
+
+Each fixture remembers its place in the fan, even if you later apply the palette with another selection. The scenes, cues and steps recorded with it follow the palette, and applying it again gives the same values. To spread it another way, select the fixtures in the new order and choose **“Spread again over the selection”**. On a group of the SHOW or of a mapping, it is spread in the order of the group.
+
+A palette recorded on one fixture of each type, or with the same values on all of them, works as before.
 
 ### The palette menu
 
@@ -158,11 +172,12 @@ Right click a palette:
 
 - **“Apply to the selection”**.
 - **“Load its fixtures in the programmer”**.
+- **“Spread again over the selection”**: gives the selected fixtures a new place in the fan of the palette, in the order of the selection. What uses them changes too.
 - **“Update with the programmer”**: adds or changes the values of the programmer in the palette. The scenes that use it change too.
 - **“Record over it”**: records it again with only what is there now.
 - **“Rename…”**, **“Change its number…”** and **“Delete”** (the scenes keep the values).
 
-A link icon on the palette shows that there are scenes that use it; the hover text says how many.
+A link icon on the palette shows that there are scenes that use it; the hover text says how many, and over how many more fixtures it is spread.
 
 > **Tip:** palettes can be put in the [SHOW](show.md) (the “A palette” action), on the [remote control](remoto.md) and in a [mapping](mapeos.md), on their fixtures or on a group, as a live edit. Alt+click on a palette takes it to the SHOW.
 
@@ -179,12 +194,15 @@ In **FX** there are three areas: the parameters and the running FX on the left, 
 3. Press **“Start FX”**, or click a **macro**.
 4. Adjust the controls: the FX changes live.
 
+Fixtures without a dimmer (RGB only, RGBW…) also have **Dimmer**, marked “virtual”: the FX dims their colour as a dimmer would, all their heads together. The intensity macros (chase, pulse, strobe…) work on them too. CMY, colour wheels and the channels whose **Dimmer** option is off in the Patch don't change. It is for FX only: the **Dimmer** fader of the Quick panel and `@` still find no dimmer on these fixtures.
+
 ### The FX controls
 
 - **The figure or the mode** (the drawing on the left): click it to choose another one. For pan/tilt there are **12 figures** (circle, eight, square, triangle, diamond, pan line, tilt line, diagonal, leaf, lissajous, ballyhoo and cross). For the rest, **22 modes**: the dotted line is the base value and the wave goes above it, below it or on both sides; modes 9 to 12 are for chases, with a step.
 - **Swing** (from 0 to 250 %). On pan/tilt, **“Swing pan”** and **“Swing tilt”** separately.
 - **Speed**, in BPM. **½** and **×2** halve or double it. **“BPM of the show”** makes it follow the show tempo (a BPM fader or dial in the SHOW, or a BPM or Tap mapping). Recorded in an FX scene, it follows instead the rhythm you tap by pressing the button of the scene, if it has one ([Live](directo.md#rhythm-of-a-scene-with-steps)). **“Multiplier”**: from ×¼ to ×8.
 - Pan/tilt only: **“Invert pan”**, **“Invert tilt”**, **“Backwards”** and **“Rotate”** (0–359°).
+- Only on a dimmer FX with fixtures without a dimmer: **“Virtual dimmer”**, the level their colour is dimmed from (0–100 %). With **“Auto”** it is the level of the dimmers of the same FX or, if there are none, full. Moving the level fixes it; the button next to it goes back to “Auto”. The colour underneath (the programmer's, the scene's or what the scenes below send) is its base, and a colour FX on the same fixture adds to it.
 
 ### FX timing
 
@@ -196,6 +214,8 @@ How the FX is spread over the fixtures:
 - **“Order”**: “Selection”, “Reversed”, “Random” (with a button for another random order) or “By number”.
 - **“Wait”**: time at the base after each run.
 - **“Phase”**.
+
+For a shift or a delay of each fixture, see [“Per fixture”](programar.md#per-fixture-shift-and-delay).
 
 Below, an animated preview draws how each fixture moves.
 
@@ -217,6 +237,17 @@ An FX is still **a single one** even if you change some of its fixtures. If you 
 - In “Running FX” you see how many have something of their own (“N own”).
 - **“Like the rest”** removes what is their own from the selected fixtures: they go back to doing the same as the FX.
 
+### Per-fixture shift and delay
+
+Under the controls of a running FX, **“Per fixture”** (unfold it with its arrow) lists its fixtures in the order of the FX: number, name, its place in the wave or the step, and two fields you change by hand. The selected fixtures are highlighted. A change plays at once, on the same clock.
+
+- **“Shift”** (0–1440°): how far behind the others it goes in the wave. 360° is a whole cycle and, in an FX with a step, one place. It adds to the wave and to the phase.
+- **“Delay”** (up to 60 s): how much later it does the FX. When the FX starts (its scene or its cue starts, or a new FX in the programmer), it waits that long at its base, so the fixtures start one after another. After that it stays that far behind. It is in seconds even when the FX follows the BPM of the show; to follow the tempo, use the shift.
+- **“Fan the shift…”** and **“Fan the delay…”** ask for the value of the last one and spread from 0 over the selected fixtures, in the order of the FX.
+- **“No shift or delay”** removes them from the selected fixtures.
+
+Changing the phase or the timing keeps them, and “Like the rest” does not touch them. It is not the same as the own phase of some fixtures: that phase replaces the phase of the FX; the shift adds to it. If you set a delay longer than the time the FX has been running, that fixture waits at its base until it gets there. The shift and the delay are recorded with the scene or the cue.
+
 ### The mirror
 
 If the fixtures that go backwards (or with their own inverted pan or tilt) are **all in one half** of the FX, each one follows the wave of its twin on the other side, so the wave also comes out mirrored. The panel shows it with “Mirror: …”.
@@ -234,6 +265,14 @@ On the right, the built-in **FX macros** by category: **Position** (circle, circ
 
 **“Save as a macro…”** saves the FX of the programmer as a macro of your own, in **“Mine”**, for all your shows. Right click one of your macros: **“Rename”** or **“Delete”**.
 
+A macro of your own keeps what each fixture of the FX did, by its place in it (the order you selected them in):
+
+- its base values: a fan of positions, different colours;
+- what it did its own way: the shape, the size, the direction, the inversions (a mirror);
+- its shift and its delay.
+
+When you apply it, the first selected fixture gets what the first one had, the second what the second one had, and so on. With more or fewer fixtures, the first and the last get what the first and the last had, and the ones in between are spread out: fans and delays stretch, and a mirror stays a mirror. Colour and gobo wheels, the prism and the shutter are not spread: each fixture takes the value of its nearest place. If they all had the same values and nothing of their own, the macro works on any selection, like the built-in ones. Macros saved fixture by fixture carry the mark **1·2·3**; hover over one to see how many fixtures it had.
+
 ## Command line
 
 The command line works like the one on a console. When you open Program it takes the keyboard: type and press **Enter**. Next to it you see what it has done, or why it does not understand.
@@ -248,7 +287,7 @@ The command line works like the one on a console. When you open Program it takes
 | `@ FULL` / `@ OUT` | Dimmer at full or at zero. `@ @` is also full. |
 | `@ 0 THRU 100` | Dimmer fan, from 0 % on the first to 100 % on the last. |
 | `@ + 10` / `@ - 10` | Raises or lowers the dimmer by 10 %. |
-| `POS 1`, `COL 2`, `BEAM 3`, `INT 4` | Applies the position, colour, beam or intensity palette with that number. |
+| `POS 1`, `COL 2`, `BEAM 3`, `INT 4`, `PAL 5` | Applies the position, colour, beam, intensity or “All” palette with that number. |
 | `LOCATE` | Locate. |
 | `HIGHLIGHT` | Highlight (toggles). |
 | `NEXT` / `PREV` | One at a time through the selection. |
@@ -257,7 +296,7 @@ The command line works like the one on a console. When you open Program it takes
 
 You can chain them: `1 THRU 4 @ FULL COL 2` selects, sets the dimmer at full and applies colour palette 2.
 
-The words also work in Spanish: HASTA, GRUPO, TODO, LLENO, TOPE, CERO, INTENSIDAD, POSICION, COLOR, HAZ, LIMPIAR, RESALTAR, LOCALIZAR, SIGUIENTE, ANTERIOR, LIBERAR, IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR… and abbreviated: THR, FL, GRP (or G), CLR, LOC, HI, SIG, ANT, REL.
+The words also work in Spanish: HASTA, GRUPO, TODO, LLENO, TOPE, CERO, INTENSIDAD, POSICION, COLOR, HAZ, PALETA, LIMPIAR, RESALTAR, LOCALIZAR, SIGUIENTE, ANTERIOR, LIBERAR, IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR… and abbreviated: THR, FL, GRP (or G), CLR, LOC, HI, SIG, ANT, REL.
 
 ### Cuelist commands
 
@@ -280,7 +319,7 @@ If a command stops halfway (for example, the palette does not exist), what it al
 
 - **↑ ↓** go through the last commands.
 - **Esc** clears the line (with the line empty, Esc is “Stop all”).
-- The **keypad** button opens an on-screen keypad for touch screens, with numbers, THRU, @, FULL, OUT, GROUP, INT, POS, COL, BEAM, NEXT, PREV, ALL, LOCATE, CLR and the cuelist keys (CUE, the decimal point, REC, UPD, GO, BACK, DELETE, PB). It stays open while you choose fixtures.
+- The **keypad** button opens an on-screen keypad for touch screens, with numbers, THRU, @, FULL, OUT, GROUP, INT, POS, COL, BEAM, PAL, HIGHLIGHT, REL, CLEAR, NEXT, PREV, ALL, LOCATE, CLR and the cuelist keys (CUE, the decimal point, REC, UPD, GO, BACK, DELETE, PB). CLR empties the line; CLEAR, the programmer. It stays open while you choose fixtures.
 
 ## Recording
 

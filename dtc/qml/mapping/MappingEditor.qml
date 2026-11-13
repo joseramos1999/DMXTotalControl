@@ -72,16 +72,18 @@ Flickable {
     readonly property var apc40Colours: apcMini2Colours.slice(0, 11)
         .concat([{ value: 46, color: "#1a2a7a", name: qsTr("Dim blue") }]).concat(apcMini2Colours.slice(11))
     // the RGB pads (else buttons with one LED: on, blinking and off are numbers)
-    readonly property bool rgbPad: midiNote && midiChannel === 1 &&
-        (mapping.controller === "apcmini2" ? midiNumber <= 63
-         : mapping.controller === "apc40mk2" ? midiNumber <= 39 || (midiNumber >= 82 && midiNumber <= 86) : false)
+    readonly property bool rgbPad: Core.mapping.isRgbPad(mapping)
     readonly property var ledPalette: mapping.controller === "apcmini" ? apcMiniColours
                                  : mapping.controller === "apcmini2" && rgbPad ? apcMini2Colours
                                  : mapping.controller === "apc40mk2" && rgbPad ? apc40Colours : []
-    // how the RGB pads light (the DTC channel of the LED values): the APC40 is solid only for now
-    readonly property var ledChannels: mapping.controller === "apcmini2" ? [1, 7, 10, 14] : [1]
+    // how the RGB pads light (the MIDI channel of the state): the mk2 its brightness,
+    // the APC40 mkII solid, or pulsing or blinking between the colour and dark
+    readonly property var ledChannels: mapping.controller === "apcmini2" ? [1, 7, 10, 14] : [1, 10, 14]
     readonly property var ledChannelNames: mapping.controller === "apcmini2"
-        ? [qsTr("Dim"), qsTr("Full"), qsTr("Pulsing"), qsTr("Blinking")] : [qsTr("Solid")]
+        ? [qsTr("Dim"), qsTr("Full"), qsTr("Pulsing"), qsTr("Blinking")]
+        : [qsTr("Solid"), qsTr("Pulsing"), qsTr("Blinking")]
+    // the scenes: their LED can have a colour of its own while they fade in or out
+    readonly property bool fadeTarget: ["scene", "sceneIndex"].indexOf(mapping.target || "scene") >= 0
 
     // the playbacks: their pages (one more past the last, for a mapping made before the page)
     function pageChoices(follows, shown) {
@@ -92,6 +94,7 @@ Flickable {
     }
     readonly property bool functionPlayback: (targetInfo.needs === "playback" || targetInfo.needs === "playbackCue")
                                              && mapping.target !== "playbackSelect" && mapping.target !== "playbackFader"
+                                             && mapping.target !== "playbackLiveTime"
     readonly property bool onFunction: functionPlayback && mapping.functionId !== undefined && mapping.functionId >= 0
     readonly property bool momentaryPlayback: button && (mapping.target || "").startsWith("playback") && mapping.target !== "playbackFlash"
     /** The cue a "go to a cue" mapping plays now (the cuelist of its playback, or its own) */
@@ -121,6 +124,24 @@ Flickable {
     }
 
     readonly property var functionList: Core.functions.slice().sort((a, b) => a.name.localeCompare(b.name))
+    // the scenes a scene target can drive: first the selected one (the last pressed), whichever it is
+    readonly property var sceneChoices: [{ id: Core.mapping.selectedSceneId, name: qsTr("The selected scene") }].concat(functionList)
+    readonly property bool onSelectedScene: mapping.functionId === Core.mapping.selectedSceneId
+    readonly property string selectedSceneName: {
+        const scene = functionList.find(f => f.id === Core.zones.selectedScene)
+        return scene ? scene.name : ""
+    }
+    // the selected scene on an absolute fader picks up: another scene selected doesn't jump to the fader
+    function pickScene(id) {
+        const pickup = id === Core.mapping.selectedSceneId && !button && (mapping.mode || "absolute") === "absolute"
+        Core.mapping.updateMapping(mid, pickup ? { functionId: id, pickup: true } : { functionId: id })
+    }
+    function pickTarget(info) {
+        // (a button becomes an absolute fader)
+        const pickup = onSelectedScene && info.kind === "fader" && info.needs === "function"
+                       && (button || mapping.mode === "absolute")
+        Core.mapping.updateMapping(mid, pickup ? { target: info.target, pickup: true } : { target: info.target })
+    }
     readonly property var zoneList: {
         let list = []
         for (let i = 0; i < Core.zones.count; i++)
@@ -259,17 +280,27 @@ Flickable {
                 textRole: "name"
                 model: editor.targetList
                 currentIndex: Math.max(0, editor.targetList.findIndex(t => t.target === editor.mapping.target))
-                onActivated: (i) => editor.set("target", editor.targetList[i].target)
+                onActivated: (i) => editor.pickTarget(editor.targetList[i])
             }
             ComboBox {
                 Layout.fillWidth: true
                 visible: editor.targetInfo.needs === "function"
                 textRole: "name"
-                model: editor.functionList
+                model: editor.sceneChoices
                 displayText: currentIndex < 0 ? qsTr("Choose a scene…") : currentText
-                currentIndex: editor.functionList.findIndex(f => f.id === editor.mapping.functionId)
-                onModelChanged: currentIndex = Qt.binding(() => editor.functionList.findIndex(f => f.id === editor.mapping.functionId))
-                onActivated: (i) => editor.set("functionId", editor.functionList[i].id)
+                currentIndex: editor.sceneChoices.findIndex(f => f.id === editor.mapping.functionId)
+                onModelChanged: currentIndex = Qt.binding(() => editor.sceneChoices.findIndex(f => f.id === editor.mapping.functionId))
+                onActivated: (i) => editor.pickScene(editor.sceneChoices[i].id)
+            }
+            // which scene the selected scene is now
+            Text {
+                Layout.fillWidth: true
+                visible: editor.targetInfo.needs === "function" && editor.onSelectedScene
+                text: editor.selectedSceneName.length > 0 ? qsTr("Now: %1").arg(editor.selectedSceneName)
+                      : qsTr("No scene selected yet: press one in Live, in the SHOW or on your controller")
+                color: Theme.textDim
+                font.pixelSize: Theme.fontSmall
+                wrapMode: Text.WordWrap
             }
             readonly property var groupChoices: editor.targetInfo.needs === "zoneAll"
                 ? [{ id: -1, name: qsTr("All groups") }].concat(editor.zoneList) : editor.zoneList
@@ -302,8 +333,7 @@ Flickable {
                 onActivated: (i) => editor.set("mixerId", Core.mixer.mixers[i].id)
             }
             readonly property var paletteList: Core.palettes.palettes.map(p => ({
-                id: p.id,
-                name: ({ intensity: "INT", position: "POS", colour: "COL", beam: "BEAM" })[p.type] + " " + p.number + " · " + p.name }))
+                id: p.id, name: p.code + " · " + p.name }))
             readonly property var paletteGroups: [{ id: -1, name: qsTr("Its own fixtures") }].concat(Core.patch.groups)
             ComboBox {
                 Layout.fillWidth: true
@@ -493,19 +523,52 @@ Flickable {
                     { key: "on", name: qsTr("On") },
                     { key: "off", name: qsTr("Off") },
                     { key: "paused", name: qsTr("Paused") }
-                ] : []
+                ].concat(editor.fadeTarget ? [{ key: "fade", name: qsTr("Fading") }] : []) : []
                 delegate: ColumnLayout {
                     id: ledRow
                     required property var modelData
                     readonly property int current: editor.mapping[modelData.key + "Value"] !== undefined ? editor.mapping[modelData.key + "Value"] : 0
                     readonly property int channel: editor.mapping[modelData.key + "Channel"] || 0
-                    // what it lights with: its own channel, else the default of the state (APC mini mk2: on full, off dim)
+                    // what it lights with: its own channel, else the default of the state (APC mini mk2: on full, off dim, fading pulsing)
                     readonly property int shownChannel: channel !== 0 ? channel : (Core.mapping.defaultLedChannel(editor.mapping, modelData.key) || 1)
+                    // the fades have a colour only when it is switched on (else on, then off)
+                    readonly property bool fade: modelData.key === "fade"
+                    readonly property bool own: !fade || (editor.mapping.fadeValue !== undefined && editor.mapping.fadeValue >= 0)
                     Layout.fillWidth: true
                     spacing: 3
                     RowLayout {
                         Layout.fillWidth: true
-                        Text { Layout.preferredWidth: 70; text: ledRow.modelData.name; color: Theme.textDim }
+                        visible: ledRow.fade
+                        // (a longer name in some languages: the switch moves along)
+                        Text { Layout.preferredWidth: Math.max(70, implicitWidth); text: ledRow.modelData.name; color: Theme.textDim }
+                        AppSwitch {
+                            checked: ledRow.own
+                            // (on: the colour of "on" to start with, in the default way of the fades)
+                            onToggled: Core.mapping.updateMapping(editor.mid, checked
+                                ? { fadeValue: editor.mapping.onValue || (editor.rgbPad ? 21 : 127), fadeChannel: 0 }
+                                : { fadeValue: -1 })
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: qsTr("Own colour while fading")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.fontSmall
+                        }
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        visible: !ledRow.own
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Without it, the fade in shows the On colour and the fade out the Off colour")
+                        color: Theme.textFaint
+                        font.pixelSize: Theme.fontSmall
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        // (the fades: their number or how they light, under the switch)
+                        visible: ledRow.own && (!ledRow.fade || editor.ledPalette.length === 0 || editor.rgbPad)
+                        Text { Layout.preferredWidth: 70; text: ledRow.fade ? "" : ledRow.modelData.name; color: Theme.textDim }
                         // numbers: any controller
                         SpinBox {
                             visible: editor.ledPalette.length === 0
@@ -526,7 +589,7 @@ Flickable {
                     }
                     Flow {
                         Layout.fillWidth: true
-                        visible: editor.ledPalette.length > 0
+                        visible: editor.ledPalette.length > 0 && ledRow.own
                         spacing: 4
                         Repeater {
                             model: editor.ledPalette

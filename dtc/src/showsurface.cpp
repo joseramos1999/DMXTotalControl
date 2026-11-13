@@ -71,7 +71,9 @@ ShowSurface::ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent)
     , m_mixer(nullptr)
     , m_core(nullptr)
     , m_currentPage(0)
+    , m_timerRevision(0)
 {
+    m_clock.start();
     connect(m_doc->masterTimer(), SIGNAL(functionListChanged()), this, SLOT(slotChanged()));
     connect(m_zones, SIGNAL(countChanged()), this, SLOT(slotZonesChanged()));
     connect(m_zones, SIGNAL(modelReset()), this, SLOT(slotZonesChanged()));
@@ -267,6 +269,7 @@ void ShowSurface::changed()
 {
     pruneSceneDimmers();
     pruneHolds();
+    pruneTimers();
     m_doc->setModified();
     emit pagesChanged();
 }
@@ -763,6 +766,8 @@ void ShowSurface::clear()
     m_speedOrder.clear();
     // (what moves goes at its own speed again: the FX of the programmer)
     applyMotion();
+    // (the IDs start again: a timer would go on in a section of the new show)
+    clearTimers();
     emit cleared();
     emit pagesChanged();
 }
@@ -846,6 +851,8 @@ void ShowSurface::press(const QVariantMap &item)
         Function *f = m_doc->function(fid);
         if (f == nullptr)
             return;
+        // (in a group or not: the selected scene)
+        m_zones->selectScene(fid);
         bool flash = item.value("mode").toString() == "flash";
 
         // a scene of a group plays in it: exclusivity, release and priority apply
@@ -1077,7 +1084,7 @@ bool ShowSurface::isSpeed(const QVariantMap &item)
     for (const QVariant &v : targets)
     {
         const QString kind = v.toMap().value("target").toString();
-        if (kind != "moveSpeed" && kind != "sceneSpeed" && kind != "sceneRun")
+        if (kind != "moveSpeed" && kind != "sceneSpeed" && kind != "sceneRun" && kind != "cueSpeed")
             return false;
     }
     return targets.isEmpty() == false;
@@ -1110,6 +1117,15 @@ bool ShowSurface::bottomStops(const QVariantMap &target)
     const QString kind = target.value("target").toString();
     return kind == "scene" || kind == "sceneRun" ||
            (kind == "map" && target.value("map").toMap().value("target").toString() == "playbackFader");
+}
+
+bool ShowSurface::flashesPlayback(const QVariantMap &target) const
+{
+    if (m_core == nullptr || m_core->playbacks() == nullptr || target.value("target").toString() != "map")
+        return false;
+    const QVariantMap map = target.value("map").toMap();
+    return map.value("target").toString() == "playbackFader" &&
+           m_core->playbacks()->crossfadesAt(map.value("pbPage", -1).toInt(), map.value("slot").toInt());
 }
 
 QList<quint32> ShowSurface::startedScenes(const QVariantList &targets)
@@ -1205,6 +1221,12 @@ QVariantList ShowSurface::holdLevels(const QVariantMap &item) const
     for (const QVariant &v : faderTargets(item))
     {
         const QVariantMap target = v.toMap();
+        // (an A/B fader: no level, a flash of its playback)
+        if (flashesPlayback(target))
+        {
+            levels.append(QVariantMap({ { "playbackFlash", true } }));
+            continue;
+        }
         const qreal level = targetLevel(target);
         levels.append(level);
         // the scenes it plays that no fader holds (started by a button): the
@@ -1224,6 +1246,14 @@ void ShowSurface::restoreLevels(const QVariantMap &item, const QVariantList &lev
     const QVariantList targets = faderTargets(item);
     for (int i = 0; i < targets.count() && i < levels.count(); i++)
     {
+        // the flash of a playback (flashFader()) goes up, wherever its page went
+        if (levels.at(i).toMap().value("playbackFlash").toBool())
+        {
+            const QVariantMap map = targets.at(i).toMap().value("map").toMap();
+            if (m_core != nullptr && m_core->playbacks() != nullptr)
+                m_core->playbacks()->flash(map.value("pbPage", -1).toInt(), map.value("slot").toInt(), false);
+            continue;
+        }
         bool ok = false;
         const qreal level = levels.at(i).toDouble(&ok);
         if (ok && qIsFinite(level))
@@ -1247,6 +1277,39 @@ void ShowSurface::restoreLevels(const QVariantMap &item, const QVariantList &lev
         }
     }
     slotChanged();
+}
+
+QVariantList ShowSurface::flashFader(const QVariantMap &item)
+{
+    const QVariantList levels = holdLevels(item);
+    const QVariantList targets = faderTargets(item);
+    QVariantList levelled;
+    for (int i = 0; i < targets.count(); i++)
+    {
+        const QVariantMap target = targets.at(i).toMap();
+        if (levels.value(i).toMap().value("playbackFlash").toBool())
+        {
+            const QVariantMap map = target.value("map").toMap();
+            m_core->playbacks()->flash(map.value("pbPage", -1).toInt(), map.value("slot").toInt(), true);
+        }
+        else
+        {
+            levelled.append(target);
+        }
+    }
+    // the others at the top of the travel (none left: no item of before,
+    // whose single target would be the grand master)
+    if (levelled.isEmpty() == false)
+    {
+        QVariantMap rest = item;
+        rest.insert("targets", levelled);
+        setLevel(rest, 1.0);
+    }
+    else
+    {
+        slotChanged();
+    }
+    return levels;
 }
 
 void ShowSurface::setSceneDimmer(quint32 functionId, qreal dimmer)
@@ -1314,6 +1377,11 @@ void ShowSurface::setTargetLevel(const QVariantMap &t, qreal level)
     else if (target == "bpm")
     {
         m_doc->inputOutputMap()->setBpmNumber(qRound(20 + level * 280));
+    }
+    else if (target == "cueSpeed")
+    {
+        // every cuelist: x0.1 .. x10, x1 in the middle (not saved)
+        m_doc->masterTimer()->setCueSpeed(std::pow(10.0, level * 2.0 - 1.0));
     }
     else if (target == "group")
     {
@@ -1743,6 +1811,8 @@ qreal ShowSurface::targetLevel(const QVariantMap &t) const
         return m_doc->inputOutputMap()->grandMasterValue() / 255.0;
     if (target == "bpm")
         return qBound(0.0, (m_doc->inputOutputMap()->bpmNumber() - 20) / 280.0, 1.0);
+    if (target == "cueSpeed")
+        return qBound(0.0, (std::log10(m_doc->masterTimer()->cueSpeed()) + 1.0) / 2.0, 1.0);
     if (target == "group")
     {
         Zone *zone = m_zones->zoneById(t.value("zoneId").toUInt());
@@ -1811,6 +1881,106 @@ qreal ShowSurface::targetLevel(const QVariantMap &t) const
 int ShowSurface::revision() const
 {
     return m_revision;
+}
+
+/*********************************************************************
+ * Timers
+ *********************************************************************/
+
+bool ShowSurface::timerRunning(const QString &sectionId) const
+{
+    return m_timers.value(sectionId).running;
+}
+
+double ShowSurface::timerElapsed(const QString &sectionId) const
+{
+    const Timer timer = m_timers.value(sectionId);
+    return double(timer.acc + (timer.running ? clock() - timer.start : 0));
+}
+
+void ShowSurface::timerToggle(const QString &sectionId)
+{
+    if (isTimer(sectionId) == false)
+        return;
+    Timer &timer = m_timers[sectionId];
+    if (timer.running)
+        timer.acc += clock() - timer.start;
+    else
+        timer.start = clock();
+    timer.running = !timer.running;
+    timersEdited();
+}
+
+void ShowSurface::timerReset(const QString &sectionId)
+{
+    if (m_timers.remove(sectionId) > 0)
+        timersEdited();
+}
+
+int ShowSurface::timerRevision() const
+{
+    return m_timerRevision;
+}
+
+qint64 ShowSurface::clock() const
+{
+    return m_clock.elapsed();
+}
+
+qint64 ShowSurface::timerOrigin(const QString &sectionId) const
+{
+    const Timer timer = m_timers.value(sectionId);
+    return timer.running ? timer.start - timer.acc : clock() - timer.acc;
+}
+
+bool ShowSurface::anyTimerRunning() const
+{
+    for (const Timer &timer : m_timers)
+        if (timer.running)
+            return true;
+    return false;
+}
+
+bool ShowSurface::isTimer(const QString &sectionId) const
+{
+    for (size_t p = 0; p < m_pages.size(); p++)
+    {
+        const Node *node = findSection(int(p), sectionId);
+        if (node != nullptr)
+            return node->split == "none" && node->props.value("type").toString() == "timer";
+    }
+    return false;
+}
+
+void ShowSurface::pruneTimers()
+{
+    bool gone = false;
+    for (auto it = m_timers.begin(); it != m_timers.end();)
+    {
+        if (isTimer(it.key()))
+        {
+            ++it;
+            continue;
+        }
+        it = m_timers.erase(it);
+        gone = true;
+    }
+    if (gone)
+        timersEdited();
+}
+
+void ShowSurface::clearTimers()
+{
+    if (m_timers.isEmpty())
+        return;
+    m_timers.clear();
+    timersEdited();
+}
+
+void ShowSurface::timersEdited()
+{
+    m_timerRevision++;
+    emit timersChanged();
 }
 
 QStringList ShowSurface::images() const
@@ -2191,6 +2361,7 @@ bool ShowSurface::loadXML(QXmlStreamReader &root)
     m_pages.clear();
     m_lastId = 0;
     clearSceneDimmers();
+    clearTimers();
 
     while (root.readNextStartElement())
     {
@@ -2569,7 +2740,7 @@ QVariantMap ShowSurface::addFromTarget(const QVariantMap &origin, int page)
     else
     {
         QVariantMap t;
-        if (kind == "grandMaster" || kind == "bpm")
+        if (kind == "grandMaster" || kind == "bpm" || kind == "cueSpeed")
             t.insert("target", kind);
         else if (kind == "groupMaster")
             t = QVariantMap({ { "target", "group" }, { "zoneId", target.value("zoneId", -1) } });

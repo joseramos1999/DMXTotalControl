@@ -144,4 +144,49 @@ void OutputPatch_Test::dump()
     delete op;
 }
 
+void OutputPatch_Test::sendSysEx()
+{
+    // DMX Total Control: a SysEx reaches the plugin once, as the
+    // KPluginSendSysEx parameter, and is never kept: not in the parameters
+    // the show saves, not sent again on reconnect
+    IOPluginStub* stub = static_cast<IOPluginStub*>
+                                (m_doc->ioPluginCache()->plugins().at(0));
+    QVERIFY(stub != NULL);
+    const QByteArray message = QByteArray::fromHex("F0477F4F62000100F7");
+
+    // (on the stack: closed before the stub goes, also when a check fails)
+    OutputPatch op(0, this);
+    op.set(stub, 1);
+    op.setPluginParameter("midichannel", 16);
+    stub->m_parametersSet.clear();
+
+    op.sendSysEx(message);
+    QCOMPARE(stub->m_parametersSet.size(), 1);
+    QCOMPARE(stub->m_parametersSet.at(0).first, QString(KPluginSendSysEx));
+    QCOMPARE(stub->m_parametersSet.at(0).second.toByteArray(), message);
+    QVERIFY(op.getPluginParameters().contains(KPluginSendSysEx) == false);
+    QCOMPARE(op.getPluginParameters().value("midichannel").toInt(), 16);
+
+    // the parameters kept are set again on reconnect, the SysEx isn't
+    stub->m_parametersSet.clear();
+    QVERIFY(op.reconnect());
+    QCOMPARE(stub->m_parametersSet.size(), 1);
+    QCOMPARE(stub->m_parametersSet.at(0).first, QString("midichannel"));
+
+    // no plugin, no line, or its line gone (waited for by its name): nothing
+    stub->m_parametersSet.clear();
+    OutputPatch none(0, this);
+    none.sendSysEx(message);
+    OutputPatch noLine(0, this);
+    noLine.set(stub, QLCIOPlugin::invalidLine());
+    noLine.sendSysEx(message);
+    stub->setProperty(KPluginLinesByName, true);
+    OutputPatch gone(0, this);
+    QVERIFY(gone.set(stub, 0, "Not plugged in") == false);
+    QVERIFY(gone.lineGone());
+    gone.sendSysEx(message);
+    stub->setProperty(KPluginLinesByName, QVariant());
+    QVERIFY(stub->m_parametersSet.isEmpty());
+}
+
 QTEST_APPLESS_MAIN(OutputPatch_Test)

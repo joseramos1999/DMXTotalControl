@@ -25,8 +25,9 @@ import DMXTotalControl.Backend
 
 /**
  * The properties of a playback: its label and colour, what its three
- * buttons do, and what its fader does (start it when it goes up, release
- * it at zero). Every change applies at once: openFor(page, slot)
+ * buttons do, the times of its flash, and what its fader does (the
+ * intensity, or an A/B crossfade on a Normal cuelist; start it when it goes
+ * up, release it at zero). Every change applies at once: openFor(page, slot)
  */
 Popup {
     id: dialog
@@ -34,6 +35,9 @@ Popup {
     property int page: -1
     property int slot: 0
     readonly property var info: { Core.playbacks.revision; return Core.playbacks.slotInfo(page, slot) }
+    /** A/B: Normal cuelists only */
+    readonly property bool normalList: !!info.isCuelist && info.mode === "normal"
+    readonly property bool crossfade: info.faderMode === "crossfade"
 
     readonly property var actions: ["none", "go", "back", "pause", "pauseBack", "release", "flash", "flashGo", "toggle", "select"]
     readonly property var actionNames: [qsTr("Nothing"), qsTr("GO"), qsTr("Back"), qsTr("Pause"), qsTr("Pause / Back"),
@@ -182,18 +186,50 @@ Popup {
                 onActivated: (i) => dialog.set("button3", dialog.actions[i])
             }
 
-            Caption { text: qsTr("The fader starts it") }
+            // the flash (on any button, a mapping, the SHOW, the phone): up to
+            // full and back to the fader in these times (0: at once)
+            Caption { text: qsTr("Flash attack") }
+            TimeSpin {
+                implicitWidth: 120
+                to: 100
+                engineValue: dialog.info.flashAttack || 0
+                onEdited: (v) => dialog.set("flashAttack", v)
+                ToolTip.text: qsTr("The time the flash takes to reach full"); ToolTip.visible: hovered
+            }
+            Caption { text: qsTr("Flash decay") }
+            TimeSpin {
+                implicitWidth: 120
+                to: 100
+                engineValue: dialog.info.flashDecay || 0
+                onEdited: (v) => dialog.set("flashDecay", v)
+                ToolTip.text: qsTr("The time it takes to come back when you let go"); ToolTip.visible: hovered
+            }
+
+            // the fader: the intensity, or each travel a GO faded by hand
+            Caption { text: qsTr("Fader"); visible: dialog.normalList }
+            ComboBox {
+                Layout.fillWidth: true
+                visible: dialog.normalList
+                model: [qsTr("Intensity"), qsTr("Crossfade (A/B)")]
+                currentIndex: dialog.crossfade ? 1 : 0
+                onActivated: (i) => dialog.set("faderMode", i === 1 ? "crossfade" : "level")
+            }
+
+            // (an A/B fader always starts it, and never releases it)
+            Caption { text: qsTr("The fader starts it"); visible: !dialog.crossfade }
             AppSwitch {
+                visible: !dialog.crossfade
                 checked: dialog.info.faderStarts !== false
                 onToggled: dialog.set("faderStarts", checked)
             }
 
-            Caption { text: qsTr("The fader at zero releases it") }
+            Caption { text: qsTr("The fader at zero releases it"); visible: !dialog.crossfade }
             ComboBox {
                 Layout.fillWidth: true
-                readonly property bool cuelist: !!dialog.info.isCuelist
-                // the default depends on the type: a cuelist keeps its cue, a scene stops
-                model: [cuelist ? qsTr("Default (no: it keeps its cue)") : qsTr("Default (yes)"), qsTr("Yes"), qsTr("No")]
+                visible: !dialog.crossfade
+                readonly property bool keeps: !!dialog.info.isCuelist && dialog.info.mode !== "submaster"
+                // the default depends on the type: a cuelist keeps its cue, a submaster and a scene stop
+                model: [keeps ? qsTr("Default (no: it keeps its cue)") : qsTr("Default (yes)"), qsTr("Yes"), qsTr("No")]
                 currentIndex: dialog.info.faderReleasesMode === 1 ? 1 : dialog.info.faderReleasesMode === 0 ? 2 : 0
                 onModelChanged: currentIndex = Qt.binding(() => dialog.info.faderReleasesMode === 1 ? 1
                                                                : dialog.info.faderReleasesMode === 0 ? 2 : 0)
@@ -204,7 +240,13 @@ Popup {
         Text {
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
-            text: qsTr("The fader is the intensity of what it plays. Raising it from zero starts it; GO with the fader down plays it at full.")
+            text: dialog.crossfade
+                  ? qsTr("Each travel of the fader is a GO whose fade you make by hand. Going back to where it started cancels it.")
+                  : dialog.info.ruledByFader
+                  ? qsTr("A submaster cuelist: raising the fader from zero starts it at the level of the fader. While it is released, GO and Back only choose the cue it starts on.")
+                  : dialog.info.mode === "override"
+                    ? qsTr("The fader crossfades its whole look with what is below. Raising it from zero starts it; GO with the fader down plays it at full.")
+                    : qsTr("The fader is the intensity of what it plays. Raising it from zero starts it; GO with the fader down plays it at full.")
             color: Theme.textFaint
             font.pixelSize: Theme.fontSmall
         }

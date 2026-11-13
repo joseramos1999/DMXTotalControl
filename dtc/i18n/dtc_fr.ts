@@ -11,6 +11,13 @@
         <source>Uses from universe %1, address %2, to universe %3, address %4</source>
         <translation>Utilise de l’univers %1, adresse %2, à l’univers %3, adresse %4</translation>
     </message>
+    <message numerus="yes">
+        <source>This mode has %n more DMX break(s): patch the mode “%1” too, at its own address.</source>
+        <translation>
+            <numerusform>Ce mode a %n DMX break de plus&#xa0;: patchez aussi le mode «&#xa0;%1&#xa0;», à sa propre adresse.</numerusform>
+            <numerusform>Ce mode a %n DMX breaks de plus&#xa0;: patchez aussi les modes «&#xa0;%1&#xa0;», chacun à sa propre adresse.</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Add fixtures</source>
         <translation>Ajouter des fixtures</translation>
@@ -90,6 +97,10 @@
     <message>
         <source>Patch fixture</source>
         <translation>Patcher le fixture</translation>
+    </message>
+    <message>
+        <source>Search GDTF-Share…</source>
+        <translation>Rechercher sur GDTF-Share…</translation>
     </message>
 </context>
 <context>
@@ -371,14 +382,14 @@
         <source>Type a command and press Enter:
 1 THRU 8 · 1 + 3 - 2 · GROUP 2 · ALL
 @ 50 · @ 5 (= 50 %) · @ FULL · @ 0 THRU 100 · @ + 10
-POS 1 · COL 2 · BEAM 3 · INT 4
+POS 1 · COL 2 · BEAM 3 · INT 4 · PAL 5
 LOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR
 Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3
 ↑ ↓: the last commands</source>
         <translation>Tapez une commande et appuyez sur Entrée&#xa0;:
 1 THRU 8 · 1 + 3 - 2 · GROUP 2 · ALL
 @ 50 · @ 5 (= 50&#xa0;%) · @ FULL · @ 0 THRU 100 · @ + 10
-POS 1 · COL 2 · BEAM 3 · INT 4
+POS 1 · COL 2 · BEAM 3 · INT 4 · PAL 5
 LOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR
 Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3
 ↑ ↓&#xa0;: les dernières commandes</translation>
@@ -840,6 +851,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>%1 · can. %2</translation>
     </message>
     <message>
+        <source>SysEx · Session mode</source>
+        <translation>SysEx · mode Session</translation>
+    </message>
+    <message>
+        <source>SysEx · Ableton mode</source>
+        <translation>SysEx · mode Ableton</translation>
+    </message>
+    <message>
         <source>any device</source>
         <translation>tout appareil</translation>
     </message>
@@ -854,6 +873,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>all groups</source>
         <translation>tous les groupes</translation>
+    </message>
+    <message>
+        <source>the selected scene</source>
+        <translation>la scène sélectionnée</translation>
     </message>
     <message>
         <source>page %1, fader %2</source>
@@ -878,6 +901,183 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>cue %1</source>
         <translation>cue %1</translation>
+    </message>
+    <message>
+        <source>Cue speed (all cuelists)</source>
+        <translation>Vitesse des cues (toutes les cuelists)</translation>
+    </message>
+    <message>
+        <source>Live time of a playback</source>
+        <translation>Temps en direct d’un playback</translation>
+    </message>
+    <message>
+        <source>Live time of the selected playback</source>
+        <translation>Temps en direct du playback sélectionné</translation>
+    </message>
+</context>
+<context>
+    <name>CueActionsView</name>
+    <message>
+        <source>The next cue</source>
+        <translation>La cue suivante</translation>
+    </message>
+    <message>
+        <source>It skips to cue %1.</source>
+        <translation>Elle saute à la cue %1.</translation>
+    </message>
+    <message numerus="yes">
+        <source>It skips to cue %1 %n times, then goes on to cue %2.</source>
+        <translation>
+            <numerusform>Elle saute à la cue %1 %n fois, puis passe à la cue %2.</numerusform>
+            <numerusform>Elle saute à la cue %1 %n fois, puis passe à la cue %2.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>It skips to cue %1 %n times.</source>
+        <translation>
+            <numerusform>Elle saute à la cue %1 %n fois.</numerusform>
+            <numerusform>Elle saute à la cue %1 %n fois.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Cue %1 repeats until you go to another cue.</source>
+        <translation>La cue %1 se répète jusqu’à ce que vous alliez à une autre cue.</translation>
+    </message>
+    <message>
+        <source>Cue %1 plays %2 times, then cue %3.</source>
+        <translation>La cue %1 joue %2 fois, puis la %3.</translation>
+    </message>
+    <message>
+        <source>Cue %1 plays %2 times, then the cuelist is released.</source>
+        <translation>La cue %1 joue %2 fois, puis la cuelist est libérée.</translation>
+    </message>
+    <message>
+        <source>Cue %1 plays %2 times, then the cuelist stays on it.</source>
+        <translation>La cue %1 joue %2 fois, puis la cuelist y reste.</translation>
+    </message>
+    <message>
+        <source>Cues %1 to %2 loop until you go to another cue.</source>
+        <translation>Les cues %1 à %2 se répètent jusqu’à ce que vous alliez à une autre cue.</translation>
+    </message>
+    <message>
+        <source>Cues %1 to %2 play %3 times, then cue %4.</source>
+        <translation>Les cues %1 à %2 jouent %3 fois, puis la %4.</translation>
+    </message>
+    <message>
+        <source>Cues %1 to %2 play %3 times, then the cuelist is released.</source>
+        <translation>Les cues %1 à %2 jouent %3 fois, puis la cuelist est libérée.</translation>
+    </message>
+    <message>
+        <source>Cues %1 to %2 play %3 times, then the cuelist stays on cue %2.</source>
+        <translation>Les cues %1 à %2 jouent %3 fois, puis la cuelist reste sur la cue %2.</translation>
+    </message>
+    <message>
+        <source>All groups</source>
+        <translation>Tous les groupes</translation>
+    </message>
+    <message>
+        <source>(deleted)</source>
+        <translation>(supprimée)</translation>
+    </message>
+    <message>
+        <source>Link</source>
+        <translation>Lien</translation>
+    </message>
+    <message>
+        <source>After this cue</source>
+        <translation>Après cette cue</translation>
+    </message>
+    <message>
+        <source>Times</source>
+        <translation>Nombre de fois</translation>
+    </message>
+    <message>
+        <source>0: always</source>
+        <translation>0&#xa0;: toujours</translation>
+    </message>
+    <message>
+        <source>Links don&apos;t count in a Chase or Timecode cuelist</source>
+        <translation>Les liens ne comptent pas dans une cuelist Chase ou Timecode</translation>
+    </message>
+    <message>
+        <source>Actions when it starts</source>
+        <translation>Actions au départ</translation>
+    </message>
+    <message>
+        <source>Add an action</source>
+        <translation>Ajouter une action</translation>
+    </message>
+    <message>
+        <source>GO of a cuelist</source>
+        <translation>GO d’une cuelist</translation>
+    </message>
+    <message>
+        <source>Go to a cue…</source>
+        <translation>Aller à une cue…</translation>
+    </message>
+    <message>
+        <source>Release a cuelist</source>
+        <translation>Libérer une cuelist</translation>
+    </message>
+    <message>
+        <source>Start a scene</source>
+        <translation>Lancer une scène</translation>
+    </message>
+    <message>
+        <source>Stop a scene</source>
+        <translation>Arrêter une scène</translation>
+    </message>
+    <message>
+        <source>Release a group</source>
+        <translation>Libérer un groupe</translation>
+    </message>
+    <message>
+        <source>Release all playbacks</source>
+        <translation>Libérer tous les playbacks</translation>
+    </message>
+    <message>
+        <source>Set the BPM</source>
+        <translation>Régler le BPM</translation>
+    </message>
+    <message>
+        <source>They run with its GO, Follow, Wait and Go to; not with BACK.</source>
+        <translation>Elles se font avec son GO, Suivre, Attendre et Aller à&#xa0;; pas avec RETOUR.</translation>
+    </message>
+    <message>
+        <source>GO</source>
+        <translation>GO</translation>
+    </message>
+    <message>
+        <source>Go to</source>
+        <translation>Aller à</translation>
+    </message>
+    <message>
+        <source>BPM</source>
+        <translation>BPM</translation>
+    </message>
+    <message>
+        <source>Release</source>
+        <translation>Libérer</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>Lancer</translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation>Arrêter</translation>
+    </message>
+    <message>
+        <source>Remove: %1</source>
+        <translation>Retirer&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Select a cue</source>
+        <translation>Sélectionnez une cue</translation>
+    </message>
+    <message>
+        <source>No actions</source>
+        <translation>Aucune action</translation>
     </message>
 </context>
 <context>
@@ -982,12 +1182,190 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Déplacer une cue change ce dont héritent les cues suivantes</translation>
     </message>
     <message>
-        <source>These steps are empty: there is nothing to convert</source>
-        <translation>Ces pas sont vides&#xa0;: il n’y a rien à convertir</translation>
+        <source>Converted to a cuelist: %1</source>
+        <translation>Converti en cuelist&#xa0;: %1</translation>
     </message>
     <message>
-        <source>These steps play too many times to become cues: lower the number of times first</source>
-        <translation>Ces pas se répètent trop de fois pour devenir des cues&#xa0;: réduisez d’abord le nombre de fois</translation>
+        <source>Cuelist options</source>
+        <translation>Options de la cuelist</translation>
+    </message>
+    <message>
+        <source>Record cue %1</source>
+        <translation>Enregistrer la cue %1</translation>
+    </message>
+    <message>
+        <source>Update cue %1</source>
+        <translation>Mettre à jour la cue %1</translation>
+    </message>
+    <message>
+        <source>Take out of cue %1</source>
+        <translation>Retirer de la cue %1</translation>
+    </message>
+    <message>
+        <source>Release in cue %1</source>
+        <translation>Libérer dans la cue %1</translation>
+    </message>
+    <message>
+        <source>Delete cue %1</source>
+        <translation>Supprimer la cue %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>Delete %n cues</source>
+        <translation>
+            <numerusform>Supprimer %n cue</numerusform>
+            <numerusform>Supprimer %n cues</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Copy cue %1</source>
+        <translation>Copier la cue %1</translation>
+    </message>
+    <message>
+        <source>Number of cue %1</source>
+        <translation>Numéro de la cue %1</translation>
+    </message>
+    <message>
+        <source>Times</source>
+        <translation>Temps</translation>
+    </message>
+    <message>
+        <source>Trigger</source>
+        <translation>Départ</translation>
+    </message>
+    <message>
+        <source>Name of cue %1</source>
+        <translation>Nom de la cue %1</translation>
+    </message>
+    <message>
+        <source>Note of cue %1</source>
+        <translation>Note de la cue %1</translation>
+    </message>
+    <message>
+        <source>Skip and block</source>
+        <translation>Ignorer et bloc</translation>
+    </message>
+    <message>
+        <source>Move in black</source>
+        <translation>Déplacement au noir</translation>
+    </message>
+    <message>
+        <source>Intensity</source>
+        <translation>Intensité</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Couleur</translation>
+    </message>
+    <message>
+        <source>Position</source>
+        <translation>Position</translation>
+    </message>
+    <message>
+        <source>Beam</source>
+        <translation>Faisceau</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixtures</source>
+        <translation>
+            <numerusform>%n fixture</numerusform>
+            <numerusform>%n fixtures</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Attribute times</source>
+        <translation>Temps par attribut</translation>
+    </message>
+    <message>
+        <source>Fixture times</source>
+        <translation>Temps par fixture</translation>
+    </message>
+    <message>
+        <source>Linear</source>
+        <translation>Linéaire</translation>
+    </message>
+    <message>
+        <source>Smooth</source>
+        <translation>Douce</translation>
+    </message>
+    <message>
+        <source>Slow start</source>
+        <translation>Départ lent</translation>
+    </message>
+    <message>
+        <source>Fast start</source>
+        <translation>Départ rapide</translation>
+    </message>
+    <message>
+        <source>Curve</source>
+        <translation>Courbe</translation>
+    </message>
+    <message>
+        <source>Time fan</source>
+        <translation>Éventail de temps</translation>
+    </message>
+    <message>
+        <source>Cue %1 linked to a deleted cue: its link is gone</source>
+        <translation>La cue %1 renvoyait à une cue supprimée&#xa0;: son lien a disparu</translation>
+    </message>
+    <message>
+        <source>Link of cue %1</source>
+        <translation>Lien de la cue %1</translation>
+    </message>
+    <message>
+        <source>Actions of cue %1</source>
+        <translation>Actions de la cue %1</translation>
+    </message>
+    <message>
+        <source>(deleted)</source>
+        <translation>(supprimée)</translation>
+    </message>
+    <message>
+        <source>GO of %1</source>
+        <translation>GO de %1</translation>
+    </message>
+    <message>
+        <source>Go to cue %1 of %2</source>
+        <translation>Aller à la cue %1 de %2</translation>
+    </message>
+    <message>
+        <source>Release %1</source>
+        <translation>Libérer %1</translation>
+    </message>
+    <message>
+        <source>Stop %1</source>
+        <translation>Arrêter %1</translation>
+    </message>
+    <message>
+        <source>Start %1</source>
+        <translation>Lancer %1</translation>
+    </message>
+    <message>
+        <source>Release all the groups</source>
+        <translation>Libérer tous les groupes</translation>
+    </message>
+    <message>
+        <source>Release the group %1</source>
+        <translation>Libérer le groupe %1</translation>
+    </message>
+    <message>
+        <source>Release a deleted group</source>
+        <translation>Libérer un groupe supprimé</translation>
+    </message>
+    <message>
+        <source>Release all playbacks</source>
+        <translation>Libérer tous les playbacks</translation>
+    </message>
+    <message>
+        <source>BPM %1</source>
+        <translation>BPM %1</translation>
+    </message>
+    <message>
+        <source>Live time of cue %1</source>
+        <translation>Temps en direct de la cue %1</translation>
+    </message>
+    <message>
+        <source>Time of cue %1</source>
+        <translation>Heure de la cue %1</translation>
     </message>
 </context>
 <context>
@@ -1106,7 +1484,143 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     </message>
     <message>
         <source>Press its button several times in a row (Live, SHOW, a mapping): a GO on each beat, at that rhythm</source>
-        <translation>Appuyez plusieurs fois de suite sur son bouton (Direct, SHOW, un mappage) : un GO à chaque battement, à ce rythme</translation>
+        <translation>Appuyez plusieurs fois de suite sur son bouton (Direct, SHOW, un mappage)&#xa0;: un GO à chaque battement, à ce rythme</translation>
+    </message>
+    <message>
+        <source>Move in black</source>
+        <translation>Déplacement au noir</translation>
+    </message>
+    <message>
+        <source>When a cue has finished, the fixtures that are dark and that the next cue lights up already take its position, colour and beam: at GO they only fade up</source>
+        <translation>Quand une cue est terminée, les fixtures éteints que la cue suivante allume prennent déjà sa position, sa couleur et son faisceau&#xa0;: au GO, ils ne font que monter en intensité</translation>
+    </message>
+    <message>
+        <source>After</source>
+        <translation>Après</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>Durée</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Normal: GO plays the next cue</source>
+        <translation>Normal&#xa0;: GO lance la cue suivante</translation>
+    </message>
+    <message>
+        <source>Chase</source>
+        <translation>Chase</translation>
+    </message>
+    <message>
+        <source>Chase: the cues follow each other by themselves, at a speed</source>
+        <translation>Chase&#xa0;: les cues s’enchaînent seules, à une vitesse</translation>
+    </message>
+    <message>
+        <source>Timecode</source>
+        <translation>Timecode</translation>
+    </message>
+    <message>
+        <source>Timecode: each cue plays at its time on a clock</source>
+        <translation>Timecode&#xa0;: chaque cue joue à son heure sur une horloge</translation>
+    </message>
+    <message>
+        <source>Submaster</source>
+        <translation>Submaster</translation>
+    </message>
+    <message>
+        <source>Submaster: its fader rules: up from zero starts it, down to zero releases it; GO chooses the cue</source>
+        <translation>Submaster&#xa0;: son fader décide&#xa0;: le monter depuis zéro la lance, le baisser à zéro la libère&#xa0;; GO choisit la cue</translation>
+    </message>
+    <message>
+        <source>Override</source>
+        <translation>Override</translation>
+    </message>
+    <message>
+        <source>Override: its fader crossfades everything it holds between what is below and its cue</source>
+        <translation>Override&#xa0;: son fader fait un fondu de tout ce qu’elle tient entre ce qui est dessous et sa cue</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Vitesse</translation>
+    </message>
+    <message>
+        <source>A step a beat</source>
+        <translation>Un pas à chaque battement</translation>
+    </message>
+    <message>
+        <source>BPM of the show</source>
+        <translation>BPM du show</translation>
+    </message>
+    <message>
+        <source>Crossfade</source>
+        <translation>Fondu</translation>
+    </message>
+    <message>
+        <source>Part of the step the change takes (0: a cut)</source>
+        <translation>Part du pas que dure le changement (0&#xa0;: une coupure)</translation>
+    </message>
+    <message>
+        <source>Direction</source>
+        <translation>Sens</translation>
+    </message>
+    <message>
+        <source>Random never plays the same step twice in a row</source>
+        <translation>Aléatoire ne joue jamais le même pas deux fois de suite</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>En avant</translation>
+    </message>
+    <message>
+        <source>Backward</source>
+        <translation>À l’envers</translation>
+    </message>
+    <message>
+        <source>Bounce</source>
+        <translation>Aller-retour</translation>
+    </message>
+    <message>
+        <source>Random</source>
+        <translation>Aléatoire</translation>
+    </message>
+    <message>
+        <source>Clock</source>
+        <translation>Horloge</translation>
+    </message>
+    <message>
+        <source>In a super scene the timeline is the clock: the cuelist follows the cursor</source>
+        <translation>Dans une super scène, la timeline est l’horloge&#xa0;: la cuelist suit le curseur</translation>
+    </message>
+    <message>
+        <source>Own clock</source>
+        <translation>Horloge propre</translation>
+    </message>
+    <message>
+        <source>The timecode drives the cuelist, also in a super scene: GO and Back do nothing</source>
+        <translation>Le timecode mène la cuelist, aussi dans une super scène&#xa0;: GO et Retour ne font rien</translation>
+    </message>
+    <message>
+        <source>MIDI timecode (MTC)</source>
+        <translation>Timecode MIDI (MTC)</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Décalage</translation>
+    </message>
+    <message>
+        <source>The timecode where the cuelist&apos;s 00:00 is</source>
+        <translation>Le timecode où se trouve le 00:00 de la cuelist</translation>
+    </message>
+    <message>
+        <source>Turn on the input of the MIDI device in Mappings › Devices</source>
+        <translation>Activez l’entrée de l’appareil MIDI dans Mappages › Appareils</translation>
     </message>
 </context>
 <context>
@@ -1228,12 +1742,12 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Supprimer les cues sélectionnées</translation>
     </message>
     <message>
-        <source>Tracking sheet</source>
-        <translation>Feuille de tracking</translation>
+        <source>Cue details</source>
+        <translation>Détails de la cue</translation>
     </message>
     <message>
-        <source>What the stage shows on the selected cue, channel by channel</source>
-        <translation>Ce qu’on voit sur scène à la cue sélectionnée, canal par canal</translation>
+        <source>The tracking sheet, the times, the link and the actions of the selected cue</source>
+        <translation>La feuille de tracking, les temps, le lien et les actions de la cue sélectionnée</translation>
     </message>
     <message>
         <source>CUE</source>
@@ -1274,6 +1788,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Block: Record and Update also store the values equal to the ones it tracks</source>
         <translation>Bloc&#xa0;: Enregistrer et Mettre à jour gardent aussi les valeurs égales à celles dont elle hérite</translation>
+    </message>
+    <message>
+        <source>MIB</source>
+        <translation>MIB</translation>
+    </message>
+    <message>
+        <source>Move in black: this cue is prepared while its fixtures are dark (off: its moves are seen)</source>
+        <translation>Déplacement au noir&#xa0;: cette cue est préparée pendant que ses fixtures sont éteints (décochée&#xa0;: ses mouvements se voient)</translation>
     </message>
     <message>
         <source>NOTE</source>
@@ -1377,6 +1899,246 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Undo: %1 (Ctrl+Z)</source>
+        <translation>Annuler&#xa0;: %1 (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Nothing to undo</source>
+        <translation>Rien à annuler</translation>
+    </message>
+    <message>
+        <source>Redo: %1 (Ctrl+Y)</source>
+        <translation>Rétablir&#xa0;: %1 (Ctrl+Y)</translation>
+    </message>
+    <message>
+        <source>Nothing to redo</source>
+        <translation>Rien à rétablir</translation>
+    </message>
+    <message>
+        <source>Times</source>
+        <translation>Temps</translation>
+    </message>
+    <message>
+        <source>Times of cue %1</source>
+        <translation>Temps de la cue %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>Times of %n cues</source>
+        <translation>
+            <numerusform>Temps de %n cue</numerusform>
+            <numerusform>Temps de %n cues</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Times…</source>
+        <translation>Temps…</translation>
+    </message>
+    <message>
+        <source>Own times: %1</source>
+        <translation>Temps propres&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Link and actions of cue %1</source>
+        <translation>Lien et actions de la cue %1</translation>
+    </message>
+    <message>
+        <source>Link and actions</source>
+        <translation>Lien et actions</translation>
+    </message>
+    <message>
+        <source>Link and actions…</source>
+        <translation>Lien et actions…</translation>
+    </message>
+    <message numerus="yes">
+        <source>Then cue %1, %n times</source>
+        <translation>
+            <numerusform>Puis la cue %1, %n fois</numerusform>
+            <numerusform>Puis la cue %1, %n fois</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Then cue %1, always</source>
+        <translation>Puis la cue %1, toujours</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n actions when it starts</source>
+        <translation>
+            <numerusform>%n action au départ</numerusform>
+            <numerusform>%n actions au départ</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Released · the fader plays %1</source>
+        <translation>Libérée · le fader lance la %1</translation>
+    </message>
+    <message>
+        <source>Before the first cue</source>
+        <translation>Avant la première cue</translation>
+    </message>
+    <message>
+        <source>Set to the clock</source>
+        <translation>Mettre à l’horloge</translation>
+    </message>
+    <message>
+        <source>Put the selected cue at the time of the clock</source>
+        <translation>Mettre la cue sélectionnée à l’heure de l’horloge</translation>
+    </message>
+    <message>
+        <source>TIME</source>
+        <translation>HEURE</translation>
+    </message>
+    <message>
+        <source>The time of the cue on the clock</source>
+        <translation>L’heure de la cue sur l’horloge</translation>
+    </message>
+    <message>
+        <source>This cue&apos;s time is before the cue before it</source>
+        <translation>L’heure de cette cue est avant celle de la cue précédente</translation>
+    </message>
+</context>
+<context>
+    <name>CueTimesView</name>
+    <message>
+        <source>Intensity</source>
+        <translation>Intensité</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>Couleur</translation>
+    </message>
+    <message>
+        <source>Position</source>
+        <translation>Position</translation>
+    </message>
+    <message>
+        <source>Beam</source>
+        <translation>Faisceau</translation>
+    </message>
+    <message>
+        <source>Times per attribute</source>
+        <translation>Temps par attribut</translation>
+    </message>
+    <message>
+        <source>DELAY</source>
+        <translation>DÉLAI</translation>
+    </message>
+    <message>
+        <source>FADE</source>
+        <translation>FONDU</translation>
+    </message>
+    <message>
+        <source>Empty or =: the times of the cue</source>
+        <translation>Vide ou =&#xa0;: les temps de la cue</translation>
+    </message>
+    <message>
+        <source>Dimmers going down take the DOWN time of the cue; with =, the intensity fade</source>
+        <translation>Les dimmers qui descendent prennent la DESCENTE de la cue&#xa0;; avec =, le fondu de l’intensité</translation>
+    </message>
+    <message>
+        <source>Times per fixture</source>
+        <translation>Temps par fixture</translation>
+    </message>
+    <message>
+        <source>Selected fixtures</source>
+        <translation>Fixtures sélectionnés</translation>
+    </message>
+    <message>
+        <source>The fixtures selected in Program get times of their own, starting with the times of the cue</source>
+        <translation>Les fixtures sélectionnés dans Programmer reçoivent leurs propres temps, en partant des temps de la cue</translation>
+    </message>
+    <message>
+        <source>Select fixtures in Program first</source>
+        <translation>Sélectionnez d’abord des fixtures dans Programmer</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Retirer</translation>
+    </message>
+    <message>
+        <source>Select a cue</source>
+        <translation>Sélectionnez une cue</translation>
+    </message>
+    <message>
+        <source>No fixture has its own times</source>
+        <translation>Aucun fixture n’a ses propres temps</translation>
+    </message>
+    <message>
+        <source>Linear</source>
+        <translation>Linéaire</translation>
+    </message>
+    <message>
+        <source>Smooth</source>
+        <translation>Douce</translation>
+    </message>
+    <message>
+        <source>Slow start</source>
+        <translation>Départ lent</translation>
+    </message>
+    <message>
+        <source>Fast start</source>
+        <translation>Départ rapide</translation>
+    </message>
+    <message>
+        <source>Like the cue</source>
+        <translation>Comme la cue</translation>
+    </message>
+    <message>
+        <source>Curve of the fades</source>
+        <translation>Courbe des fondus</translation>
+    </message>
+    <message>
+        <source>CURVE</source>
+        <translation>COURBE</translation>
+    </message>
+    <message>
+        <source>Fan</source>
+        <translation>Éventail</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>Délai</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>Fondu</translation>
+    </message>
+    <message>
+        <source>from</source>
+        <translation>de</translation>
+    </message>
+    <message>
+        <source>to</source>
+        <translation>à</translation>
+    </message>
+    <message>
+        <source>One after the other</source>
+        <translation>L’un après l’autre</translation>
+    </message>
+    <message>
+        <source>From the middle</source>
+        <translation>Depuis le centre</translation>
+    </message>
+    <message>
+        <source>From the ends</source>
+        <translation>Depuis les extrémités</translation>
+    </message>
+    <message>
+        <source>Selected in Program (%1)</source>
+        <translation>Sélectionnés dans Programmer (%1)</translation>
+    </message>
+    <message>
+        <source>Of this cue, by number (%1)</source>
+        <translation>De cette cue, par numéro (%1)</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Appliquer</translation>
+    </message>
+    <message>
+        <source>Each fixture gets a time between the two, in this order</source>
+        <translation>Chaque fixture reçoit un temps entre les deux, dans cet ordre</translation>
     </message>
 </context>
 <context>
@@ -1554,6 +2316,53 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>No file name given</source>
         <translation>Aucun nom de fichier indiqué</translation>
+    </message>
+    <message>
+        <source>Choose at least one cuelist</source>
+        <translation>Choisissez au moins une cuelist</translation>
+    </message>
+    <message>
+        <source>Choose another name: that file is this show</source>
+        <translation>Choisissez un autre nom&#xa0;: ce fichier est ce show</translation>
+    </message>
+    <message>
+        <source>Choose at least one cue list</source>
+        <translation>Choisissez au moins une liste de cues</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cuelist(s) made</source>
+        <translation>
+            <numerusform>%n cuelist créée</numerusform>
+            <numerusform>%n cuelists créées</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n on playbacks</source>
+        <translation>
+            <numerusform>%n sur un playback</numerusform>
+            <numerusform>%n sur des playbacks</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n with no free playback</source>
+        <translation>
+            <numerusform>%n sans playback libre</numerusform>
+            <numerusform>%n sans playback libre</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n mapping(s) made</source>
+        <translation>
+            <numerusform>%n mappage créé</numerusform>
+            <numerusform>%n mappages créés</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n step(s) not converted</source>
+        <translation>
+            <numerusform>%n pas non converti</numerusform>
+            <numerusform>%n pas non convertis</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -2067,6 +2876,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         </translation>
     </message>
     <message numerus="yes">
+        <source>GDTF-Share: %n fixture(s) downloaded</source>
+        <translation>
+            <numerusform>GDTF-Share&#xa0;: %n fixture téléchargé</numerusform>
+            <numerusform>GDTF-Share&#xa0;: %n fixtures téléchargés</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
         <source>%n new in the library</source>
         <translation>
             <numerusform>%n nouveau dans la bibliothèque</numerusform>
@@ -2480,6 +3296,84 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Phase</source>
         <translation>Phase</translation>
     </message>
+    <message>
+        <source>Virtual dimmer</source>
+        <translation>Dimmer virtuel</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <translation>Auto</translation>
+    </message>
+    <message>
+        <source>Fixtures without a dimmer (RGB only): the FX dims their colour from this level. Auto: like the dimmers of the FX, or full</source>
+        <translation>Fixtures sans dimmer (RGB seul)&#xa0;: le FX atténue leur couleur à partir de ce niveau. Auto&#xa0;: comme les dimmers du FX, ou à fond</translation>
+    </message>
+</context>
+<context>
+    <name>FxFixtureOffsets</name>
+    <message>
+        <source>Step %1</source>
+        <translation>Pas %1</translation>
+    </message>
+    <message>
+        <source>Per fixture</source>
+        <translation>Par fixture</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n with shift or delay</source>
+        <translation>
+            <numerusform>%n avec décalage ou délai</numerusform>
+            <numerusform>%n avec décalage ou délai</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Fan the shift…</source>
+        <translation>Répartir le décalage…</translation>
+    </message>
+    <message>
+        <source>From 0 on the first to this on the last, in the order of the FX</source>
+        <translation>De 0 sur le premier à cette valeur sur le dernier, dans l’ordre du FX</translation>
+    </message>
+    <message>
+        <source>Shift of the last one (°)</source>
+        <translation>Décalage du dernier (°)</translation>
+    </message>
+    <message>
+        <source>Fan the delay…</source>
+        <translation>Répartir le délai…</translation>
+    </message>
+    <message>
+        <source>Delay of the last one (s)</source>
+        <translation>Délai du dernier (s)</translation>
+    </message>
+    <message>
+        <source>No shift or delay</source>
+        <translation>Sans décalage ni délai</translation>
+    </message>
+    <message>
+        <source>In the wave</source>
+        <translation>Dans la vague</translation>
+    </message>
+    <message>
+        <source>Shift</source>
+        <translation>Décalage</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>Délai</translation>
+    </message>
+    <message>
+        <source>How far behind the others it goes in the wave: 360° is a whole cycle (in a step, one place)</source>
+        <translation>De combien il va derrière les autres dans la vague&#xa0;: 360° est un cycle entier (dans un pas, une place)</translation>
+    </message>
+    <message>
+        <source>How much later it does the FX. When the FX starts, it waits that long at its base</source>
+        <translation>Combien de temps plus tard il fait le FX. Quand le FX démarre, il attend ce temps à la base</translation>
+    </message>
+    <message>
+        <source>virtual</source>
+        <translation>virtuel</translation>
+    </message>
 </context>
 <context>
     <name>FxMacros</name>
@@ -2707,6 +3601,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>%1 (right click: rename or delete)</source>
         <translation>%1 (clic droit&#xa0;: renommer ou supprimer)</translation>
     </message>
+    <message numerus="yes">
+        <source>Saved fixture by fixture: %n fixture(s)</source>
+        <translation>
+            <numerusform>Enregistrée fixture par fixture&#xa0;: %n fixture</numerusform>
+            <numerusform>Enregistrée fixture par fixture&#xa0;: %n fixtures</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Save as a macro…</source>
         <translation>Enregistrer comme macro…</translation>
@@ -2726,6 +3627,17 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>virtual</source>
+        <translation>virtuel</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).</source>
+        <translation>
+            <numerusform>%n fixture sans dimmer&#xa0;: le FX atténue sa couleur (un dimmer virtuel).</numerusform>
+            <numerusform>%n fixtures sans dimmer&#xa0;: le FX atténue leur couleur (un dimmer virtuel).</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -2796,6 +3708,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Linked FX share the speed and the timing</source>
         <translation>Les FX liés partagent la vitesse et le timing</translation>
     </message>
+    <message numerus="yes">
+        <source>%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).</source>
+        <translation>
+            <numerusform>%n fixture sans dimmer&#xa0;: le FX atténue sa couleur (un dimmer virtuel).</numerusform>
+            <numerusform>%n fixtures sans dimmer&#xa0;: le FX atténue leur couleur (un dimmer virtuel).</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>FxShapePicker</name>
@@ -2810,6 +3729,306 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>The dotted line is the base value: the wave goes above it, below it or both. Modes 9 to 12 are for chases, with a step.</source>
         <translation>La ligne pointillée est la valeur de base&#xa0;: l’onde passe au-dessus, en dessous ou des deux côtés. Les modes 9 à 12 sont pour les chenillards, avec un pas.</translation>
+    </message>
+</context>
+<context>
+    <name>GdtfShare</name>
+    <message>
+        <source>GDTF-Share sent an answer that can&apos;t be read</source>
+        <translation>GDTF-Share a envoyé une réponse illisible</translation>
+    </message>
+    <message>
+        <source>Sign in to GDTF-Share to continue</source>
+        <translation>Connectez-vous à GDTF-Share pour continuer</translation>
+    </message>
+    <message>
+        <source>GDTF-Share is only used over a secure connection (https)</source>
+        <translation>GDTF-Share ne s’utilise qu’avec une connexion sécurisée (https)</translation>
+    </message>
+    <message>
+        <source>GDTF-Share refused the session: sign in again</source>
+        <translation>GDTF-Share a refusé la session&#xa0;: reconnectez-vous</translation>
+    </message>
+    <message>
+        <source>Wrong user name or password</source>
+        <translation>Nom d’utilisateur ou mot de passe incorrect</translation>
+    </message>
+    <message>
+        <source>Download cancelled</source>
+        <translation>Téléchargement annulé</translation>
+    </message>
+    <message>
+        <source>GDTF-Share could not be reached: %1</source>
+        <translation>Impossible de joindre GDTF-Share&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>GDTF-Share answered with an error: %1</source>
+        <translation>GDTF-Share a répondu par une erreur&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>The saved password can&apos;t be read on this computer: sign in again</source>
+        <translation>Le mot de passe enregistré ne peut pas être lu sur cet ordinateur&#xa0;: reconnectez-vous</translation>
+    </message>
+    <message>
+        <source>Downloading the list of GDTF-Share…</source>
+        <translation>Téléchargement de la liste de GDTF-Share…</translation>
+    </message>
+    <message>
+        <source>GDTF-Share sent an empty list: showing the one from %1</source>
+        <translation>GDTF-Share a envoyé une liste vide&#xa0;: affichage de celle du %1</translation>
+    </message>
+    <message>
+        <source>GDTF-Share sent an empty list: try again later</source>
+        <translation>GDTF-Share a envoyé une liste vide&#xa0;: réessayez plus tard</translation>
+    </message>
+    <message>
+        <source>Offline: showing the list from %1</source>
+        <translation>Hors ligne&#xa0;: affichage de la liste du %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>GDTF-Share: %n fixture type(s)</source>
+        <translation>
+            <numerusform>GDTF-Share&#xa0;: %n type de fixture</numerusform>
+            <numerusform>GDTF-Share&#xa0;: %n types de fixture</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Unable to write %1</source>
+        <translation>Impossible d’écrire %1</translation>
+    </message>
+    <message>
+        <source>Downloading %1 (%2 of %3)…</source>
+        <translation>Téléchargement de %1 (%2 sur %3)…</translation>
+    </message>
+    <message>
+        <source>Downloading %1…</source>
+        <translation>Téléchargement de %1…</translation>
+    </message>
+    <message>
+        <source>%1 is not a GDTF file: it was not imported</source>
+        <translation>%1 n’est pas un fichier GDTF&#xa0;: il n’a pas été importé</translation>
+    </message>
+</context>
+<context>
+    <name>GdtfShareDialog</name>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 Ko</translation>
+    </message>
+    <message>
+        <source>%1 MB</source>
+        <translation>%1 Mo</translation>
+    </message>
+    <message>
+        <source>Manufacturer</source>
+        <translation>Fabricant</translation>
+    </message>
+    <message>
+        <source>User</source>
+        <translation>Utilisateur</translation>
+    </message>
+    <message>
+        <source>GDTF-Share</source>
+        <translation>GDTF-Share</translation>
+    </message>
+    <message>
+        <source>Search manufacturer or fixture…</source>
+        <translation>Rechercher un fabricant ou un fixture…</translation>
+    </message>
+    <message>
+        <source>Sign in</source>
+        <translation>Se connecter</translation>
+    </message>
+    <message>
+        <source>Refresh</source>
+        <translation>Actualiser la liste</translation>
+    </message>
+    <message>
+        <source>List of %1</source>
+        <translation>Liste du %1</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Tous</translation>
+    </message>
+    <message>
+        <source>From manufacturers</source>
+        <translation>Des fabricants</translation>
+    </message>
+    <message>
+        <source>In my library</source>
+        <translation>Dans ma bibliothèque</translation>
+    </message>
+    <message>
+        <source>Updates (%1)</source>
+        <translation>Mises à jour (%1)</translation>
+    </message>
+    <message>
+        <source>Update all</source>
+        <translation>Tout mettre à jour</translation>
+    </message>
+    <message>
+        <source>All manufacturers</source>
+        <translation>Tous les fabricants</translation>
+    </message>
+    <message>
+        <source>Fixtures</source>
+        <translation>Fixtures</translation>
+    </message>
+    <message>
+        <source>Newer revision</source>
+        <translation>Révision plus récente</translation>
+    </message>
+    <message>
+        <source>From a file</source>
+        <translation>Depuis un fichier</translation>
+    </message>
+    <message>
+        <source>In library</source>
+        <translation>Dans la bibliothèque</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n mode(s)</source>
+        <translation>
+            <numerusform>%n mode</numerusform>
+            <numerusform>%n modes</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Showing %1 of %2: type more to narrow the list</source>
+        <translation>%1 affichés sur %2&#xa0;: tapez davantage pour affiner la liste</translation>
+    </message>
+    <message>
+        <source>Downloading the list of GDTF-Share…</source>
+        <translation>Téléchargement de la liste de GDTF-Share…</translation>
+    </message>
+    <message>
+        <source>Sign in with your GDTF-Share account to see its fixtures</source>
+        <translation>Connectez-vous avec votre compte GDTF-Share pour voir ses fixtures</translation>
+    </message>
+    <message>
+        <source>No fixture matches “%1”</source>
+        <translation>Aucun fixture ne correspond à «&#xa0;%1&#xa0;»</translation>
+    </message>
+    <message>
+        <source>No fixture with this filter</source>
+        <translation>Aucun fixture avec ce filtre</translation>
+    </message>
+    <message>
+        <source>Details</source>
+        <translation>Détails</translation>
+    </message>
+    <message>
+        <source>Choose a fixture</source>
+        <translation>Choisissez un fixture</translation>
+    </message>
+    <message>
+        <source>Uploaded by</source>
+        <translation>Publié par</translation>
+    </message>
+    <message>
+        <source>Rating</source>
+        <translation>Note</translation>
+    </message>
+    <message>
+        <source>Revision</source>
+        <translation>Révision</translation>
+    </message>
+    <message>
+        <source>GDTF version</source>
+        <translation>Version GDTF</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Taille</translation>
+    </message>
+    <message>
+        <source>Modes</source>
+        <translation>Modes</translation>
+    </message>
+    <message>
+        <source>%1 — %2 ch</source>
+        <translation>%1 — %2 ch</translation>
+    </message>
+    <message>
+        <source>Revisions</source>
+        <translation>Révisions</translation>
+    </message>
+    <message>
+        <source>In your library (imported from a file)</source>
+        <translation>Dans votre bibliothèque (importé depuis un fichier)</translation>
+    </message>
+    <message>
+        <source>In your library as “%1”</source>
+        <translation>Dans votre bibliothèque sous le nom «&#xa0;%1&#xa0;»</translation>
+    </message>
+    <message>
+        <source>A newer revision: %1 (%2)</source>
+        <translation>Une révision plus récente&#xa0;: %1 (%2)</translation>
+    </message>
+    <message>
+        <source>Another upload of this fixture is in your library: it will be replaced</source>
+        <translation>Une autre publication de ce fixture est dans votre bibliothèque&#xa0;: elle sera remplacée</translation>
+    </message>
+    <message>
+        <source>Download again</source>
+        <translation>Télécharger à nouveau</translation>
+    </message>
+    <message>
+        <source>Update to this revision</source>
+        <translation>Mettre à jour vers cette révision</translation>
+    </message>
+    <message>
+        <source>Download and import</source>
+        <translation>Télécharger et importer</translation>
+    </message>
+    <message>
+        <source>Patch it</source>
+        <translation>Le patcher</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Sign out</source>
+        <translation>Se déconnecter</translation>
+    </message>
+    <message>
+        <source>Forget the saved password</source>
+        <translation>Oublier le mot de passe enregistré</translation>
+    </message>
+    <message>
+        <source>Sign in to GDTF-Share</source>
+        <translation>Connexion à GDTF-Share</translation>
+    </message>
+    <message>
+        <source>Use your own free gdtf-share.com account. Your user name and password are only sent to gdtf-share.com.</source>
+        <translation>Utilisez votre propre compte gratuit gdtf-share.com. Votre nom d’utilisateur et votre mot de passe ne sont envoyés qu’à gdtf-share.com.</translation>
+    </message>
+    <message>
+        <source>User name</source>
+        <translation>Nom d’utilisateur</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Mot de passe</translation>
+    </message>
+    <message>
+        <source>Remember on this computer</source>
+        <translation>Se souvenir sur cet ordinateur</translation>
+    </message>
+    <message>
+        <source>Saved encrypted for your Windows user: anyone using this Windows account can sign in with it.</source>
+        <translation>Enregistré chiffré pour votre utilisateur Windows&#xa0;: toute personne utilisant ce compte Windows peut se connecter avec.</translation>
+    </message>
+    <message>
+        <source>Create a free account</source>
+        <translation>Créer un compte gratuit</translation>
     </message>
 </context>
 <context>
@@ -2956,6 +4175,37 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     </message>
 </context>
 <context>
+    <name>LiveTimeBar</name>
+    <message>
+        <source>Live time</source>
+        <translation>Temps en direct</translation>
+    </message>
+    <message>
+        <source>The time of the cue that is fading: change it and the fade goes on from where it is</source>
+        <translation>Le temps de la cue en cours de fondu&#xa0;: changez-le et le fondu continue là où il en est</translation>
+    </message>
+    <message>
+        <source>Now</source>
+        <translation>Maintenant</translation>
+    </message>
+    <message>
+        <source>Finish the fade now</source>
+        <translation>Terminer le fondu maintenant</translation>
+    </message>
+    <message>
+        <source>Store in the cue</source>
+        <translation>Enregistrer dans la cue</translation>
+    </message>
+    <message>
+        <source>Keep this time in the cue</source>
+        <translation>Garder ce temps dans la cue</translation>
+    </message>
+    <message>
+        <source>This cue runs with a BACK time or a fade-in, not its own times</source>
+        <translation>Cette cue passe avec un temps de BACK ou une montée, pas avec ses propres temps</translation>
+    </message>
+</context>
+<context>
     <name>LockDialog</name>
     <message>
         <source>Setup</source>
@@ -3047,6 +4297,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>New fixtures in the Open Fixture Library: update it in Options</source>
         <translation>Nouveaux fixtures dans l’Open Fixture Library&#xa0;: mettez-la à jour dans Options</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) have a newer revision on GDTF-Share: update them in Options</source>
+        <translation>
+            <numerusform>%n fixture a une révision plus récente sur GDTF-Share&#xa0;: mettez-le à jour dans Options</numerusform>
+            <numerusform>%n fixtures ont une révision plus récente sur GDTF-Share&#xa0;: mettez-les à jour dans Options</numerusform>
+        </translation>
     </message>
     <message>
         <source>Open show</source>
@@ -3258,6 +4515,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Show recovered. Remember to save it.</source>
         <translation>Show récupéré. Pensez à l’enregistrer.</translation>
     </message>
+    <message numerus="yes">
+        <source>%n QLC+ cue list(s): Scenes › New › QLC+ cue lists…</source>
+        <translation>
+            <numerusform>%n cue list de QLC+&#xa0;: Scènes › Nouvelle › Cue lists de QLC+…</numerusform>
+            <numerusform>%n cue lists de QLC+&#xa0;: Scènes › Nouvelle › Cue lists de QLC+…</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>MappingEditor</name>
@@ -3430,6 +4694,18 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Choisissez une scène…</translation>
     </message>
     <message>
+        <source>The selected scene</source>
+        <translation>La scène sélectionnée</translation>
+    </message>
+    <message>
+        <source>Now: %1</source>
+        <translation>Maintenant&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>No scene selected yet: press one in Live, in the SHOW or on your controller</source>
+        <translation>Aucune scène sélectionnée&#xa0;: appuyez sur une scène dans Direct, dans le SHOW ou sur votre contrôleur</translation>
+    </message>
+    <message>
         <source>All groups</source>
         <translation>Tous les groupes</translation>
     </message>
@@ -3558,6 +4834,18 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>En pause</translation>
     </message>
     <message>
+        <source>Fading</source>
+        <translation>En fondu</translation>
+    </message>
+    <message>
+        <source>Own colour while fading</source>
+        <translation>Couleur propre pendant le fondu</translation>
+    </message>
+    <message>
+        <source>Without it, the fade in shows the On colour and the fade out the Off colour</source>
+        <translation>Sinon, le fondu d’entrée prend la couleur de «&#xa0;Activé&#xa0;» et celui de sortie celle de «&#xa0;Désactivé&#xa0;»</translation>
+    </message>
+    <message>
         <source>Duplicate</source>
         <translation>Dupliquer</translation>
     </message>
@@ -3667,6 +4955,18 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>universe %1</source>
         <translation>univers %1</translation>
+    </message>
+    <message>
+        <source>Get ready</source>
+        <translation>Préparer</translation>
+    </message>
+    <message>
+        <source>Puts the controller in the mode its mappings use (Session mode on an APC mini mk2, Ableton mode on an APC40 mkII) and sends all its LEDs again. Use it after switching the controller off and on, or after changing its mode.</source>
+        <translation>Met le contrôleur dans le mode qu’utilisent ses mappages (mode Session sur une APC mini mk2, mode Ableton sur une APC40 mkII) et renvoie toutes ses LED. À utiliser après l’avoir éteint et rallumé ou après avoir changé son mode.</translation>
+    </message>
+    <message>
+        <source>%1 is ready</source>
+        <translation>%1 est prêt</translation>
     </message>
     <message>
         <source>Map it all</source>
@@ -4349,6 +5649,46 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Copy</source>
         <translation>Copier</translation>
     </message>
+    <message>
+        <source>This computer isn&apos;t on any network: connect it to the Wi-Fi of the phones</source>
+        <translation>Cet ordinateur n’est sur aucun réseau&#xa0;: connectez-le au Wi-Fi des téléphones</translation>
+    </message>
+    <message>
+        <source>Show its QR code</source>
+        <translation>Afficher son code QR</translation>
+    </message>
+    <message>
+        <source>Scan it with the camera of the phone or the tablet to open the remote control. It must be on the same Wi-Fi network.</source>
+        <translation>Scannez-le avec l’appareil photo du téléphone ou de la tablette pour ouvrir la télécommande. Il doit être sur le même réseau Wi-Fi.</translation>
+    </message>
+    <message>
+        <source>The PIN goes in the code: whoever scans it gets in without typing it</source>
+        <translation>Le PIN est dans le code&#xa0;: qui le scanne entre sans le taper</translation>
+    </message>
+    <message>
+        <source>Bigger</source>
+        <translation>Plus grand</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Name on the network</source>
+        <translation>Nom sur le réseau</translation>
+    </message>
+    <message>
+        <source>Empty: phones use the addresses below</source>
+        <translation>Vide&#xa0;: les téléphones utilisent les adresses ci-dessous</translation>
+    </message>
+    <message>
+        <source>%1 is used by another computer: this one is %2</source>
+        <translation>%1 est utilisé par un autre ordinateur&#xa0;: celui-ci est %2</translation>
+    </message>
+    <message>
+        <source>Phones open it as %1, also when the address of this computer changes (iPhone, iPad and recent Android phones)</source>
+        <translation>Les téléphones l’ouvrent avec %1, même quand l’adresse de cet ordinateur change (iPhone, iPad et téléphones Android récents)</translation>
+    </message>
     <message numerus="yes">
         <source>%n device(s) connected</source>
         <translation>
@@ -4369,8 +5709,8 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Open Fixture Library</translation>
     </message>
     <message>
-        <source>Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it. Nothing is downloaded or installed without asking you.</source>
-        <translation>Une fois par jour, sur GitHub&#xa0;: le programme et, si vous l’avez téléchargée, les nouveaux fixtures de l’Open Fixture Library. Rien n’est téléchargé ni installé sans vous le demander.</translation>
+        <source>Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it; on GDTF-Share, newer revisions of the fixtures you downloaded from it, if you saved your account. Nothing is downloaded or installed without asking you.</source>
+        <translation>Une fois par jour, sur GitHub&#xa0;: le programme et, si vous l’avez téléchargée, les nouveaux fixtures de l’Open Fixture Library&#xa0;; sur GDTF-Share, les révisions plus récentes des fixtures que vous y avez téléchargés, si vous avez enregistré votre compte. Rien n’est téléchargé ni installé sans vous le demander.</translation>
     </message>
     <message>
         <source>Thousands of extra fixtures from open-fixture-library.org (MIT license). Needs internet.</source>
@@ -4428,15 +5768,15 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Fixtures GDTF</translation>
     </message>
     <message numerus="yes">
-        <source>The open format the manufacturers publish on GDTF-Share (free account): import .gdtf files, folders of them or the .zip of its bulk download. %n GDTF fixture(s) in the library.</source>
+        <source>The open format the manufacturers publish on GDTF-Share: search and download them with your free account, or import .gdtf files, folders of them or the .zip of its bulk download. %n GDTF fixture(s) in the library.</source>
         <translation>
-            <numerusform>Le format ouvert que les fabricants publient sur GDTF-Share (compte gratuit)&#xa0;: importez des fichiers .gdtf, des dossiers qui en contiennent ou le .zip de son téléchargement groupé. %n fixture GDTF dans la bibliothèque.</numerusform>
-            <numerusform>Le format ouvert que les fabricants publient sur GDTF-Share (compte gratuit)&#xa0;: importez des fichiers .gdtf, des dossiers qui en contiennent ou le .zip de son téléchargement groupé. %n fixtures GDTF dans la bibliothèque.</numerusform>
+            <numerusform>Le format ouvert que les fabricants publient sur GDTF-Share&#xa0;: recherchez et téléchargez leurs fixtures avec votre compte gratuit, ou importez des fichiers .gdtf, des dossiers qui en contiennent ou le .zip de son téléchargement groupé. %n fixture GDTF dans la bibliothèque.</numerusform>
+            <numerusform>Le format ouvert que les fabricants publient sur GDTF-Share&#xa0;: recherchez et téléchargez leurs fixtures avec votre compte gratuit, ou importez des fichiers .gdtf, des dossiers qui en contiennent ou le .zip de son téléchargement groupé. %n fixtures GDTF dans la bibliothèque.</numerusform>
         </translation>
     </message>
     <message>
-        <source>GDTF-Share</source>
-        <translation>GDTF-Share</translation>
+        <source>GDTF-Share…</source>
+        <translation>GDTF-Share…</translation>
     </message>
     <message>
         <source>Stop</source>
@@ -4445,6 +5785,29 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Import GDTF…</source>
         <translation>Importer GDTF…</translation>
+    </message>
+    <message>
+        <source>Convert again</source>
+        <translation>Convertir à nouveau</translation>
+    </message>
+    <message>
+        <source>Convert the fixtures downloaded from GDTF-Share again with this version of the program</source>
+        <translation>Convertir à nouveau les fixtures téléchargés depuis GDTF-Share avec cette version du programme</translation>
+    </message>
+    <message>
+        <source>Fixtures downloaded from GDTF-Share</source>
+        <translation>Fixtures téléchargés depuis GDTF-Share</translation>
+    </message>
+    <message>
+        <source>Newer revisions on GDTF-Share</source>
+        <translation>Révisions plus récentes sur GDTF-Share</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) of the library have a newer revision. Update shows them in GDTF-Share, where “Update all” downloads and converts them: the fixtures patched with them get it.</source>
+        <translation>
+            <numerusform>%n fixture de la bibliothèque a une révision plus récente. «&#xa0;Mettre à jour&#xa0;» l’affiche dans GDTF-Share, où «&#xa0;Tout mettre à jour&#xa0;» la télécharge et la convertit&#xa0;: les fixtures patchés avec lui la reçoivent.</numerusform>
+            <numerusform>%n fixtures de la bibliothèque ont une révision plus récente. «&#xa0;Mettre à jour&#xa0;» les affiche dans GDTF-Share, où «&#xa0;Tout mettre à jour&#xa0;» les télécharge et les convertit&#xa0;: les fixtures patchés avec eux les reçoivent.</numerusform>
+        </translation>
     </message>
     <message>
         <source>Import my QLC+ fixtures</source>
@@ -4700,6 +6063,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Faisceau %1</translation>
     </message>
     <message>
+        <source>All %1</source>
+        <translation>Tout %1</translation>
+    </message>
+    <message>
         <source>Palette not found</source>
         <translation>Palette introuvable</translation>
     </message>
@@ -4731,6 +6098,10 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Faisceau</translation>
     </message>
     <message>
+        <source>All</source>
+        <translation>Tout</translation>
+    </message>
+    <message>
         <source>Record</source>
         <translation>Enregistrer</translation>
     </message>
@@ -4743,6 +6114,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Donnez d’abord des valeurs de %1 à la sélection</translation>
     </message>
     <message>
+        <source>Record every value of the selection, except the maintenance channels, as a new palette</source>
+        <translation>Enregistrer toutes les valeurs de la sélection, sauf les canaux de maintenance, comme nouvelle palette</translation>
+    </message>
+    <message>
+        <source>Set some values on the selection first</source>
+        <translation>Donnez d’abord des valeurs à la sélection</translation>
+    </message>
+    <message>
         <source>Recorded %1: the scenes you record now follow it</source>
         <translation>%1 enregistrée&#xa0;: les scènes que vous enregistrez maintenant la suivent</translation>
     </message>
@@ -4751,6 +6130,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>
             <numerusform>%1 — enregistrée sur %n fixture</numerusform>
             <numerusform>%1 — enregistrée sur %n fixtures</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Spread over %n more fixture(s)</source>
+        <translation>
+            <numerusform>Répartie sur %n fixture de plus</numerusform>
+            <numerusform>Répartie sur %n fixtures de plus</numerusform>
         </translation>
     </message>
     <message numerus="yes">
@@ -4777,12 +6163,24 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Donnez des valeurs de %1 à la sélection et appuyez sur Enregistrer</translation>
     </message>
     <message>
+        <source>Set the look of the selection and press Record: the palette keeps every value</source>
+        <translation>Préparez l’aspect de la sélection et appuyez sur Enregistrer&#xa0;: la palette garde toutes les valeurs</translation>
+    </message>
+    <message>
         <source>Apply to the selection</source>
         <translation>Appliquer à la sélection</translation>
     </message>
     <message>
         <source>Load its fixtures in the programmer</source>
         <translation>Charger ses fixtures dans le programmeur</translation>
+    </message>
+    <message>
+        <source>Spread again over the selection</source>
+        <translation>Répartir à nouveau sur la sélection</translation>
+    </message>
+    <message>
+        <source>%1 spread again over the selection: the scenes that use it changed too</source>
+        <translation>%1 répartie à nouveau sur la sélection&#xa0;: les scènes qui l’utilisent ont aussi changé</translation>
     </message>
     <message>
         <source>Update with the programmer</source>
@@ -5720,6 +7118,22 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>Bouton 3</translation>
     </message>
     <message>
+        <source>Flash attack</source>
+        <translation>Attaque du flash</translation>
+    </message>
+    <message>
+        <source>The time the flash takes to reach full</source>
+        <translation>Le temps que met le flash pour arriver à fond</translation>
+    </message>
+    <message>
+        <source>Flash decay</source>
+        <translation>Retombée du flash</translation>
+    </message>
+    <message>
+        <source>The time it takes to come back when you let go</source>
+        <translation>Le temps qu’il met à revenir quand vous relâchez</translation>
+    </message>
+    <message>
         <source>The fader starts it</source>
         <translation>Le fader le lance</translation>
     </message>
@@ -5750,6 +7164,30 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Close</source>
         <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>A submaster cuelist: raising the fader from zero starts it at the level of the fader. While it is released, GO and Back only choose the cue it starts on.</source>
+        <translation>Une cuelist submaster&#xa0;: monter le fader depuis zéro la lance au niveau du fader. Tant qu’elle est libérée, GO et Retour choisissent seulement la cue sur laquelle elle démarre.</translation>
+    </message>
+    <message>
+        <source>The fader crossfades its whole look with what is below. Raising it from zero starts it; GO with the fader down plays it at full.</source>
+        <translation>Le fader fait un fondu de tout ce qu’elle tient avec ce qui est dessous. Le monter depuis zéro la lance&#xa0;; un GO avec le fader en bas la joue à fond.</translation>
+    </message>
+    <message>
+        <source>Fader</source>
+        <translation>Fader</translation>
+    </message>
+    <message>
+        <source>Intensity</source>
+        <translation>Intensité</translation>
+    </message>
+    <message>
+        <source>Crossfade (A/B)</source>
+        <translation>Fondu enchaîné (A/B)</translation>
+    </message>
+    <message>
+        <source>Each travel of the fader is a GO whose fade you make by hand. Going back to where it started cancels it.</source>
+        <translation>Chaque course du fader est un GO dont vous faites le fondu à la main. Revenir au point de départ l’annule.</translation>
     </message>
 </context>
 <context>
@@ -5894,6 +7332,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Clear the playback</source>
         <translation>Vider le playback</translation>
     </message>
+    <message>
+        <source>GO: the cue its fader starts it on</source>
+        <translation>GO&#xa0;: la cue sur laquelle son fader la lance</translation>
+    </message>
+    <message>
+        <source>A/B</source>
+        <translation>A/B</translation>
+    </message>
 </context>
 <context>
     <name>PlaybacksPage</name>
@@ -6036,6 +7482,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Cue speed</source>
+        <translation>Vitesse des cues</translation>
+    </message>
+    <message>
+        <source>The speed of every cuelist: fades, delays, Follow and Wait (double click: ×1)</source>
+        <translation>La vitesse de toutes les cuelists&#xa0;: fondus, délais, Suivre et Attendre (double clic&#xa0;: ×1)</translation>
     </message>
 </context>
 <context>
@@ -6322,8 +7776,8 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Le fichier GDTF n’a aucun mode DMX</translation>
     </message>
     <message>
-        <source>Mode %1: only the first DMX break is used</source>
-        <translation>Mode %1&#xa0;: seul le premier DMX break est utilisé</translation>
+        <source>Mode %1: its DMX break %2 is the mode “%3”: patch it at its own address</source>
+        <translation>Mode %1&#xa0;: son DMX break %2 est le mode «&#xa0;%3&#xa0;»&#xa0;: patchez-le à sa propre adresse</translation>
     </message>
     <message>
         <source>Mode %1 has no DMX channels</source>
@@ -6340,6 +7794,390 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Unable to write %1</source>
         <translation>Impossible d’écrire %1</translation>
+    </message>
+</context>
+<context>
+    <name>QlcExchange</name>
+    <message>
+        <source>the cuelist has no cues</source>
+        <translation>la cuelist n’a aucune cue</translation>
+    </message>
+    <message numerus="yes">
+        <source>FX in %n cue(s): only their base values</source>
+        <translation>
+            <numerusform>FX dans %n cue&#xa0;: seulement leurs valeurs de base</numerusform>
+            <numerusform>FX dans %n cues&#xa0;: seulement leurs valeurs de base</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>delay in %n cue(s): the step starts at once</source>
+        <translation>
+            <numerusform>délai dans %n cue&#xa0;: le pas commence aussitôt</numerusform>
+            <numerusform>délai dans %n cues&#xa0;: le pas commence aussitôt</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>down fade in %n cue(s): only approximate</source>
+        <translation>
+            <numerusform>fondu de descente dans %n cue&#xa0;: seulement approximatif</numerusform>
+            <numerusform>fondu de descente dans %n cues&#xa0;: seulement approximatif</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Wait shorter than the fade in %n cue(s): the next step waits for the fade</source>
+        <translation>
+            <numerusform>Attendre plus court que le fondu dans %n cue&#xa0;: le pas suivant attend la fin du fondu</numerusform>
+            <numerusform>Attendre plus court que le fondu dans %n cues&#xa0;: le pas suivant attend la fin du fondu</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>released values: their rest value</source>
+        <translation>valeurs libérées&#xa0;: leur valeur de repos</translation>
+    </message>
+    <message>
+        <source>Stay at the end: GO on the last cue stops the steps</source>
+        <translation>Rester à la fin&#xa0;: GO sur la dernière cue arrête les pas</translation>
+    </message>
+    <message>
+        <source>BeatGO and Pulse: the steps don&apos;t follow the beat</source>
+        <translation>BeatGO et Pulsation&#xa0;: les pas ne suivent pas le rythme</translation>
+    </message>
+    <message>
+        <source>tapped rhythm: the steps keep their own times</source>
+        <translation>rythme tapé&#xa0;: les pas gardent leurs propres temps</translation>
+    </message>
+    <message>
+        <source>released by another GO: in a solo frame of QLC+</source>
+        <translation>libérée par un autre GO&#xa0;: dans un Cadre de solos de QLC+</translation>
+    </message>
+    <message>
+        <source>Chase: the steps keep %1 BPM; the BPM of the show and the tapped rhythm aren&apos;t followed</source>
+        <translation>Chase&#xa0;: les pas gardent %1 BPM&#xa0;; ils ne suivent ni le BPM du show ni le rythme tapé</translation>
+    </message>
+    <message>
+        <source>Chase: the steps keep %1 BPM; the BPM of the show isn&apos;t followed</source>
+        <translation>Chase&#xa0;: les pas gardent %1 BPM&#xa0;; ils ne suivent pas le BPM du show</translation>
+    </message>
+    <message>
+        <source>Chase: the steps keep %1 BPM; the tapped rhythm isn&apos;t followed</source>
+        <translation>Chase&#xa0;: les pas gardent %1 BPM&#xa0;; ils ne suivent pas le rythme tapé</translation>
+    </message>
+    <message>
+        <source>Timecode: the steps run from the first GO; the MIDI timecode isn&apos;t followed</source>
+        <translation>Timecode&#xa0;: les pas défilent dès le premier GO&#xa0;; ils ne suivent pas le timecode MIDI</translation>
+    </message>
+    <message>
+        <source>Timecode: the steps run from the first GO; the timeline of a super scene isn&apos;t followed</source>
+        <translation>Timecode&#xa0;: les pas défilent dès le premier GO&#xa0;; ils ne suivent pas la timeline d’une super scène</translation>
+    </message>
+    <message>
+        <source>Timecode: the first step plays at the GO, not %1 after it</source>
+        <translation>Timecode&#xa0;: le premier pas joue dès le GO, et non %1 après</translation>
+    </message>
+    <message>
+        <source>Submaster: the steps start with a GO, not with the fader</source>
+        <translation>Submaster&#xa0;: les pas démarrent avec un GO, pas avec le fader</translation>
+    </message>
+    <message>
+        <source>Override: the steps mix with what&apos;s below like any others</source>
+        <translation>Override&#xa0;: les pas se mélangent à ce qui est dessous comme les autres</translation>
+    </message>
+    <message numerus="yes">
+        <source>times per attribute or fixture in %n cue(s): only the cue&apos;s fade</source>
+        <translation>
+            <numerusform>temps par attribut ou fixture dans %n cue&#xa0;: seulement le fondu de la cue</numerusform>
+            <numerusform>temps par attribut ou fixture dans %n cues&#xa0;: seulement le fondu de la cue</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>fade curves in %n cue(s): only linear</source>
+        <translation>
+            <numerusform>courbes des fondus dans %n cue&#xa0;: seulement linéaires</numerusform>
+            <numerusform>courbes des fondus dans %n cues&#xa0;: seulement linéaires</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>fade longer than the step in %n cue(s): the next step waits for the fade</source>
+        <translation>
+            <numerusform>fondu plus long que le pas dans %n cue&#xa0;: le pas suivant attend la fin du fondu</numerusform>
+            <numerusform>fondu plus long que le pas dans %n cues&#xa0;: le pas suivant attend la fin du fondu</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>no time in %n cue(s): the steps stop there until a GO</source>
+        <translation>
+            <numerusform>sans heure dans %n cue&#xa0;: les pas s’arrêtent là jusqu’à un GO</numerusform>
+            <numerusform>sans heure dans %n cues&#xa0;: les pas s’arrêtent là jusqu’à un GO</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>links in %n cue(s): the steps play in order</source>
+        <translation>
+            <numerusform>liens dans %n cue&#xa0;: les pas jouent dans l’ordre</numerusform>
+            <numerusform>liens dans %n cues&#xa0;: les pas jouent dans l’ordre</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>actions in %n cue(s): they don&apos;t run</source>
+        <translation>
+            <numerusform>actions dans %n cue&#xa0;: elles ne s’exécutent pas</numerusform>
+            <numerusform>actions dans %n cues&#xa0;: elles ne s’exécutent pas</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Move in black: the fixtures move as they fade up</source>
+        <translation>Déplacement au noir&#xa0;: les fixtures bougent pendant qu’ils montent</translation>
+    </message>
+    <message>
+        <source>Cuelists</source>
+        <translation>Cuelists</translation>
+    </message>
+    <message>
+        <source>Cuelists (one at a time)</source>
+        <translation>Cuelists (une à la fois)</translation>
+    </message>
+    <message>
+        <source>Step %1 (“%2”) isn&apos;t a scene or FX: its cue is empty</source>
+        <translation>Le pas %1 («&#xa0;%2&#xa0;») n’est ni une scène ni un effet&#xa0;: sa cue reste vide</translation>
+    </message>
+    <message>
+        <source>Step %1 (“%2”): what isn&apos;t a scene or FX stays out of its cue: %3</source>
+        <translation>Pas %1 («&#xa0;%2&#xa0;»)&#xa0;: ce qui n’est ni une scène ni un effet reste hors de sa cue&#xa0;: %3</translation>
+    </message>
+    <message>
+        <source>These steps are empty: there is nothing to convert</source>
+        <translation>Ces pas sont vides&#xa0;: il n’y a rien à convertir</translation>
+    </message>
+    <message>
+        <source>These steps play too many times to become cues: lower the number of times first</source>
+        <translation>Ces pas se répètent trop de fois pour devenir des cues&#xa0;: réduisez d’abord le nombre de fois</translation>
+    </message>
+    <message>
+        <source>random order: they play in order</source>
+        <translation>ordre aléatoire&#xa0;: ils jouent dans l’ordre</translation>
+    </message>
+    <message>
+        <source>in beats: in seconds at %1 BPM</source>
+        <translation>en beats&#xa0;: en secondes à %1 BPM</translation>
+    </message>
+    <message>
+        <source>old QLC+ format: open and save it in QLC+ first</source>
+        <translation>ancien format de QLC+&#xa0;: ouvrez-le et enregistrez-le d’abord dans QLC+</translation>
+    </message>
+    <message>
+        <source>its side fader isn&apos;t used</source>
+        <translation>son fader latéral n’est pas utilisé</translation>
+    </message>
+    <message>
+        <source>OSC controls aren&apos;t carried</source>
+        <translation>les contrôles OSC ne passent pas</translation>
+    </message>
+    <message>
+        <source>controls on any device aren&apos;t carried: choose their device in Mappings</source>
+        <translation>les contrôles de tout appareil ne passent pas&#xa0;: choisissez leur appareil dans Mappages</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t enabled: its controls aren&apos;t carried</source>
+        <translation>%1 n’est pas activé&#xa0;: ses contrôles ne passent pas</translation>
+    </message>
+    <message>
+        <source>more controls for the same button: QLC+ takes the first key and the first input</source>
+        <translation>plusieurs contrôles pour le même bouton&#xa0;: QLC+ prend la première touche et la première entrée</translation>
+    </message>
+    <message>
+        <source>already mapped: %1</source>
+        <translation>déjà mappé&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>keys with Ctrl, Alt or Shift aren&apos;t mapped</source>
+        <translation>les touches avec Ctrl, Alt ou Maj ne sont pas mappées</translation>
+    </message>
+    <message>
+        <source>the key %1 can&apos;t be mapped</source>
+        <translation>la touche %1 ne peut pas être mappée</translation>
+    </message>
+    <message>
+        <source>no controller on input universe %1</source>
+        <translation>aucun contrôleur sur l’univers d’entrée %1</translation>
+    </message>
+</context>
+<context>
+    <name>QlcExportDialog</name>
+    <message>
+        <source>Save a copy for QLC+</source>
+        <translation>Enregistrer une copie pour QLC+</translation>
+    </message>
+    <message>
+        <source>QLC+ doesn&apos;t read cuelists. The copy is another show in which each cuelist checked is a list of QLC+ steps; each step holds the whole look of its cue. Under each cuelist, what QLC+ won&apos;t get. This show doesn&apos;t change.</source>
+        <translation>QLC+ ne lit pas les cuelists. La copie est un autre show dans lequel chaque cuelist cochée est une liste de pas de QLC+&#xa0;; chaque pas contient tout ce qu’on voit sur scène à sa cue. Sous chaque cuelist, ce que QLC+ ne reçoit pas. Ce show ne change pas.</translation>
+    </message>
+    <message>
+        <source>Cuelists</source>
+        <translation>Cuelists</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Toutes</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Aucune</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cue(s)</source>
+        <translation>
+            <numerusform>%n cue</numerusform>
+            <numerusform>%n cues</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>This show has no cuelists</source>
+        <translation>Ce show n’a pas de cuelists</translation>
+    </message>
+    <message>
+        <source>As</source>
+        <translation>Sous forme de</translation>
+    </message>
+    <message>
+        <source>Sequence (one step list)</source>
+        <translation>Sequence (une liste de pas)</translation>
+    </message>
+    <message>
+        <source>One item in QLC+. Released values go to their rest value.</source>
+        <translation>Un seul élément dans QLC+. Les valeurs libérées vont à leur valeur de repos.</translation>
+    </message>
+    <message>
+        <source>Chaser (a scene for each cue)</source>
+        <translation>Chaser (une scène par cue)</translation>
+    </message>
+    <message>
+        <source>The scenes go in a folder named like the cuelist. Released values are left to QLC+.</source>
+        <translation>Les scènes vont dans un dossier au nom de la cuelist. Les valeurs libérées sont laissées à QLC+.</translation>
+    </message>
+    <message>
+        <source>A cue list for each one in the Virtual Console</source>
+        <translation>Une liste de cues pour chacune dans la Console virtuelle</translation>
+    </message>
+    <message>
+        <source>Its Next button is the GO, Previous is the BACK and Stop releases it</source>
+        <translation>Son bouton Suivant est le GO, Précédent est le BACK et Stop la libère</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Save the copy…</source>
+        <translation>Enregistrer la copie…</translation>
+    </message>
+    <message>
+        <source>Show files (*.qxw)</source>
+        <translation>Fichiers de show (*.qxw)</translation>
+    </message>
+    <message>
+        <source>Saved for QLC+: %1</source>
+        <translation>Enregistré pour QLC+&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>With their keys and controller buttons</source>
+        <translation>Avec leurs touches et boutons du contrôleur</translation>
+    </message>
+    <message>
+        <source>GO, Back, Pause/Back and Release become Next, Previous, Playback and Stop of its cue list</source>
+        <translation>GO, Retour, Pause/Retour et Libérer deviennent Suivant, Précédent, Lecture et Stop de sa liste de cues</translation>
+    </message>
+</context>
+<context>
+    <name>QlcImportDialog</name>
+    <message>
+        <source>Virtual Console cue list</source>
+        <translation>Liste de cues de la Console virtuelle</translation>
+    </message>
+    <message>
+        <source>QLC+ cue lists</source>
+        <translation>Cue lists de QLC+</translation>
+    </message>
+    <message>
+        <source>Each one checked becomes a cuelist: each step a cue with what it changes, timed steps chained with Wait. Under each one, what doesn&apos;t play the same.</source>
+        <translation>Chacune cochée devient une cuelist&#xa0;: chaque pas, une cue avec ce qu’il change&#xa0;; les pas temporisés s’enchaînent avec Attendre. Sous chacune, ce qui ne joue pas pareil.</translation>
+    </message>
+    <message>
+        <source>In this show</source>
+        <translation>Dans ce show</translation>
+    </message>
+    <message>
+        <source>From another show…</source>
+        <translation>D’un autre show…</translation>
+    </message>
+    <message>
+        <source>Only the cuelists come in, on the fixtures of this show</source>
+        <translation>Seules les cuelists entrent, sur les fixtures de ce show</translation>
+    </message>
+    <message>
+        <source>To convert</source>
+        <translation>À convertir</translation>
+    </message>
+    <message>
+        <source>All</source>
+        <translation>Toutes</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Aucune</translation>
+    </message>
+    <message>
+        <source>already a cuelist: “%1”</source>
+        <translation>déjà une cuelist&#xa0;: «&#xa0;%1&#xa0;»</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n step(s)</source>
+        <translation>
+            <numerusform>%n pas</numerusform>
+            <numerusform>%n pas</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>No chasers, sequences or cue lists of QLC+ to convert</source>
+        <translation>Aucun chenillard, aucune séquence ni liste de cues de QLC+ à convertir</translation>
+    </message>
+    <message>
+        <source>Replace the originals (their groups, SHOW buttons and mappings play the cuelist; QLC+ won&apos;t see them)</source>
+        <translation>Remplacer les originaux (leurs groupes, boutons du SHOW et mappages jouent la cuelist&#xa0;; QLC+ ne les verra plus)</translation>
+    </message>
+    <message>
+        <source>Put them on the free playbacks of this page</source>
+        <translation>Les mettre sur les playbacks libres de cette page</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message numerus="yes">
+        <source>Make %n cuelist(s)</source>
+        <translation>
+            <numerusform>Créer %n cuelist</numerusform>
+            <numerusform>Créer %n cuelists</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>QLC+ cue lists of another show</source>
+        <translation>Cue lists de QLC+ d’un autre show</translation>
+    </message>
+    <message>
+        <source>Show files (*.qxw)</source>
+        <translation>Fichiers de show (*.qxw)</translation>
+    </message>
+    <message>
+        <source>All files (*)</source>
+        <translation>Tous les fichiers (*)</translation>
+    </message>
+    <message>
+        <source>Bring their keys and controller buttons as mappings</source>
+        <translation>Importer leurs touches et boutons du contrôleur comme mappages</translation>
+    </message>
+    <message>
+        <source>Next, Previous, Playback and Stop of each cue list become GO, Back, Pause/Back and Release of its cuelist</source>
+        <translation>Suivant, Précédent, Lecture et Stop de chaque liste de cues deviennent GO, Retour, Pause/Retour et Libérer de sa cuelist</translation>
     </message>
 </context>
 <context>
@@ -6548,6 +8386,18 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Le port %1 est utilisé&#xa0;: choisissez-en un autre</translation>
     </message>
     <message>
+        <source>Phones can&apos;t find it by name: the network port 5353 isn&apos;t available</source>
+        <translation>Les téléphones ne peuvent pas le trouver par son nom&#xa0;: le port réseau 5353 n’est pas disponible</translation>
+    </message>
+    <message>
+        <source>Phones can&apos;t find it by name: %1 and %1-2 … %1-9 are used by other computers</source>
+        <translation>Les téléphones ne peuvent pas le trouver par son nom&#xa0;: d’autres ordinateurs utilisent %1 et %1-2 … %1-9</translation>
+    </message>
+    <message>
+        <source>By name</source>
+        <translation>Par son nom</translation>
+    </message>
+    <message>
         <source>Next</source>
         <translation>Suivant</translation>
     </message>
@@ -6598,6 +8448,10 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Playbacks</source>
         <translation>Playbacks</translation>
+    </message>
+    <message>
+        <source>Cue speed</source>
+        <translation>Vitesse des cues</translation>
     </message>
 </context>
 <context>
@@ -6987,8 +8841,20 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>Chaque pas devient une cue avec ce qu’il change par rapport au pas précédent&#xa0;; les pas temporisés s’enchaînent avec Attendre. Ses groupes, boutons du SHOW et mappages jouent la cuelist. Les pas disparaissent.</translation>
     </message>
     <message>
+        <source>Each step becomes a cue with its scene, and releases what the step before had and it doesn&apos;t; timed steps follow each other with Wait. Its groups, SHOW buttons and mappings play the cuelist. The chaser is gone; its scenes stay.</source>
+        <translation>Chaque pas devient une cue avec sa scène, et libère ce que le pas précédent avait et lui non&#xa0;; les pas temporisés s’enchaînent avec Attendre. Ses groupes, boutons du SHOW et mappages jouent la cuelist. Le chenillard disparaît&#xa0;; ses scènes restent.</translation>
+    </message>
+    <message>
         <source>Convert</source>
         <translation>Convertir</translation>
+    </message>
+    <message>
+        <source>Save a copy for QLC+: the cuelists as QLC+ steps, with a cue list for each one in its Virtual Console</source>
+        <translation>Enregistrer une copie pour QLC+&#xa0;: les cuelists comme pas de QLC+, avec une liste de cues pour chacune dans sa Console virtuelle</translation>
+    </message>
+    <message>
+        <source>QLC+ cue lists…</source>
+        <translation>Cue lists de QLC+…</translation>
     </message>
 </context>
 <context>
@@ -7437,6 +9303,10 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Images (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)</source>
         <translation>Images (*.png *.jpg *.jpeg *.svg *.gif *.bmp *.webp)</translation>
     </message>
+    <message>
+        <source>Cue speed (all cuelists)</source>
+        <translation>Vitesse des cues (toutes les cuelists)</translation>
+    </message>
 </context>
 <context>
     <name>SectionView</name>
@@ -7638,6 +9508,18 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>No cues yet: set a look in the programmer, arm Record and click this playback.</source>
         <translation>Pas encore de cues&#xa0;: créez un look dans le programmeur, armez Enregistrer et cliquez sur ce playback.</translation>
+    </message>
+    <message>
+        <source>Released · the fader plays %1</source>
+        <translation>Libérée · le fader lance la %1</translation>
+    </message>
+    <message>
+        <source>Before the first cue</source>
+        <translation>Avant la première cue</translation>
+    </message>
+    <message>
+        <source>TIME</source>
+        <translation>HEURE</translation>
     </message>
 </context>
 <context>
@@ -7970,6 +9852,10 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Double click a step to load it in the programmer. Ctrl/Shift+click selects several steps to change their times together.</source>
         <translation>Double-clic sur un pas pour le charger dans le programmeur. Ctrl/Maj+clic sélectionne plusieurs pas pour changer leurs temps ensemble.</translation>
     </message>
+    <message>
+        <source>Uses %1: when they change, the step changes too</source>
+        <translation>Utilise %1&#xa0;: quand elles changent, le pas change aussi</translation>
+    </message>
 </context>
 <context>
     <name>SuperSceneEditor</name>
@@ -7988,6 +9874,14 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>From the cursor (Space)</source>
         <translation>Depuis le curseur (Espace)</translation>
+    </message>
+    <message>
+        <source>Undo: %1 (Ctrl+Z)</source>
+        <translation>Annuler&#xa0;: %1 (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Redo: %1 (Ctrl+Y)</source>
+        <translation>Rétablir&#xa0;: %1 (Ctrl+Y)</translation>
     </message>
     <message>
         <source>To the start</source>
@@ -8098,8 +9992,15 @@ Ajoutez-en sur la page Patch.</translation>
         <translation>En boucle&#xa0;: la scène se répète dans le bloc. Étirée&#xa0;: un cycle dure tout le bloc</translation>
     </message>
     <message>
-        <source>Duplicate</source>
-        <translation>Dupliquer</translation>
+        <source>Duplicate (Ctrl+D)</source>
+        <translation>Dupliquer (Ctrl+D)</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n block(s) selected</source>
+        <translation>
+            <numerusform>%n bloc sélectionné</numerusform>
+            <numerusform>%n blocs sélectionnés</numerusform>
+        </translation>
     </message>
     <message>
         <source>Delete (Del)</source>
@@ -8116,6 +10017,33 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>All files (*)</source>
         <translation>Tous les fichiers (*)</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <translation>Coller</translation>
+    </message>
+    <message numerus="yes">
+        <source>Paste %n block(s) at the cursor, from the selected track (Ctrl+V)</source>
+        <translation>
+            <numerusform>Coller %n bloc au curseur, à partir de la piste sélectionnée (Ctrl+V)</numerusform>
+            <numerusform>Coller %n blocs au curseur, à partir de la piste sélectionnée (Ctrl+V)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copier</translation>
+    </message>
+    <message>
+        <source>Ctrl+C</source>
+        <translation>Ctrl+C</translation>
+    </message>
+    <message>
+        <source>Cut</source>
+        <translation>Couper</translation>
+    </message>
+    <message>
+        <source>Ctrl+X</source>
+        <translation>Ctrl+X</translation>
     </message>
 </context>
 <context>
@@ -8187,6 +10115,10 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Movement speed</source>
         <translation>Vitesse de mouvement</translation>
     </message>
+    <message>
+        <source>Cue speed</source>
+        <translation>Vitesse des cues</translation>
+    </message>
 </context>
 <context>
     <name>SurfaceFader</name>
@@ -8225,6 +10157,10 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Flash</source>
         <translation>Flash</translation>
+    </message>
+    <message>
+        <source>Cue speed</source>
+        <translation>Vitesse des cues</translation>
     </message>
 </context>
 <context>
@@ -8415,6 +10351,33 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Audio</source>
         <translation>Audio</translation>
     </message>
+    <message>
+        <source>CHASE</source>
+        <translation>CHASE</translation>
+    </message>
+    <message>
+        <source>TC</source>
+        <translation>TC</translation>
+    </message>
+    <message>
+        <source>SUB</source>
+        <translation>SUB</translation>
+    </message>
+    <message>
+        <source>OVR</source>
+        <translation>OVR</translation>
+    </message>
+</context>
+<context>
+    <name>TimecodeReader</name>
+    <message>
+        <source>No MIDI timecode</source>
+        <translation>Aucun timecode MIDI</translation>
+    </message>
+    <message>
+        <source>MTC %1 · %2 fps</source>
+        <translation>MTC %1 · %2 fps</translation>
+    </message>
 </context>
 <context>
     <name>TimelineBlock</name>
@@ -8445,6 +10408,14 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copier</translation>
+    </message>
+    <message>
+        <source>Cut</source>
+        <translation>Couper</translation>
     </message>
 </context>
 <context>
@@ -8480,6 +10451,99 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>%1 (static values)</source>
         <translation>%1 (valeurs statiques)</translation>
+    </message>
+    <message>
+        <source>Add a track</source>
+        <translation>Ajouter une piste</translation>
+    </message>
+    <message>
+        <source>Delete a track</source>
+        <translation>Supprimer une piste</translation>
+    </message>
+    <message>
+        <source>Change a track</source>
+        <translation>Modifier une piste</translation>
+    </message>
+    <message>
+        <source>Move a track</source>
+        <translation>Déplacer une piste</translation>
+    </message>
+    <message>
+        <source>Add a block</source>
+        <translation>Ajouter un bloc</translation>
+    </message>
+    <message>
+        <source>Add audio</source>
+        <translation>Ajouter de l’audio</translation>
+    </message>
+    <message numerus="yes">
+        <source>Move %n block(s)</source>
+        <translation>
+            <numerusform>Déplacer %n bloc</numerusform>
+            <numerusform>Déplacer %n blocs</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Resize a block</source>
+        <translation>Changer la durée d’un bloc</translation>
+    </message>
+    <message numerus="yes">
+        <source>Change %n block(s)</source>
+        <translation>
+            <numerusform>Modifier %n bloc</numerusform>
+            <numerusform>Modifier %n blocs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Delete %n block(s)</source>
+        <translation>
+            <numerusform>Supprimer %n bloc</numerusform>
+            <numerusform>Supprimer %n blocs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Duplicate %n block(s)</source>
+        <translation>
+            <numerusform>Dupliquer %n bloc</numerusform>
+            <numerusform>Dupliquer %n blocs</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Change the automation</source>
+        <translation>Modifier l’automation</translation>
+    </message>
+    <message>
+        <source>Change the timeline</source>
+        <translation>Modifier la timeline</translation>
+    </message>
+    <message>
+        <source>Take the static values</source>
+        <translation>Prendre les valeurs statiques</translation>
+    </message>
+    <message>
+        <source>Clear the static values</source>
+        <translation>Effacer les valeurs statiques</translation>
+    </message>
+    <message numerus="yes">
+        <source>Cut %n block(s)</source>
+        <translation>
+            <numerusform>Couper %n bloc</numerusform>
+            <numerusform>Couper %n blocs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>Paste %n block(s)</source>
+        <translation>
+            <numerusform>Coller %n bloc</numerusform>
+            <numerusform>Coller %n blocs</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n block(s) not pasted: their track is locked</source>
+        <translation>
+            <numerusform>%n bloc non collé&#xa0;: sa piste est verrouillée</numerusform>
+            <numerusform>%n blocs non collés&#xa0;: leur piste est verrouillée</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -8535,6 +10599,14 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Dimmer / volume</source>
         <translation>Dimmer / volume</translation>
+    </message>
+    <message>
+        <source>Paste here</source>
+        <translation>Coller ici</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>Tout sélectionner</translation>
     </message>
 </context>
 <context>

@@ -29,6 +29,7 @@
 #include <functional>
 
 #include "effectexchange.h"
+#include "qlcexchange.h"
 
 #include "qlcfixturedefcache.h"
 #include "monitorproperties.h"
@@ -497,6 +498,8 @@ QHash<quint32, quint32> EffectExchange::importFunctions(Doc *doc, Doc *tmp, cons
                 ChaserStep step = steps.at(i);
                 step.fid = sequence->boundSceneID();
                 step.values = mapValues(step.values);
+                // (the palettes of the other show: the values stay, without the reference)
+                step.palettes.clear();
                 sequence->replaceStep(step, i);
             }
         }
@@ -595,6 +598,11 @@ QHash<quint32, quint32> EffectExchange::importFunctions(Doc *doc, Doc *tmp, cons
                     if (fixtureMap.contains(release.second))
                         fxReleases.insert(Cuelist::FxKey(release.first, fixtureMap.value(release.second)));
                 cue.fxReleases = fxReleases;
+                QMap<quint32, Cuelist::PartTime> fixtureTimes;
+                for (auto it = cue.fixtureTimes.cbegin(); it != cue.fixtureTimes.cend(); ++it)
+                    if (fixtureMap.contains(it.key()))
+                        fixtureTimes.insert(fixtureMap.value(it.key()), it.value());
+                cue.fixtureTimes = fixtureTimes;
             }
             cuelist->setCues(cues);
         }
@@ -631,11 +639,47 @@ QHash<quint32, quint32> EffectExchange::importFunctions(Doc *doc, Doc *tmp, cons
         }
     }
 
+    // the actions of the cues, once every function has its copy: on the
+    // functions that came with them; on the others nothing (-1), nor on a
+    // group, which is one of the other show (-2; all the groups, -1, stays)
+    for (auto it = functionMap.cbegin(); it != functionMap.cend(); ++it)
+    {
+        Cuelist *cuelist = qobject_cast<Cuelist *>(doc->function(it.value()));
+        if (cuelist == nullptr)
+            continue;
+        QList<Cuelist::Cue> cues = cuelist->cues();
+        bool changed = false;
+        for (Cuelist::Cue &cue : cues)
+        {
+            for (Cuelist::CueAction &action : cue.actions)
+            {
+                const Cuelist::CueAction was = action;
+                if (action.contains(QStringLiteral("functionId")))
+                {
+                    bool ok = false;
+                    const int fid = action.value(QStringLiteral("functionId")).toInt(&ok);
+                    const bool copied = ok && fid >= 0 && functionMap.contains(quint32(fid));
+                    action.insert(QStringLiteral("functionId"),
+                                  copied ? QString::number(functionMap.value(quint32(fid))) : QStringLiteral("-1"));
+                }
+                if (action.value(QStringLiteral("target")) == QLatin1String("groupRelease") &&
+                    action.value(QStringLiteral("zoneId"), QStringLiteral("-1")).toInt() != -1)
+                    action.insert(QStringLiteral("zoneId"), QStringLiteral("-2"));
+                changed = changed || action != was;
+            }
+        }
+        if (changed)
+            cuelist->setCues(cues);
+    }
+
     return functionMap;
 }
 
-Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error)
+Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error,
+                              QByteArray *virtualConsole)
 {
+    if (virtualConsole != nullptr)
+        virtualConsole->clear();
     QFile file(path);
     if (file.open(QIODevice::ReadOnly) == false)
     {
@@ -676,6 +720,17 @@ Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> 
                 {
                     Function::loader(reader, tmp);
                 }
+                else if (reader.name() == KXMLDTCFunctions)
+                {
+                    // (a copy for QLC+ keeps the functions of this program there)
+                    while (reader.readNextStartElement())
+                    {
+                        if (reader.name() == KXMLQLCFunction)
+                            Function::loader(reader, tmp);
+                        else
+                            reader.skipCurrentElement();
+                    }
+                }
                 else if (reader.name() == KXMLQLCMonitorProperties)
                 {
                     tmp->monitorProperties()->loadXML(reader, tmp);
@@ -685,6 +740,15 @@ Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> 
                     reader.skipCurrentElement();
                 }
             }
+            // as a show opened: steps of functions that aren't there go, the
+            // steps of a Sequence get every channel of its hidden scene
+            for (Function *f : tmp->functions())
+                f->postLoad();
+        }
+        else if (reader.name() == QLatin1String("VirtualConsole") && virtualConsole != nullptr)
+        {
+            // (its Cue Lists can become cuelists)
+            *virtualConsole = QlcExchange::copyElement(reader);
         }
         else if (reader.name() == QLatin1String("DMXTotalControl"))
         {
@@ -782,6 +846,26 @@ uint cycleOf(Doc *doc, quint32 id, QSet<quint32> &visiting)
     return 0;
 }
 
+/** DMX Total Control: the longest delay of a fixture of the FX in $id (ms),
+ *  the members of a rack included, as cycleOf goes through them */
+uint delayOf(Doc *doc, quint32 id, QSet<quint32> &visiting)
+{
+    Function *f = doc->function(id);
+    if (f == nullptr || visiting.contains(id))
+        return 0;
+    if (FXScene *fx = qobject_cast<FXScene *>(f))
+        return fx->longestDelay();
+    uint longest = 0;
+    if (Collection *rack = qobject_cast<Collection *>(f))
+    {
+        visiting.insert(id);
+        for (quint32 member : rack->functions())
+            longest = qMax(longest, delayOf(doc, member, visiting));
+        visiting.remove(id);
+    }
+    return longest;
+}
+
 } // namespace
 
 uint EffectExchange::cycleDuration(Doc *doc, quint32 id)
@@ -851,6 +935,14 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
 
     Function *function = tmp->function(root);
     function->start(tmp->masterTimer(), FunctionParent::master());
+
+    // DMX Total Control: the fixtures with a delay start one after the other:
+    // the steps record the cycle once they all go (they loop: else every cycle
+    // would play that start again)
+    QSet<quint32> visiting;
+    const uint delay = qMin(MaxRenderCycle, delayOf(tmp, root, visiting));
+    for (uint rolled = 0; rolled < delay; rolled += MasterTimer::tick())
+        renderFrame();
 
     QList<QList<SceneValue>> samples;
     uint now = 0;

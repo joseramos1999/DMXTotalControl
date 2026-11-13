@@ -31,7 +31,7 @@ Rectangle {
     id: view
 
     property var section: ({})
-    /** The ShowPage: edit mode, selection, timers, drag item */
+    /** The ShowPage: edit mode, selection, drag item */
     property var surface: null
     /** Half of a split (SectionNode): a group section can fold to its strip,
      *  across when the halves are one above the other */
@@ -777,6 +777,8 @@ Rectangle {
         }
     }
 
+    // (the timers count in the backend: the same on the phones, and on
+    // another page)
     Component {
         id: timerContent
         Item {
@@ -784,11 +786,16 @@ Rectangle {
             readonly property bool countdown: view.section.mode === "countdown"
             readonly property int total: (view.section.minutes || 5) * 60000
             property real elapsed: 0
-            readonly property bool running: { view.surface.timerRevision; return view.surface.timerRunning(view.sid) }
+            readonly property bool running: { Core.surface.timerRevision; return Core.surface.timerRunning(view.sid) }
             readonly property real shown: countdown ? Math.max(0, total - elapsed) : elapsed
+            // (at once when it starts, pauses or resets, here or on a phone)
+            Connections {
+                target: Core.surface
+                function onTimersChanged() { timerItem.elapsed = Core.surface.timerElapsed(view.sid) }
+            }
             Timer {
                 interval: 100; running: view.visible; repeat: true; triggeredOnStart: true
-                onTriggered: timerItem.elapsed = view.surface.timerElapsed(view.sid)
+                onTriggered: timerItem.elapsed = Core.surface.timerElapsed(view.sid)
             }
             function format(ms) {
                 let s = Math.floor(ms / 1000)
@@ -818,13 +825,13 @@ Rectangle {
                         highlighted: timerItem.running
                         accentColor: Theme.success
                         enabled: !view.editing
-                        onClicked: view.surface.timerToggle(view.sid)
+                        onClicked: Core.surface.timerToggle(view.sid)
                     }
                     AppButton {
                         text: qsTr("Reset")
                         iconGlyph: Theme.iconRefresh
                         enabled: !view.editing
-                        onClicked: view.surface.timerReset(view.sid)
+                        onClicked: Core.surface.timerReset(view.sid)
                     }
                 }
             }

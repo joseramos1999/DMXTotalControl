@@ -1052,7 +1052,8 @@ public:
     /**
      * Playback priority, from 0 to 10. When two running functions write
      * the same LTP channel, the one with the higher priority wins.
-     * Functions with the same priority behave as in QLC+ (latest wins).
+     * With the same priority the last change wins: the function started
+     * last, or a cuelist whose GO changed the channel later.
      */
     void setPriority(int priority);
     int priority() const;
@@ -1074,6 +1075,14 @@ public:
      * priority changed while running, move the faders to the new priority
      */
     void applyPriorityChange();
+
+    /** DMX Total Control: the faders it writes with, one per universe (in
+     *  the thread that runs it) */
+    QList<QSharedPointer<GenericFader>> faders() const;
+
+    /** DMX Total Control: its faders go after the others of their priority:
+     *  what it writes now is the last change (in the thread that runs it) */
+    void raiseFaders();
 
 protected:
     /** Move the running faders to the playback priority. Functions that

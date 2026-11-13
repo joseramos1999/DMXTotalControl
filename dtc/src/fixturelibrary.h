@@ -30,6 +30,10 @@
 
 #include <atomic>
 
+// a complete type is needed by the QML property below
+#include "gdtfshare.h"
+#include "gdtfimporter.h"
+
 class QNetworkAccessManager;
 class QLCFixtureDef;
 class QThread;
@@ -43,6 +47,7 @@ class Doc;
  * - importing definition files (.qxf, or .zip of .qxf) and GDTF files
  *   (.gdtf, folders of them, or the .zip GDTF-Share downloads), converted
  *   to .qxf in a thread of their own
+ * - GDTF-Share, with the user's own account (share())
  * - the fixture editor: definitions are exchanged with QML as plain maps
  */
 class FixtureLibrary : public QObject
@@ -60,6 +65,9 @@ class FixtureLibrary : public QObject
     Q_PROPERTY(qreal importProgress READ importProgress NOTIFY importChanged)
     /** The GDTF files of the last import that could not be read: "file: why" */
     Q_PROPERTY(QStringList importErrors READ importErrors NOTIFY importChanged)
+    /** The fixtures the last GDTF import put in the library: [{manufacturer,
+     *  model, rid}], with rid the upload of GDTF-Share (0 from a file) */
+    Q_PROPERTY(QVariantList lastImported READ lastImported NOTIFY importChanged)
     /** How many GDTF fixtures are in the library */
     Q_PROPERTY(int gdtfCount READ gdtfCount NOTIFY libraryChanged)
     /** The Open Fixture Library download: how many fixtures, when (UTC,
@@ -70,6 +78,8 @@ class FixtureLibrary : public QObject
     Q_PROPERTY(bool oflChecking READ oflChecking NOTIFY oflCheckChanged)
     /** The fixtures the last download added to the library ("Manufacturer Model") */
     Q_PROPERTY(QStringList oflNewFixtures READ oflNewFixtures NOTIFY libraryChanged)
+    /** GDTF-Share, with the user's own account */
+    Q_PROPERTY(GdtfShare *share READ share CONSTANT)
 
 public:
     FixtureLibrary(Doc *doc, QObject *parent = nullptr);
@@ -95,12 +105,14 @@ public:
     bool importing() const;
     qreal importProgress() const;
     QStringList importErrors() const;
+    QVariantList lastImported() const;
     int gdtfCount() const;
     int oflCount() const;
     QDateTime oflDownloaded() const;
     bool oflUpdateAvailable() const;
     bool oflChecking() const;
     QStringList oflNewFixtures() const;
+    GdtfShare *share() const;
 
     /** Copy .qxf files (or the .qxf inside .zip files) to the user folder, and
      *  convert the GDTF files (.gdtf, also in folders and .zip) in the background.
@@ -108,6 +120,12 @@ public:
     Q_INVOKABLE int importFiles(const QList<QUrl> &urls);
     /** Import the user fixtures of a QLC+ installation, if there is one */
     Q_INVOKABLE int importFromQlcPlus();
+    /** Convert again, with this version, the .gdtf kept of the fixtures
+     *  downloaded from GDTF-Share (GdtfShare::originals()), in the
+     *  background: nothing is downloaded, and the fixtures patched with
+     *  them get the new version, as with an import.
+     *  @return how many are being converted */
+    Q_INVOKABLE int reconvertShareDownloads();
     /** Download the whole Open Fixture Library (MIT licensed). Again: an
      *  update, in the same folder (apart from the user's own fixtures). The
      *  new fixtures join the library; the changed ones take the place of the
@@ -125,6 +143,10 @@ public:
     void setOpenFixtureLibraryUrls(const QString &download, const QString &commits);
     Q_INVOKABLE void cancelDownload();
     Q_INVOKABLE void cancelImport();
+    /** Stop what GDTF-Share and the GDTF import run (Cancel in the
+     *  browser of GDTF-Share): the downloads of the batch that arrived
+     *  whole are still converted */
+    Q_INVOKABLE void cancelShare();
     Q_INVOKABLE void openUserFolder() const;
 
     /*********************************************************************
@@ -180,14 +202,45 @@ private:
     /** The definitions of $staging (a download) into the Open Fixture
      *  Library folder and the library. @return the status */
     QString mergeOpenFixtureLibrary(const QDir &staging, int count);
+    /** Where a GDTF file comes from: a file of the user (recorded as such),
+     *  GDTF-Share (its .gdtf is kept), or a .gdtf kept, converted again (its
+     *  record stays as it is) */
+    enum class GdtfSource { File, Share, Kept };
     struct GdtfJob
     {
         QString path;
         /** Inside a .zip: its name there */
         QString entry;
+        GdtfSource source = GdtfSource::File;
+        /** The upload of GDTF-Share it is */
+        int rid = 0;
+        QString uuid;
+        QString revision;
+        qint64 modified = 0;
+    };
+    /** What the conversion of some GDTF jobs gave */
+    struct GdtfOutcome
+    {
+        /** The .qxf written, and [{manufacturer, model, rid}] of each one */
+        QStringList written;
+        QVariantList fixtures;
+        /** Where they came from, for GdtfShare (not the .gdtf kept) */
+        QList<GdtfShare::Imported> records;
+        /** The downloads of GDTF-Share that weren't converted */
+        QStringList discarded;
+        /** The jobs downloaded from GDTF-Share */
+        int downloads = 0;
+        int failed = 0;
+        int warnings = 0;
+        QStringList errors;
     };
     void startGdtf(const QList<GdtfJob> &jobs, int copied);
-    void finishGdtf(const QStringList &written, int failed, int warnings, const QStringList &errors, int copied);
+    /** $result of $job into $outcome */
+    static void addConverted(GdtfOutcome *outcome, const GdtfJob &job, const GdtfImporter::Result &result);
+    void finishGdtf(const GdtfOutcome &outcome, int copied);
+    /** The fixtures downloaded from GDTF-Share, converted (after the import
+     *  running, if there is one) */
+    void importShareDownloads(const QList<GdtfShare::Download> &downloads);
 
 private:
     Doc *m_doc;
@@ -199,12 +252,19 @@ private:
     std::atomic<bool> m_cancelImport;
     qreal m_importProgress;
     QStringList m_importErrors;
+    QVariantList m_lastImported;
+    /** Downloads of GDTF-Share that wait for the import running */
+    QList<QList<GdtfJob>> m_pendingJobs;
+    /** What the import thread gave, as it ends: read only once it is
+     *  waited for, when the program closes before its end is told */
+    GdtfOutcome m_unfinished;
     QString m_oflDownloadUrl;
     QString m_oflCommitsUrl;
     QNetworkReply *m_checkReply = nullptr;
     bool m_checkManual = false;
     bool m_oflUpdate = false;
     QStringList m_oflNew;
+    GdtfShare *m_share;
 };
 
 #endif

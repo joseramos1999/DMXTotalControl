@@ -375,4 +375,95 @@ void FadeChannel_Test::calculateCurrent()
     QCOMPARE(fch.calculateCurrent(200, 200), uchar(101));
 }
 
+void FadeChannel_Test::curves()
+{
+    // DMX Total Control: the progress of the fade, shaped by its curve, then
+    // the same rounded interpolation as a linear fade
+    auto shaped = [](int curve, qreal p) {
+        switch (curve)
+        {
+            case FadeChannel::CurveSmooth: return p * p * (3.0 - 2.0 * p);
+            case FadeChannel::CurveSlowStart: return p * p;
+            case FadeChannel::CurveFastStart: return 1.0 - (1.0 - p) * (1.0 - p);
+            default: return p;
+        }
+    };
+    const QList<int> all = { FadeChannel::CurveLinear, FadeChannel::CurveSmooth,
+                             FadeChannel::CurveSlowStart, FadeChannel::CurveFastStart };
+    // 0 -> 200 in 1000 ms, at 250, 500 and 750 ms
+    const QHash<int, QList<int>> expected = {
+        { FadeChannel::CurveLinear, { 50, 100, 150 } },
+        { FadeChannel::CurveSmooth, { 31, 100, 169 } },
+        { FadeChannel::CurveSlowStart, { 13, 50, 113 } },
+        { FadeChannel::CurveFastStart, { 88, 150, 188 } },
+    };
+
+    FadeChannel fc;
+    QCOMPARE(fc.curve(), int(FadeChannel::CurveLinear));
+    for (int curve : all)
+    {
+        fc.setCurve(curve);
+        QCOMPARE(fc.curve(), curve);
+        for (int step = 1; step <= 3; step++)
+        {
+            const uint elapsed = uint(step * 250);
+            const int formula = int(qRound64(200.0 * shaped(curve, qreal(elapsed) / 1000.0)));
+            QCOMPARE(formula, expected.value(curve).at(step - 1));
+
+            // up
+            fc.setStart(0);
+            fc.setTarget(200);
+            fc.setReady(false);
+            QCOMPARE(int(fc.calculateCurrent(1000, elapsed)), formula);
+            // down: the same way from the start
+            fc.setStart(200);
+            fc.setTarget(0);
+            fc.setReady(false);
+            QCOMPARE(int(fc.calculateCurrent(1000, elapsed)), 200 - formula);
+        }
+
+        // the start at 0, the target at the end
+        fc.setStart(0);
+        fc.setTarget(200);
+        fc.setReady(false);
+        QCOMPARE(fc.calculateCurrent(1000, 0), uchar(0));
+        QCOMPARE(fc.calculateCurrent(1000, 1000), uchar(200));
+        fc.setStart(200);
+        fc.setTarget(0);
+        fc.setReady(false);
+        QCOMPARE(fc.calculateCurrent(1000, 0), uchar(200));
+        QCOMPARE(fc.calculateCurrent(1000, 1000), uchar(0));
+    }
+
+    // a copy and an assignment keep it
+    fc.setCurve(FadeChannel::CurveFastStart);
+    FadeChannel copy(fc);
+    QCOMPARE(copy.curve(), int(FadeChannel::CurveFastStart));
+    FadeChannel assigned;
+    assigned = fc;
+    QCOMPARE(assigned.curve(), int(FadeChannel::CurveFastStart));
+
+    // a 16-bit pair: the whole value takes the curve
+    FadeChannel pair;
+    pair.addChannel(0);
+    pair.addChannel(1);
+    QCOMPARE(pair.channelCount(), 2);
+    pair.setStart(quint32(0));
+    pair.setTarget(quint32(51200));
+    pair.setCurve(FadeChannel::CurveSlowStart);
+    pair.calculateCurrent(1000, 500);
+    QCOMPARE(pair.current(), quint32(12800));
+    QCOMPARE(pair.current(0), uchar(50));
+    QCOMPARE(pair.current(1), uchar(0));
+    // with a delay: the curve starts after it
+    pair.setReady(false);
+    pair.setElapsed(0);
+    pair.setFadeTime(1000);
+    pair.setDelay(200);
+    pair.nextStep(200);
+    QCOMPARE(pair.current(), quint32(0));
+    pair.nextStep(500);
+    QCOMPARE(pair.current(), quint32(12800));
+}
+
 QTEST_APPLESS_MAIN(FadeChannel_Test)

@@ -50,6 +50,11 @@ Panel {
         Core.playbacks.progressRevision
         return isCuelist && info.running ? Core.playbacks.functionStatus(fid).progress : 0
     }
+    /** The clock of a Timecode list that plays (ms), -1 when it has none */
+    readonly property real clock: {
+        Core.playbacks.progressRevision
+        return info.mode === "timecode" && info.running ? Core.playbacks.functionStatus(fid).clock : -1
+    }
     /** The row clicked (it doesn't play) */
     property int pickedUid: -1
 
@@ -71,12 +76,16 @@ Panel {
         return "GO"
     }
 
+    /** A Timecode list: the time of each cue on its clock instead of its trigger */
+    property bool timecode: false
     function refresh() {
         const cues = isCuelist && fid >= 0 ? Core.cuelists.cues(fid) : []
+        timecode = isCuelist && fid >= 0 && Core.cuelists.options(fid).mode === "timecode"
         // the rows stay: a change updates them in place
         for (let i = 0; i < cues.length; i++) {
             const c = cues[i]
-            const row = { uid: c.uid, number: c.number, name: c.name, trigger: triggerText(c), delay: c.delay,
+            const row = { uid: c.uid, number: c.number, name: c.name, delay: c.delay,
+                          trigger: timecode ? (Theme.clockText(c.time, 2) || "—") : triggerText(c),
                           fade: c.fade, downFade: c.downFade, skip: c.skip }
             if (i < cueModel.count)
                 cueModel.set(i, row)
@@ -114,10 +123,31 @@ Panel {
     title: hasSelection ? qsTr("Playback %1 · %2").arg(pbSlot + 1).arg(info.name || "") : qsTr("Selected playback")
 
     headerItems: [
+        // a cuelist of a type of its own: its tag (SUB, CHASE...)
+        Rectangle {
+            id: modeTag
+            anchors.verticalCenter: parent.verticalCenter
+            visible: panel.hasSelection && modeTagText.text.length > 0
+            width: modeTagText.implicitWidth + 10
+            height: 20
+            radius: 4
+            color: Qt.alpha(Theme.functionColor("Cuelist"), 0.25)
+            border.color: Theme.functionColor("Cuelist")
+            Text {
+                id: modeTagText
+                anchors.centerIn: parent
+                text: Theme.cuelistTag(panel.info.mode || "")
+                color: Theme.text
+                font.pixelSize: 10
+                font.weight: Font.Bold
+            }
+        },
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: panel.hasSelection
-            width: Math.min(implicitWidth, Math.max(0, panel.width - 660))
+            // (the Live Time of a fade and the tag take their room)
+            width: Math.min(implicitWidth, Math.max(0, panel.width - 660 - (liveBar.visible ? liveBar.width + 6 : 0)
+                                                    - (modeTag.visible ? modeTag.width + 6 : 0)))
             elide: Text.ElideRight
             text: {
                 if (!panel.hasSelection)
@@ -125,19 +155,37 @@ Panel {
                 const i = panel.info
                 if (!i.running)
                     return !i.isCuelist ? qsTr("Off")
-                         : i.nextNumber ? qsTr("Released · GO plays %1").arg(i.nextNumber) : qsTr("Released")
-                const where = i.isCuelist ? "Q " + i.cueNumber + (i.cueName ? " · " + i.cueName : "") : qsTr("On")
-                return (i.paused ? qsTr("Paused") + " · " : "") + where
+                         : !i.nextNumber ? qsTr("Released")
+                         : i.ruledByFader ? qsTr("Released · the fader plays %1").arg(i.nextNumber)
+                         : qsTr("Released · GO plays %1").arg(i.nextNumber)
+                // (a Timecode list: its clock first; nothing before its first cue)
+                const tc = panel.clock >= 0 ? Theme.clockText(panel.clock, 1) + " · " : ""
+                const where = !i.isCuelist ? qsTr("On")
+                            : tc && !i.cueNumber ? qsTr("Before the first cue")
+                            : "Q " + i.cueNumber + (i.cueName ? " · " + i.cueName : "")
+                return (i.paused ? qsTr("Paused") + " · " : "") + tc + where
             }
             color: panel.info.paused ? Theme.warning : panel.info.running ? Theme.success : Theme.textDim
             font.pixelSize: Theme.fontSmall
             font.weight: Font.DemiBold
         },
+        // the time of the cue that fades, changed as it runs
+        LiveTimeBar {
+            id: liveBar
+            anchors.verticalCenter: parent.verticalCenter
+            info: panel.info
+            pbPage: panel.pbPage
+            pbSlot: panel.pbSlot
+            // (the panel shows the selected playback: as Main GO)
+            mapTarget: ({ target: "playbackSelectedLiveTime" })
+            compact: panel.width < 1000
+        },
         AppButton {
             iconGlyph: Theme.iconStepBackward
             implicitHeight: 28
             visible: panel.isCuelist
-            enabled: !!panel.info.running
+            // (a submaster released: the cue its fader starts on)
+            enabled: !!panel.info.running || !!panel.info.ruledByFader
             ToolTip.text: qsTr("Back: the cue before")
             ToolTip.visible: hovered
             ToolTip.delay: 500
@@ -230,7 +278,8 @@ Panel {
             spacing: 8
             HeaderText { Layout.preferredWidth: 56; text: qsTr("CUE") }
             HeaderText { Layout.fillWidth: true; text: qsTr("NAME") }
-            HeaderText { Layout.preferredWidth: 96; text: qsTr("TRIGGER") }
+            // (none on a Chase: its speed steps it; a Timecode list: the time of the cue)
+            HeaderText { Layout.preferredWidth: 96; visible: panel.info.mode !== "chase"; text: panel.timecode ? qsTr("TIME") : qsTr("TRIGGER") }
             HeaderText { Layout.preferredWidth: 66; text: qsTr("DELAY"); horizontalAlignment: Text.AlignRight }
             HeaderText { Layout.preferredWidth: 72; text: qsTr("FADE"); horizontalAlignment: Text.AlignRight }
             Item { Layout.preferredWidth: 118 }
@@ -298,8 +347,10 @@ Panel {
                     }
                     Text {
                         Layout.preferredWidth: 96
+                        visible: panel.info.mode !== "chase"
                         text: row.model.trigger
-                        color: row.model.trigger === "GO" ? Theme.textFaint : Theme.warning
+                        color: panel.timecode ? Theme.text : row.model.trigger === "GO" ? Theme.textFaint : Theme.warning
+                        font.family: panel.timecode ? Theme.monoFamily : Theme.fontFamily
                         font.pixelSize: Theme.fontSmall
                         elide: Text.ElideRight
                     }

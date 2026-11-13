@@ -22,6 +22,7 @@
 
 #include <Windows.h>
 #include <QObject>
+#include <atomic>
 
 #include "midiinputdevice.h"
 
@@ -39,11 +40,23 @@ public:
 
     bool processMBC(int type);
 
+    /** DMX Total Control: a SysEx buffer came back (in the MIDI thread):
+     *  its message is read when $complete (not a broken one), and it goes
+     *  back for the next one, unless the device closes */
+    void processSysExBuffer(HMIDIIN handle, MIDIHDR* header, bool complete);
+
 private:
     UINT m_id;
     HMIDIIN m_handle;
     QByteArray m_universe;
     uint m_mbc_counter;
+
+    /** DMX Total Control: the buffers the SysEx messages come in (a full
+     *  frame of a MIDI timecode, sent on a locate) */
+    enum { SysExBuffers = 4, SysExSize = 256 };
+    MIDIHDR m_sysExHeaders[SysExBuffers];
+    char m_sysExData[SysExBuffers][SysExSize];
+    std::atomic<bool> m_closing;
 };
 
 #endif

@@ -430,6 +430,16 @@ public:
      *  FaderPriority: it moves to its new place (DMX Total Control) */
     void setFaderFunctionPriority(QSharedPointer<GenericFader> fader, int functionPriority);
 
+    /** DMX Total Control: no fader of the same priority comes after $fader
+     *  (it writes last of them: its LTP values win). The faders in $ignore,
+     *  and the ones fading out or deleted, don't count. False when $fader
+     *  isn't in this universe */
+    bool isTopOfPriority(const QSharedPointer<GenericFader> &fader,
+                         const QList<QSharedPointer<GenericFader>> &ignore = QList<QSharedPointer<GenericFader>>());
+
+    /** DMX Total Control: $fader goes after the other faders of its priority */
+    void raiseFader(const QSharedPointer<GenericFader> &fader);
+
 private:
     /** Set the sort priority of a fader and move it after the faders of
      *  the same or a lower priority. Call with m_fadersMutex locked */

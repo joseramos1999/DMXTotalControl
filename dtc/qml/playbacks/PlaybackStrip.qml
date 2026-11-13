@@ -83,7 +83,14 @@ Rectangle {
         return strip.info.isCuelist && strip.running ? Core.playbacks.functionStatus(strip.info.functionId).progress
                                                      : (strip.running ? 1 : 0)
     }
+    /** The clock of a Timecode list that plays (ms), -1 when it has none */
+    readonly property real clock: {
+        Core.playbacks.progressRevision
+        return strip.info.mode === "timecode" && strip.running ? Core.playbacks.functionStatus(strip.info.functionId).clock : -1
+    }
     readonly property color tint: strip.info.color ? Theme.category(strip.info.color) : Theme.functionColor(strip.info.type || "")
+    /** An A/B fader: each travel is a GO faded by hand (not the intensity) */
+    readonly property bool crossfade: !strip.empty && strip.info.faderMode === "crossfade"
     /** Lock of the programming screens: no recording or changing the playbacks */
     readonly property bool programLocked: Core.settings.lockedScreens.indexOf("program") >= 0
     readonly property bool hasProgrammer: Core.programmer.hasValues || Core.programmer.fxLayers.length > 0
@@ -123,7 +130,8 @@ Rectangle {
     }
     function actionTip(action) {
         switch (action) {
-        case "go": return qsTr("GO: the next cue (starts it when it is off)")
+        case "go": return strip.info.ruledByFader && !strip.running ? qsTr("GO: the cue its fader starts it on")
+                                                                    : qsTr("GO: the next cue (starts it when it is off)")
         case "back": return qsTr("Back: the cue before")
         case "pauseBack": return qsTr("Pause / Back: pauses a fade, else the cue before")
         case "pause": return qsTr("Pause")
@@ -162,8 +170,12 @@ Rectangle {
             return ""
         if (!strip.info.isCuelist)
             return Theme.typeLabel(strip.info.type || "")
+        // (a Timecode list: its clock first, also before its first cue)
+        const tc = strip.running && strip.clock >= 0 ? "TC " + Theme.clockText(strip.clock, 1) : ""
         if (strip.running && strip.info.cueNumber)
-            return strip.info.cueNumber + (strip.info.cueName ? " · " + strip.info.cueName : "")
+            return (tc ? tc + " · " : "") + strip.info.cueNumber + (strip.info.cueName ? " · " + strip.info.cueName : "")
+        if (tc)
+            return tc
         return strip.info.cueCount > 0 ? qsTr("Released") : qsTr("No cues")
     }
     function nextLine() {
@@ -171,9 +183,16 @@ Rectangle {
             return ""
         if (!strip.info.isCuelist)
             return strip.playState === 3 ? qsTr("Paused") : strip.running ? qsTr("On") : qsTr("Off")
+        // (the next cue is a jump of a link: ↺ and the jump, of how many)
+        const link = strip.info.linkJump > 0
+                     ? " ↺" + (strip.info.linkCount > 0 ? " " + strip.info.linkJump + "/" + strip.info.linkCount : "") : ""
+        // (a Chase: the BPM it plays at first)
+        const beat = strip.info.mode === "chase" && strip.info.chaseBpm > 0
+                     ? "♩ " + Math.max(1, Math.round(strip.info.chaseBpm)) : ""
         if (strip.info.nextNumber)
-            return "▸ " + strip.info.nextNumber + (strip.info.nextName ? " · " + strip.info.nextName : "")
-        return ""
+            return (beat ? beat + "  " : "") + "▸ " + strip.info.nextNumber + link
+                   + (strip.info.nextName ? " · " + strip.info.nextName : "")
+        return beat
     }
 
     /** The context menu (at the mouse; $below: under the name, for the keyboard and screenshots) */
@@ -307,6 +326,7 @@ Rectangle {
                 // lit while it plays
                 color: strip.empty ? Theme.surfaceRaised : strip.running ? Theme.fill(strip.tint) : Qt.alpha(strip.tint, 0.3)
                 Text {
+                    id: slotNumber
                     anchors { left: parent.left; leftMargin: 6; verticalCenter: parent.verticalCenter }
                     text: strip.slot + 1
                     color: strip.running ? Theme.textOn(Theme.fill(strip.tint)) : strip.empty ? Theme.textFaint : Theme.text
@@ -314,11 +334,22 @@ Rectangle {
                     font.pixelSize: Theme.fontSmall
                     font.weight: Font.Bold
                 }
+                // a cuelist of a type of its own: its tag (SUB, CHASE...)
+                Text {
+                    id: modeTag
+                    anchors { left: slotNumber.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                    visible: text.length > 0
+                    text: strip.empty ? "" : Theme.cuelistTag(strip.info.mode || "")
+                    color: slotNumber.color
+                    font.pixelSize: Theme.fontSmall - 1
+                    font.weight: Font.Bold
+                }
                 // a scene with steps (a cuelist, an FX at the BPM of the show) that plays: its rhythm, a half a step
                 RhythmBar {
                     functionId: !strip.empty && strip.info.functionId !== undefined ? strip.info.functionId : -1
                     litColor: Theme.textOn(Theme.fill(strip.tint))
-                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 26; rightMargin: 24 }
+                    anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter
+                              leftMargin: modeTag.visible ? modeTag.x + modeTag.width + 6 : 26; rightMargin: 24 }
                     height: 4
                 }
                 AbstractButton {
@@ -483,7 +514,8 @@ Rectangle {
             }
         }
 
-        // the fader: the intensity of what it plays
+        // the fader: the intensity of what it plays, or an A/B crossfade
+        // (where it is, and how far the crossfade is)
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -500,7 +532,7 @@ Rectangle {
                 focusPolicy: Qt.NoFocus
                 enabled: !strip.empty || Core.mapping.learnMode
                 fillColor: strip.empty ? Theme.border : strip.tint
-                value: strip.info.level !== undefined ? strip.info.level : 0
+                value: strip.crossfade ? (strip.info.xfadePos || 0) : strip.info.level !== undefined ? strip.info.level : 0
                 resetValue: value > 0.5 ? 0 : 1
                 onUserMoved: (v) => Core.playbacks.setLevel(strip.page, strip.slot, v)
                 MapTarget {
@@ -510,8 +542,10 @@ Rectangle {
             Text {
                 id: levelText
                 anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-                text: strip.empty ? "" : Math.round((strip.info.level || 0) * 100) + "%"
-                color: (strip.info.level || 0) < 0.05 && !strip.empty ? Theme.textFaint : Theme.textDim
+                text: strip.empty ? ""
+                    : strip.crossfade ? qsTr("A/B") + (strip.running ? " " + Math.round(Math.max(0, Math.min(1, strip.progress)) * 100) + "%" : "")
+                    : Math.round((strip.info.level || 0) * 100) + "%"
+                color: (strip.info.level || 0) < 0.05 && !strip.empty && !strip.crossfade ? Theme.textFaint : Theme.textDim
                 font.family: Theme.monoFamily
                 font.pixelSize: Theme.fontSmall
             }

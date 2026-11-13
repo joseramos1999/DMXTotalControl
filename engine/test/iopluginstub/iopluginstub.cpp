@@ -144,3 +144,15 @@ bool IOPluginStub::canConfigure() const
 {
     return m_canConfigure;
 }
+
+/*****************************************************************************
+ * Parameters
+ *****************************************************************************/
+
+void IOPluginStub::setParameter(quint32 universe, quint32 line, Capability type,
+                                QString name, QVariant value)
+{
+    // DMX Total Control: noted for the tests
+    m_parametersSet.append(qMakePair(name, value));
+    QLCIOPlugin::setParameter(universe, line, type, name, value);
+}

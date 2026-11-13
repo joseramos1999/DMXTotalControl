@@ -22,6 +22,8 @@
 #define CHASERSTEP_H
 
 #include <QVariant>
+#include <QHash>
+#include <QPair>
 #include "scenevalue.h"
 #include "function.h"
 
@@ -90,6 +92,9 @@ public:
     uint fadeOut;                //! Fade out speed
     uint duration;               //! Duration
     QList <SceneValue> values;   //! specific DMX values for this step (chaser in sequence mode)
+    /** DMX Total Control: the DTC palette of some of the values, (fixture,
+     *  channel) -> palette ID (opaque to the engine, as Cuelist::Cue::palettes) */
+    QHash<QPair<quint32, quint32>, int> palettes;
     QString note;
 };
 

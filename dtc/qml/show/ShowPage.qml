@@ -134,30 +134,6 @@ Item {
             Core.effects.togglePreview(fid)
     }
 
-    // timers keep running when the page changes: their state lives here
-    property var timers: ({})
-    property int timerRevision: 0
-    function timerState(id) { return timers[id] || { running: false, start: 0, acc: 0 } }
-    function timerElapsed(id) {
-        let t = timerState(id)
-        return t.acc + (t.running ? Date.now() - t.start : 0)
-    }
-    function timerRunning(id) { return timerState(id).running }
-    function timerToggle(id) {
-        let t = timerState(id)
-        let copy = Object.assign({}, timers)
-        copy[id] = t.running ? { running: false, start: 0, acc: t.acc + Date.now() - t.start }
-                             : { running: true, start: Date.now(), acc: t.acc }
-        timers = copy
-        timerRevision++
-    }
-    function timerReset(id) {
-        let copy = Object.assign({}, timers)
-        copy[id] = { running: false, start: 0, acc: 0 }
-        timers = copy
-        timerRevision++
-    }
-
     // the keys of the buttons of the page
     function keyItem(node, text) {
         if (!node)

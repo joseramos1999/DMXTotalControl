@@ -66,7 +66,9 @@ Para usar las páginas del SHOW desde un móvil o una tablet en la misma red wif
 - **Control remoto activado**.
 - **Puerto**: cámbialo si otro programa lo usa (por defecto, 8800). Si está ocupado, se avisa en rojo.
 - **PIN**: se pide una vez en cada dispositivo. Vacío, cualquiera en la red puede usarlo.
-- Las **direcciones** que hay que abrir en el navegador del móvil, con un botón para copiarlas.
+- **Nombre en la red**: el móvil abre el remoto con `http://dmxtotalcontrol.local:8800/`, aunque cambie la dirección del ordenador (iPhone, iPad y móviles Android recientes). Si otro ordenador ya usa el nombre, este toma `dmxtotalcontrol-2`. Vacío, no hay nombre. Si el puerto de red 5353 no está disponible, o si otros ordenadores usan el nombre y del `-2` al `-9`, se avisa en rojo.
+- Las **direcciones** que hay que abrir en el navegador del móvil, con un botón para copiarlas. Delante de cada una está el nombre de su red, como la llama Windows («Wi-Fi», «Ethernet 2»). Primero va la dirección **«Por nombre»**, luego la wifi, después el cable y al final los adaptadores virtuales y las VPN. La lista se actualiza sola unos segundos después de conectar o desconectar una red. Si el ordenador no está en ninguna red, en su lugar aparece un aviso.
+- Un **código QR** de la dirección marcada con un borde (al principio, la primera numérica), para abrirla con la cámara del móvil. Haz clic en otra dirección para cambiarla. Si hay PIN, el código lo lleva y el móvil entra sin pedirlo. **«Más grande»** lo muestra en grande.
 - Cuántos dispositivos están conectados.
 
 Consulta [Control remoto](remoto.md).
@@ -77,7 +79,9 @@ Indica cuántas definiciones de fixtures hay disponibles (la biblioteca incluida
 
 - **Open Fixture Library**: **«Descargar»** (necesita internet). Ya descargada, se ve cuántos fixtures tiene y cuándo se descargó, y el botón pasa a ser **«Actualizar»**: trae los fixtures nuevos y los mejorados, y conserva tus fixtures y los que la biblioteca ya no tenga. Si hay novedades, se dice y el botón se resalta (consulta [Fixtures](fixtures.md#open-fixture-library)).
 - **Importar archivos de fixtures**: **«Importar…»** definiciones `.qxf` (el formato de QLC+), archivos `.gdtf` o un `.zip` con ellos.
-- **Fixtures GDTF**: **«GDTF-Share»** abre su web; **«Importar GDTF…»** importa archivos, carpetas o el `.zip` de su descarga múltiple. Indica cuántos fixtures GDTF hay en la biblioteca.
+- **Fixtures GDTF**: **«GDTF-Share…»** busca, descarga e importa fixtures de GDTF-Share (consulta [Fixtures](fixtures.md#gdtf-share)); **«Importar GDTF…»** importa archivos, carpetas o el `.zip` de su descarga múltiple. Indica cuántos fixtures GDTF hay en la biblioteca.
+- **Fixtures descargados de GDTF-Share**: aparece cuando los hay. **«Convertir otra vez»** los convierte de nuevo con esta versión del programa, desde el `.gdtf` guardado (consulta [Fixtures](fixtures.md#convertir-otra-vez)).
+- **Revisiones más nuevas en GDTF-Share**: aparece cuando fixtures GDTF de la biblioteca tienen una revisión más nueva en GDTF-Share. **«Actualizar»** los muestra en GDTF-Share, donde **«Actualizar todos»** descarga la más nueva de cada uno y la convierte: los fixtures patcheados con ellos la reciben. Cuenta los que descargaste de GDTF-Share. Un archivo importado a mano cuenta si el texto de su última revisión coincide con una sola revisión de GDTF-Share. Se basa en la última lista de GDTF-Share que tiene el programa (consulta [Fixtures](fixtures.md#revisiones-más-nuevas)).
 - **Importar mis fixtures de QLC+**: **«Importar»** copia los fixtures que creaste en QLC+.
 - **Carpeta de fixtures de usuario**: **«Abrir carpeta»**.
 
@@ -85,7 +89,7 @@ Todo esto se explica en [Fixtures](fixtures.md).
 
 ## Actualizaciones
 
-- **Buscar actualizaciones al arrancar**: una vez al día, en GitHub: el programa y, si descargaste la Open Fixture Library, si tiene fixtures nuevos (un aviso lo dice). No se descarga ni se instala nada sin preguntarte. Sin internet, no molesta.
+- **Buscar actualizaciones al arrancar**: una vez al día, en GitHub: el programa y, si descargaste la Open Fixture Library, si tiene fixtures nuevos (un aviso lo dice). Si guardaste tu cuenta de GDTF-Share, también se conecta a GDTF-Share y avisa si los fixtures que descargaste de allí tienen revisiones más nuevas (cada revisión se avisa una vez). No se descarga ni se instala nada sin preguntarte. Sin internet, no molesta.
 - **Incluir versiones de prueba**: las novedades antes, menos probadas.
 
 Debajo se ve el estado («Tienes la última versión», «Ya está disponible la versión…») y los botones:

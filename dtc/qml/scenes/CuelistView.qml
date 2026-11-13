@@ -28,8 +28,10 @@ import DMXTotalControl.Backend
  * tracks from the cues before it. Cues are recorded from the programmer,
  * updated (the change goes on to the next cues, or only into this one) and
  * loaded back to edit them. Ctrl/Shift+click selects several cues to change
- * their times, trigger or flags together. The tracking sheet shows what the
- * stage shows on the selected cue.
+ * their times, trigger or flags together. The details of the selected cue:
+ * what the stage shows on it (the tracking sheet), the times of its
+ * attributes and fixtures, and its link and actions. Undo and Redo (Ctrl+Z,
+ * Ctrl+Y) go through the edits of the cuelist.
  *
  * (Not CuelistEditor.qml: that name is the C++ type of Core.cuelists.)
  */
@@ -66,11 +68,44 @@ Item {
     }
     /** The cue the programmer holds, when it is one of these */
     readonly property int editingUid: Core.cuelists.editing.id === fid ? Core.cuelists.editing.uid : -1
-    /** Room for the tracking sheet beside the cues */
+    /** Room for the details of the cue beside the cues */
     readonly property bool sideBySide: width >= 1150
-    /** The tracking sheet: -1 automatic (shown when there is room beside the cues), 0 hidden, 1 shown */
+    /** The details of the cue: -1 automatic (shown when there is room beside the cues), 0 hidden, 1 shown */
     property int sheetMode: -1
     readonly property bool sheetShown: sheetMode < 0 ? sideBySide : sheetMode === 1
+    /** Their tab: "tracking" (the tracking sheet), "times" or "links" (link and actions) */
+    property string detailsTab: "tracking"
+    /** The next cue is a jump of a link: "↺ 1/3" (the jump, of how many), "↺" when always */
+    readonly property string linkMark: status.linkJump > 0
+                                       ? " ↺" + (status.linkCount > 0 ? " " + status.linkJump + "/" + status.linkCount : "")
+                                       : ""
+    /** The options of the list, read again with its cues */
+    readonly property var listOptions: {
+        cues
+        return fid >= 0 ? Core.cuelists.options(fid) : ({})
+    }
+    /** Move in black is on: the cues show the MIB column (not in a Chase
+     *  nor in an Override list) */
+    readonly property bool moveInBlack: !!listOptions.moveInBlack && listOptions.mode !== "chase"
+                                        && listOptions.mode !== "override"
+    /** A Chase: its cues have no trigger; with a change of its own, their
+     *  delay and fades don't count (dimmed) */
+    readonly property bool chase: listOptions.mode === "chase"
+    readonly property bool cueTimesUnused: chase && listOptions.chaseXfade !== undefined && listOptions.chaseXfade >= 0
+    /** A Timecode list: its cues have a TIME on a clock instead of a trigger */
+    readonly property bool timecode: listOptions.mode === "timecode"
+    /** Its clock while it plays (ms), -1 when it has none */
+    readonly property real clock: {
+        Core.playbacks.progressRevision
+        Core.playbacks.revision
+        return fid >= 0 && timecode ? Core.playbacks.functionStatus(fid).clock : -1
+    }
+    /** What Undo and Redo do: { canUndo, canRedo, undo, redo } */
+    property int undoRevision: 0
+    readonly property var undoInfo: {
+        undoRevision
+        return fid >= 0 ? Core.cuelists.undoState(fid) : ({})
+    }
 
     function refresh() {
         // the selection follows its cues (by uid): a cue recorded, deleted or
@@ -83,8 +118,10 @@ Item {
             const c = cues[i]
             const row = { uid: c.uid, number: c.number, name: c.name, note: c.note, trigger: c.trigger,
                           triggerTime: c.triggerTime, fade: c.fade, downFade: c.downFade, delay: c.delay,
-                          skip: c.skip, block: c.block, changes: c.changes, releases: c.releases + c.fxReleases,
-                          fx: c.fx, palettesText: c.palettes.join(", ") }
+                          skip: c.skip, block: c.block, noMib: c.noMib, changes: c.changes, releases: c.releases + c.fxReleases,
+                          fx: c.fx, palettesText: c.palettes.join(", "), ownTimes: c.ownTimes, timesText: c.timesText,
+                          curve: c.curve, link: c.link, linkNumber: c.linkNumber, linkCount: c.linkCount,
+                          actions: c.actions, actionsText: c.actionsText, time: c.time, timeWarning: c.timeWarning }
             if (i < cueModel.count)
                 cueModel.set(i, row)
             else
@@ -154,6 +191,23 @@ Item {
         if (Core.cuelists.loadCue(fid, index, tracked))
             selected = [index]
     }
+    /** Undo ($redo: redo) an edit of the cuelist: the first cue it changes is selected */
+    function undoStep(redo) {
+        if (fid < 0)
+            return
+        const i = redo ? Core.cuelists.redo(fid) : Core.cuelists.undo(fid)
+        if (i >= 0 && i < cues.length)
+            selected = [i]
+    }
+    /** Ctrl+Z and Ctrl+Y in a name or a note with nothing of its own to undo
+     *  (nothing typed, or a name entered): the edits of the cuelist */
+    function historyKey(event, field) {
+        const redo = event.matches(StandardKey.Redo)
+        if (event.matches(StandardKey.Undo) ? field.canUndo : (!redo || field.canRedo))
+            return
+        event.accepted = true
+        undoStep(redo)
+    }
 
     onFidChanged: { cueModel.clear(); selected = []; refresh() }
     Component.onCompleted: refresh()
@@ -168,6 +222,20 @@ Item {
             if (id === view.fid && index < view.cues.length && view.current !== index)
                 view.selected = [index]
         }
+        function onUndoChanged() { view.undoRevision++ }
+    }
+
+    // while the cuelist is on screen; a field with something typed to undo
+    // keeps them for its own text
+    Shortcut {
+        sequences: [StandardKey.Undo]
+        enabled: view.visible && view.fid >= 0 && !!view.undoInfo.canUndo
+        onActivated: view.undoStep(false)
+    }
+    Shortcut {
+        sequences: ["Ctrl+Y", "Ctrl+Shift+Z"]
+        enabled: view.visible && view.fid >= 0 && !!view.undoInfo.canRedo
+        onActivated: view.undoStep(true)
     }
     // the palettes give the cues their names
     Connections {
@@ -177,92 +245,7 @@ Item {
 
     ListModel { id: cueModel }
 
-    /* A time in a cell, in seconds: typed, or the mouse wheel once clicked
-     * (0.1 s, with Shift 1 s). $allowSame: empty or "=" is the same as the fade */
-    component TimeField: TextField {
-        id: field
-        property int ms: 0
-        property bool same: false
-        property bool allowSame: false
-        signal committed(int ms)
-
-        // to the ms (a time typed with 3 decimals, or from QLC+, shows as it is)
-        function format(value) {
-            const s = value / 1000
-            return s.toLocaleString(Qt.locale(), 'f', value % 100 === 0 ? 1 : (value % 10 === 0 ? 2 : 3))
-        }
-        readonly property string shown: allowSame && same ? "=" : format(ms)
-        /** Something was typed: only then a focus that leaves sets the time
-         *  (of every cue selected), not a click in and out */
-        property bool typed: false
-        onTextEdited: typed = true
-        function commit() {
-            const t = text.trim().replace(",", ".").replace(/s$/, "").trim()
-            if (typed) {
-                // ("=" is no time: 0 typed on it is one, an instant down fade)
-                const current = allowSame && same ? -1 : ms
-                if (allowSame && (t === "" || t === "=")) {
-                    if (!same)
-                        committed(-2)
-                } else {
-                    const v = Number(t)
-                    if (t.length > 0 && !isNaN(v) && v >= 0 && Math.round(v * 1000) !== current)
-                        committed(Math.min(3600000, Math.round(v * 1000)))
-                }
-            }
-            typed = false
-            text = Qt.binding(() => field.shown)
-        }
-
-        text: shown
-        horizontalAlignment: TextInput.AlignRight
-        font.family: Theme.monoFamily
-        font.pixelSize: Theme.fontSmall + 1
-        color: (allowSame && same) || ms === 0 ? Theme.textDim : Theme.text
-        selectByMouse: true
-        leftPadding: 6
-        rightPadding: 6
-        validator: RegularExpressionValidator { regularExpression: /=?|[0-9]{0,4}([.,][0-9]{0,3})?\s*s?/ }
-        background: Rectangle {
-            radius: Theme.radiusSmall
-            color: field.activeFocus ? Theme.background : (fieldHover.hovered ? Theme.surfaceHover : "transparent")
-            border.color: field.activeFocus ? Theme.accent : "transparent"
-        }
-        HoverHandler { id: fieldHover }
-        onEditingFinished: commit()
-        onActiveFocusChanged: { wheelDelta = 0; if (activeFocus) selectAll() }
-        Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
-        Keys.onEscapePressed: { typed = false; text = Qt.binding(() => field.shown); focus = false }
-        /* The wheel changes the time only while the cell is being edited
-         * (clicked): over the other cells it scrolls the list. A notch
-         * (120) is a step; a touchpad adds its small deltas up to one. */
-        property real wheelDelta: 0
-        WheelHandler {
-            enabled: field.activeFocus
-            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: (event) => {
-                const shift = (event.modifiers & Qt.ShiftModifier) !== 0
-                // (Shift+wheel can come horizontal from the system)
-                const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : (shift ? event.angleDelta.x : 0)
-                if (delta === 0)
-                    return
-                field.wheelDelta += delta
-                const notches = Math.trunc(field.wheelDelta / 120)
-                if (notches === 0)
-                    return
-                field.wheelDelta -= notches * 120
-                const base = field.allowSame && field.same ? field.sameBase : field.ms
-                field.committed(Math.min(3600000, Math.max(0, base + notches * (shift ? 1000 : 100))))
-                // (what was typed and not entered gives way to the new time)
-                field.typed = false
-                field.text = Qt.binding(() => field.shown)
-            }
-        }
-        /** The value the wheel starts from when it is "=" */
-        property int sameBase: ms
-    }
-
-    // a small on/off box: Skip and Block
+    // a small on/off box: Skip, Block and Move in black
     component FlagBox: Rectangle {
         id: box
         property bool checked: false
@@ -290,6 +273,31 @@ Item {
         }
     }
 
+    // Undo or Redo: its tooltip says what it does, also when there is nothing to do
+    component HistoryButton: Item {
+        id: historyButton
+        property string glyph: ""
+        property bool available: false
+        property string tip: ""
+        signal clicked()
+        implicitWidth: historyAppButton.implicitWidth
+        implicitHeight: 30
+        AppButton {
+            id: historyAppButton
+            anchors.fill: parent
+            iconGlyph: historyButton.glyph
+            flat: true
+            implicitHeight: 30
+            enabled: historyButton.available
+            onClicked: historyButton.clicked()
+        }
+        // (a disabled button gets no hover)
+        HoverHandler { id: historyHover }
+        ToolTip.text: tip
+        ToolTip.visible: historyHover.hovered
+        ToolTip.delay: 500
+    }
+
     // a column title
     component HeaderText: Text {
         color: Theme.textFaint
@@ -302,8 +310,11 @@ Item {
     readonly property int wCue: 64
     readonly property int wTrigger: 156
     readonly property int wTime: 62
-    readonly property int wChanges: 96
+    readonly property int wChanges: 140
     readonly property int wFlag: 24
+    readonly property int wMib: 32
+    // (the note gives way to the clock of the changes: the row keeps its width)
+    readonly property int wNoteMin: 40
 
     GridLayout {
         anchors.fill: parent
@@ -317,25 +328,60 @@ Item {
             Layout.preferredHeight: 1000
             title: qsTr("Cues (%1)").arg(view.cues.length)
             headerItems: [
+                // a cuelist of a type of its own: its tag (SUB, CHASE...)
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: modeTagText.text.length > 0
+                    width: modeTagText.implicitWidth + 10
+                    height: 20
+                    radius: 4
+                    color: Qt.alpha(Theme.functionColor("Cuelist"), 0.25)
+                    border.color: Theme.functionColor("Cuelist")
+                    Text {
+                        id: modeTagText
+                        anchors.centerIn: parent
+                        text: Theme.cuelistTag(view.status.mode || "")
+                        color: Theme.text
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                    }
+                },
                 // where it is, and its own transport (as a playback: the same state)
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Math.min(implicitWidth, 300)
+                    // (the Live Time of a fade takes its room; with the clock
+                    // of a Timecode list, and its tag, a little more)
+                    width: Math.min(implicitWidth, liveBar.visible ? (view.clock >= 0 ? 110 : 160) : 300)
                     elide: Text.ElideRight
+                    // (a Timecode list: its clock first, after its TC tag;
+                    // before the time of its first cue it holds nothing)
                     text: view.status.running
-                          ? (view.status.paused ? qsTr("Paused") + " · " : "") + "Q " + view.status.cueNumber
+                          ? (view.status.paused ? qsTr("Paused") + " · " : "")
+                            + (view.clock >= 0 ? Theme.clockText(view.clock, 1) + " · " : "")
+                            + (view.clock >= 0 && !view.status.cueNumber ? qsTr("Before the first cue")
+                                                                          : "Q " + view.status.cueNumber)
                             + (view.status.cueName ? " · " + view.status.cueName : "")
-                            + (view.status.nextNumber ? "   ▸ " + view.status.nextNumber : "")
-                          : (view.status.nextNumber ? qsTr("Released · GO plays %1").arg(view.status.nextNumber)
-                                                    : qsTr("Released"))
+                            + (view.status.nextNumber ? "   ▸ " + view.status.nextNumber + view.linkMark : "")
+                          : !view.status.nextNumber ? qsTr("Released")
+                          : view.status.ruledByFader ? qsTr("Released · the fader plays %1").arg(view.status.nextNumber)
+                          : qsTr("Released · GO plays %1").arg(view.status.nextNumber)
                     color: view.status.running ? Theme.success : Theme.textDim
                     font.pixelSize: Theme.fontSmall
                     font.weight: Font.DemiBold
                 },
+                // the time of the cue that fades, changed as it runs (as on its playback)
+                LiveTimeBar {
+                    id: liveBar
+                    anchors.verticalCenter: parent.verticalCenter
+                    info: view.status
+                    functionId: view.fid
+                    compact: true
+                },
                 AppButton {
                     iconGlyph: Theme.iconStepBackward
                     implicitHeight: 28
-                    enabled: !!view.status.running
+                    // (a submaster released: the cue its fader starts on)
+                    enabled: !!view.status.running || !!view.status.ruledByFader
                     ToolTip.text: qsTr("Back: the cue before")
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
@@ -489,6 +535,20 @@ Item {
                         ToolTip.delay: 500
                         onClicked: view.askNumber(view.current)
                     }
+                    // a Timecode list: the selected cue at the time of its clock (it plays)
+                    AppButton {
+                        visible: view.timecode
+                        text: tools.compact ? "" : qsTr("Set to the clock")
+                        iconGlyph: Theme.iconClock
+                        flat: true
+                        implicitHeight: 30
+                        enabled: view.current >= 0 && view.clock >= 0
+                        ToolTip.text: (tools.compact ? qsTr("Set to the clock") + ": " : "")
+                                      + qsTr("Put the selected cue at the time of the clock")
+                        ToolTip.visible: hovered
+                        ToolTip.delay: 500
+                        onClicked: Core.cuelists.stampCueTime(view.fid, view.current)
+                    }
                     AppButton {
                         iconGlyph: Theme.iconTrash
                         flat: true
@@ -499,14 +559,26 @@ Item {
                         ToolTip.delay: 500
                         onClicked: deleteConfirm.open()
                     }
+                    HistoryButton {
+                        glyph: Theme.iconUndo
+                        available: !!view.undoInfo.canUndo
+                        tip: available ? qsTr("Undo: %1 (Ctrl+Z)").arg(view.undoInfo.undo) : qsTr("Nothing to undo")
+                        onClicked: view.undoStep(false)
+                    }
+                    HistoryButton {
+                        glyph: Theme.iconRedo
+                        available: !!view.undoInfo.canRedo
+                        tip: available ? qsTr("Redo: %1 (Ctrl+Y)").arg(view.undoInfo.redo) : qsTr("Nothing to redo")
+                        onClicked: view.undoStep(true)
+                    }
                     Rectangle { width: 1; height: 30; color: Theme.border }
                     AppButton {
-                        text: qsTr("Tracking sheet")
+                        text: qsTr("Cue details")
                         iconGlyph: Theme.iconTable
                         flat: !view.sheetShown
                         highlighted: view.sheetShown
                         implicitHeight: 30
-                        ToolTip.text: qsTr("What the stage shows on the selected cue, channel by channel")
+                        ToolTip.text: qsTr("The tracking sheet, the times, the link and the actions of the selected cue")
                         ToolTip.visible: hovered
                         ToolTip.delay: 500
                         onClicked: view.sheetMode = view.sheetShown ? 0 : 1
@@ -521,10 +593,22 @@ Item {
                     spacing: 8
                     HeaderText { Layout.preferredWidth: view.wCue; Layout.minimumWidth: view.wCue; Layout.maximumWidth: view.wCue; text: qsTr("CUE") }
                     HeaderText { Layout.fillWidth: true; Layout.minimumWidth: 80; Layout.preferredWidth: 150; text: qsTr("NAME") }
-                    HeaderText { Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger; text: qsTr("TRIGGER") }
-                    HeaderText { Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("DELAY"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
-                    HeaderText { Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("FADE"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
+                    HeaderText { visible: !view.chase && !view.timecode; Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger; text: qsTr("TRIGGER") }
                     HeaderText {
+                        visible: view.timecode
+                        Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger
+                        text: qsTr("TIME")
+                        horizontalAlignment: Text.AlignRight
+                        rightPadding: 6
+                        ToolTip.text: qsTr("The time of the cue on the clock")
+                        ToolTip.visible: timeMouse.containsMouse
+                        ToolTip.delay: 400
+                        MouseArea { id: timeMouse; anchors.fill: parent; hoverEnabled: true }
+                    }
+                    HeaderText { opacity: view.cueTimesUnused ? 0.4 : 1; Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("DELAY"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
+                    HeaderText { opacity: view.cueTimesUnused ? 0.4 : 1; Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime; text: qsTr("FADE"); horizontalAlignment: Text.AlignRight; rightPadding: 6 }
+                    HeaderText {
+                        opacity: view.cueTimesUnused ? 0.4 : 1
                         Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                         text: qsTr("DOWN")
                         horizontalAlignment: Text.AlignRight
@@ -553,7 +637,17 @@ Item {
                         ToolTip.delay: 400
                         MouseArea { id: blockMouse; anchors.fill: parent; hoverEnabled: true }
                     }
-                    HeaderText { Layout.fillWidth: true; Layout.minimumWidth: 60; Layout.preferredWidth: 150; text: qsTr("NOTE") }
+                    HeaderText {
+                        visible: view.moveInBlack
+                        Layout.preferredWidth: view.wMib; Layout.minimumWidth: view.wMib; Layout.maximumWidth: view.wMib
+                        text: qsTr("MIB")
+                        horizontalAlignment: Text.AlignHCenter
+                        ToolTip.text: qsTr("Move in black: this cue is prepared while its fixtures are dark (off: its moves are seen)")
+                        ToolTip.visible: mibMouse.containsMouse
+                        ToolTip.delay: 400
+                        MouseArea { id: mibMouse; anchors.fill: parent; hoverEnabled: true }
+                    }
+                    HeaderText { Layout.fillWidth: true; Layout.minimumWidth: view.wNoteMin; Layout.preferredWidth: 150; text: qsTr("NOTE") }
                 }
 
                 ListView {
@@ -673,11 +767,14 @@ Item {
                                         cursorPosition = 0
                                 }
                                 onEditingFinished: if (text !== row.model.name) Core.cuelists.setCueName(view.fid, row.index, text)
+                                Keys.onPressed: (event) => view.historyKey(event, nameField)
                                 Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
                                 Keys.onEscapePressed: { text = Qt.binding(() => row.model.name); focus = false }
                             }
-                            // trigger: GO, Follow (after the cue before ends) or Wait (after its GO)
+                            // trigger: GO, Follow (after the cue before ends) or Wait (after its
+                            // GO); none on a Chase, its speed steps it, nor on a Timecode list
                             RowLayout {
+                                visible: !view.chase && !view.timecode
                                 Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger
                                 spacing: 4
                                 AppButton {
@@ -705,28 +802,60 @@ Item {
                                         }
                                     }
                                 }
-                                TimeField {
+                                CueTimeField {
                                     Layout.fillWidth: true
                                     visible: row.model.trigger !== "go"
                                     ms: row.model.triggerTime
                                     onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                     onCommitted: (v) => Core.cuelists.setCueTrigger(view.fid, view.targets(row.index), "", v)
+                                    onHistoryKey: (redo) => view.undoStep(redo)
                                 }
                                 Item { Layout.fillWidth: true; visible: row.model.trigger === "go" }
                             }
-                            TimeField {
+                            // a Timecode list: its time on the clock, and a warning
+                            // when it comes before the cue before it
+                            RowLayout {
+                                visible: view.timecode
+                                Layout.preferredWidth: view.wTrigger; Layout.minimumWidth: view.wTrigger; Layout.maximumWidth: view.wTrigger
+                                spacing: 4
+                                // (the warning before the time: the times line up on the right)
+                                IconLabel {
+                                    Layout.preferredWidth: 16
+                                    opacity: row.model.timeWarning ? 1 : 0
+                                    icon: Theme.iconWarning
+                                    size: 12
+                                    color: Theme.warning
+                                    ToolTip.text: qsTr("This cue's time is before the cue before it")
+                                    ToolTip.visible: row.model.timeWarning && warningHover.hovered
+                                    HoverHandler { id: warningHover }
+                                }
+                                CueTimeField {
+                                    Layout.fillWidth: true
+                                    clock: true
+                                    ms: row.model.time
+                                    onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
+                                    onCommitted: (v) => Core.cuelists.setCueTime(view.fid, row.index, v)
+                                    onHistoryKey: (redo) => view.undoStep(redo)
+                                }
+                            }
+                            CueTimeField {
+                                opacity: view.cueTimesUnused ? 0.4 : 1
                                 Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 ms: row.model.delay
                                 onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                 onCommitted: (v) => Core.cuelists.setCueTimes(view.fid, view.targets(row.index), -1, -1, v)
+                                onHistoryKey: (redo) => view.undoStep(redo)
                             }
-                            TimeField {
+                            CueTimeField {
+                                opacity: view.cueTimesUnused ? 0.4 : 1
                                 Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 ms: row.model.fade
                                 onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                 onCommitted: (v) => Core.cuelists.setCueTimes(view.fid, view.targets(row.index), v, -1, -1)
+                                onHistoryKey: (redo) => view.undoStep(redo)
                             }
-                            TimeField {
+                            CueTimeField {
+                                opacity: view.cueTimesUnused ? 0.4 : 1
                                 Layout.preferredWidth: view.wTime; Layout.minimumWidth: view.wTime; Layout.maximumWidth: view.wTime
                                 allowSame: true
                                 same: row.model.downFade < 0
@@ -734,6 +863,7 @@ Item {
                                 sameBase: row.model.fade
                                 onActiveFocusChanged: if (activeFocus && !row.isSelected) view.select(row.index, 0)
                                 onCommitted: (v) => Core.cuelists.setCueTimes(view.fid, view.targets(row.index), -1, v, -1)
+                                onHistoryKey: (redo) => view.undoStep(redo)
                             }
                             // what it changes: channels, FX, releases, palettes
                             Row {
@@ -778,6 +908,42 @@ Item {
                                     ToolTip.visible: paletteHover.hovered
                                     HoverHandler { id: paletteHover }
                                 }
+                                // times of its own for some attributes or fixtures, or a curve
+                                IconLabel {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: row.model.ownTimes > 0 || row.model.curve !== "linear"
+                                    icon: Theme.iconClock
+                                    size: 11
+                                    color: Theme.textDim
+                                    ToolTip.text: qsTr("Own times: %1").arg(row.model.timesText)
+                                    ToolTip.visible: timesHover.hovered
+                                    HoverHandler { id: timesHover }
+                                }
+                                // a link to another cue
+                                IconLabel {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: row.model.link > 0
+                                    icon: Theme.iconLink
+                                    size: 11
+                                    // (dim: links don't count in a Chase or a Timecode list)
+                                    color: view.chase || view.timecode ? Theme.textFaint : Theme.success
+                                    ToolTip.text: row.model.linkCount > 0
+                                                  ? qsTr("Then cue %1, %n times", "", row.model.linkCount).arg(row.model.linkNumber)
+                                                  : qsTr("Then cue %1, always").arg(row.model.linkNumber)
+                                    ToolTip.visible: linkHover.hovered
+                                    HoverHandler { id: linkHover }
+                                }
+                                // what it does when it starts
+                                IconLabel {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: row.model.actions > 0
+                                    icon: Theme.iconBolt
+                                    size: 11
+                                    color: Theme.warning
+                                    ToolTip.text: qsTr("%n actions when it starts", "", row.model.actions) + ": " + row.model.actionsText
+                                    ToolTip.visible: actionsHover.hovered
+                                    HoverHandler { id: actionsHover }
+                                }
                             }
                             FlagBox {
                                 Layout.preferredWidth: view.wFlag; Layout.minimumWidth: view.wFlag; Layout.maximumWidth: view.wFlag
@@ -795,10 +961,19 @@ Item {
                                 checked: row.model.block
                                 onToggled: Core.cuelists.setCueFlags(view.fid, view.targets(row.index), -1, checked ? 0 : 1)
                             }
+                            FlagBox {
+                                visible: view.moveInBlack
+                                Layout.preferredWidth: view.wMib; Layout.minimumWidth: view.wMib; Layout.maximumWidth: view.wMib
+                                Layout.preferredHeight: 24
+                                letter: qsTr("MIB")
+                                tint: Theme.category("#ae3ec9")
+                                checked: !row.model.noMib
+                                onToggled: Core.cuelists.setCueMib(view.fid, view.targets(row.index), !checked)
+                            }
                             TextField {
                                 id: noteField
                                 Layout.fillWidth: true
-                                Layout.minimumWidth: 60
+                                Layout.minimumWidth: view.wNoteMin
                                 Layout.preferredWidth: 150
                                 text: row.model.note
                                 // out of focus a long text shows its start
@@ -821,6 +996,7 @@ Item {
                                         cursorPosition = 0
                                 }
                                 onEditingFinished: if (text !== row.model.note) Core.cuelists.setCueNote(view.fid, row.index, text)
+                                Keys.onPressed: (event) => view.historyKey(event, noteField)
                                 Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
                                 Keys.onEscapePressed: { text = Qt.binding(() => row.model.note); focus = false }
                             }
@@ -850,19 +1026,59 @@ Item {
             }
         }
 
-        // what the stage shows on the selected cue
+        // the details of the selected cue: what the stage shows on it, its times
         Panel {
             visible: view.sheetShown
             Layout.fillWidth: !view.sideBySide
             Layout.fillHeight: true
             Layout.preferredWidth: 380
             Layout.preferredHeight: 1000
-            title: view.current >= 0 ? qsTr("Cue %1 on stage").arg(view.cueLabel(view.currentCue)) : qsTr("Tracking")
+            title: view.detailsTab === "times"
+                   ? (view.current < 0 ? qsTr("Times")
+                                       : view.selected.length > 1 ? qsTr("Times of %n cues", "", view.selected.length)
+                                                                  : qsTr("Times of cue %1").arg(view.cueLabel(view.currentCue)))
+                   : view.detailsTab === "links"
+                   ? (view.current >= 0 ? qsTr("Link and actions of cue %1").arg(view.cueLabel(view.currentCue))
+                                        : qsTr("Link and actions"))
+                   : (view.current >= 0 ? qsTr("Cue %1 on stage").arg(view.cueLabel(view.currentCue)) : qsTr("Tracking"))
 
-            TrackingSheet {
+            ColumnLayout {
                 anchors { fill: parent; margins: 8 }
-                cuelistId: view.fid
-                cueIndex: view.current
+                spacing: 8
+
+                Row {
+                    spacing: 0
+                    Repeater {
+                        model: [{ key: "tracking", text: qsTr("Tracking") }, { key: "times", text: qsTr("Times") },
+                                { key: "links", text: qsTr("Link and actions") }]
+                        AppButton {
+                            required property var modelData
+                            text: modelData.text
+                            implicitHeight: 28
+                            highlighted: view.detailsTab === modelData.key
+                            onClicked: view.detailsTab = modelData.key
+                        }
+                    }
+                }
+                StackLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    currentIndex: view.detailsTab === "times" ? 1 : view.detailsTab === "links" ? 2 : 0
+                    TrackingSheet {
+                        cuelistId: view.fid
+                        cueIndex: view.current
+                    }
+                    CueTimesView {
+                        cuelistId: view.fid
+                        cueIndex: view.current
+                        targets: view.selected
+                        onHistoryKey: (redo) => view.undoStep(redo)
+                    }
+                    CueActionsView {
+                        cuelistId: view.fid
+                        cueIndex: view.current
+                    }
+                }
             }
         }
     }
@@ -904,6 +1120,14 @@ Item {
             onTriggered: view.updateCue(false)
         }
         MenuSeparator {}
+        MenuItem {
+            text: qsTr("Times…")
+            onTriggered: { view.detailsTab = "times"; view.sheetMode = 1 }
+        }
+        MenuItem {
+            text: qsTr("Link and actions…")
+            onTriggered: { view.detailsTab = "links"; view.sheetMode = 1 }
+        }
         MenuItem { text: qsTr("Number…"); onTriggered: view.askNumber(view.current) }
         MenuItem { text: qsTr("Delete…"); onTriggered: deleteConfirm.open() }
     }

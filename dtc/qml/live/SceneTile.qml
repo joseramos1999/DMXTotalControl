@@ -44,6 +44,8 @@ Rectangle {
                                       ? "Q " + cueStatus.cueNumber + (cueStatus.cueName ? " · " + cueStatus.cueName : "") : ""
 
     property bool flash: false
+    /** The selected scene (the last pressed), which mappings can drive: a bar along its bottom */
+    property bool selected: false
     /** Its own rhythm, tapped on its button (ms a step, 0: none) */
     property int tap: 0
     readonly property string rhythmText: tap > 0 ? " · " + Math.round(60000 / tap) + " BPM" : ""
@@ -99,6 +101,16 @@ Rectangle {
         litColor: tile.active ? Theme.textOn(tile.fillColor) : Theme.accent
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: 14; rightMargin: 14; bottomMargin: 3 }
         height: 3
+    }
+
+    // the selected scene: on its bottom edge (inside the tile, so it doesn't
+    // grow; under the type and the rhythm bar, between the round corners)
+    Rectangle {
+        visible: tile.selected
+        height: 3
+        radius: 1.5
+        color: tile.active ? Theme.textOn(tile.fillColor) : Theme.accent
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; leftMargin: Theme.radius; rightMargin: Theme.radius }
     }
 
     // priority badge, only when it differs from the default

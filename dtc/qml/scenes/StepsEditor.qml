@@ -193,7 +193,31 @@ Panel {
                     }
                     TimeSpin { Layout.preferredWidth: 130; beats: editor.beats; engineValue: row.modelData.fadeOut
                                onEdited: (v) => editor.setTime(row.index, "fadeOut", v) }
-                    Text { Layout.fillWidth: true; text: row.modelData.channels; color: Theme.textDim }
+                    // the channels on, and the palettes its values come from
+                    RowLayout {
+                        id: channelsCell
+                        Layout.fillWidth: true
+                        spacing: 6
+                        readonly property var palettes: row.modelData.palettes || []
+                        Text { Layout.preferredWidth: 26; text: row.modelData.channels; color: Theme.textDim; font.family: Theme.monoFamily }
+                        IconLabel {
+                            visible: channelsCell.palettes.length > 0
+                            icon: Theme.iconPalette
+                            size: 11
+                            color: Theme.textDim
+                            ToolTip.text: qsTr("Uses %1: when they change, the step changes too").arg(channelsCell.palettes.join(", "))
+                            ToolTip.visible: paletteHover.hovered
+                            HoverHandler { id: paletteHover }
+                        }
+                        // (always there, empty without palettes: it takes the rest of the row)
+                        Text {
+                            Layout.fillWidth: true
+                            text: channelsCell.palettes.join(", ")
+                            color: Theme.textDim
+                            font.pixelSize: Theme.fontSmall
+                            elide: Text.ElideRight
+                        }
+                    }
                 }
             }
         }

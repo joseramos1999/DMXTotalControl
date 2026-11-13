@@ -53,7 +53,11 @@ static void MidiInProc(const MIDIPacketList* pktList, void* readProcRefCon,
             if (!MIDI_IS_CMD(cmd))
                 continue; // Not a MIDI command. Skip to the next byte.
             if (cmd == MIDI_SYSEX)
+            {
+                // DMX Total Control: only in a full frame of a MIDI timecode
+                self->processSysEx(QByteArray((const char*) &packet->data[i], int(packet->length - i)));
                 break; // Sysex reserves the whole packet. Not interested.
+            }
 
             // 1 or 2 MIDI Data bytes
             if (packet->length > (i + 1) && !MIDI_IS_CMD(packet->data[i + 1]))
@@ -65,6 +69,13 @@ static void MidiInProc(const MIDIPacketList* pktList, void* readProcRefCon,
                     // no data2 ? Could be a Program Change, so act like Linux
                     // and give it a value
                     data2 = 127;
+            }
+
+            // DMX Total Control: a quarter frame of a MIDI timecode
+            if (cmd == MIDI_TIME_CODE)
+            {
+                self->processQuarterFrame(data1);
+                continue;
             }
 
             if (cmd >= MIDI_BEAT_CLOCK && cmd <= MIDI_BEAT_STOP)

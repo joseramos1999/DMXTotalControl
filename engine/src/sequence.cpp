@@ -20,6 +20,7 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 #include <QDebug>
+#include <QSet>
 #include <algorithm>
 
 #include "sequence.h"
@@ -147,11 +148,117 @@ void Sequence::applyDumpValues(const QList<SceneValue> &dumpedValues, int target
 }
 
 /*****************************************************************************
+ * DMX Total Control: palettes
+ *****************************************************************************/
+
+void Sequence::applyPalette(int paletteId, const std::function<int(quint32, quint32)> &valueOf)
+{
+    if (!valueOf)
+        return;
+
+    // the channels that use it, then their values outside the lock (the
+    // caller reads its own palettes)
+    QSet<QPair<quint32, quint32>> keys;
+    {
+        QMutexLocker locker(&m_stepListMutex);
+        for (const ChaserStep &step : std::as_const(m_steps))
+            for (auto it = step.palettes.cbegin(); it != step.palettes.cend(); ++it)
+                if (it.value() == paletteId)
+                    keys.insert(it.key());
+    }
+    if (keys.isEmpty())
+        return;
+
+    QHash<QPair<quint32, quint32>, int> newValues;
+    for (const QPair<quint32, quint32> &key : std::as_const(keys))
+        newValues.insert(key, valueOf(key.first, key.second));
+
+    // what changed in each step
+    QList<QList<SceneValue>> changedValues;
+    bool modified = false;
+    {
+        QMutexLocker locker(&m_stepListMutex);
+        for (ChaserStep &step : m_steps)
+        {
+            QList<SceneValue> changedHere;
+            for (auto it = step.palettes.begin(); it != step.palettes.end();)
+            {
+                if (it.value() != paletteId)
+                {
+                    ++it;
+                    continue;
+                }
+                const int value = newValues.value(it.key(), -1);
+                // the palette doesn't have this channel any more: a plain value
+                if (value < 0)
+                {
+                    it = step.palettes.erase(it);
+                    modified = true;
+                    continue;
+                }
+                const SceneValue scv(it.key().first, it.key().second, uchar(qBound(0, value, 255)));
+                const int index = int(step.values.indexOf(scv));
+                if (index >= 0 && step.values.at(index).value != scv.value)
+                {
+                    step.values[index].value = scv.value;
+                    changedHere.append(scv);
+                    modified = true;
+                }
+                ++it;
+            }
+            changedValues.append(changedHere);
+        }
+    }
+    if (modified == false)
+        return;
+    emit changed(id());
+
+    // the step on stage plays them at once, without a fade (as a cuelist).
+    // Not blind: the running scene puts them in its faders, in place of what
+    // they had (no HTP check: a palette can also lower a value)
+    if (isRunning() == false)
+        return;
+    const int current = currentStepIndex();
+    Scene *bound = qobject_cast<Scene *>(doc()->function(boundSceneID()));
+    if (bound == nullptr || current < 0 || current >= changedValues.count())
+        return;
+    for (const SceneValue &scv : changedValues.at(current))
+        bound->setValue(scv, false, false);
+}
+
+void Sequence::forgetPalette(int paletteId)
+{
+    bool modified = false;
+    {
+        QMutexLocker locker(&m_stepListMutex);
+        for (ChaserStep &step : m_steps)
+        {
+            for (auto it = step.palettes.begin(); it != step.palettes.end();)
+            {
+                if (it.value() == paletteId)
+                {
+                    it = step.palettes.erase(it);
+                    modified = true;
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+    }
+    if (modified)
+        emit changed(id());
+}
+
+/*****************************************************************************
  * Fixtures
  *****************************************************************************/
 
 void Sequence::slotFixtureRemoved(quint32 fxID)
 {
+    // DMX Total Control: its palettes go with its values
+    bool palettesRemoved = false;
     for (ChaserStep& step : m_steps)
     {
         QMutableListIterator<SceneValue> it(step.values);
@@ -161,7 +268,22 @@ void Sequence::slotFixtureRemoved(quint32 fxID)
             if (value.fxi == fxID)
                 it.remove();
         }
+        for (auto ref = step.palettes.begin(); ref != step.palettes.end();)
+        {
+            if (ref.key().first == fxID)
+            {
+                ref = step.palettes.erase(ref);
+                palettesRemoved = true;
+            }
+            else
+            {
+                ++ref;
+            }
+        }
     }
+    // (the palettes it uses may have changed)
+    if (palettesRemoved)
+        emit changed(id());
 }
 
 /*****************************************************************************

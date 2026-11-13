@@ -68,10 +68,23 @@ Veja [a linha de comando](programar.md#linha-de-comando).
 | Tecla ou gesto | O que faz |
 |---|---|
 | **Espaço** | Reproduzir ou parar a partir do cursor |
-| **Del** | Exclui o bloco selecionado |
+| **Del** / **Backspace** | Exclui os blocos selecionados |
+| **Ctrl+A** | Seleciona todos os blocos das faixas visíveis |
+| **Ctrl+D** | Duplica os blocos selecionados logo depois deles |
+| **Ctrl+C** | Copia os blocos selecionados |
+| **Ctrl+X** | Recorta os blocos selecionados (os de faixas bloqueadas só são copiados) |
+| **Ctrl+V** | Cola os blocos copiados no cursor, a partir da faixa selecionada |
+| **Ctrl+Z** | Desfaz a última alteração (não enquanto você digita em um campo) |
+| **Ctrl+Y** / **Ctrl+Shift+Z** | Refaz o que foi desfeito |
+| **Ctrl+clique** em um bloco | Adiciona-o à seleção ou o tira |
+| **Shift+clique** em um bloco | Seleciona do último bloco escolhido até este |
+| Arrastar em uma área vazia das faixas | Desenha um retângulo que seleciona os blocos que ele toca (com **Ctrl** ou **Shift**, eles se somam) |
+| Botão direito em uma área vazia de uma faixa | “Colar aqui” e “Selecionar tudo” |
 | **Ctrl+roda** | Zoom na linha do tempo |
 | **Shift+roda** | Deslocar-se no tempo |
 | Clique duplo na régua | Reproduzir a partir dali |
+
+As teclas dos blocos não agem enquanto você digita em um campo. Consulte [Selecionar vários blocos](escenas.md#selecionar-vários-blocos) e [Copiar e colar](escenas.md#copiar-e-colar).
 
 ## Faders e controles deslizantes
 
@@ -92,6 +105,8 @@ Depois de clicar em um fader ou um controle deslizante:
 | Clique duplo em uma cue ou um passo | Carrega-o no programador |
 | Clique duplo no número de uma cue | Altera o número dela |
 | Roda do mouse sobre um tempo clicado | ±0,1 s (com **Shift**, ±1 s) |
+| **Ctrl+Z** | Desfaz a última edição da cuelist aberta (em um campo com texto digitado, primeiro esse texto) |
+| **Ctrl+Y** / **Ctrl+Shift+Z** | Refaz o que foi desfeito |
 | **Esc** em um campo | Deixa o valor como estava |
 
 ## Mouse e modificadores
@@ -101,7 +116,7 @@ Depois de clicar em um fader ou um controle deslizante:
 | **Alt+clique** | Quase qualquer controle | Leva-o para a página do SHOW aberta |
 | **Shift+clique** | Modo Mapear | Usa o controle em vez de mapeá-lo |
 | **Ctrl+clique** | Botões Flash do mixer | Deixam o flash ligado até o próximo clique |
-| **Ctrl+clique** / **Shift+clique** | Fixtures, grupos e plano 2D (Programar e Patch), lista de cenas | Adiciona ou tira da seleção |
+| **Ctrl+clique** / **Shift+clique** | Fixtures, grupos e plano 2D (Programar e Patch), lista de cenas, blocos de uma super cena | Adiciona ou tira da seleção |
 | Roda do mouse | Plano 2D | Zoom |
 | Arrastar com o botão direito ou o do meio | Plano 2D | Move a vista (clique duplo: centraliza-a) |
 | Clique com o botão direito | Botão 15° do plano 2D | Gira para o outro lado |

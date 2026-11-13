@@ -22,14 +22,16 @@ No cabeçalho você escolhe a vista e tem as ferramentas para adicionar:
    - **Universo** e **Endereço**: o endereço é definido sozinho no primeiro livre do universo.
    - **Intervalo**: canais livres entre um fixture e o seguinte.
    - Com mais de um, **“Criar um grupo com eles”** e o nome do **Grupo**.
-4. Embaixo aparece quais endereços eles vão usar (“Usa os endereços 1 a 20”). Se não couberem no que resta do universo, eles passam para o seguinte.
+4. Embaixo aparece quais endereços eles vão usar (“Usa os endereços 1 a 20”). Se não couberem no que resta do universo, eles passam para o seguinte. Se o modo tiver mais *DMX breaks* (um fixture GDTF com duas entradas DMX), um aviso pede para patchear também o modo “(DMX break 2)” dele, no seu próprio endereço.
 5. Pressione **“Patchear fixture”** ou **“Patchear N fixtures”**.
 
 A janela fica aberta para continuar adicionando, com o endereço já no próximo livre. Se algo não puder ser patcheado (os endereços estão ocupados, por exemplo), o motivo aparece em vermelho embaixo. Pressione **“Fechar”** ao terminar.
 
 Para dimmers avulsos, escolha **Generic › Generic Dimmer**: em vez de modo, você informa quantos **Canais**.
 
-> **Dica:** se não encontrar seu fixture, baixe a [Open Fixture Library](fixtures.md#open-fixture-library), importe o GDTF dele ou crie-o na página [Fixtures](fixtures.md).
+**“Buscar no GDTF-Share…”**, embaixo, abre o [GDTF-Share](fixtures.md#gdtf-share): baixe o fixture e pressione **“Patchear”** para deixá-lo escolhido aqui.
+
+> **Dica:** se não encontrar seu fixture, busque-o no GDTF-Share, baixe a [Open Fixture Library](fixtures.md#open-fixture-library), importe o GDTF dele ou crie-o na página [Fixtures](fixtures.md).
 
 ## A lista
 

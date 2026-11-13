@@ -28,6 +28,11 @@ class Midi_Test final : public QObject
 
 private slots:
     void midiToInput();
+    // DMX Total Control: the MIDI timecode
+    void mtcDecoder();
+    void mtcBackwards();
+    void mtcDropFrame();
+    void mtcFullFrame();
 };
 
 #endif

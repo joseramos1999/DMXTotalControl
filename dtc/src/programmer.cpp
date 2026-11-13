@@ -1174,7 +1174,7 @@ QList<SceneValue> Programmer::sceneValues() const
     return list;
 }
 
-void Programmer::loadValues(const QList<SceneValue> &values)
+void Programmer::loadValues(const QList<SceneValue> &values, const QHash<QPair<quint32, quint32>, int> &refs)
 {
     QMap<QPair<quint32, quint32>, uchar> map;
     QList<quint32> fixtures;
@@ -1184,7 +1184,8 @@ void Programmer::loadValues(const QList<SceneValue> &values)
         if (fixtures.contains(scv.fxi) == false)
             fixtures.append(scv.fxi);
     }
-    loadState(map, fixtures, QList<FXScene::Layer>(), QHash<QPair<quint32, quint32>, int>());
+    // (the values that come from palettes still do)
+    loadState(map, fixtures, QList<FXScene::Layer>(), refs);
     // a step: a cue loaded before is not what the programmer holds now
     emit lookLoaded();
 }
@@ -1331,9 +1332,11 @@ void Programmer::releaseForCue(Cuelist *cuelist)
             clear();
         return;
     }
-    // the values on the channels the cue changed, and the FX of the programmer there
+    // the values on the channels the cue changed, and the FX of the programmer
+    // there (also the dimmer FX on the fixtures without a dimmer it dims)
     releaseKeys(keys);
     releaseFxOn(keys);
+    releaseVirtualDimmerFx(cuelist->playingFx(), &keys);
 }
 
 bool Programmer::releaseKeys(const QSet<QPair<quint32, quint32>> &keys)
@@ -1390,6 +1393,39 @@ bool Programmer::releaseFxOn(const QSet<QPair<quint32, quint32>> &keys)
     return fxChanged;
 }
 
+bool Programmer::releaseVirtualDimmerFx(const QList<FXScene::Layer> &layers,
+                                        const QSet<QPair<quint32, quint32>> *changed)
+{
+    // DMX Total Control: a dimmer FX on fixtures without a dimmer moves their
+    // emitters, which releaseFxOn() doesn't see as a dimmer. It takes the
+    // dimmer FX of the programmer off them (not their colour values: a
+    // dimmer FX only takes the dimmer)
+    QList<quint32> virtualDimmed;
+    for (const FXScene::Layer &layer : layers)
+    {
+        if (layer.param != QLatin1String("dimmer"))
+            continue;
+        for (quint32 fid : layer.fixtures)
+        {
+            const QList<QPair<quint32, quint32>> emitters = FXScene::virtualDimmerChannels(m_doc->fixture(fid));
+            if (emitters.isEmpty() || virtualDimmed.contains(fid))
+                continue;
+            if (changed != nullptr && changed->contains(qMakePair(fid, emitters.first().first)) == false)
+                continue;
+            virtualDimmed.append(fid);
+        }
+    }
+    if (virtualDimmed.isEmpty())
+        return false;
+
+    const QList<FXScene::Layer> before = m_fxLayers;
+    removeFromFx(QStringLiteral("dimmer"), virtualDimmed);
+    if (m_fxLayers == before)
+        return false;
+    syncFx();
+    return true;
+}
+
 void Programmer::releaseUsedBy(quint32 functionId)
 {
     Function *f = m_doc->function(functionId);
@@ -1408,6 +1444,7 @@ void Programmer::releaseUsedBy(quint32 functionId)
         const QSet<QPair<quint32, quint32>> keys = cuelist->takeChangedKeys();
         releaseKeys(keys);
         releaseFxOn(keys);
+        releaseVirtualDimmerFx(cuelist->playingFx(), &keys);
         return;
     }
 
@@ -1442,6 +1479,15 @@ void Programmer::releaseUsedBy(quint32 functionId)
         // and the FX of the programmer there
         releaseKeys(used);
         releaseFxOn(used);
+        // DMX Total Control: and its dimmer FX on fixtures without a dimmer
+        // (a layer without fixtures plays on those of the scene)
+        QList<FXScene::Layer> layers = fx->layers();
+        for (FXScene::Layer &layer : layers)
+        {
+            if (layer.fixtures.isEmpty())
+                layer.fixtures = fx->fixtures();
+        }
+        releaseVirtualDimmerFx(layers);
         return;
     }
 
@@ -1879,12 +1925,15 @@ QVariantList Programmer::fxParams() const
     QVariantList list;
     QStringList keys;
     bool pan = false, tilt = false;
+    // DMX Total Control: a fixture without a dimmer that a dimmer FX dims
+    bool virtualDimmer = false;
 
     for (quint32 fxid : m_selection)
     {
         Fixture *fxi = m_doc->fixture(fxid);
         if (fxi == nullptr)
             continue;
+        virtualDimmer = virtualDimmer || FXScene::virtualDimmerChannels(fxi).isEmpty() == false;
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
             const QLCChannel *ch = fxi->channel(c);
@@ -1905,6 +1954,19 @@ QVariantList Programmer::fxParams() const
         }
     }
 
+    // DMX Total Control: the dimmer of the ones without one, first after pan/tilt
+    if (virtualDimmer && keys.contains(QStringLiteral("dimmer")) == false)
+    {
+        QVariantMap info;
+        info.insert("key", "dimmer");
+        info.insert("name", QString());
+        info.insert("group", QLCChannel::groupToString(QLCChannel::Intensity));
+        info.insert("colour", QString());
+        info.insert("active", fxLayerFor("dimmer", false) >= 0);
+        info.insert("virtual", true);
+        list.prepend(info);
+    }
+
     if (pan && tilt)
     {
         QVariantMap info;
@@ -1923,11 +1985,8 @@ QList<quint32> Programmer::selectionWith(const QString &param) const
     QList<quint32> list;
     for (quint32 fid : m_selection)
     {
-        Fixture *fxi = m_doc->fixture(fid);
-        bool has = param == QLatin1String("pantilt")
-                ? FXScene::channelFor(fxi, "pan") != QLCChannel::invalid() && FXScene::channelFor(fxi, "tilt") != QLCChannel::invalid()
-                : FXScene::channelFor(fxi, param) != QLCChannel::invalid();
-        if (has)
+        // DMX Total Control: a dimmer FX also dims the colour of the fixtures without a dimmer
+        if (FXScene::hasParam(m_doc->fixture(fid), param))
             list.append(fid);
     }
     return list;
@@ -1979,12 +2038,26 @@ FXScene *Programmer::fxScene() const
 QVariantList Programmer::fxLayers() const
 {
     QVariantList list;
+    // (the values, copied once and only for an auto virtual dimmer: this is
+    // read at every change of a value)
+    QHash<QPair<quint32, quint32>, uchar> values;
+    bool valuesRead = false;
     for (int i = 0; i < m_fxLayers.count(); i++)
     {
-        QVariantMap map = FxTools::layerToMap(m_fxLayers.at(i));
+        const FXScene::Layer &layer = m_fxLayers.at(i);
+        QVariantMap map = FxTools::layerToMap(layer);
         map.insert("index", i);
-        map.insert("count", m_fxLayers.at(i).fixtures.count());
-        map.insert("ownCount", m_fxLayers.at(i).tidyOwn().count());
+        map.insert("count", layer.fixtures.count());
+        // DMX Total Control: the shape their own way, apart from the shift and the delay
+        map.insert("ownCount", FxTools::ownShapeCount(layer));
+        map.insert("offsetCount", FxTools::offsetCount(layer));
+        // DMX Total Control: the fixtures without a dimmer it dims
+        if (valuesRead == false && autoVirtualDimmer(layer))
+        {
+            values = valueHash();
+            valuesRead = true;
+        }
+        map.insert(FxTools::virtualDimmer(m_doc, layer, layer.fixtures, values));
         list.append(map);
     }
     return list;
@@ -2001,8 +2074,9 @@ QVariantMap Programmer::fxOf(const QString &param) const
     FXScene::Layer layer = index >= 0 ? m_fxLayers.at(index) : FxTools::defaultLayer(param);
     QVariantMap map = FxTools::layerToMap(layer);
     const QList<quint32> with = selectionWith(param);
-    int ownSelected = 0;
+    int ownSelected = 0, offsetSelected = 0;
     bool partial = false;
+    QVariantList rows;
     if (index >= 0)
     {
         // what the first selected fixture of the FX does (its own way included)
@@ -2014,8 +2088,11 @@ QVariantMap Programmer::fxOf(const QString &param) const
                 continue;
             if (first == Fixture::invalidId())
                 first = fid;
-            if (own.contains(fid))
+            // DMX Total Control: a shift or a delay alone is not "their own way"
+            if (own.value(fid).hasShape())
                 ownSelected++;
+            if (own.value(fid).hasOffset())
+                offsetSelected++;
         }
         const FXScene::Shape shape = layer.shapeOf(first);
         map.insert("mode", shape.mode);
@@ -2027,17 +2104,26 @@ QVariantMap Programmer::fxOf(const QString &param) const
         map.insert("panInvert", shape.panInvert);
         map.insert("tiltInvert", shape.tiltInvert);
         map.insert("reverse", shape.reverse);
-        map.insert("ownCount", own.count());
+        map.insert("ownCount", FxTools::ownShapeCount(layer));
+        map.insert("offsetCount", FxTools::offsetCount(layer));
+        // DMX Total Control: its fixtures, with their shift and delay
+        rows = FxTools::fixtureRows(m_doc, layer, layer.fixtures, with);
         // the ones on one side go the other way round: they follow the wave of their twins
         map.insert("mirror", FXScene::mirrorTwins(layer, FXScene::orderedFixtures(layer, layer.fixtures)).contains(true));
         // the FX has fixtures that are not selected: the shape changes only on the selected ones
         for (quint32 fid : std::as_const(layer.fixtures))
             partial = partial || with.contains(fid) == false;
     }
+    // DMX Total Control: the fixtures without a dimmer it dims (or would dim)
+    // and the level it dims them from
+    map.insert(FxTools::virtualDimmer(m_doc, layer, index >= 0 ? layer.fixtures : with,
+                                      autoVirtualDimmer(layer) ? valueHash() : QHash<QPair<quint32, quint32>, uchar>()));
     map.insert("active", index >= 0);
     map.insert("exact", fxLayerFor(param, true) >= 0);
     map.insert("partial", partial);
     map.insert("ownSelected", ownSelected);
+    map.insert("offsetSelected", offsetSelected);
+    map.insert("rows", rows);
     map.insert("count", with.count());
     map.insert("sets", fxSets(param));
     return map;
@@ -2094,6 +2180,9 @@ void Programmer::setFx(const QString &param, const QVariantMap &props)
                 was.panInvert = s.panInvert;
                 was.tiltInvert = s.tiltInvert;
                 was.reverse = s.reverse;
+                // (DMX Total Control: its shift and its delay too)
+                was.shift = s.shift;
+                was.delay = s.delay;
                 m_fxLayers[index].own.insert(fid, was);
                 other.fixtures.removeAll(fid);
                 other.own.remove(fid);
@@ -2203,6 +2292,51 @@ void Programmer::resetFxOwn(const QString &param)
         syncFx();
 }
 
+void Programmer::setFxOffset(const QString &param, quint32 fixtureId, const QString &key, int value)
+{
+    // the FX the selection is on, and a fixture of it
+    int index = fxLayerFor(param, false);
+    if (index < 0 || FxTools::offsetKeys().contains(key) == false ||
+        m_fxLayers.at(index).fixtures.contains(fixtureId) == false)
+        return;
+    FXScene::Layer &layer = m_fxLayers[index];
+    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
+    FxTools::setOffset(layer, { fixtureId }, key, value);
+    if (layer.own != before)
+        syncFx();
+}
+
+void Programmer::fanFxOffset(const QString &param, const QString &key, int last)
+{
+    int index = fxLayerFor(param, false);
+    if (index < 0 || FxTools::offsetKeys().contains(key) == false)
+        return;
+    // its selected fixtures, in the order of the effect
+    FXScene::Layer &layer = m_fxLayers[index];
+    const QList<quint32> with = selectionWith(param);
+    const QList<quint32> ordered = FXScene::orderedFixtures(layer, layer.fixtures);
+    QList<quint32> order;
+    for (quint32 fid : ordered)
+        if (with.contains(fid))
+            order.append(fid);
+    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
+    FxTools::fanOffset(layer, order, key, last);
+    if (layer.own != before)
+        syncFx();
+}
+
+void Programmer::clearFxOffsets(const QString &param)
+{
+    int index = fxLayerFor(param, false);
+    if (index < 0)
+        return;
+    FXScene::Layer &layer = m_fxLayers[index];
+    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
+    FxTools::clearOwn(layer, FxTools::offsetKeys(), selectionWith(param));
+    if (layer.own != before)
+        syncFx();
+}
+
 void Programmer::stopAllFx()
 {
     if (m_fxLayers.isEmpty())
@@ -2234,53 +2368,83 @@ QVariantList Programmer::fxPreview(const QString &param, qreal cyclePos) const
     return m_fx->previewLayer(index, cyclePos);
 }
 
-int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases)
+int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases,
+                             const QList<QList<FxTools::FixtureLook>> &looks)
 {
     if (m_selection.isEmpty())
         return 0;
 
     int applied = 0;
     QString first;
-    for (FXScene::Layer layer : layers)
+    // DMX Total Control: whether it puts on a dimmer layer (a dimmer base on
+    // the fixtures without a dimmer is the level of its virtual dimmer)
+    bool dimmerApplied = false;
+    // DMX Total Control: a macro saved fixture by fixture: the parameters
+    // its looks give, and the bases each fixture takes from its place
+    QSet<QString> lookParams;
+    QList<QPair<quint32, QMap<QString, int>>> lookBases;
+    for (int i = 0; i < layers.count(); i++)
     {
-        // the selected fixtures that have the parameter
+        FXScene::Layer layer = layers.at(i);
+        // the selected fixtures that have the parameter (DMX Total Control:
+        // a dimmer FX also on the ones without a dimmer)
         QList<quint32> fixtures;
         for (quint32 fid : m_selection)
         {
-            Fixture *fxi = m_doc->fixture(fid);
-            bool has = layer.isPanTilt()
-                    ? FXScene::channelFor(fxi, "pan") != QLCChannel::invalid() && FXScene::channelFor(fxi, "tilt") != QLCChannel::invalid()
-                    : FXScene::channelFor(fxi, layer.param) != QLCChannel::invalid();
-            if (has)
+            if (FXScene::hasParam(m_doc->fixture(fid), layer.param))
                 fixtures.append(fid);
         }
         if (fixtures.isEmpty())
             continue;
+        const QList<FxTools::FixtureLook> placed = looks.value(i);
+        if (placed.isEmpty() == false)
+        {
+            const QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
+            lookParams.unite(QSet<QString>(params.cbegin(), params.cend()));
+        }
         removeFromFx(layer.param, fixtures);
         layer.fixtures = fixtures;
-        // (a macro is for any fixtures: what some did their own way stays out)
+        // (a macro is for any fixtures: what some did their own way stays out.
+        // DMX Total Control: one saved fixture by fixture gives each one what
+        // the one in its place did)
         layer.own.clear();
+        for (int j = 0; j < fixtures.count() && placed.isEmpty() == false; j++)
+        {
+            const FxTools::FixtureLook look = FxTools::lookAt(placed, j, int(fixtures.count()));
+            layer.own.insert(fixtures.at(j), look.own);
+            lookBases.append(qMakePair(fixtures.at(j), look.bases));
+        }
+        layer.own = layer.tidyOwn();
         m_fxLayers.append(layer);
+        dimmerApplied = dimmerApplied || layer.param == QLatin1String("dimmer");
         if (first.isEmpty())
             first = layer.param;
         applied++;
     }
     if (applied == 0)
         return 0;
+    // (the last dimmer layer: the next layers may have taken FX out before it)
+    int dimmerLayer = -1;
+    for (int i = int(m_fxLayers.count()) - 1; dimmerApplied && dimmerLayer < 0 && i >= 0; i--)
+        if (m_fxLayers.at(i).param == QLatin1String("dimmer"))
+            dimmerLayer = i;
 
-    // its base values
+    // its base values (DMX Total Control: but the ones its looks give: they
+    // would reach the fixtures out of their FX)
     for (auto it = bases.cbegin(); it != bases.cend(); ++it)
     {
+        if (lookParams.contains(it.key()))
+            continue;
+        bool virtualSet = false;
         for (quint32 fid : m_selection)
-        {
-            quint32 fine = QLCChannel::invalid();
-            quint32 c = FXScene::channelFor(m_doc->fixture(fid), it.key(), &fine);
-            if (c == QLCChannel::invalid())
-                continue;
-            setValue(fid, c, uchar(qBound(0, it.value(), 255)));
-            if (fine != QLCChannel::invalid())
-                setValue(fid, fine, 0);
-        }
+            setMacroBase(fid, it.key(), it.value(), dimmerLayer, virtualSet);
+    }
+    // DMX Total Control: the ones of each fixture, from its place
+    bool virtualSet = false;
+    for (const QPair<quint32, QMap<QString, int>> &placed : std::as_const(lookBases))
+    {
+        for (auto it = placed.second.cbegin(); it != placed.second.cend(); ++it)
+            setMacroBase(placed.first, it.key(), it.value(), dimmerLayer, virtualSet);
     }
 
     setLastParam(first);
@@ -2289,46 +2453,66 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
     return applied;
 }
 
-QMap<QString, int> Programmer::fxBaseValues(const QList<FXScene::Layer> &layers) const
+void Programmer::setMacroBase(quint32 fixtureId, const QString &param, int value, int dimmerLayer, bool &virtualSet)
 {
-    QMap<QString, int> bases;
-    if (m_selection.isEmpty())
-        return bases;
-    Fixture *fxi = m_doc->fixture(m_selection.last());
-    if (fxi == nullptr)
-        return bases;
-    for (const FXScene::Layer &layer : layers)
+    const Fixture *fxi = m_doc->fixture(fixtureId);
+    quint32 fine = QLCChannel::invalid();
+    const quint32 c = FXScene::channelFor(fxi, param, &fine);
+    if (c == QLCChannel::invalid())
     {
-        QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
+        // DMX Total Control: without a dimmer, the level the FX dims
+        // the colour from (once, for the layer)
+        if (param == QLatin1String("dimmer") && dimmerLayer >= 0 && virtualSet == false &&
+            FXScene::virtualDimmerChannels(fxi).isEmpty() == false)
+        {
+            m_fxLayers[dimmerLayer].virtualBase = qBound(0, value, 255);
+            virtualSet = true;
+        }
+        return;
+    }
+    setValue(fixtureId, c, uchar(qBound(0, value, 255)));
+    if (fine != QLCChannel::invalid())
+        setValue(fixtureId, fine, 0);
+}
+
+QList<FxTools::FixtureLook> Programmer::fxFixtureLooks(const FXScene::Layer &layer) const
+{
+    QList<FxTools::FixtureLook> looks;
+    const QMap<quint32, FXScene::Own> own = layer.tidyOwn();
+    const QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
+    for (quint32 fid : layer.fixtures)
+    {
+        FxTools::FixtureLook look;
+        const Fixture *fxi = m_doc->fixture(fid);
         for (const QString &param : params)
         {
-            quint32 c = FXScene::channelFor(fxi, param);
-            auto it = c != QLCChannel::invalid() ? m_values.constFind(qMakePair(fxi->id(), c)) : m_values.constEnd();
+            const quint32 c = FXScene::channelFor(fxi, param);
+            auto it = c != QLCChannel::invalid() ? m_values.constFind(qMakePair(fid, c)) : m_values.constEnd();
             if (it != m_values.constEnd())
-                bases.insert(param, it.value());
+                look.bases.insert(param, it.value());
         }
+        look.own = own.value(fid);
+        looks.append(look);
     }
-    return bases;
+    return looks;
 }
 
 void Programmer::syncFx()
 {
-    // the channels the FX move: the source leaves them to the FX
+    // the channels the FX move: the source leaves them to the FX. DMX Total
+    // Control: a dimmer FX on a fixture without a dimmer, its emitters (their
+    // values are the bases the FX dims)
     QSet<QPair<quint32, quint32>> channels;
     for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
     {
-        QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
         for (quint32 fid : layer.fixtures)
         {
-            Fixture *fxi = m_doc->fixture(fid);
-            for (const QString &param : params)
+            const QList<QPair<quint32, quint32>> played = FXScene::layerChannels(m_doc->fixture(fid), layer.param);
+            for (const QPair<quint32, quint32> &channel : played)
             {
-                quint32 fine = QLCChannel::invalid();
-                quint32 c = FXScene::channelFor(fxi, param, &fine);
-                if (c != QLCChannel::invalid())
-                    channels.insert(qMakePair(fid, c));
-                if (fine != QLCChannel::invalid())
-                    channels.insert(qMakePair(fid, fine));
+                channels.insert(qMakePair(fid, channel.first));
+                if (channel.second != QLCChannel::invalid())
+                    channels.insert(qMakePair(fid, channel.second));
             }
         }
     }
@@ -2375,6 +2559,16 @@ void Programmer::syncFx()
     if (play && (m_fx->isRunning() == false || m_fx->stopped()))
         m_fx->start(m_doc->masterTimer(), FunctionParent::master());
     emit fxChanged();
+}
+
+QHash<QPair<quint32, quint32>, uchar> Programmer::valueHash() const
+{
+    return QHash<QPair<quint32, quint32>, uchar>(m_values.cbegin(), m_values.cend());
+}
+
+bool Programmer::autoVirtualDimmer(const FXScene::Layer &layer)
+{
+    return layer.param == QLatin1String("dimmer") && layer.virtualBase < 0;
 }
 
 void Programmer::restartFx()

@@ -359,6 +359,22 @@ Item {
                                 font.pixelSize: Theme.fontSmall
                             }
                         }
+                        // a known controller back in its mode, with all its
+                        // LEDs again (switched off and on, its mode changed)
+                        AppButton {
+                            visible: deviceRow.kind === "midi" && deviceRow.controller.length > 0 &&
+                                     deviceRow.inputOn && deviceRow.feedbackOn
+                            text: qsTr("Get ready")
+                            iconGlyph: Theme.iconRefresh
+                            implicitHeight: 30
+                            ToolTip.text: qsTr("Puts the controller in the mode its mappings use (Session mode on an APC mini mk2, Ableton mode on an APC40 mkII) and sends all its LEDs again. Use it after switching the controller off and on, or after changing its mode.")
+                            ToolTip.visible: hovered
+                            ToolTip.delay: 500
+                            onClicked: {
+                                Core.mapping.refreshController(deviceRow.devKey)
+                                page.message(qsTr("%1 is ready").arg(deviceRow.devName), false)
+                            }
+                        }
                         // a whole controller in one go
                         AppButton {
                             id: mapAllButton

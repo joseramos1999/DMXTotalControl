@@ -119,6 +119,7 @@ Ein Fader der SHOW kann **mehrere Dinge gleichzeitig** steuern. In seinen Eigens
 | **Tempo einer Szene** | Das Live-Tempo dieser Szene (×0,1 bis ×10, wie das Bewegungstempo). |
 | **Szene abspielen (ihr Tempo)** | Wie „Szene abspielen (ihre Intensität)“, aber der Fader ist ihr Tempo: Ganz unten ist die Szene gestoppt; beim Hochziehen startet sie in ihrer Gruppe, und der Weg ist ihr Tempo, ×0,1 knapp über unten, ×1 in der Mitte und ×10 oben. Der Text zeigt „Gestoppt“, solange sie nicht läuft, und der Fader folgt der Szene, wenn sie anderswo gestoppt oder gestartet wird. Das Tempo gilt nur für diesen Durchlauf: Gestoppt kehrt die Szene zu ihrem vorherigen Tempo zurück (das Tempo in Live ändert sich nicht). Ein Doppelklick setzt sie auf ×1 (und startet sie, wenn sie gestoppt war). Wie der Intensitäts-Fader fügt er seine Szene ihrer Gruppe hinzu und hält sie: Mehrere gleichzeitig laufen zusammen (auch mehrere Szenen derselben exklusiven Gruppe auf einem Fader), und nur ganz Herunterziehen stoppt sie. |
 | **BPM** | Das Tempo der Show, von 20 bis 300. |
+| **Cue-Tempo (alle Cuelists)** | Das [Tempo aller Cuelists](playbacks.md#cue-tempo): ihre Überblendungen (auch die laufenden), Verzögerungen, Folgen und Warten. Von ×0,1 bis ×10, wie das Bewegungstempo. Es wird nicht mit der Show gespeichert. |
 
 Der Unterschied zwischen den beiden Szenen-Elementen: **„Szene abspielen (ihre Intensität)“** ist die Szene selbst und startet und stoppt sie; **„Dimmer einer Szene (ohne sie abzuspielen)“** dimmt sie nur, auch wenn sie von woanders gestartet wird. Beide lassen sich zusammen verwenden: Mit dem Dimmer auf 50 % und dem startenden Fader auf 80 % läuft die Szene mit 40 %.
 
@@ -126,9 +127,9 @@ Drücken Sie **„Weiteres Element hinzufügen“**, um ein weiteres hinzuzufüg
 
 Mit **Bereich**, **Von** … **bis** … (von 0 bis 100 %) deckt der Weg des Faders nur diesen Teil dessen ab, was er steuert, bei all seinen Elementen. Zum Beispiel das Tempo einer Szene von 20 bis 80 % oder ein Dimmer von 0 bis 60 %, damit er nicht darüber geht. Ist „Von“ größer als „bis“, oder mit **„Invertieren“**, arbeitet der Fader umgekehrt. Ein Fader, der eine Szene startet, stoppt sie an dem Ende, an dem der Wert am niedrigsten ist (ganz unten; ganz oben, wenn er invertiert ist), auch wenn „Von“ nicht 0 ist.
 
-Der Text des Faders zeigt den tatsächlichen Wert (die %, die BPM oder, wenn er nur Tempi steuert, den Faktor ×), nicht die Stellung des Faders. Bringt ein anderes Bedienelement den Wert außerhalb des Bereichs, bleibt der Fader am Ende stehen. Ein Fader, der nur Tempi steuert (der Bewegung oder von Szenen, eines oder mehrere), kehrt mit einem Doppelklick auf ×1 zurück.
+Der Text des Faders zeigt den tatsächlichen Wert (die %, die BPM oder, wenn er nur Tempi steuert, den Faktor ×), nicht die Stellung des Faders. Bringt ein anderes Bedienelement den Wert außerhalb des Bereichs, bleibt der Fader am Ende stehen. Ein Fader, der nur Tempi steuert (der Bewegung, von Szenen oder der Cues, eines oder mehrere), kehrt mit einem Doppelklick auf ×1 zurück.
 
-Unter jedem Fader gibt es eine Taste **„Flash“**: Sie bringt ihn ganz an das obere Ende seines Wegs, solange Sie sie drücken, und stellt beim Loslassen genau das wieder her, was vorher war. Sie wird mit dem Schalter „Flash-Taste: voll, solange gedrückt“ in seinen Eigenschaften ein- oder ausgeblendet.
+Unter jedem Fader gibt es eine Taste **„Flash“**: Sie bringt ihn ganz an das obere Ende seines Wegs, solange Sie sie drücken, und stellt beim Loslassen genau das wieder her, was vorher war. Sie wird mit dem Schalter „Flash-Taste: voll, solange gedrückt“ in seinen Eigenschaften ein- oder ausgeblendet. Auf dem A/B-Fader eines Playbacks ist der Flash der des Playbacks: Er bringt es auf voll, solange Sie drücken, mit seinem Anstieg und Abfall, ohne die Überblendung zu bewegen oder zu einem anderen Cue zu wechseln (siehe [Der Flash](playbacks.md#der-flash)).
 
 > **Tipp:** Ein Fader mit „Master einer Gruppe“ Ihrer Washes und „Dimmer von Fixtures“ der PARs auf der Publikumsseite gibt Ihnen einen einzigen Fader, um das ganze Frontlicht herunterzuziehen.
 
@@ -167,11 +168,11 @@ Legen Sie im Bearbeitungsmodus eine Szene auf einem Streifen ab, um sie auf dies
 ## Hilfsmittel
 
 - **Uhr**: Uhrzeit und Datum des Computers.
-- **Timer**: **„Starten“** / **„Pause“** und **„Zurücksetzen“**. Als Countdown wird er in der letzten Minute orange und bei null rot. Er zählt weiter, auch wenn Sie die Seite wechseln.
+- **Timer**: **„Starten“** / **„Pause“** und **„Zurücksetzen“**. Als Countdown wird er in der letzten Minute orange und bei null rot. Er zählt weiter, auch wenn Sie die Seite wechseln. Die [Fernsteuerung](remoto.md) zeigt denselben Timer. Wenn Sie eine andere Show öffnen, steht er wieder auf null.
 - **Rhythmus**: **GO**, **Stop** und **BeatGO**.
 - **Notizen**: der Text, den Sie in ihre Eigenschaften schreiben (der Ablaufplan, Hinweise für den Operator…).
 - **Läuft gerade**: was läuft, mit der Stopptaste neben jeder Szene.
-- **DMX-Pegel**: ein Raster mit den 512 Kanälen des gewählten Universums.
+- **DMX-Pegel**: ein Raster mit den 512 Kanälen des gewählten Universums. Die [Fernsteuerung](remoto.md) zeigt es auch.
 - **Bild**: ganz oder den Bereich füllend.
 
 ## Seiten

@@ -1701,6 +1701,22 @@ void Function::updateFadersPriority()
     }
 }
 
+QList<QSharedPointer<GenericFader>> Function::faders() const
+{
+    return m_fadersMap.values();
+}
+
+void Function::raiseFaders()
+{
+    InputOutputMap *io = doc()->inputOutputMap();
+    for (auto it = m_fadersMap.cbegin(); it != m_fadersMap.cend(); ++it)
+    {
+        Universe *universe = io->universe(it.key());
+        if (universe != nullptr && it.value().isNull() == false)
+            universe->raiseFader(it.value());
+    }
+}
+
 /*****************************************************************************
  * Playback settings and live controls (DMX Total Control)
  *****************************************************************************/

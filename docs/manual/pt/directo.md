@@ -133,7 +133,7 @@ O mesmo menu do cartão tem **“Abrir em Cenas”**, **“Editar no programador
 Cada cena tem uma prioridade de 0 a 10; as novas recebem a que você indicar em [Opções](opciones.md#reprodução) (5 por padrão).
 
 - A cena de **maior prioridade manda em todos os canais que toca**, zeros incluídos: uma cena vermelha de prioridade 8 sobre uma azul de prioridade 5 dá vermelho, não magenta.
-- Com a **mesma prioridade**, nos canais de intensidade (dimmer, RGB…) elas se misturam e vence o valor mais alto; nos outros canais vence a última cena disparada.
+- Com a **mesma prioridade**, nos canais de intensidade (dimmer, RGB…) elas se misturam e vence o valor mais alto; nos outros canais vence a **última mudança**: a última cena disparada ou o último GO de uma cuelist que mudou esse canal. O que uma cuelist só mantém de cues anteriores ela não retoma.
 - Se você muda a prioridade de uma cena que está rodando, a mudança se aplica na hora.
 - Ao liberar uma cena de maior prioridade com fade, ela faz um fade para o que está por baixo.
 - **O programador manda sobre tudo**, intensidades incluídas. Em Opções você pode baixar a prioridade da edição ao vivo.
@@ -189,3 +189,5 @@ Os cartões de cena, os masters dos grupos, os botões ◀ ▶ e de liberar de c
 
 - Com **Alt+clique** são copiados para a página do SHOW que estiver aberta (veja [Show](show.md#levar-qualquer-controle-para-o-show)).
 - No modo Mapear podem ser atribuídos a um controlador (veja [Mapeamentos](mapeos.md#modo-mapear)).
+
+Enquanto algum mapeamento usar “A cena selecionada”, ou no modo Mapear, o cartão da cena selecionada (a última que você tocou) tem uma barra fina na borda inferior (veja [Mapeamentos](mapeos.md#a-cena-selecionada)).

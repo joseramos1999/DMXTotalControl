@@ -127,6 +127,8 @@ private:
 private slots:
     /** Catch MIDI input device valueChanged signals */
     void slotValueChanged(const QVariant& uid, ushort channel, uchar value);
+    /** DMX Total Control: the same with a key (the MIDI timecode) */
+    void slotKeyValueChanged(const QVariant& uid, ushort channel, uchar value, const QString& key);
 
     /*************************************************************************
      * Configuration

@@ -99,6 +99,8 @@ static QString commandOf(const QString &typed)
         { "POS", "POS" }, { "POSITION", "POS" }, { "POSICION", "POS" },
         { "COL", "COL" }, { "COLOR", "COL" }, { "COLOUR", "COL" },
         { "BEAM", "BEAM" }, { "HAZ", "BEAM" },
+        // a palette of every attribute (ALL and TODO are the selection)
+        { "PAL", "PAL" }, { "PALETTE", "PAL" }, { "PALETA", "PAL" },
         { "CLEAR", "CLEAR" }, { "CLR", "CLEAR" }, { "BORRAR", "CLEAR" }, { "LIMPIAR", "CLEAR" },
         { "HIGHLIGHT", "HIGHLIGHT" }, { "HI", "HIGHLIGHT" }, { "HL", "HIGHLIGHT" }, { "RESALTAR", "HIGHLIGHT" },
         { "LOCATE", "LOCATE" }, { "LOC", "LOCATE" }, { "LOCALIZAR", "LOCATE" },
@@ -321,7 +323,7 @@ QString CommandLine::syntaxError(const QList<Token> &t)
             }
         }
         else if (word == QLatin1String("INT") || word == QLatin1String("POS") || word == QLatin1String("COL") ||
-                 word == QLatin1String("BEAM"))
+                 word == QLatin1String("BEAM") || word == QLatin1String("PAL"))
         {
             if (isNumber(i++) == false)
                 return tr("Which palette? %1 1, %1 2…").arg(word);
@@ -634,10 +636,11 @@ bool CommandLine::execute(const QString &command)
                 return fail(tr("@ what? A level from 0 to 100, FULL or OUT"));
             }
         }
-        else if (isWord(i, "INT") || isWord(i, "POS") || isWord(i, "COL") || isWord(i, "BEAM"))
+        else if (isWord(i, "INT") || isWord(i, "POS") || isWord(i, "COL") || isWord(i, "BEAM") || isWord(i, "PAL"))
         {
             static const QHash<QString, QString> types = {
-                { "INT", "intensity" }, { "POS", "position" }, { "COL", "colour" }, { "BEAM", "beam" } };
+                { "INT", "intensity" }, { "POS", "position" }, { "COL", "colour" }, { "BEAM", "beam" },
+                { "PAL", "all" } };
             const QString word = t.at(i++).text;
             const QString type = types.value(word);
             if (isNumber(i) == false)

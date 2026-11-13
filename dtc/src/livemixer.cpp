@@ -57,35 +57,40 @@ static bool isEffectGroup(FixtureGroup *group)
     return group->name().endsWith(" (FX)") || group->name().endsWith(" (FX 2D)");
 }
 
+QVariantMap LiveMixer::describe(const State &s)
+{
+    QVariantMap map;
+    map.insert("dimmer", s.dimmer);
+    map.insert("colour", s.colour);
+    map.insert("hue", s.hue);
+    map.insert("saturation", s.saturation);
+    map.insert("strobe", s.strobe);
+    map.insert("strobeHz", s.strobeHz);
+    map.insert("full", s.full);
+    map.insert("blackout", s.blackout);
+    map.insert("flash", s.flash);
+    map.insert("fullExclusive", s.fullExclusive);
+    map.insert("flashExclusive", s.flashExclusive);
+    return map;
+}
+
 QVariantList LiveMixer::mixers() const
 {
     QVariantList list;
-    auto describe = [this](int id, const QString &name, int fixtures)
+    auto mixer = [this](int id, const QString &name, int fixtures)
     {
-        State s = m_states.value(id);
-        QVariantMap map;
+        QVariantMap map = describe(m_states.value(id));
         map.insert("id", id);
         map.insert("name", name);
         map.insert("fixtures", fixtures);
-        map.insert("dimmer", s.dimmer);
-        map.insert("colour", s.colour);
-        map.insert("hue", s.hue);
-        map.insert("saturation", s.saturation);
-        map.insert("strobe", s.strobe);
-        map.insert("strobeHz", s.strobeHz);
-        map.insert("full", s.full);
-        map.insert("blackout", s.blackout);
-        map.insert("flash", s.flash);
-        map.insert("fullExclusive", s.fullExclusive);
-        map.insert("flashExclusive", s.flashExclusive);
         return map;
     };
 
-    list.append(describe(-1, tr("All fixtures"), int(m_doc->fixtures().count())));
+    list.append(mixer(-1, tr("All fixtures"), int(m_doc->fixtures().count())));
     for (FixtureGroup *group : m_doc->fixtureGroups())
     {
         if (isEffectGroup(group) == false)
-            list.append(describe(int(group->id()), group->name(), int(group->fixtureList().count())));
+            list.append(mixer(int(group->id()), group->name(), int(group->fixtureList().count())));
     }
     return list;
 }
@@ -96,6 +101,21 @@ QString LiveMixer::mixerName(int mixerId) const
         return tr("All fixtures");
     FixtureGroup *group = m_doc->fixtureGroup(quint32(mixerId));
     return group != nullptr && isEffectGroup(group) == false ? group->name() : QString();
+}
+
+bool LiveMixer::hasMixer(int mixerId) const
+{
+    if (mixerId == -1)
+        return true;
+    if (mixerId < 0)
+        return false;
+    FixtureGroup *group = m_doc->fixtureGroup(quint32(mixerId));
+    return group != nullptr && isEffectGroup(group) == false;
+}
+
+QVariant LiveMixer::value(int mixerId, const QString &key) const
+{
+    return describe(m_states.value(mixerId)).value(key);
 }
 
 bool LiveMixer::isNeutral(const State &s) const

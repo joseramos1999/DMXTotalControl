@@ -24,9 +24,12 @@ import DMXTotalControl
 import DMXTotalControl.Backend
 
 /**
- * The palettes: intensity, position, colour and beam.
+ * The palettes: intensity, position, colour and beam, and "all" palettes
+ * that keep every value at once.
  * "+" records the values of the selection; a click puts a palette on the
  * selection. The scenes recorded with a palette follow it when it changes.
+ * A palette recorded on several fixtures of one type is a fan: the others
+ * share it out in the order of the selection.
  */
 Item {
     id: view
@@ -38,7 +41,8 @@ Item {
         { type: "intensity", name: qsTr("Intensity"), word: "INT", icon: Theme.iconSun, color: Theme.text },
         { type: "position", name: qsTr("Position"), word: "POS", icon: Theme.iconMove, color: Theme.functionColor("EFX") },
         { type: "colour", name: qsTr("Colour"), word: "COL", icon: Theme.iconPalette, color: Theme.category("#ff6a00") },
-        { type: "beam", name: qsTr("Beam"), word: "BEAM", icon: Theme.iconCircle, color: Theme.category("#3d8bfd") }
+        { type: "beam", name: qsTr("Beam"), word: "BEAM", icon: Theme.iconCircle, color: Theme.category("#3d8bfd") },
+        { type: "all", name: qsTr("All"), word: "PAL", icon: Theme.iconLayers, color: Theme.category("#8e5bd8") }
     ]
     readonly property bool hasSelection: Core.programmer.selection.length > 0
     property string notice: ""
@@ -63,6 +67,8 @@ Item {
                 required property var modelData
                 readonly property var palettes: Core.palettes.palettes.filter(p => p.type === modelData.type)
                 readonly property int recordable: Core.palettes.recordable[modelData.type] || 0
+                // (every attribute: "the all values" doesn't read)
+                readonly property bool isAll: modelData.type === "all"
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -92,7 +98,10 @@ Item {
                             // (a narrow pool: the icon, so its name shows)
                             implicitHeight: 26
                             enabled: pool.recordable > 0
-                            ToolTip.text: pool.recordable > 0
+                            ToolTip.text: pool.isAll
+                                ? (pool.recordable > 0 ? qsTr("Record every value of the selection, except the maintenance channels, as a new palette")
+                                                       : qsTr("Set some values on the selection first"))
+                                : pool.recordable > 0
                                 ? qsTr("Record the %1 values of the selection as a new palette").arg(view.inText(pool.modelData.name))
                                 : qsTr("Set some %1 values on the selection first").arg(view.inText(pool.modelData.name))
                             ToolTip.visible: hovered
@@ -127,6 +136,8 @@ Item {
                                     // on the selection: 2 all of it, 1 some
                                     readonly property int level: Core.palettes.states[String(modelData.id)] || 0
                                     readonly property color swatch: modelData.color.length > 0 ? modelData.color : pool.modelData.color
+                                    // a wide swatch: a colour palette, or an "all" palette with a colour
+                                    readonly property bool wide: pool.modelData.type === "colour" || (pool.isAll && modelData.color.length > 0)
 
                                     width: Math.max(86, (tiles.width - 6) / 2)
                                     height: 54
@@ -139,7 +150,7 @@ Item {
                                     // the colour of the palette, or of its type
                                     Rectangle {
                                         anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: 4 }
-                                        width: pool.modelData.type === "colour" ? 14 : 4
+                                        width: tile.wide ? 14 : 4
                                         radius: 3
                                         color: tile.swatch
                                         opacity: Theme.lightLevel
@@ -154,7 +165,7 @@ Item {
                                     }
                                     Text {
                                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom
-                                                  leftMargin: pool.modelData.type === "colour" ? 24 : 14; rightMargin: 6; bottomMargin: 6 }
+                                                  leftMargin: tile.wide ? 24 : 14; rightMargin: 6; bottomMargin: 6 }
                                         text: tile.modelData.name
                                         color: Theme.text
                                         font.pixelSize: Theme.fontSmall + 1
@@ -164,7 +175,7 @@ Item {
                                     // used by scenes: they follow it
                                     IconLabel {
                                         visible: tile.modelData.scenes > 0
-                                        anchors { left: parent.left; top: parent.top; leftMargin: pool.modelData.type === "colour" ? 24 : 14; topMargin: 6 }
+                                        anchors { left: parent.left; top: parent.top; leftMargin: tile.wide ? 24 : 14; topMargin: 6 }
                                         icon: Theme.iconLink
                                         size: 9
                                         color: Theme.textFaint
@@ -179,6 +190,7 @@ Item {
                                         ToolTip.visible: containsMouse
                                         ToolTip.delay: 700
                                         ToolTip.text: qsTr("%1 — recorded on %n fixture(s)", "", tile.modelData.fixtures).arg(tile.modelData.name)
+                                                      + (tile.modelData.spread > 0 ? "\n" + qsTr("Spread over %n more fixture(s)", "", tile.modelData.spread) : "")
                                                       + (tile.modelData.scenes > 0 ? "\n" + qsTr("Used by %n scene(s): they change with it", "", tile.modelData.scenes) : "")
                                                       + "\n" + qsTr("Click: on the selection · Right click: update, load, rename…")
                                         onClicked: (mouse) => {
@@ -203,7 +215,8 @@ Item {
                             visible: pool.palettes.length === 0
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.WordWrap
-                            text: qsTr("Set the %1 of the selection and press Record").arg(view.inText(pool.modelData.name))
+                            text: pool.isAll ? qsTr("Set the look of the selection and press Record: the palette keeps every value")
+                                             : qsTr("Set the %1 of the selection and press Record").arg(view.inText(pool.modelData.name))
                             color: Theme.textFaint
                             font.pixelSize: Theme.fontSmall
                         }
@@ -242,6 +255,16 @@ Item {
         MenuItem {
             text: qsTr("Load its fixtures in the programmer")
             onTriggered: Core.palettes.load(paletteMenu.palette.id)
+        }
+        // a fan (two fixtures of a type at least): the fixtures it was not
+        // recorded on take new places, in the order of the selection
+        MenuItem {
+            text: qsTr("Spread again over the selection")
+            enabled: view.hasSelection && paletteMenu.palette.fan === true
+            onTriggered: {
+                if (Core.palettes.spreadAgain(paletteMenu.palette.id) > 0)
+                    view.say(qsTr("%1 spread again over the selection: the scenes that use it changed too").arg(paletteMenu.palette.name))
+            }
         }
         MenuSeparator {}
         MenuItem {

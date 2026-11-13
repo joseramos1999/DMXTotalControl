@@ -11,6 +11,8 @@ set(SRC_FILES
     src/timelineeditor.cpp src/timelineeditor.h
     src/fxtools.cpp src/fxtools.h
     src/remoteserver.cpp src/remoteserver.h
+    src/qrcode.cpp src/qrcode.h
+    src/mdnsresponder.cpp src/mdnsresponder.h
     src/updatechecker.cpp src/updatechecker.h
     src/uiaudit.cpp src/uiaudit.h
     src/scenetaps.cpp src/scenetaps.h
@@ -21,12 +23,15 @@ set(SRC_FILES
     src/commandline.cpp src/commandline.h
     src/cuelisteditor.cpp src/cuelisteditor.h
     src/playbackmanager.cpp src/playbackmanager.h
+    src/timecodereader.cpp src/timecodereader.h
     src/showsurface.cpp src/showsurface.h
     src/drivecontrol.cpp src/drivecontrol.h
     src/effectexchange.cpp src/effectexchange.h
+    src/qlcexchange.cpp src/qlcexchange.h
     src/livemixer.cpp src/livemixer.h
     src/controlmapper.cpp src/controlmapper.h
     src/fixturelibrary.cpp src/fixturelibrary.h
+    src/gdtfshare.cpp src/gdtfshare.h
     src/gdtfimporter.cpp src/gdtfimporter.h
     src/iomanager.cpp src/iomanager.h
     src/patchmanager.cpp src/patchmanager.h src/patchplan.cpp
@@ -52,10 +57,12 @@ set(QML_FILES
     qml/components/Panel.qml
     qml/components/StagePlan.qml
     qml/components/TextPrompt.qml
+    qml/components/QrCode.qml
     qml/components/SceneBrowser.qml
     qml/components/FxShape.qml
     qml/components/FxShapePicker.qml
     qml/components/FxControls.qml
+    qml/components/FxFixtureOffsets.qml
     qml/components/ReleaseNotes.qml
     qml/components/UpdateBanner.qml
     qml/components/HelpPanel.qml
@@ -64,6 +71,7 @@ set(QML_FILES
     qml/components/LockDialog.qml
     qml/components/MissingFilesDialog.qml
     qml/components/TimeSpin.qml
+    qml/components/LiveTimeBar.qml
     qml/components/VFader.qml
     qml/live/LivePage.qml
     qml/live/ZoneColumn.qml
@@ -102,9 +110,14 @@ set(QML_FILES
     qml/scenes/TimelineTrack.qml
     qml/scenes/TimelineBlock.qml
     qml/scenes/CuelistView.qml
+    qml/scenes/CueTimeField.qml
+    qml/scenes/CueTimesView.qml
+    qml/scenes/CueActionsView.qml
     qml/scenes/TrackingSheet.qml
     qml/scenes/CuelistOptions.qml
     qml/scenes/CueExistsDialog.qml
+    qml/scenes/QlcExportDialog.qml
+    qml/scenes/QlcImportDialog.qml
     qml/playbacks/PlaybacksPage.qml
     qml/playbacks/PlaybackStrip.qml
     qml/playbacks/PlaybackSlotDialog.qml
@@ -121,6 +134,7 @@ set(QML_FILES
     qml/fixtures/FixtureEditorPage.qml
     qml/fixtures/CapabilitiesDialog.qml
     qml/fixtures/LibraryPicker.qml
+    qml/fixtures/GdtfShareDialog.qml
     qml/setup/OutputsPage.qml
     qml/setup/DmxMonitor.qml
     qml/mapping/MappingsPage.qml
@@ -190,6 +204,10 @@ target_link_libraries(${module_name} PRIVATE
     Qt${QT_MAJOR_VERSION}::GuiPrivate
     qlcplusengine
 )
+# the GDTF-Share password, saved encrypted for the Windows user (DPAPI)
+if(WIN32)
+    target_link_libraries(${module_name} PRIVATE crypt32)
+endif()
 
 # The repository whose GitHub releases the updates come from
 set(DTC_GITHUB_REPO "joseramos1999/DMXTotalControl" CACHE STRING

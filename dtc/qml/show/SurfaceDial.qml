@@ -49,8 +49,8 @@ Rectangle {
         return "×" + factor.toLocaleString(Qt.locale(), 'f', factor < 1 ? 2 : 1)
     }
     // where the dial is on its travel, and what its first target is at (the text)
-    readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.level(item) }
-    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.value(item) }
+    readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; Core.playbacks.cueSpeed; return Core.surface.level(item) }
+    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; Core.playbacks.cueSpeed; return Core.surface.value(item) }
     // the wheel turns with the hand, whatever the level
     property real wheelAngle: 0
     // where the hand has the dial while it holds it (-1: not held): a narrow
@@ -74,6 +74,7 @@ Rectangle {
             return qsTr("Dimmer of %1").arg(m ? m.name : "?")
         }
         case "moveSpeed": return qsTr("Movement speed")
+        case "cueSpeed": return qsTr("Cue speed")
         case "map":
             // (a playback is named by what its slot holds now, a function by its name)
             Core.surface.revision

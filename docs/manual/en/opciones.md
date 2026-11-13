@@ -66,7 +66,9 @@ To use the SHOW pages from a phone or a tablet on the same Wi-Fi network, withou
 - **Remote control on**.
 - **Port**: change it if another program uses it (8800 by default). If it is in use, you are warned in red.
 - **PIN**: asked once on each device. If it is empty, anyone on the network can use it.
-- The **addresses** to open in the phone's browser, with a button to copy them.
+- **Name on the network**: the phone opens the remote with `http://dmxtotalcontrol.local:8800/`, even when the address of the computer changes (iPhone, iPad and recent Android phones). If another computer already uses the name, this one takes `dmxtotalcontrol-2`. If it is empty, there is no name. If the network port 5353 is not available, or other computers use the name and `-2` to `-9`, you are warned in red.
+- The **addresses** to open in the phone's browser, with a button to copy them. Each one has the name of its network in front, as Windows calls it (“Wi-Fi”, “Ethernet 2”). The **“By name”** address comes first, then Wi-Fi, then cable (Ethernet), and virtual adapters and VPNs last. The list updates by itself a few seconds after a network connects or disconnects. If the computer is on no network, a warning appears instead.
+- A **QR code** of the address with the border (at first, the first numeric one), to open it with the camera of the phone. Click another address to change it. If there is a PIN, the code holds it and the phone gets in without asking for it. **“Bigger”** shows it large.
 - How many devices are connected.
 
 See [Remote control](remoto.md).
@@ -77,7 +79,9 @@ It tells you how many fixture definitions are available (the built-in library, t
 
 - **Open Fixture Library**: **“Download”** (needs internet access). Once downloaded, you see how many fixtures it has and when it was downloaded, and the button becomes **“Update”**: it brings the new and improved fixtures, and keeps your fixtures and the ones the library no longer has. If there is something new, you are told and the button is highlighted (see [Fixtures](fixtures.md#open-fixture-library)).
 - **Import fixture files**: **“Import…”** `.qxf` definitions (the QLC+ format), `.gdtf` files or a `.zip` with them.
-- **GDTF fixtures**: **“GDTF-Share”** opens its website; **“Import GDTF…”** imports files, folders or the `.zip` of its multiple download. It tells you how many GDTF fixtures are in the library.
+- **GDTF fixtures**: **“GDTF-Share…”** searches, downloads and imports fixtures from GDTF-Share (see [Fixtures](fixtures.md#gdtf-share)); **“Import GDTF…”** imports files, folders or the `.zip` of its multiple download. It tells you how many GDTF fixtures are in the library.
+- **Fixtures downloaded from GDTF-Share**: appears when there are some. **“Convert again”** converts them again with this version of the program, from the `.gdtf` kept (see [Fixtures](fixtures.md#convert-again)).
+- **Newer revisions on GDTF-Share**: shown when GDTF fixtures of the library have a newer revision on GDTF-Share. **“Update”** shows them in GDTF-Share, where **“Update all”** downloads the newest one of each and converts it: the fixtures patched with them get it. It counts the ones you downloaded from GDTF-Share. A file imported by hand counts if the text of its last revision matches exactly one revision on GDTF-Share. It uses the last GDTF-Share list the program has (see [Fixtures](fixtures.md#newer-revisions)).
 - **Import my QLC+ fixtures**: **“Import”** copies the fixtures you created in QLC+.
 - **User fixtures folder**: **“Open folder”**.
 
@@ -85,7 +89,7 @@ All of this is explained in [Fixtures](fixtures.md).
 
 ## Updates
 
-- **Check for updates at startup**: once a day, on GitHub: the program and, if you downloaded the Open Fixture Library, whether it has new fixtures (a notice tells you). Nothing is downloaded or installed without asking you. With no internet, it does not bother you.
+- **Check for updates at startup**: once a day, on GitHub: the program and, if you downloaded the Open Fixture Library, whether it has new fixtures (a notice tells you). If you saved your GDTF-Share account, it also signs in to GDTF-Share and tells you if the fixtures you downloaded from it have newer revisions (each revision is told once). Nothing is downloaded or installed without asking you. With no internet, it does not bother you.
 - **Include test versions**: the new features earlier, less tested.
 
 Below, you see the status (“You have the latest version”, “Version … is out.”) and the buttons:

@@ -54,7 +54,18 @@ public:
         AutoRemove  = (1 << 9),     /** Automatically remove the channel once target is reached */
         CrossFade   = (1 << 10),    /** Channel subject to crossfade */
         ForceLTP    = (1 << 11),    /** Force LTP for flashing scenes */
-        Modulated   = (1 << 12)     /** DMX Total Control: an FX adds an offset to the value */
+        Modulated   = (1 << 12),    /** DMX Total Control: an FX adds an offset to the value */
+        Manual      = (1 << 13),    /** DMX Total Control: a hand crossfade (the A/B fader) sets its elapsed time: no clock */
+        MixBelow    = (1 << 14)     /** DMX Total Control: the level of the fader mixes the value with what's below (an Override cuelist) */
+    };
+
+    /** DMX Total Control: how a fade moves from start to target over its time */
+    enum Curve
+    {
+        CurveLinear = 0,    /** the same speed all along (default) */
+        CurveSmooth,        /** slow at both ends */
+        CurveSlowStart,     /** slow at first, fast at the end */
+        CurveFastStart      /** fast at first, slow at the end */
     };
 
     /** Create a new FadeChannel with empty/invalid values */
@@ -212,14 +223,22 @@ public:
     void setDelay(uint ms);
     uint delay() const;
 
+    /** DMX Total Control: the Curve of the fade (linear by default). The
+     *  whole value takes it, both bytes of a 16-bit pair */
+    void setCurve(int curve);
+    int curve() const;
+
     /** DMX Total Control: FX. A Modulated channel sends its value (or, when
      *  $onBelow, what the faders below send) plus $offset. With the address
      *  in the universe of its fine channel, the values are 16 bit and it
-     *  sends the fine channel too (fixtures with the fine channels apart) */
-    void setModulation(qint32 offset, bool onBelow, quint32 fineAddress = UINT_MAX);
+     *  sends the fine channel too (fixtures with the fine channels apart).
+     *  DMX Total Control: $scale (0..1) dims what it sends, as a dimmer would
+     *  (the virtual dimmer of a fixture without one); 1 leaves it as it is */
+    void setModulation(qint32 offset, bool onBelow, quint32 fineAddress = UINT_MAX, qreal scale = 1.0);
     qint32 modulationOffset() const;
     bool modulatesBelow() const;
     quint32 modulationFine() const;
+    qreal modulationScale() const;
     /** The last value a Modulated channel sent (where its fade out starts) */
     void setModulatedOutput(quint32 value);
     quint32 modulatedOutput() const;
@@ -233,11 +252,15 @@ private:
     uint m_fadeTime;
     uint m_elapsed;
     uint m_delay;
+    /** DMX Total Control: a Curve */
+    int m_curve;
 
     qint32 m_modOffset;
     quint32 m_modOutput;
     bool m_modBelow;
     quint32 m_modFine;
+    /** DMX Total Control: the virtual dimmer of an FX (setModulation) */
+    qreal m_modScale;
 };
 
 /** @} */

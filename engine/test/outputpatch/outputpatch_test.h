@@ -35,6 +35,7 @@ private slots:
     void defaults();
     void patch();
     void dump();
+    void sendSysEx();
 
 private:
     Doc* m_doc;

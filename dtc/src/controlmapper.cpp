@@ -32,6 +32,7 @@
 
 #include "controlmapper.h"
 #include "playbackmanager.h"
+#include "cuelisteditor.h"
 #include "iomanager.h"
 #include "drivecontrol.h"
 #include "zonemanager.h"
@@ -49,6 +50,7 @@
 #include "mastertimer.h"
 #include "function.h"
 #include "cuelist.h"
+#include "scene.h"
 #include "fixturegroup.h"
 #include "doc.h"
 
@@ -57,6 +59,13 @@
 // the MIDI channel in the 4 top bits of an input channel (OMNI mode)
 #define MIDI_OMNI 16
 #define MONITOR_SIZE 200
+
+/** A motorised fader the hand moves gets no feedback until it has been still
+ *  this long (ms). Then it is only moved when its target is more than
+ *  MOTOR_SLACK (of 0-255) away from where the hand left it: a whole BPM
+ *  on a short range, something else that moved it */
+#define MOTOR_HOLD_MS 400
+#define MOTOR_SLACK 2
 
 static int midiValue(uchar value)
 {
@@ -74,7 +83,7 @@ static bool isSlotTarget(const QString &target)
 {
     static const QSet<QString> targets = {
         "playbackGo", "playbackBack", "playbackPauseBack", "playbackFlash", "playbackRelease",
-        "playbackSelect", "playbackGoTo", "playbackFader" };
+        "playbackSelect", "playbackGoTo", "playbackFader", "playbackLiveTime" };
     return targets.contains(target);
 }
 
@@ -82,7 +91,14 @@ static bool isSlotTarget(const QString &target)
  *  function is (the ...Function entry points of the playbacks) */
 static bool isFunctionTarget(const QString &target)
 {
-    return isSlotTarget(target) && target != "playbackSelect" && target != "playbackFader";
+    return isSlotTarget(target) && target != "playbackSelect" && target != "playbackFader" &&
+           target != "playbackLiveTime";
+}
+
+/** The Live Time of a playback, or of the selected one */
+static bool isLiveTimeTarget(const QString &target)
+{
+    return target == "playbackLiveTime" || target == "playbackSelectedLiveTime";
 }
 
 /** The zoneId of the group targets: -1 is "all groups" (release, next,
@@ -90,6 +106,18 @@ static bool isFunctionTarget(const QString &target)
  *  group) */
 #define ALL_GROUPS -1
 #define DELETED_GROUP -2
+
+/** The functionId of the scene targets that drive the selected scene (the
+ *  last one pressed): a deleted function is -1, so this one stays */
+#define SELECTED_SCENE -2
+
+/** A scene, its live dimmer or speed, on the selected scene */
+static bool onSelectedScene(const QVariantMap &m)
+{
+    const QString target = m.value("target").toString();
+    return (target == "scene" || target == "sceneDimmer" || target == "sceneSpeed") &&
+           m.value("functionId", -1).toInt() == SELECTED_SCENE;
+}
 
 void ControlMapper::rangeOf(const QVariantMap &m, qreal &min, qreal &max, bool &invert)
 {
@@ -149,6 +177,11 @@ ControlMapper::ControlMapper(DtcCore *core, QObject *parent)
     // the functions and the groups deleted: their mappings drive nothing (a
     // new function or group may get their ID)
     connect(m_core->doc(), SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
+    // the actions of the cues of the cuelists, here in the GUI thread (they
+    // come from the timer thread, after the frame of the cue)
+    m_actionClock.start();
+    connect(m_core->doc()->masterTimer(), SIGNAL(cueActions(quint32,quint32)),
+            this, SLOT(slotCueActions(quint32,quint32)), Qt::QueuedConnection);
     if (m_core->zones() != nullptr)
         connect(m_core->zones(), &ZoneManager::rowsAboutToBeRemoved, this, &ControlMapper::slotZonesAboutToBeRemoved);
     // the faders of the SHOW follow their pages
@@ -156,6 +189,7 @@ ControlMapper::ControlMapper(DtcCore *core, QObject *parent)
         connect(m_core->surface(), &ShowSurface::pagesChanged, this, &ControlMapper::slotSurfacePagesChanged);
 
     // the LEDs and motor faders follow what they drive
+    m_clock.start();
     m_feedbackTimer->setInterval(100);
     connect(m_feedbackTimer, &QTimer::timeout, this, &ControlMapper::slotFeedback);
     m_feedbackTimer->start();
@@ -274,6 +308,35 @@ QString ControlMapper::controllerOf(const QString &deviceName)
     return QString();
 }
 
+QVariantMap ControlMapper::controllerDefaults(const QString &source, const QString &device, quint32 channel, bool leds)
+{
+    // a known controller: its LED colours (green when on, blinking when paused)
+    QVariantMap props;
+    const QString controller = source == "midi" ? controllerOf(device.section('|', 1)) : QString();
+    if (controller.isEmpty())
+        return props;
+    props.insert("controller", controller);
+    if (leds)
+    {
+        // RGB pads take a colour (the velocity) and a behaviour (the
+        // MIDI channel); the other buttons have one LED: 1 on, 2 blinking
+        int on = 1, onChannel = 0, paused = 2, pausedChannel = 0;
+        if (isRgbPad({ { "source", source }, { "channel", channel }, { "controller", controller } }))
+        {
+            // green (at 100 % on the APC mini mk2, solid on the APC40
+            // mkII), pulsing when paused
+            on = 21; onChannel = controller == "apcmini2" ? 7 : 1; paused = 21; pausedChannel = 10;
+        }
+        props.insert("onValue", on);
+        props.insert("onChannel", onChannel);
+        props.insert("pausedValue", paused);
+        props.insert("pausedChannel", pausedChannel);
+        props.insert("offValue", 0);
+        props.insert("offChannel", 0);
+    }
+    return props;
+}
+
 /** Adds one mapping of a template: its target, its input channel and its own keys */
 typedef std::function<void(const QString &target, quint32 channel, const QVariantMap &props)> TemplateAdd;
 
@@ -381,8 +444,10 @@ static void miniPlaybacksTemplate(bool mk2, const TemplateAdd &add)
  *  knobs on the masters of the first 8 groups */
 static void apc40PlaybacksTemplate(ZoneManager *zones, const TemplateAdd &add)
 {
-    // the RGB pads, solid (MIDI channel 1): green, yellow, dim blue
-    const QVariantMap cue = ledsOf(21, 1, 13, 1, 46, 1);
+    // the RGB pads, the colour the velocity and the way the MIDI channel (1
+    // solid, 10 pulsing): a cue green, pulsing green when it is the next one,
+    // dim blue the others; a page green, the others dim blue
+    const QVariantMap cue = ledsOf(21, 1, 21, 10, 46, 1);
     const QVariantMap page = ledsOf(21, 1, 21, 1, 46, 1);
     // the single LEDs: on (fading too), off; Clip Stop also blinks
     const QVariantMap lit = ledsOf(1, 0, 1, 0, 0, 0);
@@ -453,8 +518,10 @@ int ControlMapper::applyTemplate(const QString &deviceKey, const QString &contro
         lightOff(m);
         const int id = m.value("id").toInt();
         m_pressed.remove(id);
+        m_animatedLed.remove(id);
         m_applied.remove(id);
         m_physical.remove(id);
+        m_touch.remove(id);
         m_mappings.removeAt(i);
         if (id == m_learnSourceOf)
             dropPendingLearn();
@@ -489,43 +556,99 @@ int ControlMapper::applyTemplate(const QString &deviceKey, const QString &contro
     return made;
 }
 
-void ControlMapper::initControllers()
+QList<QByteArray> ControlMapper::modeMessages(const QString &controller)
+{
+    // the APC mini mk2: Session mode (00; 01 is Note mode, 02 Drum mode)
+    if (controller == "apcmini2")
+        return { QByteArray::fromHex("F0 47 7F 4F 62 00 01 00 F7") };
+    // the APC40 mkII: Ableton mode (the message of the QLC+ MIDI template)
+    if (controller == "apc40mk2")
+        return { QByteArray::fromHex("F0 47 7F 29 60 00 04 41 09 00 05 F7") };
+    return {};
+}
+
+bool ControlMapper::isReadyController(const QVariantMap &device)
+{
+    return device.value("kind").toString() == "midi" && device.value("enabled").toBool() &&
+           device.value("feedback").toBool() && device.value("controller").toString().startsWith("apc");
+}
+
+void ControlMapper::readyController(const QVariantMap &device, bool again)
 {
     InputOutputMap *io = m_core->doc()->inputOutputMap();
+    const QString key = device.value("key").toString();
+    const QString controller = device.value("controller").toString();
+    const quint32 universe = device.value("universe").toUInt();
+    OutputPatch *patch = io->feedbackPatch(universe);
+    if (patch == nullptr || patch->isPatched() == false)
+        return;
+
+    // the APCs ignore note offs: an LED goes dark with a note on at 0
+    patch->setPluginParameter("MIDISendNoteOff", false);
+
+    // the mode its mappings use. The APC40 mkII: the QLC+ MIDI template
+    // sends it when the output opens; again, without reopening the port,
+    // on "Get ready" (switched off and on, it lost it)
+    bool modeSent = false;
+    if (controller == "apc40mk2")
+    {
+        const QString ableton = QStringLiteral("APC40 Mk2 Ableton mode");
+        if (patch->getPluginParameters().value("initmessage").toString() != ableton)
+        {
+            patch->setPluginParameter("initmessage", ableton);
+            modeSent = patch->reconnect();
+        }
+    }
+    if (modeSent == false && (controller == "apcmini2" || again))
+    {
+        // (the mk2 every time: one left in Note or Drum mode works as it is)
+        const QList<QByteArray> messages = modeMessages(controller);
+        for (const QByteArray &message : messages)
+            patch->sendSysEx(message);
+        modeSent = messages.isEmpty() == false;
+    }
+    if (modeSent)
+        log("out", key, controller == "apc40mk2" ? tr("SysEx · Ableton mode") : tr("SysEx · Session mode"), 0);
+
+    if (controller == "apc40mk2")
+    {
+        // the rings of the track and device knobs: a single dot
+        for (quint32 cc = 56; cc <= 63; cc++)
+            io->sendFeedBack(universe, cc, dmxFromMidi(1), QVariant());
+        for (quint32 cc = 24; cc <= 31; cc++)
+            io->sendFeedBack(universe, cc, dmxFromMidi(1), QVariant());
+    }
+}
+
+void ControlMapper::initControllers()
+{
     for (const QVariant &v : devices())
     {
         const QVariantMap device = v.toMap();
-        const QString controller = device.value("controller").toString();
-        if (device.value("kind").toString() != "midi" || device.value("enabled").toBool() == false ||
-            device.value("feedback").toBool() == false || controller.startsWith("apc") == false)
-            continue;
-        const quint32 universe = device.value("universe").toUInt();
-        OutputPatch *patch = io->feedbackPatch(universe);
-        if (patch == nullptr || patch->isPatched() == false)
-            continue;
-
-        // the APCs ignore note offs: an LED goes dark with a note on at 0
-        patch->setPluginParameter("MIDISendNoteOff", false);
-
-        if (controller == "apc40mk2")
-        {
-            // Ableton mode, where the host drives the LEDs: the QLC+ MIDI
-            // template sends its SysEx when the output opens
-            const QString ableton = QStringLiteral("APC40 Mk2 Ableton mode");
-            if (patch->getPluginParameters().value("initmessage").toString() != ableton)
-            {
-                patch->setPluginParameter("initmessage", ableton);
-                patch->reconnect();
-            }
-            // the rings of the track and device knobs: a single dot
-            for (quint32 cc = 56; cc <= 63; cc++)
-                io->sendFeedBack(universe, cc, dmxFromMidi(1), QVariant());
-            for (quint32 cc = 24; cc <= 31; cc++)
-                io->sendFeedBack(universe, cc, dmxFromMidi(1), QVariant());
-        }
+        if (isReadyController(device))
+            readyController(device, false);
     }
     // everything is sent again on the next tick
     m_sentFeedback.clear();
+}
+
+void ControlMapper::refreshController(const QString &deviceKey)
+{
+    for (const QVariant &v : devices())
+    {
+        const QVariantMap device = v.toMap();
+        if (device.value("key").toString() != deviceKey || isReadyController(device) == false)
+            continue;
+        readyController(device, true);
+        // its LEDs (and knob rings) are all sent again on the next tick: the
+        // mappings of that device and those of any MIDI device
+        for (const QVariantMap &m : std::as_const(m_mappings))
+        {
+            const QString mapped = m.value("device").toString();
+            if (m.value("source").toString() == "midi" && (mapped == deviceKey || mapped.isEmpty()))
+                m_sentFeedback.remove(m.value("id").toInt());
+        }
+    }
 }
 
 int ControlMapper::universeOf(const QString &deviceKey) const
@@ -741,7 +864,10 @@ QVariantList ControlMapper::targets() const
         << t("mixerSaturation", "fader", tr("Mixer: saturation"), "mixer")
         << t("mixerStrobeHz", "fader", tr("Mixer: strobe speed"), "mixer")
         << t("surfaceFader", "fader", tr("Fader of the SHOW"), "surface")
-        << t("playbackFader", "fader", tr("Playback: fader"), "playback");
+        << t("playbackFader", "fader", tr("Playback: fader"), "playback")
+        << t("cueSpeed", "fader", tr("Cue speed (all cuelists)"), "")
+        << t("playbackLiveTime", "fader", tr("Live time of a playback"), "playback")
+        << t("playbackSelectedLiveTime", "fader", tr("Live time of the selected playback"), "");
 }
 
 bool ControlMapper::isButton(const QString &target) const
@@ -757,6 +883,19 @@ bool ControlMapper::isButton(const QString &target) const
     }
     // (an unknown target is a button)
     return m_buttonKinds.value(target, true);
+}
+
+int ControlMapper::selectedSceneId() const
+{
+    return SELECTED_SCENE;
+}
+
+bool ControlMapper::usesSelectedScene() const
+{
+    for (const QVariantMap &m : m_mappings)
+        if (onSelectedScene(m))
+            return true;
+    return false;
 }
 
 QVariantMap ControlMapper::defaultsFor(const QString &target) const
@@ -786,11 +925,15 @@ QVariantMap ControlMapper::defaultsFor(const QString &target) const
     m.insert("offValue", 0);
     m.insert("pausedValue", 64);
     // the MIDI channel of each state (0: the default of the state, see
-    // defaultLedChannel): on some controllers (APC mini mk2) it sets the
-    // brightness or the blinking
+    // defaultLedChannel): on some controllers (APC mini mk2, APC40 mkII) it
+    // sets the brightness, the pulsing or the blinking
     m.insert("onChannel", 0);
     m.insert("offChannel", 0);
     m.insert("pausedChannel", 0);
+    // a scene fading in or out: no colour of its own (-1), it shows on and
+    // then off as always
+    m.insert("fadeValue", -1);
+    m.insert("fadeChannel", 0);
     m.insert("controller", QString());
     if (target == "palette")
     {
@@ -897,9 +1040,10 @@ void ControlMapper::updateMapping(int id, const QVariantMap &props)
                 m.insert(it.key(), it.value());
         normalizeMapping(m);
         m_sentFeedback.remove(id);
-        // a fader that picks up starts again
+        // a fader that picks up starts again (a motorised one is sent again)
         m_applied.remove(id);
         m_physical.remove(id);
+        m_touch.remove(id);
         m_core->doc()->setModified();
         emit mappingsChanged();
         return;
@@ -917,8 +1061,11 @@ void ControlMapper::removeMapping(int id)
             m_mappings.removeAt(i);
             m_sentFeedback.clear();
             m_pressed.remove(id);
+            m_flashScene.remove(id);
+            m_animatedLed.remove(id);
             m_applied.remove(id);
             m_physical.remove(id);
+            m_touch.remove(id);
             // the control it was learning has nothing to go to
             if (id == m_learnSourceOf)
                 dropPendingLearn();
@@ -968,8 +1115,13 @@ void ControlMapper::clear()
     m_mappings.clear();
     m_sentFeedback.clear();
     m_pressed.clear();
+    m_flashScene.clear();
     m_applied.clear();
     m_physical.clear();
+    m_touch.clear();
+    m_sceneOn.clear();
+    m_fadeOutUntil.clear();
+    m_animatedLed.clear();
     m_lastId = 0;
     // a control being learnt was for a mapping or a target of that show (the
     // next show reuses the IDs)
@@ -1192,6 +1344,8 @@ QString ControlMapper::describeTarget(const QVariantMap &m) const
         if (target == "scene" || target == "sceneDimmer" || target == "sceneSpeed")
             detail = f->name();
     }
+    if (onSelectedScene(m))
+        detail = tr("the selected scene");
     Zone *zone = m_core->zones()->zoneById(m.value("zoneId").toUInt());
     const int zoneId = m.value("zoneId").toInt();
     if (target == "sceneIndex")
@@ -1477,36 +1631,11 @@ void ControlMapper::handleInput(const QString &source, const QString &device, qu
         props.insert("channel", channel);
         props.insert("key", key);
 
-        // a known controller: its LED colours (green when on, blinking when paused)
-        QString controller = source == "midi" ? controllerOf(device.section('|', 1)) : QString();
-        if (controller.isEmpty() == false)
-        {
-            props.insert("controller", controller);
-            if (button && m_learnSourceOf < 0)
-            {
-                // RGB pads take a colour (the velocity) and a behaviour (the
-                // MIDI channel); the other buttons have one LED: 1 on, 2 blinking
-                const int n = int(channel & 0x0FFF) - 128;     // the note (< 0: a CC)
-                const int midiChannel = int(channel >> 12);
-                int on = 1, onChannel = 0, paused = 2, pausedChannel = 0;
-                if (controller == "apcmini2" && n >= 0 && n <= 63)
-                {
-                    // green at 100 %, pulsing
-                    on = 21; onChannel = 7; paused = 21; pausedChannel = 10;
-                }
-                else if (controller == "apc40mk2" && midiChannel == 0 && ((n >= 0 && n <= 39) || (n >= 82 && n <= 86)))
-                {
-                    // the clip grid and the scene buttons: solid green, solid yellow
-                    on = 21; onChannel = 1; paused = 13; pausedChannel = 1;
-                }
-                props.insert("onValue", on);
-                props.insert("onChannel", onChannel);
-                props.insert("pausedValue", paused);
-                props.insert("pausedChannel", pausedChannel);
-                props.insert("offValue", 0);
-                props.insert("offChannel", 0);
-            }
-        }
+        // a known controller: its kind, and the LEDs of a button (learning
+        // the source of a mapping again keeps its LEDs)
+        const QVariantMap known = controllerDefaults(source, device, channel, button && m_learnSourceOf < 0);
+        for (auto it = known.cbegin(); it != known.cend(); ++it)
+            props.insert(it.key(), it.value());
 
         int id = m_learnSourceOf;
         if (id >= 0)
@@ -1577,6 +1706,12 @@ quint32 ControlMapper::functionOf(const QVariantMap &m) const
             return Function::invalidId();
         return zone->functionIDs().value(m.value("index").toInt(), Function::invalidId());
     }
+    // the selected scene, whichever it is now (none yet: no function)
+    if (onSelectedScene(m))
+    {
+        const int selected = m_core->zones()->selectedScene();
+        return selected >= 0 ? quint32(selected) : Function::invalidId();
+    }
     return m.value("functionId").toUInt();
 }
 
@@ -1604,6 +1739,13 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
 
     if (mode == "absolute")
     {
+        // a motorised fader already shows where the hand puts it: its motor
+        // waits until it is still (slotFeedback), so it doesn't fight the hand
+        if (m.value("feedback").toBool())
+        {
+            m_touch.insert(id, { m_clock.elapsed(), int(value) });
+            m_sentFeedback.insert(id, int(value));
+        }
         qreal f = value / 255.0;
         if (invert)
             f = 1.0 - f;
@@ -1612,7 +1754,9 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
         {
             // pickup (a fader without a motor): it drives its target while
             // they agree; when something else moved the target (another
-            // page, the screen) it must meet the target first
+            // page, the screen) it must meet the target first. An A/B
+            // playback fader not placed yet: its first value only tells
+            // where it is (nothing to meet)
             const qreal current = faderValue(m);
             const qreal applied = m_applied.value(id, -1.0);
             const qreal previous = m_physical.value(id, -1.0);
@@ -1620,7 +1764,10 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
             const bool inSync = applied >= 0.0 && qAbs(current - applied) < 0.01;
             const bool meets = qAbs(wanted - current) < 0.03 ||
                                (previous >= 0.0 && (previous - current) * (wanted - current) <= 0.0);
-            if (inSync == false && meets == false)
+            const bool placing = target == QLatin1String("playbackFader") &&
+                                 m_core->playbacks()->faderKnown(m.value("pbPage", -1).toInt(),
+                                                                 m.value("slot").toInt()) == false;
+            if (inSync == false && meets == false && placing == false)
             {
                 // the fader moved away from what it last gave: a target
                 // that shows that value again (paging back, the screen)
@@ -1636,6 +1783,8 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
 
     qreal current = faderValue(m);
     qreal delta = 0;
+    // the steps of the press or the turn (up is more)
+    int clicks = 0;
     if (mode == "incremental")
     {
         // each press moves one step
@@ -1644,7 +1793,8 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
         m_pressed.insert(id, pressed);
         if (pressed == false || was)
             return;
-        delta = invert ? -step : step;
+        clicks = invert ? -1 : 1;
+        delta = clicks * step;
     }
     else if (mode == "relative2c")
     {
@@ -1652,9 +1802,10 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
         int midi = midiValue(value);
         if (midi == 0)
             return;
-        delta = (midi < 64 ? midi : midi - 128) * step / 5.0;
+        clicks = midi < 64 ? midi : midi - 128;
         if (invert)
-            delta = -delta;
+            clicks = -clicks;
+        delta = clicks * step / 5.0;
     }
     else
     {
@@ -1662,9 +1813,19 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
         int midi = midiValue(value);
         if (midi == 64 || midi == 0)
             return;
-        delta = (midi < 64 ? -(64 - midi) : midi - 64) * step / 5.0;
+        clicks = midi < 64 ? -(64 - midi) : midi - 64;
         if (invert)
-            delta = -delta;
+            clicks = -clicks;
+        delta = clicks * step / 5.0;
+    }
+
+    // the Live Time of a cue: 10 % longer or shorter a step, from where it is
+    if (isLiveTimeTarget(target))
+    {
+        int page, slot;
+        if (liveTimeSlot(m, &page, &slot))
+            m_core->playbacks()->scaleLiveTime(page, slot, std::pow(1.1, clicks));
+        return;
     }
 
     qreal next = current + delta;
@@ -1678,7 +1839,7 @@ void ControlMapper::apply(QVariantMap &m, uchar value)
     applyFader(m, qBound(min, next, max));
 }
 
-void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
+void ControlMapper::applyButton(const QVariantMap &m, bool pressed, bool select)
 {
     QString target = m.value("target").toString();
     QString mode = m.value("mode").toString();
@@ -1737,17 +1898,34 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed)
     if (target == "scene" || target == "sceneIndex")
     {
         quint32 fid = functionOf(m);
+        // a flash on the selected scene: the release stops the scene of
+        // the press, even when another one was selected since
+        if (mode == "flash" && onSelectedScene(m))
+        {
+            const int id = m.value("id").toInt();
+            if (pressed)
+                m_flashScene.insert(id, fid);
+            else if (m_flashScene.contains(id))
+                fid = m_flashScene.take(id);
+            else
+                return;
+        }
         Function *f = m_core->doc()->function(fid);
         if (f == nullptr)
             return;
+        // a press selects it (a group selects the scenes it starts too); an
+        // action of a cue doesn't: nobody pressed it
+        if (select && pressed && mode != "off")
+            zones->selectScene(fid);
         Zone *owner = zoneOwning(fid);
         if (owner != nullptr)
         {
             // toggle uses the group, which knows the scenes that start paused
+            // (the actions of the cues are only on or off)
             if (mode == "toggle")
                 owner->trigger(fid);
             else if (next && owner->isActive(fid) == false)
-                owner->start(fid);
+                owner->start(fid, select);
             else if (next == false && owner->isActive(fid))
                 owner->stop(fid);
         }
@@ -1807,9 +1985,11 @@ void ControlMapper::applyPlaybackButton(const QVariantMap &m, bool pressed)
 
     if (target == "playbackFlash")
     {
-        // on/off: flash (while pressed), toggle, on, off
+        // on/off: flash (while pressed), toggle, on, off. (Held by a press,
+        // not lit: during its decay a press holds it again)
         const QString mode = m.value("mode").toString();
-        const bool flashing = playbackState(m) == 1;
+        const QVariantMap info = fid >= 0 ? pb->functionStatus(fid) : pb->slotInfo(pbPage, slot);
+        const bool flashing = info.value("flashHeld").toBool();
         bool down = flashing;
         if (mode == "flash")
             down = pressed;
@@ -1995,11 +2175,28 @@ int ControlMapper::playbackState(const QVariantMap &m) const
     return 0;
 }
 
+bool ControlMapper::liveTimeSlot(const QVariantMap &m, int *page, int *slot) const
+{
+    if (m.value("target").toString() == "playbackSelectedLiveTime")
+    {
+        const QVariantMap selected = m_core->playbacks()->selected();
+        if (selected.isEmpty())
+            return false;
+        *page = selected.value("page").toInt();
+        *slot = selected.value("slot").toInt();
+        return true;
+    }
+    *page = m.value("pbPage", -1).toInt();
+    *slot = m.value("slot").toInt();
+    return true;
+}
+
 qreal ControlMapper::faderValue(const QVariantMap &m) const
 {
     QString target = m.value("target").toString();
     Zone *zone = m_core->zones()->zoneById(m.value("zoneId").toUInt());
-    quint32 fid = m.value("functionId").toUInt();
+    // (the selected scene: whichever it is now)
+    quint32 fid = functionOf(m);
 
     if (target == "grandMaster")
         return m_core->grandMaster() / 255.0;
@@ -2027,6 +2224,18 @@ qreal ControlMapper::faderValue(const QVariantMap &m) const
         return (m_core->bpm() - 20) / 280.0;
     if (target == "playbackFader")
         return m_core->playbacks()->level(m.value("pbPage", -1).toInt(), m.value("slot").toInt());
+    // x0.1 .. x10 on a logarithmic fader, x1 in the middle
+    if (target == "cueSpeed")
+        return qBound(0.0, (std::log10(m_core->playbacks()->cueSpeed()) + 1.0) / 2.0, 1.0);
+    if (isLiveTimeTarget(target))
+    {
+        // the time the cue started with in the middle (also when no cue fades)
+        int page, slot;
+        if (liveTimeSlot(m, &page, &slot) == false)
+            return 0.5;
+        const qreal scale = m_core->playbacks()->slotInfo(page, slot).value("liveScale", 1.0).toDouble();
+        return scale > 0 ? qBound(0.0, (std::log10(scale) + 1.0) / 2.0, 1.0) : 0.5;
+    }
     if (target == "surfaceFader")
     {
         QVariantMap item = surfaceFaderItem(m);
@@ -2052,7 +2261,7 @@ void ControlMapper::applyFader(const QVariantMap &m, qreal value)
     value = qBound(0.0, value, 1.0);
     QString target = m.value("target").toString();
     Zone *zone = m_core->zones()->zoneById(m.value("zoneId").toUInt());
-    quint32 fid = m.value("functionId").toUInt();
+    quint32 fid = functionOf(m);
     int mixerId = m.value("mixerId").toInt();
 
     if (target == "grandMaster")
@@ -2083,6 +2292,19 @@ void ControlMapper::applyFader(const QVariantMap &m, qreal value)
         m_core->setBpm(qRound(20 + value * 280));
     else if (target == "playbackFader")
         m_core->playbacks()->setLevel(m.value("pbPage", -1).toInt(), m.value("slot").toInt(), value);
+    else if (target == "cueSpeed")
+        m_core->playbacks()->setCueSpeed(std::pow(10.0, value * 2.0 - 1.0));
+    else if (isLiveTimeTarget(target))
+    {
+        // the time the cue started with in the middle, x0.1 .. x10 of it
+        int page, slot;
+        if (liveTimeSlot(m, &page, &slot))
+        {
+            PlaybackManager *pb = m_core->playbacks();
+            const int base = pb->slotInfo(page, slot).value("fadeBase").toInt();
+            pb->setLiveTime(page, slot, qRound(base * std::pow(10.0, value * 2.0 - 1.0)));
+        }
+    }
     else if (target == "mixerDimmer")
         m_core->mixer()->set(mixerId, "dimmer", value);
     else if (target == "mixerHue")
@@ -2103,17 +2325,173 @@ void ControlMapper::applyFader(const QVariantMap &m, qreal value)
  * Feedback
  *********************************************************************/
 
+bool ControlMapper::isRgbPad(const QVariantMap &m)
+{
+    // a note on MIDI channel 1: the pads 0-63 of the APC mini mk2, the clip
+    // grid (0-39) and the scene buttons (82-86) of the APC40 mkII
+    const quint32 channel = m.value("channel").toUInt();
+    const int code = int(channel & 0x0FFF);
+    if (m.value("source").toString() != "midi" || (channel >> 12) != 0 || code < 128 || code > 255)
+        return false;
+    const int note = code - 128;
+    const QString controller = m.value("controller").toString();
+    if (controller == "apcmini2")
+        return note <= 63;
+    if (controller == "apc40mk2")
+        return note <= 39 || (note >= 82 && note <= 86);
+    return false;
+}
+
+/** An RGB pad of the APC40 mkII: MIDI channel 1 sets its colour, the others
+ *  a second colour it pulses or blinks to */
+static bool isApc40Pad(const QVariantMap &m)
+{
+    return m.value("controller").toString() == "apc40mk2" && ControlMapper::isRgbPad(m);
+}
+
 int ControlMapper::defaultLedChannel(const QVariantMap &mapping, const QString &state)
 {
-    // the RGB pads of the APC mini mk2: notes 0-63 on MIDI channel 1, where
-    // the MIDI channel of a state is its brightness (1 dim, 7 full)
-    const quint32 channel = mapping.value("channel").toUInt();
-    const quint32 code = channel & 0x0FFF;
-    const bool pad = mapping.value("controller").toString() == "apcmini2" && mapping.value("source").toString() == "midi"
-                     && (channel >> 12) == 0 && code >= 128 && code <= 128 + 63;
-    if (pad == false)
+    // the RGB pads, where the MIDI channel of a state is how it lights. The
+    // APC mini mk2: its brightness (1 dim, 7 full, 10 pulsing); the APC40
+    // mkII: solid on the channel of the control (1), 10 pulsing
+    if (isRgbPad(mapping) == false)
         return 0;
-    return state == "on" ? 7 : 1;
+    if (mapping.value("controller").toString() == "apc40mk2")
+        return state == "fade" ? 10 : 0;
+    return state == "on" ? 7 : state == "fade" ? 10 : 1;
+}
+
+QList<QPair<quint32, int>> ControlMapper::ledMessages(const QVariantMap &m, int value, quint32 channel,
+                                                      int stateChannel, int previous)
+{
+    if (isApc40Pad(m) == false)
+        return { { channel, value } };
+
+    const quint32 note = channel & 0x0FFF;
+    auto on = [note](int midiChannel) { return (quint32(midiChannel - 1) << 12) | note; };
+    // pulsing or blinking: from dark (channel 1) to the colour
+    if (stateChannel > 1)
+        return { { on(1), 0 }, { on(stateChannel), value } };
+
+    // solid: the colour also as the second colour of every other way the
+    // mapping lights (and of the one it lit with last), then on channel 1. A
+    // pulse or a blink of an earlier state stops, whatever the pad does with
+    // a colour on channel 1 while it blinks
+    QList<int> others;
+    for (const QString &key : { QStringLiteral("on"), QStringLiteral("off"), QStringLiteral("paused"),
+                                QStringLiteral("fade") })
+    {
+        // (the fades only on a scene with a colour of its own for them)
+        if (key == "fade" && (isFadeTarget(m.value("target").toString()) == false || m.value("fadeValue", -1).toInt() < 0))
+            continue;
+        int c = m.value(key + "Channel").toInt();
+        if (c == 0)
+            c = defaultLedChannel(m, key);
+        others.append(c);
+    }
+    others.append(previous);
+    QList<QPair<quint32, int>> messages;
+    QSet<int> sent;
+    for (int c : std::as_const(others))
+    {
+        if (c > 1 && c <= 16 && sent.contains(c) == false)
+        {
+            sent.insert(c);
+            messages.append({ on(c), value });
+        }
+    }
+    messages.append({ on(1), value });
+    return messages;
+}
+
+bool ControlMapper::isFadeTarget(const QString &target)
+{
+    return target == "scene" || target == "sceneIndex";
+}
+
+qint64 ControlMapper::fadeTimeMs(const Function *f, uint fade) const
+{
+    if (fade == 0 || fade == Function::infiniteSpeed())
+        return 0;
+    // a scene reads its fades in its own tempo, the others in that of the run
+    const bool beats = qobject_cast<const Scene *>(f) != nullptr ? f->tempoType() == Function::Beats
+                                                                  : f->overrideTempoType() == Function::Beats;
+    qint64 ms = beats ? Function::beatsToTime(fade, m_core->doc()->masterTimer()->beatTimeDuration()) : fade;
+    // a staggered scene: its last fixture starts later
+    if (const Scene *scene = qobject_cast<const Scene *>(f))
+        ms += qint64(scene->stagger()) * qMax(0, int(scene->fixtures().count()) - 1);
+    return ms;
+}
+
+bool ControlMapper::fadingIn(const Function *f) const
+{
+    if (f->stopped() || f->isPaused())
+        return false;
+    // a cuelist: the fades of the cue it plays
+    if (const Cuelist *cuelist = qobject_cast<const Cuelist *>(f))
+        return cuelist->isRunning() && cuelist->status().fading;
+    // the fade in of this run (the crossfade of its group), else its own
+    const uint fade = f->overrideFadeInSpeed() == Function::defaultSpeed() ? f->fadeInSpeed() : f->overrideFadeInSpeed();
+    return qint64(f->elapsed()) < fadeTimeMs(f, fade);
+}
+
+qint64 ControlMapper::fadeOutMs(const Function *f) const
+{
+    // (the fade out of its last run: start() keeps it after the stop)
+    const uint fade = f->overrideFadeOutSpeed() == Function::defaultSpeed() ? f->fadeOutSpeed() : f->overrideFadeOutSpeed();
+    return fadeTimeMs(f, fade);
+}
+
+void ControlMapper::trackFades()
+{
+    // only the scenes of the mappings with a colour for the fades: each one
+    // once, and what is not watched any more is forgotten
+    const qint64 now = m_clock.elapsed();
+    QHash<quint32, bool> sceneOn;
+    QHash<quint32, qint64> fadeOutUntil;
+    for (const QVariantMap &m : std::as_const(m_mappings))
+    {
+        if (isFadeTarget(m.value("target").toString()) == false || m.value("fadeValue", -1).toInt() < 0 ||
+            m.value("feedback").toBool() == false)
+            continue;
+        const quint32 fid = functionOf(m);
+        const Function *f = m_core->doc()->function(fid);
+        if (f == nullptr || sceneOn.contains(fid))
+            continue;
+        const bool on = buttonState(m) >= 1;
+        sceneOn.insert(fid, on);
+        // it stopped since the last tick: it fades out for its fade out time
+        if (m_sceneOn.value(fid, false) && on == false)
+        {
+            const qint64 ms = fadeOutMs(f);
+            if (ms > 0)
+                fadeOutUntil.insert(fid, now + ms);
+        }
+        // still fading out (a scene started again is on at once)
+        else if (on == false && m_fadeOutUntil.value(fid, 0) > now)
+        {
+            fadeOutUntil.insert(fid, m_fadeOutUntil.value(fid));
+        }
+    }
+    m_sceneOn = sceneOn;
+    m_fadeOutUntil = fadeOutUntil;
+}
+
+int ControlMapper::ledState(const QVariantMap &m) const
+{
+    const int state = buttonState(m);
+    if (isFadeTarget(m.value("target").toString()) == false || m.value("fadeValue", -1).toInt() < 0)
+        return state;
+    // (paused and waiting win over the fade)
+    const quint32 fid = functionOf(m);
+    if (state == 1)
+    {
+        const Function *f = m_core->doc()->function(fid);
+        return f != nullptr && fadingIn(f) ? 3 : 1;
+    }
+    if (state == 0 && m_fadeOutUntil.value(fid, 0) > m_clock.elapsed())
+        return 3;
+    return state;
 }
 
 void ControlMapper::feedbackOf(const QVariantMap &m, int &value, quint32 &channel, int &stateChannel) const
@@ -2124,8 +2502,8 @@ void ControlMapper::feedbackOf(const QVariantMap &m, int &value, quint32 &channe
     stateChannel = 0;
     if (isButton(m.value("target").toString()))
     {
-        int state = buttonState(m);
-        QString key = state == 1 ? "on" : state == 2 ? "paused" : "off";
+        int state = ledState(m);
+        QString key = state == 1 ? "on" : state == 2 ? "paused" : state == 3 ? "fade" : "off";
         // no scene there: the LED is off
         int midi = state < 0 ? 0 : m.value(key + "Value").toInt();
         if (state >= 0)
@@ -2154,8 +2532,37 @@ void ControlMapper::feedbackOf(const QVariantMap &m, int &value, quint32 &channe
         channel = (quint32(stateChannel - 1) << 12) | (channel & 0x0FFF);
 }
 
+QList<QPair<quint32, int>> ControlMapper::feedbackMessages(const QVariantMap &m) const
+{
+    int value = 0;
+    int stateChannel = 0;
+    quint32 channel = 0;
+    feedbackOf(m, value, channel, stateChannel);
+    return ledMessages(m, value, channel, stateChannel, m_animatedLed.value(m.value("id").toInt()));
+}
+
+bool ControlMapper::motorStays(int id, int value, qint64 now)
+{
+    // a fader the hand moved: nothing while it moves (it shows the value it
+    // gave already); once it is still, it stays where the hand left it if
+    // its target is there too
+    const auto touch = m_touch.find(id);
+    if (touch == m_touch.end())
+        return false;
+    if (now - touch->at < MOTOR_HOLD_MS)
+        return true;
+    const bool there = qAbs(value - touch->value) <= MOTOR_SLACK;
+    m_touch.erase(touch);
+    if (there)
+        m_sentFeedback.insert(id, value);
+    return there;
+}
+
 void ControlMapper::slotFeedback()
 {
+    // (the scenes that stopped since the last tick start their fade out)
+    trackFades();
+    const qint64 now = m_clock.elapsed();
     for (const QVariantMap &m : std::as_const(m_mappings))
     {
         QString source = m.value("source").toString();
@@ -2169,11 +2576,20 @@ void ControlMapper::slotFeedback()
 
         int id = m.value("id").toInt();
         int sent = value | (stateChannel << 16);
+        if (motorStays(id, value, now))
+            continue;
         if (m_sentFeedback.value(id, -1) == sent)
             continue;
         m_sentFeedback.insert(id, sent);
 
-        sendToDevices(m, channel, value);
+        // (one message, two or more on an RGB pad of the APC40 mkII)
+        for (const auto &message : ledMessages(m, value, channel, stateChannel, m_animatedLed.value(id)))
+            sendToDevices(m, message.first, message.second);
+        // the way it pulses or blinks now, which a solid colour stops later
+        if (stateChannel > 1 && isApc40Pad(m))
+            m_animatedLed.insert(id, stateChannel);
+        else
+            m_animatedLed.remove(id);
     }
 }
 
@@ -2209,11 +2625,19 @@ void ControlMapper::lightOff(const QVariantMap &m, const QString &onlyDevice)
     if (isButton(m.value("target").toString()) == false)
         return;
 
-    // 0 on the channel of the control: a note off, the LED goes dark
     quint32 channel = m.value("channel").toUInt();
+    int id = m.value("id").toInt();
+    // an RGB pad of the APC40 mkII: dark on every way it lights
+    if (isApc40Pad(m))
+    {
+        for (const auto &message : ledMessages(m, 0, channel, 0, m_animatedLed.value(id)))
+            sendToDevices(m, message.first, message.second, onlyDevice);
+        m_sentFeedback.remove(id);
+        return;
+    }
+    // 0 on the channel of the control: a note off, the LED goes dark
     sendToDevices(m, channel, 0, onlyDevice);
     // and on the MIDI channel of the last state, if it had its own (APC mini mk2)
-    int id = m.value("id").toInt();
     int stateChannel = m_sentFeedback.value(id, 0) >> 16;
     if (source == "midi" && stateChannel > 0)
     {
@@ -2240,6 +2664,15 @@ void ControlMapper::stopFeedback()
  * Load & Save
  *********************************************************************/
 
+/** The keys added after 1.0 are not saved at their default value: a show
+ *  that doesn't use them saves as it did */
+static bool unsavedDefault(const QString &key, const QVariant &value)
+{
+    static const QHash<QString, int> defaults = { { "fadeValue", -1 }, { "fadeChannel", 0 } };
+    const auto it = defaults.constFind(key);
+    return it != defaults.constEnd() && value.toInt() == it.value();
+}
+
 bool ControlMapper::saveXML(QXmlStreamWriter *doc) const
 {
     doc->writeStartElement(KXMLDTCMappings);
@@ -2248,6 +2681,8 @@ bool ControlMapper::saveXML(QXmlStreamWriter *doc) const
         doc->writeStartElement(KXMLDTCMapping);
         for (auto it = m.cbegin(); it != m.cend(); ++it)
         {
+            if (unsavedDefault(it.key(), it.value()))
+                continue;
             QVariant v = it.value();
             doc->writeAttribute(it.key(), v.typeId() == QMetaType::Bool ? (v.toBool() ? "true" : "false")
                                                                         : v.toString());
@@ -2267,8 +2702,13 @@ bool ControlMapper::loadXML(QXmlStreamReader &root)
     dropPendingLearn();
     m_mappings.clear();
     m_pressed.clear();
+    m_flashScene.clear();
     m_applied.clear();
     m_physical.clear();
+    m_touch.clear();
+    m_sceneOn.clear();
+    m_fadeOutUntil.clear();
+    m_animatedLed.clear();
     m_lastId = 0;
     QSet<int> ids;
     QList<int> renumbered;
@@ -2342,10 +2782,15 @@ bool ControlMapper::loadXML(QXmlStreamReader &root)
 
 void ControlMapper::pressTarget(const QVariantMap &target, bool pressed)
 {
+    applyTarget(target, pressed, true);
+}
+
+void ControlMapper::applyTarget(const QVariantMap &target, bool pressed, bool select)
+{
     QVariantMap m = defaultsFor(target.value("target").toString());
     for (auto it = target.cbegin(); it != target.cend(); ++it)
         m.insert(it.key(), it.value());
-    applyButton(m, pressed);
+    applyButton(m, pressed, select);
 }
 
 void ControlMapper::stopTarget(const QVariantMap &target)
@@ -2376,7 +2821,7 @@ void ControlMapper::stopTarget(const QVariantMap &target)
         else if (Zone *zone = zones->zoneById(m.value("zoneId").toUInt()))
             zone->stopAll();
     }
-    else if (isSlotTarget(kind) && kind != "playbackFader")
+    else if (isSlotTarget(kind) && kind != "playbackFader" && kind != "playbackLiveTime")
     {
         // the playback released (a function: wherever it is)
         PlaybackManager *pb = m_core->playbacks();
@@ -2427,4 +2872,81 @@ int ControlMapper::cueIndexOf(const QVariantMap &target) const
         return target.value("cue").toInt();
     const Cuelist *cuelist = qobject_cast<const Cuelist *>(m_core->doc()->function(quint32(fid)));
     return cuelist != nullptr ? cuelist->indexOfUid(uid) : -1;
+}
+
+/*********************************************************************
+ * The actions of the cues
+ *********************************************************************/
+
+void ControlMapper::slotCueActions(quint32 functionId, quint32 cueUid)
+{
+    const Cuelist *cuelist = qobject_cast<const Cuelist *>(m_core->doc()->function(functionId));
+    const int index = cuelist != nullptr ? cuelist->indexOfUid(cueUid) : -1;
+    if (index < 0)
+        return;
+
+    // the same cue again, so soon: cuelists that start each other (A starts
+    // B, which starts A) stop there
+    const qint64 now = m_actionClock.elapsed();
+    m_actionsRun.removeIf([now](QHash<QPair<quint32, quint32>, qint64>::iterator it) { return now - it.value() >= 200; });
+    const QPair<quint32, quint32> key(functionId, cueUid);
+    if (m_actionsRun.contains(key))
+        return;
+    m_actionsRun.insert(key, now);
+    // the lists whose actions started this one, just now: its actions don't
+    // start them again (lists that start each other on every cue stop too)
+    m_actionChain.removeIf([now](QHash<quint32, QPair<QSet<quint32>, qint64>>::iterator it) {
+        return now - it.value().second >= 200;
+    });
+    const QSet<quint32> chain = m_actionChain.value(functionId).first;
+
+    const QList<Cuelist::CueAction> actions = cuelist->cueAt(index).actions;
+    for (const Cuelist::CueAction &action : actions)
+    {
+        const QVariantMap target = CuelistEditor::actionToMap(action);
+        const QString kind = target.value("target").toString();
+        const int fid = target.value("functionId", -1).toInt();
+        // (on the list itself: a link of the cue does that)
+        if (fid == int(functionId))
+            continue;
+        if ((kind == "playbackGo" || kind == "playbackGoTo") && fid >= 0)
+        {
+            if (chain.contains(quint32(fid)))
+                continue;
+            m_actionChain.insert(quint32(fid), qMakePair(chain + QSet<quint32>({ functionId }), now));
+        }
+        if (kind == "bpm")
+            m_core->setBpm(qBound(20, target.value("value").toInt(), 300));
+        // releasing all of them, or a group, never releases the list itself
+        else if (kind == "playbackReleaseAll")
+            m_core->playbacks()->releaseAll(int(functionId));
+        else if (kind == "groupRelease")
+            releaseGroups(target.value("zoneId").toInt(), functionId);
+        // a scene it starts isn't the selected scene: nobody pressed it
+        else
+            applyTarget(target, true, false);
+    }
+}
+
+void ControlMapper::releaseGroups(int zoneId, quint32 except)
+{
+    // its group, or all of them (a deleted group: none)
+    ZoneManager *zones = m_core->zones();
+    QList<Zone *> released;
+    if (zoneId == ALL_GROUPS)
+    {
+        for (int i = 0; i < zones->count(); i++)
+            released.append(zones->zone(i));
+    }
+    else if (Zone *zone = zoneId >= 0 ? zones->zoneById(quint32(zoneId)) : nullptr)
+    {
+        released.append(zone);
+    }
+    for (Zone *zone : std::as_const(released))
+    {
+        const QList<quint32> running = zone->activeFunctions();
+        for (quint32 fid : running)
+            if (fid != except)
+                zone->stop(fid);
+    }
 }

@@ -23,7 +23,9 @@
 #include <QColor>
 #include <QFile>
 #include <QHash>
+#include <QMap>
 #include <QSet>
+#include <QTimeZone>
 
 #include <algorithm>
 #include <cmath>
@@ -765,6 +767,34 @@ QString signature(const QLCChannel *ch)
     return parts.join('|');
 }
 
+/** A FixtureTypeID without braces, in capitals; empty when it is all zeros */
+QString fixtureTypeIdOf(const QString &text)
+{
+    const QString id = QString(text).remove('{').remove('}').trimmed().toUpper();
+    for (const QChar c : id)
+        if (c != '0' && c != '-')
+            return id;
+    return QString();
+}
+
+/** The fixture type id and the last revision of $type */
+GdtfImporter::Info infoOf(const Node *type)
+{
+    GdtfImporter::Info info;
+    info.fixtureTypeId = fixtureTypeIdOf(type->attr("FixtureTypeID"));
+    const Node *revisions = type->child("Revisions");
+    const QList<const Node *> list = revisions != nullptr ? revisions->all("Revision") : QList<const Node *>();
+    if (list.isEmpty())
+        return info;
+    info.revisionText = list.last()->attr("Text").trimmed();
+    // in UTC, mostly without saying so
+    QDateTime date = QDateTime::fromString(list.last()->attr("Date").trimmed(), Qt::ISODate);
+    if (date.isValid() && date.timeSpec() == Qt::LocalTime)
+        date = QDateTime(date.date(), date.time(), QTimeZone::UTC);
+    info.revisionDate = date.isValid() ? date.toUTC() : QDateTime();
+    return info;
+}
+
 } // namespace
 
 /*********************************************************************
@@ -816,7 +846,8 @@ QByteArray GdtfImporter::zipFileData(const QZipReader &zip, const QString &name)
     return data;
 }
 
-QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStringList *warnings, const QDir *wheelsDir)
+QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStringList *warnings, const QDir *wheelsDir,
+                                  Info *info)
 {
     QString dummyError;
     QStringList dummyWarnings;
@@ -851,6 +882,8 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
         *error = QObject::tr("Not a GDTF file: there is no fixture type");
         return nullptr;
     }
+    if (info != nullptr)
+        *info = infoOf(type);
 
     Context ctx;
     ctx.fixtureType = type;
@@ -930,6 +963,81 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
         return ch;
     };
 
+    // a channel at its address in a mode, with its cell (head), or -1
+    struct Placed
+    {
+        int address;
+        QLCChannel *channel;
+        int head;
+    };
+
+    // a mode of the channels $placed, the gaps between them as unused
+    // channels and the cells of a bar as heads; $physical is the fixture's
+    auto makeMode = [&](const QString &modeName, QList<Placed> placed, QLCPhysical physical) {
+        // the channels in the order of their addresses, the gaps as unused channels
+        std::sort(placed.begin(), placed.end(), [](const Placed &a, const Placed &b) { return a.address < b.address; });
+        QLCFixtureMode *mode = new QLCFixtureMode(def.get());
+        mode->setName(modeName.isEmpty() ? QString("%1 ch").arg(placed.last().address) : modeName);
+        QHash<int, QLCFixtureHead> heads;
+        quint32 position = 0;
+        int address = 1;
+        int unused = 0;
+        bool collision = false;
+        for (const Placed &p : std::as_const(placed))
+        {
+            if (p.address < address)
+            {
+                collision = true;   // two channels on one address: the first stays
+                continue;
+            }
+            while (address < p.address)
+            {
+                QLCChannel *gap = new QLCChannel();
+                gap->setName(QString("Not used %1").arg(++unused));
+                gap->setGroup(QLCChannel::Nothing);
+                gap->addCapability(new QLCCapability(0, 255, QStringLiteral("No function")));
+                mode->insertChannel(addChannel(gap), position++);
+                address++;
+            }
+            if (mode->insertChannel(p.channel, position) == false)
+            {
+                // the same channel twice in a mode: a copy of its own
+                QLCChannel *copy = p.channel->createCopy();
+                copy->setName(QString("%1 (%2)").arg(p.channel->name()).arg(p.address));
+                mode->insertChannel(addChannel(copy), position);
+            }
+            if (p.head >= 0)
+                heads[p.head].addChannel(position);
+            position++;
+            address++;
+        }
+        if (collision)
+            warnings->append(QObject::tr("Mode %1: two channels on the same address, the first one is used").arg(mode->name()));
+        QList<int> headIndexes = heads.keys();
+        std::sort(headIndexes.begin(), headIndexes.end());
+        if (headIndexes.count() > 1)
+        {
+            for (int h : std::as_const(headIndexes))
+                mode->insertHead(-1, heads.value(h));
+            maxHeads = qMax(maxHeads, int(headIndexes.count()));
+            physical.setLayoutSize(QSize(int(headIndexes.count()), 1));
+        }
+        mode->setPhysical(physical);
+        return mode;
+    };
+    auto addMode = [&](QLCFixtureMode *mode) {
+        def->addMode(mode);
+        if (def->physical().width() == 0)
+            def->setPhysical(mode->physical());
+    };
+
+    // the names of the modes of the file, which the modes of their other DMX
+    // breaks don't take; those modes come after them
+    QSet<QString> modeNames;
+    for (const Node *modeNode : modesNode->all("DMXMode"))
+        modeNames.insert(modeNode->attr("Name").trimmed().toLower());
+    QList<QLCFixtureMode *> breakModes;
+
     for (const Node *modeNode : modesNode->all("DMXMode"))
     {
         const QString modeName = modeNode->attr("Name").trimmed();
@@ -947,15 +1055,9 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
             if (const Node *templ = ctx.geometries.value(ref->attr("Geometry")))
                 referencesOf[templ].append(ref);
 
-        struct Placed
-        {
-            int address;
-            QLCChannel *channel;
-            int head;
-        };
-        QList<Placed> placed;
-        QSet<QString> usedNames;
-        bool otherBreaks = false;
+        // its channels by DMX break, and their names in each one
+        QMap<int, QList<Placed>> placedByBreak;
+        QMap<int, QSet<QString>> namesByBreak;
 
         for (const Node *dmxChannel : channelsNode->all("DMXChannel"))
         {
@@ -1025,11 +1127,8 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
                         shift = chosen->attr("DMXOffset", "1").toInt() - 1;
                     }
                 }
-                if (dmxBreak > 1)
-                {
-                    otherBreaks = true;
-                    continue;
-                }
+                const int breakNumber = qMax(1, dmxBreak);
+                QSet<QString> &usedNames = namesByBreak[breakNumber];
 
                 // its name: "Red", "Red 2" for the second cell
                 QString name = kind.name;
@@ -1080,65 +1179,15 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
                     ch->setName(fine ? (b == 1 ? QString("%1 fine").arg(name) : QString("%1 fine %2").arg(name).arg(b))
                                      : name);
                     ch->setDefaultValue(uchar((defaultValue >> (8 * (bytes - 1 - b))) & 0xff));
-                    placed.append({ offsets.at(b) + shift, addChannel(ch), referenced ? instance : -1 });
+                    placedByBreak[breakNumber].append({ offsets.at(b) + shift, addChannel(ch), referenced ? instance : -1 });
                 }
             }
         }
 
-        if (otherBreaks)
-            warnings->append(QObject::tr("Mode %1: only the first DMX break is used").arg(modeName));
-        if (placed.isEmpty())
+        if (placedByBreak.isEmpty())
         {
             warnings->append(QObject::tr("Mode %1 has no DMX channels").arg(modeName));
             continue;
-        }
-
-        // the channels in the order of their addresses, the gaps as unused channels
-        std::sort(placed.begin(), placed.end(), [](const Placed &a, const Placed &b) { return a.address < b.address; });
-        QLCFixtureMode *mode = new QLCFixtureMode(def.get());
-        mode->setName(modeName.isEmpty() ? QString("%1 ch").arg(placed.last().address) : modeName);
-        QHash<int, QLCFixtureHead> heads;
-        quint32 position = 0;
-        int address = 1;
-        int unused = 0;
-        bool collision = false;
-        for (const Placed &p : std::as_const(placed))
-        {
-            if (p.address < address)
-            {
-                collision = true;   // two channels on one address: the first stays
-                continue;
-            }
-            while (address < p.address)
-            {
-                QLCChannel *gap = new QLCChannel();
-                gap->setName(QString("Not used %1").arg(++unused));
-                gap->setGroup(QLCChannel::Nothing);
-                gap->addCapability(new QLCCapability(0, 255, QStringLiteral("No function")));
-                mode->insertChannel(addChannel(gap), position++);
-                address++;
-            }
-            if (mode->insertChannel(p.channel, position) == false)
-            {
-                // the same channel twice in a mode: a copy of its own
-                QLCChannel *copy = p.channel->createCopy();
-                copy->setName(QString("%1 (%2)").arg(p.channel->name()).arg(p.address));
-                mode->insertChannel(addChannel(copy), position);
-            }
-            if (p.head >= 0)
-                heads[p.head].addChannel(position);
-            position++;
-            address++;
-        }
-        if (collision)
-            warnings->append(QObject::tr("Mode %1: two channels on the same address, the first one is used").arg(modeName));
-        QList<int> headIndexes = heads.keys();
-        std::sort(headIndexes.begin(), headIndexes.end());
-        if (headIndexes.count() > 1)
-        {
-            for (int h : std::as_const(headIndexes))
-                mode->insertHead(-1, heads.value(h));
-            maxHeads = qMax(maxHeads, int(headIndexes.count()));
         }
 
         // the physical part: size, beam, power, pan and tilt
@@ -1184,13 +1233,31 @@ QLCFixtureDef *GdtfImporter::read(const QByteArray &gdtf, QString *error, QStrin
         }
         if (hasPan || hasTilt)
             physical.setFocusType(QStringLiteral("Head"));
-        if (headIndexes.count() > 1)
-            physical.setLayoutSize(QSize(int(headIndexes.count()), 1));
-        mode->setPhysical(physical);
-        def->addMode(mode);
-        if (def->physical().width() == 0)
-            def->setPhysical(physical);
+
+        // the first DMX break is the mode itself
+        QString baseName = modeName;
+        if (placedByBreak.contains(1))
+        {
+            QLCFixtureMode *mode = makeMode(modeName, placedByBreak.take(1), physical);
+            baseName = mode->name();
+            addMode(mode);
+        }
+        // each other one is a mode of its own, patched at its own address
+        for (auto it = placedByBreak.cbegin(); it != placedByBreak.cend(); ++it)
+        {
+            const QString wanted = QString("%1 (DMX break %2)").arg(baseName).arg(it.key()).trimmed();
+            QString name = wanted;
+            for (int n = 2; modeNames.contains(name.toLower()); n++)
+                name = QString("%1 (%2)").arg(wanted).arg(n);
+            modeNames.insert(name.toLower());
+            breakModes.append(makeMode(name, it.value(), physical));
+            warnings->append(QObject::tr("Mode %1: its DMX break %2 is the mode “%3”: patch it at its own address")
+                             .arg(baseName).arg(it.key()).arg(name));
+        }
     }
+    // (after the modes of the file: theirs keep their places)
+    for (QLCFixtureMode *mode : std::as_const(breakModes))
+        addMode(mode);
 
     if (def->modes().isEmpty())
     {
@@ -1224,18 +1291,19 @@ GdtfImporter::Result GdtfImporter::convert(const QByteArray &gdtf, const QDir &t
 {
     Result result;
     QDir wheels(target.filePath(QStringLiteral("wheels")));
-    std::unique_ptr<QLCFixtureDef> def(read(gdtf, &result.error, &result.warnings, &wheels));
+    Info info;
+    std::unique_ptr<QLCFixtureDef> def(read(gdtf, &result.error, &result.warnings, &wheels, &info));
     if (def == nullptr)
         return result;
+    result.fixtureTypeId = info.fixtureTypeId;
+    result.revisionText = info.revisionText;
 
     // the same fixture in another library: both can be used
     if (taken && taken(def->manufacturer(), def->model()))
         def->setModel(def->model() + QStringLiteral(" (GDTF)"));
 
-    QString name = QString("%1-%2").arg(def->manufacturer(), def->model());
-    name.replace(QRegularExpression(QStringLiteral("[^A-Za-z0-9_\\-\\.]+")), QStringLiteral("-"));
     target.mkpath(".");
-    const QString path = target.filePath(name + QStringLiteral(".qxf"));
+    const QString path = target.filePath(qxfName(def->manufacturer(), def->model()));
     if (def->saveXML(path) != QFile::NoError)
     {
         result.error = QObject::tr("Unable to write %1").arg(path);
@@ -1247,4 +1315,12 @@ GdtfImporter::Result GdtfImporter::convert(const QByteArray &gdtf, const QDir &t
     result.model = def->model();
     result.file = path;
     return result;
+}
+
+QString GdtfImporter::qxfName(const QString &manufacturer, const QString &model)
+{
+    static const QRegularExpression unsafe(QStringLiteral("[^A-Za-z0-9_\\-\\.]+"));
+    QString name = QString("%1-%2").arg(manufacturer, model);
+    name.replace(unsafe, QStringLiteral("-"));
+    return name + QStringLiteral(".qxf");
 }

@@ -23,6 +23,7 @@
 #include <QSet>
 #include <algorithm>
 #include <climits>
+#include <cmath>
 
 #include "palettemanager.h"
 #include "patchmanager.h"
@@ -33,6 +34,7 @@
 #include "qlccapability.h"
 #include "qlcchannel.h"
 #include "fixturegroup.h"
+#include "sequence.h"
 #include "cuelist.h"
 #include "fxscene.h"
 #include "fixture.h"
@@ -51,7 +53,8 @@ PaletteManager::PaletteManager(Doc *doc, Programmer *programmer, PatchManager *p
     , m_statesDirty(true)
 {
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
-    // the cuelists keep their references in the cues: their counts follow the edits
+    // the cuelists and steps keep their references in the cues and steps:
+    // their counts follow the edits
     connect(m_doc, SIGNAL(functionAdded(quint32)), this, SLOT(slotFunctionChanged(quint32)));
     connect(m_doc, SIGNAL(functionChanged(quint32)), this, SLOT(slotFunctionChanged(quint32)));
     connect(m_doc, SIGNAL(fixtureRemoved(quint32)), this, SLOT(slotFixtureRemoved(quint32)));
@@ -62,7 +65,23 @@ PaletteManager::PaletteManager(Doc *doc, Programmer *programmer, PatchManager *p
 
 QStringList PaletteManager::types()
 {
-    return { QStringLiteral("intensity"), QStringLiteral("position"), QStringLiteral("colour"), QStringLiteral("beam") };
+    return { QStringLiteral("intensity"), QStringLiteral("position"), QStringLiteral("colour"), QStringLiteral("beam"),
+             QStringLiteral("all") };
+}
+
+bool PaletteManager::records(const QString &type, const QLCChannel *ch)
+{
+    // (a palette click must not switch lamps on nor reset heads)
+    if (type == QLatin1String("all"))
+        return ch != nullptr && ch->group() != QLCChannel::Maintenance;
+    return typeOf(ch) == type;
+}
+
+QString PaletteManager::word(const QString &type)
+{
+    static const QHash<QString, QString> words = {
+        { "intensity", "INT" }, { "position", "POS" }, { "colour", "COL" }, { "beam", "BEAM" }, { "all", "PAL" } };
+    return words.value(type);
 }
 
 QString PaletteManager::typeOf(const QLCChannel *ch)
@@ -70,6 +89,7 @@ QString PaletteManager::typeOf(const QLCChannel *ch)
     if (ch == nullptr)
         return QString();
 
+    // (the cue times of an attribute follow these rules too: Cuelist::timeGroupOf)
     const QString attribute = FXScene::attributeOf(ch);
     switch (ch->group())
     {
@@ -143,18 +163,26 @@ QVariantMap PaletteManager::toMap(const Palette &p) const
             }
         }
     }
-    // and the cuelists whose cues use it
-    for (auto it = m_cuelistRefs.cbegin(); it != m_cuelistRefs.cend(); ++it)
+    // and the cuelists and steps that use it (each once)
+    for (auto it = m_listRefs.cbegin(); it != m_listRefs.cend(); ++it)
         if (it.value().contains(p.id))
             scenes++;
+    // (the places it uses: of fixtures still there, in a fan)
+    int spread = 0;
+    for (auto it = p.places.cbegin(); it != p.places.cend(); ++it)
+        if (takesPlace(p, m_doc->fixture(it.key())))
+            spread++;
 
     QVariantMap map;
     map.insert("id", p.id);
     map.insert("type", p.type);
     map.insert("number", p.number);
     map.insert("name", p.name);
+    map.insert("code", word(p.type) + QLatin1Char(' ') + QString::number(p.number));
     map.insert("color", p.color.isValid() ? p.color.name() : QString());
     map.insert("fixtures", int(p.entries.count()));
+    map.insert("fan", isFan(p));
+    map.insert("spread", spread);
     map.insert("scenes", scenes);
     return map;
 }
@@ -179,6 +207,15 @@ int PaletteManager::paletteByNumber(const QString &type, int number) const
         if (p.type == type && p.number == number)
             return p.id;
     return -1;
+}
+
+QStringList PaletteManager::namesOf(const QSet<int> &ids) const
+{
+    QStringList names;
+    for (const Palette &p : m_palettes)
+        if (ids.contains(p.id))
+            names.append(p.name);
+    return names;
 }
 
 int PaletteManager::nextNumber(const QString &type) const
@@ -265,7 +302,7 @@ QList<PaletteManager::Entry> PaletteManager::entriesFromProgrammer(const QString
         {
             auto it = values.constFind(qMakePair(fid, c));
             const QLCChannel *ch = fxi->channel(c);
-            if (it == values.constEnd() || typeOf(ch) != type)
+            if (it == values.constEnd() || records(type, ch) == false)
                 continue;
 
             Value v;
@@ -298,6 +335,38 @@ bool PaletteManager::sameType(const Entry &entry, const Fixture *fxi) const
         if (v.channel >= fxi->channels())
             return false;
     return true;
+}
+
+bool PaletteManager::isFan(const Palette &p)
+{
+    for (int i = 0; i < p.entries.count(); i++)
+    {
+        const Entry &a = p.entries.at(i);
+        for (int j = i + 1; j < p.entries.count(); j++)
+        {
+            const Entry &b = p.entries.at(j);
+            if (a.manufacturer == b.manufacturer && a.model == b.model && a.mode == b.mode)
+                return true;
+        }
+    }
+    return false;
+}
+
+bool PaletteManager::takesPlace(const Palette &p, const Fixture *fxi) const
+{
+    if (fxi == nullptr || isFan(p) == false)
+        return false;
+    int same = 0;
+    for (const Entry &e : p.entries)
+    {
+        if (sameType(e, fxi) == false)
+            continue;
+        // (recorded on it: its own values)
+        if (e.fixture == fxi->id())
+            return false;
+        same++;
+    }
+    return same != 1;
 }
 
 /** The colour of a capability of a wheel: its colour, else the one its name says
@@ -373,6 +442,19 @@ QColor PaletteManager::colourOf(const Entry &entry) const
     return wheel;
 }
 
+QColor PaletteManager::colourOf(const QString &type, const QList<Entry> &entries) const
+{
+    if (type != QLatin1String("colour") && type != QLatin1String("all"))
+        return QColor();
+    for (const Entry &e : entries)
+    {
+        const QColor colour = colourOf(e);
+        if (colour.isValid())
+            return colour;
+    }
+    return QColor();
+}
+
 /** A key without its head ("red 2") nor its repetition ("gobo#2") */
 static QString baseKey(const QString &key)
 {
@@ -381,16 +463,20 @@ static QString baseKey(const QString &key)
     return base.remove(suffix);
 }
 
-QMap<quint32, uchar> PaletteManager::genericValues(const Palette &p, const Fixture *fxi) const
+QMap<quint32, uchar> PaletteManager::genericValues(const Palette &p, const Fixture *fxi, qreal place) const
 {
     QMap<quint32, uchar> values;
     if (fxi == nullptr)
         return values;
 
-    // colours: the mix of the colour of the palette, or the closest slot of a wheel
-    if (p.type == QLatin1String("colour") && p.color.isValid())
+    // colours: the mix of the colour of the palette (at its place in a fan),
+    // or the closest slot of a wheel
+    const bool all = p.type == QLatin1String("all");
+    const bool fanned = place >= 0.0 && isFan(p);
+    const QColor colour = fanned ? fanColour(p, place) : p.color;
+    if ((p.type == QLatin1String("colour") || all) && colour.isValid())
     {
-        values = Programmer::colourMix(fxi, p.color);
+        values = Programmer::colourMix(fxi, colour);
         if (values.isEmpty())
         {
             for (quint32 c = 0; c < fxi->channels(); c++)
@@ -401,11 +487,11 @@ QMap<quint32, uchar> PaletteManager::genericValues(const Palette &p, const Fixtu
                 int best = -1, distance = INT_MAX;
                 for (QLCCapability *cap : ch->capabilities())
                 {
-                    const QColor colour = capabilityColour(cap);
-                    if (colour.isValid() == false)
+                    const QColor slot = capabilityColour(cap);
+                    if (slot.isValid() == false)
                         continue;
-                    int d = qAbs(colour.red() - p.color.red()) + qAbs(colour.green() - p.color.green()) +
-                            qAbs(colour.blue() - p.color.blue());
+                    int d = qAbs(slot.red() - colour.red()) + qAbs(slot.green() - colour.green()) +
+                            qAbs(slot.blue() - colour.blue());
                     if (d < distance)
                     {
                         distance = d;
@@ -419,26 +505,44 @@ QMap<quint32, uchar> PaletteManager::genericValues(const Palette &p, const Fixtu
                 }
             }
         }
-        if (values.isEmpty() == false)
+        if (values.isEmpty() == false && all == false)
             return values;
     }
+    // ("all": its colour is that mix, the rest goes by attribute)
+    const bool mixed = values.isEmpty() == false;
 
     // the same attributes: as they are on continuous channels (zoom, pan...),
-    // by the name of the capability on the others (shutter "Open")
-    QHash<QString, const Value *> byKey;
-    for (const Entry &e : p.entries)
-        for (const Value &v : e.values)
+    // by the name of the capability on the others (shutter "Open"). In a
+    // fan, each one from the nearest recorded fixture that has it
+    QList<int> order;
+    for (int i = 0; i < p.entries.count(); i++)
+        order.append(i);
+    if (fanned)
+    {
+        // (halfway between two, the later one, as fanValues())
+        const qreal x = place * qreal(p.entries.count() - 1);
+        std::stable_sort(order.begin(), order.end(), [x](int a, int b) {
+            const qreal da = qAbs(a - x), db = qAbs(b - x);
+            return da != db ? da < db : a > b;
+        });
+    }
+    QHash<QString, const Value *> byKey, byBase;
+    for (int i : std::as_const(order))
+    {
+        for (const Value &v : p.entries.at(i).values)
+        {
             if (byKey.contains(v.key) == false)
                 byKey.insert(v.key, &v);
-    QHash<QString, const Value *> byBase;
-    for (auto it = byKey.cbegin(); it != byKey.cend(); ++it)
-        if (byBase.contains(baseKey(it.key())) == false)
-            byBase.insert(baseKey(it.key()), it.value());
+            if (byBase.contains(baseKey(v.key)) == false)
+                byBase.insert(baseKey(v.key), &v);
+        }
+    }
 
     for (quint32 c = 0; c < fxi->channels(); c++)
     {
         const QLCChannel *ch = fxi->channel(c);
-        if (ch == nullptr || typeOf(ch) != p.type)
+        if (ch == nullptr || records(p.type, ch) == false || values.contains(c) ||
+            (mixed && typeOf(ch) == QLatin1String("colour")))
             continue;
         const QString key = m_programmer->attributeKey(fxi->id(), c);
         const Value *v = byKey.value(key, byBase.value(baseKey(key), nullptr));
@@ -478,20 +582,126 @@ QMap<quint32, uchar> PaletteManager::valuesFor(int id, quint32 fixtureId) const
     if (p == nullptr || fxi == nullptr)
         return values;
 
-    auto valuesOf = [](const Entry &e) {
-        QMap<quint32, uchar> map;
-        for (const Value &v : e.values)
-            map.insert(v.channel, v.value);
-        return map;
-    };
-    // its own values, else the ones of a fixture of the same type, else its attributes
+    // its own values
     for (const Entry &e : p->entries)
         if (e.fixture == fixtureId && sameType(e, fxi))
             return valuesOf(e);
+    // else the fan of the fixtures of the same type, at its place (without
+    // one yet, the first of them); else its attributes
+    QList<const Entry *> same;
     for (const Entry &e : p->entries)
         if (sameType(e, fxi))
-            return valuesOf(e);
-    return genericValues(*p, fxi);
+            same.append(&e);
+    const qreal place = p->places.value(fixtureId, -1.0);
+    if (same.count() >= 2 && place >= 0.0)
+        return fanValues(same, fxi, place);
+    if (same.isEmpty() == false)
+        return valuesOf(*same.first());
+    return genericValues(*p, fxi, place);
+}
+
+QMap<quint32, uchar> PaletteManager::valuesOf(const Entry &entry)
+{
+    QMap<quint32, uchar> map;
+    for (const Value &v : entry.values)
+        map.insert(v.channel, v.value);
+    return map;
+}
+
+/** Where $place (0..1) falls in a fan of $count: the one before it and how far to the next */
+static int fanSegment(qreal place, int count, qreal *fraction)
+{
+    const qreal x = qBound(0.0, place, 1.0) * qreal(count - 1);
+    const int k = qMin(int(std::floor(x)), count - 2);
+    *fraction = x - k;
+    return k;
+}
+
+QMap<quint32, uchar> PaletteManager::fanValues(const QList<const Entry *> &fan, const Fixture *fxi, qreal place) const
+{
+    qreal f = 0.0;
+    const int k = fanSegment(place, int(fan.count()), &f);
+    const QMap<quint32, uchar> a = valuesOf(*fan.at(k));
+    const QMap<quint32, uchar> b = valuesOf(*fan.at(k + 1));
+
+    // 16 bit: a fine channel goes with the coarse one of its attribute and head
+    QHash<quint32, quint32> fineOf;
+    QSet<quint32> fines;
+    for (auto l = a.cbegin(); l != a.cend(); ++l)
+    {
+        const QLCChannel *lsb = fxi->channel(l.key());
+        if (lsb == nullptr || lsb->controlByte() != QLCChannel::LSB || b.contains(l.key()) == false)
+            continue;
+        const QString attribute = FXScene::attributeOf(lsb);
+        const int head = FXScene::headOf(fxi, l.key());
+        for (auto m = a.cbegin(); m != a.cend(); ++m)
+        {
+            const QLCChannel *msb = fxi->channel(m.key());
+            if (msb == nullptr || msb->controlByte() != QLCChannel::MSB || msb->group() != lsb->group() ||
+                b.contains(m.key()) == false || fineOf.contains(m.key()) ||
+                FXScene::attributeOf(msb) != attribute || FXScene::headOf(fxi, m.key()) != head)
+                continue;
+            fineOf.insert(m.key(), l.key());
+            fines.insert(l.key());
+            break;
+        }
+    }
+
+    QMap<quint32, uchar> values = b;
+    for (auto it = a.cbegin(); it != a.cend(); ++it)
+    {
+        const quint32 c = it.key();
+        // (what only one of them has, as it has it)
+        if (b.contains(c) == false)
+        {
+            values.insert(c, it.value());
+            continue;
+        }
+        // (with its coarse channel)
+        if (fines.contains(c))
+            continue;
+        const int from = it.value(), to = b.value(c);
+        const QLCChannel *ch = fxi->channel(c);
+        auto fine = fineOf.constFind(c);
+        if (fine != fineOf.cend())
+        {
+            const int wideFrom = (from << 8) | a.value(fine.value());
+            const int wideTo = (to << 8) | b.value(fine.value());
+            const int wide = qRound(wideFrom + (wideTo - wideFrom) * f);
+            values.insert(c, uchar(wide >> 8));
+            values.insert(fine.value(), uchar(wide & 0xff));
+        }
+        else if (ch == nullptr || ch->capabilities().count() <= 1)
+        {
+            values.insert(c, uchar(qRound(from + (to - from) * f)));
+        }
+        else
+        {
+            // a wheel, a shutter...: the slot of the nearest one, never one in between
+            values.insert(c, uchar(f < 0.5 ? from : to));
+        }
+    }
+    return values;
+}
+
+QColor PaletteManager::fanColour(const Palette &p, qreal place) const
+{
+    QList<QColor> colours;
+    for (const Entry &e : p.entries)
+    {
+        const QColor colour = colourOf(e);
+        if (colour.isValid())
+            colours.append(colour);
+    }
+    if (colours.count() < 2)
+        return colours.isEmpty() ? p.color : colours.first();
+
+    qreal f = 0.0;
+    const int k = fanSegment(place, int(colours.count()), &f);
+    const QColor &from = colours.at(k), &to = colours.at(k + 1);
+    return QColor(qRound(from.red() + (to.red() - from.red()) * f),
+                  qRound(from.green() + (to.green() - from.green()) * f),
+                  qRound(from.blue() + (to.blue() - from.blue()) * f));
 }
 
 /*********************************************************************
@@ -511,7 +721,7 @@ int PaletteManager::record(const QString &type, const QString &name, int number)
     p.type = type;
     p.number = number > 0 && paletteByNumber(type, number) < 0 ? number : nextNumber(type);
     p.entries = entries;
-    p.color = type == QLatin1String("colour") ? colourOf(entries.first()) : QColor();
+    p.color = colourOf(type, entries);
     p.name = name.trimmed();
     if (p.name.isEmpty())
     {
@@ -521,6 +731,8 @@ int PaletteManager::record(const QString &type, const QString &name, int number)
             p.name = tr("Position %1").arg(p.number);
         else if (type == QLatin1String("colour"))
             p.name = tr("Colour %1").arg(p.number);
+        else if (type == QLatin1String("all"))
+            p.name = tr("All %1").arg(p.number);
         else
             p.name = tr("Beam %1").arg(p.number);
     }
@@ -584,18 +796,13 @@ bool PaletteManager::update(int id)
                 it->values.append(v);
         }
     }
-    if (p->type == QLatin1String("colour"))
-    {
-        for (const Entry &e : p->entries)
-        {
-            QColor colour = colourOf(e);
-            if (colour.isValid())
-            {
-                p->color = colour;
-                break;
-            }
-        }
-    }
+    // (a palette that holds no colour any more keeps the one it had)
+    const QColor colour = colourOf(p->type, p->entries);
+    if (colour.isValid())
+        p->color = colour;
+    // recorded now: their own values, no place in the fan
+    for (const Entry &entry : entries)
+        p->places.remove(entry.fixture);
 
     linkProgrammer(id);
     propagate(id);
@@ -615,8 +822,9 @@ bool PaletteManager::replace(int id)
         return false;
 
     p->entries = entries;
-    if (p->type == QLatin1String("colour"))
-        p->color = colourOf(entries.first());
+    p->color = colourOf(p->type, entries);
+    for (const Entry &entry : entries)
+        p->places.remove(entry.fixture);
 
     linkProgrammer(id);
     propagate(id);
@@ -693,6 +901,10 @@ void PaletteManager::propagate(int id)
     for (Function *f : m_doc->functionsByType(Function::CuelistType))
         if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
             cuelist->applyPalette(id, valueOf);
+    // and the steps, the same way: the step on stage plays them at once
+    for (Function *f : m_doc->functionsByType(Function::SequenceType))
+        if (Sequence *sequence = qobject_cast<Sequence *>(f))
+            sequence->applyPalette(id, valueOf);
 }
 
 void PaletteManager::rename(int id, const QString &name)
@@ -743,10 +955,13 @@ void PaletteManager::remove(int id)
                 ++it;
         }
     }
-    // and so do the cues
+    // and so do the cues and the steps
     for (Function *f : m_doc->functionsByType(Function::CuelistType))
         if (Cuelist *cuelist = qobject_cast<Cuelist *>(f))
             cuelist->forgetPalette(id);
+    for (Function *f : m_doc->functionsByType(Function::SequenceType))
+        if (Sequence *sequence = qobject_cast<Sequence *>(f))
+            sequence->forgetPalette(id);
     m_programmer->forgetPalette(id);
     m_doc->setModified();
     emit palettesChanged();
@@ -757,10 +972,70 @@ void PaletteManager::remove(int id)
  * Apply
  *********************************************************************/
 
+int PaletteManager::placeFixtures(Palette &p, const QList<quint32> &ordered, bool again)
+{
+    if (isFan(p) == false)
+        return 0;
+    // the fixtures it was not recorded on, that it applies to, in their order
+    // (one of a type recorded on a single fixture takes its values: no place)
+    QList<quint32> candidates;
+    for (quint32 fid : ordered)
+    {
+        const Fixture *fxi = m_doc->fixture(fid);
+        if (candidates.contains(fid) || takesPlace(p, fxi) == false)
+            continue;
+        if (valuesFor(p.id, fid).isEmpty() == false)
+            candidates.append(fid);
+    }
+
+    // as the position fan: from one end to the other, one alone in the
+    // middle (rounded as the file keeps it: opened again, the same values)
+    const int n = int(candidates.count());
+    int placed = 0;
+    bool changed = false;
+    for (int i = 0; i < n; i++)
+    {
+        const quint32 fid = candidates.at(i);
+        if (again == false && p.places.contains(fid))
+            continue;
+        const qreal t = n > 1 ? qRound(10000.0 * i / (n - 1)) / 10000.0 : 0.5;
+        placed++;
+        if (p.places.value(fid, -1.0) != t)
+        {
+            p.places.insert(fid, t);
+            changed = true;
+        }
+    }
+    if (changed)
+    {
+        // (what used one of them through the first fixture of its type
+        // follows its place now)
+        m_doc->setModified();
+        propagate(p.id);
+        emit palettesChanged();
+        slotStatesChanged();
+    }
+    return placed;
+}
+
+int PaletteManager::spreadAgain(int id)
+{
+    Palette *p = find(id);
+    if (p == nullptr)
+        return 0;
+    const int placed = placeFixtures(*p, m_programmer->selectionIds(), true);
+    if (placed > 0)
+        apply(id);
+    return placed;
+}
+
 int PaletteManager::apply(int id)
 {
-    if (find(id) == nullptr)
+    Palette *p = find(id);
+    if (p == nullptr)
         return 0;
+    // the fixtures it was not recorded on take their place in its fan
+    placeFixtures(*p, m_programmer->selectionIds(), false);
     QHash<quint32, QMap<quint32, uchar>> values;
     for (quint32 fid : m_programmer->selectionIds())
     {
@@ -811,12 +1086,14 @@ QList<quint32> PaletteManager::liveFixtures(const Palette &p, int groupId) const
 
 void PaletteManager::setLive(int id, int groupId, bool on)
 {
-    const Palette *p = find(id);
+    Palette *p = find(id);
     if (p == nullptr)
         return;
     const QList<quint32> fixtures = liveFixtures(*p, groupId);
     if (on)
     {
+        // (its fan in the order of the group)
+        placeFixtures(*p, fixtures, false);
         QHash<quint32, QMap<quint32, uchar>> values;
         for (quint32 fid : fixtures)
             values.insert(fid, valuesFor(id, fid));
@@ -903,27 +1180,35 @@ QVariantList PaletteManager::scenePalettes(quint32 functionId) const
 void PaletteManager::slotFunctionRemoved(quint32 id)
 {
     const bool scene = m_sceneRefs.remove(id) > 0;
-    const QSet<int> cuelist = m_cuelistRefs.take(id);
-    if (scene || cuelist.isEmpty() == false)
+    const QSet<int> list = m_listRefs.take(id);
+    if (scene || list.isEmpty() == false)
         emit palettesChanged();
 }
 
 void PaletteManager::slotFunctionChanged(quint32 id)
 {
-    Cuelist *cuelist = qobject_cast<Cuelist *>(m_doc->function(id));
+    Function *function = m_doc->function(id);
     QSet<int> used;
-    if (cuelist != nullptr)
+    if (Cuelist *cuelist = qobject_cast<Cuelist *>(function))
+    {
         for (const Cuelist::Cue &cue : cuelist->cues())
             for (int pid : cue.palettes)
                 used.insert(pid);
+    }
+    else if (Sequence *sequence = qobject_cast<Sequence *>(function))
+    {
+        for (const ChaserStep &step : sequence->steps())
+            for (int pid : step.palettes)
+                used.insert(pid);
+    }
 
     // (only a change of what it uses changes the counts)
-    if (used == m_cuelistRefs.value(id))
+    if (used == m_listRefs.value(id))
         return;
     if (used.isEmpty())
-        m_cuelistRefs.remove(id);
+        m_listRefs.remove(id);
     else
-        m_cuelistRefs.insert(id, used);
+        m_listRefs.insert(id, used);
     emit palettesChanged();
 }
 
@@ -950,6 +1235,10 @@ void PaletteManager::slotFixtureRemoved(quint32 id)
         else
             ++f;
     }
+    // and its place in the fans
+    for (Palette &p : m_palettes)
+        if (p.places.remove(id) > 0)
+            changed = true;
     // the scenes each palette is used by, and the palettes of a scene
     if (changed)
         emit palettesChanged();
@@ -993,6 +1282,17 @@ bool PaletteManager::loadXML(QXmlStreamReader &root)
             p.color = QColor(root.attributes().value("Color").toString());
             while (root.readNextStartElement())
             {
+                // the place of a fixture in its fan: one that is there, from 0 to 1
+                if (root.name() == QLatin1String("Place"))
+                {
+                    bool fixtureOk = false, atOk = false;
+                    const quint32 fixture = root.attributes().value("Fixture").toUInt(&fixtureOk);
+                    const qreal at = root.attributes().value("At").toDouble(&atOk);
+                    if (fixtureOk && atOk && qIsFinite(at) && at >= 0.0 && at <= 1.0 && m_doc->fixture(fixture) != nullptr)
+                        p.places.insert(fixture, at);
+                    root.skipCurrentElement();
+                    continue;
+                }
                 if (root.name() != QLatin1String("Fixture"))
                 {
                     root.skipCurrentElement();
@@ -1025,6 +1325,10 @@ bool PaletteManager::loadXML(QXmlStreamReader &root)
                 if (fixtureOk && e.values.isEmpty() == false)
                     p.entries.append(e);
             }
+            // (a fixture recorded in it has its own values)
+            for (const Entry &e : std::as_const(p.entries))
+                if (sameType(e, m_doc->fixture(e.fixture)))
+                    p.places.remove(e.fixture);
             if (types().contains(p.type) && idOk && p.id > 0 && p.id <= kMaxPaletteId && find(p.id) == nullptr)
             {
                 if (p.number < 1 || p.number > kMaxPaletteId || paletteByNumber(p.type, p.number) >= 0)
@@ -1108,6 +1412,17 @@ bool PaletteManager::saveXML(QXmlStreamWriter *doc) const
             }
             doc->writeEndElement();
         }
+        // the places in its fan, by fixture
+        QList<quint32> placed = p.places.keys();
+        std::sort(placed.begin(), placed.end());
+        for (quint32 fid : std::as_const(placed))
+        {
+            if (m_doc->fixture(fid) == nullptr)
+                continue;
+            doc->writeEmptyElement("Place");
+            doc->writeAttribute("Fixture", QString::number(fid));
+            doc->writeAttribute("At", QString::number(p.places.value(fid), 'f', 4));
+        }
         doc->writeEndElement();
     }
 
@@ -1136,7 +1451,7 @@ bool PaletteManager::saveXML(QXmlStreamWriter *doc) const
 void PaletteManager::afterLoad(int usedId)
 {
     // a palette recorded later would get the ID of a missing one: the
-    // cues that name it would follow a palette they never had
+    // cues and steps that name it would follow a palette they never had
     for (Function *f : m_doc->functionsByType(Function::CuelistType))
     {
         Cuelist *cuelist = qobject_cast<Cuelist *>(f);
@@ -1149,6 +1464,19 @@ void PaletteManager::afterLoad(int usedId)
                     missing.insert(pid);
         for (int pid : std::as_const(missing))
             cuelist->forgetPalette(pid);
+    }
+    for (Function *f : m_doc->functionsByType(Function::SequenceType))
+    {
+        Sequence *sequence = qobject_cast<Sequence *>(f);
+        if (sequence == nullptr)
+            continue;
+        QSet<int> missing;
+        for (const ChaserStep &step : sequence->steps())
+            for (int pid : step.palettes)
+                if (find(pid) == nullptr)
+                    missing.insert(pid);
+        for (int pid : std::as_const(missing))
+            sequence->forgetPalette(pid);
     }
 
     // (the SHOW buttons and the mappings keep the ID of a deleted palette:

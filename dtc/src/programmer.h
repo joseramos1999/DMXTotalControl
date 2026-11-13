@@ -33,6 +33,7 @@
 #include <QPointF>
 
 #include "fxscene.h"
+#include "fxtools.h"
 
 class GenericDMXSource;
 class SceneValue;
@@ -222,8 +223,10 @@ public:
 
     /** The programmer values, as scene values */
     QList<SceneValue> sceneValues() const;
-    /** Replace the programmer with values, selecting their fixtures (no FX) */
-    void loadValues(const QList<SceneValue> &values);
+    /** Replace the programmer with values, selecting their fixtures (no FX).
+     *  $refs: the palette of the values that come from one (a step) */
+    void loadValues(const QList<SceneValue> &values,
+                    const QHash<QPair<quint32, quint32>, int> &refs = QHash<QPair<quint32, quint32>, int>());
     /**
      * Replace the programmer with a look to edit (a scene, a step, a cue):
      * its values, its FX (with none, the FX of before stop: the next update
@@ -255,15 +258,27 @@ public:
     /** The FX of $param on the selection, with "active", "count" and "sets". Its
      *  shape is the one of the first selected fixture; "partial": the FX has
      *  other fixtures; "ownCount", "ownSelected": the fixtures (selected ones)
-     *  that do something their own way */
+     *  that do the shape, size, direction or phase their own way. DMX Total
+     *  Control: "rows", its fixtures in the order of the effect
+     *  (FxTools::fixtureRows); "offsetCount", "offsetSelected": the fixtures
+     *  (selected ones) with a shift or a delay */
     Q_INVOKABLE QVariantMap fxOf(const QString &param) const;
     /** Change (or start) the FX of $param on the selection. An FX stays one, on
      *  one clock: the selected fixtures join it; the shape, size and direction
      *  (FxTools::ownKeys) go to the selected fixtures only, the speed and the
      *  timing to the whole FX */
     Q_INVOKABLE void setFx(const QString &param, const QVariantMap &props);
-    /** The selected fixtures of the FX of $param do what the FX does again */
+    /** The selected fixtures of the FX of $param do what the FX does again
+     *  (their shift and delay stay) */
     Q_INVOKABLE void resetFxOwn(const QString &param);
+    /** DMX Total Control: the shift (degrees) or the delay (ms) of a fixture
+     *  of the FX of $param on the selection ($key: FxTools::offsetKeys) */
+    Q_INVOKABLE void setFxOffset(const QString &param, quint32 fixtureId, const QString &key, int value);
+    /** Spread $key over the selected fixtures of the FX of $param, in the
+     *  order of the effect: 0 on the first, $last on the last */
+    Q_INVOKABLE void fanFxOffset(const QString &param, const QString &key, int last);
+    /** The selected fixtures of the FX of $param lose their shift and delay */
+    Q_INVOKABLE void clearFxOffsets(const QString &param);
     /** Stop the FX of $param on the selection (and of what is linked to it) */
     Q_INVOKABLE void stopFx(const QString &param);
     Q_INVOKABLE void stopAllFx();
@@ -276,10 +291,17 @@ public:
 
     QList<FXScene::Layer> fxLayerList() const;
     /** A macro on the selection: its layers where the fixtures have the parameter,
-     *  and its base values. @return how many layers went on */
-    int applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases);
-    /** The base values of the parameters of $layers, on the last selected fixture */
-    QMap<QString, int> fxBaseValues(const QList<FXScene::Layer> &layers) const;
+     *  and its base values. DMX Total Control: a layer with $looks (by layer;
+     *  FxTools::lookAt) gives the selected fixtures with its parameter, in
+     *  order, what the one in their place did: their bases (the top-level
+     *  ones of its parameters stay out), their own way, their shift and delay.
+     *  @return how many layers went on */
+    int applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases,
+                     const QList<QList<FxTools::FixtureLook>> &looks = {});
+    /** DMX Total Control: what each fixture of $layer does, in its order: the
+     *  programmer values of the parameter (pan and tilt for pan/tilt; none for
+     *  a virtual dimmer, whose level is the layer's) and its own way */
+    QList<FxTools::FixtureLook> fxFixtureLooks(const FXScene::Layer &layer) const;
     /** Start the FX again after everything was stopped */
     void restartFx();
     bool isFxRunning() const;
@@ -375,15 +397,29 @@ private:
     int fxLayerFor(const QString &param, bool exact) const;
     /** $fixtures leave the FX of $param (FX left without fixtures go) */
     void removeFromFx(const QString &param, const QList<quint32> &fixtures);
+    /** The base $value of a macro on $param of $fixtureId. DMX Total Control:
+     *  a dimmer base on a fixture without a dimmer is the level of the
+     *  virtual dimmer of the FX layer $dimmerLayer, once ($virtualSet) */
+    void setMacroBase(quint32 fixtureId, const QString &param, int value, int dimmerLayer, bool &virtualSet);
     /** The fixtures whose FX channels (or their fine channels) are in $keys
      *  leave the FX of the programmer. @return true if any did */
     bool releaseFxOn(const QSet<QPair<quint32, quint32>> &keys);
+    /** DMX Total Control: the fixtures without a dimmer that a dimmer layer of
+     *  $layers dims leave the dimmer FX of the programmer; with $changed, only
+     *  the ones whose first emitter is in it. @return true if any did */
+    bool releaseVirtualDimmerFx(const QList<FXScene::Layer> &layers,
+                                const QSet<QPair<quint32, quint32>> *changed = nullptr);
     /** A cuelist went to a cue: the edits the release mode takes back. The
      *  changed channels are always drained, so that a GO with nothing to
      *  release never releases a later edit */
     void releaseForCue(Cuelist *cuelist);
     /** The FX play: the source leaves them their channels, the FX scene gets the layers */
     void syncFx();
+    /** DMX Total Control: the values as the FX scene takes them (its bases) */
+    QHash<QPair<quint32, quint32>, uchar> valueHash() const;
+    /** DMX Total Control: $layer is a dimmer FX whose virtual dimmer takes its
+     *  level from the values (auto): only then FxTools::virtualDimmer reads them */
+    static bool autoVirtualDimmer(const FXScene::Layer &layer);
 
 private:
     Doc *m_doc;

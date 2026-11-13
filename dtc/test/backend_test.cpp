@@ -25,6 +25,8 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QUdpSocket>
+#include <QNetworkDatagram>
+#include <QLockFile>
 #include <QSettings>
 #include <QScopeGuard>
 #include <QWebSocket>
@@ -42,6 +44,10 @@
 #include <QImageReader>
 #include <QStandardPaths>
 #include <QRandomGenerator>
+#include <QNetworkAccessManager>
+#include <QNetworkCookieJar>
+#include <QUrlQuery>
+#include <QUuid>
 #include "rgbimage.h"
 #include "rgbtext.h"
 
@@ -69,6 +75,8 @@
 #include "qlcphysical.h"
 #include "outputpatch.h"
 #include "singleinstance.h"
+#include "mdnsresponder.h"
+#include "qrcode.h"
 #if __has_include(<QtCore/private/qzipwriter_p.h>)
 #include <QtCore/private/qzipwriter_p.h>
 #include <QtCore/private/qzipreader_p.h>
@@ -91,6 +99,7 @@
 #include "fxtools.h"
 #include "remoteserver.h"
 #include "effectexchange.h"
+#include "qlcexchange.h"
 #include "chaserstep.h"
 #include "sequence.h"
 #include "rgbmatrix.h"
@@ -407,6 +416,359 @@ private slots:
     void recoveryOfNamedShow();
     void singleInstanceMessages();
     void dialogFolders();
+    // cuelists-qlc G10a
+    void qlcExportSteps();
+    void qlcCueLabels();
+    // cuelists-qlc G10b
+    void qlcCopyReadableByQlc();
+    void qlcCopyMergesVirtualConsole();
+    // cuelists-qlc G10c
+    void convertChaserToCuelist();
+    void convertStepsOrders();
+    void qlcRoundTrip();
+    // cuelists-qlc G10d
+    void qlcCueListsInShow();
+    void qlcCueListsFromAnotherShow();
+    void qlcOpenHint();
+    // cuelists-qlc G10e
+    void qlcCueListControlsImport();
+    void qlcCueListControlsExport();
+    // paletas E1
+    void stepsPalettes();
+    void stepsPalettesSaved();
+    void stepsPalettesToCues();
+    // paletas E3
+    void allPalettes();
+    void allPalettesCommandLine();
+    void allPalettesSaved();
+    // paletas E2
+    void paletteFan();
+    void paletteFanChannels();
+    void paletteFanSaved();
+    // gdtf-share share-client
+    // GDTF-Share with the user's own account (a local server plays it):
+    // the session, signed in again when it expires, and the errors
+    void gdtfShareSession();
+    void gdtfShareErrors();
+    // gdtf-share share-credentials
+    // the account: the password encrypted by Windows, only when asked; a
+    // saved one that stops working or can't be read is forgotten
+    void gdtfShareSecrets();
+    void gdtfShareCredentials();
+    // gdtf-share share-list-cache
+    // the list of GDTF-Share: read whatever the types of its values, kept
+    // in the user folder for offline use, never replaced by an empty one,
+    // and searched by manufacturer and fixture name
+    void gdtfShareList();
+    void gdtfShareListCache();
+    void gdtfShareListSpeed();
+    // gdtf-share gdtf-importer-limits
+    // GDTF files as GDTF-Share has them: each other DMX break of a mode is a
+    // mode of its own, patched at its own address; the fixtures downloaded
+    // are converted again from the .gdtf kept, without downloading them
+    void gdtfDmxBreaks();
+    void gdtfReconvertShareDownloads();
+    // gdtf-share share-download-import
+    // a fixture downloaded from GDTF-Share and converted as Import GDTF
+    // does: its .gdtf kept, where it came from recorded (a newer revision
+    // reaches the fixtures patched with it); what isn't a GDTF file, or is
+    // cancelled, leaves nothing; a download waits for the import running;
+    // Cancel in the browser still converts what arrived whole; the program
+    // closed in the middle leaves a record that matches the files
+    void gdtfShareDownload();
+    void gdtfShareDownloadErrors();
+    void gdtfShareDownloadWaits();
+    void gdtfShareDownloadCancel();
+    void gdtfShareClosed();
+    // gdtf-share share-revisions
+    // a fixture downloaded from GDTF-Share whose fixture type has a newer
+    // revision there: found, and updated; once a day at the start, with the
+    // saved account, told once per new revision (and nothing asked without
+    // it); one imported from a file only when its revision text says which
+    void gdtfShareRevisions();
+    void gdtfShareDailyCheck();
+    void gdtfShareRevisionText();
+    // gdtf-share share-browser-ui
+    // what the GDTF-Share browser shows and does: the manufacturers of what
+    // the search and the filter find, Sign in or the account, a revision
+    // downloaded and imported, then patched from Add fixtures ("Patch it")
+    void gdtfShareBrowser();
+    // gdtf-share share-docs-i18n
+    // every text of the interface in the five catalogues, translated; the
+    // six manuals line for line, their links finding their sections, and
+    // GDTF-Share told with the names its buttons have in each language
+    void interfaceTranslated();
+    void manualInStep();
+    void gdtfShareManual();
+    // mapeos A2
+    void ledFadeState();
+    void ledFadeCuelistAndAlone();
+    void ledFadeSaved();
+    // mapeos A1
+    void selectedSceneFollowsPresses();
+    void selectedSceneMappings();
+    void selectedSceneFaders();
+    void selectedSceneKept();
+    // mapeos G11a
+    void apc40RgbPads();
+    void apc40LedMessages();
+    void apc40TemplateLeds();
+    // mapeos G11b
+    void controllerModeMessages();
+    void controllerSessionMode();
+    void controllerGetReady();
+    void controllerGetReadyOthers();
+    // mapeos G11c
+    void motorFaderNoEcho();
+    void motorFaderCorrected();
+    void motorFaderOthers();
+    // superescenas B3
+    void superSceneUndoRedo();
+    void superSceneUndoAudioAndStatic();
+    void superSceneHistoryForgets();
+    void superSceneUndoWhilePlaying();
+    void superSceneUndoRandom();
+    // superescenas B1
+    void superSceneMoveBlocks();
+    void superSceneRemoveBlocks();
+    void superSceneDuplicateAndSetBlocks();
+    // superescenas B2
+    void superSceneCopyPaste();
+    void superScenePasteElsewhere();
+    void superScenePasteAudio();
+    void superSceneClipboardUpkeep();
+    // remoto D0
+    // the addresses of the remote: by network, the best first, kept current
+    void remoteAddresses();
+    // remoto D1
+    // the QR code of the address of the remote: the parts of the standard,
+    // the codes read back by a reader of the tests, and what Options shows
+    void qrReedSolomon();
+    void qrFormatAndVersionBits();
+    void qrCapacity();
+    void qrRoundTrip();
+    void qrMaskChoice();
+    void remoteQrCode();
+    // remoto D3a
+    // the timers of the SHOW count in the backend, for the SHOW and the
+    // phones: started, paused and reset from either, at zero in another show
+    void showTimers();
+    void remoteTimers();
+    void remoteTimerClock();
+    // remoto D3b
+    // the DMX levels on the phone: the bytes of a universe, sent only to the
+    // phones whose page shows them and only when they change
+    void ioLastValues();
+    void remoteLevels();
+    // remoto D3c
+    // the live mixer on the phone: the strips of the computer, their
+    // settings both ways, and the flashes held while a finger is on them
+    void remoteMixer();
+    void remoteMixerFlash();
+    // remoto D2
+    // the phones find the program by name (<name>.local): the packets of
+    // Multicast DNS, another computer with the name, the answers on the
+    // loopback, and the name of the remote
+    void mdnsPackets();
+    void mdnsConflict();
+    void mdnsLoopback();
+    void remoteName();
+    // remoto D2b
+    // a page opened by an address goes to the name: which program answers
+    // at an address (GET /whoami, asked by a page of another origin), and
+    // the layout with this program, its name and its port
+    void remoteWhoAmI();
+    // fx C1
+    // the shift and the delay of each fixture of an FX, typed by hand: on the
+    // output (a delayed one waits at its base when the FX starts), saved, in
+    // the programmer and the scene editor, and in the conversions
+    void fxShiftDelay();
+    void programmerFxShiftDelay();
+    void convertFxStepsAfterDelay();
+    // fx C2
+    // a dimmer FX on fixtures without a dimmer dims their colour (a virtual
+    // dimmer): on the output, with a colour FX, on what is below, saved; in
+    // the programmer, its macros, a recorded scene, a cue and the release
+    void fxVirtualDimmer();
+    void programmerFxVirtualDimmer();
+    // fx C3
+    // the macros of the user saved fixture by fixture: what each fixture of
+    // the FX did by its place (its bases, its own way, its shift and delay),
+    // stretched over more or fewer fixtures; the same for all is for any
+    // selection; older files and the factory macros as before
+    void fxMacroLooks();
+    void fxMacrosPerFixture();
+    // cuelists-cues G9
+    // undo and redo of the edits of a cuelist: every kind of edit, the wheel
+    // as one step, the limits, what changed outside the editor meanwhile,
+    // the cue in the programmer and a running list, the options of the step only
+    void cuelistUndoEdits();
+    void cuelistUndoMerge();
+    void cuelistUndoLimits();
+    void cuelistUndoOutsideChanges();
+    void cuelistUndoEditing();
+    void cuelistUndoOptionsOnly();
+    // cuelists-cues G2
+    // times of the attributes and fixtures of a cue: the attribute of each
+    // channel, which time wins on the output, what keeps one time for all
+    // (a group fade-in, a BACK time), the length of a cue with them (Follow,
+    // the status, a super scene), the show file, an import, the editor
+    void cuelistTimeGroups();
+    void cuelistAttributeTimes();
+    void cuelistFixtureTimes();
+    void cuelistTimesOverride();
+    void cuelistLengthWithParts();
+    void cuelistTimesXml();
+    void cuelistTimesImport();
+    void cuelistEditorTimes();
+    // cuelists-cues G3
+    // fade curves and time fans: what each curve does on the output (one
+    // time for everything and the release of the list stay linear, the curve
+    // of an attribute shapes only its channels), the show file, the editor,
+    // and the fan of delays or fades over fixtures
+    void cuelistCurves();
+    void cuelistCurvesXml();
+    void cuelistEditorCurves();
+    void cuelistTimeFan();
+    // cuelists-cues G4
+    // cue links with repetitions, and cue actions: the cues a GO plays with
+    // a link and the status (BACK, jumps, a pre-selected cue, a release),
+    // the triggers through a link, the length and the super-scene seek, the
+    // show file, what the actions do (and when not), an import, the editor
+    void cuelistLinks();
+    void cuelistLinksFollow();
+    void cuelistLinksDuration();
+    void cuelistLinksXml();
+    void cueActionsRun();
+    void cuelistImportActions();
+    void cuelistEditorLinksActions();
+    // cuelists-reproduccion G7a
+    // the flash attack and decay of a playback: up to full and back on the
+    // output (what the flash starts, what plays at its level), the Flash
+    // button lit until the decay ends, a press, the fader or a GO during a
+    // ramp, what drops the ramps, the show file, a flash off the slots and
+    // the toggle of a mapping during a decay
+    void playbackFlashTimes();
+    void playbackFlashTimesDuringRamps();
+    void playbackFlashTimesXml();
+    void playbackFlashTimesOffSlot();
+    // cuelists-reproduccion G8
+    // the cue speed of every cuelist (its fades, also the ones that run,
+    // delays and triggers; not a scene) and Live Time of the cue that fades
+    // (a new time, a factor, now; a Follow after it, a release, a delay):
+    // the property, the show, storing the time in the cue, the mappings and
+    // the SHOW
+    void cuelistCueSpeed();
+    void cuelistLiveTime();
+    void cuelistLiveTimeOtherTimes();
+    void playbackCueSpeed();
+    // cuelists-reproduccion G6
+    // Move in black: once a cue has finished, the dark fixtures the next cue
+    // lights take its other attributes (not when another playback or the cue
+    // itself lights them, nor the channels of an FX, nor on a cue that says
+    // no); its delay and time, a pre-selected cue, the show file, the editor
+    void cuelistMoveInBlack();
+    void cuelistMoveInBlackXml();
+    void cuelistEditorMoveInBlack();
+    // cuelists-reproduccion G5a
+    // the type of a cuelist (the show file, a copy, the editor) and the
+    // submaster: its fader starts it at its level and releases it, GO and
+    // Back on it stopped only choose its cue (also off the playbacks, or
+    // with no fader to start it), a GO while it plays, the flash, a group
+    void cuelistModeXml();
+    void playbackSubmaster();
+    void playbackSubmasterChoose();
+    // cuelists-reproduccion G5b
+    // the Chase cuelists: their cues by themselves, round and round, at a
+    // speed (Forward, Backward, Bounce, Random; tracking still applies, the
+    // triggers and the end don't count); GO, Back, pause, a tapped rhythm,
+    // BeatGO and the speeds; the change of a step and the BPM of the show;
+    // the show file, the length and a super-scene block that starts in the
+    // middle; the editor and the playbacks
+    void cuelistChaseOrder();
+    void cuelistChaseControl();
+    void cuelistChaseTimes();
+    void cuelistChaseXml();
+    void cuelistEditorChase();
+    // cuelists-reproduccion G1
+    // the last change wins between cuelists (and scenes) of the same
+    // priority: each LTP channel follows the last GO that changed it, what a
+    // list only tracks is not taken back, a release glides to the one that
+    // had it; a higher priority and the HTP intensities as before; the
+    // faders of a list (how many, its level, pause and priority, a release
+    // and a stop on an older one, a coarse/fine pair) and its FX
+    void cuelistLastChangeWins();
+    void cuelistLastChangeWinsRules();
+    void cuelistLastChangeWinsFaderCount();
+    void cuelistLastChangeWinsOlderFaders();
+    void cuelistLastChangeWinsFx();
+    // cuelists-reproduccion G5c
+    // the Override cuelists: the fader crossfades their whole look with what
+    // is below (no HTP merge, at any priority; a 16-bit pan in 16 bit), a
+    // cue fade with it, a release of the list and of a channel back to what
+    // is below (and taken again on the way), the programmer above it, a type
+    // that plays from the next start; the editor raises the default priority
+    void cuelistOverride();
+    void cuelistOverrideFades();
+    void cuelistOverrideFine();
+    void cuelistEditorOverride();
+    // cuelists-reproduccion G7b
+    // the A/B crossfade fader: each travel of the fader is a GO whose fade
+    // follows it, not the clock (the first value only tells where it is),
+    // completed at the other end, cancelled back where it started; GO in the
+    // middle, a stopped list, a cue with no time, delays, down fades and
+    // fixture times in proportion (the cue speed and Live Time don't count),
+    // Follow after it, the option (Normal cuelists only), the show file and a
+    // controller fader that picks up
+    void playbackCrossfadeFader();
+    void playbackCrossfadeStart();
+    void playbackCrossfadeTimes();
+    void playbackCrossfadeOptions();
+    void playbackCrossfadeMappings();
+    // cuelists-reproduccion G5d
+    // the Timecode cuelists on their own clock: each cue at its time (one
+    // step on with its fade, nothing before the first cue, a cue without a
+    // time or later than the clock not played), GO, Back and Go to setting
+    // the clock, a pause, the speeds; a super-scene block that starts in the
+    // middle (the timeline is the clock); the show file and the length; the
+    // editor (the times, the warning, Record and Set to the clock) and the
+    // playbacks
+    void cuelistTimecodeInternal();
+    void cuelistTimecodeControl();
+    void cuelistTimecodeSuperScene();
+    void cuelistTimecodeXml();
+    void cuelistEditorTimecode();
+    // cuelists-reproduccion G5e
+    // MIDI timecode (MTC): the input of the MIDI plugin (channel 532, the key
+    // "mtc:<ms>:<fps>") to the MasterTimer, the status and the offsets; a
+    // Timecode list that follows it (the offset, a run that waits, a timecode
+    // that stops, a rewind, a locate, GO and Back that do nothing); the
+    // options in the editor, and Set to the clock on it
+    void timecodeReader();
+    void cuelistTimecodeMtc();
+    void cuelistEditorTimecodeMtc();
+    // cross-track qlc export
+    // the copy for QLC+ knows the cuelists of today: a Chase as steps that
+    // go on by themselves at its speed and crossfade, round and round in
+    // its direction; a Timecode list as steps that last until the time of
+    // the next cue; what Submaster and Override lists do instead; and the
+    // times of attributes and fixtures, curves, links (a last cue linked
+    // always to the first one loops), actions and Move in black said. The
+    // buttons of a QLC+ Cue List on a known controller get the LEDs that
+    // learning gives
+    void qlcExportChase();
+    void qlcExportTimecode();
+    void qlcExportCueParts();
+    void qlcCueListControlsLeds();
+    // cross-track selection, A/B faders on the SHOW and the phone
+    // the actions of a cue start and stop scenes (in a group or not) without
+    // selecting them, a press still selects; the Flash of a SHOW fader (and
+    // of the phone) on the A/B fader of a playback is the flash of the
+    // playback, never a travel of the crossfade; the phone knows an A/B
+    // fader from an intensity
+    void selectedSceneCueActions();
+    void surfaceFlashCrossfade();
+    void remoteCrossfadeState();
 
 private:
     Doc *m_doc = nullptr;
@@ -430,13 +792,36 @@ struct ScopedTestSettings
     ScopedTestSettings()
         : organization(QCoreApplication::organizationName())
     {
-        QCoreApplication::setOrganizationName("DMXTotalControlCoreTest");
+        // (one of its own per test process: several copies of the suite may
+        // run at once on one computer)
+        QCoreApplication::setOrganizationName(QString("DMXTotalControlCoreTest-%1")
+                                              .arg(QCoreApplication::applicationPid()));
         QSettings().clear();
     }
     ~ScopedTestSettings()
     {
         QSettings().clear();
+#ifdef Q_OS_WIN
+        // (and its key, so that no empty key is left for each run)
+        QSettings("HKEY_CURRENT_USER\\Software", QSettings::NativeFormat)
+            .remove(QCoreApplication::organizationName());
+#endif
         QCoreApplication::setOrganizationName(organization);
+    }
+};
+
+/** The tests that use fixed network ports (the OSC plugin, the remote
+ *  server) run one at a time across test processes, when several copies of
+ *  the suite run at once on one computer */
+struct ScopedPortLock
+{
+    QLockFile lock;
+    ScopedPortLock()
+        : lock(QDir::temp().filePath("dtc-backend-test-ports.lock"))
+    {
+        // (a lock left by a process that died is taken over)
+        lock.setStaleLockTime(0);
+        lock.tryLock(300000);
     }
 };
 
@@ -595,10 +980,17 @@ void Backend_Test::initTestCase()
     // that question blocked superSceneAudio until the 5 minute timeout).
     // The decoders are all the tests need (the Pulse input is SilentCapture)
     AudioPluginCache::setDevicesEnabled(false);
+
+    // nor the networks of the machine: the remote control answers for its
+    // name with Multicast DNS on UDP 5353 of every network. Here it opens
+    // nothing (the tests of the name use the loopback)
+    MdnsResponder::setNetworkEnabled(false);
+    QVERIFY(MdnsResponder::networkEnabled() == false);
 }
 
 void Backend_Test::cleanupTestCase()
 {
+    MdnsResponder::setNetworkEnabled(true);
     AudioPluginCache::setDevicesEnabled(true);
     if (m_oldProfile.isNull())
         qunsetenv("USERPROFILE");
@@ -1331,6 +1723,7 @@ void Backend_Test::sceneFolders()
 
 void Backend_Test::feedbackLightsOff()
 {
+    ScopedPortLock ports;
     // the LEDs of a controller don't stay lit when the application closes,
     // nor when their mapping goes away: an OSC device with feedback,
     // listened to here
@@ -2769,6 +3162,7 @@ void Backend_Test::manualPages()
 
 void Backend_Test::remoteControl()
 {
+    ScopedPortLock ports;
     // remote control: the SHOW on a phone, through a web page and a WebSocket
     // its settings need somewhere to be (QSettings without an organization
     // saves nothing): empty ones, not those a previous run left
@@ -2791,6 +3185,15 @@ void Backend_Test::remoteControl()
     remote->setEnabled(true);
     QVERIFY2(remote->running(), qPrintable(remote->lastError()));
     QVERIFY(remote->urls().isEmpty() == false);
+    // the addresses of Options are the same ones, in the same order (none on
+    // a computer on no network: the URL is then its own 127.0.0.1)
+    QStringList listed;
+    for (const QVariant &address : remote->addresses())
+        listed.append(address.toMap().value("url").toString());
+    if (remote->onNetwork())
+        QCOMPARE(listed, remote->urls());
+    else
+        QVERIFY(listed.isEmpty());
 
     // the page, over HTTP; only its own files
     auto get = [](const QByteArray &path) {
@@ -2814,6 +3217,8 @@ void Backend_Test::remoteControl()
     QVERIFY2(page.startsWith("HTTP/1.1 200"), page.left(80).constData());
     QVERIFY(page.contains("remote.js"));
     QVERIFY(get("/remote.js").contains("WebSocket"));
+    // (the PIN the QR code of Options carries after '#' is read by the page)
+    QVERIFY(get("/remote.js").contains("location.hash"));
     QVERIFY(get("/icons.otf").startsWith("HTTP/1.1 200"));
     QVERIFY(get("/../dtccore.cpp").startsWith("HTTP/1.1 404"));
     // the icon of the application, for the tab and the home screen of the phone
@@ -3854,6 +4259,27 @@ void Backend_Test::zoneLiveControls()
     zone->press(quint32(a));
     QTRY_VERIFY_WITH_TIMEOUT(zone->isActive(quint32(b)), 3000);
     QTRY_COMPARE_WITH_TIMEOUT(io.channelValues(0).at(19).toInt(), 90, 2000);
+    // (nobody pressed it: the scene pressed stays the selected scene)
+    QCOMPARE(zones.selectedScene(), a);
+
+    // a jump to a scene of another group doesn't select it either
+    zones.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(seq->isRunning() == false, 2000);
+    prog.select(par);
+    prog.setChannelValue("dimmer", 40);
+    int c = prog.recordScene("C");
+    prog.setChannelValue("dimmer", 60);
+    int d = prog.recordScene("D");
+    prog.clear();
+    Zone *other = zones.addZone("Other");
+    other->addFunction(quint32(c));
+    other->addFunction(quint32(d));
+    fx.setPlayback(quint32(a), "jumpTo", c);
+    zone->press(quint32(a));
+    other->press(quint32(d));
+    QCOMPARE(zones.selectedScene(), d);
+    QTRY_VERIFY_WITH_TIMEOUT(other->isActive(quint32(c)), 3000);
+    QCOMPARE(zones.selectedScene(), d);
 
     zones.stopAll();
     m_doc->masterTimer()->stop();
@@ -4944,6 +5370,7 @@ void Backend_Test::showFaders()
  *  network card for every DMX input over the network */
 void Backend_Test::devicesControllersFirst()
 {
+    ScopedPortLock ports;
     auto device = [](const QString &plugin, const QString &name, const QString &kind, bool enabled) {
         return QVariant(QVariantMap({ { "key", plugin + "|" + name }, { "plugin", plugin }, { "name", name },
                                       { "kind", kind }, { "enabled", enabled } }));
@@ -6140,6 +6567,19 @@ void Backend_Test::demoPalettesShow()
     prog->setChannelValue("prism", 200);
     palettes->record("beam", "Prisma");
 
+    // whole looks: every value at once
+    prog->clear();
+    prog->selectFixtures(ids(spots));
+    prog->setDimmer(255);
+    prog->setPosition(0.5, 0.3);
+    prog->setChannelValue("gobo", 20);
+    palettes->record("all", "Solo");
+    prog->clear();
+    prog->selectFixtures(ids(pars + washes));
+    prog->setDimmer(180);
+    prog->setColor(QColor("#ff00ff"));
+    palettes->record("all", "Ambiente");
+
     // scenes made of palettes
     Zone *zone = core.zones()->addZone("Canción");
     const QStringList names = { "Intro", "Verso", "Estribillo" };
@@ -6399,8 +6839,12 @@ static QByteArray makeGdtf()
 {
     const QByteArray description = R"(<?xml version="1.0" encoding="UTF-8"?>
 <GDTF DataVersion="1.2">
-  <FixtureType Name="Spot GDTF" ShortName="SPG" LongName="Test Spot GDTF" Manufacturer="Test" FixtureTypeID="00000000-0000-0000-0000-000000000001">
+  <FixtureType Name="Spot GDTF" ShortName="SPG" LongName="Test Spot GDTF" Manufacturer="Test" FixtureTypeID="{00000000-0000-0000-0000-000000000001}">
     <AttributeDefinitions/>
+    <Revisions>
+      <Revision Date="2023-01-10T08:00:00" Text="Rev 1"/>
+      <Revision Date="2023-09-01T12:30:00" Text="Rev 2 "/>
+    </Revisions>
     <Wheels>
       <Wheel Name="Color1">
         <Slot Name="Open" Color="0.312700,0.329000,100.000000"/>
@@ -6514,14 +6958,26 @@ void Backend_Test::gdtfImport()
     QDir wheels(dir.filePath("wheels"));
     QString error;
     QStringList warnings;
-    std::unique_ptr<QLCFixtureDef> def(GdtfImporter::read(makeGdtf(), &error, &warnings, &wheels));
+    GdtfImporter::Info info;
+    std::unique_ptr<QLCFixtureDef> def(GdtfImporter::read(makeGdtf(), &error, &warnings, &wheels, &info));
     QVERIFY2(def != nullptr, qPrintable(error));
     QCOMPARE(def->manufacturer(), QString("Test"));
     QCOMPARE(def->model(), QString("Spot GDTF"));
     QCOMPARE(def->type(), QLCFixtureDef::MovingHead);
-    QCOMPARE(def->modes().count(), 2);
-    // the second DMX break can't be patched with the first one
-    QVERIFY(warnings.join(' ').contains("Standard"));
+    // its fixture type and its last revision (for the newer ones on GDTF-Share)
+    QCOMPARE(info.fixtureTypeId, QString("00000000-0000-0000-0000-000000000001"));
+    QCOMPARE(info.revisionText, QString("Rev 2"));
+    QCOMPARE(info.revisionDate, QDateTime(QDate(2023, 9, 1), QTime(12, 30), QTimeZone::UTC));
+    // the second DMX break can't be patched with the first one: a mode of its
+    // own, after those of the file
+    QCOMPARE(def->modes().count(), 3);
+    QCOMPARE(def->modes().at(1)->name(), QString("Pixels"));
+    QLCFixtureMode *secondBreak = def->modes().at(2);
+    QCOMPARE(secondBreak->name(), QString("Standard (DMX break 2)"));
+    QCOMPARE(secondBreak->channels().count(), 1);
+    QCOMPARE(secondBreak->channel(0)->name(), QString("Control 1"));
+    QCOMPARE(secondBreak->channel(0)->group(), QLCChannel::Maintenance);
+    QVERIFY2(warnings.join(' ').contains(QString::fromUtf8("“Standard (DMX break 2)”")), qPrintable(warnings.join('\n')));
 
     QLCFixtureMode *standard = def->modes().at(0);
     QCOMPARE(standard->name(), QString("Standard"));
@@ -6581,11 +7037,14 @@ void Backend_Test::gdtfImport()
         [](const QString &manufacturer, const QString &) { return manufacturer == "Test"; });
     QVERIFY2(result.ok, qPrintable(result.error));
     QCOMPARE(result.model, QString("Spot GDTF (GDTF)"));
+    QCOMPARE(result.fixtureTypeId, QString("00000000-0000-0000-0000-000000000001"));
+    QCOMPARE(result.revisionText, QString("Rev 2"));
     QLCFixtureDef reloaded;
     QCOMPARE(reloaded.loadXML(result.file), QFile::NoError);
-    QCOMPARE(reloaded.modes().count(), 2);
+    QCOMPARE(reloaded.modes().count(), 3);
     QCOMPARE(reloaded.modes().at(0)->channels().count(), 10);
     QCOMPARE(reloaded.modes().at(1)->heads().count(), 3);
+    QCOMPARE(reloaded.modes().at(2)->name(), QString("Standard (DMX break 2)"));
 
     // not a GDTF file
     QVERIFY(GdtfImporter::read("not a zip", &error, &warnings) == nullptr);
@@ -7332,6 +7791,22 @@ void Backend_Test::cuelistNumbers()
     QCOMPARE(editor.nextNumber(9999), QString());
 }
 
+namespace
+{
+/** trackedStates() of $cl, in one pass, is trackedState() of each of its cues */
+bool sameTrackedStates(const Cuelist *cl)
+{
+    QList<Cuelist::Cue> cues;
+    const QList<Cuelist::State> states = cl->trackedStates(&cues);
+    if (cues != cl->cues() || states.count() != cl->cueCount())
+        return false;
+    for (int i = 0; i < states.count(); i++)
+        if (states.at(i) != cl->trackedState(i))
+            return false;
+    return true;
+}
+} // namespace
+
 void Backend_Test::cuelistTrackingFold()
 {
     typedef Cuelist::Key Key;
@@ -7378,6 +7853,8 @@ void Backend_Test::cuelistTrackingFold()
     QVERIFY(cl->stateBefore(3) == s2);
     QVERIFY(cl->trackedState(-1) == Cuelist::State());
     QVERIFY(cl->trackedState(3) == Cuelist::State());
+    // (all of them in one pass: the same)
+    QVERIFY(sameTrackedStates(cl));
 
     // correcting cue 1 carries into cue 2, not into cue 3 (it owns c1)
     Cuelist::Cue first = cl->cueAt(0);
@@ -7393,6 +7870,7 @@ void Backend_Test::cuelistTrackingFold()
     QVERIFY(cl->replaceCue(second));
     QCOMPARE(cl->trackedState(1).values.value(d2), uchar(200));
     QCOMPARE(cl->trackedState(2).values, (QHash<Key, uchar>({ { c1, 50 } })));
+    QVERIFY(sameTrackedStates(cl));
     second.skip = false;
     QVERIFY(cl->replaceCue(second));
 
@@ -7401,6 +7879,7 @@ void Backend_Test::cuelistTrackingFold()
     QCOMPARE(cl->trackedState(1).values, (QHash<Key, uchar>({ { d2, 200 } })));
     QCOMPARE(cl->trackedState(2).values, (QHash<Key, uchar>({ { c1, 50 } })));
     QVERIFY(cl->stateBefore(2) == Cuelist::State());
+    QVERIFY(sameTrackedStates(cl));
     cl->setTracking(true);
     QCOMPARE(cl->trackedState(2).values.count(), 2);
 
@@ -7478,6 +7957,7 @@ void Backend_Test::cuelistTrackingFold()
     QCOMPARE(t3.fx.count(), 1);
     QVERIFY(t3.fx.at(0) == kept);
     QCOMPARE(t3.fxOwner.count(), 2);
+    QVERIFY(sameTrackedStates(fx));
 
     // the sweep of a skip cue shows on that cue only
     Cuelist::Cue skipped = fx->cueAt(1);
@@ -7487,6 +7967,7 @@ void Backend_Test::cuelistTrackingFold()
     kept.fixtures = { 10, 11, 12 };
     QCOMPARE(fx->trackedState(2).fx.count(), 1);
     QVERIFY(fx->trackedState(2).fx.at(0) == kept);
+    QVERIFY(sameTrackedStates(fx));
     skipped.skip = false;
     QVERIFY(fx->replaceCue(skipped));
 
@@ -7532,6 +8013,9 @@ void Backend_Test::cuelistTrackingFold()
     QCOMPARE(fx->trackedState(1).fx.count(), 1);
     QVERIFY(fx->trackedState(1).fx.first() == sweep);
     QVERIFY(fx->trackedState(2).fx.isEmpty());
+    QVERIFY(sameTrackedStates(fx));
+    fx->setTracking(true);
+    QVERIFY(sameTrackedStates(fx));
 }
 
 void Backend_Test::cuelistXml()
@@ -9198,9 +9682,10 @@ void Backend_Test::programmerLoadState()
     QVERIFY(prog.fxLayerList().isEmpty());
 }
 
-/** Offline frames on $doc, whose timer and universes don't run: $frames ticks
- *  of the functions, each one followed by the faders (EffectExchange renders
- *  this way). The cue timers and the fades count exact ticks */
+/** Offline frames on $doc, whose timer doesn't run: $frames ticks of the
+ *  functions, each one followed by the faders (EffectExchange renders this
+ *  way). The universe threads, if they run (a DtcCore), get no frame from
+ *  them. The cue timers and the fades count exact ticks */
 static void renderFrames(Doc *doc, int frames = 1)
 {
     for (int i = 0; i < frames; i++)
@@ -12055,8 +12540,8 @@ void Backend_Test::playbackMappings()
     QCOMPARE(leds(learn("MIDI|APC mini mk2", note + 5)), QList<int>({ 21, 7, 21, 10, 0, 0 }));
     QCOMPARE(leds(learn("MIDI|APC mini mk2", note + 112)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
     QCOMPARE(leds(learn("MIDI|APC MINI", note + 5)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
-    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 32)), QList<int>({ 21, 1, 13, 1, 0, 0 }));
-    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 84)), QList<int>({ 21, 1, 13, 1, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 32)), QList<int>({ 21, 1, 21, 10, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 84)), QList<int>({ 21, 1, 21, 10, 0, 0 }));
     QCOMPARE(leds(learn("MIDI|APC40 mkII", (3 << 12) | (note + 50))), QList<int>({ 1, 0, 2, 0, 0, 0 }));
     QCOMPARE(leds(learn("MIDI|APC40 mkII", (3 << 12) | (note + 32))), QList<int>({ 1, 0, 2, 0, 0, 0 }));
     mapper->setLearnMode(false);
@@ -12325,9 +12810,10 @@ void Backend_Test::apcTemplates()
     QCOMPARE(what(m.value((5 << 12) | 179)), QString("playbackSelect 5/0"));
     QCOMPARE(what(m.value((1 << 12) | 180)), QString("playbackRelease 1/0"));
     QCOMPARE(leds(m.value((1 << 12) | 180)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
-    // the clip grid: cue 1 on the top row, solid green / yellow / dim blue
+    // the clip grid: cue 1 on the top row, solid green, pulsing green for
+    // the next cue, dim blue
     QCOMPARE(what(m.value(128 + 32)), QString("playbackGoTo 0/0"));
-    QCOMPARE(leds(m.value(128 + 32)), QList<int>({ 21, 1, 13, 1, 46, 1 }));
+    QCOMPARE(leds(m.value(128 + 32)), QList<int>({ 21, 1, 21, 10, 46, 1 }));
     QCOMPARE(what(m.value(128 + 7)), QString("playbackGoTo 7/4"));
     QCOMPARE(what(m.value(128 + 16 + 1)), QString("playbackGoTo 1/2"));
     // the scene buttons: pages 1-5
@@ -15372,6 +15858,7 @@ void Backend_Test::removeUniverseInUse()
 
 void Backend_Test::devicesFollowShowAndUniverses()
 {
+    ScopedPortLock ports;
     // opening a show adds each universe before it reads its name and its
     // patches: the Outputs page and the devices are read again once it is
     // loaded (the last universe showed its default name and no device)
@@ -15703,6 +16190,7 @@ void Backend_Test::mappingsFollowDeletionsAndPages()
 
 void Backend_Test::remotePortInUse()
 {
+    ScopedPortLock ports;
     // the remote can't start on a port in use: another port (as the message
     // says) starts it, and switching it off leaves no error on the screen
     ScopedTestSettings settings;
@@ -15715,11 +16203,16 @@ void Backend_Test::remotePortInUse()
     QVERIFY(remote->running() == false);
     QVERIFY(remote->lastError().isEmpty() == false);
     QSignalSpy running(remote, SIGNAL(runningChanged()));
+    QSignalSpy addresses(remote, SIGNAL(addressesChanged()));
     remote->setPort(18891);
     QVERIFY2(remote->running(), qPrintable(remote->lastError()));
     QVERIFY(remote->lastError().isEmpty());
     QVERIFY(running.count() > 0);
     QVERIFY(remote->urls().isEmpty() == false);
+    // the addresses of Options follow it to the new port
+    QVERIFY(addresses.count() > 0);
+    for (const QString &url : remote->urls())
+        QVERIFY2(url.endsWith(":18891/"), qPrintable(url));
     // a port in use again, then switched off
     remote->setPort(18890);
     QVERIFY(remote->running() == false);
@@ -19526,7 +20019,8 @@ void Backend_Test::editorKeepsWhatItDoesntShow()
 
     QLCFixtureDef *copy = m_doc->fixtureDefCache()->fixtureDef("Test", "Spot copy");
     QVERIFY(copy != nullptr);
-    QCOMPARE(copy->modes().count(), 2);
+    // (Standard, Pixels and the second DMX break of Standard)
+    QCOMPARE(copy->modes().count(), 3);
     QLCFixtureMode *standard = copy->mode("Standard");
     QVERIFY(standard != nullptr);
     QCOMPARE(standard->physical().width(), 300);
@@ -20428,10 +20922,20 @@ QString lookText(const RefLook &look)
 
 QString cueText(const Cuelist::Cue &cue)
 {
+    QStringList parts;
+    for (auto it = cue.groupTimes.cbegin(); it != cue.groupTimes.cend(); ++it)
+        parts << QString("a%1=%2/%3").arg(it.key()).arg(it.value().fade).arg(it.value().delay);
+    for (auto it = cue.fixtureTimes.cbegin(); it != cue.fixtureTimes.cend(); ++it)
+        parts << QString("f%1=%2/%3").arg(it.key()).arg(it.value().fade).arg(it.value().delay);
+    QStringList actions;
+    for (const Cuelist::CueAction &action : cue.actions)
+        actions << action.value("target") + "/" + action.value("functionId", action.value("value"));
     return "#" + QString::number(cue.uid) + " n" + QString::number(cue.number) + (cue.skip ? " skip" : "") +
            (cue.block ? " block" : "") + " '" + cue.name + "' values{" + mapText(sortedOf(cue.values)) +
            "} palettes{" + mapText(sortedOf(cue.palettes)) + "} releases{" + keysText(cue.releases) + "} fx[" +
-           layersText(cue.fx) + "] fxReleases{" + slotsText(cue.fxReleases) + "}";
+           layersText(cue.fx) + "] fxReleases{" + slotsText(cue.fxReleases) + "} times{" + parts.join(' ') + "}" +
+           (cue.link != 0 || cue.linkCount != 0 ? QString(" link#%1x%2").arg(cue.link).arg(cue.linkCount) : QString()) +
+           (actions.isEmpty() ? QString() : " actions[" + actions.join(' ') + "]");
 }
 
 QString cuesText(const QList<Cuelist::Cue> &cues)
@@ -20493,6 +20997,33 @@ QString checkCueList(const QList<Cuelist::Cue> &cues)
         }
         if (cue.downFade < -1)
             return at + "a down fade below -1";
+        auto validPart = [](const Cuelist::PartTime &part) {
+            return part.isEmpty() == false && part.fade >= -1 && part.fade <= 3600000 && part.delay >= -1 &&
+                   part.delay <= 3600000;
+        };
+        for (auto it = cue.groupTimes.cbegin(); it != cue.groupTimes.cend(); ++it)
+        {
+            if (it.key() < 0 || it.key() >= Cuelist::TimeGroupCount || validPart(it.value()) == false)
+                return at + "attribute times that are not valid";
+        }
+        for (auto it = cue.fixtureTimes.cbegin(); it != cue.fixtureTimes.cend(); ++it)
+        {
+            if (validPart(it.value()) == false)
+                return at + "fixture times that are not valid";
+        }
+        if (cue.linkCount < 0 || cue.linkCount > 999 || (cue.link == 0 && cue.linkCount != 0))
+            return at + "a link count that is not valid";
+        for (const Cuelist::CueAction &action : cue.actions)
+        {
+            if (action.value("target").isEmpty())
+                return at + "an action without a target";
+        }
+    }
+    // links only to cues of the list
+    for (const Cuelist::Cue &cue : cues)
+    {
+        if (cue.link != 0 && uids.contains(cue.link) == false)
+            return "cue " + Cuelist::numberToString(cue.number) + ": a link to a cue the list doesn't have";
     }
     return QString();
 }
@@ -20658,6 +21189,49 @@ struct RefList
 
         if (cue.downFade < -1)
             cue.downFade = -1;
+
+        // part times: the four attributes, -1 (the cue's) up to an hour, and
+        // only the parts with a time
+        auto tidy = [](Cuelist::PartTime part) {
+            part.fade = qBound(-1, part.fade, 3600000);
+            part.delay = qBound(-1, part.delay, 3600000);
+            return part;
+        };
+        QMap<int, Cuelist::PartTime> groupTimes;
+        for (auto it = cue.groupTimes.cbegin(); it != cue.groupTimes.cend(); ++it)
+            if (it.key() >= 0 && it.key() <= 3 && tidy(it.value()).isEmpty() == false)
+                groupTimes.insert(it.key(), tidy(it.value()));
+        cue.groupTimes = groupTimes;
+        QMap<quint32, Cuelist::PartTime> fixtureTimes;
+        for (auto it = cue.fixtureTimes.cbegin(); it != cue.fixtureTimes.cend(); ++it)
+            if (tidy(it.value()).isEmpty() == false)
+                fixtureTimes.insert(it.key(), tidy(it.value()));
+        cue.fixtureTimes = fixtureTimes;
+
+        // a link: taken 0 (always) to 999 times; no link, no count. The
+        // actions have a target
+        if (cue.link == 0)
+            cue.linkCount = 0;
+        else
+            cue.linkCount = qBound(0, cue.linkCount, 999);
+        QList<Cuelist::CueAction> actions;
+        for (const Cuelist::CueAction &action : std::as_const(cue.actions))
+            if (action.value("target").isEmpty() == false)
+                actions << action;
+        cue.actions = actions;
+    }
+
+    /** The links to cues that are not in the list go */
+    void pruneLinks()
+    {
+        for (Cuelist::Cue &cue : cues)
+        {
+            if (cue.link != 0 && indexOfUid(cue.link) < 0)
+            {
+                cue.link = 0;
+                cue.linkCount = 0;
+            }
+        }
     }
 
     int indexOfUid(quint32 uid) const
@@ -20695,6 +21269,7 @@ struct RefList
             nextUid = qMax(nextUid, cue.uid + 1);
         const int index = placeOf(cue.number);
         cues.insert(index, cue);
+        pruneLinks();
         return index;
     }
 
@@ -20711,6 +21286,7 @@ struct RefList
         sanitize(cue);
         cues.removeAt(from);
         cues.insert(placeOf(cue.number), cue);
+        pruneLinks();
         return true;
     }
 
@@ -20720,6 +21296,7 @@ struct RefList
         if (index < 0)
             return false;
         cues.removeAt(index);
+        pruneLinks();
         return true;
     }
 
@@ -20751,6 +21328,7 @@ struct RefList
         for (int i : std::as_const(fresh))
             kept[i].uid = nextUid++;
         cues = kept;
+        pruneLinks();
     }
 
     void applyPalette(int palette, const std::function<int(quint32, quint32)> &valueOf)
@@ -20806,6 +21384,7 @@ struct RefList
             for (const MFxKey &key : cue.fxReleases.values())
                 if (key.second == fixture)
                     cue.fxReleases.remove(key);
+            cue.fixtureTimes.remove(fixture);
         }
     }
 };
@@ -20891,6 +21470,24 @@ struct ModelDice
         cue.fade = uint(pick(QList<int>({ 0, 300, 1000, 2500 })));
         cue.downFade = pick(QList<int>({ -1, -1, 0, 800, -7 }));
         cue.delay = uint(pick(QList<int>({ 0, 0, 200 })));
+        // now and then times of attributes and fixtures, some of them as a
+        // damaged file could give them (no attribute, no time, out of range)
+        cue.groupTimes.clear();
+        cue.fixtureTimes.clear();
+        if (chance(30))
+        {
+            for (int i = below(3); i >= 0; i--)
+                cue.groupTimes.insert(pick(QList<int>({ 0, 1, 2, 3, 2, -1, 4 })), partTime());
+            for (int i = fixtures.isEmpty() ? 0 : below(3); i > 0; i--)
+                cue.fixtureTimes.insert(pick(fixtures), partTime());
+        }
+    }
+    Cuelist::PartTime partTime()
+    {
+        Cuelist::PartTime part;
+        part.fade = pick(QList<int>({ -1, -1, 0, 400, 2000, -9, 4000000 }));
+        part.delay = pick(QList<int>({ -1, -1, 0, 300, -3 }));
+        return part;
     }
     /** A cue as an import or a hand edit could give it: a new uid, one of the
      *  list or one it doesn't know; values that are released too, palettes
@@ -21218,6 +21815,9 @@ QString checkRecorded(const Cuelist *cl, int index, const QList<Cuelist::Cue> &o
         times.fade = cl->fadeInSpeed();
     if (cue.fade != times.fade || cue.downFade != times.downFade || cue.delay != times.delay)
         return "the times are not the ones of the cue before";
+    // and its attribute times, not the ones of its fixtures
+    if (cue.groupTimes != times.groupTimes || cue.fixtureTimes.isEmpty() == false)
+        return "the attribute or fixture times are not the ones of the cue before";
 
     QHash<MKey, uchar> values;
     QHash<MKey, int> palettes;
@@ -21559,7 +22159,8 @@ void Backend_Test::cuelistModelRandomEdits()
 {
     // random edits of cuelists, each step checked against a model of the
     // list written from cuelist.h (sorted, unique numbers, uids never given
-    // again, sanitised cues) and against a fold written from the design:
+    // again, sanitised cues, links only to cues of the list, actions with a
+    // target) and against a fold written from the design:
     // every stateBefore/trackedState, every changed() signal, the show XML
     // and copies. The editor's renumber, flags, times and names go through
     // the same model
@@ -21585,6 +22186,33 @@ void Backend_Test::cuelistModelRandomEdits()
         const quint32 id = cl->id();
         QSignalSpy changed(cl, SIGNAL(changed(quint32)));
         RefList model;
+        // cuelists-cues G4: now and then a link (to a cue of the list, to
+        // itself, to a cue it doesn't have, or a count without a link) and
+        // actions (some without a target)
+        static const QList<Cuelist::CueAction> someActions = {
+            Cuelist::CueAction({ { "target", "playbackGo" }, { "functionId", "3" }, { "slot", "-1" } }),
+            Cuelist::CueAction({ { "target", "bpm" }, { "value", "128" } }),
+            Cuelist::CueAction({ { "functionId", "4" } }),
+            Cuelist::CueAction({ { "target", "" }, { "zoneId", "-1" } }) };
+        auto decorate = [&](Cuelist::Cue &cue) {
+            if (dice.chance(30))
+            {
+                cue.link = model.cues.isEmpty() || dice.chance(25) ? quint32(1 + dice.below(400))
+                         : dice.chance(15) ? cue.uid : dice.pick(model.cues).uid;
+                cue.linkCount = dice.pick(QList<int>({ 0, 1, 3, -2, 1500 }));
+            }
+            else if (dice.chance(10))
+            {
+                cue.link = 0;
+                cue.linkCount = 2;
+            }
+            if (dice.chance(20))
+            {
+                cue.actions.clear();
+                for (int i = dice.below(3); i >= 0; i--)
+                    cue.actions << dice.pick(someActions);
+            }
+        };
 
         for (int step = 0; step < 50; step++)
         {
@@ -21600,7 +22228,8 @@ void Backend_Test::cuelistModelRandomEdits()
             const int roll = dice.below(100);
             if (roll < 24 || count == 0 || roll >= 90)
             {
-                const Cuelist::Cue cue = dice.cue(model.cues);
+                Cuelist::Cue cue = dice.cue(model.cues);
+                decorate(cue);
                 op = "addCue " + cueText(cue);
                 const int expected = model.add(cue);
                 const int index = cl->addCue(cue);
@@ -21612,6 +22241,7 @@ void Backend_Test::cuelistModelRandomEdits()
                 // a cue changes (it may move), or one the list doesn't have
                 Cuelist::Cue cue = model.cues.at(dice.below(count));
                 dice.mutate(cue);
+                decorate(cue);
                 if (dice.chance(8))
                     cue.uid = 100000 + quint32(dice.below(100));
                 op = "replaceCue " + cueText(cue);
@@ -21634,8 +22264,11 @@ void Backend_Test::cuelistModelRandomEdits()
                 for (int i = int(list.count()) - 1; i > 0; i--)
                     list.swapItemsAt(i, dice.below(i + 1));
                 for (Cuelist::Cue &cue : list)
+                {
                     if (dice.chance(25))
                         dice.mutate(cue);
+                    decorate(cue);
+                }
                 if (list.isEmpty() == false && dice.chance(30))
                     list.removeAt(dice.below(int(list.count())));
                 for (int i = dice.below(3); i > 0; i--)
@@ -21715,8 +22348,61 @@ void Backend_Test::cuelistModelRandomEdits()
                 for (const QVariant &v : std::as_const(indexes))
                     if (v.toInt() >= 0 && v.toInt() < count)
                         valid << v.toInt();
-                const int which = dice.below(4);
-                if (which == 0)
+                const int which = dice.below(5);
+                if (which == 4)
+                {
+                    // the times of an attribute (maybe one that isn't), of a
+                    // fixture (maybe one not in the show), or none for fixtures
+                    const int fade = dice.pick(QList<int>({ -2, -1, 0, 600 }));
+                    const int delay = dice.pick(QList<int>({ -2, -1, 0, 250 }));
+                    auto change = [&](Cuelist::PartTime &part) {
+                        if (fade >= 0 || fade == -2)
+                            part.fade = fade >= 0 ? fade : -1;
+                        if (delay >= 0 || delay == -2)
+                            part.delay = delay >= 0 ? delay : -1;
+                    };
+                    const int kind = dice.below(3);
+                    if (kind == 0)
+                    {
+                        const QString attribute = dice.pick(QStringList({ "intensity", "colour", "Position", "beam", "gobo" }));
+                        op = QString("setAttributeTime '%1' %2 %3").arg(attribute).arg(fade).arg(delay);
+                        const int group = QStringList({ "intensity", "colour", "position", "beam" }).indexOf(attribute.toLower());
+                        for (int index : std::as_const(valid))
+                            if (group >= 0)
+                                change(model.cues[index].groupTimes[group]);
+                        editor.setAttributeTime(id, indexes, attribute, fade, delay);
+                    }
+                    else
+                    {
+                        const quint32 fixture = dice.pick(dice.fixtures);
+                        QVariantList fixtures = { fixture };
+                        if (dice.chance(30))
+                            fixtures << 9999;
+                        if (kind == 1)
+                        {
+                            op = QString("setFixtureTimes %1 %2 %3").arg(fixture).arg(fade).arg(delay);
+                            for (int index : std::as_const(valid))
+                                change(model.cues[index].fixtureTimes[fixture]);
+                            editor.setFixtureTimes(id, indexes, fixtures, fade, delay);
+                        }
+                        else
+                        {
+                            const bool all = dice.chance(40);
+                            op = all ? QString("clearFixtureTimes (all)") : QString("clearFixtureTimes %1").arg(fixture);
+                            for (int index : std::as_const(valid))
+                            {
+                                if (all)
+                                    model.cues[index].fixtureTimes.clear();
+                                else
+                                    model.cues[index].fixtureTimes.remove(fixture);
+                            }
+                            editor.clearFixtureTimes(id, indexes, all ? QVariantList() : fixtures);
+                        }
+                    }
+                    for (int index : std::as_const(valid))
+                        RefList::sanitize(model.cues[index]);
+                }
+                else if (which == 0)
                 {
                     const int fade = dice.pick(QList<int>({ -1, 0, 700 }));
                     const int down = dice.pick(QList<int>({ -2, -1, 0, 900, -5 }));
@@ -25884,6 +26570,9 @@ void Backend_Test::isolatedFromTheUser()
                      qPrintable(def->definitionSourceFile()));
         }
         QCOMPARE(core.fxMacros()->filePath(), QDir(home).absoluteFilePath("DMXTotalControl/FX Macros.json"));
+        // nothing asked of GDTF-Share at the start: no network at all
+        QCOMPARE(core.library()->share()->state(), int(GdtfShare::Idle));
+        QVERIFY(core.library()->share()->findChild<QNetworkAccessManager *>() == nullptr);
     }
 
     // a definition saved goes there too, and goes with the folder
@@ -28423,5 +29112,19932 @@ void Backend_Test::dialogFolders()
         QCOMPARE(folderOf(core.dialogFolder("image")), dir.filePath("Other"));
     }
 }
+
+/*********************************************************************
+ * cuelists-qlc G10a
+ *********************************************************************/
+
+/** The values of a QLC+ step, "fixture.channel=value" in their order */
+static QString qlcStepValues(const QList<SceneValue> &values)
+{
+    QStringList list;
+    for (const SceneValue &scv : values)
+        list << QString("%1.%2=%3").arg(scv.fxi).arg(scv.channel).arg(scv.value);
+    return list.join(' ');
+}
+
+void Backend_Test::qlcExportSteps()
+{
+    // a cuelist as the steps of QLC+: each cue becomes one step with the
+    // whole look of the cue and its times, and what QLC+ won't get is told
+    typedef Cuelist::Key Key;
+    const uint untilGo = Function::infiniteSpeed();
+
+    // two dimmers (0, 1), an RGB par (2) and a moving head (3) whose pan
+    // rests at 128
+    QLCFixtureDef *spotDef = m_doc->fixtureDefCache()->fixtureDef("Generic", "Moving Head Spot");
+    QVERIFY(spotDef != nullptr);
+    spotDef->channel("Pan")->setDefaultValue(128);
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 2, 0, 1), 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 3, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 10, 1), 1);
+    QCOMPARE(m_doc->fixture(2)->channels(), quint32(3));
+    QCOMPARE(m_doc->fixture(3)->channels(), quint32(9));
+    const Key d1(0, 0), d2(1, 0), red(2, 0), blue(2, 2), pan(3, 0), tilt(3, 1), spotDimmer(3, 3);
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    // cue 1: the pan of a palette
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.values = { { d1, 255 }, { d2, 200 }, { pan, 64 } };
+    cue.palettes = { { pan, 7 } };
+    QCOMPARE(cl->addCue(cue), 0);
+    // cue 2: Wait 3 s, releases dimmer 2
+    cue = Cuelist::Cue();
+    cue.number = 2000;
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 3000;
+    cue.values = { { red, 100 } };
+    cue.releases = { d2 };
+    QCOMPARE(cl->addCue(cue), 1);
+    // cue 2.5: Follow 0.5 s, with a delay, a down fade of its own, cue only
+    cue = Cuelist::Cue();
+    cue.number = 2500;
+    cue.name = "Verse";
+    cue.note = "fog";
+    cue.trigger = Cuelist::TriggerFollow;
+    cue.triggerTime = 500;
+    cue.delay = 1000;
+    cue.fade = 2000;
+    cue.downFade = 500;
+    cue.skip = true;
+    cue.values = { { blue, 50 }, { tilt, 30 } };
+    QCOMPARE(cl->addCue(cue), 2);
+    // cue 3: GO, an FX layer
+    cue = Cuelist::Cue();
+    cue.number = 3000;
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.fixtures = { 3 };
+    cue.fx = { circle };
+    cue.values = { { spotDimmer, 255 } };
+    QCOMPARE(cl->addCue(cue), 3);
+    // cue 4: Wait 0.5 s (shorter than the fade of cue 3), a down fade equal
+    // to its fade; a fixture that is not in the show and a channel past the
+    // end of the par don't go
+    cue = Cuelist::Cue();
+    cue.number = 4000;
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 500;
+    cue.fade = 2000;
+    cue.downFade = 2000;
+    cue.values = { { d1, 10 }, { Key(99, 0), 255 }, { Key(2, 7), 255 } };
+    QCOMPARE(cl->addCue(cue), 4);
+
+    // Sequence: every step holds every channel, sorted; released and not
+    // set yet at their rest value; the cue only (2.5) on its own step
+    QlcExchange::CueSteps seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(qlcStepValues(seq.channels), QString("0.0=0 1.0=0 2.0=0 2.2=0 3.0=0 3.1=0 3.3=0"));
+    QCOMPARE(seq.steps.count(), 5);
+    QCOMPARE(qlcStepValues(seq.steps.at(0).values), QString("0.0=255 1.0=200 2.0=0 2.2=0 3.0=64 3.1=0 3.3=0"));
+    QCOMPARE(qlcStepValues(seq.steps.at(1).values), QString("0.0=255 1.0=0 2.0=100 2.2=0 3.0=64 3.1=0 3.3=0"));
+    QCOMPARE(qlcStepValues(seq.steps.at(2).values), QString("0.0=255 1.0=0 2.0=100 2.2=50 3.0=64 3.1=30 3.3=0"));
+    QCOMPARE(qlcStepValues(seq.steps.at(3).values), QString("0.0=255 1.0=0 2.0=100 2.2=0 3.0=64 3.1=0 3.3=255"));
+    QCOMPARE(qlcStepValues(seq.steps.at(4).values), QString("0.0=10 1.0=0 2.0=100 2.2=0 3.0=64 3.1=0 3.3=255"));
+
+    // the fade in is the fade, the fade out the down fade
+    const QList<uint> fadeIns = { 1000, 1000, 2000, 1000, 2000 };
+    const QList<uint> fadeOuts = { 1000, 1000, 500, 1000, 2000 };
+    // the hold is what is left of the step after its fade: the Wait of cue
+    // 2 (3 s from the GO of cue 1), the Follow of 2.5 (cue 2 lasts 1 s, then
+    // 0.5 s), a GO on cue 3, the Wait of cue 4 shorter than the fade of cue
+    // 3 (the step lasts its fade), and back to cue 1 with a GO
+    const QList<uint> holds = { 2000, 500, untilGo, 0, untilGo };
+    for (int i = 0; i < 5; i++)
+    {
+        QCOMPARE(seq.steps.at(i).fadeIn, fadeIns.at(i));
+        QCOMPARE(seq.steps.at(i).fadeOut, fadeOuts.at(i));
+        QCOMPARE(seq.steps.at(i).hold, holds.at(i));
+    }
+
+    // the number and the name of the cue, and its note
+    QCOMPARE(seq.steps.at(0).label, QString("Q1"));
+    QCOMPARE(seq.steps.at(0).note, QString("Q1"));
+    QCOMPARE(seq.steps.at(2).label, QString("Q2.5 · Verse"));
+    QCOMPARE(seq.steps.at(2).note, QString("Q2.5 · Verse — fog"));
+    QCOMPARE(seq.runOrder, Function::Loop);
+    QCOMPARE(seq.nextPrevBehavior, 0);
+    QCOMPARE(seq.solo, false);
+    // FX in cues 3 and 4 (it tracks on); the palette is not lost: its values go
+    QCOMPARE(seq.lost, QStringList({ "FX in 2 cue(s): only their base values",
+                                     "delay in 1 cue(s): the step starts at once",
+                                     "down fade in 1 cue(s): only approximate",
+                                     "Wait shorter than the fade in 1 cue(s): the next step waits for the fade",
+                                     "released values: their rest value" }));
+
+    // Chaser: only what each cue shows, the rest is left to QLC+; the scene
+    // takes the label, the step the note of the cue
+    QlcExchange::CueSteps chaser = QlcExchange::toSteps(m_doc, cl, false);
+    QCOMPARE(qlcStepValues(chaser.channels), qlcStepValues(seq.channels));
+    QCOMPARE(chaser.steps.count(), 5);
+    QCOMPARE(qlcStepValues(chaser.steps.at(0).values), QString("0.0=255 1.0=200 3.0=64"));
+    QCOMPARE(qlcStepValues(chaser.steps.at(1).values), QString("0.0=255 2.0=100 3.0=64"));
+    QCOMPARE(qlcStepValues(chaser.steps.at(2).values), QString("0.0=255 2.0=100 2.2=50 3.0=64 3.1=30"));
+    QCOMPARE(qlcStepValues(chaser.steps.at(3).values), QString("0.0=255 2.0=100 3.0=64 3.3=255"));
+    QCOMPARE(qlcStepValues(chaser.steps.at(4).values), QString("0.0=10 2.0=100 3.0=64 3.3=255"));
+    for (int i = 0; i < 5; i++)
+        QCOMPARE(chaser.steps.at(i).hold, holds.at(i));
+    QCOMPARE(chaser.steps.at(2).label, QString("Q2.5 · Verse"));
+    QCOMPARE(chaser.steps.at(2).note, QString("fog"));
+    QCOMPARE(chaser.steps.at(0).note, QString());
+    QCOMPARE(chaser.lost, seq.lost.mid(0, 4));
+
+    // a Follow after a delayed cue counts its delay: 1 + 2 s, then 0.25 s
+    Cuelist::Cue third = cl->cueAt(3);
+    third.trigger = Cuelist::TriggerFollow;
+    third.triggerTime = 250;
+    QVERIFY(cl->replaceCue(third));
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).steps.at(2).hold, 1250u);
+    third.trigger = Cuelist::TriggerGo;
+    QVERIFY(cl->replaceCue(third));
+
+    // Release: it stops after the last step; with a GO on cue 1 the last
+    // step waits for that GO
+    cl->setAtEnd(Cuelist::AtEndRelease);
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(seq.runOrder, Function::SingleShot);
+    QCOMPARE(seq.steps.at(4).hold, untilGo);
+    // a Wait on cue 1: the last step is timed (2.5 s from the GO of cue 4)
+    Cuelist::Cue first = cl->cueAt(0);
+    first.trigger = Cuelist::TriggerWait;
+    first.triggerTime = 2500;
+    QVERIFY(cl->replaceCue(first));
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(seq.runOrder, Function::SingleShot);
+    QCOMPARE(seq.steps.at(4).hold, 500u);
+    // the same in a loop
+    cl->setAtEnd(Cuelist::AtEndLoop);
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(seq.runOrder, Function::Loop);
+    QCOMPARE(seq.steps.at(4).hold, 500u);
+    // Stay: the last step holds, and a GO there stops it in QLC+
+    cl->setAtEnd(Cuelist::AtEndStay);
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(seq.runOrder, Function::SingleShot);
+    QCOMPARE(seq.steps.at(4).hold, untilGo);
+    QVERIFY(seq.lost.contains("Stay at the end: GO on the last cue stops the steps"));
+
+    // the options of the Cue List of the Virtual Console, and what goes
+    cl->setResetOnRelease(false);
+    cl->setReleaseOnNextGo(true);
+    cl->setDriveMode(Function::DriveBeatGO);
+    cl->setTapPeriod(500);
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(seq.nextPrevBehavior, 1);
+    QCOMPARE(seq.solo, true);
+    QCOMPARE(seq.lost.mid(5), QStringList({ "Stay at the end: GO on the last cue stops the steps",
+                                            "BeatGO and Pulse: the steps don't follow the beat",
+                                            "tapped rhythm: the steps keep their own times",
+                                            "released by another GO: in a solo frame of QLC+" }));
+    cl->setDriveMode(Function::DrivePulse);
+    QVERIFY(QlcExchange::toSteps(m_doc, cl, true).lost.contains("BeatGO and Pulse: the steps don't follow the beat"));
+
+    // tracking off: each step is its own cue, the rest at rest (the pan at 128)
+    cl->setTracking(false);
+    seq = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(qlcStepValues(seq.steps.at(0).values), QString("0.0=255 1.0=200 2.0=0 2.2=0 3.0=64 3.1=0 3.3=0"));
+    QCOMPARE(qlcStepValues(seq.steps.at(1).values), QString("0.0=0 1.0=0 2.0=100 2.2=0 3.0=128 3.1=0 3.3=0"));
+    QCOMPARE(qlcStepValues(seq.steps.at(3).values), QString("0.0=0 1.0=0 2.0=0 2.2=0 3.0=128 3.1=0 3.3=255"));
+    QCOMPARE(qlcStepValues(seq.steps.at(4).values), QString("0.0=10 1.0=0 2.0=0 2.2=0 3.0=128 3.1=0 3.3=0"));
+    QCOMPARE(seq.lost.first(), QString("FX in 1 cue(s): only their base values"));
+    chaser = QlcExchange::toSteps(m_doc, cl, false);
+    QCOMPARE(qlcStepValues(chaser.steps.at(1).values), QString("2.0=100"));
+
+    // an empty list: no steps, and said
+    Cuelist *empty = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(empty));
+    seq = QlcExchange::toSteps(m_doc, empty, true);
+    QVERIFY(seq.steps.isEmpty());
+    QVERIFY(seq.channels.isEmpty());
+    QCOMPARE(seq.lost, QStringList({ "the cuelist has no cues" }));
+    QVERIFY(QlcExchange::toSteps(m_doc, nullptr, true).steps.isEmpty());
+}
+
+void Backend_Test::qlcCueLabels()
+{
+    // the number and the name of a cue in the note of a QLC+ step, and back
+    QCOMPARE(QlcExchange::cueLabel(1000, QString()), QString("Q1"));
+    QCOMPARE(QlcExchange::cueLabel(2500, "Verse"), QString("Q2.5 · Verse"));
+    QCOMPARE(QlcExchange::cueLabel(1, "A"), QString("Q0.001 · A"));
+    QCOMPARE(QlcExchange::cueNote(2500, "Verse", "fog on"), QString("Q2.5 · Verse — fog on"));
+    QCOMPARE(QlcExchange::cueNote(3000, QString(), QString()), QString("Q3"));
+    // a note is one line
+    QCOMPARE(QlcExchange::cueNote(3000, QString(), "smoke\nand\r\nhaze"), QString("Q3 — smoke and haze"));
+
+    int number = 0;
+    QString name, rest;
+    QVERIFY(QlcExchange::parseCueLabel("Q1", &number, &name, &rest));
+    QCOMPARE(number, 1000);
+    QCOMPARE(name, QString());
+    QCOMPARE(rest, QString());
+    QVERIFY(QlcExchange::parseCueLabel("Q12.125 · A · B — x", &number, &name, &rest));
+    QCOMPARE(number, 12125);
+    QCOMPARE(name, QString("A · B"));
+    QCOMPARE(rest, QString("x"));
+    QVERIFY(QlcExchange::parseCueLabel("Q3 — fog", &number, &name, &rest));
+    QCOMPARE(number, 3000);
+    QCOMPARE(name, QString());
+    QCOMPARE(rest, QString("fog"));
+    QVERIFY(QlcExchange::parseCueLabel("Q99999.999", nullptr, nullptr, nullptr));
+
+    // round trips
+    const QList<QPair<int, QString>> cues = { { 1000, QString() }, { 12125, "A · B" }, { 2500, "Verse" } };
+    for (const auto &c : cues)
+    {
+        QVERIFY(QlcExchange::parseCueLabel(QlcExchange::cueLabel(c.first, c.second), &number, &name, &rest));
+        QCOMPARE(number, c.first);
+        QCOMPARE(name, c.second);
+        QCOMPARE(rest, QString());
+        QVERIFY(QlcExchange::parseCueLabel(QlcExchange::cueNote(c.first, c.second, "line one\nline two"),
+                                           &number, &name, &rest));
+        QCOMPARE(number, c.first);
+        QCOMPARE(name, c.second);
+        QCOMPARE(rest, QString("line one line two"));
+    }
+
+    // not a cue label
+    for (const char *bad : { "Q", "Qx", "1 intro", "Q0", "Q100000", "Q1.2345", "q1", "Q1 Verse", " Q1", "", "Q1.",
+                             "Q 1", "Q1·Verse" })
+        QVERIFY2(QlcExchange::parseCueLabel(QString(bad), &number, &name, &rest) == false, bad);
+}
+
+/*********************************************************************
+ * cuelists-qlc G10b
+ *********************************************************************/
+
+namespace
+{
+
+/** A widget of the Virtual Console of a workspace (qlcWidgets) */
+struct QlcWidget
+{
+    QString tag;
+    QString caption;
+    qint64 id = -1;
+    /** the widget it is in (its index), -1 for the frame of the whole console */
+    int parent = -1;
+    QRect rect;
+    QString chaser;
+    QString nextPrev;
+};
+
+/** The widgets of the Virtual Console of the workspace $xml in their order,
+ *  and the size of the console */
+QList<QlcWidget> qlcWidgets(const QByteArray &xml, QSize *size = nullptr)
+{
+    static const QStringList tags = { "Frame", "SoloFrame", "Button", "Slider", "XYPad", "CueList", "SpeedDial",
+                                      "Label", "AudioTriggers", "Clock", "Matrix" };
+    QList<QlcWidget> widgets;
+    QXmlStreamReader reader(xml);
+    QStringList elements;
+    // the widgets open (their index) and the depth of their element
+    QList<QPair<int, int>> open;
+    while (reader.atEnd() == false && reader.hasError() == false)
+    {
+        reader.readNext();
+        if (reader.isEndElement())
+        {
+            if (open.isEmpty() == false && open.last().second == elements.count())
+                open.removeLast();
+            elements.removeLast();
+            continue;
+        }
+        if (reader.isStartElement() == false)
+            continue;
+        const QString name = reader.name().toString();
+        elements.append(name);
+        if (elements.count() < 3 || elements.at(1) != "VirtualConsole")
+            continue;
+
+        const QXmlStreamAttributes attrs = reader.attributes();
+        if (tags.contains(name))
+        {
+            QlcWidget widget;
+            widget.tag = name;
+            widget.caption = attrs.value("Caption").toString();
+            bool ok = false;
+            const uint id = attrs.value("ID").toUInt(&ok);
+            if (ok)
+                widget.id = id;
+            widget.parent = open.isEmpty() ? -1 : open.last().first;
+            widgets.append(widget);
+            open.append({ int(widgets.count() - 1), int(elements.count()) });
+        }
+        else if (name == "WindowState" && open.isEmpty() == false)
+        {
+            widgets[open.last().first].rect = QRect(attrs.value("X").toInt(), attrs.value("Y").toInt(),
+                                                    attrs.value("Width").toInt(), attrs.value("Height").toInt());
+        }
+        else if ((name == "Chaser" || name == "NextPrevBehavior") && open.isEmpty() == false)
+        {
+            QlcWidget &widget = widgets[open.last().first];
+            (name == "Chaser" ? widget.chaser : widget.nextPrev) = reader.readElementText();
+            elements.removeLast();
+        }
+        else if (name == "Size" && elements.at(elements.count() - 2) == "Properties" && size != nullptr)
+        {
+            *size = QSize(attrs.value("Width").toInt(), attrs.value("Height").toInt());
+        }
+    }
+    return widgets;
+}
+
+/** The element $reader is on, to $writer (it ends on its end) */
+void copyQlcElement(QXmlStreamReader &reader, QXmlStreamWriter &writer)
+{
+    int depth = 0;
+    do
+    {
+        if (reader.isStartElement())
+            depth++;
+        else if (reader.isEndElement())
+            depth--;
+        QlcExchange::copyToken(reader, writer);
+    } while (depth > 0 && reader.readNext() != QXmlStreamReader::Invalid);
+}
+
+/** The first element $tag of $xml with the ID $id */
+QByteArray qlcElement(const QByteArray &xml, const QString &tag, const QString &id)
+{
+    QByteArray element;
+    QXmlStreamWriter writer(&element);
+    QXmlStreamReader reader(xml);
+    while (reader.atEnd() == false && reader.hasError() == false)
+    {
+        reader.readNext();
+        if (reader.isStartElement() && reader.name() == tag && reader.attributes().value("ID") == id)
+        {
+            copyQlcElement(reader, writer);
+            break;
+        }
+    }
+    return element;
+}
+
+/** A function as QLC+ 4 reads it (Function::loader): one of a type it
+ *  knows whole, to $writer; one it doesn't know is left where it is, so the
+ *  caller reads its children next as if they were its siblings */
+void qlcPlusFunction(QXmlStreamReader &reader, QXmlStreamWriter &writer, QStringList *read)
+{
+    static const QStringList known = { "Scene", "Chaser", "EFX", "Collection", "Script", "RGBMatrix", "Show",
+                                       "Sequence", "Audio", "Video" };
+    const QXmlStreamAttributes attrs = reader.attributes();
+    const QString type = attrs.value("Type").toString();
+    if (known.contains(type) == false || attrs.value("ID").toUInt() == Function::invalidId())
+        return;
+    read->append(type + " " + attrs.value("ID").toString());
+    copyQlcElement(reader, writer);
+}
+
+/** The <Engine> as QLC+ 4 reads it (Doc::loadXML): it ends on the first end
+ *  tag it meets, the one of the Engine or of a function it didn't read */
+void qlcPlusDoc(QXmlStreamReader &reader, QXmlStreamWriter &writer, QStringList *read)
+{
+    static const QStringList tags = { "Fixture", "FixtureGroup", "ChannelsGroup", "Palette", "Bus",
+                                      "InputOutputMap", "Monitor" };
+    while (reader.readNextStartElement())
+    {
+        const QString name = reader.name().toString();
+        if (name == QLatin1String("Function"))
+        {
+            qlcPlusFunction(reader, writer, read);
+        }
+        else if (tags.contains(name))
+        {
+            read->append(name);
+            copyQlcElement(reader, writer);
+        }
+        else
+        {
+            // ("Unknown engine tag")
+            reader.skipCurrentElement();
+        }
+    }
+}
+
+/** The workspace $xml as QLC+ 4 opens it (App::loadXML): what it reads of
+ *  the Engine, each element to $read ("Fixture", "Sequence 3"...), and each
+ *  section of the workspace it gets to, to $reached */
+QByteArray qlcPlusEngine(const QByteArray &xml, QStringList *read, QStringList *reached = nullptr)
+{
+    QByteArray engine;
+    QXmlStreamWriter writer(&engine);
+    QXmlStreamReader reader(xml);
+    writer.writeStartElement("Engine");
+    if (reader.readNextStartElement())
+    {
+        while (reader.readNextStartElement())
+        {
+            const QString name = reader.name().toString();
+            if (reached != nullptr)
+                reached->append(name);
+            if (name == QLatin1String("Engine"))
+            {
+                qlcPlusDoc(reader, writer, read);
+            }
+            else if (name == QLatin1String("Function"))
+            {
+                // (an old workspace)
+                qlcPlusFunction(reader, writer, read);
+            }
+            else if (name == QLatin1String("Fixture"))
+            {
+                read->append(name);
+                copyQlcElement(reader, writer);
+            }
+            else
+            {
+                // (the Virtual Console, the Simple Desk... read whole)
+                reader.skipCurrentElement();
+            }
+        }
+    }
+    writer.writeEndElement();
+    return engine;
+}
+
+/** The function types of the direct children of the <Engine> of $xml
+ *  (other elements by their name) */
+QStringList engineChildren(const QByteArray &xml)
+{
+    QStringList children;
+    QXmlStreamReader reader(xml);
+    reader.readNextStartElement();
+    while (reader.readNextStartElement() && reader.name() != QLatin1String("Engine"))
+        reader.skipCurrentElement();
+    while (reader.readNextStartElement())
+    {
+        if (reader.name() == QLatin1String("Function"))
+            children.append(reader.attributes().value("Type").toString());
+        else
+            children.append(reader.name().toString());
+        reader.skipCurrentElement();
+    }
+    return children;
+}
+
+/** Load the Engine $engine into $doc as QLC+ would: no plugins */
+bool loadQlcEngine(Doc *doc, const QByteArray &engine)
+{
+    QXmlStreamReader reader(engine);
+    return reader.readNextStartElement() && doc->loadXML(reader, false);
+}
+
+} // namespace
+
+void Backend_Test::qlcCopyReadableByQlc()
+{
+    // a copy of the show for QLC+: the cuelists chosen become QLC+ steps
+    // with their IDs, where QLC+ still reads them, and a Cue List each in its
+    // Virtual Console plays them. The show open doesn't change
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 2, 0, 1), 2);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 3, 1), 1);
+    const Key d1(0, 0), d2(1, 0), red(2, 0);
+
+    // a scene, an FX scene before the cuelists, the cuelists A and B, and a
+    // super scene that plays A
+    Scene *look = new Scene(doc);
+    look->setName("Look");
+    look->setValue(0, 0, 100);
+    QVERIFY(doc->addFunction(look));
+    FXScene *waves = new FXScene(doc);
+    waves->setName("Waves");
+    QVERIFY(doc->addFunction(waves));
+    Cuelist *a = new Cuelist(doc);
+    a->setName("Song A");
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.values = { { d1, 255 }, { d2, 200 } };
+    QCOMPARE(a->addCue(cue), 0);
+    cue = Cuelist::Cue();
+    cue.number = 2000;
+    cue.name = "Verse";
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 3000;
+    cue.values = { { red, 100 } };
+    cue.releases = { d2 };
+    QCOMPARE(a->addCue(cue), 1);
+    cue = Cuelist::Cue();
+    cue.number = 3000;
+    cue.fade = 2000;
+    cue.values = { { d1, 50 } };
+    QCOMPARE(a->addCue(cue), 2);
+    QVERIFY(doc->addFunction(a));
+    Cuelist *b = new Cuelist(doc);
+    b->setName("B side");
+    cue = Cuelist::Cue();
+    cue.number = 1000;
+    cue.values = { { d1, 10 } };
+    QCOMPARE(b->addCue(cue), 0);
+    QVERIFY(doc->addFunction(b));
+    Show *show = new Show(doc);
+    show->setName("Timeline");
+    QVERIFY(doc->addFunction(show));
+    Track *track = new Track(Function::invalidId(), show);
+    QVERIFY(show->addTrack(track));
+    ShowFunction *sf = track->createShowFunction(a->id());
+    QVERIFY(sf != nullptr);
+    sf->setDuration(5000);
+    QVERIFY(waves->id() < a->id());
+
+    // the show, saved, then changed
+    const QString path = dir.filePath("Show.qxw");
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    const QByteArray original = fileBytes(path);
+    core.addSceneFolder("Changed");
+    QVERIFY(core.modified());
+    const QStringList recent = core.settings()->recentShows();
+    const QString workspace = doc->workspacePath();
+
+    // the dialog: every cuelist by name, and what QLC+ won't get
+    const QVariantList info = core.qlcExportInfo("sequence");
+    QCOMPARE(info.count(), 2);
+    QCOMPARE(info.at(0).toMap().value("name").toString(), QString("B side"));
+    QCOMPARE(info.at(1).toMap().value("id").toUInt(), a->id());
+    QCOMPARE(info.at(1).toMap().value("cues").toInt(), 3);
+    QCOMPARE(info.at(1).toMap().value("lost").toStringList(), QStringList({ "released values: their rest value" }));
+    QVERIFY(core.qlcExportInfo("chaser").at(1).toMap().value("lost").toStringList().isEmpty());
+    const QString copyPath = dir.filePath("Show (QLC+).qxw");
+    QCOMPARE(core.qlcCopyUrl(), QUrl::fromLocalFile(copyPath));
+
+    // not over the show itself, and not without a cuelist
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(path), { a->id() }, {}) == false);
+    QCOMPARE(core.lastError(), QString("Choose another name: that file is this show"));
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(dir.filePath("SHOW")), { a->id() }, {}) == false);
+    QCOMPARE(core.lastError(), QString("Choose another name: that file is this show"));
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(dir.filePath("None.qxw")), {}, {}) == false);
+    QCOMPARE(core.lastError(), QString("Choose at least one cuelist"));
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(dir.filePath("None.qxw")), { look->id() }, {}) == false);
+    QVERIFY(QFile::exists(dir.filePath("None.qxw")) == false);
+
+    QVERIFY2(core.saveCopyForQlc(core.qlcCopyUrl(), { a->id() }, { { "format", "sequence" } }),
+             qPrintable(core.lastError()));
+    // the show open is as it was, and saving the copy again leaves no backup
+    QCOMPARE(core.fileName(), path);
+    QVERIFY(core.modified());
+    QCOMPARE(core.settings()->recentShows(), recent);
+    QCOMPARE(doc->workspacePath(), workspace);
+    QCOMPARE(fileBytes(path), original);
+    QVERIFY(doc->function(a->id()) == a);
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { a->id() }, {}));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files, QDir::Name), QStringList({ "Show (QLC+).qxw", "Show.qxw" }));
+
+    // QLC+ opens it on its Virtual Console
+    const QByteArray copied = fileBytes(copyPath);
+    {
+        QXmlStreamReader reader(copied);
+        QVERIFY(reader.readNextStartElement());
+        QCOMPARE(reader.attributes().value("CurrentWindow").toString(), QString("VirtualConsole"));
+    }
+    QCOMPARE(workspaceSections(copyPath), QStringList({ "Creator", "Engine", "VirtualConsole", "DMXTotalControl" }));
+
+    // what QLC+ reads of the Engine: the steps of A with its ID, their hidden
+    // scene and the super scene. What it doesn't know (the FX scene and B,
+    // which stay for this program) is in an element it skips, so it reads
+    // on to the Virtual Console
+    QStringList read, reached;
+    const QByteArray engine = qlcPlusEngine(copied, &read, &reached);
+    QCOMPARE(reached, QStringList({ "Creator", "Engine", "VirtualConsole", "DMXTotalControl" }));
+    const QStringList children = engineChildren(copied);
+    for (const QString &type : QStringList({ "FXScene", "CurveFX", "Cuelist" }))
+        QVERIFY2(children.contains(type) == false, qPrintable(children.join(", ")));
+    QCOMPARE(children.count("DtcFunctions"), 1);
+    QCOMPARE(children.last(), QString("DtcFunctions"));
+    QVERIFY2(read.contains(QString("Sequence %1").arg(a->id())), qPrintable(read.join(", ")));
+    QVERIFY(read.contains(QString("Show %1").arg(show->id())));
+    QVERIFY(read.contains(QString("Scene %1").arg(look->id())));
+    QVERIFY(read.join(", ").contains("Cuelist") == false);
+    QVERIFY(copied.contains(QString("ID=\"%1\" Type=\"Cuelist\"").arg(b->id()).toUtf8()));
+    QVERIFY(copied.contains(QString("ID=\"%1\" Type=\"FXScene\"").arg(waves->id()).toUtf8()));
+    QVERIFY(copied.contains(QString("ID=\"%1\" Type=\"Cuelist\"").arg(a->id()).toUtf8()) == false);
+
+    // loaded as QLC+ does: a step for each cue with the whole look of the
+    // cue, a GO an endless hold, and the super scene plays the steps
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    Sequence *seq = qobject_cast<Sequence *>(qlc.function(a->id()));
+    QVERIFY(seq != nullptr);
+    QCOMPARE(seq->name(), a->name());
+    QCOMPARE(seq->fadeInMode(), Chaser::PerStep);
+    QCOMPARE(seq->fadeOutMode(), Chaser::PerStep);
+    QCOMPARE(seq->durationMode(), Chaser::PerStep);
+    QCOMPARE(seq->runOrder(), Function::Loop);
+    const QlcExchange::CueSteps expected = QlcExchange::toSteps(doc, a, true);
+    QCOMPARE(seq->stepsCount(), 3);
+    for (int i = 0; i < 3; i++)
+    {
+        const ChaserStep step = seq->steps().at(i);
+        QCOMPARE(qlcStepValues(step.values), qlcStepValues(expected.steps.at(i).values));
+        QCOMPARE(step.fadeIn, expected.steps.at(i).fadeIn);
+        QCOMPARE(step.hold, expected.steps.at(i).hold);
+        QCOMPARE(step.fadeOut, expected.steps.at(i).fadeOut);
+        QCOMPARE(step.note, expected.steps.at(i).note);
+    }
+    QCOMPARE(qlcStepValues(seq->steps().at(0).values), QString("0.0=255 1.0=200 2.0=0"));
+    QCOMPARE(qlcStepValues(seq->steps().at(1).values), QString("0.0=255 1.0=0 2.0=100"));
+    QCOMPARE(qlcStepValues(seq->steps().at(2).values), QString("0.0=50 1.0=0 2.0=100"));
+    QCOMPARE(seq->steps().at(0).hold, 2000u);
+    QCOMPARE(seq->steps().at(1).hold, Function::infiniteSpeed());
+    QCOMPARE(seq->steps().at(2).fadeIn, 2000u);
+    QCOMPARE(seq->steps().at(1).note, QString("Q2 · Verse"));
+    Scene *bound = qobject_cast<Scene *>(qlc.function(seq->boundSceneID()));
+    QVERIFY(bound != nullptr);
+    QVERIFY(bound->isVisible() == false);
+    QVERIFY(bound->id() > show->id());
+    QCOMPARE(qlcStepValues(bound->values()), QString("0.0=0 1.0=0 2.0=0"));
+    Show *timeline = qobject_cast<Show *>(qlc.function(show->id()));
+    QVERIFY(timeline != nullptr);
+    QCOMPARE(timeline->tracks().count(), 1);
+    QCOMPARE(timeline->tracks().first()->showFunctions().count(), 1);
+    QCOMPARE(timeline->tracks().first()->showFunctions().first()->functionID(), a->id());
+    QVERIFY(qlc.function(b->id()) == nullptr);
+
+    // its Cue List: GO is Next, and a new start runs the first cue
+    QSize size;
+    QList<QlcWidget> widgets = qlcWidgets(copied, &size);
+    QCOMPARE(widgets.count(), 3);
+    QCOMPARE(widgets.at(0).tag, QString("Frame"));
+    QCOMPARE(widgets.at(0).parent, -1);
+    QCOMPARE(widgets.at(1).tag, QString("Frame"));
+    QCOMPARE(widgets.at(1).caption, QString("Cuelists"));
+    QCOMPARE(widgets.at(1).parent, 0);
+    QCOMPARE(widgets.at(1).rect, QRect(10, 10, 320, 270));
+    QCOMPARE(widgets.at(2).tag, QString("CueList"));
+    QCOMPARE(widgets.at(2).caption, a->name());
+    QCOMPARE(widgets.at(2).chaser, QString::number(a->id()));
+    QCOMPARE(widgets.at(2).nextPrev, QString("0"));
+    QCOMPARE(widgets.at(2).parent, 1);
+    QCOMPARE(widgets.at(2).rect, QRect(10, 40, 300, 220));
+    QCOMPARE(widgets.at(1).id, qint64(0));
+    QCOMPARE(widgets.at(2).id, qint64(1));
+    QCOMPARE(size, QSize(1920, 1080));
+
+    // opened here again, the steps play where the cuelist did
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY2(other.openShow(QUrl::fromLocalFile(copyPath)), qPrintable(other.lastError()));
+        QVERIFY(qobject_cast<Sequence *>(other.doc()->function(a->id())) != nullptr);
+        QVERIFY(qobject_cast<Cuelist *>(other.doc()->function(b->id())) != nullptr);
+        QVERIFY(qobject_cast<FXScene *>(other.doc()->function(waves->id())) != nullptr);
+        QCOMPARE(other.doc()->function(waves->id())->name(), waves->name());
+        // (and imported from it)
+        QString error;
+        Doc *imported = EffectExchange::loadShow(other.doc(), copyPath, nullptr, &error);
+        QVERIFY2(imported != nullptr, qPrintable(error));
+        QVERIFY(qobject_cast<FXScene *>(imported->function(waves->id())) != nullptr);
+        QVERIFY(qobject_cast<Cuelist *>(imported->function(b->id())) != nullptr);
+        delete imported;
+    }
+
+    // Chaser: a scene for each cue in a folder of the cuelist, with only what
+    // the cue shows; the Cue Lists in the order of the playbacks first
+    Cuelist *zed = new Cuelist(doc);
+    zed->setName("Zed");
+    cue = Cuelist::Cue();
+    cue.number = 1000;
+    cue.values = { { red, 7 } };
+    QCOMPARE(zed->addCue(cue), 0);
+    QVERIFY(doc->addFunction(zed));
+    core.playbacks()->assign(0, 0, int(zed->id()));
+    const QString chaserPath = dir.filePath("Chasers.qxw");
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(chaserPath), { a->id(), zed->id() }, { { "format", "chaser" } }),
+             qPrintable(core.lastError()));
+    read.clear();
+    reached.clear();
+    Doc chasers(this);
+    chasers.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&chasers, qlcPlusEngine(fileBytes(chaserPath), &read, &reached)));
+    QCOMPARE(reached, QStringList({ "Creator", "Engine", "VirtualConsole", "DMXTotalControl" }));
+    Chaser *chaser = qobject_cast<Chaser *>(chasers.function(a->id()));
+    QVERIFY(chaser != nullptr);
+    QCOMPARE(chaser->type(), Function::ChaserType);
+    QCOMPARE(chaser->fadeInMode(), Chaser::PerStep);
+    QCOMPARE(chaser->fadeOutMode(), Chaser::PerStep);
+    QCOMPARE(chaser->durationMode(), Chaser::PerStep);
+    const QlcExchange::CueSteps looks = QlcExchange::toSteps(doc, a, false);
+    // (every step is still there after Chaser::postLoad)
+    QCOMPARE(chaser->stepsCount(), 3);
+    for (int i = 0; i < 3; i++)
+    {
+        const ChaserStep step = chaser->steps().at(i);
+        Scene *scene = qobject_cast<Scene *>(chasers.function(step.fid));
+        QVERIFY(scene != nullptr);
+        QVERIFY(scene->isVisible());
+        QVERIFY(doc->function(scene->id()) == nullptr);
+        QCOMPARE(scene->name(), looks.steps.at(i).label);
+        QCOMPARE(scene->path(true), a->name());
+        QCOMPARE(qlcStepValues(scene->values()), qlcStepValues(looks.steps.at(i).values));
+        QCOMPARE(step.fadeIn, looks.steps.at(i).fadeIn);
+        QCOMPARE(step.hold, looks.steps.at(i).hold);
+        QCOMPARE(step.fadeOut, looks.steps.at(i).fadeOut);
+    }
+    // the released dimmer is left to QLC+
+    QCOMPARE(qlcStepValues(qobject_cast<Scene *>(chasers.function(chaser->steps().at(1).fid))->values()),
+             QString("0.0=255 2.0=100"));
+    QCOMPARE(chasers.function(chaser->steps().at(1).fid)->name(), QString("Q2 · Verse"));
+    QVERIFY(qobject_cast<Chaser *>(chasers.function(zed->id())) != nullptr);
+    widgets = qlcWidgets(fileBytes(chaserPath));
+    QCOMPARE(widgets.count(), 4);
+    QCOMPARE(widgets.at(2).caption, QString("Zed"));
+    QCOMPARE(widgets.at(2).rect.topLeft(), QPoint(10, 40));
+    QCOMPARE(widgets.at(3).caption, a->name());
+    QCOMPARE(widgets.at(3).rect.topLeft(), QPoint(320, 40));
+    QCOMPARE(widgets.at(1).rect.size(), QSize(630, 270));
+
+    // without the Virtual Console: the steps alone
+    const QString bare = dir.filePath("Bare.qxw");
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(bare), { a->id() }, { { "virtualConsole", false } }));
+    QCOMPARE(workspaceSections(bare), QStringList({ "Creator", "Engine", "DMXTotalControl" }));
+    QVERIFY(fileBytes(bare).contains("CurrentWindow") == false);
+    QVERIFY(fileBytes(bare).contains(QString("ID=\"%1\" Type=\"Sequence\"").arg(a->id()).toUtf8()));
+    read.clear();
+    reached.clear();
+    qlcPlusEngine(fileBytes(bare), &read, &reached);
+    QCOMPARE(reached, QStringList({ "Creator", "Engine", "DMXTotalControl" }));
+    QVERIFY(read.contains(QString("Sequence %1").arg(a->id())));
+    QCOMPARE(fileBytes(path), original);
+}
+
+void Backend_Test::qlcCopyMergesVirtualConsole()
+{
+    // a show of QLC+ with a Virtual Console: the copy for QLC+ adds its
+    // frames below what the console holds, with IDs of their own, and a
+    // cuelist that has a Cue List there (steps of QLC+ converted to a
+    // cuelist) plays from it again
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("FromQLC.qxw");
+    const QByteArray show =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE Workspace>\n"
+        "<Workspace xmlns=\"http://www.qlcplus.org/Workspace\" CurrentWindow=\"VirtualConsole\">\n"
+        " <Creator><Name>Q Light Controller Plus</Name><Version>4.14.4</Version><Author>Someone</Author></Creator>\n"
+        " <Engine>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>LED PAR RGB</Model><Mode>3ch RGB</Mode>"
+        "<ID>0</ID><Name>Par</Name><Universe>0</Universe><Address>0</Address><Channels>3</Channels></Fixture>\n"
+        "  <Function ID=\"0\" Type=\"Scene\" Name=\"Look\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,255</FixtureVal></Function>\n"
+        "  <Function ID=\"2\" Type=\"Scene\" Name=\"Intro\" Hidden=\"True\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,0,1,0</FixtureVal></Function>\n"
+        "  <Function ID=\"1\" Type=\"Sequence\" Name=\"Intro\" BoundScene=\"2\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+        "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+        "<Step Number=\"0\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\" Values=\"2\">0:0,255</Step>"
+        "<Step Number=\"1\" FadeIn=\"500\" Hold=\"1000\" FadeOut=\"500\" Values=\"2\">0:1,128</Step>"
+        "</Function>\n"
+        " </Engine>\n"
+        " <VirtualConsole>\n"
+        "  <Frame Caption=\"\">\n"
+        "   <Appearance><FrameStyle>None</FrameStyle><BackgroundColor>Default</BackgroundColor></Appearance>\n"
+        "   <Button Caption=\"Look &amp; feel\" ID=\"0\" Icon=\"\">\n"
+        "    <WindowState Visible=\"False\" X=\"10\" Y=\"20\" Width=\"50\" Height=\"50\"/>\n"
+        "    <Function ID=\"0\"/>\n"
+        "    <Action>Toggle</Action>\n"
+        "   </Button>\n"
+        "   <SoloFrame Caption=\"Songs\" ID=\"5\">\n"
+        "    <WindowState Visible=\"False\" X=\"70\" Y=\"0\" Width=\"320\" Height=\"60\"/>\n"
+        "    <AllowChildren>True</AllowChildren>\n"
+        "    <CueList Caption=\"Intro\" ID=\"7\">\n"
+        "     <WindowState Visible=\"False\" X=\"10\" Y=\"40\" Width=\"300\" Height=\"220\"/>\n"
+        "     <Chaser>1</Chaser>\n"
+        "     <NextPrevBehavior>0</NextPrevBehavior>\n"
+        "     <Next/><Previous/><Playback/><Stop/>\n"
+        "    </CueList>\n"
+        "   </SoloFrame>\n"
+        "  </Frame>\n"
+        "  <Properties><Size Width=\"600\" Height=\"300\"/>"
+        "<GrandMaster Visible=\"1\" ChannelMode=\"Intensity\" ValueMode=\"Reduce\" SliderMode=\"Normal\"/></Properties>\n"
+        " </VirtualConsole>\n"
+        " <SimpleDesk><Engine/></SimpleDesk>\n"
+        "</Workspace>\n";
+    QVERIFY(writeBytes(path, show));
+
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QCOMPARE(core.cuelists()->convertFromSteps(1), 1);
+    QVERIFY(qobject_cast<Cuelist *>(doc->function(1)) != nullptr);
+    // a song released by the GO of another, and one more
+    Cuelist *outro = new Cuelist(doc);
+    outro->setName("Outro");
+    outro->setReleaseOnNextGo(true);
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.values = { { Cuelist::Key(0, 2), 255 } };
+    QCOMPARE(outro->addCue(cue), 0);
+    QVERIFY(doc->addFunction(outro));
+    Cuelist *verse = new Cuelist(doc);
+    verse->setName("Verse");
+    QCOMPARE(verse->addCue(cue), 0);
+    QVERIFY(doc->addFunction(verse));
+    // an FX scene and a cuelist left out: they stay for this program
+    FXScene *waves = new FXScene(doc);
+    waves->setName("Waves");
+    QVERIFY(doc->addFunction(waves));
+    Cuelist *left = new Cuelist(doc);
+    left->setName("Left out");
+    QCOMPARE(left->addCue(cue), 0);
+    QVERIFY(doc->addFunction(left));
+
+    const QString copyPath = dir.filePath("Copy.qxw");
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { 1, outro->id(), verse->id() }, {}),
+             qPrintable(core.lastError()));
+    const QByteArray copied = fileBytes(copyPath);
+    QCOMPARE(workspaceSections(copyPath),
+             QStringList({ "Creator", "Engine", "VirtualConsole", "SimpleDesk", "DMXTotalControl" }));
+    // QLC+ reads on past them, to its Virtual Console and Simple Desk
+    QStringList read, reached;
+    qlcPlusEngine(copied, &read, &reached);
+    QCOMPARE(reached, QStringList({ "Creator", "Engine", "VirtualConsole", "SimpleDesk", "DMXTotalControl" }));
+    QVERIFY2(read.contains("Sequence 1"), qPrintable(read.join(", ")));
+    QVERIFY(read.contains(QString("Sequence %1").arg(outro->id())));
+    const QStringList children = engineChildren(copied);
+    QVERIFY2(children.contains("FXScene") == false && children.contains("Cuelist") == false,
+             qPrintable(children.join(", ")));
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY2(other.openShow(QUrl::fromLocalFile(copyPath)), qPrintable(other.lastError()));
+        QVERIFY(qobject_cast<FXScene *>(other.doc()->function(waves->id())) != nullptr);
+        QVERIFY(qobject_cast<Cuelist *>(other.doc()->function(left->id())) != nullptr);
+        QCOMPARE(qobject_cast<Cuelist *>(other.doc()->function(left->id()))->cueCount(), 1);
+    }
+
+    QSize size;
+    const QList<QlcWidget> widgets = qlcWidgets(copied, &size);
+    // the console, the button, the solo frame with Intro, then the frames:
+    // Verse in "Cuelists", Outro (released by another GO) in the solo frame
+    QCOMPARE(widgets.count(), 8);
+    int intro = 0;
+    for (const QlcWidget &widget : widgets)
+        if (widget.tag == "CueList" && widget.chaser == "1")
+            intro++;
+    QCOMPARE(intro, 1);
+    QCOMPARE(widgets.at(3).id, qint64(7));
+    const QlcWidget &frame = widgets.at(4);
+    QCOMPARE(frame.tag, QString("Frame"));
+    QCOMPARE(frame.caption, QString("Cuelists"));
+    QCOMPARE(frame.parent, 0);
+    // below the button (20 + 50), not below the Cue List inside the frame
+    QCOMPARE(frame.rect, QRect(10, 80, 320, 270));
+    QCOMPARE(widgets.at(5).caption, QString("Verse"));
+    QCOMPARE(widgets.at(5).parent, 4);
+    QCOMPARE(widgets.at(5).chaser, QString::number(verse->id()));
+    const QlcWidget &solo = widgets.at(6);
+    QCOMPARE(solo.tag, QString("SoloFrame"));
+    QCOMPARE(solo.caption, QString("Cuelists (one at a time)"));
+    QCOMPARE(solo.parent, 0);
+    QCOMPARE(solo.rect, QRect(340, 80, 320, 270));
+    QCOMPARE(widgets.at(7).caption, QString("Outro"));
+    QCOMPARE(widgets.at(7).parent, 6);
+    QCOMPARE(widgets.at(7).chaser, QString::number(outro->id()));
+    // IDs no widget had
+    QSet<qint64> ids;
+    for (const QlcWidget &widget : widgets)
+    {
+        if (widget.id < 0)
+            continue;
+        QVERIFY(ids.contains(widget.id) == false);
+        ids.insert(widget.id);
+    }
+    for (int i = 4; i < 8; i++)
+        QVERIFY(widgets.at(i).id > 7);
+    // the button as it was, and the console grown to hold the frames
+    QVERIFY(qlcElement(show, "Button", "0").contains("Look &amp; feel"));
+    QCOMPARE(qlcElement(copied, "Button", "0"), qlcElement(show, "Button", "0"));
+    QCOMPARE(size, QSize(670, 360));
+
+    // the converted one alone: nothing to add, the console as it was
+    QSet<quint32> there;
+    QlcExchange::VcCueList list;
+    list.caption = "Intro";
+    list.functionId = 1;
+    const QByteArray section = qlcElement(show, "VirtualConsole", QString());
+    QVERIFY(section.isEmpty() == false);
+    QCOMPARE(QlcExchange::mergeVirtualConsole(section, { list }, &there), section);
+    QCOMPARE(there, QSet<quint32>({ 1 }));
+    // a console with no frame and no properties gets them
+    list.functionId = 9;
+    const QByteArray made = QlcExchange::mergeVirtualConsole("<VirtualConsole/>", { list }, &there);
+    const QList<QlcWidget> bare = qlcWidgets("<Workspace>" + made + "</Workspace>", &size);
+    QCOMPARE(bare.count(), 3);
+    QCOMPARE(bare.at(1).rect, QRect(10, 10, 320, 270));
+    QCOMPARE(bare.at(2).chaser, QString("9"));
+    QCOMPARE(size, QSize(1920, 1080));
+}
+
+/*********************************************************************
+ * cuelists-qlc G10c
+ *********************************************************************/
+
+namespace
+{
+
+/** A scene of $doc named $name, with $values */
+Scene *qlcScene(Doc *doc, const QString &name, const QHash<Cuelist::Key, uchar> &values)
+{
+    Scene *scene = new Scene(doc);
+    scene->setName(name);
+    for (auto it = values.cbegin(); it != values.cend(); ++it)
+        scene->setValue(it.key().first, it.key().second, it.value());
+    doc->addFunction(scene);
+    return scene;
+}
+
+/** A Chaser of $doc with a step for each of the functions $ids, each $duration ms long */
+Chaser *qlcChaser(Doc *doc, const QList<quint32> &ids, uint duration)
+{
+    Chaser *chaser = new Chaser(doc);
+    chaser->setDurationMode(Chaser::PerStep);
+    for (quint32 id : ids)
+    {
+        ChaserStep step(id, 0, duration, 0);
+        step.duration = duration;
+        chaser->addStep(step);
+    }
+    doc->addFunction(chaser);
+    return chaser;
+}
+
+} // namespace
+
+void Backend_Test::convertChaserToCuelist()
+{
+    // a Chaser (of a QLC+ show) becomes a cuelist with its ID: each step a
+    // cue with its scene (a Move FX as FX), releasing what the step before
+    // had and it doesn't. A step that is no scene nor FX gives an empty cue
+    // with a note. The scenes stay
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 2, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 10, 2), 2);
+    const Key dimmer(0, 0), red(1, 0), green(1, 1);
+    const Key pan2(2, 0), tilt2(2, 1), dimmer2(2, 3), pan3(3, 0), tilt3(3, 1), dimmer3(3, 3);
+
+    // A, B, the rack C (the scene D and a Move FX on the spots), an audio, A again
+    Scene *a = qlcScene(doc, "A", { { dimmer, 255 }, { red, 100 } });
+    Scene *b = qlcScene(doc, "B", { { dimmer, 255 }, { green, 50 } });
+    Scene *d = qlcScene(doc, "D", { { dimmer2, 255 }, { dimmer3, 255 } });
+    EFX *efx = new EFX(doc);
+    efx->setName("Circle");
+    for (quint32 spot : { 2u, 3u })
+    {
+        EFXFixture *ef = new EFXFixture(efx);
+        ef->setHead(GroupHead(spot, 0));
+        efx->addFixture(ef);
+    }
+    efx->setXOffset(200);
+    efx->setYOffset(100);
+    QVERIFY(doc->addFunction(efx));
+    Collection *c = new Collection(doc);
+    c->setName("C");
+    QVERIFY(c->addFunction(d->id()));
+    QVERIFY(c->addFunction(efx->id()));
+    QVERIFY(doc->addFunction(c));
+    Audio *audio = new Audio(doc);
+    audio->setName("Intro");
+    QVERIFY(doc->addFunction(audio));
+
+    // a common fade of 0.5 s, a time per step (C for ever), played once
+    Chaser *chaser = new Chaser(doc);
+    chaser->setName("Song");
+    chaser->setPriority(7);
+    chaser->setFadeInMode(Chaser::Common);
+    chaser->setFadeInSpeed(500);
+    chaser->setFadeOutMode(Chaser::Common);
+    chaser->setFadeOutSpeed(500);
+    chaser->setDurationMode(Chaser::PerStep);
+    chaser->setRunOrder(Function::SingleShot);
+    const QList<QPair<quint32, uint>> steps = { { a->id(), 1000 }, { b->id(), 2000 }, { c->id(), Function::infiniteSpeed() },
+                                                { audio->id(), 1500 }, { a->id(), 800 } };
+    for (const auto &s : steps)
+    {
+        ChaserStep step(s.first, 0, s.second, 0);
+        step.duration = s.second;
+        if (s.first == b->id())
+            step.note = "chorus";
+        QVERIFY(chaser->addStep(step));
+    }
+    QVERIFY(doc->addFunction(chaser));
+    const quint32 id = chaser->id();
+    Zone *zone = core.zones()->addZone("Songs");
+    zone->addFunction(id);
+
+    QSignalSpy messages(core.cuelists(), SIGNAL(message(QString)));
+    QCOMPARE(core.cuelists()->convertFromSteps(id), int(id));
+    Cuelist *cl = qobject_cast<Cuelist *>(doc->function(id));
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->name(), QString("Song"));
+    QCOMPARE(cl->priority(), 7);
+    QCOMPARE(cl->cueCount(), 5);
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndRelease);
+    QCOMPARE(cl->fadeOutSpeed(), 500u);
+
+    // cue 1 holds A; cue 2 the green of B, and releases the red of A
+    QCOMPARE(cl->cueAt(0).values, (QHash<Key, uchar>({ { dimmer, 255 }, { red, 100 } })));
+    QVERIFY(cl->cueAt(0).releases.isEmpty());
+    QCOMPARE(cl->cueAt(1).values, (QHash<Key, uchar>({ { green, 50 } })));
+    QCOMPARE(cl->cueAt(1).releases, QSet<Key>({ red }));
+    QCOMPARE(cl->cueAt(1).note, QString("chorus"));
+    // cue 3: D, the Move FX as a pan/tilt FX on the spots around its centre,
+    // and the release of what B had
+    const Cuelist::Cue third = cl->cueAt(2);
+    QCOMPARE(third.values, (QHash<Key, uchar>({ { dimmer2, 255 }, { dimmer3, 255 }, { pan2, 200 }, { tilt2, 100 },
+                                                 { pan3, 200 }, { tilt3, 100 } })));
+    QCOMPARE(third.releases, QSet<Key>({ dimmer, green }));
+    QCOMPARE(third.fx.count(), 1);
+    QCOMPARE(third.fx.first().param, QString("pantilt"));
+    QCOMPARE(third.fx.first().fixtures, QList<quint32>({ 2, 3 }));
+    QCOMPARE(cl->trackedState(2).fx.count(), 1);
+    // cue 4: the audio isn't converted: an empty cue that releases everything, and says so
+    const Cuelist::Cue fourth = cl->cueAt(3);
+    QVERIFY(fourth.values.isEmpty());
+    QVERIFY(fourth.fx.isEmpty());
+    QCOMPARE(fourth.releases, QSet<Key>({ dimmer2, dimmer3, pan2, tilt2, pan3, tilt3 }));
+    QCOMPARE(fourth.fxReleases, QSet<Cuelist::FxKey>({ { "pan", 2 }, { "tilt", 2 }, { "pan", 3 }, { "tilt", 3 } }));
+    const QString notConverted = QString::fromUtf8("Step 4 (“Intro”) isn't a scene or FX: its cue is empty");
+    QCOMPARE(fourth.note, notConverted);
+    QVERIFY(cl->trackedState(3).values.isEmpty());
+    QVERIFY(cl->trackedState(3).fx.isEmpty());
+    // cue 5: A again, from nothing
+    QCOMPARE(cl->cueAt(4).values, (QHash<Key, uchar>({ { dimmer, 255 }, { red, 100 } })));
+    QVERIFY(cl->cueAt(4).releases.isEmpty());
+
+    // named after their steps, numbered in order, with the fade of the chaser
+    const QStringList names = { "A", "B", "C", "Intro", "A" };
+    // a cue waits for the step before it, C for a GO; past the last cue,
+    // the time of the last step releases the list
+    const QList<Cuelist::Trigger> triggers = { Cuelist::TriggerWait, Cuelist::TriggerWait, Cuelist::TriggerWait,
+                                               Cuelist::TriggerGo, Cuelist::TriggerWait };
+    const QList<uint> waits = { 800, 1000, 2000, 0, 1500 };
+    for (int i = 0; i < 5; i++)
+    {
+        const Cuelist::Cue cue = cl->cueAt(i);
+        QCOMPARE(cue.name, names.at(i));
+        QCOMPARE(cue.number, (i + 1) * 1000);
+        QCOMPARE(cue.fade, 500u);
+        QCOMPARE(cue.downFade, -1);
+        QCOMPARE(cue.trigger, triggers.at(i));
+        QCOMPARE(cue.triggerTime, waits.at(i));
+    }
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().first().toString(), "Converted to a cuelist: " + notConverted);
+
+    // the scenes and effects of the steps stay
+    for (const Function *f : std::initializer_list<const Function *>({ a, b, c, d, efx, audio }))
+        QVERIFY(doc->function(f->id()) == f);
+    // its group plays the cuelist
+    QVERIFY(zone->functionIDs().contains(id));
+    zone->trigger(id);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning(), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(core.io()->channelValues(0).at(0).toInt(), 255, 3000);
+    zone->stop(id);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning() == false, 3000);
+
+    // nothing to convert, or not steps
+    Chaser *empty = new Chaser(doc);
+    QVERIFY(doc->addFunction(empty));
+    QCOMPARE(core.cuelists()->convertFromSteps(empty->id()), -1);
+    QCOMPARE(messages.last().first().toString(), QString("These steps are empty: there is nothing to convert"));
+    QCOMPARE(core.cuelists()->convertFromSteps(a->id()), -1);
+    QCOMPARE(core.cuelists()->convertFromSteps(id), -1);
+}
+
+void Backend_Test::convertStepsOrders()
+{
+    // ping-pong steps play there and back as cues (the ends once), a random
+    // order plays in order and says so, steps in beats take the BPM of now
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(0, 0), green(0, 1);
+    CuelistEditor *editor = core.cuelists();
+    QSignalSpy messages(editor, SIGNAL(message(QString)));
+    auto listOf = [&](quint32 id) { return qobject_cast<Cuelist *>(doc->function(id)); };
+    // the red the stage shows on each cue
+    auto redsOf = [&](const Cuelist *cl) {
+        QList<int> reds;
+        for (int i = 0; i < cl->cueCount(); i++)
+            reds << cl->trackedState(i).values.value(red);
+        return reds;
+    };
+
+    // QLC+ steps: red 50, 150 and 250, 300 ms each
+    auto makeSteps = [&](Function::RunOrder order, int loops) {
+        Scene *bound = new Scene(doc);
+        bound->setValue(0, 0, 0);
+        bound->setVisible(false);
+        doc->addFunction(bound);
+        Sequence *sequence = new Sequence(doc);
+        sequence->setBoundSceneID(bound->id());
+        sequence->setDurationMode(Chaser::PerStep);
+        sequence->setRunOrder(order);
+        sequence->setLoopCount(loops);
+        doc->addFunction(sequence);
+        for (int value : { 50, 150, 250 })
+        {
+            ChaserStep step(bound->id(), 0, 300, 0);
+            step.duration = 300;
+            step.values = { SceneValue(0, 0, uchar(value)) };
+            sequence->addStep(step);
+        }
+        return sequence->id();
+    };
+
+    // ping-pong for ever: there and back, then a loop
+    quint32 id = makeSteps(Function::PingPong, 0);
+    QCOMPARE(editor->convertFromSteps(id), int(id));
+    Cuelist *cl = listOf(id);
+    QVERIFY(cl != nullptr);
+    QCOMPARE(redsOf(cl), QList<int>({ 50, 150, 250, 150 }));
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndLoop);
+    for (int i = 0; i < 4; i++)
+    {
+        QCOMPARE(cl->cueAt(i).trigger, Cuelist::TriggerWait);
+        QCOMPARE(cl->cueAt(i).triggerTime, 300u);
+    }
+    QCOMPARE(messages.count(), 0);
+    // twice there and back, then released
+    id = makeSteps(Function::PingPong, 2);
+    QCOMPARE(editor->convertFromSteps(id), int(id));
+    cl = listOf(id);
+    QVERIFY(cl != nullptr);
+    QCOMPARE(redsOf(cl), QList<int>({ 50, 150, 250, 150, 50, 150, 250, 150 }));
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndRelease);
+    QCOMPARE(cl->cueAt(7).number, 8000);
+    QCOMPARE(messages.count(), 0);
+
+    // random: in order, and said
+    id = makeSteps(Function::Random, 0);
+    QCOMPARE(editor->convertFromSteps(id), int(id));
+    cl = listOf(id);
+    QVERIFY(cl != nullptr);
+    QCOMPARE(redsOf(cl), QList<int>({ 50, 150, 250 }));
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndLoop);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.last().first().toString(), QString("Converted to a cuelist: random order: they play in order"));
+
+    // in beats: ms at 120 BPM (a fade in of half a beat, 2 beats a step)
+    doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    doc->inputOutputMap()->setBpmNumber(120);
+    QCOMPARE(doc->masterTimer()->beatTimeDuration(), 500);
+    Scene *bound = new Scene(doc);
+    bound->setValue(0, 0, 0);
+    bound->setVisible(false);
+    QVERIFY(doc->addFunction(bound));
+    Sequence *beats = new Sequence(doc);
+    beats->setBoundSceneID(bound->id());
+    beats->setTempoType(Function::Beats);
+    beats->setFadeInMode(Chaser::PerStep);
+    beats->setDurationMode(Chaser::PerStep);
+    QVERIFY(doc->addFunction(beats));
+    for (int value : { 100, 200 })
+    {
+        ChaserStep step(bound->id(), 500, 1500, 0);
+        step.duration = 2000;
+        step.values = { SceneValue(0, 0, uchar(value)) };
+        QVERIFY(beats->addStep(step));
+    }
+    QCOMPARE(editor->convertFromSteps(beats->id()), int(beats->id()));
+    cl = listOf(beats->id());
+    QVERIFY(cl != nullptr);
+    for (int i = 0; i < 2; i++)
+    {
+        QCOMPARE(cl->cueAt(i).fade, 250u);
+        QCOMPARE(cl->cueAt(i).trigger, Cuelist::TriggerWait);
+        QCOMPARE(cl->cueAt(i).triggerTime, 1000u);
+    }
+    QCOMPARE(messages.count(), 2);
+    QCOMPARE(messages.last().first().toString(), QString("Converted to a cuelist: in beats: in seconds at 120 BPM"));
+
+    // a chaser in ping-pong: the looks there and back, B after C releases
+    // the red of C
+    Scene *a = qlcScene(doc, "A", { { red, 100 } });
+    Scene *b = qlcScene(doc, "B", { { green, 50 } });
+    Scene *c = qlcScene(doc, "C", { { red, 30 }, { green, 20 } });
+    Chaser *chaser = qlcChaser(doc, { a->id(), b->id(), c->id() }, 500);
+    chaser->setRunOrder(Function::PingPong);
+    QCOMPARE(editor->convertFromSteps(chaser->id()), int(chaser->id()));
+    cl = listOf(chaser->id());
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueCount(), 4);
+    QStringList names;
+    for (int i = 0; i < 4; i++)
+        names << cl->cueAt(i).name;
+    QCOMPARE(names, QStringList({ "A", "B", "C", "B" }));
+    QCOMPARE(cl->cueAt(3).values, (QHash<Key, uchar>({ { green, 50 } })));
+    QCOMPARE(cl->cueAt(3).releases, QSet<Key>({ red }));
+    QCOMPARE(cl->trackedState(3).values, (QHash<Key, uchar>({ { green, 50 } })));
+
+    // scenes named as cues (a copy for QLC+): their numbers and names, when
+    // they go up; backwards they don't, and the names stay as they are
+    Scene *intro = qlcScene(doc, "Q1 · Intro", { { red, 10 } });
+    Scene *half = qlcScene(doc, "Q2.5", { { red, 20 } });
+    Scene *end = qlcScene(doc, "Q3 · End", { { red, 30 } });
+    const QList<quint32> labelled = { intro->id(), half->id(), end->id() };
+    chaser = qlcChaser(doc, labelled, 500);
+    QCOMPARE(editor->convertFromSteps(chaser->id()), int(chaser->id()));
+    cl = listOf(chaser->id());
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueAt(0).number, 1000);
+    QCOMPARE(cl->cueAt(0).name, QString("Intro"));
+    QCOMPARE(cl->cueAt(1).number, 2500);
+    QCOMPARE(cl->cueAt(1).name, QString());
+    QCOMPARE(cl->cueAt(2).number, 3000);
+    QCOMPARE(cl->cueAt(2).name, QString("End"));
+    chaser = qlcChaser(doc, labelled, 500);
+    chaser->setDirection(Function::Backward);
+    QCOMPARE(editor->convertFromSteps(chaser->id()), int(chaser->id()));
+    cl = listOf(chaser->id());
+    QVERIFY(cl != nullptr);
+    QCOMPARE(redsOf(cl), QList<int>({ 30, 20, 10 }));
+    QCOMPARE(cl->cueAt(0).number, 1000);
+    QCOMPARE(cl->cueAt(0).name, QString::fromUtf8("Q3 · End"));
+    QCOMPARE(cl->cueAt(1).number, 2000);
+    QCOMPARE(cl->cueAt(1).name, QString("Q2.5"));
+    QCOMPARE(messages.count(), 2);
+}
+
+void Backend_Test::qlcRoundTrip()
+{
+    // a cuelist saved in a copy for QLC+ (as a Sequence, then as a Chaser)
+    // and converted back: its numbers, names and notes, what the stage shows
+    // on each cue (with the rest values over the channels of the steps of a
+    // Sequence) and its times. A GO stays a GO, a Follow becomes a Wait of the
+    // same total time
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    // two dimmers, an RGB par and a moving head whose pan rests at 128
+    QLCFixtureDef *spotDef = doc->fixtureDefCache()->fixtureDef("Generic", "Moving Head Spot");
+    QVERIFY(spotDef != nullptr);
+    spotDef->channel("Pan")->setDefaultValue(128);
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 2, 0, 1), 2);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 3, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 10, 1), 1);
+    const Key d1(0, 0), d2(1, 0), red(2, 0), blue(2, 2), pan(3, 0), tilt(3, 1), spotDimmer(3, 3);
+
+    // the cues of qlcExportSteps, without FX
+    Cuelist *cl = new Cuelist(doc);
+    cl->setName("Song");
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.values = { { d1, 255 }, { d2, 200 }, { pan, 64 } };
+    QCOMPARE(cl->addCue(cue), 0);
+    cue = Cuelist::Cue();
+    cue.number = 2000;
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 3000;
+    cue.values = { { red, 100 } };
+    cue.releases = { d2 };
+    QCOMPARE(cl->addCue(cue), 1);
+    cue = Cuelist::Cue();
+    cue.number = 2500;
+    cue.name = "Verse";
+    cue.note = "fog";
+    cue.trigger = Cuelist::TriggerFollow;
+    cue.triggerTime = 500;
+    cue.delay = 1000;
+    cue.fade = 2000;
+    cue.downFade = 500;
+    cue.skip = true;
+    cue.values = { { blue, 50 }, { tilt, 30 } };
+    QCOMPARE(cl->addCue(cue), 2);
+    cue = Cuelist::Cue();
+    cue.number = 3000;
+    cue.values = { { spotDimmer, 255 } };
+    QCOMPARE(cl->addCue(cue), 3);
+    cue = Cuelist::Cue();
+    cue.number = 4000;
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 500;
+    cue.fade = 2000;
+    cue.downFade = 2000;
+    cue.values = { { d1, 10 } };
+    QCOMPARE(cl->addCue(cue), 4);
+    QVERIFY(doc->addFunction(cl));
+
+    // the channels of the steps of a Sequence, and their rest values
+    QHash<Key, uchar> rest;
+    for (const SceneValue &scv : QlcExchange::toSteps(doc, cl, true).channels)
+        rest.insert(Key(scv.fxi, scv.channel), doc->fixture(scv.fxi)->channel(scv.channel)->defaultValue());
+    QCOMPARE(rest.count(), 7);
+    QCOMPARE(rest.value(pan), uchar(128));
+
+    // a GO stays a GO, the Wait of cue 2 too; the Follow of 2.5 is a Wait
+    // from the GO of cue 2 (1 s of cue 2, then 0.5 s); the Wait of cue 4,
+    // shorter than the fade of cue 3, the length of that fade
+    const QList<Cuelist::Trigger> triggers = { Cuelist::TriggerGo, Cuelist::TriggerWait, Cuelist::TriggerWait,
+                                               Cuelist::TriggerGo, Cuelist::TriggerWait };
+    const QList<uint> waits = { 0, 3000, 1500, 0, 1000 };
+
+    for (const QString &format : { QString("sequence"), QString("chaser") })
+    {
+        const bool sequence = format == "sequence";
+        const QString copy = dir.filePath(format + ".qxw");
+        QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copy), { cl->id() }, { { "format", format } }),
+                 qPrintable(core.lastError()));
+
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY2(other.openShow(QUrl::fromLocalFile(copy)), qPrintable(other.lastError()));
+        Chaser *steps = qobject_cast<Chaser *>(other.doc()->function(cl->id()));
+        QVERIFY(steps != nullptr);
+        QCOMPARE(qobject_cast<Sequence *>(steps) != nullptr, sequence);
+        QList<quint32> scenes;
+        for (const ChaserStep &step : steps->steps())
+            scenes << step.fid;
+
+        QSignalSpy messages(other.cuelists(), SIGNAL(message(QString)));
+        QCOMPARE(other.cuelists()->convertFromSteps(cl->id()), int(cl->id()));
+        QCOMPARE(messages.count(), 0);
+        Cuelist *back = qobject_cast<Cuelist *>(other.doc()->function(cl->id()));
+        QVERIFY(back != nullptr);
+        QCOMPARE(back->name(), cl->name());
+        QCOMPARE(back->atEnd(), Cuelist::AtEndLoop);
+        QCOMPARE(back->cueCount(), cl->cueCount());
+        for (int i = 0; i < cl->cueCount(); i++)
+        {
+            const Cuelist::Cue original = cl->cueAt(i);
+            const Cuelist::Cue converted = back->cueAt(i);
+            QCOMPARE(converted.number, original.number);
+            QCOMPARE(converted.name, original.name);
+            QCOMPARE(converted.note, original.note);
+            QCOMPARE(converted.fade, original.fade);
+            QCOMPARE(converted.effectiveDown(), original.effectiveDown());
+            QCOMPARE(converted.trigger, triggers.at(i));
+            QCOMPARE(converted.triggerTime, waits.at(i));
+
+            QHash<Key, uchar> look = cl->trackedState(i).values;
+            if (sequence)
+            {
+                for (auto it = rest.cbegin(); it != rest.cend(); ++it)
+                    if (look.contains(it.key()) == false)
+                        look.insert(it.key(), it.value());
+            }
+            QCOMPARE(back->trackedState(i).values, look);
+        }
+        QCOMPARE(back->cueAt(2).name, QString("Verse"));
+        QCOMPARE(back->cueAt(2).note, QString("fog"));
+        // the hidden scene of a Sequence goes, the scenes of a Chaser stay
+        for (quint32 scene : std::as_const(scenes))
+            QCOMPARE(other.doc()->function(scene) != nullptr, sequence == false);
+    }
+}
+
+/*********************************************************************
+ * cuelists-qlc G10d
+ *********************************************************************/
+
+namespace
+{
+
+/** A show of QLC+ 4.14: two dimmers and a par; the Chaser 10 played by the
+ *  Cue List "Song 1" in a frame on page 2 of a frame with pages; the
+ *  Sequence 12 (its hidden scene 11) that no Cue List plays; the Chaser 13,
+ *  played by two Cue Lists of a solo frame (a step of it is a colour
+ *  effect); a Cue List of the old format */
+const QByteArray QlcCueListShow =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    "<!DOCTYPE Workspace>\n"
+    "<Workspace xmlns=\"http://www.qlcplus.org/Workspace\" CurrentWindow=\"VirtualConsole\">\n"
+    " <Creator><Name>Q Light Controller Plus</Name><Version>4.14.4</Version><Author>Someone</Author></Creator>\n"
+    " <Engine>\n"
+    "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+    "<ID>0</ID><Name>Dimmer 1</Name><Universe>0</Universe><Address>0</Address><Channels>1</Channels></Fixture>\n"
+    "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+    "<ID>1</ID><Name>Dimmer 2</Name><Universe>0</Universe><Address>1</Address><Channels>1</Channels></Fixture>\n"
+    "  <Fixture><Manufacturer>Generic</Manufacturer><Model>LED PAR RGB</Model><Mode>3ch RGB</Mode>"
+    "<ID>2</ID><Name>Par</Name><Universe>0</Universe><Address>2</Address><Channels>3</Channels></Fixture>\n"
+    "  <Function ID=\"1\" Type=\"Scene\" Name=\"Red\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<FixtureVal ID=\"0\">0,255</FixtureVal><FixtureVal ID=\"2\">0,255</FixtureVal></Function>\n"
+    "  <Function ID=\"2\" Type=\"Scene\" Name=\"Blue\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<FixtureVal ID=\"1\">0,200</FixtureVal><FixtureVal ID=\"2\">2,255</FixtureVal></Function>\n"
+    "  <Function ID=\"10\" Type=\"Chaser\" Name=\"Song A\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+    "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+    "<Step Number=\"0\" FadeIn=\"500\" Hold=\"1000\" FadeOut=\"0\">1</Step>"
+    "<Step Number=\"1\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">2</Step></Function>\n"
+    "  <Function ID=\"11\" Type=\"Scene\" Name=\"Intro\" Hidden=\"True\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<FixtureVal ID=\"0\">0,0</FixtureVal><FixtureVal ID=\"2\">0,0,1,0,2,0</FixtureVal></Function>\n"
+    "  <Function ID=\"12\" Type=\"Sequence\" Name=\"Intro\" BoundScene=\"11\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+    "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+    "<Step Number=\"0\" FadeIn=\"0\" Hold=\"2000\" FadeOut=\"0\" Values=\"1\">0:0,255</Step>"
+    "<Step Number=\"1\" FadeIn=\"1000\" Hold=\"4294967294\" FadeOut=\"0\" Values=\"1\">2:1,128</Step></Function>\n"
+    "  <Function ID=\"13\" Type=\"Chaser\" Name=\"Song B\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+    "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+    "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+    "<Step Number=\"0\" FadeIn=\"0\" Hold=\"1000\" FadeOut=\"0\">2</Step>"
+    "<Step Number=\"1\" FadeIn=\"0\" Hold=\"1000\" FadeOut=\"0\">14</Step></Function>\n"
+    "  <Function ID=\"14\" Type=\"RGBMatrix\" Name=\"Matrix\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"500\"/>"
+    "<Direction>Forward</Direction><RunOrder>Loop</RunOrder></Function>\n"
+    " </Engine>\n"
+    " <VirtualConsole>\n"
+    "  <Frame Caption=\"\">\n"
+    "   <Appearance><FrameStyle>None</FrameStyle><BackgroundColor>Default</BackgroundColor></Appearance>\n"
+    "   <Frame Caption=\"Pages\" ID=\"0\">\n"
+    "    <WindowState Visible=\"False\" X=\"10\" Y=\"10\" Width=\"340\" Height=\"300\"/>\n"
+    "    <AllowChildren>True</AllowChildren>\n"
+    "    <Multipage PagesNum=\"2\" CurrentPage=\"0\"/>\n"
+    "    <Frame Caption=\"Verse\" ID=\"1\" Page=\"1\">\n"
+    "     <WindowState Visible=\"False\" X=\"10\" Y=\"40\" Width=\"320\" Height=\"250\"/>\n"
+    "     <CueList Caption=\"Song 1\" ID=\"2\">\n"
+    "      <WindowState Visible=\"False\" X=\"10\" Y=\"10\" Width=\"300\" Height=\"220\"/>\n"
+    "      <Chaser>10</Chaser>\n"
+    "      <NextPrevBehavior>1</NextPrevBehavior>\n"
+    "      <Next><Key>N</Key><Input Universe=\"0\" Channel=\"60\"/></Next>\n"
+    "      <Previous/><Playback/><Stop/>\n"
+    "     </CueList>\n"
+    "    </Frame>\n"
+    "   </Frame>\n"
+    "   <SoloFrame Caption=\"Songs\" ID=\"3\">\n"
+    "    <WindowState Visible=\"False\" X=\"360\" Y=\"10\" Width=\"630\" Height=\"270\"/>\n"
+    "    <CueList Caption=\"\" ID=\"4\">\n"
+    "     <Chaser>13</Chaser><NextPrevBehavior>0</NextPrevBehavior>\n"
+    "     <Next/><Previous/><Playback/><Stop/>\n"
+    "     <SlidersMode>Crossfade</SlidersMode>\n"
+    "    </CueList>\n"
+    "    <CueList Caption=\"B again\" ID=\"5\">\n"
+    "     <Chaser>13</Chaser>\n"
+    "     <Next/><Previous/><Playback/><Stop><Key>S</Key></Stop>\n"
+    "    </CueList>\n"
+    "   </SoloFrame>\n"
+    "   <CueList Caption=\"Old list\" ID=\"6\"><Function>1</Function><Function>2</Function></CueList>\n"
+    "   <Button Caption=\"Red\" ID=\"7\">\n"
+    "    <WindowState Visible=\"False\" X=\"10\" Y=\"320\" Width=\"50\" Height=\"50\"/>\n"
+    "    <Function ID=\"1\"/>\n"
+    "    <Action>Toggle</Action>\n"
+    "   </Button>\n"
+    "  </Frame>\n"
+    "  <Properties><Size Width=\"1920\" Height=\"1080\"/></Properties>\n"
+    " </VirtualConsole>\n"
+    " <SimpleDesk><Engine/></SimpleDesk>\n"
+    "</Workspace>\n";
+
+/** The entry of $lists (DtcCore::qlcCueLists) with the key $key */
+QVariantMap qlcCandidate(const QVariantList &lists, const QString &key)
+{
+    for (const QVariant &entry : lists)
+        if (entry.toMap().value("key").toString() == key)
+            return entry.toMap();
+    return QVariantMap();
+}
+
+/** The cuelists of $doc, by name */
+QHash<QString, Cuelist *> cuelistsOf(const Doc *doc)
+{
+    QHash<QString, Cuelist *> cuelists;
+    for (Function *f : doc->functionsByType(Function::CuelistType))
+        cuelists.insert(f->name(), qobject_cast<Cuelist *>(f));
+    return cuelists;
+}
+
+} // namespace
+
+void Backend_Test::qlcCueListsInShow()
+{
+    // a QLC+ show: its Virtual Console cue lists (in frames and pages, two on
+    // the same chaser are one, the old format can't be converted), then the
+    // steps no cue list plays, become cuelists beside the originals (the show
+    // plays the same in QLC+, its Virtual Console saved as it was), or in
+    // their place; on the free playbacks of the page
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("FromQLC.qxw");
+    QVERIFY(writeBytes(path, QlcCueListShow));
+
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QCOMPARE(core.qlcCueListCount(), 3);
+
+    // what the console has: the controls of each Cue List, for the mappings
+    const QByteArray console = qlcElement(QlcCueListShow, "VirtualConsole", QString());
+    const QList<QlcExchange::Candidate> candidates = QlcExchange::candidates(doc, console);
+    QCOMPARE(candidates.count(), 4);
+    QCOMPARE(candidates.at(0).lists.count(), 1);
+    QCOMPARE(candidates.at(0).lists.first().widgetId, qint64(2));
+    QCOMPARE(candidates.at(0).lists.first().next.key, QString("N"));
+    QCOMPARE(candidates.at(0).lists.first().next.universe, 0);
+    QCOMPARE(candidates.at(0).lists.first().next.channel, 60u);
+    QCOMPARE(candidates.at(0).lists.first().previous.universe, -1);
+    QCOMPARE(candidates.at(1).lists.count(), 2);
+    QCOMPARE(candidates.at(1).lists.at(1).index, 2);
+    QCOMPARE(candidates.at(1).lists.at(1).stop.key, QString("S"));
+    QCOMPARE(candidates.at(2).lists.first().legacySteps, 2);
+
+    // the cue lists of the console first (13 once), then the Sequence; no
+    // scene, no hidden scene, no colour effect
+    QVariantList lists = core.qlcCueLists();
+    QStringList keys;
+    for (const QVariant &entry : std::as_const(lists))
+        keys << entry.toMap().value("key").toString();
+    QCOMPARE(keys, QStringList({ "vc:0", "vc:1", "vc:3", "fn:12" }));
+    QVariantMap song = qlcCandidate(lists, "vc:0");
+    QCOMPARE(song.value("kind").toString(), QString("vcCueList"));
+    QCOMPARE(song.value("name").toString(), QString("Song 1"));
+    QCOMPARE(song.value("functionId").toUInt(), 10u);
+    QCOMPARE(song.value("steps").toInt(), 2);
+    QVERIFY(song.value("warnings").toStringList().isEmpty());
+    QCOMPARE(song.value("exists").toString(), QString());
+    QVERIFY(song.value("enabled").toBool());
+    QVERIFY(song.value("checked").toBool());
+    // no caption: the name of the chaser; what doesn't play the same
+    const QVariantMap songB = qlcCandidate(lists, "vc:1");
+    QCOMPARE(songB.value("name").toString(), QString("Song B"));
+    QCOMPARE(songB.value("functionId").toUInt(), 13u);
+    QCOMPARE(songB.value("warnings").toStringList(),
+             QStringList({ QString::fromUtf8("Step 2 (“Matrix”) isn't a scene or FX: its cue is empty"),
+                           "its side fader isn't used" }));
+    QVERIFY(songB.value("checked").toBool());
+    const QVariantMap old = qlcCandidate(lists, "vc:3");
+    QCOMPARE(old.value("name").toString(), QString("Old list"));
+    QCOMPARE(old.value("steps").toInt(), 2);
+    QVERIFY(old.value("enabled").toBool() == false);
+    QVERIFY(old.value("checked").toBool() == false);
+    QCOMPARE(old.value("warnings").toStringList(), QStringList({ "old QLC+ format: open and save it in QLC+ first" }));
+    // the steps alone are not checked: there are cue lists
+    const QVariantMap intro = qlcCandidate(lists, "fn:12");
+    QCOMPARE(intro.value("kind").toString(), QString("Sequence"));
+    QCOMPARE(intro.value("name").toString(), QString("Intro"));
+    QVERIFY(intro.value("enabled").toBool());
+    QVERIFY(intro.value("checked").toBool() == false);
+
+    // made beside the originals, on the first playbacks of the page
+    QString done = core.importQlcCueLists(QUrl(), { "vc:0", "fn:12", "fn:99" }, { { "playbacks", true } });
+    QCOMPARE(done, QString("2 cuelist(s) made · 2 on playbacks"));
+    QVERIFY(core.modified());
+    QHash<QString, Cuelist *> cuelists = cuelistsOf(doc);
+    QCOMPARE(cuelists.count(), 2);
+    Cuelist *song1 = cuelists.value("Song 1");
+    Cuelist *introList = cuelists.value("Intro");
+    QVERIFY(song1 != nullptr && introList != nullptr);
+    QCOMPARE(core.playbacks()->functionAt(0, 0), int(song1->id()));
+    QCOMPARE(core.playbacks()->functionAt(0, 1), int(introList->id()));
+    QCOMPARE(doc->function(10)->type(), Function::ChaserType);
+    QCOMPARE(doc->function(12)->type(), Function::SequenceType);
+    QVERIFY(doc->function(11) != nullptr);
+    // its Cue List goes on from the step it was stopped on
+    QVERIFY(song1->resetOnRelease() == false);
+    QVERIFY(introList->resetOnRelease());
+    // the scenes of the chaser, the steps of the Sequence with every channel
+    const Key d1(0, 0), d2(1, 0), red(2, 0), green(2, 1), blue(2, 2);
+    QCOMPARE(song1->cueCount(), 2);
+    QCOMPARE(song1->cueAt(0).name, QString("Red"));
+    QCOMPARE(song1->cueAt(0).values, (QHash<Key, uchar>({ { d1, 255 }, { red, 255 } })));
+    QCOMPARE(song1->cueAt(0).fade, 500u);
+    QCOMPARE(song1->cueAt(1).values, (QHash<Key, uchar>({ { d2, 200 }, { blue, 255 } })));
+    QCOMPARE(song1->cueAt(1).releases, QSet<Key>({ d1, red }));
+    QCOMPARE(song1->cueAt(1).trigger, Cuelist::TriggerWait);
+    QCOMPARE(song1->cueAt(1).triggerTime, 1500u);
+    QCOMPARE(introList->cueAt(0).values, (QHash<Key, uchar>({ { d1, 255 }, { red, 0 }, { green, 0 }, { blue, 0 } })));
+    QCOMPARE(introList->cueAt(1).values, (QHash<Key, uchar>({ { d1, 0 }, { green, 128 } })));
+
+    // they are cuelists now: unchecked
+    lists = core.qlcCueLists();
+    QCOMPARE(qlcCandidate(lists, "vc:0").value("exists").toString(), QString("Song 1"));
+    QVERIFY(qlcCandidate(lists, "vc:0").value("checked").toBool() == false);
+    QCOMPARE(qlcCandidate(lists, "fn:12").value("exists").toString(), QString("Intro"));
+
+    // saved: QLC+ gets its Virtual Console as it was
+    const QString saved = dir.filePath("Saved.qxw");
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(saved)));
+    QCOMPARE(qlcElement(fileBytes(saved), "VirtualConsole", QString()), console);
+    QStringList read;
+    qlcPlusEngine(fileBytes(saved), &read);
+    QVERIFY2(read.contains("Chaser 10") && read.contains("Sequence 12") && read.contains("Chaser 13"),
+             qPrintable(read.join(", ")));
+
+    // in their place: the same IDs, the hidden scene goes, the scenes stay
+    done = core.importQlcCueLists(QUrl(), { "vc:0", "fn:12" }, { { "replace", true }, { "playbacks", false } });
+    QCOMPARE(done, QString("2 cuelist(s) made"));
+    Cuelist *replaced = qobject_cast<Cuelist *>(doc->function(10));
+    QVERIFY(replaced != nullptr);
+    QCOMPARE(replaced->name(), QString("Song 1"));
+    QCOMPARE(replaced->cueCount(), 2);
+    QVERIFY(qobject_cast<Cuelist *>(doc->function(12)) != nullptr);
+    QCOMPARE(doc->function(12)->name(), QString("Intro"));
+    QVERIFY(doc->function(11) == nullptr);
+    QVERIFY(doc->function(1) != nullptr && doc->function(2) != nullptr);
+    // what is left to convert
+    keys.clear();
+    for (const QVariant &entry : core.qlcCueLists())
+        keys << entry.toMap().value("key").toString();
+    QCOMPARE(keys, QStringList({ "vc:1", "vc:3" }));
+
+    // a full page: said
+    while (core.playbacks()->firstFreeSlot(0) >= 0)
+        core.playbacks()->assign(0, core.playbacks()->firstFreeSlot(0), 1);
+    done = core.importQlcCueLists(QUrl(), { "vc:1" }, { { "playbacks", true } });
+    QCOMPARE(done, QString("1 cuelist(s) made · 1 with no free playback · 1 step(s) not converted"));
+    QVERIFY(cuelistsOf(doc).contains("Song B"));
+    // nothing to make
+    QVERIFY(core.importQlcCueLists(QUrl(), { "vc:3" }, {}).isEmpty());
+    QVERIFY(core.lastError().contains("old QLC+ format"));
+    QVERIFY(core.importQlcCueLists(QUrl(), {}, {}).isEmpty());
+    QCOMPARE(core.lastError(), QString("Choose at least one cue list"));
+}
+
+void Backend_Test::qlcCueListsFromAnotherShow()
+{
+    // the cue lists of another QLC+ show: only the cuelists come in, on the
+    // fixtures of this show (the same address and model first); a fixture
+    // with no match is said. The other show doesn't change
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Other.qxw");
+    // (the hidden scene of the Sequence after it: the steps get its channels
+    // once all of the show is read)
+    const QByteArray show =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE Workspace>\n"
+        "<Workspace xmlns=\"http://www.qlcplus.org/Workspace\" CurrentWindow=\"VirtualConsole\">\n"
+        " <Creator><Name>Q Light Controller Plus</Name><Version>4.14.4</Version><Author>Someone</Author></Creator>\n"
+        " <Engine>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+        "<ID>0</ID><Name>Dimmer</Name><Universe>0</Universe><Address>0</Address><Channels>1</Channels></Fixture>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>LED PAR RGB</Model><Mode>3ch RGB</Mode>"
+        "<ID>1</ID><Name>Par</Name><Universe>0</Universe><Address>1</Address><Channels>3</Channels></Fixture>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+        "<ID>2</ID><Name>Haze</Name><Universe>0</Universe><Address>30</Address><Channels>1</Channels></Fixture>\n"
+        "  <Function ID=\"0\" Type=\"Scene\" Name=\"Look\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,255</FixtureVal><FixtureVal ID=\"1\">0,200</FixtureVal>"
+        "<FixtureVal ID=\"2\">0,100</FixtureVal></Function>\n"
+        "  <Function ID=\"1\" Type=\"Scene\" Name=\"Green\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"1\">1,50</FixtureVal></Function>\n"
+        "  <Function ID=\"2\" Type=\"Chaser\" Name=\"Song\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+        "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+        "<Step Number=\"0\" FadeIn=\"0\" Hold=\"2000\" FadeOut=\"0\">0</Step>"
+        "<Step Number=\"1\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">1</Step></Function>\n"
+        "  <Function ID=\"4\" Type=\"Sequence\" Name=\"Fade\" BoundScene=\"5\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+        "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+        "<Step Number=\"0\" FadeIn=\"0\" Hold=\"1000\" FadeOut=\"0\" Values=\"1\">0:0,255</Step>"
+        "<Step Number=\"1\" FadeIn=\"0\" Hold=\"1000\" FadeOut=\"0\" Values=\"1\">1:1,128</Step></Function>\n"
+        "  <Function ID=\"5\" Type=\"Scene\" Name=\"Fade\" Hidden=\"True\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,0</FixtureVal><FixtureVal ID=\"1\">0,0,1,0,2,0</FixtureVal></Function>\n"
+        " </Engine>\n"
+        " <VirtualConsole>\n"
+        "  <Frame Caption=\"\">\n"
+        "   <CueList Caption=\"Song list\" ID=\"0\"><Chaser>2</Chaser><Next/><Previous/><Playback/><Stop/></CueList>\n"
+        "  </Frame>\n"
+        " </VirtualConsole>\n"
+        "</Workspace>\n";
+    QVERIFY(writeBytes(path, show));
+
+    // this show: a par far away, then a dimmer and a par where the other
+    // show has them (their IDs aren't the same)
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Far", 0, 101, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Front", 0, 1, 1, 0, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Back", 0, 2, 1), 1);
+    QVERIFY(doc->function(qlcScene(doc, "Own", { { Key(0, 0), 10 } })->id()) != nullptr);
+    Cuelist *mine = new Cuelist(doc);
+    mine->setName("SONG LIST");
+    QVERIFY(doc->addFunction(mine));
+    const int scenes = int(doc->functionsByType(Function::SceneType).count());
+
+    // the Virtual Console of a show read aside, empty for a show without one
+    {
+        QString error;
+        QByteArray console = "stale";
+        std::unique_ptr<Doc> other(EffectExchange::loadShow(doc, path, nullptr, &error, &console));
+        QVERIFY(other != nullptr);
+        QVERIFY(console.startsWith("<VirtualConsole"));
+        QCOMPARE(QlcExchange::readVirtualConsole(console).count(), 1);
+        QCOMPARE(QlcExchange::readVirtualConsole(console).first().chaserId, 2u);
+        const QString own = dir.filePath("Own.qxw");
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(own)));
+        other.reset(EffectExchange::loadShow(doc, own, nullptr, &error, &console));
+        QVERIFY(other != nullptr);
+        QVERIFY(console.isEmpty());
+    }
+
+    const QUrl url = QUrl::fromLocalFile(path);
+    const QVariantList lists = core.qlcCueLists(url);
+    QCOMPARE(lists.count(), 2);
+    const QVariantMap song = qlcCandidate(lists, "vc:0");
+    QCOMPARE(song.value("name").toString(), QString("Song list"));
+    QCOMPARE(song.value("steps").toInt(), 2);
+    // a cuelist of this show has its name (in other capitals)
+    QCOMPARE(song.value("exists").toString(), QString("SONG LIST"));
+    QVERIFY(song.value("checked").toBool() == false);
+    QCOMPARE(qlcCandidate(lists, "fn:4").value("kind").toString(), QString("Sequence"));
+    QVERIFY(qlcCandidate(lists, "fn:4").value("checked").toBool() == false);
+
+    // (replace is for this show only)
+    const QString done = core.importQlcCueLists(url, { "vc:0", "fn:4" }, { { "replace", true } });
+    QCOMPARE(done, QString("2 cuelist(s) made · 2 on playbacks · 1 fixture(s) not found in this show"));
+    QCOMPARE(fileBytes(path), show);
+    // only cuelists came in
+    QCOMPARE(int(doc->functionsByType(Function::SceneType).count()), scenes);
+    QVERIFY(doc->functionsByType(Function::ChaserType).isEmpty());
+    QVERIFY(doc->functionsByType(Function::SequenceType).isEmpty());
+    const QHash<QString, Cuelist *> cuelists = cuelistsOf(doc);
+    QCOMPARE(cuelists.count(), 3);
+    Cuelist *songList = cuelists.value("Song list");
+    Cuelist *fade = cuelists.value("Fade");
+    QVERIFY(songList != nullptr && fade != nullptr);
+    QCOMPARE(core.playbacks()->functionAt(0, 0), int(songList->id()));
+    QCOMPARE(core.playbacks()->functionAt(0, 1), int(fade->id()));
+
+    // on the dimmer (1) and the par (2) of this show; the haze has no match
+    const Key front(1, 0), red(2, 0), green(2, 1), blue(2, 2);
+    QCOMPARE(songList->cueCount(), 2);
+    QCOMPARE(songList->cueAt(0).values, (QHash<Key, uchar>({ { front, 255 }, { red, 200 } })));
+    QCOMPARE(songList->cueAt(1).values, (QHash<Key, uchar>({ { green, 50 } })));
+    QCOMPARE(songList->cueAt(1).releases, QSet<Key>({ front, red }));
+    QCOMPARE(songList->cueAt(1).trigger, Cuelist::TriggerWait);
+    QCOMPARE(songList->cueAt(1).triggerTime, 2000u);
+    // a step of the Sequence has every channel of its hidden scene, as QLC+ plays it
+    QCOMPARE(fade->cueAt(0).values, (QHash<Key, uchar>({ { front, 255 }, { red, 0 }, { green, 0 }, { blue, 0 } })));
+    QCOMPARE(fade->cueAt(1).values, (QHash<Key, uchar>({ { front, 0 }, { green, 128 } })));
+
+    // a show that can't be read
+    QVERIFY(core.qlcCueLists(QUrl::fromLocalFile(dir.filePath("Missing.qxw"))).isEmpty());
+    QVERIFY(core.lastError().contains("Missing.qxw"));
+    QVERIFY(core.importQlcCueLists(QUrl::fromLocalFile(dir.filePath("Missing.qxw")), { "vc:0" }, {}).isEmpty());
+}
+
+void Backend_Test::qlcOpenHint()
+{
+    // how many cue lists of the QLC+ Virtual Console a show has, when it is
+    // opened ("Opened..." says where they become cuelists): none for a new
+    // show, nor for a show without them
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("FromQLC.qxw");
+    QVERIFY(writeBytes(path, QlcCueListShow));
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QSignalSpy told(&core, SIGNAL(fileNameChanged()));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QCOMPARE(core.qlcCueListCount(), 3);
+    QCOMPARE(core.property("qlcCueListCount").toInt(), 3);
+    QVERIFY(told.count() > 0);
+
+    core.newShow();
+    QCOMPARE(core.qlcCueListCount(), 0);
+    const QString plain = dir.filePath("Plain.qxw");
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(plain)));
+    QVERIFY(core.openShow(QUrl::fromLocalFile(plain)));
+    QCOMPARE(core.qlcCueListCount(), 0);
+
+    // the steps of its cue lists converted: only the old one is left
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    QCOMPARE(core.cuelists()->convertFromSteps(10), 10);
+    QCOMPARE(core.cuelists()->convertFromSteps(13), 13);
+    QCOMPARE(core.qlcCueListCount(), 3);
+    const QString converted = dir.filePath("Converted.qxw");
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(converted)));
+    QVERIFY(core.openShow(QUrl::fromLocalFile(converted)));
+    QCOMPARE(core.qlcCueListCount(), 1);
+}
+
+/*********************************************************************
+ * cuelists-qlc G10e
+ *********************************************************************/
+
+namespace
+{
+
+/** The mappings of $mapper as "source device key-or-channel → target functionId" */
+QStringList qlcMappingLines(const ControlMapper *mapper)
+{
+    QStringList lines;
+    for (const QVariant &v : mapper->mappings())
+    {
+        const QVariantMap m = v.toMap();
+        const QString source = m.value("source").toString();
+        lines << QString("%1 %2 %3 → %4 %5")
+                     .arg(source, m.value("device").toString(),
+                          source == "key" ? m.value("key").toString() : QString::number(m.value("channel").toUInt()),
+                          m.value("target").toString(), QString::number(m.value("functionId").toInt()));
+    }
+    return lines;
+}
+
+/** The first input line of the Loopback plugin as the input of universe 0 of $core */
+bool patchLoopbackInput(DtcCore &core)
+{
+    InputOutputMap *ioMap = core.doc()->inputOutputMap();
+    if (ioMap->inputPluginNames().contains("Loopback") == false)
+        core.doc()->ioPluginCache()->load(QDir(DTC_LOOPBACK_PLUGIN));
+    return ioMap->setInputPatch(0, "Loopback", QString(), "Loopback 1", 0) &&
+           core.mapping()->deviceKeyOf(0) == QLatin1String("Loopback|Loopback 1");
+}
+
+} // namespace
+
+void Backend_Test::qlcCueListControlsImport()
+{
+    // the keys and the controller buttons of the Cue Lists of QLC+ become
+    // mappings of their new cuelist: Next its GO, Previous its Back,
+    // Playback its Pause/Back, Stop its release (every Cue List of the same
+    // steps). Not keys with Ctrl, Alt or Shift, inputs of a universe with no
+    // controller here, nor controls that have a mapping already
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Keys.qxw");
+    const QByteArray show =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE Workspace>\n"
+        "<Workspace xmlns=\"http://www.qlcplus.org/Workspace\" CurrentWindow=\"VirtualConsole\">\n"
+        " <Creator><Name>Q Light Controller Plus</Name><Version>4.14.4</Version><Author>Someone</Author></Creator>\n"
+        " <Engine>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+        "<ID>0</ID><Name>Dimmer</Name><Universe>0</Universe><Address>0</Address><Channels>1</Channels></Fixture>\n"
+        "  <Function ID=\"1\" Type=\"Scene\" Name=\"Full\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,255</FixtureVal></Function>\n"
+        "  <Function ID=\"2\" Type=\"Scene\" Name=\"Half\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,128</FixtureVal></Function>\n"
+        "  <Function ID=\"10\" Type=\"Chaser\" Name=\"Song\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+        "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+        "<Step Number=\"0\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">1</Step>"
+        "<Step Number=\"1\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">2</Step></Function>\n"
+        " </Engine>\n"
+        " <VirtualConsole>\n"
+        "  <Frame Caption=\"\">\n"
+        "   <CueList Caption=\"Song\" ID=\"0\">\n"
+        "    <Chaser>10</Chaser>\n"
+        "    <Next><Key>N</Key><Input Universe=\"0\" Channel=\"60\"/></Next>\n"
+        "    <Previous><Key>Ctrl+B</Key></Previous>\n"
+        "    <Playback><Key>P</Key></Playback>\n"
+        "    <Stop><Input Universe=\"3\" Channel=\"1\"/></Stop>\n"
+        "   </CueList>\n"
+        "   <CueList Caption=\"Song again\" ID=\"1\">\n"
+        "    <Chaser>10</Chaser>\n"
+        "    <Next><Key>M</Key></Next><Previous/><Playback/><Stop/>\n"
+        "   </CueList>\n"
+        "  </Frame>\n"
+        " </VirtualConsole>\n"
+        "</Workspace>\n";
+    QVERIFY(writeBytes(path, show));
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    // a controller on universe 1 (0 in the file), none on universe 4
+    QVERIFY(patchLoopbackInput(core));
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *pb = core.playbacks();
+    QVERIFY(mapper->mappings().isEmpty());
+
+    QString done = core.importQlcCueLists(QUrl(), { "vc:0" }, { { "controls", true } });
+    QCOMPARE(done, QString("1 cuelist(s) made · 1 on playbacks · 4 mapping(s) made · "
+                           "keys with Ctrl, Alt or Shift aren't mapped · no controller on input universe 4"));
+    Cuelist *song = qobject_cast<Cuelist *>(core.doc()->function(quint32(pb->functionAt(0, 0))));
+    QVERIFY(song != nullptr);
+    const QString id = QString::number(song->id());
+    QCOMPARE(qlcMappingLines(mapper), QStringList({ "key  N → playbackGo " + id,
+                                                     "dmx Loopback|Loopback 1 60 → playbackGo " + id,
+                                                     "key  P → playbackPauseBack " + id,
+                                                     "key  M → playbackGo " + id }));
+    // the LEDs only for MIDI
+    for (const QVariant &v : mapper->mappings())
+        QVERIFY(v.toMap().value("feedback").toBool() == false);
+
+    // the key and the controller button play it
+    QVERIFY(mapper->keyEvent("N", true));
+    mapper->keyEvent("N", false);
+    QTRY_VERIFY_WITH_TIMEOUT(pb->functionStatus(int(song->id())).value("running").toBool(), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->functionStatus(int(song->id())).value("cue").toInt(), 0, 3000);
+    mapper->handleInput("dmx", "Loopback|Loopback 1", 60, QString(), 255);
+    mapper->handleInput("dmx", "Loopback|Loopback 1", 60, QString(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->functionStatus(int(song->id())).value("cue").toInt(), 1, 3000);
+    pb->releaseFunction(int(song->id()));
+
+    // imported again: no mapping twice
+    done = core.importQlcCueLists(QUrl(), { "vc:0" }, { { "controls", true } });
+    QCOMPARE(done, QString("1 cuelist(s) made · 1 on playbacks · already mapped: Key N · "
+                           "already mapped: DMX 61 · Loopback 1 · keys with Ctrl, Alt or Shift aren't mapped · "
+                           "already mapped: Key P · no controller on input universe 4 · already mapped: Key M"));
+    QCOMPARE(mapper->mappings().count(), 4);
+    // without them: no mappings, nothing said
+    done = core.importQlcCueLists(QUrl(), { "vc:0" }, {});
+    QCOMPARE(done, QString("1 cuelist(s) made · 1 on playbacks"));
+    QCOMPARE(mapper->mappings().count(), 4);
+
+    // a key the mappings don't take
+    QStringList lost;
+    QlcExchange::VcControl escape;
+    escape.key = "Esc";
+    QVERIFY(QlcExchange::mappingsFrom(escape, "playbackGo", song->id(), mapper, &lost).isEmpty());
+    QCOMPARE(lost, QStringList({ "the key Esc can't be mapped" }));
+}
+
+void Backend_Test::qlcCueListControlsExport()
+{
+    // in the copy for QLC+, each Cue List takes the keys and controller
+    // buttons of its cuelist: those of the cuelist and those of the playback
+    // that holds it (on the page shown now). GO is Next, Back Previous,
+    // Pause/Back Playback, release Stop; one key and one input each. OSC,
+    // a device that isn't enabled and the other controls of a button are said
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    QVERIFY(patchLoopbackInput(core));
+    const QString loopback = "Loopback|Loopback 1";
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *pb = core.playbacks();
+
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.values = { { Key(0, 0), 255 } };
+    Cuelist *a = new Cuelist(doc);
+    a->setName("Song");
+    QCOMPARE(a->addCue(cue), 0);
+    QVERIFY(doc->addFunction(a));
+    Cuelist *b = new Cuelist(doc);
+    b->setName("Other");
+    QCOMPARE(b->addCue(cue), 0);
+    QVERIFY(doc->addFunction(b));
+    pb->assign(0, 0, int(a->id()));
+
+    // (a key learnt is kept in lower case: QLC+ gets it as it writes keys)
+    const int songId = int(a->id());
+    mapper->addMapping({ { "target", "playbackGo" }, { "source", "key" }, { "key", "g" }, { "functionId", songId } });
+    mapper->addMapping({ { "target", "playbackBack" }, { "source", "dmx" }, { "device", loopback }, { "channel", 61 },
+                         { "pbPage", -1 }, { "slot", 0 } });
+    mapper->addMapping({ { "target", "playbackGo" }, { "source", "osc" }, { "key", "/song/go" }, { "functionId", songId } });
+    mapper->addMapping({ { "target", "playbackGo" }, { "source", "key" }, { "key", "H" }, { "functionId", songId } });
+    // any device: the only DMX input enabled
+    mapper->addMapping({ { "target", "playbackRelease" }, { "source", "dmx" }, { "channel", 7 },
+                         { "functionId", songId } });
+    mapper->addMapping({ { "target", "playbackPauseBack" }, { "source", "midi" }, { "device", "MIDI|APC mini mk2" },
+                         { "channel", 130 }, { "functionId", songId } });
+    // another cuelist, and a target a Cue List has no button for
+    mapper->addMapping({ { "target", "playbackGo" }, { "source", "key" }, { "key", "Q" }, { "functionId", int(b->id()) } });
+    mapper->addMapping({ { "target", "playbackFlash" }, { "source", "key" }, { "key", "F" }, { "functionId", songId } });
+
+    // the dialog says what doesn't go
+    auto lostOf = [&](bool controls) {
+        for (const QVariant &v : core.qlcExportInfo("sequence", controls))
+            if (v.toMap().value("id").toInt() == songId)
+                return v.toMap().value("lost").toStringList();
+        return QStringList({ "no such cuelist" });
+    };
+    const QStringList steps = lostOf(false);
+    QCOMPARE(lostOf(true), steps + QStringList({ "OSC controls aren't carried",
+                                                 "APC mini mk2 isn't enabled: its controls aren't carried",
+                                                 "more controls for the same button: QLC+ takes the first key and the first input" }));
+
+    const QString copyPath = dir.filePath("Copy.qxw");
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { a->id(), b->id() }, { { "controls", true } }),
+             qPrintable(core.lastError()));
+    const QByteArray copied = fileBytes(copyPath);
+    // (Song is on the first playback: its Cue List comes first, ID 1)
+    const QByteArray song = qlcElement(copied, "CueList", "1");
+    QVERIFY2(song.contains("<Chaser>" + QByteArray::number(songId) + "</Chaser>"), song.constData());
+    QVERIFY2(song.contains("<Next><Key>G</Key></Next>"), song.constData());
+    QVERIFY(song.contains("<Previous><Input Universe=\"0\" Channel=\"61\"/></Previous>"));
+    QVERIFY(song.contains("<Playback/>"));
+    QVERIFY(song.contains("<Stop><Input Universe=\"0\" Channel=\"7\"/></Stop>"));
+    // as QLC+ reads them
+    QList<QlcExchange::VcCueListInfo> lists =
+        QlcExchange::readVirtualConsole(qlcElement(copied, "VirtualConsole", QString()));
+    QCOMPARE(lists.count(), 2);
+    QCOMPARE(lists.at(0).next.key, QString("G"));
+    QCOMPARE(lists.at(0).next.universe, -1);
+    QCOMPARE(lists.at(0).previous.universe, 0);
+    QCOMPARE(lists.at(0).previous.channel, 61u);
+    QVERIFY(lists.at(0).playback.key.isEmpty() && lists.at(0).playback.universe < 0);
+    QCOMPARE(lists.at(0).stop.channel, 7u);
+    QCOMPARE(lists.at(1).chaserId, b->id());
+    QCOMPARE(lists.at(1).next.key, QString("Q"));
+    // the show keeps its mappings
+    QCOMPARE(mapper->mappings().count(), 8);
+
+    // the current page is the one shown now: the playback no longer holds it
+    pb->setCurrentPage(pb->addPage());
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { a->id() }, { { "controls", true } }),
+             qPrintable(core.lastError()));
+    lists = QlcExchange::readVirtualConsole(qlcElement(fileBytes(copyPath), "VirtualConsole", QString()));
+    QCOMPARE(lists.count(), 1);
+    QCOMPARE(lists.at(0).next.key, QString("G"));
+    QCOMPARE(lists.at(0).previous.universe, -1);
+    pb->setCurrentPage(0);
+
+    // without them: the buttons are empty
+    QVERIFY(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { a->id() }, {}));
+    QVERIFY(qlcElement(fileBytes(copyPath), "CueList", "1").contains("<Next/>"));
+}
+
+/*********************************************************************
+ * paletas E1: palettes by reference in the steps
+ *********************************************************************/
+
+namespace
+{
+/** Two RGBW pars ($p1 at 1, $p2 at 6: dimmer 0, red 1, green 2, blue 3,
+ *  white 4), both selected, red from a new colour palette "Rojo" and the
+ *  dimmers at full by hand. @return the palette */
+int stepsPaletteRig(DtcCore &core, quint32 *p1, quint32 *p2)
+{
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    if (core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2) != 2)
+        return -1;
+    for (Fixture *f : core.doc()->fixtures())
+        (f->address() == 0 ? *p1 : *p2) = f->id();
+    Programmer *prog = core.programmer();
+    prog->setReleaseMode("keep");
+    prog->selectFixtures({ *p1, *p2 });
+    prog->setColor(QColor(255, 0, 0));
+    const int red = core.palettes()->record("colour", "Rojo");
+    prog->setChannelValue("dimmer", 255);
+    return red;
+}
+
+/** The value of a channel in step $index, -1 when the step has none */
+int stepValueOf(const Sequence *sequence, int index, quint32 fixture, quint32 channel)
+{
+    for (const SceneValue &scv : sequence->steps().at(index).values)
+        if (scv.fxi == fixture && scv.channel == channel)
+            return int(scv.value);
+    return -1;
+}
+
+/** The programmer on both pars: their colour by hand */
+void setStepsColour(DtcCore &core, quint32 p1, quint32 p2, const QColor &colour)
+{
+    core.programmer()->clear();
+    core.programmer()->selectFixtures({ p1, p2 });
+    core.programmer()->setColor(colour);
+}
+} // namespace
+
+void Backend_Test::stepsPalettes()
+{
+    // the steps keep the palettes their values come from: an update of the
+    // palette changes them (the step on stage at once), Load step brings
+    // the links back, the copies of steps keep them; a deleted palette or
+    // fixture leaves plain values
+    typedef QPair<quint32, quint32> Key;
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int red = stepsPaletteRig(core, &p1, &p2);
+    QVERIFY(red > 0);
+    Programmer *prog = core.programmer();
+    PaletteManager *palettes = core.palettes();
+    EffectEditor *fx = core.effects();
+    const QHash<Key, int> refs = prog->paletteRefs();
+    QCOMPARE(refs.count(), 8);
+    auto out = [&]() {
+        const QVariantList v = core.io()->channelValues(0);
+        QStringList list;
+        for (int i = 0; i < 10; i++)
+            list << QString::number(v.at(i).toInt());
+        return list.join(',');
+    };
+    auto paletteNames = [&](quint32 id, int index) {
+        return fx->steps(id).value(index).toMap().value("palettes").toStringList();
+    };
+
+    // New > Steps: the first step keeps the colours from the palette, the
+    // dimmers set by hand stay plain; a step set by hand has none
+    const int created = fx->createSteps("Song");
+    QVERIFY(created >= 0);
+    const quint32 id = quint32(created);
+    Sequence *seq = qobject_cast<Sequence *>(core.doc()->function(id));
+    QVERIFY(seq != nullptr);
+    QCOMPARE(seq->steps().at(0).palettes, refs);
+    setStepsColour(core, p1, p2, QColor(0, 0, 255));
+    prog->setChannelValue("dimmer", 255);
+    QVERIFY(fx->addStep(id));
+    QCOMPARE(seq->stepsCount(), 2);
+    QVERIFY(seq->steps().at(1).palettes.isEmpty());
+    // the list says it; the palette counts the steps once
+    QCOMPARE(paletteNames(id, 0), QStringList({ "Rojo" }));
+    QCOMPARE(paletteNames(id, 1), QStringList());
+    QCOMPARE(palettes->palette(red).value("scenes").toInt(), 1);
+
+    // the palette updated to green: the step follows and keeps the links,
+    // the step set by hand doesn't change
+    setStepsColour(core, p1, p2, QColor(0, 255, 0));
+    QVERIFY(palettes->update(red));
+    prog->clear();
+    QCOMPARE(stepValueOf(seq, 0, p1, 1), 0);
+    QCOMPARE(stepValueOf(seq, 0, p1, 2), 255);
+    QCOMPARE(stepValueOf(seq, 0, p2, 2), 255);
+    QCOMPARE(stepValueOf(seq, 0, p1, 0), 255);
+    QCOMPARE(seq->steps().at(0).palettes, refs);
+    QCOMPARE(stepValueOf(seq, 1, p1, 2), 0);
+    QCOMPARE(stepValueOf(seq, 1, p1, 3), 255);
+    QVERIFY(seq->steps().at(1).palettes.isEmpty());
+
+    // Load step: the links come back, the palette lights up on the selection
+    QVERIFY(fx->loadStep(id, 0));
+    QCOMPARE(prog->paletteRefs(), refs);
+    QCOMPARE(palettes->states().value(QString::number(red)).toInt(), 2);
+    // Save in step: a dimmer set by hand stays plain, the colours keep their links
+    prog->setChannelValue("dimmer", 128);
+    QVERIFY(fx->updateStep(id, 0));
+    QCOMPARE(seq->steps().at(0).palettes, refs);
+    QCOMPARE(stepValueOf(seq, 0, p1, 0), 128);
+    // a red set by hand leaves the palette; the palette applied again links it back
+    prog->setChannelValue("red", 10);
+    QVERIFY(fx->updateStep(id, 0));
+    QCOMPARE(seq->steps().at(0).palettes.count(), 6);
+    QVERIFY(seq->steps().at(0).palettes.contains(Key(p1, 1)) == false);
+    QCOMPARE(palettes->apply(red), 2);
+    QVERIFY(fx->updateStep(id, 0));
+    QCOMPARE(seq->steps().at(0).palettes, refs);
+    QCOMPARE(stepValueOf(seq, 0, p1, 1), 0);
+    prog->clear();
+
+    // Duplicate step and the arrows keep the links of each step
+    QVERIFY(fx->duplicateStep(id, 0));
+    QCOMPARE(seq->stepsCount(), 3);
+    QCOMPARE(seq->steps().at(1).palettes, refs);
+    QVERIFY(fx->moveStep(id, 1, 2));
+    QVERIFY(seq->steps().at(1).palettes.isEmpty());
+    QCOMPARE(seq->steps().at(2).palettes, refs);
+    QVERIFY(fx->removeStep(id, 2));
+    QCOMPARE(seq->stepsCount(), 2);
+
+    // a copy of the whole steps follows the next update too
+    const quint32 copyId = fx->duplicate(id);
+    Sequence *copy = qobject_cast<Sequence *>(core.doc()->function(copyId));
+    QVERIFY(copy != nullptr && copy != seq);
+    QCOMPARE(copy->steps().at(0).palettes, refs);
+    QCOMPARE(palettes->palette(red).value("scenes").toInt(), 2);
+    setStepsColour(core, p1, p2, QColor(255, 0, 0));
+    QVERIFY(palettes->update(red));
+    prog->clear();
+    QCOMPARE(stepValueOf(seq, 0, p1, 1), 255);
+    QCOMPARE(stepValueOf(copy, 0, p1, 1), 255);
+    QCOMPARE(stepValueOf(copy, 0, p2, 2), 0);
+
+    // playing, the step on stage changes at once: no GO, no new step
+    fx->setStepsWait(id, QVariantList() << 0, true);
+    seq->start(core.doc()->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(), QString("128,255,0,0,0,128,255,0,0,0"), 3000);
+    setStepsColour(core, p1, p2, QColor(0, 0, 255));
+    QVERIFY(palettes->update(red));
+    prog->clear();
+    QTRY_COMPARE_WITH_TIMEOUT(out(), QString("128,0,0,255,0,128,0,0,255,0"), 3000);
+    QCOMPARE(seq->currentStepIndex(), 0);
+    seq->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(seq->isRunning() == false, 3000);
+
+    // a fixture removed: its links go from every step
+    core.patch()->removeFixture(p2);
+    QCOMPARE(seq->steps().at(0).palettes.count(), 4);
+    QCOMPARE(copy->steps().at(0).palettes.count(), 4);
+    for (const Sequence *steps : { seq, copy })
+        for (auto it = steps->steps().at(0).palettes.cbegin(); it != steps->steps().at(0).palettes.cend(); ++it)
+            QCOMPARE(it.key().first, p1);
+
+    // the palette deleted: the steps keep its values, without the links
+    palettes->remove(red);
+    for (const Sequence *steps : { seq, copy })
+    {
+        QVERIFY(steps->steps().at(0).palettes.isEmpty());
+        QCOMPARE(stepValueOf(steps, 0, p1, 3), 255);
+    }
+    QCOMPARE(paletteNames(id, 0), QStringList());
+}
+
+void Backend_Test::stepsPalettesSaved()
+{
+    // the links are an attribute of each <Step> (QLC+ reads the values as
+    // before); opened again they still go by reference. A link to a
+    // palette that isn't there goes; steps imported come without links
+    typedef QPair<quint32, quint32> Key;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Steps.qxw");
+    quint32 p1 = 0, p2 = 0;
+    QHash<Key, int> refs;
+    int red = -1;
+    {
+        DtcCore core;
+        red = stepsPaletteRig(core, &p1, &p2);
+        QVERIFY(red > 0);
+        refs = core.programmer()->paletteRefs();
+        QVERIFY(core.effects()->createSteps("Song") >= 0);
+        setStepsColour(core, p1, p2, QColor(0, 0, 255));
+        QVERIFY(core.effects()->addStep(core.doc()->functionsByType(Function::SequenceType).first()->id()));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+
+        // imported (here or from another show): the values, no links
+        const quint32 stepsId = core.doc()->functionsByType(Function::SequenceType).first()->id();
+        QString error;
+        int missing = -1;
+        const quint32 imported = EffectExchange::importXml(core.doc(), EffectExchange::exportXml(core.doc(), stepsId),
+                                                           &error, &missing);
+        QVERIFY2(imported != Function::invalidId(), qPrintable(error));
+        Sequence *copy = qobject_cast<Sequence *>(core.doc()->function(imported));
+        QVERIFY(copy != nullptr);
+        QCOMPARE(copy->stepsCount(), 2);
+        QVERIFY(copy->steps().at(0).palettes.isEmpty());
+        QCOMPARE(stepValueOf(copy, 0, p1, 1), 255);
+        QCOMPARE(core.palettes()->palette(red).value("scenes").toInt(), 1);
+    }
+
+    // in the file: fixture:channel:palette, sorted, on the first step only;
+    // the values stay the text of the step (no element inside it)
+    QStringList expected;
+    QList<Key> keys = refs.keys();
+    std::sort(keys.begin(), keys.end());
+    for (const Key &key : std::as_const(keys))
+        expected << QString("%1:%2:%3").arg(key.first).arg(key.second).arg(refs.value(key));
+    const QString text = QString::fromUtf8(fileBytes(path));
+    static const QRegularExpression stepTag(QStringLiteral("<Step [^>]*Palettes=\"([^\"]*)\"[^>]*>([^<]*)</Step>"));
+    QRegularExpressionMatchIterator steps = stepTag.globalMatch(text);
+    QVERIFY(steps.hasNext());
+    const QRegularExpressionMatch step = steps.next();
+    QCOMPARE(step.captured(1), expected.join(','));
+    QVERIFY(step.captured(0).contains("Number=\"0\""));
+    QVERIFY(step.captured(2).isEmpty() == false);
+    QVERIFY2(steps.hasNext() == false, "only the first step has links");
+
+    // opened again: the same links, still by reference
+    DtcCore other;
+    other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(other.openShow(QUrl::fromLocalFile(path)));
+    Sequence *seq = qobject_cast<Sequence *>(other.doc()->functionsByType(Function::SequenceType).value(0));
+    QVERIFY(seq != nullptr);
+    QCOMPARE(seq->stepsCount(), 2);
+    QCOMPARE(seq->steps().at(0).palettes, refs);
+    QVERIFY(seq->steps().at(1).palettes.isEmpty());
+    QCOMPARE(other.palettes()->palette(red).value("scenes").toInt(), 1);
+    QCOMPARE(other.effects()->steps(seq->id()).value(0).toMap().value("palettes").toStringList(), QStringList({ "Rojo" }));
+    setStepsColour(other, p1, p2, QColor(0, 255, 0));
+    QVERIFY(other.palettes()->replace(red));
+    other.programmer()->clear();
+    QCOMPARE(stepValueOf(seq, 0, p1, 1), 0);
+    QCOMPARE(stepValueOf(seq, 0, p2, 2), 255);
+    QCOMPARE(stepValueOf(seq, 1, p2, 3), 255);
+
+    // a file edited to name palette 99: that link goes, the others stay
+    const Key edit = keys.first();
+    QString edited = text;
+    edited.replace("Palettes=\"" + expected.first() + ",",
+                   QString("Palettes=\"%1:%2:99,").arg(edit.first).arg(edit.second));
+    QVERIFY(edited != text);
+    const QString editedPath = dir.filePath("Edited.qxw");
+    {
+        QFile file(editedPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(edited.toUtf8());
+    }
+    QVERIFY(other.openShow(QUrl::fromLocalFile(editedPath)));
+    seq = qobject_cast<Sequence *>(other.doc()->functionsByType(Function::SequenceType).value(0));
+    QVERIFY(seq != nullptr);
+    QHash<Key, int> kept = refs;
+    kept.remove(edit);
+    QCOMPARE(seq->steps().at(0).palettes, kept);
+    QCOMPARE(stepValueOf(seq, 0, edit.first, edit.second), 255);
+}
+
+void Backend_Test::stepsPalettesToCues()
+{
+    // Convert to cuelist: each cue refers to the palettes of its step. A
+    // step with the same values from another palette, or set by hand, still
+    // changes them (the link changed)
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int red = stepsPaletteRig(core, &p1, &p2);
+    QVERIFY(red > 0);
+    Programmer *prog = core.programmer();
+    EffectEditor *fx = core.effects();
+    const QHash<Key, int> refs = prog->paletteRefs();
+
+    // step 1 from "Rojo", step 2 the same red from "Rojo 2", step 3 by hand
+    const int created = fx->createSteps("Song");
+    QVERIFY(created >= 0);
+    const quint32 id = quint32(created);
+    const int red2 = core.palettes()->record("colour", "Rojo 2");
+    QVERIFY(red2 > 0 && red2 != red);
+    const QHash<Key, int> refs2 = prog->paletteRefs();
+    QCOMPARE(refs2.count(), 8);
+    QVERIFY(fx->addStep(id));
+    prog->setColor(QColor(255, 0, 0));
+    QVERIFY(prog->paletteRefs().isEmpty());
+    QVERIFY(fx->addStep(id));
+    prog->clear();
+
+    QCOMPARE(core.cuelists()->convertFromSteps(id), int(id));
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueCount(), 3);
+    QCOMPARE(cl->cueAt(0).values.count(), 10);
+    QCOMPARE(cl->cueAt(0).palettes, refs);
+    // the same values, another palette: the colours are in the cue, the dimmers not
+    QCOMPARE(cl->cueAt(1).values.count(), 8);
+    QCOMPARE(int(cl->cueAt(1).values.value(Key(p1, 1))), 255);
+    QCOMPARE(cl->cueAt(1).palettes, refs2);
+    // by hand: the same values, without links
+    QCOMPARE(cl->cueAt(2).values.count(), 8);
+    QVERIFY(cl->cueAt(2).palettes.isEmpty());
+    QCOMPARE(core.cuelists()->cues(id).value(1).toMap().value("palettes").toStringList(), QStringList({ "Rojo 2" }));
+
+    // and the cuelist follows its palettes
+    setStepsColour(core, p1, p2, QColor(0, 0, 255));
+    QVERIFY(core.palettes()->update(red2));
+    prog->clear();
+    QCOMPARE(int(cl->cueAt(1).values.value(Key(p1, 3))), 255);
+    QCOMPARE(int(cl->cueAt(0).values.value(Key(p1, 3))), 0);
+    QCOMPARE(int(cl->cueAt(2).values.value(Key(p1, 3))), 0);
+}
+
+namespace
+{
+/** Two spots (11ch Standard: pan 0, dimmer 5, shutter 6, colour wheel 7,
+ *  gobo 8, prism 9 and the maintenance channel "Control" 10), an RGB par
+ *  (red 0, green 1, blue 2) and an RGBW par (dimmer 0, red 1... white 4),
+ *  numbered 1 to 4 in that order. Spot 1 is selected with a look: a
+ *  position, dimmer full, shutter open, red on the wheel, gobo 2 and the
+ *  lamp on. @return the fixture IDs (none if the patch failed) */
+QList<quint32> allPaletteRig(DtcCore &core)
+{
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    PatchManager *patch = core.patch();
+    if (patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 2) != 2 ||
+        patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Rgb", 0, 50, 1) != 1 ||
+        patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 60, 1) != 1)
+        return QList<quint32>();
+    QList<quint32> ids;
+    for (Fixture *fxi : core.doc()->fixtures())
+        ids.append(fxi->id());
+
+    Programmer *prog = core.programmer();
+    const quint32 spot = ids.at(0);
+    prog->selectFixtures({ spot });
+    prog->setPosition(0.25, 0.5);
+    prog->setDimmer(255);
+    prog->setChannelValue(prog->attributeKey(spot, 6), 10);     // Open
+    prog->setChannelValue(prog->attributeKey(spot, 7), 15);     // Red
+    prog->setChannelValue(prog->attributeKey(spot, 8), 20);     // Gobo 2
+    prog->setChannelValue(prog->attributeKey(spot, 10), 205);   // Lamp on
+    return ids;
+}
+
+/** The programmer values of a fixture: channel -> value */
+QMap<quint32, uchar> programmerValuesOf(Programmer *prog, quint32 fixture)
+{
+    QMap<quint32, uchar> map;
+    for (auto it = prog->valueMap().cbegin(); it != prog->valueMap().cend(); ++it)
+        if (it.key().first == fixture)
+            map.insert(it.key().second, it.value());
+    return map;
+}
+} // namespace
+
+void Backend_Test::allPalettes()
+{
+    // an «All» palette keeps every programmer value of the selection but the
+    // maintenance channels. On a fixture of the same type it puts the same
+    // values; on another type the mix of its colour, and the rest by
+    // attribute. The scenes, cues and steps recorded with it follow it
+    typedef QPair<quint32, quint32> Key;
+    DtcCore core;
+    const QList<quint32> ids = allPaletteRig(core);
+    QCOMPARE(ids.count(), 4);
+    const quint32 spot1 = ids.at(0), spot2 = ids.at(1), rgb = ids.at(2), par = ids.at(3);
+    Programmer *prog = core.programmer();
+    PaletteManager *palettes = core.palettes();
+
+    // the position from a palette first: the «All» palette takes it over
+    const int pos = palettes->record("position", "Cantante");
+    QVERIFY(pos > 0);
+    QCOMPARE(palettes->palette(pos).value("code").toString(), QString("POS 1"));
+
+    // everything but the lamp
+    QMap<quint32, uchar> look = programmerValuesOf(prog, spot1);
+    QCOMPARE(int(look.value(10)), 205);
+    look.remove(10);
+    QVERIFY(look.count() >= 7);
+    QCOMPARE(palettes->recordable().value("all").toInt(), int(look.count()));
+    QCOMPARE(palettes->recordable().value("colour").toInt(), 1);
+    const int all = palettes->record("all");
+    QVERIFY(all > 0);
+    const QVariantMap info = palettes->palette(all);
+    QCOMPARE(info.value("type").toString(), QString("all"));
+    QCOMPARE(info.value("number").toInt(), 1);
+    QCOMPARE(info.value("name").toString(), QString("All 1"));
+    QCOMPARE(info.value("code").toString(), QString("PAL 1"));
+    // (the colour of the red slot of the wheel)
+    QCOMPARE(info.value("color").toString(), QString("#ff0000"));
+    QCOMPARE(palettes->valuesFor(all, spot1), look);
+    QCOMPARE(palettes->paletteByNumber("all", 1), all);
+    // the values come from it now, the position too (no palette inside a palette)
+    QCOMPARE(palettes->states().value(QString::number(all)).toInt(), 2);
+    QCOMPARE(palettes->states().value(QString::number(pos)).toInt(), 0);
+    QCOMPARE(prog->paletteRefs().value(Key(spot1, 0), -1), all);
+    QVERIFY(prog->paletteRefs().contains(Key(spot1, 10)) == false);
+
+    // on the other spot (the same type): the same values, not the lamp
+    prog->clear();
+    prog->selectFixtures({ spot2 });
+    QCOMPARE(palettes->apply(all), 1);
+    QCOMPARE(programmerValuesOf(prog, spot2), look);
+    QCOMPARE(palettes->states().value(QString::number(all)).toInt(), 2);
+    // on the RGB par: the red of the wheel, mixed, and nothing else
+    QCOMPARE(palettes->valuesFor(all, rgb), (QMap<quint32, uchar>({ { 0, 255 }, { 1, 0 }, { 2, 0 } })));
+    // on the RGBW par: the mix, and its dimmer by attribute
+    QCOMPARE(palettes->valuesFor(all, par),
+             (QMap<quint32, uchar>({ { 0, 255 }, { 1, 255 }, { 2, 0 }, { 3, 0 }, { 4, 0 } })));
+
+    // a scene, a cuelist and steps recorded with it on both spots
+    prog->clear();
+    prog->selectFixtures({ spot1, spot2 });
+    QCOMPARE(palettes->apply(all), 2);
+    const int scene = prog->recordScene("Look");
+    QVERIFY(scene >= 0);
+    QCOMPARE(palettes->sceneRefs(quint32(scene)).count(), 2 * int(look.count()));
+    const int list = core.cuelists()->create("Lista");
+    QVERIFY(list >= 0);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(quint32(list)));
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueAt(0).palettes.count(), 2 * int(look.count()));
+    const int steps = core.effects()->createSteps("Pasos");
+    QVERIFY(steps >= 0);
+    Sequence *seq = qobject_cast<Sequence *>(core.doc()->function(quint32(steps)));
+    QVERIFY(seq != nullptr);
+    QCOMPARE(seq->steps().at(0).palettes.count(), 2 * int(look.count()));
+    QCOMPARE(palettes->palette(all).value("scenes").toInt(), 3);
+    Scene *s = qobject_cast<Scene *>(core.doc()->function(quint32(scene)));
+    QVERIFY(s != nullptr);
+
+    // updated with a new pan on spot 1: all three follow, on both spots
+    // (spot 2 takes the values of its type); the rest stays
+    prog->clear();
+    prog->selectFixtures({ spot1 });
+    prog->setPosition(0.75, 0.5);
+    QVERIFY(palettes->update(all));
+    prog->clear();
+    QCOMPARE(int(s->value(spot1, 0)), 191);
+    QCOMPARE(int(s->value(spot2, 0)), 191);
+    QCOMPARE(int(cl->cueAt(0).values.value(Key(spot2, 0))), 191);
+    QCOMPARE(stepValueOf(seq, 0, spot2, 0), 191);
+    QCOMPARE(int(s->value(spot2, 8)), 20);
+    QCOMPARE(int(s->value(spot1, 10)), 0);
+    QCOMPARE(palettes->palette(all).value("color").toString(), QString("#ff0000"));
+
+    // deleted: they keep its values, without the links
+    palettes->remove(all);
+    QCOMPARE(palettes->sceneRefs(quint32(scene)).count(), 0);
+    QVERIFY(cl->cueAt(0).palettes.isEmpty());
+    QVERIFY(seq->steps().at(0).palettes.isEmpty());
+    QCOMPARE(int(s->value(spot2, 0)), 191);
+    QCOMPARE(int(cl->cueAt(0).values.value(Key(spot2, 8))), 20);
+    QCOMPARE(stepValueOf(seq, 0, spot1, 7), 15);
+}
+
+void Backend_Test::allPalettesCommandLine()
+{
+    // PAL 5 (PALETTE, PALETA) puts «All» palette 5 on the selection; ALL and
+    // TODO still mean the fixtures
+    DtcCore core;
+    const QList<quint32> ids = allPaletteRig(core);
+    QCOMPARE(ids.count(), 4);
+    Programmer *prog = core.programmer();
+    CommandLine *cmd = core.commands();
+    const int all = core.palettes()->record("all", "Look");
+    QVERIFY(all > 0);
+    QMap<quint32, uchar> look = programmerValuesOf(prog, ids.at(0));
+    look.remove(10);
+    prog->clear();
+
+    QVERIFY2(cmd->execute("2 PAL 1"), qPrintable(cmd->message()));
+    QCOMPARE(prog->selectionIds(), QList<quint32>({ ids.at(1) }));
+    QCOMPARE(programmerValuesOf(prog, ids.at(1)), look);
+    QVERIFY(cmd->message().contains("Look"));
+    QCOMPARE(core.palettes()->states().value(QString::number(all)).toInt(), 2);
+    // in Spanish, on the RGB par: its colour mixed
+    QVERIFY2(cmd->execute("3 paleta 1"), qPrintable(cmd->message()));
+    QCOMPARE(int(prog->valueMap().value(qMakePair(ids.at(2), quint32(0)))), 255);
+    QVERIFY2(cmd->execute("4 palette 1"), qPrintable(cmd->message()));
+    QCOMPARE(int(prog->valueMap().value(qMakePair(ids.at(3), quint32(0)))), 255);
+    QCOMPARE(cmd->normalize("pal 1"), QString("PAL 1"));
+    QCOMPARE(cmd->normalize("1 hasta 2 paleta 1"), QString("1 THRU 2 PAL 1"));
+
+    // what isn't there
+    QVERIFY(cmd->execute("PAL 9") == false);
+    QCOMPARE(cmd->message(), QString("There is no palette PAL 9"));
+    QVERIFY(cmd->execute("1 PAL") == false);
+    QCOMPARE(cmd->message(), QString("Which palette? PAL 1, PAL 2…"));
+    // (an intensity palette 1 is another one)
+    QVERIFY(cmd->execute("INT 1") == false);
+
+    // ALL and TODO are still every fixture
+    QVERIFY(cmd->execute("TODO PAL 1"));
+    QCOMPARE(prog->selectionIds().count(), 4);
+}
+
+void Backend_Test::allPalettesSaved()
+{
+    // in the DTC section with Type="all" (QLC+ doesn't read it): opened again,
+    // the same palette, its colour, and still by reference
+    typedef QPair<quint32, quint32> Key;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("All.qxw");
+    QList<quint32> ids;
+    int all = -1, scene = -1, list = -1;
+    {
+        DtcCore core;
+        ids = allPaletteRig(core);
+        QCOMPARE(ids.count(), 4);
+        all = core.palettes()->record("all", "Todo rojo", 5);
+        QVERIFY(all > 0);
+        core.programmer()->selectFixtures({ ids.at(0), ids.at(1) });
+        QCOMPARE(core.palettes()->apply(all), 2);
+        scene = core.programmer()->recordScene("Look");
+        list = core.cuelists()->create("Lista");
+        QVERIFY(scene >= 0 && list >= 0);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    const QString text = QString::fromUtf8(fileBytes(path));
+    const QString head = QString("<Palette ID=\"%1\" Type=\"all\" Number=\"5\" Name=\"Todo rojo\" Color=\"#ff0000\">").arg(all);
+    const int start = int(text.indexOf(head));
+    QVERIFY(start >= 0);
+    const QString element = text.mid(start, text.indexOf("</Palette>", start) - start);
+    QVERIFY(element.contains("Channel=\"8\""));
+    QVERIFY2(element.contains("Channel=\"10\"") == false, "the lamp is not in it");
+
+    DtcCore other;
+    other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(other.openShow(QUrl::fromLocalFile(path)));
+    PaletteManager *palettes = other.palettes();
+    const QVariantMap info = palettes->palette(all);
+    QCOMPARE(info.value("type").toString(), QString("all"));
+    QCOMPARE(info.value("code").toString(), QString("PAL 5"));
+    QCOMPARE(info.value("name").toString(), QString("Todo rojo"));
+    QCOMPARE(info.value("color").toString(), QString("#ff0000"));
+    QCOMPARE(palettes->paletteByNumber("all", 5), all);
+    QCOMPARE(info.value("scenes").toInt(), 2);
+    QCOMPARE(int(palettes->valuesFor(all, ids.at(1)).value(8)), 20);
+    QCOMPARE(palettes->sceneRefs(quint32(scene)).value(Key(ids.at(1), 8), -1), all);
+    Cuelist *cl = qobject_cast<Cuelist *>(other.doc()->function(quint32(list)));
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueAt(0).palettes.value(Key(ids.at(1), 8), -1), all);
+
+    // still by reference: gobo 3 on spot 1 reaches both spots
+    Programmer *prog = other.programmer();
+    prog->selectFixtures({ ids.at(0) });
+    prog->setChannelValue(prog->attributeKey(ids.at(0), 8), 28);
+    QVERIFY(palettes->update(all));
+    prog->clear();
+    Scene *s = qobject_cast<Scene *>(other.doc()->function(quint32(scene)));
+    QVERIFY(s != nullptr);
+    QCOMPARE(int(s->value(ids.at(1), 8)), 28);
+    QCOMPARE(int(cl->cueAt(0).values.value(Key(ids.at(1), 8))), 28);
+}
+
+namespace
+{
+/** Eight spots (11ch Standard: pan 0, tilt 1, pan fine 2, tilt fine 3,
+ *  dimmer 5, gobo 8), numbered 1 to 8. Spots 1 to 3 are selected with a
+ *  position fan (pan 0.2, 0.5 and 0.8, tilt 0.5) recorded as the palette
+ *  "Abanico" ($palette). @return the fixture IDs (none if the patch failed) */
+QList<quint32> fanPaletteRig(DtcCore &core, int *palette)
+{
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    if (core.patch()->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 8) != 8)
+        return QList<quint32>();
+    QList<quint32> ids;
+    for (Fixture *fxi : core.doc()->fixtures())
+        ids.append(fxi->id());
+
+    Programmer *prog = core.programmer();
+    prog->selectFixtures({ ids.at(0), ids.at(1), ids.at(2) });
+    prog->setPosition(0.5, 0.5);
+    prog->setPositionFan(0.6, 0, "spread");
+    *palette = core.palettes()->record("position", "Abanico");
+    return ids;
+}
+
+/** Pan, pan fine, tilt and tilt fine of a spot (11ch Standard) */
+QList<int> panTiltOf(const QMap<quint32, uchar> &values)
+{
+    return { int(values.value(0)), int(values.value(2)), int(values.value(1)), int(values.value(3)) };
+}
+
+/** The 16 bit pan of panTiltOf() */
+int widePan(const QList<int> &position)
+{
+    return position.at(0) * 256 + position.at(1);
+}
+
+/** A pan of 16 bits, and the tilt in the middle, as panTiltOf() gives it */
+QList<int> panAt(int pan)
+{
+    return { pan >> 8, pan & 0xff, 128, 0 };
+}
+} // namespace
+
+void Backend_Test::paletteFan()
+{
+    // a palette recorded with a different value on each fixture is a fan, in
+    // the order they were selected: the fixtures it was not recorded on
+    // share it out in the order of the selection, keep their place, and
+    // what is recorded with them follows the palette
+    typedef QPair<quint32, quint32> Key;
+    DtcCore core;
+    int fan = -1;
+    const QList<quint32> s = fanPaletteRig(core, &fan);
+    QCOMPARE(s.count(), 8);
+    QVERIFY(fan > 0);
+    Programmer *prog = core.programmer();
+    PaletteManager *palettes = core.palettes();
+    auto at = [&](quint32 fid) { return panTiltOf(programmerValuesOf(prog, fid)); };
+
+    // recorded in the order of the selection: 0.2, 0.5 and 0.8 of the pan, in 16 bit
+    QCOMPARE(palettes->palette(fan).value("fixtures").toInt(), 3);
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 0);
+    QList<int> p1 = at(s[0]);
+    const QList<int> p2 = at(s[1]), p3 = at(s[2]);
+    QCOMPARE(p2, panAt(32768));
+    QCOMPARE(qRound(widePan(p1) / 6553.5), 2);
+    QCOMPARE(qRound(widePan(p3) / 6553.5), 8);
+    QVERIFY(p1.at(1) != 0 && p3.at(1) != 0);
+
+    // on three other spots: the same fan, and the palette is lit on them
+    prog->clear();
+    prog->selectFixtures({ s[3], s[4], s[5] });
+    core.doc()->resetModified();
+    QCOMPARE(palettes->apply(fan), 3);
+    QCOMPARE(at(s[3]), p1);
+    QCOMPARE(at(s[4]), p2);
+    QCOMPARE(at(s[5]), p3);
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 3);
+    QCOMPARE(palettes->states().value(QString::number(fan)).toInt(), 2);
+    QVERIFY(core.doc()->isModified());
+    // applied again: the same places, the show stays as it was
+    core.doc()->resetModified();
+    QCOMPARE(palettes->apply(fan), 3);
+    QVERIFY(core.doc()->isModified() == false);
+
+    // a scene and a cue recorded with them: spot 1 moved by hand and the
+    // palette updated, spot 4 (its place) follows, spots 5 and 6 don't move
+    const int scene = prog->recordScene("Abanico");
+    QVERIFY(scene >= 0);
+    QCOMPARE(palettes->sceneRefs(quint32(scene)).count(), 12);
+    const int list = core.cuelists()->create("Lista");
+    QVERIFY(list >= 0);
+    Scene *sc = qobject_cast<Scene *>(core.doc()->function(quint32(scene)));
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(quint32(list)));
+    QVERIFY(sc != nullptr && cl != nullptr);
+    QCOMPARE(cl->cueAt(0).palettes.count(), 12);
+    auto inScene = [&](quint32 fid) {
+        return QList<int>({ int(sc->value(fid, 0)), int(sc->value(fid, 2)), int(sc->value(fid, 1)), int(sc->value(fid, 3)) });
+    };
+    auto inCue = [&](quint32 fid) {
+        QMap<quint32, uchar> values;
+        for (quint32 c = 0; c < 4; c++)
+            values.insert(c, cl->cueAt(0).values.value(Key(fid, c)));
+        return panTiltOf(values);
+    };
+    prog->clear();
+    prog->selectFixtures({ s[0] });
+    prog->setPosition(0.1, 0.5);
+    const QList<int> moved = at(s[0]);
+    QCOMPARE(qRound(widePan(moved) / 6553.5), 1);
+    QVERIFY(palettes->update(fan));
+    prog->clear();
+    QCOMPARE(inScene(s[3]), moved);
+    QCOMPARE(inScene(s[4]), p2);
+    QCOMPARE(inScene(s[5]), p3);
+    QCOMPARE(inCue(s[3]), moved);
+    QCOMPARE(inCue(s[4]), p2);
+    // (the fan starts there now)
+    p1 = moved;
+
+    // spot 7 alone sits in the middle; then spots 4 to 8: 4 to 7 keep their
+    // places, 8 goes at the end
+    prog->selectFixtures({ s[6] });
+    QCOMPARE(palettes->apply(fan), 1);
+    QCOMPARE(at(s[6]), p2);
+    prog->clear();
+    prog->selectFixtures({ s[3], s[4], s[5], s[6], s[7] });
+    QCOMPARE(palettes->apply(fan), 5);
+    QCOMPARE(at(s[3]), p1);
+    QCOMPARE(at(s[4]), p2);
+    QCOMPARE(at(s[5]), p3);
+    QCOMPARE(at(s[6]), p2);
+    QCOMPARE(at(s[7]), p3);
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 5);
+
+    // spread again: 0, 1/4, 1/2, 3/4 and 1 of the fan. Spot 5 halfway between
+    // spots 1 and 2 in 16 bit (not each byte on its own)
+    core.doc()->resetModified();
+    QCOMPARE(palettes->spreadAgain(fan), 5);
+    QVERIFY(core.doc()->isModified());
+    const QList<int> half = panAt(qRound((widePan(p1) + widePan(p2)) / 2.0));
+    QVERIFY(half != QList<int>({ qRound((p1.at(0) + p2.at(0)) / 2.0), qRound((p1.at(1) + p2.at(1)) / 2.0), 128, 0 }));
+    QCOMPARE(at(s[3]), p1);
+    QCOMPARE(at(s[4]), half);
+    QCOMPARE(at(s[5]), p2);
+    QCOMPARE(at(s[6]), panAt(qRound((widePan(p2) + widePan(p3)) / 2.0)));
+    QCOMPARE(at(s[7]), p3);
+    QCOMPARE(palettes->states().value(QString::number(fan)).toInt(), 2);
+    // the scene follows their new places
+    QCOMPARE(inScene(s[3]), p1);
+    QCOMPARE(inScene(s[4]), half);
+    QCOMPARE(inScene(s[5]), p2);
+    QCOMPARE(inCue(s[5]), p2);
+    // (the recorded ones get no place)
+    prog->selectFixtures({ s[0], s[1] });
+    QCOMPARE(palettes->spreadAgain(fan), 0);
+
+    // updated with spot 4 moved by hand: it is recorded in it now, at the end
+    // of the fan, with no place; spot 8 removed, its place goes too
+    prog->clear();
+    prog->selectFixtures({ s[3] });
+    prog->setPosition(0.9, 0.5);
+    QVERIFY(palettes->update(fan));
+    QCOMPARE(palettes->palette(fan).value("fixtures").toInt(), 4);
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 4);
+    QCOMPARE(panTiltOf(palettes->valuesFor(fan, s[3])), at(s[3]));
+    core.patch()->removeFixture(s[7]);
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 3);
+}
+
+void Backend_Test::paletteFanChannels()
+{
+    // a dimmer ramp glides; wheels take the slot of the nearest recorded
+    // fixture, never one in between; on another type, the colour is the
+    // blend at its place. A palette recorded on one fixture of each type, or
+    // with the same values, gives what it gave before
+    typedef QPair<quint32, quint32> Key;
+    DtcCore core;
+    int fan = -1;
+    const QList<quint32> s = fanPaletteRig(core, &fan);
+    QCOMPARE(s.count(), 8);
+    PatchManager *patch = core.patch();
+    QCOMPARE(patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 200, 2), 2);
+    QCOMPARE(patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Rgb", 0, 220, 3), 3);
+    QList<quint32> ids;
+    for (Fixture *fxi : core.doc()->fixtures())
+        ids.append(fxi->id());
+    QCOMPARE(ids.count(), 13);
+    const quint32 parA = ids.at(8), parB = ids.at(9);
+    const QList<quint32> rgb = ids.mid(10);
+    Programmer *prog = core.programmer();
+    PaletteManager *palettes = core.palettes();
+    auto value = [&](quint32 fid, quint32 channel) { return int(prog->valueMap().value(Key(fid, channel), 0)); };
+
+    // a dimmer from 40 to 200, gobo 1 on spot 1 and gobo 3 on spot 3
+    prog->clear();
+    prog->selectFixtures({ s[0] });
+    prog->setChannelValue(prog->attributeKey(s[0], 5), 40);
+    prog->setChannelValue(prog->attributeKey(s[0], 8), 12);
+    prog->selectFixtures({ s[2] });
+    prog->setChannelValue(prog->attributeKey(s[2], 5), 200);
+    prog->setChannelValue(prog->attributeKey(s[2], 8), 28);
+    prog->selectFixtures({ s[0], s[2] });
+    const int ramp = palettes->record("intensity", "Rampa");
+    const int gobos = palettes->record("beam", "Gobos");
+    QVERIFY(ramp > 0 && gobos > 0);
+    QCOMPARE(palettes->palette(gobos).value("fixtures").toInt(), 2);
+    prog->clear();
+    prog->selectFixtures({ s[3], s[4], s[5], s[6], s[7] });
+    QCOMPARE(palettes->apply(ramp), 5);
+    QCOMPARE(palettes->apply(gobos), 5);
+    QCOMPARE(value(s[3], 5), 40);
+    QCOMPARE(value(s[4], 5), 80);
+    QCOMPARE(value(s[5], 5), 120);
+    QCOMPARE(value(s[6], 5), 160);
+    QCOMPARE(value(s[7], 5), 200);
+    // gobo 1 up to a quarter, gobo 3 from three quarters (halfway: the later one)
+    QCOMPARE(value(s[3], 8), 12);
+    QCOMPARE(value(s[4], 8), 12);
+    QCOMPARE(value(s[5], 8), 28);
+    QCOMPARE(value(s[6], 8), 28);
+    QCOMPARE(value(s[7], 8), 28);
+
+    // red on par A, blue on par B (RGBW): on three RGB pars red, the blend and blue
+    prog->clear();
+    prog->selectFixtures({ parA });
+    prog->setColor(QColor(255, 0, 0));
+    prog->selectFixtures({ parB });
+    prog->setColor(QColor(0, 0, 255));
+    prog->selectFixtures({ parA, parB });
+    const int colours = palettes->record("colour", "Rojo y azul");
+    QVERIFY(colours > 0);
+    prog->clear();
+    prog->selectFixtures({ rgb.at(0), rgb.at(1), rgb.at(2) });
+    QCOMPARE(palettes->apply(colours), 3);
+    QCOMPARE(programmerValuesOf(prog, rgb.at(0)), (QMap<quint32, uchar>({ { 0, 255 }, { 1, 0 }, { 2, 0 } })));
+    QCOMPARE(programmerValuesOf(prog, rgb.at(1)), (QMap<quint32, uchar>({ { 0, 128 }, { 1, 0 }, { 2, 128 } })));
+    QCOMPARE(programmerValuesOf(prog, rgb.at(2)), (QMap<quint32, uchar>({ { 0, 0 }, { 1, 0 }, { 2, 255 } })));
+    QCOMPARE(palettes->palette(colours).value("spread").toInt(), 3);
+    QVERIFY(palettes->palette(colours).value("fan").toBool());
+
+    // one fixture of each type is no fan: red on par A and the blue slot of
+    // the wheel of spot 1 give red on the three RGB pars, with no place
+    prog->clear();
+    prog->selectFixtures({ parA });
+    prog->setColor(QColor(255, 0, 0));
+    prog->selectFixtures({ s[0] });
+    prog->setChannelValue(prog->attributeKey(s[0], 7), 55);
+    prog->selectFixtures({ parA, s[0] });
+    const int contrast = palettes->record("colour", "Contraste");
+    QVERIFY(contrast > 0);
+    QCOMPARE(palettes->palette(contrast).value("fixtures").toInt(), 2);
+    QVERIFY(palettes->palette(contrast).value("fan").toBool() == false);
+    prog->clear();
+    prog->selectFixtures({ rgb.at(0), rgb.at(1), rgb.at(2) });
+    core.doc()->resetModified();
+    QCOMPARE(palettes->apply(contrast), 3);
+    for (quint32 fid : rgb)
+        QCOMPARE(programmerValuesOf(prog, fid), (QMap<quint32, uchar>({ { 0, 255 }, { 1, 0 }, { 2, 0 } })));
+    QCOMPARE(palettes->palette(contrast).value("spread").toInt(), 0);
+    QVERIFY(core.doc()->isModified() == false);
+    QCOMPARE(palettes->spreadAgain(contrast), 0);
+
+    // a fan of the pars with spot 1 in it: the other spots take the slot of
+    // spot 1, with no place
+    prog->clear();
+    prog->selectFixtures({ parA });
+    prog->setColor(QColor(255, 0, 0));
+    prog->selectFixtures({ parB });
+    prog->setColor(QColor(0, 0, 255));
+    prog->selectFixtures({ s[0] });
+    prog->setChannelValue(prog->attributeKey(s[0], 7), 55);
+    prog->selectFixtures({ parA, parB, s[0] });
+    const int wheel = palettes->record("colour", "Pares y rueda");
+    QVERIFY(wheel > 0);
+    QVERIFY(palettes->palette(wheel).value("fan").toBool());
+    prog->clear();
+    prog->selectFixtures({ s[1], s[2] });
+    core.doc()->resetModified();
+    QCOMPARE(palettes->apply(wheel), 2);
+    QCOMPARE(value(s[1], 7), 55);
+    QCOMPARE(value(s[2], 7), 55);
+    QCOMPARE(palettes->palette(wheel).value("spread").toInt(), 0);
+    QVERIFY(core.doc()->isModified() == false);
+
+    // as before: the same green on both pars, or a position of one spot
+    prog->clear();
+    prog->selectFixtures({ parA, parB });
+    prog->setColor(QColor(0, 255, 0));
+    const int green = palettes->record("colour", "Verde");
+    QVERIFY(green > 0);
+    prog->clear();
+    prog->selectFixtures({ rgb.at(0), rgb.at(1), rgb.at(2) });
+    QCOMPARE(palettes->apply(green), 3);
+    for (quint32 fid : rgb)
+        QCOMPARE(programmerValuesOf(prog, fid), (QMap<quint32, uchar>({ { 0, 0 }, { 1, 255 }, { 2, 0 } })));
+    prog->clear();
+    prog->selectFixtures({ s[1] });
+    prog->setPosition(0.3, 0.6);
+    const QList<int> one = panTiltOf(programmerValuesOf(prog, s[1]));
+    const int single = palettes->record("position", "Uno");
+    QVERIFY(single > 0);
+    prog->clear();
+    prog->selectFixtures({ s[4], s[5], s[6] });
+    QCOMPARE(palettes->apply(single), 3);
+    for (quint32 fid : { s[4], s[5], s[6] })
+        QCOMPARE(panTiltOf(programmerValuesOf(prog, fid)), one);
+    QCOMPARE(palettes->palette(single).value("spread").toInt(), 0);
+
+    // live on a group (a SHOW button, a mapping): the fan in the order of the group
+    prog->clear();
+    const int group = patch->createGroup("Al revés", { s[7], s[6], s[5] });
+    QVERIFY(group >= 0);
+    const QVariantMap target({ { "target", "palette" }, { "paletteId", fan }, { "groupId", group } });
+    core.mapping()->pressTarget(target, true);
+    QVERIFY(palettes->isLive(fan, group));
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 3);
+    for (int i = 0; i < 3; i++)
+        QCOMPARE(panTiltOf(programmerValuesOf(prog, s[7 - i])), panTiltOf(palettes->valuesFor(fan, s[i])));
+    core.mapping()->pressTarget(target, true);
+    QVERIFY(palettes->isLive(fan, group) == false);
+    QVERIFY(prog->hasValues() == false);
+}
+
+void Backend_Test::paletteFanSaved()
+{
+    // the places go in the DTC section, <Place Fixture At> after the
+    // recorded fixtures, by fixture and with 4 decimals: opened again, the
+    // same values. A place out of 0..1, of a fixture that isn't there or of
+    // one recorded in the palette is skipped
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Fan.qxw");
+    QList<quint32> s;
+    int fan = -1;
+    QHash<quint32, QMap<quint32, uchar>> before;
+    {
+        DtcCore core;
+        s = fanPaletteRig(core, &fan);
+        QCOMPARE(s.count(), 8);
+        QVERIFY(fan > 0);
+        core.programmer()->clear();
+        // (in another order than the patch)
+        core.programmer()->selectFixtures({ s[6], s[3], s[4], s[5] });
+        QCOMPARE(core.palettes()->apply(fan), 4);
+        for (quint32 fid : s)
+            before.insert(fid, core.palettes()->valuesFor(fan, fid));
+        // (spot 4 at a third: two thirds of the way from spot 1 to spot 2)
+        const int from = widePan(panTiltOf(before.value(s[0]))), to = widePan(panTiltOf(before.value(s[1])));
+        QCOMPARE(panTiltOf(before.value(s[3])), panAt(qRound(from + (to - from) * 0.6666)));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    const QString text = QString::fromUtf8(fileBytes(path));
+    auto place = [&](quint32 fid, const QString &at) { return QString("<Place Fixture=\"%1\" At=\"%2\"/>").arg(fid).arg(at); };
+    const int start = int(text.indexOf("<Palette "));
+    const int end = int(text.indexOf("</Palette>", start));
+    QVERIFY(start >= 0 && end > start);
+    const QList<int> found = { int(text.indexOf(place(s[3], "0.3333"))), int(text.indexOf(place(s[4], "0.6667"))),
+                               int(text.indexOf(place(s[5], "1.0000"))), int(text.indexOf(place(s[6], "0.0000"))) };
+    QVERIFY2(found.at(0) > int(text.lastIndexOf("</Fixture>", end)), "after the recorded fixtures");
+    for (int i = 1; i < found.count(); i++)
+        QVERIFY(found.at(i) > found.at(i - 1));
+    QVERIFY(found.last() < end);
+    QCOMPARE(int(text.count("<Place ")), 4);
+
+    // opened again: the same places, the same values, on the output too
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(other.openShow(QUrl::fromLocalFile(path)));
+        QCOMPARE(other.palettes()->palette(fan).value("spread").toInt(), 4);
+        for (quint32 fid : s)
+            QCOMPARE(other.palettes()->valuesFor(fan, fid), before.value(fid));
+        other.programmer()->selectFixtures({ s[4] });
+        QCOMPARE(other.palettes()->apply(fan), 1);
+        QVERIFY(other.doc()->isModified() == false);
+        const int address = int(other.doc()->fixture(s[4])->address());
+        QTRY_COMPARE_WITH_TIMEOUT(other.io()->channelValues(0).at(address).toInt(), int(before.value(s[4]).value(0)), 3000);
+        QTRY_COMPARE_WITH_TIMEOUT(other.io()->channelValues(0).at(address + 2).toInt(), int(before.value(s[4]).value(2)), 3000);
+    }
+
+    // a file edited: a place of 7, of fixture 999 and of a recorded spot go
+    QString edited = text;
+    edited.replace(place(s[3], "0.3333"), place(s[3], "7"));
+    edited.replace(place(s[4], "0.6667"), place(999, "0.5") + place(s[0], "0.5"));
+    QVERIFY(edited != text);
+    const QString editedPath = dir.filePath("Edited.qxw");
+    {
+        QFile file(editedPath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(edited.toUtf8());
+    }
+    DtcCore other;
+    other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(other.openShow(QUrl::fromLocalFile(editedPath)));
+    PaletteManager *palettes = other.palettes();
+    QCOMPARE(palettes->palette(fan).value("spread").toInt(), 2);
+    QCOMPARE(palettes->valuesFor(fan, s[5]), before.value(s[5]));
+    QCOMPARE(palettes->valuesFor(fan, s[6]), before.value(s[6]));
+    // (with no place: the first spot of the fan, as before)
+    QCOMPARE(palettes->valuesFor(fan, s[3]), before.value(s[0]));
+    QCOMPARE(palettes->valuesFor(fan, s[0]), before.value(s[0]));
+}
+
+/*********************************************************************
+ * GDTF-Share
+ *********************************************************************/
+
+/** A local server that plays GDTF-Share (its public API, at /apis/public/):
+ *  accounts, a session cookie for each sign-in, the list and the files.
+ *  Unlike FakeGitHub it reads whole requests: their cookie and their body */
+class FakeGdtfShare : public QTcpServer
+{
+public:
+    struct Answer { int status; QByteArray type; QByteArray body; };
+    /** user to password */
+    QHash<QString, QString> accounts;
+    QSet<QByteArray> sessions;
+    QByteArray listBody = R"({"result":true,"list":[]})";
+    /** rid to the file */
+    QHash<int, QByteArray> files;
+    /** The rids whose download never gets its answer: a large file on its way */
+    QSet<int> held;
+    /** Answers in the place of the usual ones, by path (without the query) */
+    QHash<QByteArray, Answer> answers;
+    /** Every session is refused, even a new one */
+    bool refuseSessions = false;
+    /** See cutConnections() */
+    bool cutting = false;
+    int logins = 0;
+    /** The password of each sign-in */
+    QStringList passwords;
+    /** "METHOD path?query" of each request */
+    QList<QByteArray> asked;
+    /** The session the last request carried, and the last one given */
+    QByteArray lastCookie;
+    QByteArray lastToken;
+
+    FakeGdtfShare()
+    {
+        connect(this, &QTcpServer::newConnection, this, [this]()
+        {
+            while (QTcpSocket *socket = nextPendingConnection())
+            {
+                if (cutting)
+                {
+                    socket->abort();
+                    socket->deleteLater();
+                    continue;
+                }
+                auto buffer = std::make_shared<QByteArray>();
+                connect(socket, &QTcpSocket::readyRead, socket, [this, socket, buffer]()
+                {
+                    buffer->append(socket->readAll());
+                    const qsizetype end = buffer->indexOf("\r\n\r\n");
+                    if (end < 0)
+                        return;
+                    const QList<QByteArray> lines = buffer->left(end).split('\n');
+                    qsizetype length = 0;
+                    QByteArray cookie;
+                    for (const QByteArray &line : lines.mid(1))
+                    {
+                        const qsizetype colon = line.indexOf(':');
+                        const QByteArray name = line.left(qMax(colon, qsizetype(0))).trimmed().toLower();
+                        if (name == "content-length")
+                            length = line.mid(colon + 1).trimmed().toLongLong();
+                        else if (name == "cookie")
+                            cookie = line.mid(colon + 1).trimmed();
+                    }
+                    // (the body may come after the headers)
+                    if (buffer->size() < end + 4 + length)
+                        return;
+                    const QList<QByteArray> request = lines.first().trimmed().split(' ');
+                    answer(socket, request.value(0), request.value(1), cookie, buffer->mid(end + 4, length));
+                    buffer->clear();
+                });
+                connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+            }
+        });
+    }
+
+    QString url() const
+    {
+        return QStringLiteral("http://127.0.0.1:%1/apis/public/").arg(serverPort());
+    }
+
+    /** 2 h without use: every session is over */
+    void expireSessions()
+    {
+        sessions.clear();
+    }
+
+    /** Can't be reached: every connection is cut before it answers, also
+     *  those the client keeps open for its next requests. (A server that
+     *  is closed is the same, but Windows takes 4 s to refuse a connection) */
+    void cutConnections()
+    {
+        cutting = true;
+        for (QTcpSocket *socket : findChildren<QTcpSocket *>())
+            socket->abort();
+        QTest::qWait(100);
+    }
+
+private:
+    void answer(QTcpSocket *socket, const QByteArray &method, const QByteArray &target,
+                const QByteArray &cookie, const QByteArray &body)
+    {
+        asked.append(method + ' ' + target);
+        const QByteArray path = target.split('?').first();
+        const QUrlQuery query(QString::fromLatin1(target.mid(path.size() + 1)));
+        const int rid = query.queryItemValue("rid").toInt();
+        if (path == "/apis/public/downloadFile.php" && held.contains(rid))
+            return;
+        lastCookie.clear();
+        for (const QByteArray &part : cookie.split(';'))
+        {
+            if (part.trimmed().startsWith("PHPSESSID="))
+                lastCookie = part.trimmed().mid(10);
+        }
+
+        Answer reply{ 404, "application/json", R"({"result":false,"error":"File does not exist."})" };
+        QByteArray headers;
+        if (answers.contains(path))
+        {
+            reply = answers.value(path);
+        }
+        else if (path == "/apis/public/login.php")
+        {
+            logins++;
+            const QJsonObject account = QJsonDocument::fromJson(body).object();
+            const QString user = account.value("user").toString();
+            passwords.append(account.value("password").toString());
+            if (method == "POST" && accounts.contains(user) && accounts.value(user) == account.value("password").toString())
+            {
+                lastToken = "token" + QByteArray::number(logins);
+                sessions.insert(lastToken);
+                headers = "Set-Cookie: PHPSESSID=" + lastToken + "; path=/; HttpOnly\r\n";
+                reply = { 200, "application/json", R"({"result":true,"notice":"ok"})" };
+            }
+            else
+            {
+                reply = { 401, "application/json", R"({"result":false,"error":"No valid user or password provided."})" };
+            }
+        }
+        else if (refuseSessions || sessions.contains(lastCookie) == false)
+        {
+            reply = { 401, "application/json", R"({"result":false,"error":"Unauthorized."})" };
+        }
+        else if (path == "/apis/public/getList.php")
+        {
+            reply = { 200, "application/json", listBody };
+        }
+        else if (path == "/apis/public/downloadFile.php" && files.contains(rid))
+        {
+            reply = { 200, "application/octet-stream", files.value(rid) };
+        }
+
+        socket->write("HTTP/1.1 " + QByteArray::number(reply.status) + (reply.status == 200 ? " OK" : " Error") + "\r\n"
+                      "Content-Type: " + reply.type + "\r\n" + headers +
+                      "Content-Length: " + QByteArray::number(reply.body.size()) + "\r\n"
+                      "Connection: close\r\n\r\n" + reply.body);
+        socket->disconnectFromHost();
+    }
+};
+
+void Backend_Test::gdtfShareSession()
+{
+    // the password only goes to https (or to a test server)
+    QVERIFY(GdtfShare::allowedUrl("https://gdtf-share.com/apis/public/", false));
+    QVERIFY(GdtfShare::allowedUrl("http://gdtf-share.com/apis/public/", false) == false);
+    QVERIFY(GdtfShare::allowedUrl("not an address", false) == false);
+    QVERIFY(GdtfShare::allowedUrl("http://127.0.0.1:8080/apis/public/", true));
+
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret 1");
+    server.listBody = R"({"result":true,"timestamp":1762300000,"list":[{"rid":11,"fixture":"Spot","manufacturer":"Test"}]})";
+
+    GdtfShare share;
+    QCOMPARE(share.baseUrl(), QString("https://gdtf-share.com/apis/public/"));
+    share.setBaseUrl(server.url());
+    QCOMPARE(share.state(), int(GdtfShare::Idle));
+    QSignalSpy login(&share, SIGNAL(loginNeeded()));
+    QSignalSpy lists(&share, SIGNAL(listReceived(QByteArray)));
+
+    // a wrong password: told, asked again, not kept
+    share.signIn("ana", "wrong");
+    QCOMPARE(share.state(), int(GdtfShare::SigningIn));
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QCOMPARE(share.error(), QString("Wrong user name or password"));
+    QVERIFY(share.signedIn() == false);
+    QCOMPARE(login.count(), 1);
+    QCOMPARE(server.logins, 1);
+    QCOMPARE(server.asked, QList<QByteArray>({ "POST /apis/public/login.php" }));
+
+    // the right one: signed in, and the next request carries its cookie
+    share.signIn("ana", "secret 1");
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QVERIFY(share.signedIn());
+    QCOMPARE(share.user(), QString("ana"));
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(server.logins, 2);
+    share.fetchList();
+    QCOMPARE(share.state(), int(GdtfShare::Fetching));
+    QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 1, 5000);
+    QCOMPARE(lists.first().first().toByteArray(), server.listBody);
+    QVERIFY(server.lastToken.isEmpty() == false);
+    QCOMPARE(server.lastCookie, server.lastToken);
+    QVERIFY(share.busy() == false);
+
+    // the session expires (2 h without use): signed in again without
+    // asking, and the same request once more
+    server.expireSessions();
+    server.asked.clear();
+    share.fetchList();
+    QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 2, 5000);
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/getList.php", "POST /apis/public/login.php",
+                                               "GET /apis/public/getList.php" }));
+    QCOMPARE(server.logins, 3);
+    QCOMPARE(server.lastCookie, server.lastToken);
+    QCOMPARE(login.count(), 1);
+    QVERIFY(share.error().isEmpty());
+
+    // one request at a time: the second one waits its turn
+    server.asked.clear();
+    share.fetchList();
+    share.fetchList();
+    QVERIFY(share.busy());
+    QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 4, 5000);
+    QCOMPARE(server.asked.count(), 2);
+
+    // refused even right after a new sign-in: one sign-in again, then
+    // told, and no loop
+    server.refuseSessions = true;
+    server.asked.clear();
+    share.fetchList();
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/getList.php", "POST /apis/public/login.php",
+                                               "GET /apis/public/getList.php" }));
+    QCOMPARE(server.logins, 4);
+    QCOMPARE(share.error(), QString("GDTF-Share refused the session: sign in again"));
+    QCOMPARE(share.state(), int(GdtfShare::Idle));
+    QCOMPARE(lists.count(), 4);
+    QCOMPARE(login.count(), 1);
+    QTest::qWait(300);
+    QCOMPARE(server.asked.count(), 3);
+    server.refuseSessions = false;
+
+    // the password changed on the website: the request waits for the new one
+    server.accounts.insert("ana", "secret 2");
+    server.expireSessions();
+    share.fetchList();
+    QTRY_COMPARE_WITH_TIMEOUT(login.count(), 2, 5000);
+    QCOMPARE(share.error(), QString("Wrong user name or password"));
+    QVERIFY(share.signedIn() == false);
+    QVERIFY(share.busy() == false);
+    QCOMPARE(lists.count(), 4);
+    share.signIn("ana", "secret 2");
+    QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 5, 5000);
+    QVERIFY(share.signedIn());
+    QVERIFY(share.error().isEmpty());
+
+    // signing out drops the cookie and the password: the next request asks
+    // for the account, and nothing is sent without it
+    share.signOut();
+    QVERIFY(share.signedIn() == false);
+    QNetworkAccessManager *network = share.findChild<QNetworkAccessManager *>();
+    QVERIFY(network != nullptr);
+    QVERIFY(network->cookieJar()->cookiesForUrl(QUrl(server.url())).isEmpty());
+    server.asked.clear();
+    share.fetchList();
+    QCOMPARE(login.count(), 3);
+    QCOMPARE(share.error(), QString("Sign in to GDTF-Share to continue"));
+    QVERIFY(share.busy() == false);
+    // (the user name stays, for the next sign-in)
+    QCOMPARE(share.user(), QString("ana"));
+    // what the program does on its own doesn't ask
+    share.fetchList(false);
+    QCOMPARE(login.count(), 3);
+    QTest::qWait(200);
+    QVERIFY(server.asked.isEmpty());
+    // the request that waited runs once signed in, with the new session
+    share.signIn("ana", "secret 2");
+    QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 6, 5000);
+    QCOMPARE(server.lastCookie, server.lastToken);
+    QTest::qWait(200);
+    QCOMPARE(lists.count(), 6);
+    QCOMPARE(server.asked, QList<QByteArray>({ "POST /apis/public/login.php", "GET /apis/public/getList.php" }));
+}
+
+void Backend_Test::gdtfShareErrors()
+{
+    // what goes wrong, in plain words: GDTF-Share's own error, an HTTP
+    // status, an answer that can't be read, a file it doesn't have, no
+    // connection (with the reason). What the program does on its own says
+    // nothing
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    server.files.insert(11, QByteArray("PK\x03\x04", 4) + QByteArray(200000, 'g'));
+    GdtfShare share;
+    share.setBaseUrl(server.url());
+    share.signIn("ana", "secret");
+    QTRY_VERIFY_WITH_TIMEOUT(share.signedIn(), 5000);
+    QVERIFY(share.busy() == false);
+    QSignalSpy lists(&share, SIGNAL(listReceived(QByteArray)));
+    auto fetch = [&](bool manual) {
+        share.fetchList(manual);
+        return QTest::qWaitFor([&]() { return share.busy() == false; }, 5000);
+    };
+    const QByteArray list = "/apis/public/getList.php";
+
+    // its own words, else the HTTP status
+    server.answers.insert(list, { 500, "application/json", R"({"result":false,"error":"Database down"})" });
+    QVERIFY(fetch(true));
+    QCOMPARE(share.error(), QString("GDTF-Share answered with an error: Database down"));
+    server.answers.insert(list, { 503, "text/plain", "Busy" });
+    QVERIFY(fetch(true));
+    QCOMPARE(share.error(), QString("GDTF-Share answered with an error: HTTP 503"));
+    // "result": false, even with a 200 (and as text)
+    server.answers.insert(list, { 200, "application/json", R"({"result":"false","error":"Maintenance"})" });
+    QVERIFY(fetch(true));
+    QCOMPARE(share.error(), QString("GDTF-Share answered with an error: Maintenance"));
+    // a page where JSON was expected
+    server.answers.insert(list, { 200, "text/html", "<html><body>Oops</body></html>" });
+    QVERIFY(fetch(true));
+    QCOMPARE(share.error(), QString("GDTF-Share sent an answer that can't be read"));
+    QCOMPARE(lists.count(), 0);
+    // none of them was about the session
+    QVERIFY(share.signedIn());
+    QCOMPARE(server.logins, 1);
+    // the list again: the error goes
+    server.answers.clear();
+    QVERIFY(fetch(true));
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(lists.count(), 1);
+
+    // a sign-in answered with a page
+    server.answers.insert("/apis/public/login.php", { 200, "text/html", "<html>" });
+    share.signIn("ana", "secret");
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QCOMPARE(share.error(), QString("GDTF-Share sent an answer that can't be read"));
+    server.answers.clear();
+
+    // a file it doesn't have: its words, and nothing for the request
+    int got = 0;
+    QByteArray file;
+    auto keep = [&](const QByteArray &body) {
+        got++;
+        file = body;
+        return QString();
+    };
+    share.call(GdtfShare::Downloading, "downloadFile.php", QUrlQuery({ { "rid", "99" } }), true, keep);
+    QCOMPARE(share.state(), int(GdtfShare::Downloading));
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QCOMPARE(share.error(), QString("GDTF-Share answered with an error: File does not exist."));
+    QCOMPARE(got, 0);
+    QCOMPARE(server.asked.last(), QByteArray("GET /apis/public/downloadFile.php?rid=99"));
+    // one it has: all of it, with the progress
+    share.call(GdtfShare::Downloading, "downloadFile.php", QUrlQuery({ { "rid", "11" } }), true, keep);
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(got, 1);
+    QCOMPARE(file, server.files.value(11));
+    QCOMPARE(share.progress(), 1.0);
+    // a request that can't use what it got says why
+    share.call(GdtfShare::Downloading, "downloadFile.php", QUrlQuery({ { "rid", "11" } }), true,
+               [](const QByteArray &) { return QString("Not a GDTF file"); });
+    QTRY_VERIFY_WITH_TIMEOUT(share.busy() == false, 5000);
+    QCOMPARE(share.error(), QString("Not a GDTF file"));
+
+    // cancelled: the download and what waited its turn, nothing done with them
+    share.call(GdtfShare::Downloading, "downloadFile.php", QUrlQuery({ { "rid", "11" } }), true, keep);
+    share.call(GdtfShare::Fetching, "getList.php", QUrlQuery(), true, keep);
+    QVERIFY(share.busy());
+    share.cancel();
+    QVERIFY(share.busy() == false);
+    QCOMPARE(share.notice(), QString("Download cancelled"));
+    QVERIFY(share.error().isEmpty());
+    QTest::qWait(300);
+    QCOMPARE(got, 1);
+    QCOMPARE(share.state(), int(GdtfShare::Idle));
+
+    // GDTF-Share can't be reached: on its own, nothing; asked, the reason
+    server.cutConnections();
+    QVERIFY(fetch(false));
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(share.state(), int(GdtfShare::Idle));
+    QVERIFY(fetch(true));
+    const QString unreachable = "GDTF-Share could not be reached: ";
+    QVERIFY2(share.error().startsWith(unreachable) && share.error().length() > unreachable.length(), qPrintable(share.error()));
+    QCOMPARE(share.state(), int(GdtfShare::Idle));
+    QCOMPARE(lists.count(), 1);
+}
+
+void Backend_Test::gdtfShareSecrets()
+{
+    // the saved password is encrypted by Windows for the Windows user
+    // (DPAPI): it comes back the same, and nothing of it can be read in
+    // what is saved
+    if (GdtfShare::canRemember() == false)
+        QSKIP("Windows only: elsewhere the password is never saved");
+
+    const QString password = QString::fromUtf8("p\xC3\xA4ssw\xC3\xB6rd 123");
+    const QByteArray utf8 = password.toUtf8();
+    const QByteArray utf16(reinterpret_cast<const char *>(password.utf16()), password.size() * 2);
+    const QByteArray blob = GdtfShare::protectSecret(utf8);
+    QVERIFY(blob.size() > utf8.size());
+    QVERIFY(blob.contains(utf8) == false);
+    QVERIFY(blob.contains(utf16) == false);
+    QVERIFY(blob.contains("rd 123") == false);
+    QCOMPARE(GdtfShare::unprotectSecret(blob), utf8);
+    // (encrypted anew each time)
+    const QByteArray again = GdtfShare::protectSecret(utf8);
+    QVERIFY(again != blob);
+    QCOMPARE(GdtfShare::unprotectSecret(again), utf8);
+
+    // what isn't one gives nothing: random bytes, a blob with one byte
+    // changed, nothing at all
+    QByteArray random(256, '\0');
+    QRandomGenerator generator(1234);
+    for (char &byte : random)
+        byte = char(generator.bounded(256));
+    QVERIFY(GdtfShare::unprotectSecret(random).isEmpty());
+    QByteArray changed = blob;
+    changed[changed.size() - 1] = char(changed.at(changed.size() - 1) ^ 0x5a);
+    QVERIFY(GdtfShare::unprotectSecret(changed).isEmpty());
+    QVERIFY(GdtfShare::unprotectSecret(QByteArray()).isEmpty());
+    QVERIFY(GdtfShare::protectSecret(QByteArray()).isEmpty());
+}
+
+void Backend_Test::gdtfShareCredentials()
+{
+    // the account, in the settings of the test: the user name always, the
+    // password only when the user asks (encrypted), and the next runs sign
+    // in with it without asking
+    ScopedTestSettings settings;
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    const QString password = QString::fromUtf8("p\xC3\xA4ssw\xC3\xB6rd 123");
+    server.accounts.insert("ana", password);
+    const QString userKey = "gdtfShare/user";
+    const QString passwordKey = "gdtfShare/password";
+    const QString unreadable = "The saved password can't be read on this computer: sign in again";
+    auto newShare = [&]() {
+        auto share = std::make_unique<GdtfShare>();
+        share->setBaseUrl(server.url());
+        return share;
+    };
+    auto idle = [](GdtfShare *share) {
+        return QTest::qWaitFor([share]() { return share->busy() == false; }, 5000);
+    };
+
+    // not remembered: the user name is saved, the password nowhere
+    {
+        auto share = newShare();
+        QCOMPARE(share->property("canRemember").toBool(), GdtfShare::canRemember());
+        QVERIFY(share->property("remembered").toBool() == false);
+        QVERIFY(share->user().isEmpty());
+        QVERIFY(share->sessionPossible() == false);
+        share->signIn("ana", password);
+        QTRY_VERIFY_WITH_TIMEOUT(share->signedIn(), 5000);
+        QCOMPARE(QSettings().value(userKey).toString(), QString("ana"));
+        QVERIFY(QSettings().contains(passwordKey) == false);
+        QVERIFY(share->remembered() == false);
+        QVERIFY(share->sessionPossible());
+    }
+    // the next run knows the user, and asks for the password: nothing is sent
+    {
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QCOMPARE(share->property("user").toString(), QString("ana"));
+        QVERIFY(share->sessionPossible() == false);
+        server.asked.clear();
+        share->fetchList();
+        QCOMPARE(login.count(), 1);
+        QCOMPARE(share->error(), QString("Sign in to GDTF-Share to continue"));
+        QTest::qWait(100);
+        QVERIFY(server.asked.isEmpty());
+    }
+
+    if (GdtfShare::canRemember() == false)
+        QSKIP("Windows only: elsewhere the password is never saved");
+
+    // remembered: the base64 of what Windows encrypted, never the password
+    {
+        auto share = newShare();
+        QSignalSpy changes(share.get(), SIGNAL(changed()));
+        share->signIn("ana", password, true);
+        QTRY_VERIFY_WITH_TIMEOUT(share->signedIn(), 5000);
+        QVERIFY(share->remembered());
+        QVERIFY(share->property("remembered").toBool());
+        QVERIFY(changes.count() > 0);
+        const QByteArray saved = QSettings().value(passwordKey).toString().toLatin1();
+        const QByteArray::FromBase64Result blob = QByteArray::fromBase64Encoding(saved, QByteArray::AbortOnBase64DecodingErrors);
+        QVERIFY(blob);
+        QVERIFY(blob.decoded.size() > 16);
+        QVERIFY(blob.decoded.contains(password.toUtf8()) == false);
+        QVERIFY(blob.decoded.contains("rd 123") == false);
+        QVERIFY(saved.contains("rd 123") == false);
+        QCOMPARE(GdtfShare::unprotectSecret(blob.decoded), password.toUtf8());
+    }
+    // the next run signs in by itself with it, once, and gets the list
+    {
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QSignalSpy lists(share.get(), SIGNAL(listReceived(QByteArray)));
+        QVERIFY(share->remembered());
+        QVERIFY(share->sessionPossible());
+        QVERIFY(share->signedIn() == false);
+        server.asked.clear();
+        server.passwords.clear();
+        share->fetchList();
+        QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 1, 5000);
+        QCOMPARE(server.asked, QList<QByteArray>({ "POST /apis/public/login.php", "GET /apis/public/getList.php" }));
+        QCOMPARE(server.passwords, QStringList({ password }));
+        QCOMPARE(login.count(), 0);
+        QVERIFY(share->error().isEmpty());
+        QVERIFY(share->signedIn());
+        QCOMPARE(share->user(), QString("ana"));
+
+        // signed out: the saved password stays, but waits for the user to
+        // sign in again
+        share->signOut();
+        QVERIFY(share->remembered());
+        QVERIFY(share->sessionPossible() == false);
+        server.asked.clear();
+        share->fetchList();
+        QCOMPARE(login.count(), 1);
+        QTest::qWait(100);
+        QVERIFY(server.asked.isEmpty());
+        share->signIn("ana", password, true);
+        QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 2, 5000);
+        QVERIFY(share->remembered());
+        QVERIFY(share->sessionPossible());
+
+        // the password was changed on the website: the sign-in without
+        // asking is refused, the saved one is forgotten, and the user asked
+        server.accounts.insert("ana", "new secret");
+        server.expireSessions();
+        share->fetchList();
+        QTRY_COMPARE_WITH_TIMEOUT(login.count(), 2, 5000);
+        QVERIFY(idle(share.get()));
+        QCOMPARE(share->error(), QString("Wrong user name or password"));
+        QVERIFY(share->remembered() == false);
+        QVERIFY(QSettings().contains(passwordKey) == false);
+        QCOMPARE(QSettings().value(userKey).toString(), QString("ana"));
+        QCOMPARE(share->user(), QString("ana"));
+        // (the request waits for the new one)
+        share->signIn("ana", "new secret", true);
+        QTRY_COMPARE_WITH_TIMEOUT(lists.count(), 3, 5000);
+        QVERIFY(share->remembered());
+
+        // signed in without remembering it: the saved one goes
+        share->signIn("ana", "new secret");
+        QVERIFY(idle(share.get()));
+        QVERIFY(share->signedIn());
+        QVERIFY(share->remembered() == false);
+        QVERIFY(QSettings().contains(passwordKey) == false);
+    }
+
+    // refused when the program asks on its own: forgotten too, in silence
+    {
+        auto first = newShare();
+        first->signIn("ana", "new secret", true);
+        QTRY_VERIFY_WITH_TIMEOUT(first->signedIn(), 5000);
+        QVERIFY(first->remembered());
+    }
+    server.accounts.insert("ana", "third secret");
+    {
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        server.passwords.clear();
+        share->fetchList(false);
+        QVERIFY(idle(share.get()));
+        QCOMPARE(server.passwords, QStringList({ "new secret" }));
+        QVERIFY(share->remembered() == false);
+        QCOMPARE(login.count(), 0);
+        QVERIFY(share->error().isEmpty());
+    }
+
+    // a saved password that can't be read (the settings copied to another
+    // computer or Windows user, or spoilt): told, forgotten and asked for,
+    // and nothing is sent
+    const QStringList spoilt({ "%%% not base64 %%%", QString::fromLatin1(QByteArray("not from Windows").toBase64()) });
+    for (const QString &value : spoilt)
+    {
+        QSettings().setValue(passwordKey, value);
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QVERIFY(share->remembered());
+        server.asked.clear();
+        share->fetchList();
+        QCOMPARE(share->notice(), unreadable);
+        QCOMPARE(share->error(), unreadable);
+        QCOMPARE(login.count(), 1);
+        QVERIFY(QSettings().contains(passwordKey) == false);
+        QVERIFY(share->remembered() == false);
+        QCOMPARE(share->user(), QString("ana"));
+        QVERIFY(share->busy() == false);
+        QTest::qWait(100);
+        QVERIFY(server.asked.isEmpty());
+    }
+    // found by the program on its own: the notice alone, nothing asked
+    {
+        QSettings().setValue(passwordKey, spoilt.first());
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        share->fetchList(false);
+        QCOMPARE(share->notice(), unreadable);
+        QVERIFY(share->error().isEmpty());
+        QCOMPARE(login.count(), 0);
+        QVERIFY(share->remembered() == false);
+    }
+
+    // "Forget the saved password": signed out, the password gone, the user
+    // name still there; the next run asks
+    {
+        auto share = newShare();
+        share->signIn("ana", "third secret", true);
+        QTRY_VERIFY_WITH_TIMEOUT(share->signedIn(), 5000);
+        QVERIFY(share->remembered());
+        share->signOut(true);
+        QVERIFY(share->signedIn() == false);
+        QVERIFY(share->remembered() == false);
+        QVERIFY(QSettings().contains(passwordKey) == false);
+        QCOMPARE(QSettings().value(userKey).toString(), QString("ana"));
+        QCOMPARE(share->user(), QString("ana"));
+    }
+    {
+        auto share = newShare();
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QVERIFY(share->sessionPossible() == false);
+        share->fetchList();
+        QCOMPARE(login.count(), 1);
+    }
+}
+
+/*********************************************************************
+ * GDTF-Share: the list
+ *********************************************************************/
+
+/** A body of getList.php with $items, and the time GDTF-Share gives (none
+ *  when 0) */
+static QByteArray shareListBody(const QJsonArray &items, qint64 timestamp = 0)
+{
+    QJsonObject body({ { "result", true }, { "list", items } });
+    if (timestamp > 0)
+        body.insert("timestamp", timestamp);
+    return QJsonDocument(body).toJson(QJsonDocument::Compact);
+}
+
+/** An upload of the list of GDTF-Share */
+static QJsonObject shareItem(int rid, const QString &manufacturer, const QString &fixture, const QString &uuid,
+                             const QString &uploader = "Manuf.", qint64 modified = 1700000000)
+{
+    return QJsonObject({ { "rid", rid }, { "manufacturer", manufacturer }, { "fixture", fixture },
+                         { "uuid", uuid }, { "uploader", uploader }, { "lastModified", modified },
+                         { "revision", QString("Rev %1").arg(rid) } });
+}
+
+/** $body as the list saved in the user folder (that of the test) */
+static bool saveShareList(const QByteArray &body)
+{
+    QDir().mkpath(GdtfShare::dataDirectory().absolutePath());
+    QFile file(GdtfShare::dataDirectory().filePath("list.json"));
+    return file.open(QIODevice::WriteOnly) && file.write(body) == body.size();
+}
+
+void Backend_Test::gdtfShareList()
+{
+    // the list as GDTF-Share sends it: its documentation and its answers
+    // don't agree on the types, so every value is read as a number or a text
+    const QByteArray body = R"({"result":"true","timestamp":"1762300000","list":[
+        {"rid":"11","fixture":" Spot 1 ","manufacturer":"Test","revision":"Rev 2","uploader":"Manuf.",
+         "version":"1.1","creator":"Ana","uuid":"{3f2504e0-4f89-11d3-9a0c-0305e82c3301}",
+         "creationDate":"2025-10-03 12:00:00","lastModified":1762200000,"filesize":"123456","rating":"4.5",
+         "modes":[{"name":"Standard","dmxfootprint":"16"},{"name":"Basic","dmxfootprint":8.0},{"dmxfootprint":4}]},
+        {"fixture":"Without rid","manufacturer":"Test"},
+        {"rid":12,"manufacturer":"Without fixture"},
+        {"rid":13.0,"fixture":"Old","manufacturer":"Other","uuid":"00000000-0000-0000-0000-000000000000",
+         "creationDate":1700000000,"lastModified":"1762200000000","rating":3,"filesize":2048.0}
+    ]})";
+    QString error;
+    qint64 timestamp = 0;
+    const QList<GdtfShare::Entry> entries = GdtfShare::parseList(body, &error, &timestamp);
+    QVERIFY(error.isEmpty());
+    QCOMPARE(timestamp, qint64(1762300000));
+    // (those without rid or fixture are skipped)
+    QCOMPARE(entries.count(), 2);
+    const GdtfShare::Entry &spot = entries.at(0);
+    QCOMPARE(spot.rid, 11);
+    QCOMPARE(spot.fixture, QString("Spot 1"));
+    QCOMPARE(spot.manufacturer, QString("Test"));
+    QCOMPARE(spot.revision, QString("Rev 2"));
+    QCOMPARE(spot.uploader, QString("Manuf."));
+    QCOMPARE(spot.version, QString("1.1"));
+    QCOMPARE(spot.creator, QString("Ana"));
+    // the uuid without braces, in capitals
+    QCOMPARE(spot.uuid, QString("3F2504E0-4F89-11D3-9A0C-0305E82C3301"));
+    // a date as a text (UTC), and seconds as a number
+    QCOMPARE(spot.created, QDateTime(QDate(2025, 10, 3), QTime(12, 0), QTimeZone::UTC).toSecsSinceEpoch());
+    QCOMPARE(spot.modified, qint64(1762200000));
+    QCOMPARE(spot.filesize, qint64(123456));
+    QCOMPARE(spot.rating, 4.5);
+    QCOMPARE(spot.modes, (QList<QPair<QString, int>>({ { "Standard", 16 }, { "Basic", 8 } })));
+    QCOMPARE(spot.key, QString("test spot 1"));
+    const GdtfShare::Entry &old = entries.at(1);
+    QCOMPARE(old.rid, 13);
+    // all zeros is no uuid
+    QVERIFY(old.uuid.isEmpty());
+    QCOMPARE(old.created, qint64(1700000000));
+    // (in milliseconds)
+    QCOMPARE(old.modified, qint64(1762200000));
+    QCOMPARE(old.rating, 3.0);
+    QCOMPARE(old.filesize, qint64(2048));
+    QVERIFY(old.modes.isEmpty());
+    QVERIFY(old.revision.isEmpty());
+
+    // what isn't a list says so, and gives nothing
+    const QList<QByteArray> wrong({ "<html>Oops</html>", R"({"result":false,"error":"No"})", R"({"result":true})",
+                                    R"({"result":true,"list":{}})", "[1,2]", R"({"result":true,"list":[{"rid":1)" });
+    for (const QByteArray &answer : wrong)
+    {
+        QVERIFY(GdtfShare::parseList(answer, &error, &timestamp).isEmpty());
+        QCOMPARE(error, QString("GDTF-Share sent an answer that can't be read"));
+        QCOMPARE(timestamp, qint64(0));
+    }
+    // an empty list is one
+    QVERIFY(GdtfShare::parseList(R"({"result":true,"list":[]})", &error, &timestamp).isEmpty());
+    QVERIFY(error.isEmpty());
+    QCOMPARE(timestamp, qint64(0));
+
+    // the search ignores case and accents
+    QCOMPARE(GdtfShare::fold(QString::fromUtf8("T\xC3\xA9st \xC3\x91" "AND\xC3\x9A \xC3\x87" "a")), QString("test nandu ca"));
+
+    // the list saved: read in the background when the browser opens, and
+    // nothing asked (no session)
+    const QString a = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
+    const QString test = QString::fromUtf8("T\xC3\xA9st Lights");
+    QJsonArray items;
+    items.append(shareItem(21, test, "Spot 600", a, "Manuf.", 1700000000));
+    QJsonObject newest = shareItem(22, test, "Spot 600", "{" + a + "}", "Manuf.", 1700100000);
+    newest.insert("modes", QJsonArray({ QJsonObject({ { "name", "Standard" }, { "dmxfootprint", 16 } }) }));
+    newest.insert("creator", "Ana");
+    newest.insert("rating", 4.5);
+    newest.insert("filesize", 9000);
+    newest.insert("version", "1.2");
+    items.append(newest);
+    items.append(shareItem(23, test, "Wash 300", "B0000000-0000-0000-0000-000000000001", "ana"));
+    items.append(shareItem(24, test.toLower(), "Beam 1", "C0000000-0000-0000-0000-000000000001", "Manuf."));
+    items.append(shareItem(25, "Lumen", "Orbit 600 LEDWash", "D0000000-0000-0000-0000-000000000001", "bob"));
+    items.append(shareItem(26, "Lumen", "Orbit 600 LEDWash", "E0000000-0000-0000-0000-000000000001", "Manuf."));
+    items.append(shareItem(27, "GLX", "impression X4", "00000000-0000-0000-0000-000000000000", "Manuf."));
+    items.append(shareItem(28, "GLX", "impression X4 Bar", "", "carl"));
+    QVERIFY(saveShareList(shareListBody(items)));
+    const QString file = GdtfShare::dataDirectory().filePath("list.json");
+
+    GdtfShare share;
+    QSignalSpy changes(&share, SIGNAL(listChanged()));
+    QCOMPARE(share.listCount(), 0);
+    QVERIFY(share.listDate().isValid() == false);
+    QVERIFY(share.listLoading() == false);
+    share.load();
+    QVERIFY(share.listLoading());
+    QTRY_VERIFY_WITH_TIMEOUT(share.listLoading() == false, 5000);
+    QVERIFY(changes.count() >= 2);
+    QVERIFY(share.listRevision() > 0);
+    QVERIFY(share.findChild<QNetworkAccessManager *>() == nullptr);
+    QVERIFY(share.error().isEmpty());
+    QVERIFY(share.notice().isEmpty());
+    // one fixture type for each uuid (the rid without one)
+    QCOMPARE(share.listCount(), 7);
+    // (without the time of GDTF-Share: when it was saved)
+    QCOMPARE(share.listDate(), QFileInfo(file).lastModified().toUTC());
+    // read once
+    share.load();
+    QVERIFY(share.listLoading() == false);
+
+    // each manufacturer once (case and accents ignored), with its fixture types
+    const QVariantList makers = share.manufacturers();
+    QCOMPARE(makers.count(), 3);
+    QCOMPARE(makers.at(0).toMap().value("name").toString(), QString("GLX"));
+    QCOMPARE(makers.at(0).toMap().value("count").toInt(), 2);
+    QCOMPARE(makers.at(1).toMap().value("name").toString(), QString("Lumen"));
+    QCOMPARE(makers.at(1).toMap().value("count").toInt(), 2);
+    QCOMPARE(GdtfShare::fold(makers.at(2).toMap().value("name").toString()), QString("test lights"));
+    QCOMPARE(makers.at(2).toMap().value("count").toInt(), 3);
+
+    auto found = [&](const QString &text, const QString &maker = QString(), const QString &filter = QString(),
+                     int limit = 400) {
+        QStringList rows;
+        for (const QVariant &row : share.search(text, maker, filter, limit).value("rows").toList())
+            rows.append(row.toMap().value("rid").toString());
+        return rows.join(' ');
+    };
+    auto total = [&](const QString &text, const QString &maker = QString(), const QString &filter = QString(),
+                     int limit = 400) {
+        return share.search(text, maker, filter, limit).value("total").toInt();
+    };
+    // all of them: by manufacturer, then fixture, the upload of the
+    // manufacturer first; a fixture type shows its newest revision
+    QCOMPARE(found(""), QString("27 28 26 25 24 22 23"));
+    QCOMPARE(total(""), 7);
+    // every word, in any order, in the manufacturer and the name
+    QCOMPARE(found("spot test"), QString("22"));
+    QCOMPARE(found("600 SPOT"), QString("22"));
+    QCOMPARE(found(QString::fromUtf8("t\xC3\xA9st")), QString("24 22 23"));
+    QCOMPARE(found("test"), QString("24 22 23"));
+    QCOMPARE(found("orbit 600"), QString("26 25"));
+    QCOMPARE(found("glx x4"), QString("27 28"));
+    QCOMPARE(found("x4 bar"), QString("28"));
+    QCOMPARE(found("spot wash"), QString());
+    QCOMPARE(total("nothing like it"), 0);
+    // at most $limit rows, and the total of them all
+    QCOMPARE(found("test", "", "", 1), QString("24"));
+    QCOMPARE(total("test", "", "", 1), 3);
+    // of one manufacturer (case and accents ignored)
+    QCOMPARE(found("", "Lumen"), QString("26 25"));
+    QCOMPARE(found("", "TEST LIGHTS"), QString("24 22 23"));
+    QCOMPARE(found("600", test), QString("22"));
+    // uploaded by the manufacturer
+    QCOMPARE(found("", "", "manufacturer"), QString("27 26 24 22"));
+    QCOMPARE(found("", test, "manufacturer"), QString("24 22"));
+    // nothing downloaded from GDTF-Share yet
+    QCOMPARE(total("", "", "library"), 0);
+    QCOMPARE(total("", "", "updates"), 0);
+
+    // a row: the newest revision of its fixture type
+    const QVariantMap row = share.search("spot").value("rows").toList().first().toMap();
+    QCOMPARE(row.value("uuid").toString(), a.toUpper());
+    QCOMPARE(row.value("rid").toInt(), 22);
+    QCOMPARE(row.value("fixture").toString(), QString("Spot 600"));
+    QCOMPARE(row.value("manufacturer").toString(), test);
+    QCOMPARE(row.value("revision").toString(), QString("Rev 22"));
+    QCOMPARE(row.value("uploader").toString(), QString("manufacturer"));
+    QCOMPARE(row.value("creator").toString(), QString("Ana"));
+    QCOMPARE(row.value("rating").toDouble(), 4.5);
+    QCOMPARE(row.value("version").toString(), QString("1.2"));
+    QCOMPARE(row.value("modified").toDateTime(), QDateTime::fromSecsSinceEpoch(1700100000, QTimeZone::UTC));
+    QCOMPARE(row.value("filesize").toLongLong(), qint64(9000));
+    QCOMPARE(row.value("revisions").toInt(), 2);
+    QCOMPARE(row.value("status").toString(), QString());
+    const QVariantList modes = row.value("modes").toList();
+    QCOMPARE(modes.count(), 1);
+    QCOMPARE(modes.first().toMap().value("name").toString(), QString("Standard"));
+    QCOMPARE(modes.first().toMap().value("channels").toInt(), 16);
+    QCOMPARE(share.search("wash 300").value("rows").toList().first().toMap().value("uploader").toString(),
+             QString("user"));
+    // a fixture type without uuid goes by its rid
+    QCOMPARE(share.search("x4 bar").value("rows").toList().first().toMap().value("uuid").toString(),
+             QString("rid:28"));
+
+    // its revisions, newest first (the uuid as GDTF-Share writes it, too)
+    auto rids = [](const QVariantList &list) {
+        QStringList found;
+        for (const QVariant &item : list)
+            found.append(item.toMap().value("rid").toString());
+        return found.join(' ');
+    };
+    QCOMPARE(rids(share.revisions(a.toUpper())), QString("22 21"));
+    QCOMPARE(rids(share.revisions("{" + a + "}")), QString("22 21"));
+    QCOMPARE(share.revisions(a).first().toMap().value("revision").toString(), QString("Rev 22"));
+    QCOMPARE(rids(share.revisions("rid:28")), QString("28"));
+    QVERIFY(share.revisions("").isEmpty());
+    QVERIFY(share.revisions("rid:99").isEmpty());
+}
+
+void Backend_Test::gdtfShareListCache()
+{
+    // GDTF-Share's list is kept as it came, in the user folder (that of the
+    // test), and shown from there: also without internet, and when
+    // GDTF-Share sends an empty one. The program asks for it on its own at
+    // most once every 20 h
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    const QString uuid = "3F2504E0-4F89-11D3-9A0C-0305E82C3301";
+    const qint64 timestamp = 1762300000;
+    QJsonArray items;
+    items.append(shareItem(31, "Test", "Spot", uuid, "Manuf.", 1700000000));
+    items.append(shareItem(32, "Test", "Spot", "{" + uuid.toLower() + "}", "Manuf.", 1700200000));
+    items.append(shareItem(33, "Test", "Wash", "", "ana"));
+    server.listBody = shareListBody(items, timestamp);
+    const QByteArray good = server.listBody;
+    const QString file = GdtfShare::dataDirectory().filePath("list.json");
+    QVERIFY2(QFileInfo(file).absoluteFilePath().startsWith(QDir(m_home->path()).absolutePath()), qPrintable(file));
+    QVERIFY(QFileInfo::exists(file) == false);
+    const QString loading = QString::fromUtf8("Downloading the list of GDTF-Share\xE2\x80\xA6");
+    auto signedIn = [&](GdtfShare *share) {
+        share->setBaseUrl(server.url());
+        share->signIn("ana", "secret");
+        return QTest::qWaitFor([share]() { return share->signedIn() && share->busy() == false; }, 5000);
+    };
+    auto ready = [](GdtfShare *share) {
+        return QTest::qWaitFor([share]() { return share->listLoading() == false && share->busy() == false; }, 5000);
+    };
+    // the saved list, written $hours ago
+    auto age = [&](int hours) {
+        QFile saved(file);
+        return saved.open(QIODevice::ReadWrite)
+            && saved.setFileTime(QDateTime::currentDateTime().addSecs(-hours * 3600), QFileDevice::FileModificationTime);
+    };
+
+    // no list and no session: nothing to read, nothing asked
+    GdtfShare share;
+    share.setBaseUrl(server.url());
+    QSignalSpy changes(&share, SIGNAL(listChanged()));
+    share.load();
+    QVERIFY(share.listLoading() == false);
+    QVERIFY(share.listDate().isValid() == false);
+    QVERIFY(share.error().isEmpty());
+    QVERIFY(server.asked.isEmpty());
+
+    // signed in, the browser opens: the list downloads, and is saved as it came
+    QVERIFY(signedIn(&share));
+    server.asked.clear();
+    share.load();
+    QVERIFY(share.listLoading());
+    QCOMPARE(share.notice(), loading);
+    QVERIFY(ready(&share));
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/getList.php" }));
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(share.notice(), QString("GDTF-Share: 2 fixture type(s)"));
+    QCOMPARE(fileBytes(file), good);
+    QVERIFY(changes.count() > 0);
+    // two revisions of one uuid are one fixture type, shown by the newest
+    QCOMPARE(share.listCount(), 2);
+    QCOMPARE(share.listDate(), QDateTime::fromSecsSinceEpoch(timestamp, QTimeZone::UTC));
+    const QVariantList rows = share.search("spot").value("rows").toList();
+    QCOMPARE(rows.count(), 1);
+    QCOMPARE(rows.first().toMap().value("rid").toInt(), 32);
+    QCOMPARE(rows.first().toMap().value("revisions").toInt(), 2);
+    const QVariantList revisions = share.revisions(uuid);
+    QCOMPARE(revisions.count(), 2);
+    QCOMPARE(revisions.at(0).toMap().value("rid").toInt(), 32);
+    QCOMPARE(revisions.at(1).toMap().value("rid").toInt(), 31);
+
+    // not asked again by the program within 20 h; asked by the user, yes
+    server.asked.clear();
+    share.load();
+    share.refresh(false);
+    QVERIFY(share.listLoading() == false);
+    QTest::qWait(200);
+    QVERIFY(server.asked.isEmpty());
+    const int revision = share.listRevision();
+    share.refresh(true);
+    QVERIFY(share.listLoading());
+    QVERIFY(ready(&share));
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/getList.php" }));
+    QCOMPARE(share.listRevision(), revision + 1);
+    QCOMPARE(share.listCount(), 2);
+
+    // GDTF-Share sends an empty list (it happened): the saved one stays, and
+    // says so with its date
+    const QDateTime date = share.listDate();
+    const QString dateText = QLocale().toString(date.toLocalTime().date(), QLocale::ShortFormat);
+    server.listBody = R"({"result":true,"list":[]})";
+    share.refresh(true);
+    QVERIFY(ready(&share));
+    QCOMPARE(share.notice(), QString("GDTF-Share sent an empty list: showing the one from %1").arg(dateText));
+    QVERIFY(share.error().isEmpty());
+    QCOMPARE(share.listCount(), 2);
+    QCOMPARE(share.listDate(), date);
+    QCOMPARE(share.listRevision(), revision + 1);
+    QCOMPARE(fileBytes(file), good);
+    // without a list before it: try again later
+    {
+        TempUserFolder folder;
+        GdtfShare first;
+        QVERIFY(signedIn(&first));
+        first.refresh(true);
+        QVERIFY(ready(&first));
+        QCOMPARE(first.notice(), QString("GDTF-Share sent an empty list: try again later"));
+        QCOMPARE(first.listCount(), 0);
+        QVERIFY(first.listDate().isValid() == false);
+        QVERIFY(QFileInfo::exists(GdtfShare::dataDirectory().filePath("list.json")) == false);
+    }
+
+    // an answer that can't be read: told, and the saved list stays
+    const QList<QByteArray> wrong({ R"({"result":true,"list":[{"rid":1,"fixture":)", R"({"result":true,"list":"none"})" });
+    for (const QByteArray &answer : wrong)
+    {
+        server.listBody = answer;
+        share.refresh(true);
+        QVERIFY(ready(&share));
+        QCOMPARE(share.error(), QString("GDTF-Share sent an answer that can't be read"));
+        QCOMPARE(share.listCount(), 2);
+        QCOMPARE(share.listDate(), date);
+        QCOMPARE(share.listRevision(), revision + 1);
+        QCOMPARE(fileBytes(file), good);
+    }
+    // (on its own, nothing is told)
+    {
+        GdtfShare quiet;
+        QVERIFY(signedIn(&quiet));
+        QVERIFY(age(21));
+        quiet.refresh(false);
+        QVERIFY(quiet.listLoading());
+        QVERIFY(ready(&quiet));
+        QVERIFY(quiet.error().isEmpty());
+        QVERIFY(quiet.notice().isEmpty());
+        QCOMPARE(fileBytes(file), good);
+    }
+    server.listBody = good;
+
+    // the next run: the saved list, and a new one only when it is more than
+    // 20 h old
+    {
+        GdtfShare next;
+        QVERIFY(signedIn(&next));
+        QVERIFY(age(19));
+        server.asked.clear();
+        next.load();
+        QVERIFY(ready(&next));
+        QCOMPARE(next.listCount(), 2);
+        QCOMPARE(next.listDate(), date);
+        QVERIFY(next.notice().isEmpty());
+        next.refresh(false);
+        QTest::qWait(200);
+        QVERIFY(server.asked.isEmpty());
+        QVERIFY(age(21));
+        next.refresh(false);
+        QVERIFY(ready(&next));
+        QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/getList.php" }));
+        // (what the program does on its own says nothing)
+        QVERIFY(next.notice().isEmpty());
+        QCOMPARE(next.listCount(), 2);
+        // and not again within 20 h
+        QVERIFY(QFileInfo(file).lastModified().secsTo(QDateTime::currentDateTime()) < 60);
+        next.refresh(false);
+        QTest::qWait(200);
+        QCOMPARE(server.asked.count(), 1);
+    }
+
+    // GDTF-Share can't be reached: the saved list, said to be that of its date
+    GdtfShare offline;
+    QVERIFY(signedIn(&offline));
+    GdtfShare old;
+    QVERIFY(signedIn(&old));
+    server.cutConnections();
+    offline.load();
+    QVERIFY(ready(&offline));
+    QCOMPARE(offline.listCount(), 2);
+    QVERIFY(offline.listDate().isValid());
+    QCOMPARE(offline.listDate(), date);
+    offline.refresh(true);
+    QVERIFY(ready(&offline));
+    QCOMPARE(offline.notice(), QString("Offline: showing the list from %1").arg(dateText));
+    QVERIFY(offline.error().isEmpty());
+    QCOMPARE(offline.listCount(), 2);
+    QCOMPARE(fileBytes(file), good);
+    // also when the list is read while it is asked for (more than 20 h old)
+    QVERIFY(age(21));
+    old.load();
+    QVERIFY(old.listLoading());
+    QVERIFY(ready(&old));
+    QCOMPARE(old.listCount(), 2);
+    QCOMPARE(old.notice(), QString("Offline: showing the list from %1").arg(dateText));
+    QVERIFY(old.error().isEmpty());
+}
+
+void Backend_Test::gdtfShareListSpeed()
+{
+    // the real list has thousands of uploads: read and searched at once
+    QJsonArray items;
+    for (int i = 0; i < 3000; i++)
+    {
+        const int type = i / 3;
+        items.append(shareItem(i + 1, QString::fromUtf8("Fabric\xC3\xA1nte %1").arg(type % 150),
+                               QString("Fixture %1 Spot").arg(type),
+                               QString("%1-0000-4000-8000-000000000000").arg(type + 1, 8, 16, QChar('0')),
+                               i % 2 ? "Manuf." : "user", 1700000000 + i));
+    }
+    const QByteArray body = shareListBody(items, 1762300000);
+    QVERIFY(saveShareList(body));
+    // (what the search must find: every type with a 7 in its maker or its name)
+    int sevens = 0;
+    for (int type = 0; type < 1000; type++)
+        sevens += QString("%1 %2").arg(type % 150).arg(type).contains('7') ? 1 : 0;
+
+    QElapsedTimer clock;
+    clock.start();
+    QString error;
+    qint64 timestamp = 0;
+    QCOMPARE(GdtfShare::parseList(body, &error, &timestamp).count(), 3000);
+    GdtfShare share;
+    share.load();
+    QVERIFY(QTest::qWaitFor([&]() { return share.listLoading() == false; }, 10000));
+    QCOMPARE(share.listCount(), 1000);
+    QCOMPARE(share.manufacturers().count(), 150);
+    const QVariantMap all = share.search("");
+    QCOMPARE(all.value("total").toInt(), 1000);
+    QCOMPARE(all.value("rows").toList().count(), 400);
+    QCOMPARE(share.search("spot 7 fabricante").value("total").toInt(), sevens);
+    QCOMPARE(share.search("", QString::fromUtf8("Fabric\xC3\xA1nte 7")).value("total").toInt(), 7);
+    QCOMPARE(share.search("fixture 999").value("total").toInt(), 1);
+    const qint64 elapsed = clock.elapsed();
+    QVERIFY2(elapsed < 2000, qPrintable(QString("%1 ms").arg(elapsed)));
+}
+
+/*********************************************************************
+ * gdtf-share gdtf-importer-limits
+ *********************************************************************/
+
+void Backend_Test::gdtfDmxBreaks()
+{
+    // a mode with its pixels on a second DMX input (the cells of the bar
+    // have their address on break 2), a mode with nothing on the first
+    // break, and a mode of the file named as a break mode would be
+    const QByteArray description = R"GDTF(<?xml version="1.0" encoding="UTF-8"?>
+<GDTF DataVersion="1.2">
+  <FixtureType Name="Breaks GDTF" Manufacturer="Test" FixtureTypeID="00000000-0000-0000-0000-000000000000">
+    <Geometries>
+      <Geometry Name="Body">
+        <Beam Name="Beam" BeamAngle="10"/>
+        <GeometryReference Name="Cell 1" Geometry="Pixel"><Break DMXOffset="1" DMXBreak="1"/><Break DMXOffset="1" DMXBreak="2"/></GeometryReference>
+        <GeometryReference Name="Cell 2" Geometry="Pixel"><Break DMXOffset="1" DMXBreak="1"/><Break DMXOffset="4" DMXBreak="2"/></GeometryReference>
+        <GeometryReference Name="Cell 3" Geometry="Pixel"><Break DMXOffset="1" DMXBreak="1"/><Break DMXOffset="9" DMXBreak="2"/></GeometryReference>
+      </Geometry>
+      <Geometry Name="Pixel"><Beam Name="PixelBeam"/></Geometry>
+    </Geometries>
+    <DMXModes>
+      <DMXMode Name="Extended" Geometry="Body">
+        <DMXChannels>
+          <DMXChannel DMXBreak="1" Offset="1" Geometry="Beam"><LogicalChannel Attribute="Dimmer"><ChannelFunction Attribute="Dimmer" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+          <DMXChannel DMXBreak="1" Offset="2" Geometry="Beam"><LogicalChannel Attribute="Shutter1"><ChannelFunction Attribute="Shutter1" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+          <DMXChannel DMXBreak="2" Offset="1" Geometry="Pixel"><LogicalChannel Attribute="ColorAdd_R"><ChannelFunction Attribute="ColorAdd_R" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+          <DMXChannel DMXBreak="2" Offset="2" Geometry="Pixel"><LogicalChannel Attribute="ColorAdd_G"><ChannelFunction Attribute="ColorAdd_G" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+          <DMXChannel DMXBreak="2" Offset="3" Geometry="Pixel"><LogicalChannel Attribute="ColorAdd_B"><ChannelFunction Attribute="ColorAdd_B" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+        </DMXChannels>
+      </DMXMode>
+      <DMXMode Name="Remote" Geometry="Body">
+        <DMXChannels>
+          <DMXChannel DMXBreak="2" Offset="1" Geometry="Beam"><LogicalChannel Attribute="Control1"><ChannelFunction Attribute="Control1" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+          <DMXChannel DMXBreak="3" Offset="2" Geometry="Beam"><LogicalChannel Attribute="Control2"><ChannelFunction Attribute="Control2" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+        </DMXChannels>
+      </DMXMode>
+      <DMXMode Name="Extended (DMX break 2)" Geometry="Body">
+        <DMXChannels>
+          <DMXChannel DMXBreak="1" Offset="1" Geometry="Beam"><LogicalChannel Attribute="Dimmer"><ChannelFunction Attribute="Dimmer" DMXFrom="0/1"/></LogicalChannel></DMXChannel>
+        </DMXChannels>
+      </DMXMode>
+    </DMXModes>
+  </FixtureType>
+</GDTF>
+)GDTF";
+    QString error;
+    QStringList warnings;
+    GdtfImporter::Info info;
+    info.revisionText = "left from before";
+    std::unique_ptr<QLCFixtureDef> def(GdtfImporter::read(description, &error, &warnings, nullptr, &info));
+    QVERIFY2(def != nullptr, qPrintable(error));
+
+    // no fixture type id (all zeros) and no revision
+    QVERIFY(info.fixtureTypeId.isEmpty());
+    QVERIFY(info.revisionText.isEmpty());
+    QVERIFY(info.revisionDate.isValid() == false);
+
+    // the modes of the file first, in their order; a mode with nothing on
+    // its first break is only its other breaks
+    QStringList names;
+    for (const QLCFixtureMode *mode : def->modes())
+        names << mode->name();
+    QCOMPARE(names, QStringList({ "Extended", "Extended (DMX break 2)", "Extended (DMX break 2) (2)",
+                                  "Remote (DMX break 2)", "Remote (DMX break 3)" }));
+    QCOMPARE(def->modes().at(0)->channels().count(), 2);
+    QVERIFY(def->modes().at(0)->heads().isEmpty());
+    QCOMPARE(def->modes().at(1)->channels().count(), 1);
+
+    // the second break: its cells from address 1, with the gap between them
+    const QLCFixtureMode *pixels = def->modes().at(2);
+    QCOMPARE(pixels->channels().count(), 11);
+    QCOMPARE(pixels->channel(0)->name(), QString("Red 1"));
+    QCOMPARE(pixels->channel(3)->name(), QString("Red 2"));
+    QCOMPARE(pixels->channel(6)->group(), QLCChannel::Nothing);
+    QCOMPARE(pixels->channel(7)->group(), QLCChannel::Nothing);
+    QCOMPARE(pixels->channel(8)->name(), QString("Red 3"));
+    QCOMPARE(pixels->heads().count(), 3);
+    QCOMPARE(pixels->heads().at(0).channels(), QList<quint32>({ 0, 1, 2 }));
+    QCOMPARE(pixels->heads().at(2).channels(), QList<quint32>({ 8, 9, 10 }));
+    QCOMPARE(pixels->physical().layoutSize(), QSize(3, 1));
+    QCOMPARE(int(pixels->physical().lensDegreesMax()), 10);
+    QCOMPARE(def->modes().at(3)->channels().count(), 1);
+    QCOMPARE(def->modes().at(3)->channel(0)->name(), QString("Control 1"));
+    QCOMPARE(def->modes().at(4)->channels().count(), 2);
+    QCOMPARE(def->modes().at(4)->channel(1)->name(), QString("Control 2"));
+
+    // each one told, and no mode is said to have no channels
+    QCOMPARE(warnings, QStringList({
+        QString::fromUtf8("Mode Extended: its DMX break 2 is the mode “Extended (DMX break 2) (2)”: patch it at its own address"),
+        QString::fromUtf8("Mode Remote: its DMX break 2 is the mode “Remote (DMX break 2)”: patch it at its own address"),
+        QString::fromUtf8("Mode Remote: its DMX break 3 is the mode “Remote (DMX break 3)”: patch it at its own address") }));
+
+    // plain modes in the .qxf: QLC+ reads them
+    QTemporaryDir dir;
+    GdtfImporter::Result result = GdtfImporter::convert(description, QDir(dir.path()));
+    QVERIFY2(result.ok, qPrintable(result.error));
+    QVERIFY(result.fixtureTypeId.isEmpty());
+    QLCFixtureDef reloaded;
+    QCOMPARE(reloaded.loadXML(result.file), QFile::NoError);
+    QCOMPARE(reloaded.modes().count(), 5);
+    QCOMPARE(reloaded.mode("Extended (DMX break 2) (2)")->heads().count(), 3);
+
+    // each break patched as a fixture of its own, at its own address
+    QVERIFY(m_doc->fixtureDefCache()->addFixtureDef(def.release()));
+    QCOMPARE(m_patch->addFixtures("Test", "Breaks GDTF", "Extended", "Body", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Breaks GDTF", "Extended (DMX break 2) (2)", "Pixels", 1, 1, 1), 1);
+    const Fixture *body = m_doc->fixtures().at(0);
+    const Fixture *cells = m_doc->fixtures().at(1);
+    QCOMPARE(body->channels(), quint32(2));
+    QCOMPARE(cells->channels(), quint32(11));
+    QCOMPARE(cells->universe(), quint32(1));
+    QCOMPARE(cells->address(), quint32(0));
+    QCOMPARE(cells->heads(), 3);
+}
+
+void Backend_Test::gdtfReconvertShareDownloads()
+{
+    // a fixture downloaded from GDTF-Share, converted by an older version
+    // (here: without the mode of its second DMX break) and patched. Convert
+    // again reads the .gdtf kept: the same .qxf, and the fixture gets it
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    GdtfShare *share = m_library->share();
+    QCOMPARE(share->originalsCount(), 0);
+    QCOMPARE(m_library->reconvertShareDownloads(), 0);
+    QVERIFY(m_library->importing() == false);
+
+    // as the older version left it
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const QDir gdtf = FixtureLibrary::gdtfDirectory();
+    QVERIFY(gdtf.mkpath("."));
+    const QString qxf = gdtf.filePath("Test-Spot-GDTF.qxf");
+    {
+        QString error;
+        std::unique_ptr<QLCFixtureDef> old(GdtfImporter::read(makeGdtf(), &error, nullptr));
+        QVERIFY2(old != nullptr, qPrintable(error));
+        QVERIFY(old->removeMode(old->modes().last()));
+        QCOMPARE(old->saveXML(qxf), QFile::NoError);
+    }
+    cache->load(gdtf);
+    QLCFixtureDef *before = cache->fixtureDef("Test", "Spot GDTF");
+    QVERIFY(before != nullptr);
+    QCOMPARE(before->modes().count(), 2);
+    QCOMPARE(m_patch->addFixtures("Test", "Spot GDTF", "Standard", "Spot", 0, 1, 1), 1);
+    Fixture *spot = m_doc->fixtures().first();
+    const int definitions = int(cache->defs().count());
+
+    // the .gdtf kept, and the record of the download
+    const QDir data = GdtfShare::dataDirectory();
+    QVERIFY(data.mkpath("originals"));
+    const QString original = data.filePath("originals/Test-Spot_GDTF-11.gdtf");
+    auto write = [](const QString &path, const QByteArray &bytes) {
+        QFile file(path);
+        return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
+    };
+    QVERIFY(write(original, makeGdtf()));
+    const QByteArray index = R"({"version": 1, "fixtures": {"Test-Spot-GDTF.qxf": {"uuid": "00000000-0000-0000-0000-000000000001",
+        "rid": 11, "revision": "Rev 2", "modified": 1700000000, "original": "originals/Test-Spot_GDTF-11.gdtf",
+        "imported": "2026-11-01T10:00:00Z"}}})";
+    QVERIFY(write(GdtfShare::indexFile(), index));
+    QCOMPARE(share->originalsCount(), 1);
+    QCOMPARE(QFileInfo(share->originals().first()).canonicalFilePath(), QFileInfo(original).canonicalFilePath());
+
+    QSignalSpy indexChanged(share, SIGNAL(indexChanged()));
+    QCOMPARE(m_library->reconvertShareDownloads(), 1);
+    // (one at a time)
+    QCOMPARE(m_library->reconvertShareDownloads(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(m_library->importing() == false, 10000);
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+
+    // the same .qxf, written again; nothing new in the library
+    QCOMPARE(gdtf.entryList({ "*.qxf" }, QDir::Files), QStringList({ "Test-Spot-GDTF.qxf" }));
+    QLCFixtureDef reread;
+    QCOMPARE(reread.loadXML(qxf), QFile::NoError);
+    QCOMPARE(reread.modes().count(), 3);
+    QLCFixtureDef *after = cache->fixtureDef("Test", "Spot GDTF");
+    QVERIFY(after != nullptr);
+    QVERIFY(after != before);
+    QVERIFY(after->mode("Standard (DMX break 2)") != nullptr);
+    QCOMPARE(int(cache->defs().count()), definitions);
+    QVERIFY2(m_library->status().contains("0 new"), qPrintable(m_library->status()));
+
+    // the patched fixture has the new version, in its mode
+    QCOMPARE(spot->fixtureDef(), after);
+    QCOMPARE(spot->fixtureMode()->name(), QString("Standard"));
+    QCOMPARE(spot->channels(), quint32(10));
+
+    // the record stays as it was
+    QFile saved(GdtfShare::indexFile());
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    QCOMPARE(saved.readAll(), index);
+    saved.close();
+    QCOMPARE(share->originalsCount(), 1);
+    QVERIFY(indexChanged.count() > 0);
+
+    // a kept file is only read from the folder of GDTF-Share
+    QVERIFY(write(gdtf.filePath("../elsewhere.gdtf"), makeGdtf()));
+    QByteArray outside = index;
+    outside.replace("originals/Test-Spot_GDTF-11.gdtf", "../../elsewhere.gdtf");
+    QVERIFY(write(GdtfShare::indexFile(), outside));
+    QCOMPARE(share->originalsCount(), 0);
+    // nor for a fixture that is not in the GDTF folder any more
+    QVERIFY(write(GdtfShare::indexFile(), index));
+    QVERIFY(QFile::remove(qxf));
+    QCOMPARE(share->originalsCount(), 0);
+    QCOMPARE(m_library->reconvertShareDownloads(), 0);
+}
+
+/*********************************************************************
+ * gdtf-share share-download-import
+ *********************************************************************/
+
+/** makeGdtf() with $changes in its description: another fixture, or
+ *  another revision of it */
+static QByteArray changedGdtf(const QList<QPair<QByteArray, QByteArray>> &changes)
+{
+    QByteArray original = makeGdtf();
+    QBuffer in(&original);
+    in.open(QIODevice::ReadOnly);
+    QZipReader reader(&in);
+    QByteArray description = reader.fileData("description.xml");
+    for (const QPair<QByteArray, QByteArray> &change : changes)
+        description.replace(change.first, change.second);
+    QBuffer out;
+    out.open(QIODevice::WriteOnly);
+    QZipWriter zip(&out);
+    zip.addFile("description.xml", description);
+    zip.addFile("wheels/gobo_dots.png", QByteArray("\x89PNG fake picture"));
+    zip.close();
+    return out.data();
+}
+
+/** An upload of the list for the file $gdtf, with its size */
+static QJsonObject shareFile(int rid, const QString &fixture, const QString &uuid, qint64 modified,
+                             const QByteArray &gdtf, const QString &uploader = "Manuf.")
+{
+    QJsonObject item = shareItem(rid, "Test", fixture, uuid, uploader, modified);
+    item.insert("filesize", qint64(gdtf.size()));
+    return item;
+}
+
+/** The fixture $qxf in the record of where the GDTF fixtures came from */
+static QJsonObject shareRecord(const QString &qxf)
+{
+    QFile file(GdtfShare::indexFile());
+    if (file.open(QIODevice::ReadOnly) == false)
+        return QJsonObject();
+    return QJsonDocument::fromJson(file.readAll()).object().value("fixtures").toObject().value(qxf).toObject();
+}
+
+/** The row of the search for the fixture type $uuid */
+static QVariantMap shareRow(GdtfShare *share, const QString &uuid)
+{
+    for (const QVariant &row : share->search("").value("rows").toList())
+    {
+        if (row.toMap().value("uuid").toString() == uuid)
+            return row.toMap();
+    }
+    return QVariantMap();
+}
+
+/** The files in the folder of the .gdtf kept (.part ones too) */
+static QStringList keptShareFiles()
+{
+    return QDir(GdtfShare::dataDirectory().filePath("originals")).entryList(QDir::Files);
+}
+
+void Backend_Test::gdtfShareDownload()
+{
+    // GDTF-Share has the fixture, and another upload of one of the same name
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    const QString uuid = "00000000-0000-0000-0000-000000000001";
+    const QString other = "00000000-0000-0000-0000-000000000002";
+    const QByteArray first = makeGdtf();
+    // (the next revision: its zoom is an iris now)
+    const QByteArray newer = changedGdtf({ { "Attribute=\"Zoom\"", "Attribute=\"Iris\"" },
+                                           { "Text=\"Rev 2 \"", "Text=\"Rev 3\"" } });
+    server.files.insert(11, first);
+    server.files.insert(12, newer);
+    QJsonArray items;
+    items.append(shareFile(11, "Spot GDTF", "{" + uuid + "}", 1700000000, first));
+    items.append(shareFile(21, "Spot GDTF", other, 1690000000, first, "bob"));
+    QVERIFY(saveShareList(shareListBody(items, 1762300000)));
+    QVERIFY2(GdtfShare::dataDirectory().absolutePath().startsWith(QDir(m_home->path()).absolutePath()),
+             qPrintable(GdtfShare::dataDirectory().absolutePath()));
+
+    GdtfShare *share = m_library->share();
+    share->setBaseUrl(server.url());
+    share->load();
+    QVERIFY(QTest::qWaitFor([share]() { return share->listLoading() == false; }, 5000));
+    QCOMPARE(share->listCount(), 2);
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const int definitions = int(cache->defs().count());
+    auto settled = [&]() {
+        return QTest::qWaitFor([&]() {
+            return share->busy() == false && share->listLoading() == false && m_library->importing() == false;
+        }, 10000);
+    };
+    QObject context;
+    int batches = 0;
+    connect(share, &GdtfShare::downloaded, &context, [&batches]() { batches++; });
+    QStringList notices;
+    connect(share, &GdtfShare::changed, &context, [&notices, share]() {
+        if (notices.contains(share->notice()) == false)
+            notices.append(share->notice());
+    });
+
+    // no session: the download waits for the sign-in, asked for once.
+    // The sign-in dismissed: the download goes, and so does what it told
+    QSignalSpy login(share, SIGNAL(loginNeeded()));
+    QCOMPARE(share->download({ 11 }), 1);
+    QCOMPARE(login.count(), 1);
+    QCOMPARE(share->error(), QString("Sign in to GDTF-Share to continue"));
+    share->cancel();
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QCOMPARE(share->notice(), QString("Download cancelled"));
+    QCOMPARE(batches, 0);
+    QCOMPARE(share->download({ 11 }), 1);
+    QCOMPARE(login.count(), 2);
+    QVERIFY(share->busy() == false);
+    QVERIFY(server.asked.isEmpty());
+    // (on its way: not twice; not in the list: nothing)
+    QCOMPARE(share->download({ 11, 99 }), 0);
+    share->signIn("ana", "secret");
+    QVERIFY(settled());
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QCOMPARE(server.asked, QList<QByteArray>({ "POST /apis/public/login.php", "GET /apis/public/downloadFile.php?rid=11" }));
+    QCOMPARE(batches, 1);
+    QVERIFY2(notices.contains(QString::fromUtf8("Downloading Test Spot GDTF\xE2\x80\xA6")), qPrintable(notices.join('|')));
+    QCOMPARE(share->progress(), 1.0);
+
+    // converted as Import GDTF does, and told
+    QLCFixtureDef *def = cache->fixtureDef("Test", "Spot GDTF");
+    QVERIFY(def != nullptr);
+    QCOMPARE(int(cache->defs().count()), definitions + 1);
+    QCOMPARE(m_library->gdtfCount(), 1);
+    // (its second DMX break is a mode of its own: a warning)
+    QCOMPARE(m_library->status(), QString::fromUtf8("GDTF-Share: 1 fixture(s) downloaded \xC2\xB7 GDTF: 1 fixture(s) "
+                                                    "converted \xC2\xB7 1 new in the library \xC2\xB7 1 warning(s)"));
+    QCOMPARE(m_library->lastImported(),
+             QVariantList({ QVariantMap({ { "manufacturer", "Test" }, { "model", "Spot GDTF" }, { "rid", 11 } }) }));
+
+    // its .gdtf kept, and where it came from
+    const QString kept11 = GdtfShare::dataDirectory().filePath("originals/Test-Spot-GDTF-11.gdtf");
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-11.gdtf" }));
+    QCOMPARE(fileBytes(kept11), first);
+    QCOMPARE(share->originalsCount(), 1);
+    QJsonObject record = shareRecord("Test-Spot-GDTF.qxf");
+    QCOMPARE(record.value("uuid").toString(), uuid);
+    QCOMPARE(record.value("rid").toInt(), 11);
+    QCOMPARE(record.value("revision").toString(), QString("Rev 11"));
+    QCOMPARE(record.value("revisionText").toString(), QString("Rev 2"));
+    QCOMPARE(record.value("modified").toInteger(), qint64(1700000000));
+    QCOMPARE(record.value("manufacturer").toString(), QString("Test"));
+    QCOMPARE(record.value("model").toString(), QString("Spot GDTF"));
+    QCOMPARE(record.value("original").toString(), QString("originals/Test-Spot-GDTF-11.gdtf"));
+    QVERIFY(QDateTime::fromString(record.value("imported").toString(), Qt::ISODate).isValid());
+
+    // the browser knows it; the other upload of the same name would take its place
+    QVariantMap row = shareRow(share, uuid);
+    QCOMPARE(row.value("status").toString(), QString("current"));
+    QCOMPARE(row.value("libraryModel").toString(), QString("Spot GDTF"));
+    QCOMPARE(row.value("libraryRid").toInt(), 11);
+    QCOMPARE(row.value("replaces").toBool(), false);
+    const QVariantMap upload = shareRow(share, other);
+    QCOMPARE(upload.value("status").toString(), QString());
+    QCOMPARE(upload.value("libraryModel").toString(), QString("Spot GDTF"));
+    QCOMPARE(upload.value("replaces").toBool(), true);
+    QCOMPARE(share->search("", "", "library").value("total").toInt(), 1);
+    QCOMPARE(share->search("", "", "updates").value("total").toInt(), 0);
+
+    // patched, and GDTF-Share gets a newer revision
+    QCOMPARE(m_patch->addFixtures("Test", "Spot GDTF", "Standard", "Spot", 0, 1, 1), 1);
+    Fixture *spot = m_doc->fixtures().first();
+    QCOMPARE(spot->fixtureMode()->channel(9)->name(), QString("Zoom"));
+    items.append(shareFile(12, "Spot GDTF", uuid, 1700500000, newer));
+    server.listBody = shareListBody(items, 1762400000);
+    share->refresh(true);
+    QVERIFY(settled());
+    QCOMPARE(shareRow(share, uuid).value("status").toString(), QString("older"));
+    QCOMPARE(share->search("", "", "updates").value("total").toInt(), 1);
+
+    // downloaded: the patched fixture has it, in its mode; the .gdtf of
+    // before goes
+    server.asked.clear();
+    QCOMPARE(share->download({ 12 }), 1);
+    QVERIFY(settled());
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/downloadFile.php?rid=12" }));
+    QLCFixtureDef *updated = cache->fixtureDef("Test", "Spot GDTF");
+    QVERIFY(updated != nullptr && updated != def);
+    QCOMPARE(spot->fixtureDef(), updated);
+    QCOMPARE(spot->fixtureMode()->name(), QString("Standard"));
+    QCOMPARE(spot->fixtureMode()->channel(9)->name(), QString("Iris"));
+    QCOMPARE(int(cache->defs().count()), definitions + 1);
+    QVERIFY2(m_library->status().contains("0 new in the library"), qPrintable(m_library->status()));
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-12.gdtf" }));
+    record = shareRecord("Test-Spot-GDTF.qxf");
+    QCOMPARE(record.value("rid").toInt(), 12);
+    QCOMPARE(record.value("revisionText").toString(), QString("Rev 3"));
+    QCOMPARE(record.value("original").toString(), QString("originals/Test-Spot-GDTF-12.gdtf"));
+    QCOMPARE(shareRow(share, uuid).value("status").toString(), QString("current"));
+    QCOMPARE(m_library->lastImported().value(0).toMap().value("rid").toInt(), 12);
+
+    // downloaded again: the same file is kept
+    QCOMPARE(share->download({ 12 }), 1);
+    QVERIFY(settled());
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-12.gdtf" }));
+    QCOMPARE(fileBytes(GdtfShare::dataDirectory().filePath("originals/Test-Spot-GDTF-12.gdtf")), newer);
+    QCOMPARE(share->originalsCount(), 1);
+
+    // its file imported by hand: from a file now, nothing kept to convert again
+    const QString file = QDir(m_home->path()).filePath("spot.gdtf");
+    QVERIFY(writeBytes(file, newer));
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    QVERIFY(settled());
+    QVERIFY2(m_library->status().startsWith("GDTF: 1 fixture(s) converted"), qPrintable(m_library->status()));
+    record = shareRecord("Test-Spot-GDTF.qxf");
+    QCOMPARE(record.value("rid").toInt(), 0);
+    QCOMPARE(record.value("uuid").toString(), uuid);
+    QCOMPARE(record.value("revisionText").toString(), QString("Rev 3"));
+    QVERIFY(record.value("original").toString().isEmpty());
+    QVERIFY(keptShareFiles().isEmpty());
+    QCOMPARE(share->originalsCount(), 0);
+    QCOMPARE(shareRow(share, uuid).value("status").toString(), QString("file"));
+    QCOMPARE(shareRow(share, uuid).value("libraryRid").toInt(), 0);
+    QCOMPARE(m_library->lastImported().value(0).toMap().value("rid").toInt(), 0);
+    QCOMPARE(spot->fixtureDef(), cache->fixtureDef("Test", "Spot GDTF"));
+}
+
+void Backend_Test::gdtfShareDownloadErrors()
+{
+    // what isn't a GDTF file leaves nothing behind: an error where the file
+    // was, a page, a zip without a fixture. Cancelled during a large file:
+    // nothing of it is left, and the one before it is still converted
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    QByteArray empty;
+    {
+        QBuffer buffer(&empty);
+        buffer.open(QIODevice::WriteOnly);
+        QZipWriter zip(&buffer);
+        zip.addFile("readme.txt", QByteArray("no fixture here"));
+        zip.close();
+    }
+    const QByteArray other = changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Other GDTF\"" },
+                                           { "000000000001}", "000000000036}" } });
+    const QByteArray big = QByteArray("PK\x03\x04", 4) + QByteArray(24 * 1024 * 1024, 'g');
+    server.files.insert(32, "<html><body>Not here</body></html>");
+    server.files.insert(33, R"({"error":"Quota exceeded"})");
+    server.files.insert(34, empty);
+    server.files.insert(35, big);
+    server.files.insert(36, other);
+    QJsonArray items;
+    items.append(shareFile(31, "Missing", "00000000-0000-0000-0000-000000000031", 1700000000, QByteArray(100, 'x')));
+    items.append(shareFile(32, "Page", "00000000-0000-0000-0000-000000000032", 1700000000, server.files.value(32)));
+    items.append(shareFile(33, "Quota", "00000000-0000-0000-0000-000000000033", 1700000000, server.files.value(33)));
+    items.append(shareFile(34, "Empty zip", "00000000-0000-0000-0000-000000000034", 1700000000, empty));
+    items.append(shareFile(35, "Big", "00000000-0000-0000-0000-000000000035", 1700000000, big));
+    items.append(shareFile(36, "Other GDTF", "00000000-0000-0000-0000-000000000036", 1700000000, other));
+    QVERIFY(saveShareList(shareListBody(items, 1762300000)));
+
+    GdtfShare *share = m_library->share();
+    share->setBaseUrl(server.url());
+    share->load();
+    share->signIn("ana", "secret");
+    QVERIFY(QTest::qWaitFor([share]() { return share->signedIn() && share->busy() == false
+                                               && share->listLoading() == false; }, 5000));
+    QCOMPARE(share->listCount(), 6);
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const int definitions = int(cache->defs().count());
+    auto settled = [&]() {
+        return QTest::qWaitFor([&]() { return share->busy() == false && m_library->importing() == false; }, 20000);
+    };
+    QObject context;
+    int batches = 0;
+    connect(share, &GdtfShare::downloaded, &context, [&batches]() { batches++; });
+
+    // GDTF-Share's own words, as an answer or where the file was; a page
+    const QList<QPair<int, QString>> refused({
+        { 31, "GDTF-Share answered with an error: File does not exist." },
+        { 32, "Test Page is not a GDTF file: it was not imported" },
+        { 33, "GDTF-Share answered with an error: Quota exceeded" } });
+    for (const QPair<int, QString> &item : refused)
+    {
+        QCOMPARE(share->download({ item.first }), 1);
+        QVERIFY(settled());
+        QCOMPARE(share->error(), item.second);
+        QVERIFY2(keptShareFiles().isEmpty(), qPrintable(keptShareFiles().join(' ')));
+        QCOMPARE(batches, 0);
+        QCOMPARE(int(cache->defs().count()), definitions);
+        QVERIFY(QFileInfo::exists(GdtfShare::indexFile()) == false);
+        QCOMPARE(share->state(), int(GdtfShare::Idle));
+    }
+
+    // two at once, with the progress of both: a zip without a fixture is
+    // downloaded, can't be converted, and isn't kept
+    QStringList notices;
+    QList<qreal> progress;
+    connect(share, &GdtfShare::changed, &context, [&notices, share]() {
+        if (notices.contains(share->notice()) == false)
+            notices.append(share->notice());
+    });
+    connect(share, &GdtfShare::progressChanged, &context, [&progress, share]() { progress.append(share->progress()); });
+    QCOMPARE(share->download({ 34, 36 }), 2);
+    QVERIFY(settled());
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QCOMPARE(batches, 1);
+    QVERIFY2(notices.contains(QString::fromUtf8("Downloading Test Empty zip (1 of 2)\xE2\x80\xA6"))
+             && notices.contains(QString::fromUtf8("Downloading Test Other GDTF (2 of 2)\xE2\x80\xA6")),
+             qPrintable(notices.join('|')));
+    QVERIFY(progress.isEmpty() == false);
+    for (int i = 1; i < progress.count(); i++)
+        QVERIFY2(progress.at(i) >= progress.at(i - 1) && progress.at(i) <= 1, qPrintable(QString::number(progress.at(i))));
+    QCOMPARE(progress.last(), 1.0);
+    QCOMPARE(m_library->importErrors().count(), 1);
+    QVERIFY2(m_library->importErrors().first().startsWith("Test-Empty-zip-34.gdtf: "),
+             qPrintable(m_library->importErrors().first()));
+    QCOMPARE(m_library->status(), QString::fromUtf8("GDTF-Share: 2 fixture(s) downloaded \xC2\xB7 GDTF: 1 fixture(s) converted "
+                                                    "\xC2\xB7 1 new in the library \xC2\xB7 1 couldn't be read "
+                                                    "\xC2\xB7 1 warning(s)"));
+    QVERIFY(cache->fixtureDef("Test", "Other GDTF") != nullptr);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Other-GDTF-36.gdtf" }));
+    QCOMPARE(share->originalsCount(), 1);
+
+    // the error of one of them is still told at the end
+    QCOMPARE(share->download({ 32, 36 }), 2);
+    QVERIFY(settled());
+    QCOMPARE(share->error(), QString("Test Page is not a GDTF file: it was not imported"));
+    QCOMPARE(batches, 2);
+    QVERIFY2(m_library->status().startsWith(QString::fromUtf8("GDTF-Share: 1 fixture(s) downloaded \xC2\xB7")),
+             qPrintable(m_library->status()));
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Other-GDTF-36.gdtf" }));
+
+    // cancelled once the large one is coming: nothing of it is left, and
+    // the one before it arrived whole and is converted
+    const qreal before = qreal(other.size()) / qreal(other.size() + big.size());
+    bool cancelled = false;
+    connect(share, &GdtfShare::progressChanged, &context, [&cancelled, share, before]() {
+        if (cancelled == false && share->state() == GdtfShare::Downloading && share->progress() > before
+            && share->notice().contains("(2 of 2)"))
+        {
+            cancelled = true;
+            share->cancel();
+        }
+    });
+    QCOMPARE(share->download({ 36, 35 }), 2);
+    QVERIFY(settled());
+    QVERIFY(cancelled);
+    QCOMPARE(share->state(), int(GdtfShare::Idle));
+    QCOMPARE(share->notice(), QString("Download cancelled"));
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QCOMPARE(batches, 3);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Other-GDTF-36.gdtf" }));
+    QCOMPARE(m_library->lastImported().count(), 1);
+    QCOMPARE(m_library->lastImported().first().toMap().value("rid").toInt(), 36);
+    QVERIFY2(m_library->status().startsWith(QString::fromUtf8("GDTF-Share: 1 fixture(s) downloaded \xC2\xB7")),
+             qPrintable(m_library->status()));
+    QCOMPARE(int(cache->defs().count()), definitions + 1);
+}
+
+void Backend_Test::gdtfShareDownloadWaits()
+{
+    // downloads that arrive while a file import runs wait for it, and are
+    // converted after it (they used to be refused). Stop drops them, and
+    // their .gdtf goes
+    GdtfShare *share = m_library->share();
+    const QString file = QDir(m_home->path()).filePath("spot.gdtf");
+    QVERIFY(writeBytes(file, makeGdtf()));
+    const QDir originals(GdtfShare::dataDirectory().filePath("originals"));
+    QVERIFY(originals.mkpath("."));
+    auto downloaded = [&](int rid) {
+        GdtfShare::Download download;
+        download.path = originals.filePath(QString("Test-Waiting-GDTF-%1.gdtf").arg(rid));
+        download.uuid = "00000000-0000-0000-0000-000000000041";
+        download.rid = rid;
+        download.revision = QString("Rev %1").arg(rid);
+        download.modified = 1700000000 + rid;
+        download.manufacturer = "Test";
+        download.fixture = "Waiting GDTF";
+        const QByteArray gdtf = changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Waiting GDTF\"" },
+                                              { "000000000001}", "000000000041}" } });
+        return writeBytes(download.path, gdtf) ? download : GdtfShare::Download();
+    };
+    QObject context;
+    QStringList statuses;
+    connect(m_library, &FixtureLibrary::statusChanged, &context, [&statuses, this]() { statuses.append(m_library->status()); });
+
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    QVERIFY(m_library->importing());
+    const QString converting = m_library->status();
+    const GdtfShare::Download first = downloaded(41);
+    QVERIFY(first.rid == 41);
+    emit share->downloaded({ first });
+    // (the import running says what it does)
+    QCOMPARE(m_library->status(), converting);
+    QVERIFY(QTest::qWaitFor([this]() { return m_library->importing() == false; }, 10000));
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QVERIFY2(statuses.contains("A GDTF import is already running") == false, qPrintable(statuses.join('\n')));
+    QVERIFY2(statuses.contains(QString::fromUtf8("GDTF: 1 fixture(s) converted \xC2\xB7 1 new in the library \xC2\xB7 "
+                                                 "1 warning(s)")), qPrintable(statuses.join('\n')));
+    QCOMPARE(m_library->status(), QString::fromUtf8("GDTF-Share: 1 fixture(s) downloaded \xC2\xB7 GDTF: 1 fixture(s) "
+                                                    "converted \xC2\xB7 1 new in the library \xC2\xB7 1 warning(s)"));
+    QVERIFY(m_doc->fixtureDefCache()->fixtureDef("Test", "Spot GDTF") != nullptr);
+    QVERIFY(m_doc->fixtureDefCache()->fixtureDef("Test", "Waiting GDTF") != nullptr);
+    QCOMPARE(shareRecord("Test-Waiting-GDTF.qxf").value("rid").toInt(), 41);
+    QCOMPARE(shareRecord("Test-Waiting-GDTF.qxf").value("uuid").toString(), first.uuid);
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 0);
+    QCOMPARE(share->originalsCount(), 1);
+
+    // Stop: what waited isn't converted, and isn't kept
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    const GdtfShare::Download second = downloaded(42);
+    QVERIFY(second.rid == 42);
+    emit share->downloaded({ second });
+    m_library->cancelImport();
+    QVERIFY(QFileInfo::exists(second.path) == false);
+    QVERIFY(QTest::qWaitFor([this]() { return m_library->importing() == false; }, 10000));
+    QTest::qWait(100);
+    QVERIFY(m_library->importing() == false);
+    QCOMPARE(shareRecord("Test-Waiting-GDTF.qxf").value("rid").toInt(), 41);
+    QVERIFY(QFileInfo::exists(first.path));
+    QCOMPARE(originals.entryList(QDir::Files), QStringList({ "Test-Waiting-GDTF-41.gdtf" }));
+    for (const QVariant &fixture : m_library->lastImported())
+        QVERIFY(fixture.toMap().value("rid").toInt() != 42);
+}
+
+/** A local GDTF-Share with Spot GDTF (11), Wash GDTF (13) and a large file
+ *  (12) that never arrives whole, and $share signed in to it */
+static bool startCancelShare(FakeGdtfShare *server, GdtfShare *share)
+{
+    if (server->listen(QHostAddress::LocalHost) == false)
+        return false;
+    server->accounts.insert("ana", "secret");
+    const QByteArray spot = makeGdtf();
+    const QByteArray wash = changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Wash GDTF\"" },
+                                          { "000000000001}", "000000000013}" } });
+    server->files.insert(11, spot);
+    server->files.insert(13, wash);
+    server->held.insert(12);
+    QJsonArray items;
+    items.append(shareFile(11, "Spot GDTF", "00000000-0000-0000-0000-000000000001", 1700000000, spot));
+    items.append(shareFile(12, "Big", "00000000-0000-0000-0000-000000000012", 1700000000, QByteArray(1 << 20, 'g')));
+    items.append(shareFile(13, "Wash GDTF", "00000000-0000-0000-0000-000000000013", 1700000000, wash));
+    if (saveShareList(shareListBody(items, 1762300000)) == false)
+        return false;
+    share->setBaseUrl(server->url());
+    share->load();
+    share->signIn("ana", "secret");
+    return QTest::qWaitFor([share]() { return share->signedIn() && share->busy() == false
+                                              && share->listLoading() == false; }, 5000)
+           && share->listCount() == 3;
+}
+
+/** The second download of a batch of two is on its way: the first is whole */
+static bool secondOnItsWay(GdtfShare *share)
+{
+    return QTest::qWaitFor([share]() {
+        return share->state() == GdtfShare::Downloading && share->notice().contains("(2 of 2)");
+    }, 10000);
+}
+
+void Backend_Test::gdtfShareDownloadCancel()
+{
+    // Cancel in the browser during the second download of two (Update
+    // all): the first arrived whole, and is converted and kept
+    FakeGdtfShare server;
+    GdtfShare *share = m_library->share();
+    QVERIFY(startCancelShare(&server, share));
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    auto settled = [&]() {
+        return QTest::qWaitFor([&]() { return share->busy() == false && m_library->importing() == false; }, 10000);
+    };
+
+    QCOMPARE(share->download({ 11, 12 }), 2);
+    QVERIFY(secondOnItsWay(share));
+    QVERIFY2(keptShareFiles().contains("Test-Spot-GDTF-11.gdtf"), qPrintable(keptShareFiles().join(' ')));
+    m_library->cancelShare();
+    QVERIFY(settled());
+    QCOMPARE(share->notice(), QString("Download cancelled"));
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QVERIFY(cache->fixtureDef("Test", "Spot GDTF") != nullptr);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-11.gdtf" }));
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 11);
+    QVERIFY2(m_library->status().startsWith(QString::fromUtf8("GDTF-Share: 1 fixture(s) downloaded \xC2\xB7 GDTF: 1 fixture(s) converted")),
+             qPrintable(m_library->status()));
+
+    // the same while a file import runs: the import stops, and the
+    // download that arrived is converted after it
+    const QString file = QDir(m_home->path()).filePath("beam.gdtf");
+    QVERIFY(writeBytes(file, changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Beam GDTF\"" },
+                                           { "000000000001}", "000000000050}" } })));
+    QCOMPARE(share->download({ 13, 12 }), 2);
+    QVERIFY(secondOnItsWay(share));
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    QVERIFY(m_library->importing());
+    m_library->cancelShare();
+    QVERIFY(settled());
+    QVERIFY(cache->fixtureDef("Test", "Wash GDTF") != nullptr);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-11.gdtf", "Test-Wash-GDTF-13.gdtf" }));
+    QCOMPARE(shareRecord("Test-Wash-GDTF.qxf").value("rid").toInt(), 13);
+    QCOMPARE(m_library->lastImported().count(), 1);
+    QCOMPARE(m_library->lastImported().first().toMap().value("rid").toInt(), 13);
+    QCOMPARE(share->originalsCount(), 2);
+}
+
+void Backend_Test::gdtfShareClosed()
+{
+    // the program closed while a download is converted (its end is never
+    // told): the fixture converted is recorded, as its .qxf is in the
+    // library, and its .gdtf kept
+    const QDir originals(GdtfShare::dataDirectory().filePath("originals"));
+    QVERIFY(originals.mkpath("."));
+    GdtfShare::Download download;
+    download.path = originals.filePath("Test-Spot-GDTF-11.gdtf");
+    download.uuid = "00000000-0000-0000-0000-000000000001";
+    download.rid = 11;
+    download.revision = "Rev 11";
+    download.modified = 1700000000;
+    download.manufacturer = "Test";
+    download.fixture = "Spot GDTF";
+    QVERIFY(writeBytes(download.path, makeGdtf()));
+    const QString qxf = FixtureLibrary::gdtfDirectory().filePath("Test-Spot-GDTF.qxf");
+    emit m_library->share()->downloaded({ download });
+    QVERIFY(m_library->importing());
+    // (no event on the way: the .qxf, written by the import thread)
+    QElapsedTimer clock;
+    clock.start();
+    while (QFileInfo::exists(qxf) == false && clock.elapsed() < 10000)
+        QThread::msleep(5);
+    QVERIFY(QFileInfo::exists(qxf));
+    delete m_library;
+    m_library = new FixtureLibrary(m_doc, this);
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 11);
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("original").toString(), QString("originals/Test-Spot-GDTF-11.gdtf"));
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-11.gdtf" }));
+    QCOMPARE(m_library->share()->originalsCount(), 1);
+
+    // what a crash left behind (not in the record), a day old, goes at the
+    // next start; a newer one may be a download of a program running
+    // beside, and stays. Nothing goes with a record that can't be read
+    auto aged = [](const QString &path) {
+        QFile file(path);
+        return writeBytes(path, makeGdtf()) && file.open(QIODevice::ReadWrite)
+               && file.setFileTime(QDateTime::currentDateTimeUtc().addDays(-2), QFileDevice::FileModificationTime);
+    };
+    QVERIFY(aged(originals.filePath("Test-Crashed-21.gdtf")));
+    QVERIFY(aged(originals.filePath("Test-Crashed-22.gdtf.part")));
+    QVERIFY(aged(download.path));
+    QVERIFY(writeBytes(originals.filePath("Test-Recent-23.gdtf"), makeGdtf()));
+    const QByteArray record = fileBytes(GdtfShare::indexFile());
+    QVERIFY(writeBytes(GdtfShare::indexFile(), "{ spoilt"));
+    m_library->share()->checkOnStartup(false);
+    QCOMPARE(keptShareFiles().count(), 4);
+    QVERIFY(writeBytes(GdtfShare::indexFile(), record));
+    m_library->share()->checkOnStartup(false);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Recent-23.gdtf", "Test-Spot-GDTF-11.gdtf" }));
+    QVERIFY(QFile::remove(originals.filePath("Test-Recent-23.gdtf")));
+
+    // closed in the middle of a batch: the first download, whole, was never
+    // converted, and the second was on its way. Neither is left
+    FakeGdtfShare server;
+    GdtfShare *share = m_library->share();
+    QVERIFY(startCancelShare(&server, share));
+    QCOMPARE(share->download({ 13, 12 }), 2);
+    QVERIFY(secondOnItsWay(share));
+    QVERIFY2(keptShareFiles().contains("Test-Wash-GDTF-13.gdtf") && keptShareFiles().contains("Test-Big-12.gdtf.part"),
+             qPrintable(keptShareFiles().join(' ')));
+    delete m_library;
+    m_library = new FixtureLibrary(m_doc, this);
+    QCOMPARE(keptShareFiles(), QStringList({ "Test-Spot-GDTF-11.gdtf" }));
+    QVERIFY(shareRecord("Test-Wash-GDTF.qxf").isEmpty());
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 11);
+}
+
+/*********************************************************************
+ * gdtf-share share-revisions
+ *********************************************************************/
+
+/** The rids of the updates of $share, in their order */
+static QString updateRids(const GdtfShare *share)
+{
+    QStringList rids;
+    for (const QVariant &update : share->updates())
+        rids.append(update.toMap().value("rid").toString());
+    return rids.join(' ');
+}
+
+void Backend_Test::gdtfShareRevisions()
+{
+    // Spot GDTF downloaded (rid 11) and patched; then GDTF-Share has a
+    // newer revision of its fixture type (12), older ones (9, 10) and
+    // another fixture (13)
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    const QString uuid = "00000000-0000-0000-0000-000000000001";
+    const QString wash = "00000000-0000-0000-0000-000000000013";
+    const QByteArray first = makeGdtf();
+    // (the next revision: its zoom is an iris now)
+    const QByteArray newer = changedGdtf({ { "Attribute=\"Zoom\"", "Attribute=\"Iris\"" },
+                                           { "Text=\"Rev 2 \"", "Text=\"Rev 3\"" } });
+    const QByteArray other = changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Wash GDTF\"" },
+                                           { "000000000001}", "000000000013}" } });
+    server.files.insert(11, first);
+    server.files.insert(12, newer);
+    server.files.insert(13, other);
+    QJsonArray items;
+    items.append(shareFile(11, "Spot GDTF", uuid, 1700000000, first));
+    server.listBody = shareListBody(items, 1762300000);
+
+    GdtfShare *share = m_library->share();
+    share->setBaseUrl(server.url());
+    QSignalSpy changes(share, SIGNAL(updatesChanged()));
+    auto settled = [&]() {
+        return QTest::qWaitFor([&]() {
+            return share->busy() == false && share->listLoading() == false && m_library->importing() == false;
+        }, 10000);
+    };
+    share->signIn("ana", "secret");
+    share->refresh(true);
+    QVERIFY(settled());
+    QCOMPARE(share->download({ 11 }), 1);
+    QVERIFY(settled());
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 11);
+    QCOMPARE(m_patch->addFixtures("Test", "Spot GDTF", "Standard", "Spot", 0, 1, 1), 1);
+    Fixture *spot = m_doc->fixtures().first();
+    QCOMPARE(spot->fixtureMode()->channel(9)->name(), QString("Zoom"));
+
+    // its newest revision: nothing to update
+    QCOMPARE(share->updatesCount(), 0);
+    QVERIFY(share->updates().isEmpty());
+    QCOMPARE(share->updateAll(), 0);
+    QCOMPARE(changes.count(), 0);
+
+    // an upload of the same time with a higher rid is newer; one of the same
+    // time with a lower rid, or an earlier one, isn't; nor another fixture
+    items.append(shareFile(9, "Spot GDTF", uuid, 1700000000, first));
+    items.append(shareFile(10, "Spot GDTF", uuid, 1690000000, first));
+    items.append(shareFile(12, "Spot GDTF", "{" + uuid.toLower() + "}", 1700000000, newer));
+    items.append(shareFile(13, "Wash GDTF", wash, 1700900000, other));
+    server.listBody = shareListBody(items, 1762400000);
+    share->refresh(true);
+    QVERIFY(settled());
+    QCOMPARE(share->updatesCount(), 1);
+    QCOMPARE(share->property("updatesCount").toInt(), 1);
+    QCOMPARE(changes.count(), 1);
+    const QVariantList updates = share->updates();
+    QCOMPARE(updates.count(), 1);
+    const QVariantMap update = updates.first().toMap();
+    QCOMPARE(update.value("file").toString(), QString("Test-Spot-GDTF.qxf"));
+    QCOMPARE(update.value("manufacturer").toString(), QString("Test"));
+    QCOMPARE(update.value("model").toString(), QString("Spot GDTF"));
+    QCOMPARE(update.value("fixture").toString(), QString("Spot GDTF"));
+    QCOMPARE(update.value("from").toString(), QString("Rev 11"));
+    QCOMPARE(update.value("to").toString(), QString("Rev 12"));
+    QCOMPARE(update.value("rid").toInt(), 12);
+    QCOMPARE(update.value("modified").toDateTime(), QDateTime::fromSecsSinceEpoch(1700000000, QTimeZone::UTC));
+    // as the browser shows it
+    QCOMPARE(shareRow(share, uuid).value("status").toString(), QString("older"));
+    QCOMPARE(shareRow(share, wash).value("status").toString(), QString());
+    QCOMPARE(share->search("", "", "updates").value("total").toInt(), 1);
+    // (the same list again changes nothing)
+    share->refresh(true);
+    QVERIFY(settled());
+    QCOMPARE(changes.count(), 1);
+
+    // Update all: the newest revision, downloaded and converted; the patched
+    // fixture gets it, and nothing is left to update
+    server.asked.clear();
+    QCOMPARE(share->updateAll(), 1);
+    QVERIFY(settled());
+    QVERIFY2(share->error().isEmpty(), qPrintable(share->error()));
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QCOMPARE(server.asked, QList<QByteArray>({ "GET /apis/public/downloadFile.php?rid=12" }));
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 12);
+    QCOMPARE(share->updatesCount(), 0);
+    QVERIFY(share->updates().isEmpty());
+    QCOMPARE(changes.count(), 2);
+    QCOMPARE(shareRow(share, uuid).value("status").toString(), QString("current"));
+    QCOMPARE(spot->fixtureDef(), m_doc->fixtureDefCache()->fixtureDef("Test", "Spot GDTF"));
+    QCOMPARE(spot->fixtureMode()->channel(9)->name(), QString("Iris"));
+    QCOMPARE(share->updateAll(), 0);
+
+    // a later revision; then its fixture deleted from the library: no update
+    items.append(shareFile(14, "Spot GDTF", uuid, 1700500000, newer));
+    server.listBody = shareListBody(items, 1762500000);
+    share->refresh(true);
+    QVERIFY(settled());
+    QCOMPARE(updateRids(share), QString("14"));
+    QCOMPARE(share->updates().first().toMap().value("from").toString(), QString("Rev 12"));
+    QVERIFY(QFile::remove(FixtureLibrary::gdtfDirectory().filePath("Test-Spot-GDTF.qxf")));
+    emit m_library->libraryChanged();
+    QCOMPARE(share->updatesCount(), 0);
+    QCOMPARE(changes.count(), 4);
+}
+
+void Backend_Test::gdtfShareDailyCheck()
+{
+    // the next runs of the program, with a fixture downloaded from GDTF-Share
+    // (rid 11, as the record says) that has a newer revision there (12)
+    ScopedTestSettings settings;
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    const QString uuid = "00000000-0000-0000-0000-000000000001";
+    QJsonArray items;
+    items.append(shareItem(11, "Test", "Spot GDTF", uuid, "Manuf.", 1700000000));
+    items.append(shareItem(12, "Test", "Spot GDTF", uuid, "Manuf.", 1700500000));
+    server.listBody = shareListBody(items, 1762300000);
+    const QDir gdtf = FixtureLibrary::gdtfDirectory();
+    QVERIFY(gdtf.mkpath("."));
+    QVERIFY(writeBytes(gdtf.filePath("Test-Spot-GDTF.qxf"), "<FixtureDefinition/>"));
+    QVERIFY(GdtfShare::dataDirectory().mkpath("."));
+    auto record = [&](int rid) {
+        const QJsonObject fixture({ { "uuid", uuid }, { "rid", rid }, { "revision", QString("Rev %1").arg(rid) },
+                                    { "modified", 1700000000 }, { "manufacturer", "Test" }, { "model", "Spot GDTF" } });
+        const QJsonObject index({ { "version", 1 }, { "fixtures", QJsonObject({ { "Test-Spot-GDTF.qxf", fixture } }) } });
+        return writeBytes(GdtfShare::indexFile(), QJsonDocument(index).toJson());
+    };
+    QVERIFY(record(11));
+    const QString lastCheck = "gdtfShare/lastCheck";
+    const QString announced = "gdtfShare/announced";
+    const QString list = GdtfShare::dataDirectory().filePath("list.json");
+    // the saved list, written $hours ago
+    auto age = [&](int hours) {
+        QFile saved(list);
+        return saved.open(QIODevice::ReadWrite)
+            && saved.setFileTime(QDateTime::currentDateTime().addSecs(-hours * 3600), QFileDevice::FileModificationTime);
+    };
+    // a run of the program, and its check of the start (at once)
+    auto start = [&](bool autoCheck) {
+        auto share = std::make_unique<GdtfShare>();
+        share->setBaseUrl(server.url());
+        share->setStartupDelay(0);
+        share->checkOnStartup(autoCheck);
+        return share;
+    };
+    // nothing was asked of GDTF-Share
+    auto quiet = [&]() {
+        QTest::qWait(300);
+        return server.asked.isEmpty();
+    };
+
+    // no saved account: nothing is asked
+    {
+        auto share = start(true);
+        QVERIFY(quiet());
+        QVERIFY(QSettings().contains(lastCheck) == false);
+    }
+    if (GdtfShare::canRemember() == false)
+        QSKIP("Windows only: elsewhere the password is never saved");
+    {
+        GdtfShare first;
+        first.setBaseUrl(server.url());
+        first.signIn("ana", "secret", true);
+        QTRY_VERIFY_WITH_TIMEOUT(first.signedIn() && first.busy() == false, 5000);
+        QVERIFY(first.remembered());
+    }
+
+    // the first start: signed in without asking, a new list, and told once,
+    // with nothing else shown
+    {
+        server.asked.clear();
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QTRY_COMPARE_WITH_TIMEOUT(found.count(), 1, 5000);
+        QCOMPARE(found.first().first().toInt(), 1);
+        QCOMPARE(server.asked, QList<QByteArray>({ "POST /apis/public/login.php", "GET /apis/public/getList.php" }));
+        QCOMPARE(share->updatesCount(), 1);
+        QCOMPARE(updateRids(share.get()), QString("12"));
+        QCOMPARE(login.count(), 0);
+        QVERIFY(share->error().isEmpty());
+        QVERIFY(share->notice().isEmpty());
+        const QDateTime checked = QDateTime::fromString(QSettings().value(lastCheck).toString(), Qt::ISODate);
+        QVERIFY(checked.isValid() && checked.secsTo(QDateTime::currentDateTimeUtc()) < 60);
+        QCOMPARE(QSettings().value(announced).toStringList(), QStringList({ "12" }));
+        QVERIFY(QFileInfo::exists(list));
+        QTest::qWait(100);
+        QCOMPARE(found.count(), 1);
+    }
+    // the same day: nothing is asked (also with a saved list of yesterday:
+    // the check was made today), and the saved list still knows it
+    QVERIFY(age(21));
+    {
+        server.asked.clear();
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QTRY_COMPARE_WITH_TIMEOUT(share->updatesCount(), 1, 5000);
+        QVERIFY(quiet());
+        QCOMPARE(found.count(), 0);
+    }
+    // "Check for updates at startup" off: nothing is asked
+    QSettings().remove(lastCheck);
+    QVERIFY(age(21));
+    {
+        server.asked.clear();
+        auto share = start(false);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QTRY_COMPARE_WITH_TIMEOUT(share->updatesCount(), 1, 5000);
+        QVERIFY(quiet());
+        QCOMPARE(found.count(), 0);
+        QVERIFY(QSettings().contains(lastCheck) == false);
+    }
+    // the next day: asked again, and the update already told isn't told again
+    {
+        server.asked.clear();
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QTRY_VERIFY_WITH_TIMEOUT(QSettings().contains(lastCheck), 5000);
+        QCOMPARE(server.asked.count(), 2);
+        QCOMPARE(share->updatesCount(), 1);
+        QTest::qWait(100);
+        QCOMPARE(found.count(), 0);
+        QCOMPARE(QSettings().value(announced).toStringList(), QStringList({ "12" }));
+    }
+    // a newer revision since: told
+    items.append(shareItem(14, "Test", "Spot GDTF", uuid, "Manuf.", 1700900000));
+    server.listBody = shareListBody(items, 1762400000);
+    QSettings().remove(lastCheck);
+    QVERIFY(age(21));
+    {
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QTRY_COMPARE_WITH_TIMEOUT(found.count(), 1, 5000);
+        QCOMPARE(updateRids(share.get()), QString("14"));
+        QCOMPARE(QSettings().value(announced).toStringList(), QStringList({ "14" }));
+    }
+    // a list the browser got today is the check: nothing is asked
+    items.append(shareItem(15, "Test", "Spot GDTF", uuid, "Manuf.", 1701000000));
+    QVERIFY(saveShareList(shareListBody(items, 1762500000)));
+    QSettings().remove(lastCheck);
+    {
+        server.asked.clear();
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QTRY_COMPARE_WITH_TIMEOUT(found.count(), 1, 5000);
+        QCOMPARE(updateRids(share.get()), QString("15"));
+        QVERIFY(QSettings().contains(lastCheck));
+        QVERIFY(quiet());
+    }
+    // only fixtures imported from files: not looked for
+    QVERIFY(record(0));
+    QSettings().remove(lastCheck);
+    QVERIFY(age(21));
+    {
+        auto share = start(true);
+        QVERIFY(quiet());
+        QVERIFY(QSettings().contains(lastCheck) == false);
+    }
+    // GDTF-Share can't be reached: nothing is told, and it is tried again at
+    // the next start
+    QVERIFY(record(11));
+    QVERIFY(age(21));
+    server.cutConnections();
+    {
+        auto share = start(true);
+        QSignalSpy found(share.get(), SIGNAL(updatesFound(int)));
+        QSignalSpy login(share.get(), SIGNAL(loginNeeded()));
+        QTest::qWait(200);
+        QVERIFY(QTest::qWaitFor([&]() { return share->busy() == false && share->listLoading() == false; }, 10000));
+        QCOMPARE(found.count(), 0);
+        QCOMPARE(login.count(), 0);
+        QVERIFY(share->error().isEmpty());
+        QVERIFY(QSettings().contains(lastCheck) == false);
+        // (the saved list still knows the update)
+        QCOMPARE(share->updatesCount(), 1);
+    }
+}
+
+void Backend_Test::gdtfShareRevisionText()
+{
+    // Spot GDTF imported from its file, whose last revision is "Rev 2 "
+    const QString file = QDir(m_home->path()).filePath("spot.gdtf");
+    QVERIFY(writeBytes(file, makeGdtf()));
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    QVERIFY(QTest::qWaitFor([this]() { return m_library->importing() == false; }, 10000));
+    const QByteArray index = fileBytes(GdtfShare::indexFile());
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("rid").toInt(), 0);
+    QCOMPARE(shareRecord("Test-Spot-GDTF.qxf").value("revisionText").toString(), QString("Rev 2"));
+
+    // GDTF-Share's list, read as the browser reads it (nothing asked)
+    const QString uuid = "00000000-0000-0000-0000-000000000001";
+    auto revision = [&](int rid, const QString &text, qint64 modified) {
+        QJsonObject item = shareItem(rid, "Test", "Spot GDTF", uuid, "Manuf.", modified);
+        item.insert("revision", text);
+        return item;
+    };
+    auto read = [](GdtfShare *share, const QJsonArray &items) {
+        if (saveShareList(shareListBody(items)) == false)
+            return false;
+        share->load();
+        return QTest::qWaitFor([share]() { return share->listLoading() == false; }, 5000) && share->listCount() > 0;
+    };
+
+    // exactly one revision has its text (spaces and case ignored): it is
+    // that upload, and the newer one is an update
+    {
+        GdtfShare share;
+        QVERIFY(read(&share, { revision(11, "Rev 1", 1690000000), revision(12, " REV 2 ", 1700000000),
+                               revision(13, "Rev 3", 1700500000) }));
+        const QVariantMap row = shareRow(&share, uuid);
+        QCOMPARE(row.value("status").toString(), QString("older"));
+        QCOMPARE(row.value("libraryRid").toInt(), 12);
+        QCOMPARE(share.updatesCount(), 1);
+        const QVariantMap update = share.updates().first().toMap();
+        QCOMPARE(update.value("from").toString(), QString("REV 2"));
+        QCOMPARE(update.value("to").toString(), QString("Rev 3"));
+        QCOMPARE(update.value("rid").toInt(), 13);
+        QCOMPARE(update.value("model").toString(), QString("Spot GDTF"));
+    }
+    // it is the newest one: up to date
+    {
+        GdtfShare share;
+        QVERIFY(read(&share, { revision(11, "Rev 1", 1690000000), revision(12, "Rev 2", 1700000000) }));
+        QCOMPARE(shareRow(&share, uuid).value("status").toString(), QString("current"));
+        QCOMPARE(shareRow(&share, uuid).value("libraryRid").toInt(), 12);
+        QCOMPARE(share.updatesCount(), 0);
+    }
+    // two revisions have that text, or none: from a file, never an update
+    const QList<QJsonArray> unknown = {
+        QJsonArray({ revision(12, "Rev 2", 1700000000), revision(15, "rev 2", 1700200000), revision(13, "Rev 3", 1700500000) }),
+        QJsonArray({ revision(11, "Rev 1", 1690000000), revision(13, "Rev 3", 1700500000) }) };
+    for (const QJsonArray &items : unknown)
+    {
+        GdtfShare share;
+        QVERIFY(read(&share, items));
+        QCOMPARE(shareRow(&share, uuid).value("status").toString(), QString("file"));
+        QCOMPARE(shareRow(&share, uuid).value("libraryRid").toInt(), 0);
+        QCOMPARE(share.updatesCount(), 0);
+        QCOMPARE(share.search("", "", "updates").value("total").toInt(), 0);
+    }
+    // (the record is left as it was: matched again with each list)
+    QCOMPARE(fileBytes(GdtfShare::indexFile()), index);
+}
+
+/*********************************************************************
+ * gdtf-share share-browser-ui
+ *********************************************************************/
+
+/** The manufacturers of GdtfShare::manufacturers(): "Name count, ..." */
+static QString makerCounts(const QVariantList &makers)
+{
+    QStringList list;
+    for (const QVariant &maker : makers)
+        list.append(QString("%1 %2").arg(maker.toMap().value("name").toString()).arg(maker.toMap().value("count").toInt()));
+    return list.join(", ");
+}
+
+void Backend_Test::gdtfShareBrowser()
+{
+    // GDTF-Share has Spot GDTF in two revisions (by its manufacturer), Wash
+    // GDTF (by a user) and a beam of another manufacturer
+    FakeGdtfShare server;
+    QVERIFY(server.listen(QHostAddress::LocalHost));
+    server.accounts.insert("ana", "secret");
+    const QString spot = "00000000-0000-0000-0000-000000000001";
+    const QString wash = "00000000-0000-0000-0000-000000000013";
+    const QString beam = "00000000-0000-0000-0000-000000000020";
+    const QByteArray first = makeGdtf();
+    const QByteArray newer = changedGdtf({ { "Text=\"Rev 2 \"", "Text=\"Rev 3\"" } });
+    const QByteArray washFile = changedGdtf({ { "Name=\"Spot GDTF\"", "Name=\"Wash GDTF\"" },
+                                              { "000000000001}", "000000000013}" } });
+    server.files.insert(11, first);
+    server.files.insert(12, newer);
+    QJsonArray items;
+    items.append(shareFile(11, "Spot GDTF", spot, 1700000000, first));
+    items.append(shareFile(12, "Spot GDTF", spot, 1700500000, newer));
+    items.append(shareFile(13, "Wash GDTF", wash, 1700900000, washFile, "bob"));
+    items.append(shareItem(20, "Other", "Beam", beam));
+    QVERIFY(saveShareList(shareListBody(items, 1762300000)));
+
+    GdtfShare *share = m_library->share();
+    share->setBaseUrl(server.url());
+    auto settled = [&]() {
+        return QTest::qWaitFor([&]() {
+            return share->busy() == false && share->listLoading() == false && m_library->importing() == false;
+        }, 10000);
+    };
+
+    // no account: the browser offers Sign in (a property it watches)
+    const QMetaProperty possible = share->metaObject()->property(share->metaObject()->indexOfProperty("sessionPossible"));
+    QVERIFY(possible.isValid());
+    QCOMPARE(possible.notifySignal().name(), QByteArray("changed"));
+    QCOMPARE(share->property("sessionPossible").toBool(), false);
+    share->load();
+    QVERIFY(settled());
+    QCOMPARE(share->listCount(), 3);
+    QVERIFY(server.asked.isEmpty());
+
+    // the manufacturers of what the search and the filter find, in the
+    // order of the rows, and how many (case and accents ignored)
+    QCOMPARE(makerCounts(share->manufacturers()), QString("Other 1, Test 2"));
+    QCOMPARE(makerCounts(share->manufacturers("", "")), QString("Other 1, Test 2"));
+    QCOMPARE(makerCounts(share->manufacturers(QString::fromUtf8("W\xC3\x81SH"))), QString("Test 1"));
+    QCOMPARE(makerCounts(share->manufacturers("gdtf")), QString("Test 2"));
+    QCOMPARE(makerCounts(share->manufacturers("beam other")), QString("Other 1"));
+    QVERIFY(share->manufacturers("nothing").isEmpty());
+    QCOMPARE(makerCounts(share->manufacturers("", "manufacturer")), QString("Other 1, Test 1"));
+    QVERIFY(share->manufacturers("", "library").isEmpty());
+    QVERIFY(share->manufacturers("", "updates").isEmpty());
+    // (the same fixture types as the search)
+    QCOMPARE(share->search("gdtf", "", "manufacturer").value("total").toInt(), 1);
+    QCOMPARE(share->search("", "test").value("total").toInt(), 2);
+
+    // signed in from its popup: the account
+    QSignalSpy changes(share, SIGNAL(changed()));
+    share->signIn("ana", "secret");
+    QVERIFY(settled());
+    QVERIFY(share->signedIn());
+    QCOMPARE(share->property("sessionPossible").toBool(), true);
+    QVERIFY(changes.count() > 0);
+
+    // the older revision, chosen in Revisions, downloaded and imported:
+    // the browser waits for it in lastImported
+    const QVariantList revisions = share->revisions(spot);
+    QCOMPARE(revisions.count(), 2);
+    QCOMPARE(revisions.at(0).toMap().value("rid").toInt(), 12);
+    QCOMPARE(share->download({ revisions.at(1).toMap().value("rid") }), 1);
+    QVERIFY(settled());
+    QVERIFY2(m_library->importErrors().isEmpty(), qPrintable(m_library->importErrors().join('\n')));
+    QCOMPARE(m_library->lastImported(),
+             QVariantList({ QVariantMap({ { "manufacturer", "Test" }, { "model", "Spot GDTF" }, { "rid", 11 } }) }));
+    QVariantMap row = shareRow(share, spot);
+    QCOMPARE(row.value("status").toString(), QString("older"));
+    QCOMPARE(row.value("libraryRid").toInt(), 11);
+    QCOMPARE(row.value("libraryModel").toString(), QString("Spot GDTF"));
+    QCOMPARE(row.value("libraryManufacturer").toString(), QString("Test"));
+    QCOMPARE(makerCounts(share->manufacturers("", "library")), QString("Test 1"));
+    QCOMPARE(makerCounts(share->manufacturers("spot", "updates")), QString("Test 1"));
+    QVERIFY(share->manufacturers("wash", "updates").isEmpty());
+
+    // "Patch it": the fixture the row says is the one of the library
+    QVERIFY(m_doc->fixtureDefCache()->fixtureDef(row.value("libraryManufacturer").toString(),
+                                                 row.value("libraryModel").toString()) != nullptr);
+    QCOMPARE(m_patch->addFixtures(row.value("libraryManufacturer").toString(), row.value("libraryModel").toString(),
+                                  "Standard", "Spot", 0, 1, 1), 1);
+    // one not in the library has nothing to patch
+    QCOMPARE(shareRow(share, beam).value("libraryManufacturer").toString(), QString());
+    QCOMPARE(shareRow(share, beam).value("libraryModel").toString(), QString());
+
+    // one imported from its file is patched as it is in the library too
+    const QString file = QDir(m_home->path()).filePath("wash.gdtf");
+    QVERIFY(writeBytes(file, washFile));
+    QCOMPARE(m_library->importFiles({ QUrl::fromLocalFile(file) }), 1);
+    QVERIFY(settled());
+    row = shareRow(share, wash);
+    QCOMPARE(row.value("status").toString(), QString("file"));
+    QCOMPARE(row.value("libraryManufacturer").toString(), QString("Test"));
+    QCOMPARE(row.value("libraryModel").toString(), QString("Wash GDTF"));
+    QCOMPARE(makerCounts(share->manufacturers("", "library")), QString("Test 2"));
+
+    // signed out from its menu: Sign in again
+    changes.clear();
+    share->signOut();
+    QCOMPARE(share->property("sessionPossible").toBool(), false);
+    QVERIFY(changes.count() > 0);
+}
+
+/*********************************************************************
+ * gdtf-share share-docs-i18n
+ *********************************************************************/
+
+/** A message of a catalogue of the interface (dtc/i18n) */
+struct CatalogueMessage
+{
+    /** Finished, with every form filled */
+    bool translated = false;
+    /** With plural forms (a text with %n) */
+    bool numerus = false;
+    /** Its translation (the plural forms joined with "|") */
+    QString translation;
+};
+/** The messages of a catalogue: by context, then by "source\ncomment" */
+using Catalogue = QHash<QString, QHash<QString, CatalogueMessage>>;
+
+/** The catalogue of $language (dtc_<language>.ts in the sources) */
+static Catalogue readCatalogue(const QString &language)
+{
+    Catalogue catalogue;
+    QFile file(QString("%1/dtc_%2.ts").arg(DTC_I18N, language));
+    if (file.open(QIODevice::ReadOnly) == false)
+        return catalogue;
+    QXmlStreamReader xml(&file);
+    QString context, source, comment;
+    CatalogueMessage message;
+    while (xml.atEnd() == false)
+    {
+        xml.readNext();
+        if (xml.isEndElement() && xml.name() == u"message")
+            catalogue[context].insert(source + '\n' + comment, message);
+        if (xml.isStartElement() == false)
+            continue;
+        if (xml.name() == u"name")
+            context = xml.readElementText();
+        else if (xml.name() == u"message")
+        {
+            source.clear();
+            comment.clear();
+            message = CatalogueMessage();
+            message.numerus = xml.attributes().value("numerus") == u"yes";
+        }
+        else if (xml.name() == u"source")
+            source = xml.readElementText();
+        else if (xml.name() == u"comment")
+            comment = xml.readElementText();
+        else if (xml.name() == u"translation")
+        {
+            // (unfinished, vanished, obsolete: not translated)
+            const bool finished = xml.attributes().value("type").isEmpty();
+            QStringList forms;
+            if (message.numerus)
+            {
+                while (xml.readNextStartElement())
+                {
+                    if (xml.name() == u"numerusform")
+                        forms.append(xml.readElementText());
+                    else
+                        xml.skipCurrentElement();
+                }
+            }
+            else
+            {
+                forms.append(xml.readElementText());
+            }
+            message.translation = forms.join('|');
+            message.translated = finished && forms.isEmpty() == false;
+            for (const QString &form : std::as_const(forms))
+                message.translated = message.translated && form.trimmed().isEmpty() == false;
+        }
+    }
+    return xml.hasError() ? Catalogue() : catalogue;
+}
+
+/** The string literal at $pos of QML or C++ code (after spaces), several in
+ *  a row joined ("a" "b"), as lupdate reads them: $pos goes after it. False
+ *  when there is none there */
+static bool readLiteral(const QString &code, int *pos, QString *literal)
+{
+    literal->clear();
+    bool found = false;
+    int at = *pos;
+    while (true)
+    {
+        while (at < code.size() && code.at(at).isSpace())
+            at++;
+        if (at >= code.size() || code.at(at) != '"')
+            return found;
+        for (at++; at < code.size() && code.at(at) != '"'; at++)
+        {
+            QChar c = code.at(at);
+            if (c == '\\' && at + 1 < code.size())
+            {
+                c = code.at(++at);
+                if (c == 'n')
+                    c = '\n';
+                else if (c == 't')
+                    c = '\t';
+                else if (c == 'u' && at + 4 < code.size())
+                {
+                    c = QChar(code.mid(at + 1, 4).toUShort(nullptr, 16));
+                    at += 4;
+                }
+            }
+            literal->append(c);
+        }
+        // (after its closing quote)
+        *pos = ++at;
+        found = true;
+    }
+}
+
+/** A text of the interface in the code: qsTr() in QML, tr() in C++ */
+struct TrCall
+{
+    /** Its context: the QML file, the class (Class::tr), else $context */
+    QString context;
+    QString source;
+    QString comment;
+    /** With a count (plural forms) */
+    bool numerus = false;
+    int line = 0;
+};
+
+/** The calls of $function ("qsTr", "tr") in $code that give it a written
+ *  text (a variable is translated elsewhere) */
+static QList<TrCall> trCalls(const QString &code, const QString &function, const QString &context)
+{
+    QList<TrCall> calls;
+    const QRegularExpression call(QString("(?:\\b(\\w+)::)?\\b%1\\(").arg(function));
+    auto it = call.globalMatch(code);
+    while (it.hasNext())
+    {
+        const QRegularExpressionMatch match = it.next();
+        TrCall tr;
+        int pos = int(match.capturedEnd());
+        if (readLiteral(code, &pos, &tr.source) == false)
+            continue;
+        tr.context = match.captured(1).isEmpty() ? context : match.captured(1);
+        tr.line = int(code.left(match.capturedStart()).count('\n')) + 1;
+        // then the comment, and the count
+        auto comma = [&]() {
+            while (pos < code.size() && code.at(pos).isSpace())
+                pos++;
+            if (pos >= code.size() || code.at(pos) != ',')
+                return false;
+            pos++;
+            return true;
+        };
+        if (comma())
+        {
+            readLiteral(code, &pos, &tr.comment);
+            tr.numerus = comma();
+        }
+        calls.append(tr);
+    }
+    return calls;
+}
+
+static QString readUtf8(const QString &path)
+{
+    QFile file(path);
+    if (file.open(QIODevice::ReadOnly) == false)
+        return QString();
+    return QString::fromUtf8(file.readAll());
+}
+
+void Backend_Test::interfaceTranslated()
+{
+    // every text of the interface is in the catalogue of each language, in
+    // the context lupdate gives it (the QML file, the class), translated, and
+    // with plural forms when it has a count: the QML, and the classes of
+    // GDTF-Share and the fixture library
+    const QStringList languages({ "es", "pt", "fr", "it", "de" });
+    QHash<QString, Catalogue> catalogues;
+    for (const QString &language : languages)
+    {
+        catalogues.insert(language, readCatalogue(language));
+        QVERIFY2(catalogues.value(language).count() > 50, qPrintable(language));
+    }
+
+    QList<QPair<QString, TrCall>> calls;
+    QDirIterator qml(DTC_QML, { "*.qml" }, QDir::Files, QDirIterator::Subdirectories);
+    while (qml.hasNext())
+    {
+        const QString path = qml.next();
+        for (const TrCall &call : trCalls(readUtf8(path), "qsTr", QFileInfo(path).completeBaseName()))
+            calls.append({ "qml/" + QDir(DTC_QML).relativeFilePath(path), call });
+    }
+    const QList<QPair<QString, QString>> classes({ { "gdtfshare.cpp", "GdtfShare" },
+                                                   { "fixturelibrary.cpp", "FixtureLibrary" },
+                                                   { "gdtfimporter.cpp", "QObject" } });
+    for (const auto &source : classes)
+    {
+        const QString code = readUtf8(QString("%1/%2").arg(DTC_SOURCES, source.first));
+        QVERIFY2(code.isEmpty() == false, qPrintable(source.first));
+        for (const TrCall &call : trCalls(code, "tr", source.second))
+            calls.append({ "src/" + source.first, call });
+    }
+    // (the QML is read: hundreds of texts)
+    QVERIFY(calls.count() > 1000);
+
+    QStringList wrong;
+    for (const auto &found : std::as_const(calls))
+    {
+        const TrCall &call = found.second;
+        for (const QString &language : languages)
+        {
+            const QHash<QString, CatalogueMessage> messages = catalogues.value(language).value(call.context);
+            const auto message = messages.constFind(call.source + '\n' + call.comment);
+            QString problem;
+            if (message == messages.constEnd())
+                problem = "missing";
+            else if (message->translated == false)
+                problem = "not translated";
+            else if (message->numerus != call.numerus)
+                problem = call.numerus ? "without plural forms" : "with plural forms";
+            if (problem.isEmpty() == false)
+                wrong.append(QString("dtc_%1.ts, %2:%3 [%4] \"%5\": %6")
+                             .arg(language, found.first).arg(call.line).arg(call.context, call.source, problem));
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+
+    // and the catalogues keep nothing GDTF-Share no longer says
+    for (const QString &context : QStringList({ "GdtfShare", "GdtfShareDialog" }))
+    {
+        QSet<QString> used;
+        for (const auto &found : std::as_const(calls))
+        {
+            if (found.second.context == context)
+                used.insert(found.second.source + '\n' + found.second.comment);
+        }
+        QVERIFY2(used.isEmpty() == false, qPrintable(context));
+        for (const QString &language : languages)
+        {
+            for (const QString &key : catalogues.value(language).value(context).keys())
+            {
+                if (used.contains(key) == false)
+                    wrong.append(QString("dtc_%1.ts [%2] \"%3\": not used").arg(language, context, key.section('\n', 0, 0)));
+            }
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+}
+
+/** The lines of a page of the built-in manual */
+static QStringList manualLines(const QString &path)
+{
+    QStringList lines = readUtf8(path).split('\n');
+    for (QString &line : lines)
+    {
+        if (line.endsWith('\r'))
+            line.chop(1);
+    }
+    return lines;
+}
+
+/** What a line of the manual is, which its translations keep: blank, a
+ *  heading (its level), an item of a list (its indent; numbered or not), a
+ *  quote, a picture, a row of a table, else text; and the pages it links to */
+static QString manualLineKind(const QString &line)
+{
+    static const QRegularExpression heading("^(#+) ");
+    static const QRegularExpression item("^(\\s*)([-*]|\\d+\\.) ");
+    static const QRegularExpression page("\\]\\(([a-z0-9-]+\\.md)");
+    QString kind;
+    const QRegularExpressionMatch isHeading = heading.match(line);
+    const QRegularExpressionMatch isItem = item.match(line);
+    if (line.trimmed().isEmpty())
+        kind = "blank";
+    else if (isHeading.hasMatch())
+        kind = QString("heading %1").arg(isHeading.capturedLength(1));
+    else if (isItem.hasMatch())
+        kind = QString("item at %1%2").arg(isItem.capturedLength(1)).arg(isItem.captured(2).at(0).isDigit() ? ", numbered" : "");
+    else if (line.startsWith('>'))
+        kind = "quote";
+    else if (line.startsWith("!["))
+        kind = "picture";
+    else if (line.startsWith('|'))
+        kind = "table";
+    else
+        kind = "text";
+    QStringList pages;
+    auto it = page.globalMatch(line);
+    while (it.hasNext())
+        pages.append(it.next().captured(1));
+    pages.sort();
+    pages.removeDuplicates();
+    return pages.isEmpty() ? kind : QString("%1, links to %2").arg(kind, pages.join(" "));
+}
+
+/** The anchor of a heading of the manual, as its links write it: in lower
+ *  case, without punctuation, the spaces as hyphens */
+static QString manualAnchor(const QString &heading)
+{
+    QString anchor;
+    for (const QChar c : heading.trimmed().toLower())
+    {
+        if (c.isLetterOrNumber() || c == '-' || c == '_')
+            anchor.append(c);
+        else if (c == ' ')
+            anchor.append('-');
+    }
+    return anchor;
+}
+
+void Backend_Test::manualInStep()
+{
+    // each translation of the manual keeps the lines of the original, one
+    // for one: the same blank lines, headings, lists and pictures, and links
+    // to the same pages (a change is made in the six languages)
+    const QStringList pages = QDir(":/manual").entryList({ "*.md" });
+    QVERIFY(pages.contains("fixtures.md"));
+    QStringList languages = QDir(":/manual").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    languages.removeAll("img");
+    QVERIFY(languages.count() >= 5);
+    QStringList wrong;
+    for (const QString &page : pages)
+    {
+        const QStringList original = manualLines(":/manual/" + page);
+        for (const QString &language : std::as_const(languages))
+        {
+            const QStringList translated = manualLines(QString(":/manual/%1/%2").arg(language, page));
+            if (translated.count() != original.count())
+                wrong.append(QString("%1/%2: %3 lines, the original %4").arg(language, page).arg(translated.count()).arg(original.count()));
+            // (the first line that differs: the next ones follow from it)
+            for (int i = 0; i < qMin(original.count(), translated.count()); i++)
+            {
+                if (manualLineKind(translated.at(i)) != manualLineKind(original.at(i)))
+                {
+                    wrong.append(QString("%1/%2:%3: %4, the original %5").arg(language, page).arg(i + 1)
+                                 .arg(manualLineKind(translated.at(i)), manualLineKind(original.at(i))));
+                    break;
+                }
+            }
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+
+    // every link goes to a page of its language, and to a heading of it; the
+    // help panel follows only links to pages (never "#section" alone)
+    static const QRegularExpression link("\\]\\(([^)\\s]*)\\)");
+    static const QRegularExpression target("^([a-z0-9-]+\\.md)(?:#(.+))?$");
+    static const QRegularExpression heading("^#+ (.+)$");
+    int sections = 0;
+    for (const QString &language : QStringList({ QString() }) + languages)
+    {
+        const QString folder = language.isEmpty() ? QString(":/manual/") : QString(":/manual/%1/").arg(language);
+        for (const QString &page : pages)
+        {
+            auto it = link.globalMatch(manualLines(folder + page).join('\n'));
+            while (it.hasNext())
+            {
+                const QString to = it.next().captured(1);
+                if (to.startsWith("img/") || to.startsWith("../img/") || to.startsWith("https://"))
+                    continue;
+                const QRegularExpressionMatch match = target.match(to);
+                if (match.hasMatch() == false || QFile::exists(folder + match.captured(1)) == false)
+                {
+                    wrong.append(QString("%1%2: %3 is not a page of the manual").arg(folder, page, to));
+                    continue;
+                }
+                if (match.captured(2).isEmpty())
+                    continue;
+                QStringList anchors;
+                for (const QString &line : manualLines(folder + match.captured(1)))
+                {
+                    const QRegularExpressionMatch title = heading.match(line);
+                    if (title.hasMatch())
+                        anchors.append(manualAnchor(title.captured(1)));
+                }
+                sections++;
+                if (anchors.contains(match.captured(2)) == false)
+                    wrong.append(QString("%1%2: %3 has no such section").arg(folder, page, to));
+            }
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+    // (GDTF-Share, from Options and the Patch, in each language)
+    QVERIFY(sections > 400);
+}
+
+void Backend_Test::gdtfShareManual()
+{
+    // the manual tells GDTF-Share in the six languages, naming each button
+    // as the interface shows it in that language: the translation of the
+    // catalogue (English is the original of the interface, Spanish that of
+    // the manual)
+    using Label = QPair<QString, QString>;
+    const QList<Label> browser({ { "GdtfShareDialog", "Sign in" }, { "GdtfShareDialog", "Create a free account" },
+                                 { "GdtfShareDialog", "Remember on this computer" }, { "GdtfShareDialog", "Sign out" },
+                                 { "GdtfShareDialog", "Forget the saved password" }, { "GdtfShareDialog", "Refresh" },
+                                 { "GdtfShareDialog", "All" }, { "GdtfShareDialog", "From manufacturers" },
+                                 { "GdtfShareDialog", "In my library" }, { "GdtfShareDialog", "Manufacturer" },
+                                 { "GdtfShareDialog", "User" }, { "GdtfShareDialog", "In library" },
+                                 { "GdtfShareDialog", "Newer revision" }, { "GdtfShareDialog", "From a file" },
+                                 { "GdtfShareDialog", "Revisions" }, { "GdtfShareDialog", "Download and import" },
+                                 { "GdtfShareDialog", "Cancel" }, { "GdtfShareDialog", "Patch it" },
+                                 { "GdtfShareDialog", "Update to this revision" }, { "GdtfShareDialog", "Download again" },
+                                 { "GdtfShareDialog", "Update all" } });
+    const QList<Label> options({ { "OptionsPage", "GDTF fixtures" }, { "OptionsPage", "GDTF-Share…" },
+                                 { "OptionsPage", "Import GDTF…" }, { "OptionsPage", "Convert again" },
+                                 { "OptionsPage", "Fixtures downloaded from GDTF-Share" },
+                                 { "OptionsPage", "Newer revisions on GDTF-Share" }, { "OptionsPage", "Update" },
+                                 { "OptionsPage", "Check for updates at startup" } });
+    const QList<QPair<QString, QList<Label>>> pages({
+        { "fixtures", browser + options + QList<Label>({ { "AddFixtureDialog", "Search GDTF-Share…" } }) },
+        { "opciones", options + QList<Label>({ { "GdtfShareDialog", "Update all" } }) },
+        { "patch", { { "AddFixtureDialog", "Search GDTF-Share…" }, { "GdtfShareDialog", "Patch it" } } } });
+
+    QStringList wrong;
+    for (const QString &language : QStringList({ "es", "en", "pt", "fr", "it", "de" }))
+    {
+        const Catalogue catalogue = language == "en" ? Catalogue() : readCatalogue(language);
+        QVERIFY2(language == "en" || catalogue.isEmpty() == false, qPrintable(language));
+        for (const auto &page : pages)
+        {
+            const QString path = language == "es" ? QString(":/manual/%1.md").arg(page.first)
+                                                  : QString(":/manual/%1/%2.md").arg(language, page.first);
+            const QString text = manualLines(path).join('\n');
+            QVERIFY2(text.isEmpty() == false, qPrintable(path));
+            for (const Label &label : page.second)
+            {
+                const QString name = language == "en" ? label.second
+                                                      : catalogue.value(label.first).value(label.second + '\n').translation;
+                QVERIFY2(name.isEmpty() == false, qPrintable(QString("%1 [%2] %3").arg(language, label.first, label.second)));
+                if (text.contains(name) == false)
+                    wrong.append(QString("%1: \"%2\" (%3) is not named").arg(path, name, label.second));
+            }
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+
+    // its sections, in each language: GDTF-Share and how a fixture of it is
+    // updated and converted again (Options and the Patch link to them)
+    for (const QString &folder : QStringList({ ":/manual/", ":/manual/en/", ":/manual/pt/", ":/manual/fr/",
+                                               ":/manual/it/", ":/manual/de/" }))
+    {
+        const QStringList lines = manualLines(folder + "fixtures.md");
+        QVERIFY2(lines.contains("## GDTF-Share"), qPrintable(folder));
+        const int start = int(lines.indexOf("## GDTF-Share"));
+        int subsections = 0;
+        for (int i = start + 1; i < lines.count() && lines.at(i).startsWith("## ") == false; i++)
+            subsections += lines.at(i).startsWith("### ") ? 1 : 0;
+        // (the account, searching, downloading, newer revisions, convert again)
+        QVERIFY2(subsections == 5, qPrintable(QString("%1: %2").arg(folder).arg(subsections)));
+    }
+}
+
+/** What the feedback of mapping $id sends now: "value@MIDI channel/note"
+ *  (never a real MIDI device) */
+static QString ledSent(ControlMapper *mapper, int id)
+{
+    int value = -1, stateChannel = -1;
+    quint32 channel = 0;
+    mapper->feedbackOf(mapper->mapping(id), value, channel, stateChannel);
+    const int midi = value == 255 ? 127 : value >> 1;
+    return QString("%1@%2/%3").arg(midi).arg((channel >> 12) + 1).arg(channel & 0x0FFF);
+}
+
+/** A mapping with the keys of $base and $more */
+static int addLedMapping(ControlMapper *mapper, const QVariantMap &base, const QVariantMap &more)
+{
+    QVariantMap m = base;
+    for (auto it = more.cbegin(); it != more.cend(); ++it)
+        m.insert(it.key(), it.value());
+    return mapper->addMapping(m);
+}
+
+void Backend_Test::ledFadeState()
+{
+    // A scene of a group that fades in or out: a mapping with a colour of
+    // its own for the fades shows it (pulsing on the pads of an APC mini
+    // mk2, unless a way is chosen), the others show on and then off as
+    // always. Paused and waiting win; the SHOW still sees the scene on
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const quint32 dimmer = core.doc()->fixtures().first()->id();
+    Scene *scene = new Scene(core.doc());
+    scene->setValue(dimmer, 0, 255);
+    core.doc()->addFunction(scene);
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(scene->id());
+    zone->setFadeTime(1500);
+
+    const QVariantMap leds = { { "source", "midi" }, { "target", "scene" }, { "functionId", int(scene->id()) },
+                               { "controller", "apcmini2" }, { "onValue", 21 }, { "offValue", 13 }, { "pausedValue", 9 } };
+    // pad 10 blue while it fades, pad 11 as before, pad 12 blinking blue,
+    // a controller without colours, and the scene as "scene 1 of group A"
+    const int pad = addLedMapping(mapper, leds, { { "channel", 128 + 10 }, { "fadeValue", 45 } });
+    const int plain = addLedMapping(mapper, leds, { { "channel", 128 + 11 } });
+    const int chosen = addLedMapping(mapper, leds, { { "channel", 128 + 12 }, { "fadeValue", 45 }, { "fadeChannel", 14 } });
+    const int numbers = addLedMapping(mapper, leds, { { "channel", 128 + 13 }, { "controller", QString() }, { "fadeValue", 100 } });
+    const int index = addLedMapping(mapper, leds, { { "channel", 128 + 14 }, { "target", "sceneIndex" },
+                                                    { "zoneId", int(zone->id()) }, { "index", 0 }, { "fadeValue", 45 } });
+    QCOMPARE(mapper->mapping(plain).value("fadeValue").toInt(), -1);
+    QCOMPARE(mapper->mapping(plain).value("fadeChannel").toInt(), 0);
+    auto sent = [mapper](int id) { return ledSent(mapper, id); };
+    QCOMPARE(sent(pad), QString("13@1/138"));
+    QCOMPARE(sent(plain), QString("13@1/139"));
+
+    // the fade in: the colour of the fades, then on
+    QElapsedTimer clock;
+    clock.start();
+    zone->start(scene->id());
+    QCOMPARE(sent(pad), QString("45@10/138"));
+    QCOMPARE(sent(plain), QString("21@7/139"));
+    QCOMPARE(sent(chosen), QString("45@14/140"));
+    QCOMPARE(sent(numbers), QString("100@1/141"));
+    QCOMPARE(sent(index), QString("45@10/142"));
+    QCOMPARE(mapper->targetState(leds), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("21@7/138"), 5000);
+    QVERIFY2(clock.elapsed() >= 1000, qPrintable(QString::number(clock.elapsed())));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(index), QString("21@7/142"), 1000);
+    QCOMPARE(sent(chosen), QString("21@7/140"));
+    QCOMPARE(sent(numbers), QString("21@1/141"));
+    QCOMPARE(sent(plain), QString("21@7/139"));
+
+    // the fade out: from the stop, as long as the fade out of the group
+    clock.restart();
+    zone->stop(scene->id());
+    QCOMPARE(sent(plain), QString("13@1/139"));
+    QCOMPARE(mapper->targetState(leds), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("45@10/138"), 2000);
+    QCOMPARE(sent(index), QString("45@10/142"));
+    QCOMPARE(sent(numbers), QString("100@1/141"));
+    QCOMPARE(sent(plain), QString("13@1/139"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("13@1/138"), 5000);
+    QVERIFY2(clock.elapsed() >= 1000, qPrintable(QString::number(clock.elapsed())));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(index), QString("13@1/142"), 1000);
+
+    // started again while it fades out: it fades in again, then it is on
+    zone->start(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("21@7/138"), 5000);
+    zone->stop(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("45@10/138"), 2000);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning() == false, 3000);
+    zone->start(scene->id());
+    QCOMPARE(mapper->targetState(leds), 1);
+    QCOMPARE(sent(pad), QString("45@10/138"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("21@7/138"), 5000);
+
+    // paused in its fade in: paused
+    zone->stop(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("13@1/138"), 5000);
+    zone->start(scene->id());
+    QCOMPARE(sent(pad), QString("45@10/138"));
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    scene->setPause(true);
+    QTRY_COMPARE_WITH_TIMEOUT(mapper->targetState(leds), 2, 3000);
+    QCOMPARE(sent(pad), QString("9@1/138"));
+    scene->setPause(false);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("21@7/138"), 5000);
+    zone->stop(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("13@1/138"), 5000);
+
+    // waiting (it starts paused): paused too
+    scene->setStartMode(Function::StartPaused);
+    zone->start(scene->id());
+    QCOMPARE(mapper->targetState(leds), 2);
+    QCOMPARE(sent(pad), QString("9@1/138"));
+    zone->stop(scene->id());
+    scene->setStartMode(Function::StartPlaying);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("13@1/138"), 5000);
+
+    // a group without a crossfade: the fades of the scene, here 1.2 s in
+    // and none out (never the colour of the fades without a fade)
+    zone->setFadeTime(-1);
+    scene->setFadeInSpeed(1200);
+    scene->setFadeOutSpeed(0);
+    zone->start(scene->id());
+    QCOMPARE(sent(pad), QString("45@10/138"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(pad), QString("21@7/138"), 5000);
+    zone->stop(scene->id());
+    QCOMPARE(sent(pad), QString("13@1/138"));
+    QTest::qWait(300);
+    QCOMPARE(sent(pad), QString("13@1/138"));
+
+    // a crossfade of 0: no fades
+    zone->setFadeTime(0);
+    zone->start(scene->id());
+    QCOMPARE(sent(pad), QString("21@7/138"));
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    QCOMPARE(sent(pad), QString("21@7/138"));
+    zone->stop(scene->id());
+    QTest::qWait(300);
+    QCOMPARE(sent(pad), QString("13@1/138"));
+
+    // switched off again: as before
+    mapper->updateMapping(pad, { { "fadeValue", -1 } });
+    zone->setFadeTime(1500);
+    zone->start(scene->id());
+    QCOMPARE(sent(pad), QString("21@7/138"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(chosen), QString("21@7/140"), 5000);
+    zone->stop(scene->id());
+    QCOMPARE(sent(pad), QString("13@1/138"));
+    QTest::qWait(300);
+    QCOMPARE(sent(pad), QString("13@1/138"));
+    QCOMPARE(sent(chosen), QString("45@14/140"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(chosen), QString("13@1/140"), 5000);
+}
+
+void Backend_Test::ledFadeCuelistAndAlone()
+{
+    // a cuelist of a group: the colour of the fades while its cue fades (the
+    // first cue and each GO), and in its release. A scene in no group: its
+    // own fade in and fade out
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const quint32 dimmer = core.doc()->fixtures().first()->id();
+    Cuelist *cuelist = new Cuelist(core.doc());
+    QVERIFY(core.doc()->addFunction(cuelist));
+    QVERIFY(cuelist->addCue(testCue(1000, { { Cuelist::Key(dimmer, 0), 255 } }, 1500)) >= 0);
+    QVERIFY(cuelist->addCue(testCue(2000, { { Cuelist::Key(dimmer, 0), 100 } }, 1500)) >= 0);
+    cuelist->setFadeOutSpeed(1500);
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(cuelist->id());
+
+    const QVariantMap leds = { { "source", "midi" }, { "target", "scene" }, { "controller", "apcmini2" },
+                               { "onValue", 21 }, { "offValue", 13 }, { "pausedValue", 9 }, { "fadeValue", 45 } };
+    const int list = addLedMapping(mapper, leds, { { "channel", 128 + 10 }, { "functionId", int(cuelist->id()) } });
+    auto sent = [mapper](int id) { return ledSent(mapper, id); };
+
+    zone->start(cuelist->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("45@10/138"), 3000);
+    QVERIFY(cuelist->status().fading);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("21@7/138"), 5000);
+    QCOMPARE(cuelist->status().current, 0);
+    cuelist->go();
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("45@10/138"), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("21@7/138"), 5000);
+    QCOMPARE(cuelist->status().current, 1);
+    // its release time
+    zone->stop(cuelist->id());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("45@10/138"), 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(list), QString("13@1/138"), 5000);
+
+    // a scene in no group
+    Scene *alone = new Scene(core.doc());
+    alone->setValue(dimmer, 0, 200);
+    alone->setFadeInSpeed(1200);
+    alone->setFadeOutSpeed(1200);
+    QVERIFY(core.doc()->addFunction(alone));
+    const int single = addLedMapping(mapper, leds, { { "channel", 128 + 11 }, { "functionId", int(alone->id()) } });
+    const int plain = addLedMapping(mapper, leds, { { "channel", 128 + 12 }, { "functionId", int(alone->id()) },
+                                                    { "fadeValue", -1 } });
+    QCOMPARE(sent(single), QString("13@1/139"));
+    alone->start(core.doc()->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(alone->isRunning(), 3000);
+    QCOMPARE(sent(single), QString("45@10/139"));
+    QCOMPARE(sent(plain), QString("21@7/140"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(single), QString("21@7/139"), 5000);
+    alone->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(alone->isRunning() == false, 3000);
+    QCOMPARE(sent(plain), QString("13@1/140"));
+    QTRY_COMPARE_WITH_TIMEOUT(sent(single), QString("45@10/139"), 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(single), QString("13@1/139"), 5000);
+}
+
+void Backend_Test::ledFadeSaved()
+{
+    // the colour of the fades is saved with the mapping; a mapping without
+    // one saves as before (no new keys), and one of an older version loads
+    // without it: its LED shows on in the fade in, as it did
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const quint32 dimmer = core.doc()->fixtures().first()->id();
+    Scene *scene = new Scene(core.doc());
+    scene->setValue(dimmer, 0, 255);
+    core.doc()->addFunction(scene);
+    Zone *zone = core.zones()->addZone("A");
+    zone->addFunction(scene->id());
+    zone->setFadeTime(1500);
+
+    // the default way of the fades: pulsing on the RGB pads of an APC mini
+    // mk2 or an APC40 mkII only (not a button with one LED, another
+    // controller or no controller)
+    const QVariantMap leds = { { "source", "midi" }, { "target", "scene" }, { "functionId", int(scene->id()) },
+                               { "controller", "apcmini2" }, { "onValue", 21 }, { "offValue", 13 } };
+    const int pad = addLedMapping(mapper, leds, { { "channel", 128 + 10 }, { "fadeValue", 45 }, { "fadeChannel", 14 } });
+    QVERIFY(addLedMapping(mapper, leds, { { "channel", 128 + 11 } }) > 0);
+    QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(pad), "fade"), 10);
+    QCOMPARE(ControlMapper::defaultLedChannel(mapper->mapping(pad), "on"), 7);
+    QVariantMap other = mapper->mapping(pad);
+    other.insert("channel", 128 + 100);
+    QCOMPARE(ControlMapper::defaultLedChannel(other, "fade"), 0);
+    other = mapper->mapping(pad);
+    other.insert("controller", "apc40mk2");
+    QCOMPARE(ControlMapper::defaultLedChannel(other, "fade"), 10);
+    other.insert("controller", "apcmini");
+    QCOMPARE(ControlMapper::defaultLedChannel(other, "fade"), 0);
+    other.insert("controller", QString());
+    QCOMPARE(ControlMapper::defaultLedChannel(other, "fade"), 0);
+
+    auto save = [mapper]() {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        mapper->saveXML(&writer);
+        buffer.close();
+        return buffer.data();
+    };
+    auto load = [mapper](const QByteArray &xml) {
+        QXmlStreamReader reader(xml);
+        reader.readNextStartElement();
+        return mapper->loadXML(reader);
+    };
+    auto byChannel = [mapper](int channel) {
+        for (const QVariant &v : mapper->mappings())
+            if (v.toMap().value("channel").toInt() == channel)
+                return v.toMap();
+        return QVariantMap();
+    };
+
+    // saved: only the mapping with a colour of its own has the keys
+    const QByteArray saved = save();
+    QCOMPARE(saved.count("fadeValue="), 1);
+    QCOMPARE(saved.count("fadeChannel="), 1);
+    QVERIFY(saved.contains("fadeValue=\"45\""));
+    QVERIFY(saved.contains("fadeChannel=\"14\""));
+    QVERIFY(load(saved));
+    QCOMPARE(byChannel(128 + 10).value("fadeValue").toInt(), 45);
+    QCOMPARE(byChannel(128 + 10).value("fadeChannel").toInt(), 14);
+    QCOMPARE(byChannel(128 + 11).value("fadeValue").toInt(), -1);
+    QCOMPARE(byChannel(128 + 11).value("fadeChannel").toInt(), 0);
+    QCOMPARE(save(), saved);
+
+    // switched off: not saved any more
+    mapper->updateMapping(byChannel(128 + 10).value("id").toInt(), { { "fadeValue", -1 }, { "fadeChannel", 0 } });
+    QCOMPARE(save().count("fade"), 0);
+
+    // a mapping saved by 1.0: no colour for the fades, and saved again the same
+    const QByteArray old = QString("<Mappings><Mapping channel=\"138\" controller=\"apcmini2\" device=\"\" feedback=\"true\" "
+                                   "functionId=\"%1\" id=\"1\" index=\"0\" invert=\"false\" key=\"\" loop=\"false\" max=\"100\" "
+                                   "min=\"0\" mixerId=\"-1\" mode=\"toggle\" offChannel=\"0\" offValue=\"13\" onChannel=\"0\" "
+                                   "onValue=\"21\" pausedChannel=\"0\" pausedValue=\"9\" pickup=\"false\" source=\"midi\" "
+                                   "step=\"5\" target=\"scene\" zoneId=\"-1\"/></Mappings>").arg(scene->id()).toUtf8();
+    QVERIFY(load(old));
+    QCOMPARE(mapper->mappings().count(), 1);
+    const int loaded = byChannel(138).value("id").toInt();
+    QCOMPARE(mapper->mapping(loaded).value("fadeValue").toInt(), -1);
+    QCOMPARE(QString::fromUtf8(save()), QString::fromUtf8(old));
+    zone->start(scene->id());
+    QCOMPARE(ledSent(mapper, loaded), QString("21@7/138"));
+    QCOMPARE(mapper->targetState(leds), 1);
+    QTest::qWait(300);
+    zone->stop(scene->id());
+    QCOMPARE(ledSent(mapper, loaded), QString("13@1/138"));
+    QTest::qWait(300);
+    QCOMPARE(ledSent(mapper, loaded), QString("13@1/138"));
+}
+
+/** Scenes for the tests of the selected scene: three in group A (not
+ *  exclusive), one in group B, one in no group */
+struct SelectionShow
+{
+    Zone *a = nullptr;
+    Zone *b = nullptr;
+    QList<quint32> scenes;
+    SelectionShow(DtcCore &core)
+    {
+        QVERIFY(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 5) == 1);
+        const quint32 dimmer = core.doc()->fixtures().first()->id();
+        for (int i = 0; i < 5; i++)
+        {
+            Scene *scene = new Scene(core.doc());
+            scene->setName(QString("S%1").arg(i + 1));
+            scene->setValue(dimmer, quint32(i), 200);
+            core.doc()->addFunction(scene);
+            scenes.append(scene->id());
+        }
+        a = core.zones()->addZone("A");
+        a->setExclusive(false);
+        for (int i = 0; i < 3; i++)
+            a->addFunction(scenes.at(i));
+        b = core.zones()->addZone("B");
+        b->addFunction(scenes.at(3));
+    }
+};
+
+void Backend_Test::selectedSceneFollowsPresses()
+{
+    // the selected scene is the last one pressed: in Live, on the SHOW, on
+    // a controller, on the phone, or the one next/previous started. It
+    // stays after it stops; a fader of the SHOW doesn't select
+    DtcCore core;
+    SelectionShow show(core);
+    const QList<quint32> s = show.scenes;
+    ZoneManager *zones = core.zones();
+    QSignalSpy changed(zones, SIGNAL(selectedSceneChanged()));
+    QCOMPARE(zones->selectedScene(), -1);
+
+    // a press in Live, the phone (Zone::trigger)
+    show.a->trigger(s[0]);
+    QVERIFY(show.a->isActive(s[0]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(changed.count(), 1);
+    // with Stop it stops, and stays selected
+    core.setPressMode("stop");
+    show.a->trigger(s[0]);
+    core.setPressMode("go");
+    QVERIFY(show.a->isActive(s[0]) == false);
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(changed.count(), 1);
+
+    // started, then next and previous
+    show.a->start(s[1]);
+    QCOMPARE(zones->selectedScene(), int(s[1]));
+    show.a->next();
+    QVERIFY(show.a->isActive(s[2]));
+    QCOMPARE(zones->selectedScene(), int(s[2]));
+    show.a->previous();
+    QCOMPARE(zones->selectedScene(), int(s[1]));
+    // a flash scene in Live
+    show.a->setOption(s[0], "flash", true);
+    show.a->press(s[0]);
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    show.a->unpress(s[0]);
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+
+    // a fader of the SHOW plays it without selecting it, a stop doesn't select
+    const int before = int(changed.count());
+    show.b->hold(s[3]);
+    QVERIFY(show.b->isActive(s[3]));
+    show.b->letGo(s[3]);
+    show.a->stop(s[1]);
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(int(changed.count()), before);
+
+    // a button of the SHOW: on a scene of a group and on one of no group
+    QVariantMap added = core.surface()->addFromTarget({ { "target", "scene" }, { "functionId", int(s[3]) } });
+    QVariantMap item = core.surface()->item(added.value("page").toInt(), added.value("section").toString(),
+                                            added.value("cell").toInt());
+    QCOMPARE(item.value("action").toString(), QString("scene"));
+    core.surface()->press(item);
+    QCOMPARE(zones->selectedScene(), int(s[3]));
+    added = core.surface()->addFromTarget({ { "target", "scene" }, { "functionId", int(s[4]) } });
+    item = core.surface()->item(added.value("page").toInt(), added.value("section").toString(), added.value("cell").toInt());
+    core.surface()->press(item);
+    QTRY_VERIFY_WITH_TIMEOUT(core.doc()->function(s[4])->isRunning(), 3000);
+    QCOMPARE(zones->selectedScene(), int(s[4]));
+
+    // a controller: a pad on scene N of a group, a scene without a mapping
+    // (the SHOW, Alt+click); "only off" doesn't select
+    ControlMapper *mapper = core.mapping();
+    mapper->addMapping({ { "target", "sceneIndex" }, { "zoneId", int(show.a->id()) }, { "index", 1 },
+                         { "source", "midi" }, { "channel", 128 + 5 } });
+    mapper->handleInput("midi", "MIDI|Test controller", 128 + 5, QString(), 254);
+    mapper->handleInput("midi", "MIDI|Test controller", 128 + 5, QString(), 0);
+    QVERIFY(show.a->isActive(s[1]));
+    QCOMPARE(zones->selectedScene(), int(s[1]));
+    mapper->pressTarget({ { "target", "scene" }, { "functionId", int(s[4]) }, { "mode", "off" } }, true);
+    QVERIFY(core.doc()->function(s[4])->stopped());
+    QCOMPARE(zones->selectedScene(), int(s[1]));
+    mapper->pressTarget({ { "target", "scene" }, { "functionId", int(s[4]) } }, true);
+    QCOMPARE(zones->selectedScene(), int(s[4]));
+    mapper->pressTarget({ { "target", "scene" }, { "functionId", int(s[2]) }, { "mode", "on" } }, true);
+    QCOMPARE(zones->selectedScene(), int(s[2]));
+
+    // only a scene of the show; deleting it leaves none
+    zones->selectScene(9999);
+    QCOMPARE(zones->selectedScene(), int(s[2]));
+    zones->stopAll(true);
+    QVERIFY(core.doc()->deleteFunction(s[2]));
+    QCOMPARE(zones->selectedScene(), -1);
+    // (deleting another one changes nothing)
+    zones->selectScene(s[0]);
+    QVERIFY(core.doc()->deleteFunction(s[1]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+}
+
+void Backend_Test::selectedSceneMappings()
+{
+    // a button on "the selected scene": nothing while none is selected, then
+    // whichever is selected at the press (in its group, following GO and
+    // Stop); its LED follows the selected scene, dark without one. A flash
+    // stops at the release the scene its press started
+    DtcCore core;
+    SelectionShow show(core);
+    const QList<quint32> s = show.scenes;
+    ControlMapper *mapper = core.mapping();
+    ZoneManager *zones = core.zones();
+    const int selected = mapper->selectedSceneId();
+    QCOMPARE(selected, -2);
+    QVERIFY(mapper->usesSelectedScene() == false);
+    QSignalSpy mappingsChanged(mapper, SIGNAL(mappingsChanged()));
+
+    const QVariantMap target = { { "target", "scene" }, { "functionId", selected } };
+    const int key = mapper->addMapping({ { "target", "scene" }, { "functionId", selected }, { "source", "key" }, { "key", "q" } });
+    const int pad = mapper->addMapping({ { "target", "scene" }, { "functionId", selected }, { "source", "midi" },
+                                         { "channel", 128 + 5 }, { "onValue", 21 }, { "offValue", 13 } });
+    QVERIFY(mapper->usesSelectedScene());
+    QVERIFY(mappingsChanged.count() >= 1);
+    QCOMPARE(mapper->describeTarget(mapper->mapping(key)), QString("Play a scene — the selected scene"));
+
+    // none selected: nothing, dark
+    mapper->keyEvent("Q", true);
+    mapper->keyEvent("Q", false);
+    for (quint32 fid : s)
+        QVERIFY(core.doc()->function(fid)->stopped());
+    QCOMPARE(mapper->targetState(target), -1);
+    QCOMPARE(ledSent(mapper, pad), QString("0@1/133"));
+
+    // the scene pressed in Live: its state
+    show.a->trigger(s[0]);
+    QCOMPARE(mapper->targetState(target), 1);
+    QCOMPARE(ledSent(mapper, pad), QString("21@1/133"));
+    // another one selected (it doesn't play): off, then on again
+    zones->selectScene(s[3]);
+    QCOMPARE(mapper->targetState(target), 0);
+    QCOMPARE(ledSent(mapper, pad), QString("13@1/133"));
+    zones->selectScene(s[0]);
+    QCOMPARE(ledSent(mapper, pad), QString("21@1/133"));
+
+    // with Stop the key stops it (it stays selected), with GO starts it
+    core.setPressMode("stop");
+    QVERIFY(mapper->keyEvent("Q", true));
+    mapper->keyEvent("Q", false);
+    core.setPressMode("go");
+    QVERIFY(show.a->isActive(s[0]) == false);
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(mapper->targetState(target), 0);
+    mapper->keyEvent("Q", true);
+    mapper->keyEvent("Q", false);
+    QVERIFY(show.a->isActive(s[0]));
+    // in the group of the scene selected
+    zones->selectScene(s[3]);
+    mapper->keyEvent("Q", true);
+    mapper->keyEvent("Q", false);
+    QVERIFY(show.b->isActive(s[3]));
+    QVERIFY(show.a->isActive(s[0]));
+
+    // a flash: the release stops the scene of the press, not the one selected since
+    show.a->stopAll();
+    show.b->stopAll();
+    const int flash = mapper->addMapping({ { "target", "scene" }, { "functionId", selected }, { "mode", "flash" },
+                                           { "source", "key" }, { "key", "f" } });
+    zones->selectScene(s[1]);
+    QVERIFY(mapper->keyEvent("F", true));
+    QVERIFY(show.a->isActive(s[1]));
+    show.a->start(s[2]);
+    QCOMPARE(zones->selectedScene(), int(s[2]));
+    QVERIFY(mapper->keyEvent("F", false));
+    QVERIFY(show.a->isActive(s[1]) == false);
+    QVERIFY(show.a->isActive(s[2]));
+    // without a mapping (pressTarget), the same; a release without its
+    // press stops nothing
+    const QVariantMap flashTarget = { { "target", "scene" }, { "functionId", selected }, { "mode", "flash" } };
+    mapper->pressTarget(flashTarget, false);
+    QVERIFY(show.a->isActive(s[2]));
+    zones->selectScene(s[4]);
+    mapper->pressTarget(flashTarget, true);
+    QTRY_VERIFY_WITH_TIMEOUT(core.doc()->function(s[4])->isRunning(), 3000);
+    zones->selectScene(s[2]);
+    mapper->pressTarget(flashTarget, false);
+    QTRY_VERIFY_WITH_TIMEOUT(core.doc()->function(s[4])->isRunning() == false, 3000);
+    QVERIFY(show.a->isActive(s[2]));
+
+    // removed: no mapping uses it any more
+    mapper->removeMapping(flash);
+    mapper->removeMapping(key);
+    QVERIFY(mapper->usesSelectedScene());
+    mapper->removeMapping(pad);
+    QVERIFY(mapper->usesSelectedScene() == false);
+    // (-2 on another target is not the selected scene)
+    mapper->addMapping({ { "target", "groupRelease" }, { "functionId", selected } });
+    QVERIFY(mapper->usesSelectedScene() == false);
+}
+
+void Backend_Test::selectedSceneFaders()
+{
+    // a fader on the live dimmer or speed of the selected scene: it moves
+    // the one selected now; with pickup it takes over only when it meets
+    // the level of a newly selected scene
+    DtcCore core;
+    SelectionShow show(core);
+    const QList<quint32> s = show.scenes;
+    ControlMapper *mapper = core.mapping();
+    ZoneManager *zones = core.zones();
+    const QString dev = "MIDI|Test controller";
+    const int selected = mapper->selectedSceneId();
+    const QVariantMap dimmerTarget = { { "target", "sceneDimmer" }, { "functionId", selected } };
+    const int dimmer = mapper->addMapping({ { "target", "sceneDimmer" }, { "functionId", selected },
+                                            { "source", "midi" }, { "channel", 7 } });
+    QVERIFY(mapper->describeTarget(mapper->mapping(dimmer)).endsWith(" — the selected scene"));
+    auto dimmerOf = [&show](quint32 fid) { return show.a->options(fid).value("dimmer").toDouble(); };
+
+    // none selected: nothing moves
+    mapper->handleInput("midi", dev, 7, QString(), 64);
+    QCOMPARE(dimmerOf(s[0]), 1.0);
+
+    show.a->trigger(s[0]);
+    mapper->handleInput("midi", dev, 7, QString(), 128);
+    QVERIFY(qAbs(dimmerOf(s[0]) - 0.5) < 0.01);
+    QCOMPARE(dimmerOf(s[1]), 1.0);
+    QVERIFY(qAbs(mapper->targetLevel(dimmerTarget) - 0.5) < 0.01);
+    zones->selectScene(s[1]);
+    QCOMPARE(mapper->targetLevel(dimmerTarget), 1.0);
+    // (without pickup the new one jumps to the fader)
+    mapper->handleInput("midi", dev, 7, QString(), 130);
+    QVERIFY(qAbs(dimmerOf(s[1]) - 0.51) < 0.01);
+    QVERIFY(qAbs(dimmerOf(s[0]) - 0.5) < 0.01);
+
+    // with pickup: a scene at another level waits for the fader to meet it
+    mapper->updateMapping(dimmer, { { "pickup", true } });
+    show.a->setOption(s[2], "dimmer", 0.2);
+    zones->selectScene(s[2]);
+    mapper->handleInput("midi", dev, 7, QString(), 128);
+    mapper->handleInput("midi", dev, 7, QString(), 160);
+    QVERIFY(qAbs(dimmerOf(s[2]) - 0.2) < 0.001);
+    mapper->handleInput("midi", dev, 7, QString(), 40);
+    QVERIFY(qAbs(dimmerOf(s[2]) - 40 / 255.0) < 0.01);
+    mapper->handleInput("midi", dev, 7, QString(), 80);
+    QVERIFY(qAbs(dimmerOf(s[2]) - 80 / 255.0) < 0.01);
+    // back on the first one (0.5): it waits again, then follows
+    zones->selectScene(s[0]);
+    mapper->handleInput("midi", dev, 7, QString(), 60);
+    QVERIFY(qAbs(dimmerOf(s[0]) - 0.5) < 0.01);
+    mapper->handleInput("midi", dev, 7, QString(), 140);
+    QVERIFY(qAbs(dimmerOf(s[0]) - 140 / 255.0) < 0.01);
+    QVERIFY(qAbs(dimmerOf(s[2]) - 80 / 255.0) < 0.01);
+
+    // the live speed: of the selected scene, in a group or not
+    const QVariantMap speedTarget = { { "target", "sceneSpeed" }, { "functionId", selected } };
+    mapper->addMapping({ { "target", "sceneSpeed" }, { "functionId", selected }, { "source", "midi" }, { "channel", 8 } });
+    mapper->handleInput("midi", dev, 8, QString(), 255);
+    QVERIFY(qAbs(show.a->options(s[0]).value("speed").toDouble() - 10.0) < 0.01);
+    QCOMPARE(mapper->targetLevel(speedTarget), 1.0);
+    zones->selectScene(s[1]);
+    QVERIFY(qAbs(mapper->targetLevel(speedTarget) - 0.5) < 0.01);
+    zones->selectScene(s[4]);
+    mapper->handleInput("midi", dev, 8, QString(), 0);
+    QVERIFY(qAbs(core.doc()->function(s[4])->speedFactor() - 0.1) < 0.01);
+    QVERIFY(qAbs(show.a->options(s[1]).value("speed").toDouble() - 1.0) < 0.01);
+    QVERIFY(qAbs(show.a->options(s[0]).value("speed").toDouble() - 10.0) < 0.01);
+}
+
+void Backend_Test::selectedSceneKept()
+{
+    // a mapping on the selected scene keeps it when scenes are deleted and
+    // through the file (functionId="-2" in the mappings of DMX Total
+    // Control); the selection itself is not saved: a new or opened show
+    // has none
+    DtcCore core;
+    SelectionShow show(core);
+    const QList<quint32> s = show.scenes;
+    ControlMapper *mapper = core.mapping();
+    ZoneManager *zones = core.zones();
+    const int selected = mapper->selectedSceneId();
+    const int button = mapper->addMapping({ { "target", "scene" }, { "functionId", selected }, { "source", "midi" },
+                                            { "channel", 128 + 1 } });
+    const int speed = mapper->addMapping({ { "target", "sceneSpeed" }, { "functionId", selected }, { "pickup", true },
+                                           { "source", "midi" }, { "channel", 9 } });
+    QCOMPARE(mapper->describeTarget(mapper->mapping(speed)), QString("Live speed of a scene — the selected scene"));
+
+    show.a->trigger(s[0]);
+    QVERIFY(core.doc()->deleteFunction(s[4]));
+    QCOMPARE(mapper->mapping(button).value("functionId").toInt(), selected);
+    zones->stopAll(true);
+    QVERIFY(core.doc()->deleteFunction(s[0]));
+    QCOMPARE(zones->selectedScene(), -1);
+    QCOMPARE(mapper->mapping(button).value("functionId").toInt(), selected);
+    QCOMPARE(mapper->mapping(speed).value("functionId").toInt(), selected);
+    QCOMPARE(mapper->targetState({ { "target", "scene" }, { "functionId", selected } }), -1);
+
+    // saved and opened again
+    QTemporaryDir dir;
+    const QString path = dir.filePath("selected.qxw");
+    show.a->trigger(s[1]);
+    QCOMPARE(zones->selectedScene(), int(s[1]));
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const QByteArray xml = file.readAll();
+    QCOMPARE(xml.count("functionId=\"-2\""), 2);
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    QCOMPARE(core.zones()->selectedScene(), -1);
+    QCOMPARE(mapper->mappings().count(), 2);
+    for (const QVariant &v : mapper->mappings())
+        QCOMPARE(v.toMap().value("functionId").toInt(), selected);
+    QVERIFY(mapper->usesSelectedScene());
+    Zone *a = core.zones()->zone(0);
+    a->trigger(s[2]);
+    QCOMPARE(core.zones()->selectedScene(), int(s[2]));
+    QCOMPARE(mapper->targetState({ { "target", "scene" }, { "functionId", selected } }), 1);
+
+    // a new show: none, nor any mapping
+    QSignalSpy changed(core.zones(), SIGNAL(selectedSceneChanged()));
+    core.newShow();
+    QCOMPARE(core.zones()->selectedScene(), -1);
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(mapper->usesSelectedScene() == false);
+}
+
+/** LED messages as "value@MIDI channel/note code", in the order they are sent */
+static QStringList ledTexts(const QList<QPair<quint32, int>> &messages)
+{
+    QStringList texts;
+    for (const auto &message : messages)
+        texts.append(QString("%1@%2/%3").arg(message.second == 255 ? 127 : message.second >> 1)
+                         .arg((message.first >> 12) + 1).arg(message.first & 0x0FFF));
+    return texts;
+}
+
+/** The messages the LED of mapping $id gets when its state changes */
+static QStringList ledTextsOf(ControlMapper *mapper, int id)
+{
+    return ledTexts(mapper->feedbackMessages(mapper->mapping(id)));
+}
+
+void Backend_Test::apc40RgbPads()
+{
+    // The RGB pads of an APC40 mkII: the clip grid (notes 0-39) and the
+    // scene buttons (82-86) on MIDI channel 1. With no way chosen they are
+    // solid (the channel of the control) and pulse in the fades. The pads of
+    // the APC mini mk2 stay as they were
+    auto pad = [](const QString &controller, quint32 channel, const QString &source = QStringLiteral("midi")) {
+        return ControlMapper::isRgbPad({ { "source", source }, { "controller", controller }, { "channel", channel } });
+    };
+    for (int note : { 0, 7, 32, 39, 82, 86 })
+        QVERIFY2(pad("apc40mk2", 128 + note), qPrintable(QString::number(note)));
+    // (the track buttons, the other buttons)
+    for (int note : { 40, 48, 50, 52, 81, 87, 91, 98, 127 })
+        QVERIFY2(pad("apc40mk2", 128 + note) == false, qPrintable(QString::number(note)));
+    // a clip on another MIDI channel, a CC, OSC
+    QVERIFY(pad("apc40mk2", (1 << 12) | (128 + 32)) == false);
+    QVERIFY(pad("apc40mk2", 32) == false);
+    QVERIFY(pad("apc40mk2", 128 + 32, "osc") == false);
+    // the mk2: pads 0-63 on MIDI channel 1; no other controller
+    QVERIFY(pad("apcmini2", 128));
+    QVERIFY(pad("apcmini2", 128 + 63));
+    QVERIFY(pad("apcmini2", 128 + 64) == false);
+    QVERIFY(pad("apcmini2", 128 + 100) == false);
+    QVERIFY(pad("apcmini2", (9 << 12) | (128 + 5)) == false);
+    QVERIFY(pad("apcmini", 128 + 5) == false);
+    QVERIFY(pad(QString(), 128 + 5) == false);
+
+    // the way a state lights when the mapping chose none
+    const QVariantMap clip = { { "source", "midi" }, { "controller", "apc40mk2" }, { "channel", 128 + 32 } };
+    for (const char *state : { "on", "off", "paused" })
+        QCOMPARE(ControlMapper::defaultLedChannel(clip, state), 0);
+    QCOMPARE(ControlMapper::defaultLedChannel(clip, "fade"), 10);
+    QVariantMap button = clip;
+    button.insert("channel", (3 << 12) | (128 + 50));
+    QCOMPARE(ControlMapper::defaultLedChannel(button, "fade"), 0);
+    const QVariantMap mk2 = { { "source", "midi" }, { "controller", "apcmini2" }, { "channel", 128 + 5 } };
+    QCOMPARE(ControlMapper::defaultLedChannel(mk2, "on"), 7);
+    QCOMPARE(ControlMapper::defaultLedChannel(mk2, "off"), 1);
+    QCOMPARE(ControlMapper::defaultLedChannel(mk2, "paused"), 1);
+    QCOMPARE(ControlMapper::defaultLedChannel(mk2, "fade"), 10);
+
+    // learnt: green, pulsing when paused (the mk2 at full brightness)
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    mapper->setLearnMode(true);
+    auto learn = [mapper](const QString &device, quint32 channel) {
+        mapper->startLearn({ { "target", "playbackGo" }, { "slot", 0 } });
+        mapper->handleInput("midi", device, channel, QString(), 254);
+        mapper->handleInput("midi", device, channel, QString(), 0);
+        const QVariantMap m = mapper->mappings().last().toMap();
+        return QString("%1@%2 %3@%4").arg(m.value("onValue").toInt()).arg(m.value("onChannel").toInt())
+            .arg(m.value("pausedValue").toInt()).arg(m.value("pausedChannel").toInt());
+    };
+    QCOMPARE(learn("MIDI|APC40 mkII", 128 + 32), QString("21@1 21@10"));
+    QCOMPARE(learn("MIDI|APC40 mkII", 128 + 82), QString("21@1 21@10"));
+    QCOMPARE(learn("MIDI|APC40 mkII", (2 << 12) | (128 + 50)), QString("1@0 2@0"));
+    QCOMPARE(learn("MIDI|APC mini mk2", 128 + 5), QString("21@7 21@10"));
+    mapper->setLearnMode(false);
+}
+
+void Backend_Test::apc40LedMessages()
+{
+    // What an RGB pad of the APC40 mkII is sent: MIDI channel 1 sets its
+    // colour, the others a second colour it pulses or blinks to. Pulsing or
+    // blinking is dark on channel 1, then the colour; a solid colour goes
+    // first on every other channel the mapping lights with (and the one it
+    // blinked with last), then on channel 1, so an earlier blink stops. Any
+    // other control gets the one message it always got. Never a real MIDI
+    // device: the messages the feedback would send
+    const quint32 note = 128 + 32;
+    const int green = 42;      // 21 in MIDI
+    auto on = [note](int midiChannel) { return (quint32(midiChannel - 1) << 12) | note; };
+    const QVariantMap solid = { { "source", "midi" }, { "controller", "apc40mk2" }, { "channel", note },
+                                { "target", "playbackGoTo" }, { "onValue", 21 }, { "onChannel", 1 },
+                                { "pausedValue", 21 }, { "pausedChannel", 1 }, { "offValue", 46 }, { "offChannel", 1 } };
+    auto with = [](QVariantMap m, const QVariantMap &more) {
+        for (auto it = more.cbegin(); it != more.cend(); ++it)
+            m.insert(it.key(), it.value());
+        return m;
+    };
+
+    // blinking (14) and pulsing (10): dark, then the colour
+    const QVariantMap blink = with(solid, { { "onChannel", 14 } });
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(blink, green, on(14), 14)), QStringList({ "0@1/160", "21@14/160" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(solid, { { "onChannel", 10 } }), green, on(10), 10)),
+             QStringList({ "0@1/160", "21@10/160" }));
+    // solid, on a mapping that pulses when paused: the colour on 10, then on 1
+    const QVariantMap pulse = with(solid, { { "pausedChannel", 10 } });
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(pulse, green, on(1), 1)), QStringList({ "21@10/160", "21@1/160" }));
+    // (the channel of the control, 0, is solid too)
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(pulse, { { "onChannel", 0 } }), green, on(1), 0)),
+             QStringList({ "21@10/160", "21@1/160" }));
+    // every way it lights, each once: blinking off, pulsing paused
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(pulse, { { "offChannel", 14 }, { "onChannel", 10 } }), green, on(1), 1)),
+             QStringList({ "21@10/160", "21@14/160", "21@1/160" }));
+    // only solid: a single message
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(solid, green, on(1), 1)), QStringList({ "21@1/160" }));
+    // and the way it blinked last, which the mapping doesn't use any more
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(solid, green, on(1), 1, 14)), QStringList({ "21@14/160", "21@1/160" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(pulse, green, on(1), 1, 10)), QStringList({ "21@10/160", "21@1/160" }));
+    // dark (off at 0, or no cue there): dark everywhere
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(pulse, 0, on(1), 0)), QStringList({ "0@10/160", "0@1/160" }));
+
+    // a scene with a colour for its fades: pulsing by default, so solid stops it too
+    const QVariantMap scene = with(solid, { { "target", "scene" }, { "functionId", 1 }, { "fadeValue", 45 }, { "fadeChannel", 0 } });
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(scene, green, on(1), 1)), QStringList({ "21@10/160", "21@1/160" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(scene, { { "fadeChannel", 14 } }), green, on(1), 1)),
+             QStringList({ "21@14/160", "21@1/160" }));
+    // (no colour of its own for the fades: they don't count)
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(scene, { { "fadeValue", -1 } }), green, on(1), 1)),
+             QStringList({ "21@1/160" }));
+
+    // the others: one message, as feedbackOf() gives it
+    const QVariantMap mk2 = with(pulse, { { "controller", "apcmini2" }, { "onChannel", 7 } });
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(mk2, green, on(7), 7)), QStringList({ "21@7/160" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(mk2, green, on(10), 10, 14)), QStringList({ "21@10/160" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(pulse, { { "controller", QString() } }), green, on(1), 1)),
+             QStringList({ "21@1/160" }));
+    // a track button of the APC40 (its own MIDI channel), a CC, OSC
+    const QVariantMap track = with(pulse, { { "channel", (3 << 12) | (128 + 50) } });
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(track, 2, (3 << 12) | (128 + 50), 0)), QStringList({ "1@4/178" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(pulse, { { "channel", 32 } }), green, 32, 0)), QStringList({ "21@1/32" }));
+    QCOMPARE(ledTexts(ControlMapper::ledMessages(with(pulse, { { "source", "osc" } }), green, note, 0)),
+             QStringList({ "21@1/160" }));
+}
+
+void Backend_Test::apc40TemplateLeds()
+{
+    // Map it all > Playbacks on an APC40 mkII: the clip of the next cue pulses
+    // green, the one that plays is solid green, the other cues dim blue, no
+    // cue there dark; the scene buttons (the pages) stay solid, one message.
+    // A blinking chosen in the editor blinks, and a solid colour stops it,
+    // also after the pulsing was taken off in the editor
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *pb = core.playbacks();
+    const QString apc40 = "MIDI|APC40 mkII";
+    QCOMPARE(mapper->applyTemplate(apc40, "apc40mk2", "playbacks"), 114);
+    auto idOf = [mapper](quint32 channel) {
+        for (const QVariant &v : mapper->mappings())
+            if (v.toMap().value("channel").toUInt() == channel)
+                return v.toMap().value("id").toInt();
+        return -1;
+    };
+    // the clips of track 1: cues 1-4 from the top row; the first scene button
+    const int cue1 = idOf(128 + 32), cue2 = idOf(128 + 24), cue3 = idOf(128 + 16), cue4 = idOf(128 + 8);
+    const int page1 = idOf(128 + 82);
+    for (int id : { cue1, cue2, cue3, cue4, page1 })
+        QVERIFY(id > 0);
+    auto leds = [mapper](int id) { return ledTextsOf(mapper, id); };
+
+    Cuelist *list = new Cuelist(doc);
+    list->setName("Song");
+    list->setFadeOutSpeed(0);
+    QVERIFY(doc->addFunction(list));
+    QCOMPARE(list->addCue(testCue(1000, { { Key(dim, 0), 255 } })), 0);
+    QCOMPARE(list->addCue(testCue(2000, { { Key(dim, 0), 100 } })), 1);
+    QCOMPARE(list->addCue(testCue(3000, { { Key(dim, 1), 255 } })), 2);
+    pb->assign(0, 0, int(list->id()));
+
+    // loaded: cue 1 is the next one, pulsing green; no cue 4
+    QCOMPARE(leds(cue1), QStringList({ "0@1/160", "21@10/160" }));
+    QCOMPARE(leds(cue2), QStringList({ "46@10/152", "46@1/152" }));
+    QCOMPARE(leds(cue3), QStringList({ "46@10/144", "46@1/144" }));
+    QCOMPARE(leds(cue4), QStringList({ "0@10/136", "0@1/136" }));
+    QCOMPARE(leds(page1), QStringList({ "21@1/210" }));
+
+    // GO: cue 1 plays, solid green (its pulse stops), cue 2 pulses
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(leds(cue1), QStringList({ "21@10/160", "21@1/160" }), 3000);
+    QCOMPARE(leds(cue2), QStringList({ "0@1/152", "21@10/152" }));
+    QCOMPARE(leds(cue3), QStringList({ "46@10/144", "46@1/144" }));
+
+    // blinking chosen for the next cue: dark, then green blinking
+    mapper->updateMapping(cue2, { { "pausedChannel", 14 } });
+    QCOMPARE(leds(cue2), QStringList({ "0@1/152", "21@14/152" }));
+    // GO: cue 2 plays (solid, the blink stops), cue 3 pulses
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(leds(cue2), QStringList({ "21@14/152", "21@1/152" }), 3000);
+    QCOMPARE(leds(cue1), QStringList({ "46@10/160", "46@1/160" }));
+    QCOMPARE(leds(cue3), QStringList({ "0@1/144", "21@10/144" }));
+
+    // released: cue 1 is the next one again
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(leds(cue1), QStringList({ "0@1/160", "21@10/160" }), 3000);
+    QCOMPARE(leds(cue2), QStringList({ "46@14/152", "46@1/152" }));
+
+    // its pulse sent, cue 1 is made solid in the editor: the solid colour also
+    // goes once on the way it pulsed, which the mapping doesn't use any more
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotFeedback"));
+    mapper->updateMapping(cue1, { { "pausedChannel", 1 } });
+    QCOMPARE(leds(cue1), QStringList({ "21@10/160", "21@1/160" }));
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotFeedback"));
+    QCOMPARE(leds(cue1), QStringList({ "21@1/160" }));
+}
+
+/** What the MIDI plugin of the tests (testmidi/: lines named like the
+ *  controllers, no device) got since the last time, oldest first */
+static QStringList takeSent(QLCIOPlugin *plugin)
+{
+    const QStringList sent = plugin->property("sent").toStringList();
+    plugin->setProperty("sent", QStringList());
+    return sent;
+}
+
+/** The OUT texts of the monitor for the device named $device, oldest first */
+static QStringList monitorOut(ControlMapper *mapper, const QString &device)
+{
+    QStringList texts;
+    for (const QVariant &v : mapper->monitor())
+    {
+        const QVariantMap e = v.toMap();
+        if (e.value("direction").toString() == "out" && e.value("device").toString() == device)
+            texts.prepend(e.value("text").toString());
+    }
+    return texts;
+}
+
+/** The MIDI plugin of the tests, loaded in $core (nullptr: not built) */
+static QLCIOPlugin *loadTestMidi(DtcCore &core)
+{
+    // (the controllers $core gets ready once the event loop runs: before)
+    QCoreApplication::processEvents();
+    core.doc()->ioPluginCache()->load(QDir(DTC_TEST_MIDI_PLUGIN));
+    QLCIOPlugin *plugin = core.doc()->ioPluginCache()->plugin("Test MIDI");
+    if (plugin != nullptr)
+        takeSent(plugin);
+    return plugin;
+}
+
+void Backend_Test::controllerModeMessages()
+{
+    // the SysEx that puts a controller in the mode of its mappings: the APC
+    // mini mk2 in Session mode, the APC40 mkII in Ableton mode (the message
+    // of the QLC+ MIDI template); none for the others
+    QCOMPARE(ControlMapper::modeMessages("apcmini2"),
+             QList<QByteArray>({ QByteArray::fromHex("F0477F4F62000100F7") }));
+
+    QFile file(QDir(DTC_RGB_SCRIPTS).filePath("../miditemplates/APC40MK2.qxm"));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const QRegularExpressionMatch init =
+        QRegularExpression("<InitMessage>([^<]*)</InitMessage>").match(QString::fromUtf8(file.readAll()));
+    QVERIFY(init.hasMatch());
+    const QByteArray ableton = QByteArray::fromHex(init.captured(1).toLatin1());
+    QCOMPARE(ableton, QByteArray::fromHex("F0477F2960000441090005F7"));
+    QCOMPARE(ControlMapper::modeMessages("apc40mk2"), QList<QByteArray>({ ableton }));
+
+    QVERIFY(ControlMapper::modeMessages("apcmini").isEmpty());
+    QVERIFY(ControlMapper::modeMessages(QString()).isEmpty());
+}
+
+void Backend_Test::controllerSessionMode()
+{
+    // an APC mini mk2 goes into Session mode (its pads drive the mappings and
+    // show their LEDs; in Note or Drum mode they play notes elsewhere)
+    // whenever it gets ready: its LEDs switched on, a show opened, Map it
+    // all. The SysEx is sent once each time and never kept by the patch: it
+    // isn't sent again when the port opens again, nor saved with the show
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    const QString mk2 = "Test MIDI|APC mini mk2";
+    const QString session = "sysex 0 F0477F4F62000100F7";
+    auto sysex = [plugin]() { return takeSent(plugin).filter("sysex"); };
+
+    // its input and LEDs on: note offs off, then Session mode
+    mapper->setDeviceEnabled(mk2, true);
+    QVariantMap device;
+    for (const QVariant &v : mapper->devices())
+        if (v.toMap().value("key").toString() == mk2)
+            device = v.toMap();
+    QCOMPARE(device.value("controller").toString(), QString("apcmini2"));
+    QVERIFY(device.value("feedback").toBool());
+    QStringList sent = takeSent(plugin);
+    QCOMPARE(sent.filter("sysex"), QStringList({ session }));
+    const int noteOffs = sent.indexOf("param 0 MIDISendNoteOff=false");
+    QVERIFY(noteOffs >= 0 && noteOffs < sent.indexOf(session));
+    QCOMPARE(monitorOut(mapper, "APC mini mk2"), QStringList({ "SysEx · Session mode" }));
+
+    // not kept: not in the parameters of the patch (the show saves them), not
+    // sent again when its port opens again
+    OutputPatch *patch = core.doc()->inputOutputMap()->feedbackPatch(device.value("universe").toUInt());
+    QVERIFY(patch != nullptr);
+    QVERIFY(patch->getPluginParameters().contains(KPluginSendSysEx) == false);
+    QCOMPARE(patch->getPluginParameters().value("MIDISendNoteOff").toBool(), false);
+    QVERIFY(patch->reconnect());
+    sent = takeSent(plugin);
+    QVERIFY(sent.contains("open 0"));
+    QVERIFY(sent.contains("param 0 MIDISendNoteOff=false"));
+    QVERIFY(sent.filter("sysex").isEmpty());
+
+    // a show opened (its patches made again), the LEDs switched off and on,
+    // Map it all: Session mode each time
+    mapper->initControllers();
+    QCOMPARE(sysex(), QStringList({ session }));
+    mapper->setDeviceFeedback(mk2, false);
+    QVERIFY(sysex().isEmpty());
+    mapper->setDeviceFeedback(mk2, true);
+    QCOMPARE(sysex(), QStringList({ session }));
+    QVERIFY(mapper->applyTemplate(mk2, "apcmini2", "playbacks") > 0);
+    QCOMPARE(sysex(), QStringList({ session }));
+    QCOMPARE(monitorOut(mapper, "APC mini mk2").filter("SysEx").count(), 4);
+
+    // the first APC mini has no modes, the second port of the mk2 (Note
+    // mode) is not a controller: no SysEx to them
+    mapper->setDeviceEnabled("Test MIDI|APC MINI", true);
+    mapper->setDeviceEnabled("Test MIDI|MIDIIN2 (APC mini mk2)", true);
+    sent = takeSent(plugin);
+    QVERIFY(sent.contains("param 2 MIDISendNoteOff=false"));
+    QVERIFY(sent.contains("param 3 MIDISendNoteOff=false") == false);
+    QVERIFY(sent.filter("sysex").isEmpty() == false);
+    QVERIFY(sent.filter(QRegularExpression("^sysex [^0] ")).isEmpty());
+}
+
+void Backend_Test::controllerGetReady()
+{
+    // Mappings › Devices › "Get ready", after a controller was switched off
+    // and on or its mode was changed: the APC mini mk2 goes back to Session
+    // mode, the APC40 mkII to Ableton mode (sent at once: its port stays
+    // open) with its knob rings, the first APC mini without a SysEx. All the
+    // LEDs of that device are sent again on the next tick, and those of the
+    // mappings on any MIDI device, not those of the other devices
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    const QString mk2 = "Test MIDI|APC mini mk2", apc40 = "Test MIDI|APC40 mkII", mini = "Test MIDI|APC MINI";
+    for (const QString &key : { mk2, apc40, mini })
+        mapper->setDeviceEnabled(key, true);
+    // (the APC40 mkII got Ableton mode from the QLC+ template, sent when its
+    // port opened again)
+    QVERIFY(takeSent(plugin).contains("param 1 initmessage=APC40 Mk2 Ableton mode"));
+    QCOMPARE(monitorOut(mapper, "APC40 mkII").filter("SysEx"), QStringList({ "SysEx · Ableton mode" }));
+
+    // an LED on each device (off: 3) and one on any MIDI device (off: 5)
+    mapper->addMapping({ { "target", "blackout" }, { "source", "midi" }, { "device", mk2 }, { "channel", 128 + 112 }, { "offValue", 3 } });
+    mapper->addMapping({ { "target", "blackout" }, { "source", "midi" }, { "device", apc40 }, { "channel", 128 + 81 }, { "offValue", 3 } });
+    mapper->addMapping({ { "target", "blackout" }, { "source", "midi" }, { "device", mini }, { "channel", 128 + 82 }, { "offValue", 3 } });
+    mapper->addMapping({ { "target", "pauseAll" }, { "source", "midi" }, { "device", QString() }, { "channel", 128 + 113 }, { "offValue", 5 } });
+    const QString mk2Led = "feedback 0 240 6", apc40Led = "feedback 1 209 6", miniLed = "feedback 2 210 6";
+    const QStringList anyLeds = { "feedback 0 241 10", "feedback 1 241 10", "feedback 2 241 10" };
+    // the LED messages sent since the last time, sorted (the knob rings and
+    // the rest left out)
+    QStringList sent;
+    auto leds = [&]() {
+        sent << takeSent(plugin);
+        QStringList list = sent.filter(QRegularExpression("^feedback \\d (209|210|240|241) "));
+        list.sort();
+        return list;
+    };
+    auto sorted = [](QStringList list) { list.sort(); return list; };
+    QTRY_COMPARE_WITH_TIMEOUT(leds(), sorted(anyLeds + QStringList({ mk2Led, apc40Led, miniLed })), 3000);
+    // nothing changes: nothing more
+    sent.clear();
+    QTest::qWait(300);
+    QVERIFY(leds().isEmpty());
+
+    // the mk2: Session mode, then its LED and the one of any device
+    mapper->refreshController(mk2);
+    QStringList now = takeSent(plugin);
+    QCOMPARE(now.filter("sysex"), QStringList({ "sysex 0 F0477F4F62000100F7" }));
+    QVERIFY(now.contains("param 0 MIDISendNoteOff=false"));
+    QCOMPARE(monitorOut(mapper, "APC mini mk2").last(), QString("SysEx · Session mode"));
+    QTRY_COMPARE_WITH_TIMEOUT(leds(), sorted(anyLeds + QStringList({ mk2Led })), 3000);
+    QTest::qWait(300);
+    QCOMPARE(leds(), sorted(anyLeds + QStringList({ mk2Led })));
+
+    // the APC40 mkII: Ableton mode at once (its port isn't opened again), its
+    // 16 knob rings a single dot, then its LEDs
+    sent.clear();
+    mapper->refreshController(apc40);
+    now = takeSent(plugin);
+    QCOMPARE(now.filter("sysex"), QStringList({ "sysex 1 F0477F2960000441090005F7" }));
+    QVERIFY(now.filter("open").isEmpty());
+    QCOMPARE(now.filter(QRegularExpression("^feedback 1 (2[4-9]|3[01]|5[6-9]|6[0-3]) 2$")).count(), 16);
+    QCOMPARE(monitorOut(mapper, "APC40 mkII").filter("SysEx"),
+             QStringList({ "SysEx · Ableton mode", "SysEx · Ableton mode" }));
+    QTRY_COMPARE_WITH_TIMEOUT(leds(), sorted(anyLeds + QStringList({ apc40Led })), 3000);
+
+    // the first APC mini: no SysEx, its LEDs again
+    sent.clear();
+    mapper->refreshController(mini);
+    now = takeSent(plugin);
+    QVERIFY(now.filter("sysex").isEmpty());
+    QVERIFY(now.contains("param 2 MIDISendNoteOff=false"));
+    QVERIFY(monitorOut(mapper, "APC MINI").filter("SysEx").isEmpty());
+    QTRY_COMPARE_WITH_TIMEOUT(leds(), sorted(anyLeds + QStringList({ miniLed })), 3000);
+}
+
+void Backend_Test::controllerGetReadyOthers()
+{
+    // "Get ready" does nothing on anything else (the button isn't there):
+    // no such device, a controller not enabled or without its LEDs, a MIDI
+    // port that is not a controller (the second port of the mk2)
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    const QString mk2 = "Test MIDI|APC mini mk2", notes = "Test MIDI|MIDIIN2 (APC mini mk2)";
+    mapper->addMapping({ { "target", "blackout" }, { "source", "midi" }, { "device", QString() }, { "channel", 128 + 112 } });
+    mapper->refreshController(QString());
+    mapper->refreshController("Test MIDI|Nothing");
+    mapper->refreshController(mk2);
+    QVERIFY(takeSent(plugin).isEmpty());
+
+    mapper->setDeviceEnabled(mk2, true);
+    mapper->setDeviceFeedback(mk2, false);
+    mapper->setDeviceEnabled(notes, true);
+    // (the LED of any device, on the port that has its LEDs on)
+    QStringList sent;
+    QTRY_VERIFY_WITH_TIMEOUT((sent << takeSent(plugin)).contains("feedback 3 240 0"), 3000);
+    const int monitored = mapper->monitor().count();
+    QTest::qWait(300);
+    takeSent(plugin);
+    mapper->refreshController(mk2);
+    mapper->refreshController(notes);
+    QTest::qWait(300);
+    QVERIFY(takeSent(plugin).isEmpty());
+    QCOMPARE(mapper->monitor().count(), monitored);
+}
+
+/** The MIDI port of the test plugin that is not a controller (line 3) */
+static const QString KTestMidiPort = QStringLiteral("Test MIDI|MIDIIN2 (APC mini mk2)");
+
+void Backend_Test::motorFaderNoEcho()
+{
+    // a motorised fader (absolute, with feedback) is not pushed while the
+    // hand moves it, nor once it stops where its target is. Still, it
+    // follows the screen at once; the screen while the hand is on it moves
+    // it once the fader has been still for 0.4 s
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    mapper->setDeviceEnabled(KTestMidiPort, true);
+    mapper->addMapping({ { "target", "grandMaster" }, { "source", "midi" }, { "device", KTestMidiPort }, { "channel", 48 } });
+    // what the motor of CC 48 got since the last clear
+    QStringList motor;
+    auto sent = [&]() {
+        motor << takeSent(plugin).filter(QRegularExpression("^feedback 3 48 "));
+        return motor;
+    };
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 48 255" }), 3000);
+    motor.clear();
+
+    // moved for 0.3 s: the grand master follows, the motor gets nothing
+    for (int i = 0; i < 6; i++)
+    {
+        mapper->handleInput("midi", KTestMidiPort, 48, QString(), uchar(100 + 10 * i));
+        QCOMPARE(core.grandMaster(), 100 + 10 * i);
+        QTest::qWait(50);
+    }
+    QVERIFY(sent().isEmpty());
+    // still, where its target is, for 0.6 s: nothing either (the monitor has
+    // only the first position)
+    QTest::qWait(600);
+    QVERIFY(sent().isEmpty());
+    QCOMPARE(monitorOut(mapper, "MIDIIN2 (APC mini mk2)").filter("CC 48"), QStringList({ "CC 48 · ch 1" }));
+
+    // the screen, the fader still: the motor follows
+    core.setGrandMaster(200);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 48 200" }), 3000);
+    motor.clear();
+
+    // the screen while the hand is on it: not before the fader is still
+    QElapsedTimer touched;
+    touched.start();
+    mapper->handleInput("midi", KTestMidiPort, 48, QString(), 60);
+    core.setGrandMaster(20);
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotFeedback"));
+    QVERIFY(sent().isEmpty());
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 48 20" }), 3000);
+    QVERIFY2(touched.elapsed() >= 400, qPrintable(QString("sent after %1 ms").arg(touched.elapsed())));
+}
+
+void Backend_Test::motorFaderCorrected()
+{
+    // once still, a motorised fader is moved only when its target ended more
+    // than a step away from where the hand left it: a whole BPM on a short
+    // range, not the rounding of the BPM on a longer one. The other faders
+    // on the same target follow at once
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    mapper->setDeviceEnabled(KTestMidiPort, true);
+    core.setBpm(120);
+    // the BPM on 0-50 % (20-160 BPM, CC 49) and on 0-10 % (20-48 BPM, CC 50)
+    mapper->addMapping({ { "target", "bpm" }, { "source", "midi" }, { "device", KTestMidiPort }, { "channel", 49 },
+                         { "max", 50 } });
+    mapper->addMapping({ { "target", "bpm" }, { "source", "midi" }, { "device", KTestMidiPort }, { "channel", 50 },
+                         { "max", 10 } });
+    QStringList motors;
+    auto sent = [&]() {
+        motors << takeSent(plugin).filter(QRegularExpression("^feedback 3 (49|50) "));
+        return motors;
+    };
+    // (120 BPM: 182 of 255, above the top of CC 50)
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 49 182", "feedback 3 50 255" }), 3000);
+    motors.clear();
+
+    // CC 49 to 1 of 255: 20.5 BPM, rounded to 21, which it shows as 2: it
+    // stays where it is. CC 50 shows 21 BPM at once (9)
+    mapper->handleInput("midi", KTestMidiPort, 49, QString(), 1);
+    QCOMPARE(core.bpm(), 21);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 50 9" }), 3000);
+    QTest::qWait(600);
+    QCOMPARE(sent(), QStringList({ "feedback 3 50 9" }));
+    motors.clear();
+
+    // CC 50 to 4 of 255: 20.4 BPM, rounded to 20, which it shows as 0: it
+    // goes there once still. CC 49 shows 20 BPM at once (0)
+    QElapsedTimer touched;
+    touched.start();
+    mapper->handleInput("midi", KTestMidiPort, 50, QString(), 4);
+    QCOMPARE(core.bpm(), 20);
+    QTRY_VERIFY_WITH_TIMEOUT(sent().contains("feedback 3 49 0"), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(sent(), QStringList({ "feedback 3 49 0", "feedback 3 50 0" }), 3000);
+    QVERIFY2(touched.elapsed() >= 400, qPrintable(QString("sent after %1 ms").arg(touched.elapsed())));
+}
+
+void Backend_Test::motorFaderOthers()
+{
+    // only the absolute faders wait for the hand: the ring of an encoder
+    // (relative, incremental) and the LED of a button show their change on
+    // the next tick. A fader edited, or the mappings of another show (their
+    // IDs start again), show their target at once too
+    ScopedTestSettings settings;
+    DtcCore core;
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    mapper->setDeviceEnabled(KTestMidiPort, true);
+    Zone *zone = core.zones()->addZone("A");
+    zone->setMaster(0.5);
+    const QVariantMap gm = { { "target", "grandMaster" }, { "source", "midi" }, { "device", KTestMidiPort }, { "channel", 48 } };
+    const int fader = mapper->addMapping(gm);
+    mapper->addMapping({ { "target", "groupMaster" }, { "zoneId", int(zone->id()) }, { "source", "midi" },
+                         { "device", KTestMidiPort }, { "channel", 51 }, { "mode", "relative" } });
+    mapper->addMapping({ { "target", "groupMaster" }, { "zoneId", int(zone->id()) }, { "source", "midi" },
+                         { "device", KTestMidiPort }, { "channel", 128 + 10 }, { "mode", "incremental" } });
+    mapper->addMapping({ { "target", "blackout" }, { "source", "midi" }, { "device", KTestMidiPort }, { "channel", 128 + 20 } });
+    QStringList first;
+    QTRY_COMPARE_WITH_TIMEOUT((first << takeSent(plugin)).filter(QRegularExpression("^feedback 3 ")).count(), 4, 3000);
+    // what the controls get on one tick of the feedback
+    auto tick = [&]() {
+        QMetaObject::invokeMethod(mapper, "slotFeedback");
+        return takeSent(plugin).filter(QRegularExpression("^feedback 3 "));
+    };
+    auto rings = [&]() {
+        const int level = qRound(zone->master() * 255);
+        return QStringList({ QString("feedback 3 51 %1").arg(level), QString("feedback 3 138 %1").arg(level) });
+    };
+
+    // the encoder one step up (65), the button one step up, the button
+    mapper->handleInput("midi", KTestMidiPort, 51, QString(), 130);
+    QVERIFY(zone->master() > 0.5);
+    QCOMPARE(tick(), rings());
+    mapper->handleInput("midi", KTestMidiPort, 128 + 10, QString(), 255);
+    mapper->handleInput("midi", KTestMidiPort, 128 + 10, QString(), 0);
+    QVERIFY(zone->master() > 0.55);
+    QCOMPARE(tick(), rings());
+    mapper->handleInput("midi", KTestMidiPort, 128 + 20, QString(), 255);
+    QCOMPARE(tick(), QStringList({ "feedback 3 148 255" }));
+
+    // the fader the hand just moved, given another range: it shows the grand
+    // master on it at once (100 of 0-50 %: 200)
+    mapper->handleInput("midi", KTestMidiPort, 48, QString(), 100);
+    QVERIFY(tick().isEmpty());
+    mapper->updateMapping(fader, { { "max", 50 } });
+    QCOMPARE(tick(), QStringList({ "feedback 3 48 200" }));
+
+    // another show, with its mapping 1 on the fader (the whole range): it
+    // shows the grand master at once (90 of 0-50 % gave 45)
+    mapper->handleInput("midi", KTestMidiPort, 48, QString(), 90);
+    QCOMPARE(core.grandMaster(), 45);
+    QVERIFY(tick().isEmpty());
+    mapper->clear();
+    takeSent(plugin);
+    QCOMPARE(mapper->addMapping(gm), fader);
+    QCOMPARE(tick(), QStringList({ "feedback 3 48 45" }));
+}
+
+/*****************************************************************************
+ * superescenas B3: undo and redo in the super scene editor
+ *****************************************************************************/
+
+namespace
+{
+
+/** A super scene as it is saved */
+QByteArray superSceneXml(const Show *show)
+{
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    show->saveXML(&writer);
+    buffer.close();
+    return buffer.data();
+}
+
+/** The blocks of every track of a TimelineEditor::show() */
+QVariantList superSceneBlocks(const QVariantMap &info)
+{
+    QVariantList blocks;
+    for (const QVariant &track : info.value("tracks").toList())
+        blocks.append(track.toMap().value("blocks").toList());
+    return blocks;
+}
+
+}
+
+void Backend_Test::superSceneUndoRedo()
+{
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dimmer = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(dimmer, 0, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    const int id = fx.createSuperScene("Undo");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    QVERIFY(timeline.history(sid).value("canUndo").toBool() == false);
+    QVERIFY(timeline.history(sid).value("canRedo").toBool() == false);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    auto blockOf = [&](int blockId) {
+        for (const QVariant &b : superSceneBlocks(timeline.show(sid)))
+            if (b.toMap().value("id").toInt() == blockId)
+                return b.toMap();
+        return QVariantMap();
+    };
+
+    // each edit undone gives the super scene as it was (as saved and as
+    // shown, with the same ids), redone as it was after it. "" when it does
+    auto undoRedo = [&](const QString &text, const std::function<void()> &edit) -> QString {
+        const QVariantMap before = timeline.show(sid);
+        const QByteArray savedBefore = superSceneXml(show);
+        edit();
+        const QVariantMap after = timeline.show(sid);
+        const QByteArray savedAfter = superSceneXml(show);
+        if (after == before)
+            return text + ": nothing changed";
+        if (timeline.history(sid).value("undoText").toString() != text)
+            return text + ": the step is " + timeline.history(sid).value("undoText").toString();
+        if (timeline.undo(sid) == false || timeline.show(sid) != before || superSceneXml(show) != savedBefore)
+            return text + ": not undone";
+        if (timeline.history(sid).value("redoText").toString() != text)
+            return text + ": the redo is " + timeline.history(sid).value("redoText").toString();
+        if (timeline.redo(sid) == false || timeline.show(sid) != after || superSceneXml(show) != savedAfter)
+            return text + ": not redone";
+        return QString();
+    };
+
+    int t3 = -1, block = -1, copy = -1;
+    const QList<QPair<QString, std::function<void()>>> edits = {
+        { "Add a track", [&]() { t3 = timeline.addTrack(sid, "Three"); } },
+        { "Add a block", [&]() { block = timeline.addBlock(sid, t1, scene->id(), 1000); } },
+        { "Move 1 block(s)", [&]() { timeline.moveBlock(sid, block, t2, 3000); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "fadeIn", 3000); } },
+        // (the fades fit in the block: undone, they are as they were)
+        { "Resize a block", [&]() { timeline.resizeBlock(sid, block, 2000, 2000); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "fadeOut", 500); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "stretch", true); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "color", "#ff0000"); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "locked", true); } },
+        { "Change 1 block(s)", [&]() { timeline.setBlock(sid, block, "locked", false); } },
+        { "Change a track", [&]() { timeline.setTrack(sid, t2, "name", "Wash"); } },
+        { "Change a track", [&]() { timeline.setTrack(sid, t2, "mute", true); } },
+        { "Change a track", [&]() { timeline.setTrack(sid, t1, "locked", true); } },
+        { "Move a track", [&]() { timeline.moveTrack(sid, t1, 1); } },
+        { "Change the automation", [&]() {
+              timeline.setAutomation(sid, t1, "dimmer", { QVariantMap({ { "time", 0 }, { "value", 0.25 }, { "smooth", true } }),
+                                                          QVariantMap({ { "time", 1000 }, { "value", 1.0 } }) });
+          } },
+        { "Change the timeline", [&]() {
+              timeline.setSettings(sid, { { "grid", "bars" }, { "bpm", 128 }, { "beatsPerBar", 3 }, { "gridOffset", 250 },
+                                          { "endTime", 8000 }, { "loop", true } });
+          } },
+        { "Duplicate 1 block(s)", [&]() { copy = timeline.duplicateBlock(sid, block); } },
+        { "Delete 1 block(s)", [&]() { timeline.removeBlock(sid, copy); } },
+        // the track of the block (Wash, moved to the place of the first one):
+        // it comes back with its block and its automation
+        { "Delete a track", [&]() { timeline.removeTrack(sid, t1); } },
+        { "Delete a track", [&]() { timeline.removeTrack(sid, t3); } },
+    };
+    for (const auto &edit : edits)
+    {
+        const QString error = undoRedo(edit.first, edit.second);
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+    }
+    // the two tracks back: the block on its track (Wash, now the first one),
+    // its fade in fitted in it by the resize
+    QVERIFY(timeline.undo(sid) && timeline.undo(sid));
+    QCOMPARE(blockOf(block).value("fadeIn").toInt(), 2000);
+    QCOMPARE(blockOf(block).value("locked").toBool(), false);
+    QCOMPARE(show->getTrackFromShowFunctionID(quint32(block))->id(), quint32(t1));
+
+    // folding a track is no step, and undo leaves it folded
+    QSignalSpy told(&timeline, SIGNAL(historyChanged()));
+    const QVariantMap history = timeline.history(sid);
+    timeline.setTrack(sid, t1, "hidden", true);
+    QCOMPARE(told.count(), 0);
+    QCOMPARE(timeline.history(sid), history);
+    QVERIFY(timeline.undo(sid));
+    QVERIFY(show->track(quint32(t1))->isHidden());
+    QVERIFY(timeline.redo(sid));
+    timeline.setTrack(sid, t1, "hidden", false);
+
+    // an edit that does nothing (a locked block) is no step
+    timeline.setBlock(sid, block, "locked", true);
+    const QVariantMap locked = timeline.history(sid);
+    told.clear();
+    timeline.moveBlock(sid, block, t1, 5000);
+    QCOMPARE(timeline.history(sid), locked);
+    QCOMPARE(told.count(), 0);
+    timeline.setBlock(sid, block, "locked", false);
+
+    // a new edit after an undo: nothing to redo any more
+    QVERIFY(timeline.undo(sid));
+    QVERIFY(timeline.history(sid).value("canRedo").toBool());
+    timeline.setSettings(sid, { { "loop", false } });
+    QVERIFY(timeline.history(sid).value("canRedo").toBool() == false);
+    QVERIFY(timeline.redo(sid) == false);
+    timeline.setBlock(sid, block, "locked", false);
+
+    // the changes of one field within a second are one step
+    const int start = blockOf(block).value("start").toInt();
+    timeline.moveBlock(sid, block, -1, 100, true);
+    timeline.moveBlock(sid, block, -1, 200, true);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Move 1 block(s)"));
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blockOf(block).value("start").toInt(), start);
+    QVERIFY(timeline.redo(sid));
+    QCOMPARE(blockOf(block).value("start").toInt(), 200);
+    timeline.moveBlock(sid, block, -1, 300, true);
+    QTest::qWait(1100);
+    timeline.moveBlock(sid, block, -1, 400, true);
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blockOf(block).value("start").toInt(), 300);
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blockOf(block).value("start").toInt(), 200);
+    // (another field is another step)
+    timeline.setBlock(sid, block, "fadeIn", 100, true);
+    timeline.setBlock(sid, block, "fadeOut", 100, true);
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blockOf(block).value("fadeIn").toInt(), 100);
+
+    // up to 100 steps
+    for (int i = 0; i <= 100; i++)
+        timeline.setSettings(sid, { { "bpm", 60 + i } });
+    int undone = 0;
+    while (timeline.undo(sid) && undone < 200)
+        undone++;
+    QCOMPARE(undone, 100);
+    QCOMPARE(timeline.show(sid).value("bpm").toInt(), 60);
+
+    // the first track up when track 0 was deleted: nothing to swap with, no
+    // step (it made an empty track, and crashed)
+    const quint32 other = quint32(fx.createSuperScene("First up"));
+    const QVariantList two = timeline.show(other).value("tracks").toList();
+    QCOMPARE(two.first().toMap().value("id").toInt(), 0);
+    timeline.removeTrack(other, 0);
+    const QVariantMap steps = timeline.history(other);
+    timeline.moveTrack(other, two.last().toMap().value("id").toInt(), -1);
+    QCOMPARE(timeline.show(other).value("tracks").toList().count(), 1);
+    QCOMPARE(timeline.history(other), steps);
+}
+
+void Backend_Test::superSceneUndoAudioAndStatic()
+{
+    m_doc->audioPluginCache()->load(QDir(DTC_AUDIO_PLUGINS));
+    QTemporaryDir dir;
+    const QString path = dir.filePath("tone.wav");
+    QVERIFY(writeToneWav(path));
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dimmer = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    const int id = fx.createSuperScene("Audio");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const int track = timeline.show(sid).value("tracks").toList().first().toMap().value("id").toInt();
+    auto blocks = [&]() { return superSceneBlocks(timeline.show(sid)); };
+    auto hiddenAudio = [&](quint32 fid) {
+        Audio *audio = qobject_cast<Audio *>(m_doc->function(fid));
+        return audio != nullptr && audio->isVisible() == false && audio->getSourceFileName() == path;
+    };
+
+    // the audio of the block undone goes with it
+    const int block = timeline.addAudio(sid, track, QUrl::fromLocalFile(path), 500);
+    QVERIFY2(block >= 0, "the sndfile plugin reads WAV files");
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Add audio"));
+    const quint32 audio = blocks().first().toMap().value("functionId").toUInt();
+    QVERIFY(hiddenAudio(audio));
+    timeline.setBlock(sid, block, "fadeIn", 100);
+    QVERIFY(timeline.undo(sid) && timeline.undo(sid));
+    QVERIFY(blocks().isEmpty());
+    QVERIFY(m_doc->function(audio) == nullptr);
+
+    // meanwhile a new function took its id: the audio comes back with
+    // another one, the block with its own
+    Scene *taker = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(taker));
+    QCOMPARE(taker->id(), audio);
+    QVERIFY(timeline.redo(sid));
+    QCOMPARE(blocks().count(), 1);
+    const QVariantMap b = blocks().first().toMap();
+    QCOMPARE(b.value("id").toInt(), block);
+    QCOMPARE(b.value("type").toString(), QString("Audio"));
+    QVERIFY(qAbs(b.value("duration").toInt() - 1000) < 30);
+    const quint32 again = b.value("functionId").toUInt();
+    QVERIFY(again != audio);
+    QVERIFY(hiddenAudio(again));
+    QVERIFY(m_doc->function(audio) == taker);
+    // the other steps of the history have the new id: one audio still
+    QVERIFY(timeline.redo(sid));
+    QCOMPARE(blocks().first().toMap().value("functionId").toUInt(), again);
+    QCOMPARE(blocks().first().toMap().value("fadeIn").toInt(), 100);
+    QCOMPARE(int(m_doc->functionsByType(Function::AudioType).count()), 1);
+    QVERIFY(timeline.undo(sid) && timeline.undo(sid));
+    QVERIFY(m_doc->function(again) == nullptr);
+    QVERIFY(m_doc->function(audio) == taker);
+    QVERIFY(timeline.redo(sid) && timeline.redo(sid));
+    QCOMPARE(blocks().first().toMap().value("functionId").toUInt(), again);
+    QVERIFY(hiddenAudio(again));
+    QCOMPARE(int(m_doc->functionsByType(Function::AudioType).count()), 1);
+
+    // the block deleted takes its audio; undone, it comes back
+    timeline.removeBlock(sid, block);
+    QVERIFY(m_doc->function(again) == nullptr);
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blocks().count(), 1);
+    QCOMPARE(blocks().first().toMap().value("id").toInt(), block);
+    QCOMPARE(blocks().first().toMap().value("functionId").toUInt(), again);
+    QVERIFY(hiddenAudio(again));
+    QVERIFY(timeline.redo(sid));
+    QVERIFY(blocks().isEmpty());
+    QVERIFY(m_doc->function(again) == nullptr);
+    QVERIFY(timeline.undo(sid));
+
+    // two blocks of one audio: it comes back once, for both
+    const int copy = timeline.duplicateBlock(sid, block);
+    QVERIFY(copy >= 0);
+    timeline.removeBlock(sid, copy);
+    timeline.removeBlock(sid, block);
+    QVERIFY(m_doc->function(again) == nullptr);
+    QVERIFY(timeline.undo(sid) && timeline.undo(sid));
+    QCOMPARE(blocks().count(), 2);
+    QCOMPARE(blocks().at(0).toMap().value("functionId").toUInt(), again);
+    QCOMPARE(blocks().at(1).toMap().value("functionId").toUInt(), again);
+    QCOMPARE(int(m_doc->functionsByType(Function::AudioType).count()), 1);
+    QVERIFY(timeline.undo(sid));
+
+    // its file gone, the block comes back all the same (as a show opened
+    // without its audio)
+    timeline.removeBlock(sid, block);
+    QVERIFY(QFile::remove(path));
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(blocks().count(), 1);
+    QCOMPARE(blocks().first().toMap().value("id").toInt(), block);
+    QVERIFY(hiddenAudio(blocks().first().toMap().value("functionId").toUInt()));
+
+    // the static values taken, undone: the hidden scene goes
+    prog.selectFixtures({ dimmer });
+    prog.setDimmer(77);
+    QCOMPARE(timeline.captureStatic(sid), 2);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Take the static values"));
+    const quint32 values = show->staticScene();
+    QVERIFY(m_doc->function(values) != nullptr);
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(show->staticScene(), Function::invalidId());
+    QVERIFY(m_doc->function(values) == nullptr);
+    QVERIFY(timeline.redo(sid));
+    Scene *scene = qobject_cast<Scene *>(m_doc->function(show->staticScene()));
+    QVERIFY(scene != nullptr && scene->isVisible() == false);
+    QCOMPARE(scene->values().count(), 2);
+    QCOMPARE(scene->value(dimmer, 0), uchar(77));
+    // other values (only the value changes) are a step too
+    prog.setDimmer(99);
+    QCOMPARE(timeline.captureStatic(sid), 2);
+    prog.clear();
+    QCOMPARE(scene->value(dimmer, 0), uchar(99));
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(scene->value(dimmer, 0), uchar(77));
+
+    // cleared, undone: a hidden scene with the same values
+    const QList<SceneValue> taken = scene->values();
+    timeline.clearStatic(sid);
+    QCOMPARE(show->staticScene(), Function::invalidId());
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Clear the static values"));
+    QVERIFY(timeline.undo(sid));
+    scene = qobject_cast<Scene *>(m_doc->function(show->staticScene()));
+    QVERIFY(scene != nullptr && scene->isVisible() == false);
+    const QList<SceneValue> back = scene->values();
+    QCOMPARE(back.count(), taken.count());
+    for (int i = 0; i < back.count(); i++)
+    {
+        QCOMPARE(back.at(i).fxi, taken.at(i).fxi);
+        QCOMPARE(back.at(i).channel, taken.at(i).channel);
+        QCOMPARE(back.at(i).value, taken.at(i).value);
+    }
+    const quint32 backId = scene->id();
+    QVERIFY(timeline.redo(sid));
+    QCOMPARE(show->staticScene(), Function::invalidId());
+    QVERIFY(m_doc->function(backId) == nullptr);
+}
+
+void Backend_Test::superSceneHistoryForgets()
+{
+    // a scene deleted from the list: its blocks never come back with undo
+    // (a new function may get its id). A super scene deleted, or another
+    // show: the history goes
+    DtcCore core;
+    Doc *doc = core.doc();
+    TimelineEditor *timeline = core.timeline();
+    auto scene = [&]() {
+        Scene *s = new Scene(doc);
+        doc->addFunction(s);
+        return s;
+    };
+    const quint32 gone = scene()->id();
+    const quint32 kept = scene()->id();
+    const int id = core.effects()->createSuperScene("Forgets");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    const QVariantList tracks = timeline->show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    const int first = timeline->addBlock(sid, t1, gone, 0);
+    QVERIFY(first >= 0);
+    QVERIFY(timeline->addBlock(sid, t2, kept, 0) >= 0);
+    timeline->moveBlock(sid, first, t1, 2000);
+    QVERIFY(timeline->addBlock(sid, t2, gone, 12000) >= 0);
+    // (one to redo)
+    QVERIFY(timeline->undo(sid));
+    QVERIFY(timeline->history(sid).value("canRedo").toBool());
+
+    QSignalSpy told(timeline, SIGNAL(historyChanged()));
+    core.deleteFunction(gone);
+    QVERIFY(told.count() > 0);
+    Scene *taker = new Scene(doc);
+    QVERIFY(doc->addFunction(taker, gone));
+    // the steps that only did something to its blocks are gone too: adding
+    // the other scene is all there is to undo
+    QVERIFY(timeline->history(sid).value("canRedo").toBool() == false);
+    QCOMPARE(timeline->history(sid).value("undoText").toString(), QString("Add a block"));
+    QVERIFY(timeline->undo(sid));
+    QVERIFY(superSceneBlocks(timeline->show(sid)).isEmpty());
+    QVERIFY(timeline->undo(sid) == false);
+    QVERIFY(timeline->redo(sid));
+    const QVariantList left = superSceneBlocks(timeline->show(sid));
+    QCOMPARE(left.count(), 1);
+    QCOMPARE(left.first().toMap().value("functionId").toUInt(), kept);
+    QVERIFY(timeline->redo(sid) == false);
+
+    // the super scene deleted
+    told.clear();
+    QVERIFY(timeline->history(sid).value("canUndo").toBool());
+    core.deleteFunction(sid);
+    QVERIFY(told.count() > 0);
+    QVERIFY(timeline->history(sid).value("canUndo").toBool() == false);
+
+    // another show (or a new one)
+    const int other = core.effects()->createSuperScene("Other");
+    timeline->addTrack(quint32(other), "More");
+    QVERIFY(timeline->history(quint32(other)).value("canUndo").toBool());
+    told.clear();
+    doc->clearContents();
+    QVERIFY(told.count() > 0);
+    QVERIFY(timeline->history(quint32(other)).value("canUndo").toBool() == false);
+}
+
+void Backend_Test::superSceneUndoWhilePlaying()
+{
+    // a super scene started elsewhere (a group, a playback) plays on while
+    // its edits are undone and redone: what undo takes away stops, and
+    // nothing waits for the timer while the runner is held (each undo is
+    // quick)
+    m_doc->audioPluginCache()->load(QDir(DTC_AUDIO_PLUGINS));
+    QTemporaryDir dir;
+    const QString path = dir.filePath("tone.wav");
+    QVERIFY(writeToneWav(path));
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 6), 1);
+    const quint32 dimmer = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    IOManager io(m_doc);
+    auto out = [&](int channel) { return io.channelValues(0).at(channel).toInt(); };
+    auto scene = [&](int channel, int value) {
+        Scene *s = new Scene(m_doc);
+        s->setValue(dimmer, quint32(channel), uchar(value));
+        m_doc->addFunction(s);
+        return s;
+    };
+    Scene *a = scene(0, 200);
+    Scene *b = scene(1, 100);
+    Scene *c = scene(3, 50);
+
+    const int id = fx.createSuperScene("Undo live");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    const int t3 = timeline.addTrack(sid, "Three");
+    auto block = [&](int track, Scene *s) {
+        const int b = timeline.addBlock(sid, track, s->id(), 0);
+        timeline.resizeBlock(sid, b, 0, 60000);
+        return b;
+    };
+    const int blockA = block(t1, a);
+    const int blockB = block(t2, b);
+    // an audio later on: it doesn't play here
+    const int sound = timeline.addAudio(sid, t3, QUrl::fromLocalFile(path), 50000);
+    QVERIFY2(sound >= 0, "the sndfile plugin reads WAV files");
+    timeline.setSettings(sid, { { "endTime", 60000 } });
+    show->setStaticScene(scene(2, 90)->id());
+
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    const FunctionParent elsewhere(FunctionParent::ManualVCWidget, 7);
+    show->start(m_doc->masterTimer(), elsewhere);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 100, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 90, 3000);
+
+    QElapsedTimer clock;
+    auto quick = [&](bool back) {
+        clock.restart();
+        const bool done = back ? timeline.undo(sid) : timeline.redo(sid);
+        return done && clock.elapsed() < 500;
+    };
+
+    // a block to another track and back: it plays on
+    timeline.moveBlock(sid, blockB, t3, 0);
+    QVERIFY(quick(true));
+    QCOMPARE(show->getTrackFromShowFunctionID(quint32(blockB))->id(), quint32(t2));
+    QVERIFY(quick(false));
+    QVERIFY(quick(true));
+    QTest::qWait(100);
+    QCOMPARE(out(1), 100);
+    // a resize
+    timeline.resizeBlock(sid, blockA, 0, 30000);
+    QVERIFY(quick(true));
+    QCOMPARE(show->showFunction(quint32(blockA))->duration(), 60000u);
+    // the automation: half the dimmer, then a quarter; undone, half again
+    timeline.setAutomation(sid, t1, "dimmer", { QVariantMap({ { "time", 0 }, { "value", 0.5 } }) });
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    timeline.setAutomation(sid, t1, "dimmer", { QVariantMap({ { "time", 0 }, { "value", 0.25 } }) });
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    QVERIFY(quick(true));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    QVERIFY(quick(false));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    // (with no points at all, the dimmer stays where it was until the next
+    // start, as when the lane is cleared)
+    QVERIFY(quick(true));
+    QVERIFY(quick(true));
+    QVERIFY(show->track(quint32(t1))->hasAutomation("dimmer") == false);
+
+    // the static values cleared and back (a hidden scene of their own)
+    timeline.clearStatic(sid);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 0, 3000);
+    QVERIFY(quick(true));
+    Scene *values = qobject_cast<Scene *>(m_doc->function(show->staticScene()));
+    QVERIFY(values != nullptr && values->isVisible() == false);
+    QCOMPARE(values->value(dimmer, 2), uchar(90));
+    QVERIFY(quick(false));
+    QCOMPARE(show->staticScene(), Function::invalidId());
+    QVERIFY(quick(true));
+
+    // the audio block deleted with its audio, and back
+    const quint32 audio = show->showFunction(quint32(sound))->functionID();
+    timeline.removeBlock(sid, sound);
+    QVERIFY(m_doc->function(audio) == nullptr);
+    QVERIFY(quick(true));
+    QVERIFY(show->showFunction(quint32(sound)) != nullptr);
+    QVERIFY(qobject_cast<Audio *>(m_doc->function(show->showFunction(quint32(sound))->functionID())) != nullptr);
+    QVERIFY(quick(false));
+    QVERIFY(show->showFunction(quint32(sound)) == nullptr);
+    QVERIFY(show->isRunning());
+
+    // a block added plays from the next start; undone, what it plays stops
+    const int blockC = block(t3, c);
+    show->stop(elsewhere);
+    QTRY_VERIFY_WITH_TIMEOUT(show->isRunning() == false, 3000);
+    show->start(m_doc->masterTimer(), elsewhere);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 50, 3000);
+    QVERIFY(quick(true));
+    QVERIFY(quick(true));
+    QVERIFY(show->showFunction(quint32(blockC)) == nullptr);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 0, 3000);
+    QVERIFY(show->isRunning());
+    QCOMPARE(out(0), 200);
+    QCOMPARE(out(1), 100);
+
+    show->stop(elsewhere);
+    QTRY_VERIFY_WITH_TIMEOUT(show->isRunning() == false, 3000);
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::superSceneUndoRandom()
+{
+    // random edits, undone to the start and redone to the end: on the way,
+    // each state is the one it was, as saved and as shown (with its ids)
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 dimmer = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    QList<quint32> scenes;
+    for (int i = 0; i < 3; i++)
+    {
+        Scene *s = new Scene(m_doc);
+        s->setValue(dimmer, quint32(i % 2), uchar(60 * (i + 1)));
+        QVERIFY(m_doc->addFunction(s));
+        scenes.append(s->id());
+    }
+
+    struct Snapshot
+    {
+        QByteArray saved;
+        QVariantMap shown;
+        QString op;
+    };
+
+    for (quint32 seed = 1; seed <= 100; seed++)
+    {
+        QRandomGenerator rng(seed);
+        auto below = [&rng](int n) { return n > 0 ? int(rng.bounded(n)) : 0; };
+        const int id = fx.createSuperScene(QString("Random %1").arg(seed));
+        QVERIFY(id >= 0);
+        const quint32 sid = quint32(id);
+        Show *show = qobject_cast<Show *>(m_doc->function(sid));
+        QList<Snapshot> states = { { superSceneXml(show), timeline.show(sid), QString("start") } };
+
+        for (int step = 0; step < 40; step++)
+        {
+            QList<int> tracks, blocks;
+            for (const QVariant &t : timeline.show(sid).value("tracks").toList())
+            {
+                tracks.append(t.toMap().value("id").toInt());
+                for (const QVariant &b : t.toMap().value("blocks").toList())
+                    blocks.append(b.toMap().value("id").toInt());
+            }
+            const int track = tracks.isEmpty() ? -1 : tracks.at(below(int(tracks.count())));
+            const int block = blocks.isEmpty() ? -1 : blocks.at(below(int(blocks.count())));
+            // a group of blocks: none, some or all of them
+            auto some = [&]() {
+                QVariantList group;
+                for (int b : std::as_const(blocks))
+                    if (below(2) == 1)
+                        group.append(b);
+                return group;
+            };
+            auto blockKey = [&]() {
+                return QStringList({ "fadeIn", "fadeOut", "stretch", "locked", "color" }).at(below(5));
+            };
+            auto blockValue = [&](const QString &key) {
+                return key == "stretch" ? QVariant(below(2) == 1)
+                     : key == "locked" ? QVariant(below(4) == 0)
+                     : key == "color" ? QVariant(QStringList({ "#ff0000", "#00ff00", "" }).at(below(3)))
+                     : QVariant(below(40) * 250);
+            };
+            QString op;
+            switch (below(21))
+            {
+                case 0:
+                    op = "addTrack";
+                    timeline.addTrack(sid, below(2) ? QString() : QString("T%1").arg(below(5)));
+                break;
+                case 1:
+                    op = "removeTrack";
+                    if (tracks.count() > 1)
+                        timeline.removeTrack(sid, track);
+                break;
+                case 2:
+                    op = "rename";
+                    timeline.setTrack(sid, track, "name", QString("N%1").arg(below(4)));
+                break;
+                case 3:
+                    op = "mute";
+                    timeline.setTrack(sid, track, "mute", below(2) == 1);
+                break;
+                case 4:
+                    op = "lock a track";
+                    timeline.setTrack(sid, track, "locked", below(3) == 0);
+                break;
+                case 5:
+                    op = "moveTrack";
+                    timeline.moveTrack(sid, track, below(2) ? 1 : -1);
+                break;
+                case 6:
+                case 7:
+                    op = "addBlock";
+                    timeline.addBlock(sid, track, scenes.at(below(int(scenes.count()))), below(80) * 250);
+                break;
+                case 8:
+                    op = "moveBlock";
+                    timeline.moveBlock(sid, block, below(3) == 0 ? -1 : track, below(80) * 250);
+                break;
+                case 9:
+                    op = "resizeBlock";
+                    timeline.resizeBlock(sid, block, below(80) * 250, 100 + below(60) * 250);
+                break;
+                case 10:
+                {
+                    const QString key = blockKey();
+                    op = "setBlock " + key;
+                    timeline.setBlock(sid, block, key, blockValue(key));
+                }
+                break;
+                case 11:
+                    op = "removeBlock";
+                    timeline.removeBlock(sid, block);
+                break;
+                case 12:
+                    op = "duplicateBlock";
+                    timeline.duplicateBlock(sid, block);
+                break;
+                case 13:
+                {
+                    op = "setAutomation";
+                    QVariantList points;
+                    for (int p = below(4); p > 0; p--)
+                        points.append(QVariantMap({ { "time", below(40) * 500 }, { "value", below(11) / 10.0 },
+                                                    { "smooth", below(2) == 1 } }));
+                    timeline.setAutomation(sid, track, below(2) ? "dimmer" : "phase", points);
+                }
+                break;
+                // (several blocks at once; scenes only, so no function id moves.
+                // Folding is no step, undo doesn't bring it back: not here)
+                case 14:
+                {
+                    op = "moveBlocks";
+                    const QVariantList group = some();
+                    const int delta = (below(41) - 20) * 250;
+                    timeline.moveBlocks(sid, group, delta, below(5) - 2);
+                }
+                break;
+                case 15:
+                {
+                    const QString key = blockKey();
+                    op = "setBlocks " + key;
+                    const QVariantList group = some();
+                    timeline.setBlocks(sid, group, key, blockValue(key));
+                }
+                break;
+                case 16:
+                    op = "removeBlocks";
+                    timeline.removeBlocks(sid, some());
+                break;
+                case 17:
+                    op = "duplicateBlocks";
+                    timeline.duplicateBlocks(sid, some());
+                break;
+                case 18:
+                    op = "cutBlocks";
+                    timeline.cutBlocks(sid, some());
+                break;
+                case 19:
+                {
+                    // (a copy is no step: copied and pasted in one. From the
+                    // last track, the paste adds tracks)
+                    op = "pasteBlocks";
+                    timeline.copyBlocks(sid, some());
+                    const int onto = below(4) == 0 ? -1 : (below(3) == 0 && tracks.isEmpty() == false ? tracks.last() : track);
+                    timeline.pasteBlocks(sid, onto, below(80) * 250);
+                }
+                break;
+                default:
+                {
+                    op = "setSettings";
+                    QVariantMap settings;
+                    if (below(2))
+                        settings.insert("grid", below(2) ? "bars" : "time");
+                    if (below(2))
+                        settings.insert("bpm", 60 + below(10) * 10);
+                    if (below(3) == 0)
+                        settings.insert("beatsPerBar", 2 + below(3));
+                    if (below(3) == 0)
+                        settings.insert("gridOffset", below(8) * 250);
+                    if (below(3) == 0)
+                        settings.insert("endTime", below(2) ? 0 : 1000 + below(40) * 500);
+                    if (below(3) == 0)
+                        settings.insert("loop", below(2) == 1);
+                    timeline.setSettings(sid, settings);
+                }
+                break;
+            }
+            const Snapshot now = { superSceneXml(show), timeline.show(sid), QString("%1 (step %2)").arg(op).arg(step) };
+            if (now.saved != states.last().saved || now.shown != states.last().shown)
+                states.append(now);
+        }
+
+        // back to the start
+        for (int i = int(states.count()) - 2; i >= 0; i--)
+        {
+            const QByteArray label = QString("seed %1: undo of %2").arg(seed).arg(states.at(i + 1).op).toUtf8();
+            QVERIFY2(timeline.undo(sid), label.constData());
+            QVERIFY2(superSceneXml(show) == states.at(i).saved, label.constData());
+            QVERIFY2(timeline.show(sid) == states.at(i).shown, label.constData());
+        }
+        QVERIFY2(timeline.undo(sid) == false, qPrintable(QString("seed %1: more to undo").arg(seed)));
+        // and to the end
+        for (int i = 1; i < states.count(); i++)
+        {
+            const QByteArray label = QString("seed %1: redo of %2").arg(seed).arg(states.at(i).op).toUtf8();
+            QVERIFY2(timeline.redo(sid), label.constData());
+            QVERIFY2(superSceneXml(show) == states.at(i).saved, label.constData());
+            QVERIFY2(timeline.show(sid) == states.at(i).shown, label.constData());
+        }
+        QVERIFY2(timeline.redo(sid) == false, qPrintable(QString("seed %1: more to redo").arg(seed)));
+        // (the next seed on a super scene of its own)
+        m_doc->deleteFunction(sid);
+    }
+}
+
+/*****************************************************************************
+ * superescenas B1: several blocks selected, moved, deleted, duplicated and
+ * changed together
+ *****************************************************************************/
+
+namespace
+{
+
+/** The track and the start of a block, (-1, -1) when it is gone */
+QPair<int, int> superSceneBlockAt(const Show *show, int block)
+{
+    const ShowFunction *sf = show->showFunction(quint32(block));
+    const Track *track = show->getTrackFromShowFunctionID(quint32(block));
+    if (sf == nullptr || track == nullptr)
+        return { -1, -1 };
+    return { int(track->id()), int(sf->startTime()) };
+}
+
+}
+
+void Backend_Test::superSceneMoveBlocks()
+{
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const quint32 dimmer = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(dimmer, 0, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    const int id = fx.createSuperScene("Group");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    const int t3 = timeline.addTrack(sid, "Locked");
+    auto add = [&](int track, int start) {
+        const int block = timeline.addBlock(sid, track, scene->id(), start);
+        timeline.resizeBlock(sid, block, start, 1000);
+        return block;
+    };
+    auto at = [&](int block) { return superSceneBlockAt(show, block); };
+    const int a = add(t1, 1000);
+    const int b = add(t1, 3000);
+    const int c = add(t2, 2000);
+    timeline.setTrack(sid, t3, "locked", true);
+    const QVariantList group = { a, b, c };
+
+    // back in time: the earliest one stops at 0, the others keep their
+    // distance. One step
+    timeline.moveBlocks(sid, group, -5000, 0);
+    QCOMPARE(at(a), qMakePair(t1, 0));
+    QCOMPARE(at(b), qMakePair(t1, 2000));
+    QCOMPARE(at(c), qMakePair(t2, 1000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Move 3 block(s)"));
+
+    // later and one track down
+    timeline.moveBlocks(sid, { a, b }, 500, 1);
+    QCOMPARE(at(a), qMakePair(t2, 500));
+    QCOMPARE(at(b), qMakePair(t2, 2500));
+    QCOMPARE(at(c), qMakePair(t2, 1000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Move 2 block(s)"));
+
+    // a and b onto the locked track, c (up on the first one) onto the
+    // second: all of them or none, so only in time
+    timeline.moveBlocks(sid, { c }, 0, -1);
+    QCOMPARE(at(c), qMakePair(t1, 1000));
+    timeline.moveBlocks(sid, group, 1000, 1);
+    QCOMPARE(at(a), qMakePair(t2, 1500));
+    QCOMPARE(at(b), qMakePair(t2, 3500));
+    QCOMPARE(at(c), qMakePair(t1, 2000));
+    // past the last track, or before the first one: only in time
+    timeline.moveBlocks(sid, group, 1000, 2);
+    QCOMPARE(at(a), qMakePair(t2, 2500));
+    QCOMPARE(at(b), qMakePair(t2, 4500));
+    QCOMPARE(at(c), qMakePair(t1, 3000));
+    timeline.moveBlocks(sid, group, 0, -1);
+    QCOMPARE(at(a), qMakePair(t2, 2500));
+    QCOMPARE(at(c), qMakePair(t1, 3000));
+    // up one
+    timeline.moveBlocks(sid, { a, b }, -500, -1);
+    QCOMPARE(at(a), qMakePair(t1, 2000));
+    QCOMPARE(at(b), qMakePair(t1, 4000));
+
+    // a locked block stays, the others move
+    timeline.setBlock(sid, b, "locked", true);
+    const QByteArray saved = superSceneXml(show);
+    timeline.moveBlocks(sid, group, 1000, 1);
+    QCOMPARE(at(a), qMakePair(t2, 3000));
+    QCOMPARE(at(b), qMakePair(t1, 4000));
+    QCOMPARE(at(c), qMakePair(t2, 4000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Move 2 block(s)"));
+    // one undo takes the whole group back
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(at(a), qMakePair(t1, 2000));
+    QCOMPARE(at(c), qMakePair(t1, 3000));
+    QCOMPARE(superSceneXml(show), saved);
+    QVERIFY(timeline.redo(sid));
+
+    // blocks on a locked track stay too; nothing that can move is no step
+    timeline.setTrack(sid, t2, "locked", true);
+    const QVariantMap steps = timeline.history(sid);
+    timeline.moveBlocks(sid, group, 1000, 0);
+    QCOMPARE(timeline.history(sid), steps);
+    QCOMPARE(at(a), qMakePair(t2, 3000));
+    QCOMPARE(at(b), qMakePair(t1, 4000));
+    timeline.setBlock(sid, b, "locked", false);
+    timeline.moveBlocks(sid, group, 1000, 0);
+    QCOMPARE(at(a), qMakePair(t2, 3000));
+    QCOMPARE(at(b), qMakePair(t1, 5000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Move 1 block(s)"));
+    timeline.setTrack(sid, t2, "locked", false);
+    // (nothing at all: no step either; ids that aren't blocks are left out)
+    const QVariantMap still = timeline.history(sid);
+    timeline.moveBlocks(sid, group, 0, 0);
+    timeline.moveBlocks(sid, { 999, -1, QString("x") }, 1000, 0);
+    QCOMPARE(timeline.history(sid), still);
+
+    // a group of 20 blocks: the view is told once
+    const int t4 = timeline.addTrack(sid, "Many");
+    QVariantList many;
+    for (int i = 0; i < 20; i++)
+        many.append(add(t4, i * 1000));
+    QSignalSpy changed(&timeline, SIGNAL(changed()));
+    QSignalSpy showChanged(show, SIGNAL(changed(quint32)));
+    timeline.moveBlocks(sid, many, 250, 0);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(showChanged.count(), 1);
+    QCOMPARE(at(many.last().toInt()), qMakePair(t4, 19250));
+
+    // while it plays (started elsewhere): moved, copied and deleted at once,
+    // and it plays on
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    const FunctionParent elsewhere(FunctionParent::ManualVCWidget, 7);
+    show->start(m_doc->masterTimer(), elsewhere);
+    QTRY_VERIFY_WITH_TIMEOUT(show->isRunning(), 3000);
+    QTest::qWait(100);
+    QElapsedTimer clock;
+    clock.start();
+    timeline.moveBlocks(sid, many, -250, 0);
+    const QVariantList copies = timeline.duplicateBlocks(sid, many);
+    timeline.removeBlocks(sid, many);
+    QVERIFY(clock.elapsed() < 500);
+    QCOMPARE(copies.count(), 20);
+    QCOMPARE(at(copies.first().toInt()), qMakePair(t4, 20000));
+    QCOMPARE(at(many.first().toInt()).first, -1);
+    QVERIFY(show->isRunning());
+    show->stop(elsewhere);
+    QTRY_VERIFY_WITH_TIMEOUT(show->isRunning() == false, 3000);
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::superSceneRemoveBlocks()
+{
+    m_doc->audioPluginCache()->load(QDir(DTC_AUDIO_PLUGINS));
+    QTemporaryDir dir;
+    const QString path = dir.filePath("tone.wav");
+    QVERIFY(writeToneWav(path));
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    Scene *scene = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(scene));
+    const int id = fx.createSuperScene("Delete");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    const int t3 = timeline.addTrack(sid, "Locked");
+    auto at = [&](int block) { return superSceneBlockAt(show, block); };
+
+    // two blocks of one audio of the super scene, a scene, a block on a
+    // locked track
+    const int sound = timeline.addAudio(sid, t1, QUrl::fromLocalFile(path), 0);
+    QVERIFY2(sound >= 0, "the sndfile plugin reads WAV files");
+    const quint32 audio = show->showFunction(quint32(sound))->functionID();
+    const int echo = timeline.duplicateBlock(sid, sound);
+    QCOMPARE(show->showFunction(quint32(echo))->functionID(), audio);
+    const int other = timeline.addBlock(sid, t2, scene->id(), 0);
+    const int stays = timeline.addBlock(sid, t3, scene->id(), 0);
+    timeline.setTrack(sid, t3, "locked", true);
+
+    // the audio stays while a block plays it; the locked track keeps its
+    // block. One step, told once
+    QSignalSpy changed(&timeline, SIGNAL(changed()));
+    timeline.removeBlocks(sid, { sound, other, stays });
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(at(sound).first, -1);
+    QCOMPARE(at(other).first, -1);
+    QCOMPARE(at(stays), qMakePair(t3, 0));
+    QCOMPARE(at(echo).first, t1);
+    QVERIFY(m_doc->function(audio) != nullptr);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Delete 2 block(s)"));
+    // its last block takes it
+    timeline.removeBlocks(sid, { echo });
+    QVERIFY(m_doc->function(audio) == nullptr);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Delete 1 block(s)"));
+
+    // undone, all of them come back, with the audio
+    QVERIFY(timeline.undo(sid));
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(at(sound).first, t1);
+    QCOMPARE(at(echo).first, t1);
+    QCOMPARE(at(other), qMakePair(t2, 0));
+    const quint32 back = show->showFunction(quint32(sound))->functionID();
+    QCOMPARE(show->showFunction(quint32(echo))->functionID(), back);
+    QVERIFY(qobject_cast<Audio *>(m_doc->function(back)) != nullptr);
+
+    // deleted together, the audio goes once
+    timeline.removeBlocks(sid, { sound, echo, sound });
+    QVERIFY(m_doc->function(back) == nullptr);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Delete 2 block(s)"));
+
+    // an audio of the list (not of the super scene) stays
+    Audio *listed = new Audio(m_doc);
+    QVERIFY(listed->setSourceFileName(path));
+    QVERIFY(m_doc->addFunction(listed));
+    const int song = timeline.addBlock(sid, t2, listed->id(), 5000);
+    QVERIFY(song >= 0);
+    timeline.removeBlock(sid, song);
+    QCOMPARE(at(song).first, -1);
+    QVERIFY(m_doc->function(listed->id()) == listed);
+
+    // nothing to delete: no step
+    const QVariantMap steps = timeline.history(sid);
+    timeline.removeBlocks(sid, { stays, 999 });
+    QCOMPARE(timeline.history(sid), steps);
+    QCOMPARE(at(stays), qMakePair(t3, 0));
+}
+
+void Backend_Test::superSceneDuplicateAndSetBlocks()
+{
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    Scene *scene = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(scene));
+    const int id = fx.createSuperScene("Copies");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t1 = tracks.at(0).toMap().value("id").toInt();
+    const int t2 = tracks.at(1).toMap().value("id").toInt();
+    auto at = [&](int block) { return superSceneBlockAt(show, block); };
+
+    // a group over two tracks, from 1000 to 4500
+    const int a = timeline.addBlock(sid, t1, scene->id(), 1000);
+    timeline.resizeBlock(sid, a, 1000, 2000);
+    timeline.setBlock(sid, a, "fadeIn", 300);
+    timeline.setBlock(sid, a, "fadeOut", 400);
+    timeline.setBlock(sid, a, "color", "#ff0000");
+    timeline.setBlock(sid, a, "stretch", true);
+    const int b = timeline.addBlock(sid, t2, scene->id(), 2500);
+    timeline.resizeBlock(sid, b, 2500, 2000);
+
+    // copied right after it: each one on its own track, as long as the group
+    // later. One step, told once
+    QSignalSpy changed(&timeline, SIGNAL(changed()));
+    const QVariantList copies = timeline.duplicateBlocks(sid, { a, b });
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(copies.count(), 2);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Duplicate 2 block(s)"));
+    const int a2 = copies.at(0).toInt();
+    const int b2 = copies.at(1).toInt();
+    QCOMPARE(at(a2), qMakePair(t1, 4500));
+    QCOMPARE(at(b2), qMakePair(t2, 6000));
+    const ShowFunction *copy = show->showFunction(quint32(a2));
+    QCOMPARE(copy->functionID(), scene->id());
+    QCOMPARE(copy->duration(), 2000u);
+    QCOMPARE(copy->fadeIn(), 300u);
+    QCOMPARE(copy->fadeOut(), 400u);
+    QCOMPARE(copy->color(), QColor("#ff0000"));
+    QVERIFY(copy->stretch());
+    QCOMPARE(show->showFunction(quint32(b2))->duration(), 2000u);
+    QVERIFY(show->showFunction(quint32(b2))->stretch() == false);
+
+    // a block on a locked track is not copied (nor counted in the length)
+    timeline.setTrack(sid, t2, "locked", true);
+    const QVariantList one = timeline.duplicateBlocks(sid, { b, a });
+    QCOMPARE(one.count(), 1);
+    QCOMPARE(at(one.first().toInt()), qMakePair(t1, 3000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Duplicate 1 block(s)"));
+    QVERIFY(timeline.duplicateBlocks(sid, { b }).isEmpty());
+    QCOMPARE(timeline.duplicateBlock(sid, b), -1);
+    timeline.setTrack(sid, t2, "locked", false);
+
+    // changed together: one step
+    timeline.setBlocks(sid, { a, b, b2 }, "stretch", false);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Change 3 block(s)"));
+    QVERIFY(show->showFunction(quint32(a))->stretch() == false);
+    timeline.setBlocks(sid, { b, b2 }, "stretch", true);
+    QVERIFY(show->showFunction(quint32(b))->stretch());
+    QVERIFY(show->showFunction(quint32(b2))->stretch());
+    QVERIFY(timeline.undo(sid));
+    QVERIFY(show->showFunction(quint32(b))->stretch() == false);
+    QVERIFY(show->showFunction(quint32(b2))->stretch() == false);
+    QVERIFY(timeline.undo(sid));
+    QVERIFY(show->showFunction(quint32(a))->stretch());
+    QVERIFY(timeline.redo(sid));
+
+    // locked together: then none of them moves
+    timeline.setBlocks(sid, { a, b, a2, b2 }, "locked", true);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Change 4 block(s)"));
+    for (int block : { a, b, a2, b2 })
+        QVERIFY(show->showFunction(quint32(block))->isLocked());
+    timeline.moveBlocks(sid, { a, b, a2, b2 }, 1000, 0);
+    QCOMPARE(at(a), qMakePair(t1, 1000));
+    QCOMPARE(at(b2), qMakePair(t2, 6000));
+    timeline.setBlocks(sid, { a, b, a2, b2 }, "locked", false);
+    QVERIFY(show->showFunction(quint32(b2))->isLocked() == false);
+    // (the fades fit in each block)
+    timeline.setBlocks(sid, { a, b }, "fadeIn", 5000);
+    QCOMPARE(show->showFunction(quint32(a))->fadeIn(), 2000u);
+
+    // a key it doesn't know: no step
+    const QVariantMap steps = timeline.history(sid);
+    timeline.setBlocks(sid, { a, b }, "size", 3);
+    QCOMPARE(timeline.history(sid), steps);
+}
+
+/*****************************************************************************
+ * superescenas B2: copy, cut and paste blocks, also into another super scene
+ *****************************************************************************/
+
+namespace
+{
+
+/** The ids of the tracks of a super scene, in their order */
+QList<int> superSceneTracks(const Show *show)
+{
+    QList<int> ids;
+    for (const Track *track : show->tracks())
+        ids.append(int(track->id()));
+    return ids;
+}
+
+}
+
+void Backend_Test::superSceneCopyPaste()
+{
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    QSignalSpy messages(&timeline, SIGNAL(message(QString)));
+    QSignalSpy clipboard(&timeline, SIGNAL(clipboardChanged()));
+    Scene *scene = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(scene));
+    Scene *other = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(other));
+    const int id = fx.createSuperScene("Copies");
+    QVERIFY(id >= 0);
+    const quint32 sid = quint32(id);
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QVariantList tracks = timeline.show(sid).value("tracks").toList();
+    const int t0 = tracks.at(0).toMap().value("id").toInt();
+    const int t1 = tracks.at(1).toMap().value("id").toInt();
+    const int t2 = timeline.addTrack(sid, "Three");
+    auto at = [&](int block) { return superSceneBlockAt(show, block); };
+
+    // on the first track at 1 s, with its fades, stretched and red; on the
+    // second one at 3 s, locked
+    const int a = timeline.addBlock(sid, t0, scene->id(), 1000);
+    timeline.resizeBlock(sid, a, 1000, 2000);
+    timeline.setBlock(sid, a, "fadeIn", 300);
+    timeline.setBlock(sid, a, "fadeOut", 400);
+    timeline.setBlock(sid, a, "stretch", true);
+    timeline.setBlock(sid, a, "color", "#ff0000");
+    const int b = timeline.addBlock(sid, t1, other->id(), 3000);
+    timeline.resizeBlock(sid, b, 3000, 1500);
+    timeline.setBlock(sid, b, "locked", true);
+
+    // copying changes nothing, and is no step
+    QCOMPARE(timeline.clipboardCount(), 0);
+    const QVariantMap steps = timeline.history(sid);
+    const QByteArray saved = superSceneXml(show);
+    QCOMPARE(timeline.copyBlocks(sid, { a, b, a, 999 }), 2);
+    QCOMPARE(timeline.clipboardCount(), 2);
+    QCOMPARE(clipboard.count(), 1);
+    QCOMPARE(timeline.history(sid), steps);
+    QCOMPARE(superSceneXml(show), saved);
+    // (nothing to copy: the clipboard stays)
+    QCOMPARE(timeline.copyBlocks(sid, { 999 }), 0);
+    QCOMPARE(timeline.clipboardCount(), 2);
+
+    // on the second track at 20 s: the first one there, the other one a
+    // track down and 2 s later, as they were. Their settings, not locked.
+    // One step, told once
+    QSignalSpy changed(&timeline, SIGNAL(changed()));
+    const QVariantList pasted = timeline.pasteBlocks(sid, t1, 20000);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(pasted.count(), 2);
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Paste 2 block(s)"));
+    const int a2 = pasted.at(0).toInt();
+    const int b2 = pasted.at(1).toInt();
+    QCOMPARE(at(a2), qMakePair(t1, 20000));
+    QCOMPARE(at(b2), qMakePair(t2, 22000));
+    const ShowFunction *copy = show->showFunction(quint32(a2));
+    QCOMPARE(copy->functionID(), scene->id());
+    QCOMPARE(copy->duration(), 2000u);
+    QCOMPARE(copy->fadeIn(), 300u);
+    QCOMPARE(copy->fadeOut(), 400u);
+    QVERIFY(copy->stretch());
+    QCOMPARE(copy->color(), QColor("#ff0000"));
+    QVERIFY(copy->isLocked() == false);
+    copy = show->showFunction(quint32(b2));
+    QCOMPARE(copy->functionID(), other->id());
+    QCOMPARE(copy->duration(), 1500u);
+    QVERIFY(copy->isLocked() == false);
+    QVERIFY(copy->stretch() == false);
+    QVERIFY(copy->color().isValid() == false);
+    // (the clipboard is still there)
+    QCOMPARE(timeline.clipboardCount(), 2);
+
+    // on the last track: a fourth one is added for the other block
+    const QByteArray before = superSceneXml(show);
+    const QVariantList more = timeline.pasteBlocks(sid, t2, 30000);
+    QCOMPARE(more.count(), 2);
+    QCOMPARE(int(show->tracks().count()), 4);
+    const int t3 = superSceneTracks(show).last();
+    QCOMPARE(show->track(quint32(t3))->name(), QString("Track 4"));
+    QCOMPARE(at(more.at(0).toInt()), qMakePair(t2, 30000));
+    QCOMPARE(at(more.at(1).toInt()), qMakePair(t3, 32000));
+    // undone: the blocks and the track go
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(int(show->tracks().count()), 3);
+    QCOMPARE(at(more.at(0).toInt()).first, -1);
+    QCOMPARE(superSceneXml(show), before);
+    QVERIFY(timeline.redo(sid));
+    QCOMPARE(int(show->tracks().count()), 4);
+    QCOMPARE(at(more.at(1).toInt()), qMakePair(t3, 32000));
+
+    // a folded track that gets blocks unfolds; no track given: the first
+    // one. Before 0: at 0
+    timeline.setTrack(sid, t0, "hidden", true);
+    timeline.setTrack(sid, t1, "hidden", true);
+    const QVariantList first = timeline.pasteBlocks(sid, -1, -500);
+    QCOMPARE(at(first.at(0).toInt()), qMakePair(t0, 0));
+    QCOMPARE(at(first.at(1).toInt()), qMakePair(t1, 2000));
+    QVERIFY(show->track(quint32(t0))->isHidden() == false);
+    QVERIFY(show->track(quint32(t1))->isHidden() == false);
+    // (another track gets nothing: it stays folded)
+    timeline.setTrack(sid, t3, "hidden", true);
+    QCOMPARE(timeline.pasteBlocks(sid, t0, 50000).count(), 2);
+    QVERIFY(show->track(quint32(t3))->isHidden());
+    QVERIFY(messages.isEmpty());
+
+    // not a super scene: nothing
+    QVERIFY(timeline.pasteBlocks(quint32(scene->id()), t0, 0).isEmpty());
+    QVERIFY(timeline.pasteBlocks(9999, t0, 0).isEmpty());
+}
+
+void Backend_Test::superScenePasteElsewhere()
+{
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    QSignalSpy messages(&timeline, SIGNAL(message(QString)));
+    Scene *scene = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(scene));
+    Scene *other = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(other));
+    const quint32 sidA = quint32(fx.createSuperScene("A"));
+    const quint32 sidB = quint32(fx.createSuperScene("B"));
+    Show *showA = qobject_cast<Show *>(m_doc->function(sidA));
+    Show *showB = qobject_cast<Show *>(m_doc->function(sidB));
+    QVERIFY(showA != nullptr && showB != nullptr);
+    const QList<int> tracksA = superSceneTracks(showA);
+    const QList<int> tracksB = superSceneTracks(showB);
+    const int a = timeline.addBlock(sidA, tracksA.at(0), scene->id(), 1000);
+    const int b = timeline.addBlock(sidA, tracksA.at(1), other->id(), 2000);
+    QVERIFY(a >= 0 && b >= 0);
+
+    // into the other super scene: the same scenes, its own blocks
+    QCOMPARE(timeline.copyBlocks(sidA, { a, b }), 2);
+    const QVariantList pasted = timeline.pasteBlocks(sidB, tracksB.at(0), 0);
+    QCOMPARE(pasted.count(), 2);
+    QCOMPARE(superSceneBlockAt(showB, pasted.at(0).toInt()), qMakePair(tracksB.at(0), 0));
+    QCOMPARE(superSceneBlockAt(showB, pasted.at(1).toInt()), qMakePair(tracksB.at(1), 1000));
+    QCOMPARE(showB->showFunction(pasted.at(0).toUInt())->functionID(), scene->id());
+    QCOMPARE(showB->showFunction(pasted.at(1).toUInt())->functionID(), other->id());
+    QCOMPARE(timeline.history(sidB).value("undoText").toString(), QString("Paste 2 block(s)"));
+    // (A is as it was, with no step of the paste)
+    QCOMPARE(timeline.history(sidA).value("undoText").toString(), QString("Add a block"));
+    QCOMPARE(superSceneBlocks(timeline.show(sidA)).count(), 2);
+
+    // a locked track gets nothing, the others do. Said once
+    timeline.setTrack(sidB, tracksB.at(1), "locked", true);
+    const QVariantList one = timeline.pasteBlocks(sidB, tracksB.at(0), 10000);
+    QCOMPARE(one.count(), 1);
+    QCOMPARE(superSceneBlockAt(showB, one.at(0).toInt()), qMakePair(tracksB.at(0), 10000));
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.takeFirst().at(0).toString(), QString("1 block(s) not pasted: their track is locked"));
+    QCOMPARE(timeline.history(sidB).value("undoText").toString(), QString("Paste 1 block(s)"));
+    // all of them on locked tracks: nothing, no step
+    timeline.setTrack(sidB, tracksB.at(0), "locked", true);
+    const QVariantMap locked = timeline.history(sidB);
+    QVERIFY(timeline.pasteBlocks(sidB, tracksB.at(0), 20000).isEmpty());
+    QCOMPARE(timeline.history(sidB), locked);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.takeFirst().at(0).toString(), QString("2 block(s) not pasted: their track is locked"));
+    timeline.setTrack(sidB, tracksB.at(0), "locked", false);
+    timeline.setTrack(sidB, tracksB.at(1), "locked", false);
+
+    // a rack that plays A is a block of B, never of A: it would play itself
+    const int rack = fx.createRack("Rack", { int(sidA) });
+    QVERIFY(rack >= 0);
+    const int held = timeline.addBlock(sidB, tracksB.at(1), quint32(rack), 30000);
+    QVERIFY(held >= 0);
+    const int plain = timeline.addBlock(sidB, tracksB.at(0), scene->id(), 31000);
+    QCOMPARE(timeline.copyBlocks(sidB, { held, plain }), 2);
+    const QVariantMap stepsA = timeline.history(sidA);
+    const QByteArray savedA = superSceneXml(showA);
+    messages.clear();
+    const QVariantList refused = timeline.pasteBlocks(sidA, tracksA.at(0), 40000);
+    QCOMPARE(refused.count(), 1);
+    QCOMPARE(showA->showFunction(refused.at(0).toUInt())->functionID(), scene->id());
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().at(0).toString(), QString("“Rack” plays this super scene: it can't go into it"));
+    QVERIFY(showA->contains(quint32(rack)) == false);
+    // only the rack: nothing, no step
+    QVERIFY(timeline.undo(sidA));
+    QCOMPARE(superSceneXml(showA), savedA);
+    QCOMPARE(timeline.copyBlocks(sidB, { held }), 1);
+    messages.clear();
+    QVERIFY(timeline.pasteBlocks(sidA, tracksA.at(0), 40000).isEmpty());
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(superSceneXml(showA), savedA);
+    QCOMPARE(timeline.history(sidA).value("undoText").toString(), stepsA.value("undoText").toString());
+    QVERIFY(timeline.history(sidA).value("canRedo").toBool());
+    // (in B it goes, as with Duplicate)
+    QCOMPARE(timeline.pasteBlocks(sidB, tracksB.at(0), 50000).count(), 1);
+
+    // a super scene is never a block, nor the super scene in itself
+    QCOMPARE(timeline.addBlock(sidA, tracksA.at(0), sidB, 0), -1);
+    QCOMPARE(timeline.addBlock(sidA, tracksA.at(0), sidA, 0), -1);
+}
+
+void Backend_Test::superScenePasteAudio()
+{
+    m_doc->audioPluginCache()->load(QDir(DTC_AUDIO_PLUGINS));
+    QTemporaryDir dir;
+    const QString path = dir.filePath("tone.wav");
+    QVERIFY(writeToneWav(path));
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    QSignalSpy messages(&timeline, SIGNAL(message(QString)));
+    const quint32 sidA = quint32(fx.createSuperScene("A"));
+    const quint32 sidB = quint32(fx.createSuperScene("B"));
+    Show *showA = qobject_cast<Show *>(m_doc->function(sidA));
+    Show *showB = qobject_cast<Show *>(m_doc->function(sidB));
+    QVERIFY(showA != nullptr && showB != nullptr);
+    const QList<int> tracksA = superSceneTracks(showA);
+    const QList<int> tracksB = superSceneTracks(showB);
+    auto audios = [&]() { return int(m_doc->functionsByType(Function::AudioType).count()); };
+    auto hiddenAudio = [&](quint32 fid) {
+        Audio *audio = qobject_cast<Audio *>(m_doc->function(fid));
+        return audio != nullptr && audio->isVisible() == false && audio->getSourceFileName() == path;
+    };
+    auto playsA = [&](int block) { return showA->showFunction(quint32(block))->functionID(); };
+    auto playsB = [&](int block) { return showB->showFunction(quint32(block))->functionID(); };
+
+    const int sound = timeline.addAudio(sidA, tracksA.at(0), QUrl::fromLocalFile(path), 500);
+    QVERIFY2(sound >= 0, "the sndfile plugin reads WAV files");
+    const quint32 audio = playsA(sound);
+    QVERIFY(hiddenAudio(audio));
+    QCOMPARE(timeline.copyBlocks(sidA, { sound }), 1);
+
+    // in the same super scene: the same audio
+    const QVariantList here = timeline.pasteBlocks(sidA, tracksA.at(1), 5000);
+    QCOMPARE(here.count(), 1);
+    QCOMPARE(playsA(here.first().toInt()), audio);
+    QCOMPARE(audios(), 1);
+
+    // in another one: an audio of its own, from the same file, for all the
+    // blocks of it pasted together
+    QCOMPARE(timeline.copyBlocks(sidA, { sound, here.first() }), 2);
+    const QVariantList there = timeline.pasteBlocks(sidB, tracksB.at(0), 0);
+    QCOMPARE(there.count(), 2);
+    const quint32 own = playsB(there.at(0).toInt());
+    QVERIFY(own != audio);
+    QVERIFY(hiddenAudio(own));
+    QCOMPARE(playsB(there.at(1).toInt()), own);
+    QCOMPARE(audios(), 2);
+    QVERIFY(qAbs(int(showB->showFunction(there.at(0).toUInt())->duration()) - 1000) < 30);
+    // deleting them there never takes the first one
+    timeline.removeBlocks(sidB, there);
+    QVERIFY(m_doc->function(own) == nullptr);
+    QVERIFY(hiddenAudio(audio));
+    // undone, the paste comes back with its own audio; the paste undone,
+    // that audio goes and the first one stays
+    QVERIFY(timeline.undo(sidB));
+    const quint32 back = playsB(there.at(0).toInt());
+    QVERIFY(hiddenAudio(back) && back != audio);
+    QVERIFY(timeline.undo(sidB));
+    QVERIFY(m_doc->function(back) == nullptr);
+    QVERIFY(hiddenAudio(audio));
+    QCOMPARE(audios(), 1);
+
+    // cut (the audio goes with its last block), then pasted: its audio is
+    // made again from the file, once for both
+    QCOMPARE(timeline.cutBlocks(sidA, { sound, here.first() }), 2);
+    QCOMPARE(timeline.history(sidA).value("undoText").toString(), QString("Cut 2 block(s)"));
+    QVERIFY(superSceneBlocks(timeline.show(sidA)).isEmpty());
+    QVERIFY(m_doc->function(audio) == nullptr);
+    QCOMPARE(timeline.clipboardCount(), 2);
+    const QVariantList again = timeline.pasteBlocks(sidA, tracksA.at(0), 1000);
+    QCOMPARE(again.count(), 2);
+    const quint32 made = playsA(again.at(0).toInt());
+    QVERIFY(hiddenAudio(made));
+    QCOMPARE(playsA(again.at(1).toInt()), made);
+    QCOMPARE(audios(), 1);
+    QCOMPARE(superSceneBlockAt(showA, again.at(0).toInt()), qMakePair(tracksA.at(0), 1000));
+    QCOMPARE(superSceneBlockAt(showA, again.at(1).toInt()), qMakePair(tracksA.at(1), 5500));
+    // (and pasted again here: that same one)
+    const QVariantList third = timeline.pasteBlocks(sidA, tracksA.at(0), 20000);
+    QCOMPARE(playsA(third.at(0).toInt()), made);
+    QCOMPARE(audios(), 1);
+    QVERIFY(messages.isEmpty());
+
+    // its file gone (with its audio, which had it open): not pasted, said
+    // once for its two blocks; no track added, no step
+    const QString lost = dir.filePath("lost.wav");
+    QVERIFY(writeToneWav(lost));
+    const int first = timeline.addAudio(sidA, tracksA.at(1), QUrl::fromLocalFile(lost), 60000);
+    QVERIFY(first >= 0);
+    const int second = timeline.duplicateBlock(sidA, first);
+    timeline.moveBlock(sidA, second, tracksA.at(0), 60000);
+    QCOMPARE(timeline.cutBlocks(sidA, { first, second }), 2);
+    QCOMPARE(audios(), 1);
+    QVERIFY(QFile::remove(lost));
+    const QVariantMap steps = timeline.history(sidB);
+    const QByteArray saved = superSceneXml(showB);
+    QVERIFY(timeline.pasteBlocks(sidB, tracksB.at(1), 0).isEmpty());
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().at(0).toString(), QString("Unable to read the audio of lost.wav"));
+    QCOMPARE(superSceneXml(showB), saved);
+    QCOMPARE(int(showB->tracks().count()), 2);
+    QCOMPARE(timeline.history(sidB), steps);
+    QCOMPARE(audios(), 1);
+}
+
+void Backend_Test::superSceneClipboardUpkeep()
+{
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor fx(m_doc, &prog, &zones);
+    TimelineEditor timeline(m_doc, &prog);
+    QSignalSpy clipboard(&timeline, SIGNAL(clipboardChanged()));
+    Scene *gone = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(gone));
+    Scene *kept = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(kept));
+    const quint32 sid = quint32(fx.createSuperScene("Upkeep"));
+    Show *show = qobject_cast<Show *>(m_doc->function(sid));
+    QVERIFY(show != nullptr);
+    const QList<int> tracks = superSceneTracks(show);
+    const int a = timeline.addBlock(sid, tracks.at(0), gone->id(), 1000);
+    const int b = timeline.addBlock(sid, tracks.at(1), kept->id(), 3000);
+    QCOMPARE(timeline.copyBlocks(sid, { a, b }), 2);
+    timeline.removeBlocks(sid, { a, b });
+
+    // a scene deleted from the list leaves the clipboard (its id may be
+    // given to a new function); the rest is pasted from where it is
+    clipboard.clear();
+    const quint32 goneId = gone->id();
+    QVERIFY(m_doc->deleteFunction(goneId));
+    QCOMPARE(timeline.clipboardCount(), 1);
+    QCOMPARE(clipboard.count(), 1);
+    Scene *taker = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(taker, goneId));
+    const QVariantList pasted = timeline.pasteBlocks(sid, tracks.at(0), 0);
+    QCOMPARE(pasted.count(), 1);
+    QCOMPARE(superSceneBlockAt(show, pasted.first().toInt()), qMakePair(tracks.at(0), 0));
+    QCOMPARE(show->showFunction(pasted.first().toUInt())->functionID(), kept->id());
+    QVERIFY(show->contains(taker->id()) == false);
+    // (another function deleted: nothing to tell)
+    clipboard.clear();
+    QVERIFY(m_doc->deleteFunction(taker->id()));
+    QCOMPARE(clipboard.count(), 0);
+
+    // cut on a locked track: copied, and it stays. One step for the others
+    const int c = timeline.addBlock(sid, tracks.at(0), kept->id(), 10000);
+    const int d = timeline.addBlock(sid, tracks.at(1), kept->id(), 12000);
+    timeline.setTrack(sid, tracks.at(1), "locked", true);
+    QCOMPARE(timeline.cutBlocks(sid, { c, d }), 2);
+    QCOMPARE(timeline.clipboardCount(), 2);
+    QCOMPARE(superSceneBlockAt(show, c).first, -1);
+    QCOMPARE(superSceneBlockAt(show, d), qMakePair(tracks.at(1), 12000));
+    QCOMPARE(timeline.history(sid).value("undoText").toString(), QString("Cut 1 block(s)"));
+    QVERIFY(timeline.undo(sid));
+    QCOMPARE(superSceneBlockAt(show, c), qMakePair(tracks.at(0), 10000));
+    // only blocks on locked tracks: copied, no step
+    const QVariantMap steps = timeline.history(sid);
+    QCOMPARE(timeline.cutBlocks(sid, { d }), 1);
+    QCOMPARE(timeline.clipboardCount(), 1);
+    QCOMPARE(timeline.history(sid), steps);
+    QCOMPARE(superSceneBlockAt(show, d), qMakePair(tracks.at(1), 12000));
+    QCOMPARE(timeline.cutBlocks(sid, { 999 }), 0);
+    QCOMPARE(timeline.clipboardCount(), 1);
+
+    // another show, or a new one: the clipboard empties
+    clipboard.clear();
+    m_doc->clearContents();
+    QCOMPARE(timeline.clipboardCount(), 0);
+    QCOMPARE(clipboard.count(), 1);
+}
+
+/*********************************************************************
+ * remoto D0
+ *********************************************************************/
+
+void Backend_Test::remoteAddresses()
+{
+    // the addresses to open on the phone, with the name of their network:
+    // the Wi-Fi first, then the Ethernet, then the virtual adapters (by their
+    // names, whatever kind they say they are); not the link-local, the
+    // loopback nor IPv6 ones
+    using Address = RemoteServer::NetworkAddress;
+    const QList<Address> found = {
+        { "Ethernet", QNetworkInterface::Ethernet, QHostAddress("10.0.0.5") },
+        { "vEthernet (WSL)", QNetworkInterface::Ethernet, QHostAddress("172.20.0.1") },
+        { "Wi-Fi", QNetworkInterface::Wifi, QHostAddress("192.168.1.20") },
+        { "Wi-Fi", QNetworkInterface::Wifi, QHostAddress("169.254.3.4") },
+        { "Wi-Fi", QNetworkInterface::Wifi, QHostAddress("fe80::1") },
+        { "Loopback", QNetworkInterface::Loopback, QHostAddress("127.0.0.1") },
+        { "Ethernet 2", QNetworkInterface::Ethernet, QHostAddress("10.0.1.7") },
+        { "ethernet 10", QNetworkInterface::Ethernet, QHostAddress("10.0.2.9") },
+        { "Mobile", QNetworkInterface::Phonet, QHostAddress("100.64.0.3") },
+    };
+    const QVariantList addresses = RemoteServer::describeAddresses(found, 8800);
+    auto field = [&addresses](const QString &name) {
+        QStringList values;
+        for (const QVariant &address : addresses)
+            values.append(address.toMap().value(name).toString());
+        return values;
+    };
+    QCOMPARE(field("url"), QStringList({ "http://192.168.1.20:8800/", "http://10.0.0.5:8800/",
+                                         "http://10.0.1.7:8800/", "http://10.0.2.9:8800/",
+                                         "http://100.64.0.3:8800/", "http://172.20.0.1:8800/" }));
+    QCOMPARE(field("label"), QStringList({ "Wi-Fi", "Ethernet", "Ethernet 2", "ethernet 10", "Mobile", "vEthernet (WSL)" }));
+    QCOMPARE(field("kind"), QStringList({ "wifi", "ethernet", "ethernet", "ethernet", "other", "other" }));
+    // a VPN on the Wi-Fi goes last too; on no network there is none
+    const QVariantList vpn = RemoteServer::describeAddresses(
+        { { "Tailscale", QNetworkInterface::Wifi, QHostAddress("100.100.1.2") },
+          { "Wi-Fi", QNetworkInterface::Wifi, QHostAddress("192.168.0.4") } }, 9000);
+    QCOMPARE(vpn.first().toMap().value("label").toString(), QString("Wi-Fi"));
+    QCOMPARE(vpn.last().toMap().value("kind").toString(), QString("other"));
+    QVERIFY(RemoteServer::describeAddresses({ { "Loopback", QNetworkInterface::Loopback, QHostAddress("127.0.0.1") } }, 8800).isEmpty());
+
+    // the remote running: the addresses of this computer, the ones urls()
+    // gives, looked at again every 5 s (told only when they change)
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    RemoteServer *remote = core.remote();
+    QVERIFY(remote->addresses().isEmpty());
+    QVERIFY(remote->onNetwork());
+    QSignalSpy changed(remote, SIGNAL(addressesChanged()));
+    remote->setPort(18893);
+    remote->setEnabled(true);
+    QVERIFY2(remote->running(), qPrintable(remote->lastError()));
+    QVERIFY(changed.count() > 0);
+    // (the networks of this computer that are up)
+    QList<Address> here;
+    for (const QNetworkInterface &network : QNetworkInterface::allInterfaces())
+        if (network.flags().testFlag(QNetworkInterface::IsUp) && network.flags().testFlag(QNetworkInterface::IsRunning)
+            && network.flags().testFlag(QNetworkInterface::IsLoopBack) == false)
+            for (const QNetworkAddressEntry &entry : network.addressEntries())
+                here.append({ network.humanReadableName(), network.type(), entry.ip() });
+    QCOMPARE(remote->addresses(), RemoteServer::describeAddresses(here, 18893));
+    QCOMPARE(remote->onNetwork(), remote->addresses().isEmpty() == false);
+    for (const QVariant &address : remote->addresses())
+    {
+        const QVariantMap entry = address.toMap();
+        QVERIFY2(entry.value("url").toString().endsWith(":18893/"), qPrintable(entry.value("url").toString()));
+        QVERIFY(entry.value("url").toString().startsWith("http://127.") == false);
+        QVERIFY(QStringList({ "wifi", "ethernet", "other" }).contains(entry.value("kind").toString()));
+    }
+    auto networkTimer = [remote]() -> QTimer * {
+        for (QTimer *timer : remote->findChildren<QTimer *>(Qt::FindDirectChildrenOnly))
+            if (timer->interval() == 5000)
+                return timer;
+        return nullptr;
+    };
+    QVERIFY(networkTimer() != nullptr);
+    QVERIFY(networkTimer()->isActive());
+    changed.clear();
+    const QVariantList before = remote->addresses();
+    QVERIFY(QMetaObject::invokeMethod(remote, "slotNetworkCheck"));
+    if (remote->addresses() == before)
+        QCOMPARE(changed.count(), 0);
+    // off: no addresses, and no looking at the networks
+    remote->setEnabled(false);
+    QVERIFY(changed.count() > 0);
+    QVERIFY(remote->addresses().isEmpty());
+    QVERIFY(remote->urls().isEmpty());
+    QVERIFY(networkTimer()->isActive() == false);
+}
+
+/*********************************************************************
+ * remoto D1
+ *********************************************************************/
+
+namespace
+{
+
+/** What the reader of the tests reads in a QR code */
+struct QrReading
+{
+    QByteArray data;
+    int version = 0;
+    int mask = -1;
+    /** Empty when it reads */
+    QString error;
+};
+
+/** A BCH code (the format, the version): $value and the remainder of its
+ *  long division by $generator, of degree $degree */
+int qrTestBch(int value, int generator, int degree)
+{
+    int remainder = value << degree;
+    for (int bit = 30; bit >= degree; --bit)
+        if (remainder & (1 << bit))
+            remainder ^= generator << (bit - degree);
+    return (value << degree) | remainder;
+}
+
+/** The masks as the standard writes them: i the row, j the column */
+bool qrTestMask(int mask, int i, int j)
+{
+    switch (mask)
+    {
+        case 0: return (i + j) % 2 == 0;
+        case 1: return i % 2 == 0;
+        case 2: return j % 3 == 0;
+        case 3: return (i + j) % 3 == 0;
+        case 4: return ((i / 2) + (j / 3)) % 2 == 0;
+        case 5: return (i * j) % 2 + (i * j) % 3 == 0;
+        case 6: return ((i * j) % 2 + (i * j) % 3) % 2 == 0;
+        default: return ((i * j) % 3 + (i + j) % 2) % 2 == 0;
+    }
+}
+
+/** A reader of QR codes (byte mode, level M, versions 1 to 10), written for
+ *  the tests from the standard (ISO/IEC 18004) apart from the encoder of the
+ *  program: it finds the version by the size, checks the fixed patterns,
+ *  reads both copies of the format (and of the version from 7), takes the
+ *  mask off, follows the zigzag, puts the blocks back together, checks their
+ *  error correction (every syndrome 0) and reads the mode, the count, the
+ *  bytes and the padding */
+QrReading readQr(const QStringList &rows)
+{
+    QrReading reading;
+    auto fail = [&reading](const QString &why) {
+        reading.error = why;
+        return reading;
+    };
+    const int n = int(rows.size());
+    if (n < 21 || n > 57 || (n - 17) % 4 != 0)
+        return fail(QString("a size of %1").arg(n));
+    static const QRegularExpression onlyBits("^[01]*$");
+    for (const QString &row : rows)
+        if (row.size() != n || onlyBits.match(row).hasMatch() == false)
+            return fail("not a square of 0 and 1");
+    const int version = (n - 17) / 4;
+    // (row r, column c)
+    auto at = [&rows](int r, int c) { return rows.at(r).at(c) == QLatin1Char('1'); };
+
+    // the finders (dark 7 × 7 ring, light ring, dark 3 × 3) and the light
+    // separators around them: their top left corners (column, row)
+    for (const QPoint &corner : { QPoint(0, 0), QPoint(n - 7, 0), QPoint(0, n - 7) })
+        for (int r = -1; r <= 7; ++r)
+            for (int c = -1; c <= 7; ++c)
+            {
+                const int row = corner.y() + r;
+                const int column = corner.x() + c;
+                if (row < 0 || column < 0 || row >= n || column >= n)
+                    continue;
+                const int ring = qMax(qAbs(r - 3), qAbs(c - 3));
+                if (at(row, column) != (ring == 0 || ring == 1 || ring == 3))
+                    return fail(QString("the finder at column %1, row %2").arg(corner.x()).arg(corner.y()));
+            }
+    // the timing patterns between them, and the dark module
+    for (int i = 8; i < n - 8; ++i)
+        if (at(6, i) != (i % 2 == 0) || at(i, 6) != (i % 2 == 0))
+            return fail(QString("the timing at %1").arg(i));
+    if (at(n - 8, 8) == false)
+        return fail("the dark module");
+    // the alignment patterns: centres at 6 and at n - 7, and one halfway
+    // from version 7; none where a finder is
+    QList<int> centres;
+    if (version >= 2)
+        centres = version < 7 ? QList<int>({ 6, n - 7 }) : QList<int>({ 6, (6 + n - 7) / 2, n - 7 });
+    QList<QPoint> alignments;
+    for (int cy : std::as_const(centres))
+        for (int cx : std::as_const(centres))
+            if ((cx == 6 && cy == 6) == false && (cx == 6 && cy == n - 7) == false && (cx == n - 7 && cy == 6) == false)
+                alignments.append(QPoint(cx, cy));
+    for (const QPoint &centre : std::as_const(alignments))
+        for (int r = -2; r <= 2; ++r)
+            for (int c = -2; c <= 2; ++c)
+                if (at(centre.y() + r, centre.x() + c) != (qMax(qAbs(r), qAbs(c)) != 1))
+                    return fail(QString("the alignment at %1, %2").arg(centre.x()).arg(centre.y()));
+
+    // the format, from its highest bit, as the figure of the standard places
+    // it: along row 8 (columns 0-5, 7, 8), then up column 8 (rows 7, 5-0);
+    // and up column 8 from the bottom (7 bits), then along row 8 to the right
+    // edge (8 bits)
+    int first = 0;
+    int second = 0;
+    for (int c = 0; c <= 8; ++c)
+        if (c != 6)
+            first = (first << 1) | int(at(8, c));
+    for (int r = 7; r >= 0; --r)
+        if (r != 6)
+            first = (first << 1) | int(at(r, 8));
+    for (int r = n - 1; r >= n - 7; --r)
+        second = (second << 1) | int(at(r, 8));
+    for (int c = n - 8; c < n; ++c)
+        second = (second << 1) | int(at(8, c));
+    if (first != second)
+        return fail("the two copies of the format differ");
+    int level = -1;
+    for (int format = 0; format < 32; ++format)
+        if ((qrTestBch(format, 0x537, 10) ^ 0x5412) == first)
+        {
+            level = format >> 3;
+            reading.mask = format & 7;
+        }
+    if (level < 0)
+        return fail("the format");
+    // (M is 00)
+    if (level != 0)
+        return fail("not the level M");
+    // the version, twice from version 7: 6 × 3 above the finder of the
+    // bottom left (down each column, from the left), and its mirror
+    if (version >= 7)
+    {
+        int bottomLeft = 0;
+        int topRight = 0;
+        for (int bit = 17; bit >= 0; --bit)
+        {
+            bottomLeft = (bottomLeft << 1) | int(at(n - 11 + bit % 3, bit / 3));
+            topRight = (topRight << 1) | int(at(bit / 3, n - 11 + bit % 3));
+        }
+        if (bottomLeft != qrTestBch(version, 0x1F25, 12) || topRight != bottomLeft)
+            return fail("the version blocks");
+    }
+
+    // the data modules: not the patterns, the format nor the version, in the
+    // zigzag of column pairs from the right (up, down, up…), past column 6
+    auto isFunction = [&](int r, int c) {
+        if ((r <= 8 && c <= 8) || (r <= 8 && c >= n - 8) || (r >= n - 8 && c <= 8) || r == 6 || c == 6)
+            return true;
+        for (const QPoint &centre : std::as_const(alignments))
+            if (qAbs(r - centre.y()) <= 2 && qAbs(c - centre.x()) <= 2)
+                return true;
+        return version >= 7 && ((r <= 5 && c >= n - 11 && c <= n - 9) || (c <= 5 && r >= n - 11 && r <= n - 9));
+    };
+    QList<bool> bits;
+    bool upwards = true;
+    for (int right = n - 1; right > 0; right -= 2)
+    {
+        if (right == 6)
+            right = 5;
+        for (int i = 0; i < n; ++i)
+        {
+            const int r = upwards ? n - 1 - i : i;
+            for (int c = right; c >= right - 1; --c)
+                if (isFunction(r, c) == false)
+                    bits.append(at(r, c) != qrTestMask(reading.mask, r, c));
+        }
+        upwards = !upwards;
+    }
+    // the blocks of level M (the table of the standard): (blocks, codewords
+    // of each, data codewords of each), one or two groups
+    static const int groups[10][6] = {
+        { 1, 26, 16, 0, 0, 0 }, { 1, 44, 28, 0, 0, 0 }, { 1, 70, 44, 0, 0, 0 }, { 2, 50, 32, 0, 0, 0 },
+        { 2, 67, 43, 0, 0, 0 }, { 4, 43, 27, 0, 0, 0 }, { 4, 49, 31, 0, 0, 0 }, { 2, 60, 38, 2, 61, 39 },
+        { 3, 58, 36, 2, 59, 37 }, { 4, 69, 43, 1, 70, 44 },
+    };
+    const int *group = groups[version - 1];
+    QList<int> dataLengths;
+    for (int g = 0; g < 2; ++g)
+        for (int b = 0; b < group[3 * g]; ++b)
+            dataLengths.append(group[3 * g + 2]);
+    const int ecLength = group[1] - group[2];
+    const int total = group[0] * group[1] + group[3] * group[4];
+    const int remainderBits = version >= 2 && version <= 6 ? 7 : 0;
+    if (bits.size() != total * 8 + remainderBits)
+        return fail(QString("%1 data modules").arg(bits.size()));
+    for (int i = total * 8; i < bits.size(); ++i)
+        if (bits.at(i))
+            return fail("a remainder bit");
+    QByteArray codewords;
+    for (int i = 0; i < total; ++i)
+    {
+        int byte = 0;
+        for (int b = 0; b < 8; ++b)
+            byte = (byte << 1) | int(bits.at(8 * i + b));
+        codewords.append(char(byte));
+    }
+    // the blocks back together: the data codewords block by block, then the
+    // error correction
+    QList<QByteArray> blocks(dataLengths.size());
+    int next = 0;
+    for (int i = 0; i < *std::max_element(dataLengths.begin(), dataLengths.end()); ++i)
+        for (int b = 0; b < blocks.size(); ++b)
+            if (i < dataLengths.at(b))
+                blocks[b].append(codewords.at(next++));
+    for (int i = 0; i < ecLength; ++i)
+        for (int b = 0; b < blocks.size(); ++b)
+            blocks[b].append(codewords.at(next++));
+    // each block a codeword of the Reed-Solomon code: 0 at α^0…α^(ec-1),
+    // in GF(256) of 0x11D by tables of powers and logarithms
+    int power[255];
+    int logarithm[256] = { 0 };
+    for (int i = 0, x = 1; i < 255; ++i)
+    {
+        power[i] = x;
+        logarithm[x] = i;
+        x <<= 1;
+        if (x & 0x100)
+            x ^= 0x11D;
+    }
+    auto times = [&](int a, int b) { return a == 0 || b == 0 ? 0 : power[(logarithm[a] + logarithm[b]) % 255]; };
+    for (int b = 0; b < blocks.size(); ++b)
+        for (int j = 0; j < ecLength; ++j)
+        {
+            int syndrome = 0;
+            for (const char codeword : std::as_const(blocks.at(b)))
+                syndrome = times(syndrome, power[j]) ^ quint8(codeword);
+            if (syndrome != 0)
+                return fail(QString("the error correction of block %1").arg(b));
+        }
+
+    // the data: byte mode, the count, the bytes, the terminator, zeros to
+    // the byte, then 0xEC and 0x11 in turn
+    QByteArray data;
+    for (int b = 0; b < blocks.size(); ++b)
+        data += blocks.at(b).left(dataLengths.at(b));
+    const int capacity = int(data.size()) * 8;
+    int position = 0;
+    auto take = [&data, &position](int count) {
+        int value = 0;
+        for (int i = 0; i < count; ++i, ++position)
+            value = (value << 1) | ((quint8(data.at(position / 8)) >> (7 - position % 8)) & 1);
+        return value;
+    };
+    if (take(4) != 0x4)
+        return fail("not the byte mode");
+    const int count = take(version < 10 ? 8 : 16);
+    if (position + count * 8 > capacity)
+        return fail(QString("a count of %1").arg(count));
+    for (int i = 0; i < count; ++i)
+        reading.data.append(char(take(8)));
+    if (take(qMin(4, capacity - position)) != 0)
+        return fail("the terminator");
+    while (position % 8 != 0)
+        if (take(1) != 0)
+            return fail("the bits to the byte");
+    for (bool pad = true; position < capacity; pad = !pad)
+        if (take(8) != (pad ? 0xEC : 0x11))
+            return fail("the padding");
+    reading.version = version;
+    return reading;
+}
+
+/** Some bytes, from numbers */
+QByteArray qrTestBytes(std::initializer_list<int> values)
+{
+    QByteArray bytes;
+    for (int value : values)
+        bytes.append(char(value));
+    return bytes;
+}
+
+/** What the tests encode: the addresses of the remote, and bytes of every
+ *  length at the ends of the versions */
+QList<QByteArray> qrTestSamples()
+{
+    QList<QByteArray> samples = { "http://192.168.1.20:8800/", "http://dmxtotalcontrol-2.local:65535/#pin=123456" };
+    QRandomGenerator random(1806);
+    for (int length : { 0, 1, 14, 15, 26, 27, 42, 43, 62, 63, 84, 85, 106, 107, 122, 123, 152, 153, 180, 181, 213 })
+    {
+        QByteArray bytes;
+        for (int i = 0; i < length; ++i)
+            bytes.append(char(random.bounded(256)));
+        samples.append(bytes);
+    }
+    return samples;
+}
+
+}
+
+void Backend_Test::qrReedSolomon()
+{
+    // the worked example of "HELLO WORLD" at 1-M: its 16 data codewords
+    // and their 10 of error correction
+    const QByteArray data = qrTestBytes({ 32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17 });
+    QCOMPARE(QrCode::errorCorrection(data, 10), qrTestBytes({ 196, 35, 39, 119, 235, 215, 231, 226, 93, 23 }));
+    // the remainder has as many codewords as asked for; none of nothing
+    QCOMPARE(QrCode::errorCorrection(data, 26).size(), 26);
+    QCOMPARE(QrCode::errorCorrection(QByteArray(), 10), QByteArray(10, 0));
+    QVERIFY(QrCode::errorCorrection(data, 0).isEmpty());
+}
+
+void Backend_Test::qrFormatAndVersionBits()
+{
+    // the format bits of the level M with each mask, and the version bits
+    // of the versions 7 to 10, from the tables of the standard
+    const QList<int> formats = { 0x5412, 0x5125, 0x5E7C, 0x5B4B, 0x45F9, 0x40CE, 0x4F97, 0x4AA0 };
+    for (int mask = 0; mask < 8; ++mask)
+    {
+        QCOMPARE(int(QrCode::formatBits(mask)), formats.at(mask));
+        QCOMPARE(int(QrCode::formatBits(mask)), qrTestBch(mask, 0x537, 10) ^ 0x5412);
+    }
+    const QList<int> versions = { 0x07C94, 0x085BC, 0x09A99, 0x0A4D3 };
+    for (int version = 7; version <= 10; ++version)
+    {
+        QCOMPARE(int(QrCode::versionBits(version)), versions.at(version - 7));
+        QCOMPARE(int(QrCode::versionBits(version)), qrTestBch(version, 0x1F25, 12));
+    }
+}
+
+void Backend_Test::qrCapacity()
+{
+    // the bytes each version holds at the level M; the smallest version
+    // that holds the data; nothing past 213 bytes
+    QCOMPARE(QList<int>({ QrCode::capacity(1), QrCode::capacity(2), QrCode::capacity(3), QrCode::capacity(4),
+                          QrCode::capacity(5), QrCode::capacity(6), QrCode::capacity(7), QrCode::capacity(8),
+                          QrCode::capacity(9), QrCode::capacity(10) }),
+             QList<int>({ 14, 26, 42, 62, 84, 106, 122, 152, 180, 213 }));
+    QCOMPARE(QrCode::capacity(0), 0);
+    QCOMPARE(QrCode::capacity(11), 0);
+    auto versionOf = [](int bytes) { return QrCode::encode(QByteArray(bytes, 'a')).version(); };
+    QCOMPARE(versionOf(0), 1);
+    QCOMPARE(versionOf(14), 1);
+    QCOMPARE(QrCode::encode(QByteArray(14, 'a')).size(), 21);
+    QCOMPARE(versionOf(15), 2);
+    QCOMPARE(versionOf(42), 3);
+    QCOMPARE(versionOf(43), 4);
+    QCOMPARE(versionOf(213), 10);
+    QCOMPARE(QrCode::encode(QByteArray(213, 'a')).size(), 57);
+    const QrCode tooLong = QrCode::encode(QByteArray(214, 'a'));
+    QVERIFY(tooLong.isNull());
+    QCOMPARE(tooLong.size(), 0);
+    QVERIFY(tooLong.rows().isEmpty());
+    QVERIFY(QrCode::encode("x", 8).isNull());
+}
+
+void Backend_Test::qrRoundTrip()
+{
+    // every code reads back to its data with the reader of the tests, at
+    // each end of each version (the versions 7 to 10 with their version
+    // blocks, 8 to 10 with blocks of two lengths)
+    for (const QByteArray &sample : qrTestSamples())
+    {
+        const QrCode code = QrCode::encode(sample);
+        QVERIFY(code.isNull() == false);
+        QCOMPARE(code.size(), 4 * code.version() + 17);
+        QCOMPARE(int(code.rows().size()), code.size());
+        QVERIFY(QrCode::capacity(code.version()) >= sample.size());
+        QVERIFY(code.version() == 1 || QrCode::capacity(code.version() - 1) < sample.size());
+        const QrReading reading = readQr(code.rows());
+        QVERIFY2(reading.error.isEmpty(), qPrintable(QString("%1 bytes: %2").arg(sample.size()).arg(reading.error)));
+        QCOMPARE(reading.data, sample);
+        QCOMPARE(reading.version, code.version());
+        QCOMPARE(reading.mask, code.mask());
+        for (int y = 0; y < code.size(); ++y)
+            for (int x = 0; x < code.size(); ++x)
+                QCOMPARE(code.dark(x, y), code.rows().at(y).at(x) == QLatin1Char('1'));
+    }
+    // each mask, in a version with one kind of block and in two with two
+    const QList<QByteArray> samples = qrTestSamples();
+    for (const QByteArray &sample : { samples.at(0), samples.at(17), samples.at(22) })
+        for (int mask = 0; mask < 8; ++mask)
+        {
+            const QrCode code = QrCode::encode(sample, mask);
+            QCOMPARE(code.mask(), mask);
+            const QrReading reading = readQr(code.rows());
+            QVERIFY2(reading.error.isEmpty(), qPrintable(QString("mask %1: %2").arg(mask).arg(reading.error)));
+            QCOMPARE(reading.data, sample);
+            QCOMPARE(reading.mask, mask);
+        }
+    QCOMPARE(QrCode::encode(samples.at(17)).version(), 8);
+    QCOMPARE(QrCode::encode(samples.at(22)).version(), 10);
+
+    // (the reader sees a wrong module: one of the data, of the format, of
+    // a version block, of a finder)
+    const QStringList rows = QrCode::encode(samples.at(22)).rows();
+    const int n = int(rows.size());
+    auto flipped = [&rows](int x, int y) {
+        QStringList changed = rows;
+        changed[y][x] = changed.at(y).at(x) == QLatin1Char('1') ? QLatin1Char('0') : QLatin1Char('1');
+        return changed;
+    };
+    QVERIFY(readQr(flipped(n - 1, n - 1)).error.startsWith("the error correction"));
+    QCOMPARE(readQr(flipped(0, 8)).error, QString("the two copies of the format differ"));
+    QCOMPARE(readQr(flipped(n - 11, 0)).error, QString("the version blocks"));
+    QVERIFY(readQr(flipped(3, 3)).error.startsWith("the finder"));
+    QVERIFY(readQr(flipped(8, 6)).error.startsWith("the timing"));
+}
+
+void Backend_Test::qrMaskChoice()
+{
+    // the mask is the one with the lowest penalty, the first on ties
+    for (const QByteArray &sample : qrTestSamples())
+    {
+        QList<int> points;
+        for (int mask = 0; mask < 8; ++mask)
+            points.append(QrCode::penalty(QrCode::encode(sample, mask)));
+        const int best = int(std::min_element(points.begin(), points.end()) - points.begin());
+        const QrCode code = QrCode::encode(sample);
+        QCOMPARE(code.mask(), best);
+        QCOMPARE(code.rows(), QrCode::encode(sample, best).rows());
+        // (the masks do look different to it)
+        QVERIFY(*std::max_element(points.begin(), points.end()) > points.at(best));
+    }
+    QCOMPARE(QrCode::penalty(QrCode()), 0);
+}
+
+void Backend_Test::remoteQrCode()
+{
+    // the QR code Options draws: the address, and the PIN after '#' when
+    // there is one (whoever scans it gets in without typing it)
+    ScopedTestSettings settings;
+    DtcCore core;
+    RemoteServer *remote = core.remote();
+    const QString url("http://192.168.1.20:8800/");
+    QStringList rows;
+    QVERIFY(QMetaObject::invokeMethod(remote, "qrCode", Q_RETURN_ARG(QStringList, rows), Q_ARG(QString, url)));
+    const int n = int(rows.size());
+    QVERIFY(n >= 21 && (n - 17) % 4 == 0);
+    for (const QString &row : std::as_const(rows))
+    {
+        QCOMPARE(int(row.size()), n);
+        QCOMPARE(row.count(QLatin1Char('0')) + row.count(QLatin1Char('1')), row.size());
+    }
+    QCOMPARE(rows, QrCode::encode(url.toUtf8()).rows());
+    QCOMPARE(readQr(rows).data, url.toUtf8());
+    // too long for a code: none
+    QVERIFY(remote->qrCode(QString(214, QLatin1Char('a'))).isEmpty());
+
+    QString shared;
+    QVERIFY(QMetaObject::invokeMethod(remote, "shareUrl", Q_RETURN_ARG(QString, shared), Q_ARG(QString, url)));
+    QCOMPARE(shared, url);
+    remote->setPin("1234");
+    QCOMPARE(remote->shareUrl(url), url + "#pin=1234");
+    QCOMPARE(readQr(remote->qrCode(remote->shareUrl(url))).data, QByteArray("http://192.168.1.20:8800/#pin=1234"));
+    // (a PIN with signs of the address in it, percent-encoded)
+    remote->setPin("a b&c");
+    QCOMPARE(remote->shareUrl(url), url + "#pin=a%20b%26c");
+    remote->setPin("");
+    QCOMPARE(remote->shareUrl(url), url);
+}
+
+/*********************************************************************
+ * remoto D3a
+ *********************************************************************/
+
+void Backend_Test::showTimers()
+{
+    // a timer section counts in the backend: started, paused (the time
+    // stays), started again (it goes on from there) and reset
+    DtcCore core;
+    ShowSurface *surface = core.surface();
+    surface->clear();
+    auto rootOf = [surface](int page) { return surface->pages().at(page).toMap().value("root").toMap().value("id").toString(); };
+    const int page = surface->addPage("Times", "timer");
+    const QString sid = rootOf(page);
+    QVERIFY(surface->timerRunning(sid) == false);
+    QCOMPARE(surface->timerElapsed(sid), 0.0);
+    QVERIFY(surface->anyTimerRunning() == false);
+    QSignalSpy changed(surface, SIGNAL(timersChanged()));
+    core.doc()->resetModified();
+    const int revision = surface->timerRevision();
+    surface->timerToggle(sid);
+    QVERIFY(surface->timerRunning(sid));
+    QVERIFY(surface->anyTimerRunning());
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(surface->timerRevision() != revision);
+    QTest::qWait(150);
+    QVERIFY2(surface->timerElapsed(sid) >= 100, qPrintable(QString::number(surface->timerElapsed(sid))));
+    // (while it runs, the time it started at on the clock stays)
+    const qint64 origin = surface->timerOrigin(sid);
+    QTest::qWait(30);
+    QCOMPARE(surface->timerOrigin(sid), origin);
+    QVERIFY(origin <= surface->clock() - 150);
+
+    surface->timerToggle(sid);
+    QVERIFY(surface->timerRunning(sid) == false);
+    QVERIFY(surface->anyTimerRunning() == false);
+    QCOMPARE(changed.count(), 2);
+    const double paused = surface->timerElapsed(sid);
+    QVERIFY(paused >= 150);
+    QTest::qWait(100);
+    QCOMPARE(surface->timerElapsed(sid), paused);
+    surface->timerToggle(sid);
+    QTest::qWait(60);
+    QVERIFY(surface->timerElapsed(sid) >= paused + 50);
+    surface->timerReset(sid);
+    QVERIFY(surface->timerRunning(sid) == false);
+    QCOMPARE(surface->timerElapsed(sid), 0.0);
+    QCOMPARE(changed.count(), 4);
+    // (a timer that counts doesn't change the show)
+    QVERIFY(core.doc()->isModified() == false);
+
+    // another section is no timer; a section changed to a timer is one
+    const QString other = surface->splitSection(page, sid, "h");
+    QVERIFY(other.isEmpty() == false);
+    changed.clear();
+    surface->timerToggle(other);
+    QVERIFY(surface->timerRunning(other) == false);
+    QCOMPARE(changed.count(), 0);
+    surface->updateSection(page, other, { { "type", "timer" }, { "mode", "countdown" } });
+    surface->timerToggle(other);
+    QVERIFY(surface->timerRunning(other));
+    // (each its own: the first one still at zero)
+    QVERIFY(surface->timerRunning(sid) == false);
+
+    // not saved with the show: the same file running or not
+    auto saved = [surface]() {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        surface->saveXML(&writer);
+        return buffer.data();
+    };
+    const QByteArray running = saved();
+    surface->timerReset(other);
+    QCOMPARE(saved(), running);
+
+    // a section that goes, or isn't a timer any more, forgets its time; and
+    // so do the sections of a page removed
+    surface->timerToggle(sid);
+    surface->timerToggle(other);
+    changed.clear();
+    surface->updateSection(page, other, { { "type", "clock" } });
+    QVERIFY(surface->timerRunning(other) == false);
+    QCOMPARE(changed.count(), 1);
+    surface->updateSection(page, other, { { "type", "timer" } });
+    QVERIFY(surface->timerRunning(other) == false);
+    QCOMPARE(surface->timerElapsed(other), 0.0);
+    surface->timerToggle(other);
+    surface->removeSection(page, other);
+    QVERIFY(surface->timerRunning(other) == false);
+    QCOMPARE(surface->timerElapsed(other), 0.0);
+    // (the other half takes the place of the split, with its timer)
+    QVERIFY(surface->timerRunning(sid));
+    QCOMPARE(rootOf(page), sid);
+    // (the only section of a page that is removed empties)
+    surface->removeSection(page, sid);
+    QVERIFY(surface->timerRunning(sid) == false);
+    surface->updateSection(page, sid, { { "type", "timer" } });
+    surface->timerToggle(sid);
+    QVERIFY(surface->timerRunning(sid));
+    surface->removePage(page);
+    QVERIFY(surface->timerRunning(sid) == false);
+    QVERIFY(surface->anyTimerRunning() == false);
+
+    // another show: the IDs of its sections start again, and its timers at
+    // zero (one of the show before went on in the section of the new one
+    // with its ID)
+    surface->clear();
+    const QString first = rootOf(surface->addPage(QString(), "timer"));
+    surface->timerToggle(first);
+    QTest::qWait(30);
+    surface->clear();
+    QVERIFY(surface->anyTimerRunning() == false);
+    QCOMPARE(rootOf(surface->addPage(QString(), "timer")), first);
+    QVERIFY(surface->timerRunning(first) == false);
+    QCOMPARE(surface->timerElapsed(first), 0.0);
+    // (a show loaded, also without clearing first)
+    surface->timerToggle(first);
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    QVERIFY(surface->saveXML(&writer));
+    buffer.close();
+    QXmlStreamReader reader(buffer.data());
+    reader.readNextStartElement();
+    QVERIFY(surface->loadXML(reader));
+    QCOMPARE(rootOf(0), first);
+    QVERIFY(surface->timerRunning(first) == false);
+    QCOMPARE(surface->timerElapsed(first), 0.0);
+    // and the whole show closed (File > New)
+    surface->timerToggle(first);
+    core.newShow();
+    QVERIFY(surface->anyTimerRunning() == false);
+}
+
+void Backend_Test::remoteTimers()
+{
+    // the phone sees the timers of every page, and starts, pauses and resets
+    // them: only timer sections
+    DtcCore core;
+    ShowSurface *surface = core.surface();
+    RemoteServer *remote = core.remote();
+    auto rootOf = [surface](int page) { return surface->pages().at(page).toMap().value("root").toMap().value("id").toString(); };
+    const int buttonsPage = surface->addPage("Buttons", "buttons");
+    const int timersPage = surface->addPage("Timers", "timer");
+    const QString buttons = rootOf(buttonsPage);
+    const QString timer = rootOf(timersPage);
+    const QString countdown = surface->splitSection(timersPage, timer, "h");
+    surface->updateSection(timersPage, countdown, { { "type", "timer" }, { "mode", "countdown" }, { "minutes", 2 } });
+    auto timerState = [remote](const QString &sid) {
+        return remote->stateMessage().value("timers").toMap().value(sid).toMap();
+    };
+    // paused at zero
+    QCOMPARE(timerState(timer), QVariantMap({ { "running", false }, { "elapsed", 0 } }));
+    QCOMPARE(timerState(countdown).value("running").toBool(), false);
+    QVERIFY(remote->stateMessage().value("timers").toMap().contains(buttons) == false);
+    // (the layout says how it counts, and the clock of the computer)
+    const QVariantMap layout = remote->layoutMessage();
+    QVERIFY(layout.contains("clock"));
+    const qint64 clock = layout.value("clock").toLongLong();
+    QVERIFY(clock >= 0 && clock <= surface->clock());
+    const QVariantMap laidOut = layout.value("pages").toList().at(timersPage).toMap().value("root").toMap().value("b").toMap();
+    QCOMPARE(laidOut.value("mode").toString(), QString("countdown"));
+    QCOMPARE(laidOut.value("minutes").toInt(), 2);
+
+    // a toggle of a section that isn't a timer, or of another page: nothing
+    remote->handleCommand({ { "cmd", "timer" }, { "page", buttonsPage }, { "section", buttons }, { "action", "toggle" } });
+    remote->handleCommand({ { "cmd", "timer" }, { "page", buttonsPage }, { "section", timer }, { "action", "toggle" } });
+    QVERIFY(surface->anyTimerRunning() == false);
+    // the timer section: it runs on the computer, with the time it started at
+    remote->handleCommand({ { "cmd", "timer" }, { "page", timersPage }, { "section", timer }, { "action", "toggle" } });
+    QVERIFY(surface->timerRunning(timer));
+    QVERIFY(surface->timerRunning(countdown) == false);
+    QVariantMap running = timerState(timer);
+    QCOMPARE(running.value("running").toBool(), true);
+    QVERIFY(running.contains("origin") && running.contains("elapsed") == false);
+    QCOMPARE(running.value("origin").toLongLong(), surface->timerOrigin(timer));
+    // the state stays the same while it runs: not sent again each tick
+    const QByteArray state = QJsonDocument(QJsonObject::fromVariantMap(remote->stateMessage())).toJson();
+    QTest::qWait(150);
+    QCOMPARE(QJsonDocument(QJsonObject::fromVariantMap(remote->stateMessage())).toJson(), state);
+    // paused: the time it counted
+    remote->handleCommand({ { "cmd", "timer" }, { "page", timersPage }, { "section", timer }, { "action", "toggle" } });
+    QVERIFY(surface->timerRunning(timer) == false);
+    QVariantMap paused = timerState(timer);
+    QCOMPARE(paused.value("running").toBool(), false);
+    QVERIFY(paused.contains("origin") == false);
+    QVERIFY(paused.value("elapsed").toLongLong() >= 150);
+    QCOMPARE(paused.value("elapsed").toLongLong(), qint64(surface->timerElapsed(timer)));
+    // reset: back to zero (another action does nothing)
+    remote->handleCommand({ { "cmd", "timer" }, { "page", timersPage }, { "section", timer }, { "action", "stop" } });
+    QCOMPARE(timerState(timer), paused);
+    remote->handleCommand({ { "cmd", "timer" }, { "page", timersPage }, { "section", timer }, { "action", "reset" } });
+    QCOMPARE(timerState(timer), QVariantMap({ { "running", false }, { "elapsed", 0 } }));
+    // started on the computer: the phone sees it
+    surface->timerToggle(countdown);
+    QCOMPARE(timerState(countdown).value("running").toBool(), true);
+    QCOMPARE(timerState(countdown).value("origin").toLongLong(), surface->timerOrigin(countdown));
+}
+
+void Backend_Test::remoteTimerClock()
+{
+    // over the WebSocket: the phone gets the clock with the layout, the
+    // state when a timer starts, and the clock again when one starts (then
+    // every 10 s while one runs); the running timer doesn't send the state
+    // each tick
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    ShowSurface *surface = core.surface();
+    const int page = surface->addPage("Timer", "timer");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    RemoteServer *remote = core.remote();
+    remote->startOn(18895);
+    QVERIFY(remote->running());
+    QWebSocket phone;
+    QList<QVariantMap> received;
+    connect(&phone, &QWebSocket::textMessageReceived, this, [&received](const QString &text) {
+        received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+    });
+    auto sendJson = [&phone](const QVariantMap &m) {
+        phone.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+    };
+    auto count = [&received](const QString &type) {
+        int n = 0;
+        for (const QVariantMap &m : std::as_const(received))
+            n += m.value("type").toString() == type ? 1 : 0;
+        return n;
+    };
+    auto lastOf = [&received](const QString &type) {
+        for (int i = received.count() - 1; i >= 0; i--)
+            if (received.at(i).value("type").toString() == type)
+                return received.at(i);
+        return QVariantMap();
+    };
+    phone.open(QUrl("ws://127.0.0.1:18895/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    sendJson({ { "cmd", "hello" }, { "pin", remote->pin() } });
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("state").isEmpty() == false, 3000);
+    QVERIFY(lastOf("layout").contains("clock"));
+    const qint64 laidOut = lastOf("layout").value("clock").toLongLong();
+    QVERIFY(laidOut >= 0 && laidOut <= surface->clock());
+    QCOMPARE(count("clock"), 0);
+
+    // started from the phone: the computer counts it, the phone gets the
+    // clock and the time it started at
+    received.clear();
+    sendJson({ { "cmd", "timer" }, { "page", page }, { "section", sid }, { "action", "toggle" } });
+    QTRY_VERIFY_WITH_TIMEOUT(surface->timerRunning(sid), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(count("clock"), 1, 3000);
+    const qint64 now = lastOf("clock").value("now").toLongLong();
+    QVERIFY(now >= laidOut && now <= surface->clock());
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("state").value("timers").toMap().value(sid).toMap().value("running").toBool(), 3000);
+    QCOMPARE(lastOf("state").value("timers").toMap().value(sid).toMap().value("origin").toLongLong(), surface->timerOrigin(sid));
+    // while it runs, nothing new each tick (a tick is 120 ms)
+    received.clear();
+    QTest::qWait(600);
+    QCOMPARE(count("state"), 0);
+    QCOMPARE(count("clock"), 0);
+    // paused on the computer: the phone sees it stop, with its time
+    surface->timerToggle(sid);
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("state").isEmpty() == false, 3000);
+    const QVariantMap paused = lastOf("state").value("timers").toMap().value(sid).toMap();
+    QCOMPARE(paused.value("running").toBool(), false);
+    QCOMPARE(paused.value("elapsed").toLongLong(), qint64(surface->timerElapsed(sid)));
+    QCOMPARE(count("clock"), 0);
+    // started again: the clock again at once
+    received.clear();
+    surface->timerToggle(sid);
+    QTRY_COMPARE_WITH_TIMEOUT(count("clock"), 1, 3000);
+    // (the phone reset it)
+    sendJson({ { "cmd", "timer" }, { "page", page }, { "section", sid }, { "action", "reset" } });
+    QTRY_VERIFY_WITH_TIMEOUT(surface->timerRunning(sid) == false, 3000);
+    QCOMPARE(surface->timerElapsed(sid), 0.0);
+    phone.close();
+}
+
+/*********************************************************************
+ * remoto D3b
+ *********************************************************************/
+
+void Backend_Test::ioLastValues()
+{
+    // the levels of a universe as bytes (the DMX levels of the remote):
+    // always 512, the same values as channelValues
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    IOManager io(m_doc);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    // nothing written yet, or a universe that isn't there: all at zero
+    QCOMPARE(io.lastValues(0), QByteArray(512, '\0'));
+    QCOMPARE(io.lastValues(7), QByteArray(512, '\0'));
+    QCOMPARE(io.lastValues(-1), QByteArray(512, '\0'));
+
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+    prog.select(par);
+    prog.setChannelValue("dimmer", 255);
+    QTRY_COMPARE_WITH_TIMEOUT(int(uchar(io.lastValues(0).at(0))), 255, 3000);
+    const QByteArray values = io.lastValues(0);
+    QCOMPARE(values.size(), 512);
+    QCOMPARE(int(uchar(values.at(1))), 0);
+    QVariantList asList;
+    for (char value : values)
+        asList.append(int(uchar(value)));
+    QCOMPARE(asList, io.channelValues(0));
+
+    // (what a universe writes, filled with zeros or cut to 512)
+    emit m_doc->inputOutputMap()->universeWritten(3, QByteArray("\x10\x20", 2));
+    QByteArray filled(512, '\0');
+    filled[0] = '\x10';
+    filled[1] = '\x20';
+    QCOMPARE(io.lastValues(3), filled);
+    QCOMPARE(io.channelValues(3).at(1).toInt(), 0x20);
+    QCOMPARE(io.channelValues(3).at(2).toInt(), 0);
+    emit m_doc->inputOutputMap()->universeWritten(3, QByteArray(600, '\x7f'));
+    QCOMPARE(io.lastValues(3), QByteArray(512, '\x7f'));
+    QCOMPARE(io.channelValues(3).count(), 512);
+
+    prog.clear();
+    m_doc->masterTimer()->stop();
+}
+
+void Backend_Test::remoteLevels()
+{
+    // over the WebSocket: a phone gets the DMX levels of the universes its
+    // page shows (the ones there are, at most 4), when they change and only
+    // then; none before it says so, while its page is hidden ([]), nor to
+    // another phone or one without the PIN
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 1), 1);
+    const quint32 par = core.doc()->fixtures().first()->id();
+    IOManager *io = core.io();
+    // (a new show has 4 universes)
+    QCOMPARE(int(core.doc()->inputOutputMap()->universesCount()), 4);
+
+    // a page with the levels of the two universes: the layout says which
+    ShowSurface *surface = core.surface();
+    RemoteServer *remote = core.remote();
+    const int page = surface->addPage("Levels", "monitor");
+    const QString first = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    const QString second = surface->splitSection(page, first, "h");
+    surface->updateSection(page, second, { { "type", "monitor" }, { "universe", 1 } });
+    const QVariantMap root = remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap();
+    QCOMPARE(root.value("a").toMap().value("type").toString(), QString("monitor"));
+    QCOMPARE(root.value("a").toMap().value("universe").toInt(), 0);
+    QCOMPARE(root.value("b").toMap().value("type").toString(), QString("monitor"));
+    QCOMPARE(root.value("b").toMap().value("universe").toInt(), 1);
+
+    remote->setPin("1234");
+    remote->startOn(18897);
+    QVERIFY(remote->running());
+
+    // the phones: what each one received
+    struct Phone
+    {
+        QWebSocket socket;
+        QList<QVariantMap> received;
+        void send(const QVariantMap &m)
+        {
+            socket.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+        }
+        int count(const QString &type) const
+        {
+            int n = 0;
+            for (const QVariantMap &m : received)
+                n += m.value("type").toString() == type ? 1 : 0;
+            return n;
+        }
+        QVariantMap last(const QString &type) const
+        {
+            for (int i = received.count() - 1; i >= 0; i--)
+                if (received.at(i).value("type").toString() == type)
+                    return received.at(i);
+            return QVariantMap();
+        }
+        /** The universes of its last levels, and the bytes of one */
+        QStringList universes() const
+        {
+            QStringList list = last("levels").value("universes").toMap().keys();
+            list.sort();
+            return list;
+        }
+        QByteArray values(int universe) const
+        {
+            return QByteArray::fromBase64(last("levels").value("universes").toMap().value(QString::number(universe)).toString().toLatin1());
+        }
+        /** A "monitor", then a "hello": once its "auth" is back, the server
+         *  has taken the "monitor" (in order) and sent what it sends for it */
+        void watch(const QVariantList &list, const QString &pin)
+        {
+            const int auths = count("auth");
+            send({ { "cmd", "monitor" }, { "universes", list } });
+            send({ { "cmd", "hello" }, { "pin", pin } });
+            QTRY_COMPARE_WITH_TIMEOUT(count("auth"), auths + 1, 3000);
+        }
+    };
+    auto open = [](Phone &phone, const QString &pin) {
+        QObject::connect(&phone.socket, &QWebSocket::textMessageReceived, &phone.socket, [&phone](const QString &text) {
+            phone.received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+        });
+        phone.socket.open(QUrl("ws://127.0.0.1:18897/"));
+        QTRY_COMPARE_WITH_TIMEOUT(phone.socket.state(), QAbstractSocket::ConnectedState, 3000);
+        phone.send({ { "cmd", "hello" }, { "pin", pin } });
+        QTRY_COMPARE_WITH_TIMEOUT(phone.count("auth"), 1, 3000);
+    };
+    // the dimmer of the PAR (channel 1 of universe 1), as the output has it
+    Programmer *prog = core.programmer();
+    prog->select(par);
+    auto setDimmer = [prog, io](int value) {
+        prog->setChannelValue("dimmer", value);
+        QTRY_COMPARE_WITH_TIMEOUT(int(uchar(io->lastValues(0).at(0))), value, 3000);
+    };
+
+    Phone phone;
+    open(phone, "1234");
+    QTRY_VERIFY_WITH_TIMEOUT(phone.last("state").isEmpty() == false, 3000);
+    setDimmer(255);
+    // no levels before the page says what it shows
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), 0);
+
+    // universe 1: its 512 bytes at once
+    phone.send({ { "cmd", "monitor" }, { "universes", QVariantList({ 0 }) } });
+    QTRY_COMPARE_WITH_TIMEOUT(phone.count("levels"), 1, 3000);
+    QCOMPARE(phone.universes(), QStringList({ "0" }));
+    QCOMPARE(phone.values(0).size(), 512);
+    QCOMPARE(int(uchar(phone.values(0).at(0))), 255);
+    QCOMPARE(int(uchar(phone.values(0).at(1))), 0);
+    // the same levels: nothing more (a tick is 120 ms)
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), 1);
+    // another value: the new levels, then nothing more again
+    setDimmer(100);
+    QTRY_COMPARE_WITH_TIMEOUT(int(uchar(phone.values(0).at(0))), 100, 3000);
+    QCOMPARE(phone.universes(), QStringList({ "0" }));
+    const int sent = phone.count("levels");
+    QVERIFY(sent >= 2);
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), sent);
+
+    // the two universes (another page, the same page again): all of them
+    // at once, also the ones that didn't change
+    phone.received.clear();
+    phone.watch({ 0, 1 }, "1234");
+    QCOMPARE(phone.count("levels"), 1);
+    QCOMPARE(phone.universes(), QStringList({ "0", "1" }));
+    QCOMPARE(int(uchar(phone.values(0).at(0))), 100);
+    QCOMPARE(phone.values(1), QByteArray(512, '\0'));
+    // then only the one that changes
+    setDimmer(150);
+    QTRY_COMPARE_WITH_TIMEOUT(int(uchar(phone.values(0).at(0))), 150, 3000);
+    QCOMPARE(phone.universes(), QStringList({ "0" }));
+
+    // a finger on a fader: a command at every frame, and the output changes
+    // at each one. The levels go at the tick (120 ms), not with each command
+    QElapsedTimer burst;
+    burst.start();
+    const int before = phone.count("levels");
+    for (int i = 0; burst.elapsed() < 1000; i++)
+    {
+        prog->setChannelValue("dimmer", 20 + i % 200);
+        phone.send({ { "cmd", "level" }, { "page", 99 }, { "section", "none" }, { "cell", 0 }, { "value", 0.5 } });
+        QTest::qWait(15);
+    }
+    QTest::qWait(300);
+    const int burstLevels = phone.count("levels") - before;
+    QVERIFY2(burstLevels > 0 && burstLevels <= int(burst.elapsed() / 100) + 2,
+             qPrintable(QString("%1 levels in %2 ms").arg(burstLevels).arg(burst.elapsed())));
+
+    // only the universes there are: the others are left out
+    phone.received.clear();
+    phone.watch({ 99, 1, -1, QString("x") }, "1234");
+    QCOMPARE(phone.count("levels"), 1);
+    QCOMPARE(phone.universes(), QStringList({ "1" }));
+    setDimmer(160);
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), 1);
+    // none of them: no levels
+    phone.received.clear();
+    phone.watch({ 99, -1 }, "1234");
+    setDimmer(170);
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), 0);
+
+    // at most 4 universes (the same one twice counts once)
+    io->addUniverse();
+    io->addUniverse();
+    QCOMPARE(int(core.doc()->inputOutputMap()->universesCount()), 6);
+    phone.received.clear();
+    phone.watch({ 5, 4, 3, 2, 1, 0 }, "1234");
+    QCOMPARE(phone.count("levels"), 1);
+    QCOMPARE(phone.universes(), QStringList({ "2", "3", "4", "5" }));
+    phone.received.clear();
+    phone.watch({ 0, 0, 0, 0, 1 }, "1234");
+    QCOMPARE(phone.universes(), QStringList({ "0", "1" }));
+
+    // the page hidden ([]): nothing, and the levels of now when it is seen again
+    phone.received.clear();
+    phone.watch({}, "1234");
+    setDimmer(180);
+    QTest::qWait(400);
+    QCOMPARE(phone.count("levels"), 0);
+    phone.watch({ 0 }, "1234");
+    QCOMPARE(phone.count("levels"), 1);
+    QCOMPARE(int(uchar(phone.values(0).at(0))), 180);
+
+    // another phone that shows no levels gets none; one without the PIN
+    // can't ask for them
+    Phone other, stranger;
+    open(other, "1234");
+    open(stranger, "0000");
+    QCOMPARE(stranger.last("auth").value("ok").toBool(), false);
+    stranger.send({ { "cmd", "monitor" }, { "universes", QVariantList({ 0 }) } });
+    stranger.send({ { "cmd", "hello" }, { "pin", "0000" } });
+    QTRY_COMPARE_WITH_TIMEOUT(stranger.count("auth"), 2, 3000);
+    setDimmer(190);
+    QTRY_COMPARE_WITH_TIMEOUT(int(uchar(phone.values(0).at(0))), 190, 3000);
+    QTest::qWait(400);
+    QCOMPARE(other.count("levels"), 0);
+    QCOMPARE(stranger.count("levels"), 0);
+
+    // the phone goes, and its levels with it: the others go on
+    QCOMPARE(remote->clients(), 3);
+    phone.socket.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 2, 3000);
+    setDimmer(200);
+    QTest::qWait(400);
+    other.watch({ 0 }, "1234");
+    QCOMPARE(other.count("levels"), 1);
+    QCOMPARE(int(uchar(other.values(0).at(0))), 200);
+    setDimmer(210);
+    QTRY_COMPARE_WITH_TIMEOUT(int(uchar(other.values(0).at(0))), 210, 3000);
+    QCOMPARE(stranger.count("levels"), 0);
+
+    // stopped and started again: the phones of before are gone, a new one
+    // gets no levels until it asks
+    remote->startOn(18897);
+    QVERIFY(remote->running());
+    QTRY_COMPARE_WITH_TIMEOUT(other.socket.state(), QAbstractSocket::UnconnectedState, 3000);
+    Phone again;
+    open(again, "1234");
+    setDimmer(220);
+    QTest::qWait(400);
+    QCOMPARE(again.count("levels"), 0);
+    again.watch({ 0 }, "1234");
+    QCOMPARE(int(uchar(again.values(0).at(0))), 220);
+    stranger.socket.close();
+    again.socket.close();
+}
+
+/*********************************************************************
+ * remoto D3c
+ *********************************************************************/
+
+void Backend_Test::remoteMixer()
+{
+    // a mixer section on the phone: the layout lists the strips of the
+    // computer (all the fixtures, then each fixture group, not the groups of
+    // the colour effects), the state their settings while a page shows one,
+    // and the phone moves them: numbers, toggles (the other way it is now),
+    // the colour reset; another mixer or another key does nothing
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 3), 3);
+    QVariantList pars;
+    for (Fixture *f : core.doc()->fixtures())
+        pars.append(f->id());
+    const int front = core.patch()->createGroup("Front", pars.mid(0, 2));
+    const int effect = core.patch()->createGroup("Front (FX)", pars);
+    QVERIFY(front >= 0 && effect >= 0);
+
+    // the mixers there are, and their settings (neutral: nothing changed yet)
+    LiveMixer *mixer = core.mixer();
+    QVERIFY(mixer->hasMixer(-1));
+    QVERIFY(mixer->hasMixer(front));
+    QVERIFY(mixer->hasMixer(effect) == false);
+    QVERIFY(mixer->hasMixer(999) == false);
+    QVERIFY(mixer->hasMixer(-2) == false);
+    QCOMPARE(mixer->value(front, "dimmer").toDouble(), 1.0);
+    QCOMPARE(mixer->value(front, "saturation").toDouble(), 1.0);
+    QCOMPARE(mixer->value(front, "strobeHz").toDouble(), 8.0);
+    QCOMPARE(mixer->value(front, "full").toBool(), false);
+    QVERIFY(mixer->value(front, "bogus").isValid() == false);
+
+    // no mixer section: no settings in the state
+    ShowSurface *surface = core.surface();
+    RemoteServer *remote = core.remote();
+    surface->addPage("Buttons", "buttons");
+    QVERIFY(remote->stateMessage().contains("mixers") == false);
+
+    // a page with one: the strips, in the order of the computer
+    const int page = surface->addPage("Mixer", "mixer");
+    const QVariantMap section = remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap();
+    QCOMPARE(section.value("type").toString(), QString("mixer"));
+    const QVariantList strips = section.value("mixers").toList();
+    QCOMPARE(strips.count(), 2);
+    QCOMPARE(strips.at(0).toMap().value("id").toInt(), -1);
+    QCOMPARE(strips.at(0).toMap().value("name").toString(), mixer->mixerName(-1));
+    QCOMPARE(strips.at(0).toMap().value("fixtures").toInt(), 3);
+    QCOMPARE(strips.at(1).toMap().value("id").toInt(), front);
+    QCOMPARE(strips.at(1).toMap().value("name").toString(), QString("Front"));
+    QCOMPARE(strips.at(1).toMap().value("fixtures").toInt(), 2);
+    QCOMPARE(strips.at(1).toMap().keys(), QStringList({ "fixtures", "id", "name" }));
+    // and their settings in the state (their names are in the layout)
+    auto settings = [remote](int id) {
+        return remote->stateMessage().value("mixers").toMap().value(QString::number(id)).toMap();
+    };
+    QCOMPARE(remote->stateMessage().value("mixers").toMap().keys(), QStringList({ "-1", QString::number(front) }));
+    QCOMPARE(settings(front).keys(), QStringList({ "blackout", "colour", "dimmer", "flash", "flashExclusive", "full",
+                                                   "fullExclusive", "hue", "saturation", "strobe", "strobeHz" }));
+    QCOMPARE(settings(front).value("dimmer").toDouble(), 1.0);
+
+    auto command = [remote](QVariantMap message) {
+        message.insert("cmd", "mixer");
+        remote->handleCommand(message);
+    };
+    // the dimmer: a number (none, or not a number: nothing)
+    command({ { "mixer", front }, { "key", "dimmer" }, { "value", 0.5 } });
+    QCOMPARE(mixer->value(front, "dimmer").toDouble(), 0.5);
+    QCOMPARE(settings(front).value("dimmer").toDouble(), 0.5);
+    QCOMPARE(settings(-1).value("dimmer").toDouble(), 1.0);
+    command({ { "mixer", front }, { "key", "dimmer" } });
+    command({ { "mixer", front }, { "key", "dimmer" }, { "value", "half" } });
+    QCOMPARE(mixer->value(front, "dimmer").toDouble(), 0.5);
+    // the colour, the strobe speed (kept within their ranges by the mixer)
+    command({ { "mixer", -1 }, { "key", "hue" }, { "value", 0.25 } });
+    command({ { "mixer", -1 }, { "key", "saturation" }, { "value", 0.4 } });
+    command({ { "mixer", -1 }, { "key", "strobeHz" }, { "value", 12.5 } });
+    QCOMPARE(settings(-1).value("hue").toDouble(), 0.25);
+    QCOMPARE(settings(-1).value("saturation").toDouble(), 0.4);
+    QCOMPARE(settings(-1).value("colour").toBool(), true);
+    QCOMPARE(settings(-1).value("strobeHz").toDouble(), 12.5);
+    command({ { "mixer", -1 }, { "key", "strobeHz" }, { "value", 90 } });
+    QCOMPARE(settings(-1).value("strobeHz").toDouble(), 20.0);
+    // the colour reset: the colour of the scenes again
+    command({ { "mixer", -1 }, { "key", "resetColour" } });
+    QCOMPARE(settings(-1).value("colour").toBool(), false);
+    QCOMPARE(mixer->value(-1, "colour").toBool(), false);
+
+    // Full: on, then off (a toggle; a value says nothing)
+    command({ { "mixer", front }, { "key", "full" }, { "toggle", true } });
+    QVERIFY(mixer->value(front, "full").toBool());
+    QVERIFY(settings(front).value("full").toBool());
+    command({ { "mixer", front }, { "key", "full" }, { "toggle", true } });
+    QVERIFY(mixer->value(front, "full").toBool() == false);
+    command({ { "mixer", front }, { "key", "full" }, { "value", true } });
+    QVERIFY(mixer->value(front, "full").toBool() == false);
+    // Blackout puts Full off (the rule of the mixer)
+    command({ { "mixer", front }, { "key", "full" }, { "toggle", true } });
+    command({ { "mixer", front }, { "key", "blackout" }, { "toggle", true } });
+    QVERIFY(mixer->value(front, "blackout").toBool());
+    QVERIFY(mixer->value(front, "full").toBool() == false);
+    QVERIFY(settings(front).value("blackout").toBool());
+    QVERIFY(settings(front).value("full").toBool() == false);
+    // the strobe and the exclusive full
+    command({ { "mixer", front }, { "key", "strobe" }, { "toggle", true } });
+    command({ { "mixer", front }, { "key", "fullExclusive" }, { "toggle", true } });
+    QVERIFY(settings(front).value("strobe").toBool());
+    QVERIFY(settings(front).value("fullExclusive").toBool());
+    QVERIFY(mixer->isActive());
+    // (the flashes are held, not toggled: mixerFlash)
+    command({ { "mixer", front }, { "key", "flash" }, { "toggle", true } });
+    command({ { "mixer", front }, { "key", "flashExclusive" }, { "toggle", true } });
+    QVERIFY(mixer->value(front, "flash").toBool() == false);
+    QVERIFY(mixer->value(front, "flashExclusive").toBool() == false);
+    remote->handleCommand({ { "cmd", "mixerFlash" }, { "mixer", front }, { "key", "flashExclusive" }, { "down", true } });
+    QVERIFY(settings(front).value("flashExclusive").toBool());
+    remote->handleCommand({ { "cmd", "mixerFlash" }, { "mixer", front }, { "key", "flashExclusive" }, { "down", false } });
+    QVERIFY(settings(front).value("flashExclusive").toBool() == false);
+
+    // another mixer (none, a group of an effect, one that isn't there) or
+    // another key: nothing changes
+    const QByteArray before = QJsonDocument(QJsonObject::fromVariantMap(remote->stateMessage())).toJson();
+    command({ { "mixer", 999 }, { "key", "dimmer" }, { "value", 0.1 } });
+    command({ { "mixer", effect }, { "key", "dimmer" }, { "value", 0.1 } });
+    command({ { "key", "dimmer" }, { "value", 0.1 } });
+    command({ { "mixer", "x" }, { "key", "full" }, { "toggle", true } });
+    command({ { "mixer", front }, { "key", "bogus" }, { "value", 0.1 }, { "toggle", true } });
+    remote->handleCommand({ { "cmd", "mixerFlash" }, { "mixer", 999 }, { "key", "flash" }, { "down", true } });
+    remote->handleCommand({ { "cmd", "mixerFlash" }, { "mixer", front }, { "key", "full" }, { "down", true } });
+    QCOMPARE(QJsonDocument(QJsonObject::fromVariantMap(remote->stateMessage())).toJson(), before);
+    QCOMPARE(mixer->value(999, "dimmer").toDouble(), 1.0);
+    QCOMPARE(mixer->value(effect, "dimmer").toDouble(), 1.0);
+    QCOMPARE(mixer->value(999, "flash").toBool(), false);
+
+    // the computer moves it: the phone sees it
+    mixer->set(-1, "dimmer", 0.2);
+    QCOMPARE(settings(-1).value("dimmer").toDouble(), 0.2);
+    mixer->reset();
+}
+
+void Backend_Test::remoteMixerFlash()
+{
+    // over the WebSocket: Flash and Flash excl. of a mixer are on while a
+    // finger is on them, on until the last phone lets go, and let go of when
+    // a phone goes; an up of a flash the phone doesn't hold (never pressed,
+    // of the show before) does nothing. The layout follows the mixers (a
+    // group renamed), not their settings (a dimmer that moves)
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    QVariantList pars;
+    for (Fixture *f : core.doc()->fixtures())
+        pars.append(f->id());
+    const int front = core.patch()->createGroup("Front", pars);
+    QVERIFY(front >= 0);
+    LiveMixer *mixer = core.mixer();
+    ShowSurface *surface = core.surface();
+    surface->addPage("Mixer", "mixer");
+    RemoteServer *remote = core.remote();
+    remote->startOn(18899);
+    QVERIFY(remote->running());
+
+    // the phones: what each one received
+    struct Phone
+    {
+        QWebSocket socket;
+        QList<QVariantMap> received;
+        void send(const QVariantMap &m)
+        {
+            socket.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+        }
+        int count(const QString &type) const
+        {
+            int n = 0;
+            for (const QVariantMap &m : received)
+                n += m.value("type").toString() == type ? 1 : 0;
+            return n;
+        }
+        QVariantMap last(const QString &type) const
+        {
+            for (int i = received.count() - 1; i >= 0; i--)
+                if (received.at(i).value("type").toString() == type)
+                    return received.at(i);
+            return QVariantMap();
+        }
+        /** A message, then a "hello": once its "auth" is back, the server
+         *  has taken the message (in order) */
+        void sendAndWait(const QVariantMap &m)
+        {
+            const int auths = count("auth");
+            send(m);
+            send({ { "cmd", "hello" } });
+            QTRY_COMPARE_WITH_TIMEOUT(count("auth"), auths + 1, 3000);
+        }
+    };
+    auto open = [](Phone &phone) {
+        QObject::connect(&phone.socket, &QWebSocket::textMessageReceived, &phone.socket, [&phone](const QString &text) {
+            phone.received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+        });
+        phone.socket.open(QUrl("ws://127.0.0.1:18899/"));
+        QTRY_COMPARE_WITH_TIMEOUT(phone.socket.state(), QAbstractSocket::ConnectedState, 3000);
+        phone.send({ { "cmd", "hello" } });
+        QTRY_COMPARE_WITH_TIMEOUT(phone.count("auth"), 1, 3000);
+    };
+    auto flash = [](int id, const QString &key, bool down) {
+        return QVariantMap({ { "cmd", "mixerFlash" }, { "mixer", id }, { "key", key }, { "down", down } });
+    };
+    auto shown = [](const Phone &phone, int id) {
+        return phone.last("state").value("mixers").toMap().value(QString::number(id)).toMap();
+    };
+
+    Phone a, b;
+    open(a);
+    open(b);
+    QCOMPARE(a.last("layout").value("pages").toList().value(0).toMap().value("root").toMap()
+             .value("mixers").toList().count(), 2);
+    QTRY_VERIFY_WITH_TIMEOUT(shown(a, front).isEmpty() == false, 3000);
+    QCOMPARE(shown(a, front).value("flash").toBool(), false);
+
+    // down: on, and every phone sees it; the phone goes: off
+    a.send(flash(front, "flash", true));
+    QTRY_VERIFY_WITH_TIMEOUT(mixer->value(front, "flash").toBool(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(shown(b, front).value("flash").toBool(), 3000);
+    a.socket.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 1, 3000);
+    QVERIFY(mixer->value(front, "flash").toBool() == false);
+
+    // two phones down, one up: still on; the other up: off
+    Phone c;
+    open(c);
+    b.sendAndWait(flash(front, "flashExclusive", true));
+    c.sendAndWait(flash(front, "flashExclusive", true));
+    QVERIFY(mixer->value(front, "flashExclusive").toBool());
+    b.sendAndWait(flash(front, "flashExclusive", false));
+    QVERIFY(mixer->value(front, "flashExclusive").toBool());
+    // (an up again of the phone that let go: not the other one's hold)
+    b.sendAndWait(flash(front, "flashExclusive", false));
+    QVERIFY(mixer->value(front, "flashExclusive").toBool());
+    c.sendAndWait(flash(front, "flashExclusive", false));
+    QVERIFY(mixer->value(front, "flashExclusive").toBool() == false);
+
+    // an up without a down does nothing (a flash on from the computer stays)
+    mixer->set(front, "flash", true);
+    b.sendAndWait(flash(front, "flash", false));
+    QVERIFY(mixer->value(front, "flash").toBool());
+    mixer->set(front, "flash", false);
+    // (nor a down of a key that isn't a flash, or of a mixer that isn't there)
+    b.sendAndWait(flash(front, "full", true));
+    b.sendAndWait(flash(999, "flash", true));
+    QVERIFY(mixer->value(front, "full").toBool() == false);
+    QVERIFY(mixer->isActive() == false);
+
+    // the layout follows the mixers, not their settings: a dimmer that
+    // moves (from the phone or the computer) only changes the state
+    QTest::qWait(300);
+    b.received.clear();
+    b.send({ { "cmd", "mixer" }, { "mixer", front }, { "key", "dimmer" }, { "value", 0.3 } });
+    QTRY_COMPARE_WITH_TIMEOUT(shown(b, front).value("dimmer").toDouble(), 0.3, 3000);
+    mixer->set(-1, "dimmer", 0.6);
+    QTRY_COMPARE_WITH_TIMEOUT(shown(b, -1).value("dimmer").toDouble(), 0.6, 3000);
+    QTest::qWait(300);
+    QCOMPARE(b.count("layout"), 0);
+    // a group of an effect is no mixer: no new layout either
+    QVERIFY(core.patch()->createGroup("Front (FX)", pars) >= 0);
+    QTest::qWait(300);
+    QCOMPARE(b.count("layout"), 0);
+    // the group renamed: a new layout, with its name
+    core.patch()->renameGroup(quint32(front), "Stage");
+    QTRY_COMPARE_WITH_TIMEOUT(b.count("layout"), 1, 3000);
+    const QVariantList strips = b.last("layout").value("pages").toList().value(0).toMap().value("root").toMap()
+                                    .value("mixers").toList();
+    QCOMPARE(strips.count(), 2);
+    QCOMPARE(strips.at(1).toMap().value("name").toString(), QString("Stage"));
+    // a fixture out of it: a new layout, with its fixtures
+    core.patch()->setGroupFixtures(quint32(front), pars.mid(0, 1));
+    QTRY_COMPARE_WITH_TIMEOUT(b.count("layout"), 2, 3000);
+    QCOMPARE(b.last("layout").value("pages").toList().value(0).toMap().value("root").toMap()
+             .value("mixers").toList().at(1).toMap().value("fixtures").toInt(), 1);
+
+    // a new show: what the phones held is forgotten, and their up does
+    // nothing to the flash of the new show (the mixer of all the fixtures
+    // is in every show)
+    c.sendAndWait(flash(-1, "flash", true));
+    QVERIFY(mixer->value(-1, "flash").toBool());
+    core.newShow();
+    QVERIFY(mixer->value(-1, "flash").toBool() == false);
+    mixer->set(-1, "flash", true);
+    c.sendAndWait(flash(-1, "flash", false));
+    QVERIFY(mixer->value(-1, "flash").toBool());
+    // (nor when the phone goes)
+    c.socket.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 1, 3000);
+    QVERIFY(mixer->value(-1, "flash").toBool());
+
+    // stopped with a finger on a flash: it goes off
+    mixer->set(-1, "flash", false);
+    b.sendAndWait(flash(-1, "flash", true));
+    QVERIFY(mixer->value(-1, "flash").toBool());
+    remote->startOn(18899);
+    QVERIFY(mixer->value(-1, "flash").toBool() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(b.socket.state(), QAbstractSocket::UnconnectedState, 3000);
+}
+
+/*********************************************************************
+ * remoto D2
+ *********************************************************************/
+
+namespace
+{
+
+/** A name of DNS by hand: each label after its length, a zero at the end */
+QByteArray dnsName(const QList<QByteArray> &labels)
+{
+    QByteArray name;
+    for (const QByteArray &label : labels)
+        name += char(label.size()) + label;
+    return name + QByteArray(1, '\0');
+}
+
+/** A query of Multicast DNS by hand: a header with one question */
+QByteArray dnsQuery(quint16 id, const QList<QByteArray> &labels, quint16 type, quint16 klass)
+{
+    QByteArray packet;
+    QDataStream out(&packet, QIODevice::WriteOnly);
+    out << id << quint16(0) << quint16(1) << quint16(0) << quint16(0) << quint16(0);
+    const QByteArray name = dnsName(labels);
+    out.writeRawData(name.constData(), int(name.size()));
+    out << type << klass;
+    return packet;
+}
+
+} // namespace
+
+void Backend_Test::mdnsPackets()
+{
+    const QString host = "dmxtotalcontrol.local";
+    const QList<QByteArray> labels = { "dmxtotalcontrol", "local" };
+    const QByteArray name = dnsName(labels);
+    const QHostAddress address("192.168.1.20");
+    bool unicast = true;
+
+    // the A record, to the group: ID 0, a response with authority, no
+    // question, one answer; class IN with the cache flush, 120 s, the 4
+    // bytes of the address
+    const QByteArray multicast = QByteArray::fromHex("000084000000000100000000") + name
+                                 + QByteArray::fromHex("00018001000000780004c0a80114");
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0, labels, 1, 1), host, address, false, &unicast), multicast);
+    QVERIFY(unicast == false);
+    // from a port that is not 5353 (Android): the ID and the question
+    // again, the answer points at its name, class IN, 10 s; to that port
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0x1234, labels, 1, 1), host, address, true, &unicast),
+             QByteArray::fromHex("123484000001000100000000") + name + QByteArray::fromHex("00010001")
+                 + QByteArray::fromHex("c00c000100010000000a0004c0a80114"));
+    QVERIFY(unicast);
+    // the name in another case is the same name
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0, { "DMXTotalControl", "LOCAL" }, 1, 1), host, address, false, &unicast), multicast);
+    // the question of a name that is compressed: "local" in the first
+    // question, the second points at it
+    QByteArray compressed;
+    {
+        QDataStream out(&compressed, QIODevice::WriteOnly);
+        out << quint16(9) << quint16(0) << quint16(2) << quint16(0) << quint16(0) << quint16(0);
+        const QByteArray local = dnsName({ "local" });
+        out.writeRawData(local.constData(), int(local.size()));
+        out << quint16(12) << quint16(1);
+        out << quint8(15);
+        out.writeRawData("dmxtotalcontrol", 15);
+        out << quint8(0xC0) << quint8(12) << quint16(1) << quint16(1);
+    }
+    QCOMPARE(MdnsResponder::reply(compressed, host, address, false, &unicast), multicast);
+    // AAAA: an NSEC that says there is only the A record (the next name is
+    // the name, window 0, 1 byte, bit 1)
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0, labels, 28, 1), host, address, false, &unicast),
+             QByteArray::fromHex("000084000000000100000000") + name
+                 + QByteArray::fromHex("002f8001000000780005c00c000140"));
+    // ANY: the A record
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0, labels, 255, 1), host, address, false, &unicast), multicast);
+    // asked for a unicast answer (QU): the same answer, to the one who asked
+    QCOMPARE(MdnsResponder::reply(dnsQuery(0, labels, 1, 0x8001), host, address, false, &unicast), multicast);
+    QVERIFY(unicast);
+    // A and AAAA in one query: both answers, the second points at the name
+    QByteArray both;
+    {
+        QDataStream out(&both, QIODevice::WriteOnly);
+        out << quint16(0) << quint16(0) << quint16(2) << quint16(0) << quint16(0) << quint16(0);
+        out.writeRawData(name.constData(), int(name.size()));
+        out << quint16(1) << quint16(1) << quint8(0xC0) << quint8(12) << quint16(28) << quint16(1);
+    }
+    QCOMPARE(MdnsResponder::reply(both, host, address, false, &unicast),
+             QByteArray::fromHex("000084000000000200000000") + name
+                 + QByteArray::fromHex("00018001000000780004c0a80114")
+                 + QByteArray::fromHex("c00c002f8001000000780005c00c000140"));
+
+    // nothing for: another name, another type or class, a response, another
+    // opcode, an empty packet, an IPv6 address to give
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, { "other", "local" }, 1, 1), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, { "dmxtotalcontrol" }, 1, 1), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, labels, 16, 1), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, labels, 1, 3), host, address, false, &unicast).isEmpty());
+    QByteArray response = dnsQuery(0, labels, 1, 1);
+    response[2] = char(0x84);
+    QVERIFY(MdnsResponder::reply(response, host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(multicast, host, address, false, &unicast).isEmpty());
+    QByteArray update = dnsQuery(0, labels, 1, 1);
+    update[2] = char(0x28);
+    QVERIFY(MdnsResponder::reply(update, host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(QByteArray(), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, labels, 1, 1), host, QHostAddress("fe80::1"), false, &unicast).isEmpty());
+    QVERIFY(unicast == false);
+
+    // every piece of a query that is cut short, and names that loop or are
+    // too long: no answer (and no crash, no hang)
+    for (const QByteArray &query : { dnsQuery(0, labels, 1, 1), compressed })
+        for (int size = 0; size < query.size(); size++)
+            QVERIFY2(MdnsResponder::reply(query.left(size), host, address, false, &unicast).isEmpty(),
+                     qPrintable(QString::number(size)));
+    const QByteArray header = QByteArray::fromHex("000000000001000000000000");
+    QVERIFY(MdnsResponder::reply(header + QByteArray::fromHex("c00c00010001"), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(header + QByteArray::fromHex("c00ec00c00010001"), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(header + QByteArray::fromHex("03616263c00c00010001"), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(header + QByteArray::fromHex("c0ff00010001"), host, address, false, &unicast).isEmpty());
+    QVERIFY(MdnsResponder::reply(header + QByteArray::fromHex("4000010001"), host, address, false, &unicast).isEmpty());
+    const QByteArray label63(63, 'a');
+    QVERIFY(MdnsResponder::reply(dnsQuery(0, { label63, label63, label63, label63, "local" }, 1, 1), host, address,
+                                 false, &unicast).isEmpty());
+}
+
+void Backend_Test::mdnsConflict()
+{
+    const QString host = "dmxtotalcontrol.local";
+    const QByteArray name = dnsName({ "dmxtotalcontrol", "local" });
+    const QList<QHostAddress> ours = { QHostAddress("192.168.1.20"), QHostAddress("10.0.0.5") };
+
+    // the announcement: a response to the group with the A record (cache
+    // flush, 120 s; 0 s: the goodbye)
+    const QByteArray theirs = MdnsResponder::announcement(host, QHostAddress("192.168.1.33"), 120);
+    QCOMPARE(theirs, QByteArray::fromHex("000084000000000100000000") + name
+                         + QByteArray::fromHex("00018001000000780004c0a80121"));
+    QCOMPARE(MdnsResponder::announcement(host, QHostAddress("192.168.1.33"), 0),
+             QByteArray::fromHex("000084000000000100000000") + name
+                 + QByteArray::fromHex("00018001000000000004c0a80121"));
+    QVERIFY(MdnsResponder::announcement(host, QHostAddress("::1"), 120).isEmpty());
+
+    // another computer with the name: claimed, and at which address
+    QHostAddress other;
+    QVERIFY(MdnsResponder::claims(theirs, host, ours, &other));
+    QCOMPARE(other, QHostAddress("192.168.1.33"));
+    QVERIFY(MdnsResponder::claims(theirs, "DMXTotalControl.LOCAL", ours));
+    // not: its own address (its packets come back), another name, a goodbye
+    QVERIFY(MdnsResponder::claims(MdnsResponder::announcement(host, QHostAddress("10.0.0.5"), 120), host, ours) == false);
+    QVERIFY(MdnsResponder::claims(theirs, "other.local", ours) == false);
+    QVERIFY(MdnsResponder::claims(MdnsResponder::announcement(host, QHostAddress("192.168.1.33"), 0), host, ours) == false);
+    // an answer of another computer to a phone (its question, the name
+    // compressed) claims it too
+    const QByteArray answer = MdnsResponder::reply(dnsQuery(7, { "dmxtotalcontrol", "local" }, 1, 1), host,
+                                                   QHostAddress("192.168.1.40"), true, nullptr);
+    QVERIFY(MdnsResponder::claims(answer, host, ours, &other));
+    QCOMPARE(other, QHostAddress("192.168.1.40"));
+    // the probe: a question of any type that waits for the answers of the
+    // group (QM); a question claims nothing, and gets the A record
+    const QByteArray probe = MdnsResponder::probe(host);
+    QCOMPARE(probe, QByteArray::fromHex("000000000001000000000000") + name + QByteArray::fromHex("00ff0001"));
+    QVERIFY(MdnsResponder::claims(probe, host, {}) == false);
+    bool unicast = true;
+    QCOMPARE(MdnsResponder::reply(probe, host, QHostAddress("192.168.1.20"), false, &unicast),
+             QByteArray::fromHex("000084000000000100000000") + name + QByteArray::fromHex("00018001000000780004c0a80114"));
+    QVERIFY(unicast == false);
+    QVERIFY(MdnsResponder::probe("").isEmpty());
+    // a response cut short claims nothing
+    for (int size = 0; size < theirs.size(); size++)
+        QVERIFY(MdnsResponder::claims(theirs.left(size), host, ours) == false);
+
+    // the names tried: the name, then name-2 … (63 characters at most)
+    QCOMPARE(MdnsResponder::candidate("dmxtotalcontrol", 1), QString("dmxtotalcontrol"));
+    QCOMPARE(MdnsResponder::candidate("dmxtotalcontrol", 2), QString("dmxtotalcontrol-2"));
+    QCOMPARE(MdnsResponder::candidate(QString(63, 'a'), 9), QString(61, 'a') + "-9");
+
+    // the packets it reads: from the networks of this computer only (a
+    // claim from another network would take the name away)
+    const QList<QPair<QHostAddress, int>> networks = { { QHostAddress("192.168.1.20"), 24 },
+                                                       { QHostAddress("10.0.0.5"), 8 },
+                                                       { QHostAddress("172.16.0.1"), -1 } };
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("192.168.1.33"), networks), 0);
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("10.200.3.4"), networks), 1);
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("203.0.113.9"), networks), -1);
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("192.168.2.33"), networks), -1);
+    // (a prefix it doesn't know: no network)
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("172.16.0.1"), networks), -1);
+    QCOMPARE(MdnsResponder::networkOf(QHostAddress("192.168.1.33"), {}), -1);
+}
+
+void Backend_Test::mdnsLoopback()
+{
+    // a responder on the loopback only (nothing on the networks): it probes
+    // the name, then it is its own
+    MdnsResponder responder;
+    QSignalSpy changed(&responder, SIGNAL(hostChanged()));
+    QVERIFY(responder.startOn("dtctest", 0, QHostAddress::LocalHost, false));
+    QVERIFY(responder.port() != 0);
+    QVERIFY(responder.hostName().isEmpty());
+    QTRY_COMPARE_WITH_TIMEOUT(responder.hostName(), QString("dtctest.local"), 3000);
+    QCOMPARE(changed.count(), 1);
+
+    // a phone asks from a port of its own: the answer comes back to it, with
+    // the address the computer has on its network (the loopback here)
+    QUdpSocket phone;
+    QVERIFY(phone.bind(QHostAddress::LocalHost, 0));
+    auto ask = [&phone, &responder](const QList<QByteArray> &labels, quint16 id) {
+        phone.writeDatagram(dnsQuery(id, labels, 1, 1), QHostAddress::LocalHost, responder.port());
+        QElapsedTimer clock;
+        clock.start();
+        while (phone.hasPendingDatagrams() == false && clock.elapsed() < 1000)
+            QTest::qWait(10);
+        return phone.hasPendingDatagrams() ? phone.receiveDatagram().data() : QByteArray();
+    };
+    QCOMPARE(ask({ "dtctest", "local" }, 0x04D2),
+             QByteArray::fromHex("04d284000001000100000000") + dnsName({ "dtctest", "local" })
+                 + QByteArray::fromHex("00010001c00c000100010000000a00047f000001"));
+    QVERIFY(ask({ "other", "local" }, 5).isEmpty());
+
+    // another computer that says it has the name: the lower address on that
+    // network keeps it (this one, 127.0.0.1 before 127.0.0.2)
+    QUdpSocket computer;
+    QVERIFY(computer.bind(QHostAddress::LocalHost, 0));
+    changed.clear();
+    computer.writeDatagram(MdnsResponder::announcement("dtctest.local", QHostAddress("127.0.0.2"), 120),
+                           QHostAddress::LocalHost, responder.port());
+    QTest::qWait(300);
+    QCOMPARE(responder.hostName(), QString("dtctest.local"));
+    QCOMPARE(changed.count(), 0);
+    // one on no network of this one: it gives the name up and takes the next
+    computer.writeDatagram(MdnsResponder::announcement("dtctest.local", QHostAddress("203.0.113.9"), 120),
+                           QHostAddress::LocalHost, responder.port());
+    QTRY_COMPARE_WITH_TIMEOUT(responder.hostName(), QString("dtctest-2.local"), 3000);
+    QVERIFY(ask({ "dtctest", "local" }, 6).isEmpty());
+    QVERIFY(ask({ "dtctest-2", "local" }, 7).isEmpty() == false);
+
+    // while it probes, any other computer that has the name wins
+    MdnsResponder probing;
+    QVERIFY(probing.startOn("dtcprobe", 0, QHostAddress::LocalHost, false));
+    computer.writeDatagram(MdnsResponder::announcement("dtcprobe.local", QHostAddress("127.0.0.2"), 120),
+                           QHostAddress::LocalHost, probing.port());
+    QTRY_COMPARE_WITH_TIMEOUT(probing.hostName(), QString("dtcprobe-2.local"), 3000);
+
+    // stopped: no name, no port
+    changed.clear();
+    responder.stop();
+    QVERIFY(responder.hostName().isEmpty());
+    QCOMPARE(responder.port(), quint16(0));
+    QCOMPARE(changed.count(), 1);
+
+    // a port it can't have: failed, told
+    QUdpSocket holder;
+    QVERIFY(holder.bind(QHostAddress::LocalHost, 0, QUdpSocket::DontShareAddress));
+    MdnsResponder blocked;
+    QSignalSpy told(&blocked, SIGNAL(hostChanged()));
+    QVERIFY(blocked.startOn("dtctest", holder.localPort(), QHostAddress::LocalHost, false) == false);
+    QVERIFY(blocked.failed());
+    QCOMPARE(told.count(), 1);
+    // with the networks off (the tests) start() opens nothing, and that is
+    // no failure
+    QVERIFY(blocked.start("dtctest") == false);
+    QVERIFY(blocked.failed() == false);
+    QCOMPARE(blocked.port(), quint16(0));
+}
+
+void Backend_Test::remoteName()
+{
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    RemoteServer *remote = core.remote();
+
+    // the name, kept as a name of the network can be
+    QCOMPARE(remote->name(), QString("dmxtotalcontrol"));
+    QSignalSpy settingsSpy(remote, SIGNAL(settingsChanged()));
+    remote->setName("DMX Total_Control!");
+    QCOMPARE(remote->name(), QString("dmx-total-control"));
+    QCOMPARE(settingsSpy.count(), 1);
+    remote->setName("dmx total control");
+    QCOMPARE(settingsSpy.count(), 1);
+    remote->setName(QString::fromUtf8("  --Escenario Ñ 2--  "));
+    QCOMPARE(remote->name(), QString("escenario--2"));
+    remote->setName(QString(80, 'x'));
+    QCOMPARE(remote->name(), QString(63, 'x'));
+    remote->setName(QString(62, 'x') + " y");
+    QCOMPARE(remote->name(), QString(62, 'x'));
+    // empty: no name, and kept so
+    remote->setName("");
+    QVERIFY(remote->name().isEmpty());
+    QVERIFY(QSettings().contains("remote/name"));
+    remote->setName("dmxtotalcontrol");
+
+    // the name before the addresses, when the computer is on a network
+    using Address = RemoteServer::NetworkAddress;
+    const QList<Address> wifi = { { "Wi-Fi", QNetworkInterface::Wifi, QHostAddress("192.168.1.20") } };
+    const QVariantList named = RemoteServer::describeAddresses(wifi, 8800, "dmxtotalcontrol.local");
+    QCOMPARE(named.size(), 2);
+    QCOMPARE(named.first().toMap(), QVariantMap({ { "url", "http://dmxtotalcontrol.local:8800/" },
+                                                  { "label", "By name" }, { "kind", "name" } }));
+    QCOMPARE(named.last().toMap().value("url").toString(), QString("http://192.168.1.20:8800/"));
+    QCOMPARE(RemoteServer::describeAddresses(wifi, 8800, QString()), RemoteServer::describeAddresses(wifi, 8800));
+    QVERIFY(RemoteServer::describeAddresses({}, 8800, "dmxtotalcontrol.local").isEmpty());
+
+    // running with the networks off (the tests): no name, no error
+    remote->setPort(18894);
+    remote->setEnabled(true);
+    QVERIFY2(remote->running(), qPrintable(remote->lastError()));
+    QVERIFY(remote->hostName().isEmpty());
+    QVERIFY(remote->discoveryError().isEmpty());
+    QCOMPARE(remote->discovery()->port(), quint16(0));
+    auto hasName = [remote]() {
+        for (const QVariant &address : remote->addresses())
+            if (address.toMap().value("kind").toString() == "name")
+                return true;
+        return false;
+    };
+    QVERIFY(hasName() == false);
+
+    // its responder on the loopback, as on a network: once the name is its
+    // own the addresses start with it
+    QSignalSpy addressesSpy(remote, SIGNAL(addressesChanged()));
+    QVERIFY(remote->discovery()->startOn("dtcremote", 0, QHostAddress::LocalHost, false));
+    QTRY_COMPARE_WITH_TIMEOUT(remote->hostName(), QString("dtcremote.local"), 3000);
+    QVERIFY(addressesSpy.count() > 0);
+    // (a computer on no network has nothing to give for it)
+    if (remote->onNetwork())
+    {
+        QCOMPARE(remote->addresses().first().toMap(),
+                 QVariantMap({ { "url", "http://dtcremote.local:18894/" }, { "label", "By name" }, { "kind", "name" } }));
+        QCOMPARE(remote->urls().first(), QString("http://dtcremote.local:18894/"));
+    }
+    QVERIFY(remote->discoveryError().isEmpty());
+    // other computers have the name and name-2 … name-9: no name, and the
+    // phones can't find it by name
+    QUdpSocket computers;
+    QVERIFY(computers.bind(QHostAddress::LocalHost, 0));
+    addressesSpy.clear();
+    for (int attempt = 1; attempt <= 9; attempt++)
+        computers.writeDatagram(MdnsResponder::announcement(MdnsResponder::candidate("dtcremote", attempt) + ".local",
+                                                            QHostAddress("203.0.113.9"), 120),
+                                QHostAddress::LocalHost, remote->discovery()->port());
+    QTRY_VERIFY_WITH_TIMEOUT(remote->discovery()->gaveUp(), 3000);
+    QVERIFY(remote->hostName().isEmpty());
+    QVERIFY(hasName() == false);
+    QVERIFY2(remote->discoveryError().contains("dtcremote-9"), qPrintable(remote->discoveryError()));
+    QVERIFY(addressesSpy.count() > 0);
+    // another name starts it again (with the networks off: none)
+    remote->setName("Other name");
+    QCOMPARE(remote->name(), QString("other-name"));
+    QVERIFY(remote->hostName().isEmpty());
+    QVERIFY(hasName() == false);
+    QVERIFY(remote->discoveryError().isEmpty());
+
+    // the port of the names taken: the phones can't find it by name
+    QUdpSocket holder;
+    QVERIFY(holder.bind(QHostAddress::LocalHost, 0, QUdpSocket::DontShareAddress));
+    addressesSpy.clear();
+    QVERIFY(remote->discovery()->startOn("dtcremote", holder.localPort(), QHostAddress::LocalHost, false) == false);
+    QVERIFY2(remote->discoveryError().contains("5353"), qPrintable(remote->discoveryError()));
+    QVERIFY(addressesSpy.count() > 0);
+    // off: no name, no error
+    remote->setEnabled(false);
+    QVERIFY(remote->discoveryError().isEmpty());
+    QVERIFY(remote->hostName().isEmpty());
+    QVERIFY(remote->addresses().isEmpty());
+}
+
+void Backend_Test::remoteWhoAmI()
+{
+    ScopedPortLock ports;
+    ScopedTestSettings settings;
+    DtcCore core;
+    RemoteServer *remote = core.remote();
+    remote->setPort(18901);
+    remote->setPin("4321");
+    remote->setEnabled(true);
+    QVERIFY2(remote->running(), qPrintable(remote->lastError()));
+
+    // a request as the page of an address sends it to the name: the reply
+    auto request = [](const QByteArray &line) {
+        QTcpSocket http;
+        http.connectToHost("127.0.0.1", 18901);
+        if (http.waitForConnected(3000) == false)
+            return QByteArray();
+        http.write(line + "\r\nHost: dtcwho.local:18901\r\nOrigin: http://192.168.1.20:18901\r\n\r\n");
+        QByteArray reply;
+        QElapsedTimer clock;
+        clock.start();
+        while (clock.elapsed() < 3000 && http.state() != QAbstractSocket::UnconnectedState)
+        {
+            QCoreApplication::processEvents();
+            if (http.waitForReadyRead(50))
+                reply += http.readAll();
+        }
+        return reply + http.readAll();
+    };
+    auto whoIs = [&request]() {
+        const QByteArray reply = request("GET /whoami HTTP/1.1");
+        return QJsonDocument::fromJson(reply.mid(reply.indexOf("\r\n\r\n") + 4)).object();
+    };
+
+    // this program: one of its own, the same each time it is asked and
+    // after a stop, another one for another program
+    const QVariantMap layout = remote->layoutMessage();
+    const QString instance = layout.value("instance").toString();
+    QVERIFY2(QUuid::fromString(instance).isNull() == false, qPrintable(instance));
+    QCOMPARE(remote->layoutMessage().value("instance").toString(), instance);
+    QVERIFY(RemoteServer(&core).layoutMessage().value("instance").toString() != instance);
+    // the layout has its port, and no name with the networks off (the tests)
+    QCOMPARE(layout.value("port").toInt(), 18901);
+    QVERIFY(layout.contains("host"));
+    QCOMPARE(layout.value("host").toString(), QString());
+
+    // GET /whoami: open to the pages of other origins (no PIN: it tells
+    // nothing of the show), never from a cache
+    const QByteArray reply = request("GET /whoami HTTP/1.1");
+    QVERIFY2(reply.startsWith("HTTP/1.1 200"), reply.left(80).constData());
+    QVERIFY(reply.contains("Content-Type: application/json\r\n"));
+    QVERIFY(reply.contains("Access-Control-Allow-Origin: *\r\n"));
+    QVERIFY(reply.contains("Cache-Control: no-store\r\n"));
+    QVERIFY(reply.contains("Cache-Control: no-cache") == false);
+    QCOMPARE(whoIs().value("id").toString(), instance);
+    QVERIFY(whoIs().contains("host"));
+    QCOMPARE(whoIs().value("host").toString(), QString());
+    QVERIFY(request("GET /whoami?t=1 HTTP/1.1").startsWith("HTTP/1.1 200"));
+    QVERIFY(request("POST /whoami HTTP/1.1").startsWith("HTTP/1.1 405"));
+    // (the page itself isn't open to other origins, and is as before)
+    const QByteArray page = request("GET / HTTP/1.1");
+    QVERIFY(page.startsWith("HTTP/1.1 200"));
+    QVERIFY(page.contains("Access-Control-Allow-Origin") == false);
+    QVERIFY(page.contains("Cache-Control: no-cache\r\n"));
+    // the page asks it, and comes back to the address only once
+    const QByteArray script = request("GET /remote.js HTTP/1.1");
+    QVERIFY(script.contains("whoami"));
+    QVERIFY(script.contains("dtc.stay"));
+
+    // a phone on an address: the layout tells it the name once there is one
+    // (the responder on the loopback, as on a network), /whoami too
+    QWebSocket phone;
+    QList<QVariantMap> received;
+    connect(&phone, &QWebSocket::textMessageReceived, this, [&received](const QString &text) {
+        received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+    });
+    auto lastOf = [&received](const QString &type) {
+        for (int i = received.count() - 1; i >= 0; i--)
+            if (received.at(i).value("type").toString() == type)
+                return received.at(i);
+        return QVariantMap();
+    };
+    phone.open(QUrl("ws://127.0.0.1:18901/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    phone.sendTextMessage(QStringLiteral("{\"cmd\":\"hello\",\"pin\":\"4321\"}"));
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("state").isEmpty() == false, 3000);
+    QCOMPARE(lastOf("layout").value("instance").toString(), instance);
+    QCOMPARE(lastOf("layout").value("host").toString(), QString());
+    QCOMPARE(lastOf("layout").value("port").toInt(), 18901);
+
+    received.clear();
+    QVERIFY(remote->discovery()->startOn("dtcwho", 0, QHostAddress::LocalHost, false));
+    QTRY_COMPARE_WITH_TIMEOUT(lastOf("layout").value("host").toString(), QString("dtcwho.local"), 3000);
+    QCOMPARE(lastOf("layout").value("instance").toString(), instance);
+    QCOMPARE(lastOf("layout").value("port").toInt(), 18901);
+    QCOMPARE(whoIs().value("host").toString(), QString("dtcwho.local"));
+    QCOMPARE(whoIs().value("id").toString(), instance);
+    // (laid out once for it, not each tick)
+    received.clear();
+    QTest::qWait(400);
+    QVERIFY(lastOf("layout").isEmpty());
+
+    // no name any more: the phones are told (they stay on their address)
+    remote->setName("");
+    QTRY_VERIFY_WITH_TIMEOUT(lastOf("layout").isEmpty() == false, 3000);
+    QCOMPARE(lastOf("layout").value("host").toString(), QString());
+    QCOMPARE(whoIs().value("host").toString(), QString());
+
+    // started again: the same program
+    phone.close();
+    remote->setEnabled(false);
+    QCOMPARE(remote->layoutMessage().value("host").toString(), QString());
+    remote->setEnabled(true);
+    QVERIFY2(remote->running(), qPrintable(remote->lastError()));
+    QCOMPARE(whoIs().value("id").toString(), instance);
+    remote->setEnabled(false);
+    remote->setPin("");
+}
+
+void Backend_Test::fxShiftDelay()
+{
+    // a shift and a delay of their own: a fixture goes that far behind the
+    // others in the wave, or does the FX that much later. A delayed one waits
+    // at its base when the FX starts, then stays that far behind. Offline frames
+    typedef Cuelist::Key Key;
+
+    // the sums: behind in the wave, the delay in cycles as the wait, what is the layer's goes
+    FXScene::Layer plain = FxTools::defaultLayer("dimmer");
+    FXScene::Shape shape = plain.shape();
+    QCOMPARE(shape.shift, 0);
+    QCOMPARE(shape.delay, 0);
+    shape.shift = 90;
+    QVERIFY(qAbs(FXScene::positionOf(plain, shape, 0.5, 0, 1, 60) - 0.25) < 1e-9);
+    shape.shift = 0;
+    shape.delay = 500;
+    QVERIFY(qAbs(FXScene::delayCycles(plain, shape, 60) - 0.5) < 1e-9);
+    plain.multiplier = 2;
+    QVERIFY(qAbs(FXScene::delayCycles(plain, shape, 60) - 1.0) < 1e-9);
+    plain.multiplier = 1;
+    plain.fixtures = { 1, 2, 3 };
+    plain.own[1].shift = 0;
+    plain.own[1].delay = 0;
+    plain.own[2].delay = 100;
+    const QMap<quint32, FXScene::Own> tidy = plain.tidyOwn();
+    QCOMPARE(tidy.count(), 1);
+    QVERIFY(tidy.value(2).isEmpty() == false);
+    QVERIFY(tidy.value(2).hasOffset());
+    QVERIFY(tidy.value(2).hasShape() == false);
+    QCOMPARE(plain.shapeOf(2).delay, 100);
+    QCOMPARE(plain.shapeOf(3).delay, 0);
+    FXScene::Layer other = plain;
+    other.own[2].delay = 200;
+    QVERIFY(other != plain);
+
+    // 3 PARs, a ramp on the dimmer from 0 (fade up, snap back) at a cycle a
+    // second: the second one half a cycle behind, the third one 12 frames later
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 3), 3);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    const int tick = int(MasterTimer::tick());
+    QVERIFY(1000 % (2 * tick) == 0);
+    const int halfFrames = 500 / tick;
+    const int delayFrames = 12;
+    FXScene *fx = new FXScene(m_doc);
+    for (quint32 par : std::as_const(pars))
+        fx->setValue(par, 0, 0);
+    FXScene::Layer ramp = FxTools::defaultLayer("dimmer");
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.bpm = 60;
+    ramp.fixtures = pars;
+    ramp.own[pars.at(1)].shift = 180;
+    ramp.own[pars.at(2)].delay = delayFrames * tick;
+    fx->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(fx));
+    QCOMPARE(fx->longestDelay(), uint(delayFrames * tick));
+
+    auto dimmer = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(pars.at(i))->address())); };
+    // the dimmers after each frame
+    struct Frames { QList<int> first, second, third; };
+    auto play = [&](int count) {
+        Frames frames;
+        for (int f = 0; f < count; f++)
+        {
+            renderFrames(m_doc);
+            frames.first.append(dimmer(0));
+            frames.second.append(dimmer(1));
+            frames.third.append(dimmer(2));
+        }
+        return frames;
+    };
+    // (a ramp: its end and its start are next to each other)
+    auto apart = [](int a, int b) { const int d = qAbs(a - b); return qMin(d, 255 - d); };
+    // the third one does what the first one did 12 frames before, the second
+    // one what it did half a cycle before
+    auto behind = [&](const Frames &frames, int from) {
+        int worst = 0;
+        for (int f = from; f < frames.first.count(); f++)
+        {
+            worst = qMax(worst, apart(frames.third.at(f), frames.first.at(f - delayFrames)));
+            worst = qMax(worst, apart(frames.second.at(f), frames.first.at(f - halfFrames)));
+        }
+        return worst;
+    };
+    // while it waits the third one stays at its base, and the first one rises
+    auto waits = [&](const Frames &frames) {
+        for (int f = 0; f < delayFrames - 1; f++)
+            if (frames.third.at(f) != 0)
+                return false;
+        return frames.first.at(delayFrames - 2) > 40;
+    };
+
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    Frames frames = play(120);
+    QVERIFY2(waits(frames), qPrintable(QString("%1 %2").arg(frames.third.at(delayFrames - 2)).arg(frames.first.at(delayFrames - 2))));
+    int worst = behind(frames, halfFrames);
+    QVERIFY2(worst <= 2, qPrintable(QString::number(worst)));
+    // (they are apart: the ramp goes up a lot in 12 frames)
+    QVERIFY(apart(frames.first.at(60), frames.third.at(60)) > 40);
+
+    // the preview: the third one at its base while it waits, then behind
+    QVariantList preview = fx->previewLayer(0, 0.1);
+    QCOMPARE(preview.count(), 3);
+    QCOMPARE(preview.at(2).toMap().value("value").toDouble(), 0.0);
+    preview = fx->previewLayer(0, 0.7);
+    QVERIFY(qAbs(preview.at(0).toMap().value("value").toDouble() - 0.7) < 1e-6);
+    QVERIFY(qAbs(preview.at(1).toMap().value("value").toDouble() - 0.2) < 1e-6);
+    QVERIFY(qAbs(preview.at(2).toMap().value("value").toDouble() - 0.46) < 1e-6);
+
+    // started again: it waits again
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    frames = play(60);
+    QVERIFY(waits(frames));
+    worst = behind(frames, halfFrames);
+    QVERIFY2(worst <= 2, qPrintable(QString::number(worst)));
+
+    // another phase: they go on, as far behind (and the third one doesn't wait again)
+    ramp.phase = 90;
+    fx->setLayers({ ramp });
+    frames = play(80);
+    worst = behind(frames, halfFrames);
+    QVERIFY2(worst <= 2, qPrintable(QString::number(worst)));
+    QVERIFY(frames.third.mid(0, delayFrames).count(0) < delayFrames - 2);
+
+    // saved and loaded, in the FX of the scene; without them, no <Own>
+    auto saved = [](const FXScene *scene) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        scene->saveXML(&writer);
+        buffer.close();
+        return buffer.data();
+    };
+    const QByteArray xml = saved(fx);
+    QVERIFY(xml.contains("Shift=\"180\""));
+    QVERIFY(xml.contains(QByteArray("Delay=\"") + QByteArray::number(delayFrames * tick) + "\""));
+    {
+        QXmlStreamReader reader(xml);
+        reader.readNextStartElement();
+        FXScene loaded(m_doc);
+        QVERIFY(loaded.loadXML(reader));
+        QVERIFY(loaded.layers() == fx->layers());
+        QCOMPARE(loaded.layers().first().shapeOf(pars.at(1)).shift, 180);
+        QCOMPARE(loaded.layers().first().shapeOf(pars.at(2)).delay, delayFrames * tick);
+    }
+    {
+        FXScene bare(m_doc);
+        FXScene::Layer none = ramp;
+        none.own.clear();
+        none.own[pars.at(1)].shift = 0;
+        bare.setLayers({ none });
+        QVERIFY(saved(&bare).contains("<Own") == false);
+    }
+    // and in a cue
+    {
+        Cuelist cl(m_doc);
+        Cuelist::Cue cue = testCue(1000, { { Key(pars.at(0), 1), 200 } });
+        cue.fx = { ramp };
+        cl.setCues({ cue });
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        QVERIFY(cl.saveXML(&writer));
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        reader.readNextStartElement();
+        Cuelist loaded(m_doc);
+        QVERIFY(loaded.loadXML(reader));
+        QCOMPARE(loaded.cueCount(), 1);
+        QVERIFY(loaded.cueAt(0).fx == cue.fx);
+        QCOMPARE(loaded.cueAt(0).fx.first().shapeOf(pars.at(1)).shift, 180);
+        QCOMPARE(loaded.cueAt(0).fx.first().shapeOf(pars.at(2)).delay, delayFrames * tick);
+    }
+
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::programmerFxShiftDelay()
+{
+    // the shift and the delay of each fixture in the programmer and in the
+    // scene editor: listed in the order of the FX with their place, typed,
+    // fanned and cleared on the selected ones; the phase and "Like the rest"
+    // keep them; recorded. A Move FX converted keeps its start offsets
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    QVariantList all;
+    for (quint32 id : std::as_const(spots))
+        all << id;
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor effects(m_doc, &prog, &zones);
+    auto row = [&](int i) { return prog.fxOf("pantilt").value("rows").toList().value(i).toMap(); };
+    auto of = [&](int i) { return prog.fxLayerList().first().shapeOf(spots.at(i)); };
+
+    prog.selectFixtures(all);
+    prog.setPosition(0.5, 0.5);
+    prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 30 }, { "swingTilt", 30 },
+                            { "bpm", 30 }, { "wave", -1 } });
+    QCOMPARE(prog.fxOf("pantilt").value("rows").toList().count(), 4);
+    // their place in the wave
+    for (int i = 0; i < 4; i++)
+    {
+        QCOMPARE(row(i).value("id").toUInt(), spots.at(i));
+        QCOMPARE(row(i).value("place").toInt(), i * 90);
+        QCOMPARE(row(i).value("step").toInt(), 0);
+        QVERIFY(row(i).value("selected").toBool());
+        QCOMPARE(row(i).value("name").toString(), m_doc->fixture(spots.at(i))->name());
+    }
+
+    // typed: the list shows them, bounded, on fixtures of the FX only
+    prog.setFxOffset("pantilt", spots.at(1), "shift", 45);
+    prog.setFxOffset("pantilt", spots.at(2), "delay", 300);
+    QCOMPARE(row(1).value("shift").toInt(), 45);
+    QCOMPARE(row(2).value("delay").toInt(), 300);
+    QCOMPARE(row(0).value("shift").toInt(), 0);
+    QCOMPARE(row(0).value("delay").toInt(), 0);
+    prog.setFxOffset("pantilt", spots.at(3), "shift", 5000);
+    QCOMPARE(row(3).value("shift").toInt(), 1440);
+    prog.setFxOffset("pantilt", spots.at(3), "shift", 0);
+    prog.setFxOffset("pantilt", 9999, "shift", 30);
+    prog.setFxOffset("pantilt", spots.at(0), "speed", 30);
+    QVariantMap info = prog.fxOf("pantilt");
+    QCOMPARE(info.value("offsetCount").toInt(), 2);
+    QCOMPARE(info.value("offsetSelected").toInt(), 2);
+    // a shift or a delay is not doing the FX "their own way" (no "Like the rest")
+    QCOMPARE(info.value("ownCount").toInt(), 0);
+    QCOMPARE(info.value("ownSelected").toInt(), 0);
+    QCOMPARE(prog.fxLayers().first().toMap().value("ownCount").toInt(), 0);
+    QCOMPARE(prog.fxLayers().first().toMap().value("offsetCount").toInt(), 2);
+
+    // a step: one place each; reversed, the list too; all together, none
+    prog.setFx("pantilt", { { "step", -1 }, { "wave", 0 } });
+    for (int i = 0; i < 4; i++)
+    {
+        QCOMPARE(row(i).value("step").toInt(), i + 1);
+        QCOMPARE(row(i).value("place").toInt(), -1);
+    }
+    prog.setFx("pantilt", { { "order", int(FXScene::Reversed) } });
+    for (int i = 0; i < 4; i++)
+    {
+        QCOMPARE(row(i).value("id").toUInt(), spots.at(3 - i));
+        QCOMPARE(row(i).value("step").toInt(), i + 1);
+    }
+    prog.setFx("pantilt", { { "order", int(FXScene::SelectionOrder) }, { "step", 0 } });
+    QCOMPARE(row(0).value("place").toInt(), -1);
+    QCOMPARE(row(0).value("step").toInt(), 0);
+    prog.setFx("pantilt", { { "wave", -1 } });
+    QCOMPARE(row(2).value("place").toInt(), 180);
+
+    // the phase with all of them selected keeps them
+    prog.setFx("pantilt", { { "phase", 90 } });
+    QCOMPARE(prog.fxLayerList().first().phase, 90);
+    QCOMPARE(of(1).shift, 45);
+    QCOMPARE(of(2).delay, 300);
+    // "Like the rest" takes back the shape, not them
+    prog.selectFixtures({ all.at(1) });
+    prog.setFx("pantilt", { { "swing", 10 } });
+    QCOMPARE(prog.fxOf("pantilt").value("ownSelected").toInt(), 1);
+    QCOMPARE(prog.fxOf("pantilt").value("offsetSelected").toInt(), 1);
+    prog.selectFixtures(all);
+    prog.resetFxOwn("pantilt");
+    info = prog.fxOf("pantilt");
+    QCOMPARE(info.value("ownSelected").toInt(), 0);
+    QCOMPARE(info.value("offsetSelected").toInt(), 2);
+    QCOMPARE(of(1).swing, 30);
+    QCOMPARE(of(1).shift, 45);
+
+    // fanned over the selected ones, in the order of the FX
+    prog.fanFxOffset("pantilt", "delay", 600);
+    for (int i = 0; i < 4; i++)
+        QCOMPARE(of(i).delay, i * 200);
+    // over some: those only, from 0 on the first of them
+    prog.selectFixtures({ all.at(2), all.at(3) });
+    prog.fanFxOffset("pantilt", "shift", 90);
+    QCOMPARE(of(2).shift, 0);
+    QCOMPARE(of(3).shift, 90);
+    QCOMPARE(of(1).shift, 45);
+    QCOMPARE(of(3).delay, 600);
+    QVERIFY(row(2).value("selected").toBool() && row(3).value("selected").toBool());
+    QVERIFY(row(0).value("selected").toBool() == false);
+    // cleared on the selected ones
+    prog.clearFxOffsets("pantilt");
+    QCOMPARE(of(2).delay, 0);
+    QCOMPARE(of(3).delay, 0);
+    QCOMPARE(of(3).shift, 0);
+    QCOMPARE(of(1).delay, 200);
+    QCOMPARE(of(1).shift, 45);
+
+    // recorded: the scene has them
+    prog.selectFixtures(all);
+    const int id = prog.recordScene("Offsets");
+    QVERIFY(id >= 0);
+    FXScene *scene = qobject_cast<FXScene *>(m_doc->function(quint32(id)));
+    QVERIFY(scene != nullptr);
+    QCOMPARE(scene->layers().first().shapeOf(spots.at(1)).shift, 45);
+    QCOMPARE(scene->layers().first().shapeOf(spots.at(1)).delay, 200);
+    QCOMPARE(scene->longestDelay(), 200u);
+
+    // the scene editor: its fixtures with them (none selected), changed live
+    QSignalSpy edited(&effects, &EffectEditor::edited);
+    auto layerInfo = [&]() { return effects.info(quint32(id)).value("layers").toList().first().toMap(); };
+    auto sceneRow = [&](int i) { return layerInfo().value("rows").toList().value(i).toMap(); };
+    auto sceneOf = [&](int i) { return scene->layers().first().shapeOf(spots.at(i)); };
+    QCOMPARE(layerInfo().value("rows").toList().count(), 4);
+    QCOMPARE(sceneRow(1).value("shift").toInt(), 45);
+    QCOMPARE(sceneRow(1).value("delay").toInt(), 200);
+    QVERIFY(sceneRow(1).value("selected").toBool() == false);
+    QCOMPARE(layerInfo().value("offsetCount").toInt(), 1);
+    QCOMPARE(layerInfo().value("ownCount").toInt(), 0);
+    effects.setFxOffset(quint32(id), 0, spots.at(0), "shift", 90);
+    QCOMPARE(edited.count(), 1);
+    QCOMPARE(sceneOf(0).shift, 90);
+    QCOMPARE(sceneRow(0).value("shift").toInt(), 90);
+    // the same again, a fixture or a layer it doesn't have: nothing
+    effects.setFxOffset(quint32(id), 0, spots.at(0), "shift", 90);
+    effects.setFxOffset(quint32(id), 0, 9999, "shift", 30);
+    effects.setFxOffset(quint32(id), 3, spots.at(0), "shift", 30);
+    effects.setFxOffset(quint32(id), 0, spots.at(0), "speed", 30);
+    QCOMPARE(edited.count(), 1);
+    // fanned over all its fixtures
+    effects.fanFxOffset(quint32(id), 0, "shift", 270);
+    QCOMPARE(edited.count(), 2);
+    for (int i = 0; i < 4; i++)
+        QCOMPARE(sceneOf(i).shift, i * 90);
+    QCOMPARE(sceneOf(1).delay, 200);
+    effects.clearFxOffsets(quint32(id), 0);
+    QCOMPARE(edited.count(), 3);
+    QCOMPARE(FxTools::offsetCount(scene->layers().first()), 0);
+
+    // a Move FX: the start offset of each fixture becomes its shift (the
+    // effect puts it ahead, a shift goes behind), its own start offset the phase
+    const int moveId = effects.createMoveFx("Offsets");
+    EFX *efx = qobject_cast<EFX *>(m_doc->function(quint32(moveId)));
+    QVERIFY(efx != nullptr);
+    QCOMPARE(efx->fixtures().count(), 4);
+    efx->fixtures().at(1)->setStartOffset(90);
+    efx->setStartOffset(30);
+    FXScene *converted = FxTools::convert(m_doc, efx);
+    QVERIFY(converted != nullptr);
+    const FXScene::Layer move = converted->layers().first();
+    QVERIFY(move.isPanTilt());
+    QCOMPARE(move.phase, 30);
+    QCOMPARE(move.shapeOf(efx->fixtures().at(1)->head().fxi).shift, 270);
+    QCOMPARE(move.shapeOf(efx->fixtures().at(0)->head().fxi).shift, 0);
+    QCOMPARE(FxTools::offsetCount(move), 1);
+    delete converted;
+
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::convertFxStepsAfterDelay()
+{
+    // an FX with a delay turned into steps records the cycle once they all
+    // go: the steps loop, so a start with the delayed fixture at its base
+    // would come back on every cycle
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    // a sine around the middle, a cycle a second; the second one half a cycle later
+    FXScene *fx = new FXScene(m_doc);
+    fx->setValue(pars.at(0), 0, 128);
+    fx->setValue(pars.at(1), 0, 128);
+    FXScene::Layer sine = FxTools::defaultLayer("dimmer");
+    sine.mode = 1;
+    sine.swing = 100;
+    sine.bpm = 60;
+    sine.fixtures = pars;
+    sine.own[pars.at(1)].delay = 500;
+    fx->setLayers({ sine });
+    QVERIFY(m_doc->addFunction(fx));
+    QCOMPARE(fx->longestDelay(), 500u);
+
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor effects(m_doc, &prog, &zones);
+    const int steps = effects.convertToSteps(fx->id(), 100);
+    QVERIFY(steps >= 0);
+    Sequence *sequence = qobject_cast<Sequence *>(m_doc->function(quint32(steps)));
+    QVERIFY(sequence != nullptr);
+    QCOMPARE(sequence->stepsCount(), 10);
+
+    // in every step the second one is the first one upside down (never at
+    // its base while the first one swings)
+    int worst = 0, swing = 0;
+    for (const ChaserStep &step : sequence->steps())
+    {
+        int first = -1, second = -1;
+        for (const SceneValue &value : step.values)
+        {
+            if (value.channel == 0 && value.fxi == pars.at(0))
+                first = value.value;
+            else if (value.channel == 0 && value.fxi == pars.at(1))
+                second = value.value;
+        }
+        QVERIFY(first >= 0 && second >= 0);
+        worst = qMax(worst, qAbs(first + second - 256));
+        swing = qMax(swing, qAbs(first - 128));
+    }
+    QVERIFY2(worst <= 3, qPrintable(QString::number(worst)));
+    QVERIFY2(swing > 100, qPrintable(QString::number(swing)));
+}
+
+/** The values of $set in order, to read in a failure */
+static QString setText(const QSet<int> &set)
+{
+    QList<int> list(set.cbegin(), set.cend());
+    std::sort(list.begin(), list.end());
+    QStringList text;
+    for (int v : list)
+        text.append(QString::number(v));
+    return text.join(' ');
+}
+
+void Backend_Test::fxVirtualDimmer()
+{
+    // a dimmer FX on fixtures without a dimmer (RGB only) dims their colour,
+    // every emitter of the fixture together, as a dimmer would: on its base,
+    // with a colour FX on top, or on what the scenes below send. The ones
+    // with a dimmer move it as before. Offline frames
+    typedef Cuelist::Key Key;
+    typedef QList<QPair<quint32, quint32>> Channels;
+    auto patch = [this](const QString &model, const QString &mode, int address, int count) {
+        QSet<quint32> before;
+        for (Fixture *f : m_doc->fixtures())
+            before.insert(f->id());
+        if (m_patch->addFixtures("Generic", model, mode, "Fx", 0, address, count) != count)
+            return QList<quint32>();
+        QList<quint32> ids;
+        for (Fixture *f : m_doc->fixtures())
+            if (before.contains(f->id()) == false)
+                ids.append(f->id());
+        std::sort(ids.begin(), ids.end(), [this](quint32 a, quint32 b) {
+            return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+        });
+        return ids;
+    };
+    const QList<quint32> pars = patch("LED PAR RGB", "3ch RGB", 1, 2);
+    const QList<quint32> bars = patch("LED Bar RGB 8 Segments", "24ch Pixels", 10, 1);
+    const QList<quint32> withDimmer = patch("LED PAR RGBW", "5ch DRGBW", 40, 1);
+    QCOMPARE(pars.count(), 2);
+    QCOMPARE(bars.count(), 1);
+    QCOMPARE(withDimmer.count(), 1);
+    const quint32 bar = bars.first(), dpar = withDimmer.first();
+    Fixture *par1 = m_doc->fixture(pars.at(0));
+    const QList<quint32> all = pars + bars + withDimmer;
+
+    // the emitters: the 3 of an RGB PAR, the 24 of every head of the bar,
+    // none with a dimmer; the channels whose 'Dimmer' option is off stay out
+    QCOMPARE(FXScene::virtualDimmerChannels(par1).count(), 3);
+    QVERIFY(FXScene::virtualDimmerChannels(par1).first() == qMakePair(quint32(0), QLCChannel::invalid()));
+    QCOMPARE(FXScene::virtualDimmerChannels(m_doc->fixture(bar)).count(), 24);
+    QCOMPARE(FXScene::virtualDimmerChannels(m_doc->fixture(dpar)).count(), 0);
+    QCOMPARE(FXScene::virtualDimmerChannels(nullptr).count(), 0);
+    par1->setChannelFollowsDimmer(2, false);
+    QCOMPARE(FXScene::virtualDimmerChannels(par1).count(), 2);
+    par1->setChannelFollowsDimmer(2, true);
+    for (quint32 fid : all)
+        QVERIFY(FXScene::hasParam(m_doc->fixture(fid), "dimmer"));
+    QVERIFY(FXScene::hasParam(par1, "red"));
+    QVERIFY(FXScene::hasParam(par1, "pantilt") == false);
+    QVERIFY(FXScene::hasParam(par1, "zoom") == false);
+    QVERIFY(FXScene::hasParam(nullptr, "dimmer") == false);
+    QCOMPARE(FXScene::layerChannels(par1, "dimmer").count(), 3);
+    QVERIFY(FXScene::layerChannels(m_doc->fixture(dpar), "dimmer") == Channels({ qMakePair(quint32(0), QLCChannel::invalid()) }));
+    QVERIFY(FXScene::layerChannels(par1, "red") == Channels({ qMakePair(quint32(0), QLCChannel::invalid()) }));
+
+    // the bases: the red of the RGB PARs at full, the 8 reds of the bar at
+    // 200, the DRGBW with its dimmer at 0 and its red at full
+    QHash<QPair<quint32, quint32>, uchar> values;
+    for (quint32 par : pars)
+        values.insert(qMakePair(par, quint32(0)), 255);
+    for (quint32 c = 0; c < 24; c += 3)
+        values.insert(qMakePair(bar, c), 200);
+    values.insert(qMakePair(dpar, quint32(0)), 0);
+    values.insert(qMakePair(dpar, quint32(1)), 255);
+    // auto: the base of the first real dimmer of the FX, or full
+    QCOMPARE(FXScene::autoVirtualBase(m_doc, all, values), 0);
+    QCOMPARE(FXScene::autoVirtualBase(m_doc, pars, values), 255);
+
+    FXScene *fx = new FXScene(m_doc);
+    // (above the scene below of later)
+    fx->setPriority(8);
+    fx->setFixtures(all);
+    fx->setValues(values);
+    // a dimmer chase all together, on half of each cycle, a cycle a second
+    FXScene::Layer dimmer = FxTools::defaultLayer("dimmer");
+    dimmer.mode = 9;
+    dimmer.swing = 200;
+    dimmer.bpm = 60;
+    dimmer.fixtures = all;
+    fx->setLayers({ dimmer });
+    QVERIFY(m_doc->addFunction(fx));
+
+    auto at = [&](quint32 fid, int channel) { return renderedValue(m_doc, int(m_doc->fixture(fid)->address()) + channel); };
+    struct Seen { QSet<int> parRed, parGreen, barRed, dimmer, dparRed; bool barTogether = true, withTheDimmer = true; };
+    auto play = [&](int frames) {
+        Seen seen;
+        for (int f = 0; f < frames; f++)
+        {
+            renderFrames(m_doc);
+            for (quint32 par : pars)
+            {
+                seen.parRed.insert(at(par, 0));
+                seen.parGreen.insert(at(par, 1));
+                // a mixed rig goes together
+                seen.withTheDimmer = seen.withTheDimmer && at(par, 0) == at(dpar, 0);
+            }
+            for (int c = 0; c < 24; c += 3)
+            {
+                seen.barRed.insert(at(bar, c));
+                seen.barTogether = seen.barTogether && at(bar, c) == at(bar, 0);
+            }
+            seen.dimmer.insert(at(dpar, 0));
+            seen.dparRed.insert(at(dpar, 1));
+        }
+        return seen;
+    };
+
+    // the red of the PARs on and off, their green dark; the bar on and off
+    // at 200, all its heads together; the DRGBW moves its dimmer, its red stays
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    Seen seen = play(60);
+    QVERIFY2(seen.parRed == QSet<int>({ 0, 255 }), qPrintable(setText(seen.parRed)));
+    QVERIFY2(seen.parGreen == QSet<int>({ 0 }), qPrintable(setText(seen.parGreen)));
+    QVERIFY2(seen.barRed == QSet<int>({ 0, 200 }), qPrintable(setText(seen.barRed)));
+    QVERIFY(seen.barTogether);
+    QVERIFY2(seen.dimmer == QSet<int>({ 0, 255 }), qPrintable(setText(seen.dimmer)));
+    QVERIFY2(seen.dparRed == QSet<int>({ 255 }), qPrintable(setText(seen.dparRed)));
+    QVERIFY(seen.withTheDimmer);
+    // the preview: the dimmer wave of each fixture
+    const QVariantList preview = fx->previewLayer(0, 0.25);
+    QCOMPARE(preview.count(), 4);
+    for (const QVariant &v : preview)
+        QCOMPARE(v.toMap().value("value").toDouble(), 1.0);
+
+    // its own level, full, and a dip: the red falls from full to 0 and back
+    dimmer.virtualBase = 255;
+    dimmer.mode = 5;
+    fx->setLayers({ dimmer });
+    QList<int> reds, barReds;
+    for (int f = 0; f < 50; f++)
+    {
+        renderFrames(m_doc);
+        reds.append(at(pars.at(0), 0));
+        barReds.append(at(bar, 0));
+    }
+    QVERIFY2(*std::min_element(reds.cbegin(), reds.cend()) <= 2, qPrintable(QString::number(*std::min_element(reds.cbegin(), reds.cend()))));
+    QVERIFY(*std::max_element(reds.cbegin(), reds.cend()) >= 253);
+    QVERIFY(*std::min_element(barReds.cbegin(), barReds.cend()) <= 2);
+    QVERIFY(*std::max_element(barReds.cbegin(), barReds.cend()) >= 197);
+
+    // a red FX on the PARs with the dimmer: (colour + wave) x dimmer. Both
+    // still, to read the sums: the dimmer at 128 of 255, the red 128 + 64
+    for (quint32 par : pars)
+        values.insert(qMakePair(par, quint32(0)), 128);
+    fx->setValues(values);
+    dimmer.virtualBase = 128;
+    dimmer.swing = 0;
+    FXScene::Layer red = FxTools::defaultLayer("red");
+    red.mode = 1;
+    red.swing = 50;
+    red.bpm = 0;
+    red.phase = 90;
+    red.fixtures = pars;
+    // (the dimmer first: the red keeps its channel all the same)
+    fx->setLayers({ dimmer, red });
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 96);
+    QCOMPARE(at(pars.at(1), 0), 96);
+    QCOMPARE(at(pars.at(0), 1), 0);
+    // the bar, without a red FX: its base dimmed
+    QCOMPARE(at(bar, 0), 100);
+    QCOMPARE(at(bar, 21), 100);
+    QCOMPARE(at(dpar, 0), 0);
+    QCOMPARE(at(dpar, 1), 255);
+    // at the bottom of the red wave: 64 dimmed
+    red.phase = 270;
+    fx->setLayers({ dimmer, red });
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 32);
+    // above full: full, then dimmed (as a dimmer dims a colour at full)
+    red.phase = 90;
+    red.swing = 150;
+    fx->setLayers({ dimmer, red });
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 128);
+    // the other order of the layers: the same
+    fx->setLayers({ red, dimmer });
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 128);
+    QCOMPARE(at(bar, 0), 100);
+
+    // no base: what the scenes below send, dimmed (200 of a scene below: 100)
+    for (quint32 par : pars)
+        values.remove(qMakePair(par, quint32(0)));
+    fx->setValues(values);
+    fx->setLayers({ dimmer });
+    Scene *below = new Scene(m_doc);
+    below->setPriority(2);
+    for (quint32 par : pars)
+    {
+        below->addFixture(par);
+        below->setValue(par, 0, 200);
+    }
+    QVERIFY(m_doc->addFunction(below));
+    below->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(at(pars.at(0), 0), 100);
+    QCOMPARE(at(pars.at(1), 0), 100);
+    QCOMPARE(at(pars.at(0), 1), 0);
+    // the level of the FX fades its effect on what is below: at half, half the dip
+    fx->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 150);
+    fx->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 100);
+    below->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 0);
+
+    // the dimmer FX goes: the red is a static base again, at full, and stays
+    for (quint32 par : pars)
+        values.insert(qMakePair(par, quint32(0)), 255);
+    fx->setValues(values);
+    dimmer.virtualBase = 0;
+    fx->setLayers({ dimmer });
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 0);
+    QCOMPARE(at(bar, 0), 0);
+    fx->setLayers({});
+    for (int f = 0; f < 11; f++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(at(pars.at(0), 0), 255);
+        QCOMPARE(at(pars.at(1), 0), 255);
+        QCOMPARE(at(bar, 0), 200);
+    }
+
+    // the fade out: from what the dimmer sent to what is below (a scene at 60)
+    dimmer.virtualBase = 128;
+    fx->setLayers({ dimmer });
+    for (quint32 par : pars)
+        below->setValue(par, 0, 60);
+    below->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(at(pars.at(0), 0), 128);
+    QCOMPARE(at(bar, 0), 100);
+    fx->setFadeOutSpeed(200);
+    fx->stop(FunctionParent::master());
+    QList<int> out;
+    for (int f = 0; f < 15; f++)
+    {
+        renderFrames(m_doc);
+        out.append(at(pars.at(0), 0));
+    }
+    QStringList outText;
+    for (int v : std::as_const(out))
+        outText.append(QString::number(v));
+    for (int f = 0; f < out.count(); f++)
+    {
+        QVERIFY2(out.at(f) <= 128 && out.at(f) >= 60, qPrintable(outText.join(' ')));
+        QVERIFY2(f == 0 || out.at(f) <= out.at(f - 1), qPrintable(outText.join(' ')));
+    }
+    QVERIFY2(out.first() > 100, qPrintable(outText.join(' ')));
+    QCOMPARE(out.last(), 60);
+    QCOMPARE(at(bar, 0), 0);
+    below->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // saved and loaded: its level (not when auto, nor on another parameter)
+    auto saved = [](const FXScene *scene) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        scene->saveXML(&writer);
+        buffer.close();
+        return buffer.data();
+    };
+    QVERIFY(saved(fx).contains("VirtualBase=\"128\""));
+    {
+        QXmlStreamReader reader(saved(fx));
+        reader.readNextStartElement();
+        FXScene loaded(m_doc);
+        QVERIFY(loaded.loadXML(reader));
+        QVERIFY(loaded.layers() == fx->layers());
+        QCOMPARE(loaded.layers().first().virtualBase, 128);
+    }
+    {
+        FXScene plain(m_doc);
+        FXScene::Layer autoDimmer = dimmer;
+        autoDimmer.virtualBase = -1;
+        FXScene::Layer redLevel = red;
+        redLevel.virtualBase = 50;
+        plain.setLayers({ autoDimmer, redLevel });
+        QVERIFY(saved(&plain).contains("VirtualBase") == false);
+        // (on another parameter it doesn't count)
+        red.virtualBase = -1;
+        QVERIFY(redLevel == red);
+        QVERIFY(autoDimmer != dimmer);
+    }
+    QXmlStreamAttributes attrs;
+    attrs.append("Param", "dimmer");
+    attrs.append("VirtualBase", "999");
+    QCOMPARE(FXScene::loadLayerXML(attrs).virtualBase, 255);
+    attrs.clear();
+    attrs.append("Param", "dimmer");
+    attrs.append("VirtualBase", "a lot");
+    QCOMPARE(FXScene::loadLayerXML(attrs).virtualBase, -1);
+    // in a cue
+    {
+        Cuelist cl(m_doc);
+        Cuelist::Cue cue = testCue(1000, { { Key(pars.at(0), 0), 200 } });
+        cue.fx = { dimmer };
+        cl.setCues({ cue });
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        QVERIFY(cl.saveXML(&writer));
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        reader.readNextStartElement();
+        Cuelist loaded(m_doc);
+        QVERIFY(loaded.loadXML(reader));
+        QCOMPARE(loaded.cueCount(), 1);
+        QVERIFY(loaded.cueAt(0).fx == cue.fx);
+        QCOMPARE(loaded.cueAt(0).fx.first().virtualBase, 128);
+    }
+}
+
+void Backend_Test::programmerFxVirtualDimmer()
+{
+    // the programmer: RGB PARs have a Dimmer FX ("virtual"), the intensity
+    // macros work on them, and the scene recorded, a cue with it and the
+    // release of a scene that starts follow. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    QVariantList all;
+    for (quint32 id : std::as_const(pars))
+        all << id;
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor effects(m_doc, &prog, &zones);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    FxMacros macros(&prog);
+    macros.setFilePath(dir.filePath("macros.json"));
+    auto at = [&](int i, int channel) { return renderedValue(m_doc, int(m_doc->fixture(pars.at(i))->address()) + channel); };
+    // one PAR after the other on $channel, the other colours dark: "" or what is wrong
+    auto chases = [&](int channel, int frames) -> QString {
+        bool first = false, second = false;
+        for (int f = 0; f < frames; f++)
+        {
+            renderFrames(m_doc);
+            for (int c = 0; c < 3; c++)
+            {
+                const int a = at(0, c), b = at(1, c);
+                if (c != channel && (a != 0 || b != 0))
+                    return QString("frame %1: channel %2 at %3 and %4").arg(f).arg(c).arg(a).arg(b);
+                if (c == channel && ((a != 0 && a != 255) || (b != 0 && b != 255) || (a > 0 && b > 0)))
+                    return QString("frame %1: %2 and %3").arg(f).arg(a).arg(b);
+                first = first || (c == channel && a == 255);
+                second = second || (c == channel && b == 255);
+            }
+        }
+        return first && second ? QString() : QString("never lit: %1 %2").arg(first).arg(second);
+    };
+
+    // red PARs: Dimmer, marked virtual, first (they have no pan/tilt)
+    prog.selectFixtures(all);
+    prog.setColor(QColor(255, 0, 0));
+    const QVariantList params = prog.fxParams();
+    QVERIFY(params.isEmpty() == false);
+    QCOMPARE(params.first().toMap().value("key").toString(), QString("dimmer"));
+    QVERIFY(params.first().toMap().value("virtual").toBool());
+    for (int i = 1; i < params.count(); i++)
+        QVERIFY(params.at(i).toMap().value("virtual").toBool() == false);
+    QVariantMap info = prog.fxOf("dimmer");
+    QCOMPARE(info.value("count").toInt(), 2);
+    QCOMPARE(info.value("virtualCount").toInt(), 2);
+    QCOMPARE(info.value("virtualBase").toInt(), -1);
+    QCOMPARE(info.value("virtualLevel").toInt(), 255);
+    QCOMPARE(prog.fxOf("red").value("virtualCount").toInt(), 0);
+    // (another FX dims nothing: its level is its base, or full)
+    QCOMPARE(prog.fxOf("red").value("virtualLevel").toInt(), 255);
+    FXScene::Layer colourLayer = FxTools::defaultLayer("red");
+    colourLayer.fixtures = pars;
+    colourLayer.virtualBase = 40;
+    QCOMPARE(FxTools::virtualDimmer(m_doc, colourLayer, pars, {}).value("virtualLevel").toInt(), 40);
+    QCOMPARE(FxTools::virtualDimmer(m_doc, colourLayer, pars, {}).value("virtualCount").toInt(), 0);
+
+    // the chase: on them, from the dimmer base of the macro
+    QVERIFY(macros.apply("chase"));
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QVERIFY(prog.fxLayerList().first().fixtures == pars);
+    QCOMPARE(prog.fxLayerList().first().virtualBase, 0);
+    info = prog.fxOf("dimmer");
+    QVERIFY(info.value("active").toBool());
+    QCOMPARE(info.value("virtualBase").toInt(), 0);
+    QCOMPARE(info.value("virtualLevel").toInt(), 0);
+    QVERIFY(info.value("rows").toList().first().toMap().value("virtual").toBool());
+    QCOMPARE(prog.fxLayers().first().toMap().value("virtualCount").toInt(), 2);
+    // (no dimmer value: they have none, their colour stays)
+    QCOMPARE(prog.valuesCount(), 6);
+    QString wrong = chases(0, 60);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+    // a new colour while it plays: the blue chases
+    prog.setColor(QColor(0, 0, 255));
+    renderFrames(m_doc);
+    wrong = chases(2, 60);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+
+    // auto: like the dimmers of the FX, none here: full, and a chase from full stays lit
+    prog.setFx("dimmer", { { "virtualBase", -1 } });
+    info = prog.fxOf("dimmer");
+    QCOMPARE(info.value("virtualBase").toInt(), -1);
+    QCOMPARE(info.value("virtualLevel").toInt(), 255);
+    renderFrames(m_doc, 2);
+    for (int f = 0; f < 30; f++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(at(0, 2), 255);
+        QCOMPARE(at(1, 2), 255);
+    }
+    prog.setFx("dimmer", { { "virtualBase", 999 } });
+    QCOMPARE(prog.fxOf("dimmer").value("virtualLevel").toInt(), 255);
+    prog.setFx("dimmer", { { "virtualBase", 0 } });
+    QCOMPARE(prog.fxOf("dimmer").value("virtualLevel").toInt(), 0);
+
+    // recorded: the scene plays the same chase on its own
+    const int id = prog.recordScene("Chase");
+    QVERIFY(id >= 0);
+    FXScene *scene = qobject_cast<FXScene *>(m_doc->function(quint32(id)));
+    QVERIFY(scene != nullptr);
+    QCOMPARE(scene->layers().first().virtualBase, 0);
+    // the scene editor shows it and changes it
+    auto layerInfo = [&]() { return effects.info(quint32(id)).value("layers").toList().first().toMap(); };
+    QCOMPARE(layerInfo().value("virtualCount").toInt(), 2);
+    QCOMPARE(layerInfo().value("virtualLevel").toInt(), 0);
+    QVERIFY(layerInfo().value("rows").toList().first().toMap().value("virtual").toBool());
+    effects.setFxLayer(quint32(id), 0, { { "virtualBase", -1 } });
+    QCOMPARE(scene->layers().first().virtualBase, -1);
+    QCOMPARE(layerInfo().value("virtualLevel").toInt(), 255);
+    effects.setFxLayer(quint32(id), 0, { { "virtualBase", 0 } });
+    prog.clear();
+    renderFrames(m_doc, 3);
+    QCOMPARE(at(0, 2), 0);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    wrong = chases(2, 60);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // a cuelist: the chase alone (nothing to dim), then a GO to a cue with the
+    // red at full. Its colour is a base of the FX player, which dims it (held
+    // by the list, it would be above the player, at full)
+    FXScene::Layer layer = scene->layers().first();
+    layer.fixtures = pars;
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue dark = testCue(1000, {});
+    dark.fx = { layer };
+    Cuelist::Cue lit = testCue(2000, { { Key(pars.at(0), 0), 255 }, { Key(pars.at(1), 0), 255 } });
+    lit.fx = { layer };
+    QCOMPARE(cl->addCue(dark), 0);
+    QCOMPARE(cl->addCue(lit), 1);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 30);
+    QCOMPARE(at(0, 0), 0);
+    QCOMPARE(at(1, 0), 0);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    wrong = chases(0, 60);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the release. The programmer has a dimmer FX and red on PAR 1. A
+    // scene that takes the red takes the value back, the dimmer FX stays
+    Zone *zone = zones.addZone("FX");
+    prog.selectFixtures({ all.at(0) });
+    prog.setColor(QColor(255, 0, 0));
+    prog.setFx("dimmer", {});
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QVERIFY(prog.fxLayerList().first().fixtures == QList<quint32>({ pars.at(0) }));
+    QCOMPARE(prog.valuesCount(), 3);
+    FXScene *colour = new FXScene(m_doc);
+    colour->setValue(pars.at(0), 0, 100);
+    QVERIFY(m_doc->addFunction(colour));
+    zone->addFunction(colour->id());
+    zone->start(colour->id());
+    renderFrames(m_doc, 2);
+    QCOMPARE(prog.valuesCount(), 2);
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    zone->stopAll();
+    renderFrames(m_doc, 2);
+    // a scene with a dimmer FX on it takes the dimmer FX off, its colour stays
+    prog.setColor(QColor(255, 0, 0));
+    QCOMPARE(prog.valuesCount(), 3);
+    FXScene *dims = new FXScene(m_doc);
+    FXScene::Layer wave = FxTools::defaultLayer("dimmer");
+    wave.fixtures = { pars.at(0) };
+    dims->setLayers({ wave });
+    QVERIFY(m_doc->addFunction(dims));
+    zone->addFunction(dims->id());
+    zone->start(dims->id());
+    renderFrames(m_doc, 2);
+    QVERIFY(prog.fxLayerList().isEmpty());
+    QCOMPARE(prog.valuesCount(), 3);
+    zone->stopAll();
+    prog.clear();
+    renderFrames(m_doc, 3);
+
+    // a cuelist GO, as with a DRGBW PAR: the red and a dimmer FX on both PARs.
+    // A cue with only red takes the red back, the dimmer FX stays; a GO to a
+    // cue with a dimmer FX on them takes it off too; a GO that doesn't change
+    // that FX keeps a new one
+    prog.selectFixtures(all);
+    prog.setColor(QColor(255, 0, 0));
+    prog.setFx("dimmer", {});
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(prog.valuesCount(), 6);
+    Cuelist *gos = new Cuelist(m_doc);
+    gos->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(gos));
+    QCOMPARE(gos->addCue(testCue(1000, { { Key(pars.at(0), 0), 200 }, { Key(pars.at(1), 0), 200 } })), 0);
+    Cuelist::Cue chase = dark;
+    chase.number = 2000;
+    QCOMPARE(gos->addCue(chase), 1);
+    chase.number = 3000;
+    QCOMPARE(gos->addCue(chase), 2);
+    gos->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(gos->status().current, 0);
+    QCOMPARE(prog.valuesCount(), 4);
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QVERIFY(prog.fxLayerList().first().fixtures == pars);
+    gos->go();
+    renderFrames(m_doc, 3);
+    QCOMPARE(gos->status().current, 1);
+    QVERIFY(prog.fxLayerList().isEmpty());
+    prog.setFx("dimmer", {});
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    gos->go();
+    renderFrames(m_doc, 3);
+    QCOMPARE(gos->status().current, 2);
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    gos->stop(FunctionParent::master());
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxMacroLooks()
+{
+    // the places: the first takes the first, the last the last, the ones in
+    // between spread; one alone, or one look, the first
+    QCOMPARE(FxTools::nearestPlace(2, 4, 4), 2);
+    QCOMPARE(FxTools::nearestPlace(0, 1, 4), 0);
+    QCOMPARE(FxTools::nearestPlace(3, 8, 1), 0);
+    QCOMPARE(FxTools::nearestPlace(0, 8, 4), 0);
+    QCOMPARE(FxTools::nearestPlace(3, 8, 4), 1);
+    QCOMPARE(FxTools::nearestPlace(4, 8, 4), 2);
+    QCOMPARE(FxTools::nearestPlace(7, 8, 4), 3);
+    QCOMPARE(FxTools::nearestPlace(1, 2, 4), 3);
+    QCOMPARE(FxTools::nearestPlace(1, 3, 2), 1);
+
+    // the wheels and the shutter are slots: they don't spread; the rest does
+    QVERIFY(FxTools::interpolates("pan"));
+    QVERIFY(FxTools::interpolates("dimmer"));
+    QVERIFY(FxTools::interpolates("zoom"));
+    QVERIFY(FxTools::interpolates("a channel of its own"));
+    for (const char *param : { "colorwheel", "colormacro", "gobo", "prism", "shutter" })
+        QVERIFY2(FxTools::interpolates(param) == false, param);
+
+    // two looks: pan 40 and 160, gobo 10 and 90, a tilt on the first only,
+    // the second reversed with a shift and a delay
+    FxTools::FixtureLook left, right;
+    left.bases = { { "pan", 40 }, { "gobo", 10 }, { "tilt", 100 } };
+    right.bases = { { "pan", 160 }, { "gobo", 90 } };
+    right.own.reverse = true;
+    right.own.shift = 90;
+    right.own.delay = 300;
+    const QList<FxTools::FixtureLook> looks = { left, right };
+    // as many fixtures: each its own
+    QVERIFY(FxTools::lookAt(looks, 0, 2) == left);
+    QVERIFY(FxTools::lookAt(looks, 1, 2) == right);
+    // five: the pan, the shift and the delay spread; the gobo, the reverse
+    // and the tilt come from the nearest place
+    for (int i = 0; i < 5; i++)
+    {
+        const FxTools::FixtureLook look = FxTools::lookAt(looks, i, 5);
+        QCOMPARE(look.bases.value("pan"), 40 + 30 * i);
+        QCOMPARE(look.bases.value("gobo"), i < 2 ? 10 : 90);
+        QCOMPARE(look.bases.contains("tilt"), i < 2);
+        QCOMPARE(look.own.reverse.value_or(false), i >= 2);
+        QCOMPARE(look.own.shift.value_or(0), qRound(22.5 * i));
+        QCOMPARE(look.own.delay.value_or(0), 75 * i);
+    }
+    // one fixture: the first; one look, or none
+    QVERIFY(FxTools::lookAt(looks, 0, 1) == left);
+    QVERIFY(FxTools::lookAt({ right }, 3, 6) == right);
+    QVERIFY(FxTools::lookAt({}, 0, 3) == FxTools::FixtureLook());
+    // fewer: the first and the last
+    FxTools::FixtureLook middle;
+    middle.bases = { { "pan", 100 } };
+    QVERIFY(FxTools::lookAt({ left, middle, right }, 0, 2) == left);
+    QVERIFY(FxTools::lookAt({ left, middle, right }, 1, 2) == right);
+
+    // their own way in a macro file: what they have, also through JSON, bounded
+    FXScene::Own own;
+    own.mode = 9;
+    own.figure = int(FXScene::Eight);
+    own.swing = 120;
+    own.swingTilt = 40;
+    own.phase = 90;
+    own.rotate = 45;
+    own.panInvert = true;
+    own.tiltInvert = false;
+    own.reverse = true;
+    own.shift = 180;
+    own.delay = 1500;
+    const QVariantMap map = FxTools::ownToMap(own);
+    QCOMPARE(map.count(), 11);
+    QVERIFY(FxTools::ownFromMap(map) == own);
+    QVERIFY(FxTools::ownFromMap(QJsonObject::fromVariantMap(map).toVariantMap()) == own);
+    QVERIFY(FxTools::ownToMap(FXScene::Own()).isEmpty());
+    QVERIFY(FxTools::ownFromMap({}).isEmpty());
+    const FXScene::Own bounded = FxTools::ownFromMap({ { "mode", 99 }, { "swing", -5 }, { "phase", 450 }, { "rotate", -90 },
+                                                       { "shift", 5000 }, { "delay", -1 }, { "figure", "eight" },
+                                                       { "reverse", false } });
+    QCOMPARE(bounded.mode.value_or(0), int(FXScene::ModeCount));
+    QCOMPARE(bounded.swing.value_or(-1), 0);
+    QCOMPARE(bounded.phase.value_or(-1), 90);
+    QCOMPARE(bounded.rotate.value_or(-1), 270);
+    QCOMPARE(bounded.shift.value_or(-1), 1440);
+    QCOMPARE(bounded.delay.value_or(-1), 0);
+    QVERIFY(bounded.figure.has_value() == false);
+    QVERIFY(bounded.reverse.has_value() && *bounded.reverse == false);
+}
+
+void Backend_Test::fxMacrosPerFixture()
+{
+    // a macro of the user keeps what each fixture of the FX did, by its place:
+    // a fan of pan, the last two reversed (a mirror), a fan of delays. Put
+    // back on the same fixtures, on more (stretched) and on fewer; the same
+    // for all is for any selection; older files and the factory ones as
+    // before; a dimmer of its place is the level of a virtual dimmer
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 8), 8);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    auto ids = [&](int from, int count) {
+        QVariantList list;
+        for (int i = from; i < from + count; i++)
+            list << spots.at(i);
+        return list;
+    };
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString file = dir.filePath("macros.json");
+    FxMacros macros(&prog);
+    macros.setFilePath(file);
+    // the programmer value of $channel of spot $i (-1: none), its FX, a
+    // macro as the panel sees it, and one as the file has it
+    auto base = [&](int i, quint32 channel) {
+        const QPair<quint32, quint32> key(spots.at(i), channel);
+        return prog.valueMap().contains(key) ? int(prog.valueMap().value(key)) : -1;
+    };
+    auto shape = [&](int i) { return prog.fxLayerList().first().shapeOf(spots.at(i)); };
+    auto info = [](const FxMacros &from, const QString &id) {
+        for (const QVariant &m : from.macros())
+            if (m.toMap().value("id").toString() == id)
+                return m.toMap();
+        return QVariantMap();
+    };
+    auto inFile = [&file](int index) {
+        QFile f(file);
+        if (f.open(QIODevice::ReadOnly) == false)
+            return QJsonObject();
+        return QJsonDocument::fromJson(f.readAll()).object().value("macros").toArray().at(index).toObject();
+    };
+    const quint32 pan = 0, tilt = 1, dimmer = 3;
+    const QList<int> pans = { 40, 80, 120, 160 };
+
+    // 4 spots: a fan of pan, a circle, the last two reversed, delays 0 to 300
+    for (int i = 0; i < 4; i++)
+    {
+        prog.selectFixtures(ids(i, 1));
+        prog.setChannelValue("pan", pans.at(i));
+        QCOMPARE(base(i, pan), pans.at(i));
+    }
+    prog.selectFixtures(ids(0, 4));
+    prog.setChannelValue("tilt", 100);
+    prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 30 }, { "swingTilt", 30 },
+                            { "bpm", 30 }, { "wave", -1 } });
+    prog.selectFixtures(ids(2, 2));
+    prog.setFx("pantilt", { { "reverse", true } });
+    prog.selectFixtures(ids(0, 4));
+    prog.fanFxOffset("pantilt", "delay", 300);
+    QCOMPARE(shape(3).delay, 300);
+    QVERIFY(prog.fxOf("pantilt").value("mirror").toBool());
+
+    // saved: each fixture by its place; the bases an older version reads, the first's
+    const QString fan = macros.save("Fan");
+    QVERIFY(fan.isEmpty() == false);
+    QJsonObject saved = inFile(0);
+    QJsonObject layer = saved.value("layers").toArray().at(0).toObject();
+    QVERIFY(layer.contains("fixtures") == false);
+    QVERIFY(layer.value("reverse").toBool() == false);
+    const QJsonArray looks = layer.value("looks").toArray();
+    QCOMPARE(looks.count(), 4);
+    for (int i = 0; i < 4; i++)
+    {
+        const QJsonObject look = looks.at(i).toObject();
+        QCOMPARE(look.value("bases").toObject().value("pan").toInt(), pans.at(i));
+        QCOMPARE(look.value("bases").toObject().value("tilt").toInt(), 100);
+    }
+    QVERIFY(looks.at(0).toObject().value("own").toObject().isEmpty());
+    QCOMPARE(looks.at(1).toObject().value("own").toObject().value("delay").toInt(), 100);
+    QVERIFY(looks.at(1).toObject().value("own").toObject().contains("reverse") == false);
+    QVERIFY(looks.at(3).toObject().value("own").toObject().value("reverse").toBool());
+    QCOMPARE(looks.at(3).toObject().value("own").toObject().value("delay").toInt(), 300);
+    QCOMPARE(saved.value("bases").toObject().value("pan").toInt(), 40);
+    QCOMPARE(saved.value("bases").toObject().value("tilt").toInt(), 100);
+    QVERIFY(info(macros, fan).value("perFixture").toBool());
+    QCOMPARE(info(macros, fan).value("fixtureCount").toInt(), 4);
+
+    // on the same 4: each what it had
+    auto onFour = [&](FxMacros &from) -> QString {
+        prog.clear();
+        prog.selectFixtures(ids(0, 4));
+        if (from.apply(fan) == false)
+            return "not applied";
+        if (prog.fxLayerList().count() != 1 || prog.fxLayerList().first().fixtures.count() != 4)
+            return "not one FX on the 4";
+        for (int i = 0; i < 4; i++)
+        {
+            if (base(i, pan) != pans.at(i) || base(i, tilt) != 100)
+                return QString("spot %1: pan %2, tilt %3").arg(i).arg(base(i, pan)).arg(base(i, tilt));
+            if (shape(i).reverse != (i >= 2) || shape(i).delay != i * 100)
+                return QString("spot %1: reverse %2, delay %3").arg(i).arg(shape(i).reverse).arg(shape(i).delay);
+            if (shape(i).figure != int(FXScene::Circle) || shape(i).swing != 30)
+                return QString("spot %1: figure %2, swing %3").arg(i).arg(shape(i).figure).arg(shape(i).swing);
+        }
+        if (prog.fxOf("pantilt").value("mirror").toBool() == false)
+            return "no mirror";
+        return QString();
+    };
+    QString wrong = onFour(macros);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+
+    // on 8: the fan and the delays stretched, the last 4 reversed: still a mirror
+    prog.clear();
+    prog.selectFixtures(ids(0, 8));
+    QVERIFY(macros.apply(fan));
+    QCOMPARE(prog.fxLayerList().first().fixtures.count(), 8);
+    QCOMPARE(base(0, pan), 40);
+    QCOMPARE(base(7, pan), 160);
+    QVERIFY2(qAbs(base(2, pan) - 74) <= 1, qPrintable(QString::number(base(2, pan))));
+    for (int i = 0; i < 8; i++)
+    {
+        if (i > 0)
+            QVERIFY2(base(i, pan) > base(i - 1, pan), qPrintable(QString("spot %1").arg(i)));
+        QCOMPARE(base(i, tilt), 100);
+        QCOMPARE(shape(i).reverse, i >= 4);
+        QVERIFY2(qAbs(shape(i).delay - qRound(300.0 * i / 7)) <= 1, qPrintable(QString::number(shape(i).delay)));
+    }
+    QVERIFY(prog.fxOf("pantilt").value("mirror").toBool());
+
+    // on 2: the first and the last
+    prog.clear();
+    prog.selectFixtures(ids(4, 2));
+    QVERIFY(macros.apply(fan));
+    QCOMPARE(base(4, pan), 40);
+    QCOMPARE(base(5, pan), 160);
+    QVERIFY(shape(4).reverse == false);
+    QVERIFY(shape(5).reverse);
+    QCOMPARE(shape(4).delay, 0);
+    QCOMPARE(shape(5).delay, 300);
+    QCOMPARE(base(0, pan), -1);
+
+    // another one on the same file: the same (a round trip)
+    FxMacros again(&prog);
+    again.setFilePath(file);
+    QCOMPARE(info(again, fan).value("fixtureCount").toInt(), 4);
+    wrong = onFour(again);
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong));
+
+    // all the same, with no own way: for any selection, with the bases of the
+    // FX (not of the last selected fixture, which is not in it)
+    prog.clear();
+    prog.selectFixtures(ids(0, 4));
+    prog.setChannelValue("pan", 128);
+    prog.setFx("pantilt", { { "figure", int(FXScene::Eight) } });
+    prog.selectFixtures(ids(7, 1));
+    prog.setChannelValue("pan", 10);
+    prog.selectFixtures(ids(0, 4) + ids(7, 1));
+    QCOMPARE(prog.fxLayerList().first().fixtures.count(), 4);
+    const QString same = macros.save("Same");
+    saved = inFile(1);
+    QVERIFY(saved.value("layers").toArray().at(0).toObject().contains("looks") == false);
+    QCOMPARE(saved.value("bases").toObject().count(), 1);
+    QCOMPARE(saved.value("bases").toObject().value("pan").toInt(), 128);
+    QVERIFY(info(macros, same).value("perFixture").toBool() == false);
+    QCOMPARE(info(macros, same).value("fixtureCount").toInt(), 0);
+    prog.clear();
+    prog.selectFixtures(ids(2, 6));
+    QVERIFY(macros.apply(same));
+    for (int i = 2; i < 8; i++)
+        QCOMPARE(base(i, pan), 128);
+    QCOMPARE(FxTools::ownShapeCount(prog.fxLayerList().first()), 0);
+    QCOMPARE(FxTools::offsetCount(prog.fxLayerList().first()), 0);
+
+    // a file of an older version (bases only): the same base on all
+    const QString oldFile = dir.filePath("old.json");
+    QFile old(oldFile);
+    QVERIFY(old.open(QIODevice::WriteOnly));
+    old.write(R"({"macros":[{"id":"old","name":"Old","layers":[{"param":"pantilt","figure":1,"swing":20,)"
+              R"("swingTilt":20,"bpm":30}],"bases":{"pan":60,"tilt":90}}]})");
+    old.close();
+    FxMacros older(&prog);
+    older.setFilePath(oldFile);
+    QVERIFY(info(older, "old").isEmpty() == false);
+    QVERIFY(info(older, "old").value("perFixture").toBool() == false);
+    prog.clear();
+    prog.selectFixtures(ids(0, 4));
+    QVERIFY(older.apply("old"));
+    for (int i = 0; i < 4; i++)
+    {
+        QCOMPARE(base(i, pan), 60);
+        QCOMPARE(base(i, tilt), 90);
+    }
+    QVERIFY(prog.fxLayerList().first().own.isEmpty());
+
+    // the factory ones: as before
+    for (const char *id : { "circle", "chase" })
+        QVERIFY2(info(macros, id).value("perFixture").toBool() == false, id);
+    prog.clear();
+    prog.selectFixtures(ids(0, 4));
+    QVERIFY(macros.apply("circle"));
+    QCOMPARE(prog.fxLayerList().first().figure, int(FXScene::Circle));
+    QVERIFY(prog.fxLayerList().first().own.isEmpty());
+    QCOMPARE(base(0, pan), -1);
+    QVERIFY(macros.apply("chase"));
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    for (int i = 0; i < 4; i++)
+        QCOMPARE(base(i, dimmer), 0);
+    QVERIFY(prog.fxLayerList().last().own.isEmpty());
+
+    // a dimmer FX on 2 spots (50 and 250) and 2 RGB PARs. On the PARs alone,
+    // the first takes the dimmer of the first place: their virtual dimmer
+    // dims from it. On the 2 spots the other way round, each takes its place:
+    // the last one had no dimmer, so it gets none (not the first one's)
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 100, 2), 2);
+    QVariantList pars;
+    for (Fixture *f : m_doc->fixtures())
+        if (spots.contains(f->id()) == false)
+            pars << f->id();
+    QCOMPARE(pars.count(), 2);
+    prog.clear();
+    prog.selectFixtures(ids(0, 1));
+    prog.setChannelValue("dimmer", 50);
+    prog.selectFixtures(ids(1, 1));
+    prog.setChannelValue("dimmer", 250);
+    prog.selectFixtures(ids(0, 2) + pars);
+    prog.setFx("dimmer", { { "mode", 3 } });
+    QCOMPARE(prog.fxLayerList().first().fixtures.count(), 4);
+    const QString dimmers = macros.save("Dimmers");
+    QCOMPARE(info(macros, dimmers).value("fixtureCount").toInt(), 4);
+    prog.clear();
+    prog.selectFixtures(pars);
+    QVERIFY(macros.apply(dimmers));
+    QCOMPARE(prog.fxLayerList().first().virtualBase, 50);
+    prog.clear();
+    prog.selectFixtures(ids(1, 1) + ids(0, 1));
+    QVERIFY(macros.apply(dimmers));
+    QCOMPARE(base(1, dimmer), 50);
+    QCOMPARE(base(0, dimmer), -1);
+
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+/*********************************************************************
+ * cuelists-cues G9: undo and redo of cue edits
+ *********************************************************************/
+
+/** Two RGBW pars (dimmer 0, red 1, green 2, blue 3, white 4) and a cuelist
+ *  recorded from the programmer: cue 1 both dimmers at full, cue 2 red 100
+ *  on the first par, cue 3 blue 50 on the second one. @return its ID, or -1 */
+static int undoTestList(DtcCore &core, quint32 *p1, quint32 *p2)
+{
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    if (core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2) != 2)
+        return -1;
+    for (Fixture *f : core.doc()->fixtures())
+        (f->address() == 0 ? *p1 : *p2) = f->id();
+    Programmer *prog = core.programmer();
+    CuelistEditor *editor = core.cuelists();
+    prog->selectFixtures({ *p1, *p2 });
+    prog->setDimmer(255);
+    const int id = editor->create("Song");
+    if (id < 0)
+        return -1;
+    prog->clear();
+    prog->selectFixtures({ *p1 });
+    prog->setChannelValue("red", 100);
+    editor->recordCue(quint32(id));
+    prog->clear();
+    prog->selectFixtures({ *p2 });
+    prog->setChannelValue("blue", 50);
+    editor->recordCue(quint32(id));
+    prog->clear();
+    return id;
+}
+
+/** How many steps a cuelist can undo (undone and redone to count them) */
+static int undoDepth(CuelistEditor *editor, quint32 id)
+{
+    int steps = 0;
+    while (editor->undoState(id).value("canUndo").toBool())
+    {
+        editor->undo(id);
+        steps++;
+    }
+    for (int i = 0; i < steps; i++)
+        editor->redo(id);
+    return steps;
+}
+
+void Backend_Test::cuelistUndoEdits()
+{
+    // every edit of a cuelist is one step: undo puts its cues and options
+    // back as they were, redo as the edit left them
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    QCOMPARE(cl->cueCount(), 3);
+    CuelistEditor *editor = core.cuelists();
+    Programmer *prog = core.programmer();
+    QSignalSpy undoChanged(editor, SIGNAL(undoChanged(quint32)));
+
+    // the records of the list are steps already (creating it is not)
+    QVariantMap state = editor->undoState(id);
+    QVERIFY(state.value("canUndo").toBool());
+    QVERIFY(state.value("canRedo").toBool() == false);
+    QCOMPARE(state.value("undo").toString(), QString("Record cue 3"));
+    QCOMPARE(state.value("redo").toString(), QString());
+
+    // an edit: one step with its name, undone and redone
+    auto check = [&](const QString &label, const std::function<void()> &edit) {
+        const QList<Cuelist::Cue> cuesBefore = cl->cues();
+        const QVariantMap optionsBefore = editor->options(id);
+        const int emitted = int(undoChanged.count());
+        edit();
+        const QList<Cuelist::Cue> cuesAfter = cl->cues();
+        const QVariantMap optionsAfter = editor->options(id);
+        QVERIFY2(cuesAfter != cuesBefore || optionsAfter != optionsBefore, qPrintable(label));
+        QCOMPARE(int(undoChanged.count()), emitted + 1);
+        QCOMPARE(editor->undoState(id).value("undo").toString(), label);
+        editor->undo(id);
+        QVERIFY2(cl->cues() == cuesBefore, qPrintable(label));
+        QCOMPARE(editor->options(id), optionsBefore);
+        QCOMPARE(editor->undoState(id).value("redo").toString(), label);
+        editor->redo(id);
+        QVERIFY2(cl->cues() == cuesAfter, qPrintable(label));
+        QCOMPARE(editor->options(id), optionsAfter);
+        QCOMPARE(editor->undoState(id).value("undo").toString(), label);
+        QVERIFY(editor->undoState(id).value("canRedo").toBool() == false);
+    };
+
+    // Record; into a cue that exists: merged (Update inside is the same
+    // step), replaced, or a point cue after it
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("green", 80);
+    check("Record cue 4", [&]() { QCOMPARE(editor->recordCue(id), 3); });
+    prog->setChannelValue("white", 40);
+    check("Record cue 2", [&]() { QCOMPARE(editor->recordCue(id, "2", { { "existing", "merge" } }), 1); });
+    check("Record cue 2", [&]() { QCOMPARE(editor->recordCue(id, "2", { { "existing", "replace" } }), 1); });
+    check("Record cue 2.5", [&]() { QCOMPARE(editor->recordCue(id, "2", { { "existing", "insertAfter" } }), 2); });
+    QCOMPARE(cueNumbers(cl), QList<int>({ 1000, 2000, 2500, 3000, 4000 }));
+    if (QTest::currentTestFailed())
+        return;
+
+    // Update: the next cues follow, or keep their look (cue only)
+    prog->clear();
+    prog->selectFixtures({ p2 });
+    prog->setChannelValue("red", 33);
+    check("Update cue 3", [&]() { QVERIFY(editor->updateCue(id, 3)); });
+    prog->setChannelValue("red", 44);
+    check("Update cue 2", [&]() { QVERIFY(editor->updateCue(id, 1, { { "cueOnly", true } })); });
+    QVERIFY(cl->cueAt(2).releases.contains(Cuelist::Key(p2, 1)));
+
+    // Take out and [Release]: the programmer (toolbar) and keys (tracking sheet)
+    check("Take out of cue 2", [&]() { QVERIFY(editor->removeFromCue(id, 1)); });
+    check("Release in cue 4", [&]() { QVERIFY(editor->releaseInCue(id, 4)); });
+    const QString dimmerKey = QString("%1:0").arg(p1);
+    check("Release in cue 3", [&]() { QVERIFY(editor->releaseKeysInCue(id, 3, { dimmerKey })); });
+    check("Take out of cue 3", [&]() { QVERIFY(editor->removeKeysFromCue(id, 3, { dimmerKey })); });
+    prog->clear();
+    if (QTest::currentTestFailed())
+        return;
+
+    // Copy (the whole look) and Number
+    check("Copy cue 1", [&]() { QCOMPARE(editor->copyCue(id, 0, "", true), 5); });
+    check("Number of cue 5", [&]() { QCOMPARE(editor->renumber(id, 5, "7"), QString()); });
+
+    // times, trigger, name, note, Skip and Block, of one cue or several
+    check("Times", [&]() { editor->setCueTimes(id, { 0, 1 }, 300, 600, 100); });
+    check("Trigger", [&]() { editor->setCueTrigger(id, { 1 }, "follow", 500); });
+    check("Name of cue 1", [&]() { editor->setCueName(id, 0, "Intro"); });
+    check("Note of cue 1", [&]() { editor->setCueNote(id, 0, "House lights"); });
+    check("Skip and block", [&]() { editor->setCueFlags(id, { 1, 2 }, 1, 1); });
+
+    // the options of the list
+    check("Cuelist options", [&]() { editor->setOption(id, "tracking", false); });
+    check("Cuelist options", [&]() { editor->setOption(id, "atEnd", "stay"); });
+    check("Cuelist options", [&]() { editor->setOption(id, "backTime", 200); });
+    if (QTest::currentTestFailed())
+        return;
+
+    // Delete: one cue keeping the look of the next ones, several
+    check("Delete cue 2", [&]() { QVERIFY(editor->removeCues(id, { 1 }, true)); });
+    check("Delete 2 cues", [&]() { QVERIFY(editor->removeCues(id, { 1, 2 }, false)); });
+    QCOMPARE(cueNumbers(cl), QList<int>({ 1000, 4000, 7000 }));
+
+    // undo and redo say which cue changed (the views select it): none when
+    // a record is undone, the new cue when it is redone
+    editor->setCueName(id, 2, "Bridge");
+    QCOMPARE(editor->undo(id), 2);
+    QCOMPARE(editor->redo(id), 2);
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("blue", 9);
+    QCOMPARE(editor->recordCue(id), 3);
+    prog->clear();
+    QCOMPARE(editor->undo(id), -1);
+    QCOMPARE(cl->cueCount(), 3);
+    QCOMPARE(editor->redo(id), 3);
+    QCOMPARE(cl->cueCount(), 4);
+    // the cue a delete took away is back where it was
+    QVERIFY(editor->removeCues(id, { 1 }, true));
+    QCOMPARE(editor->undo(id), 1);
+    QCOMPARE(cl->cueAt(1).number, 4000);
+
+    // a new edit after an undo: nothing to redo any more
+    QVERIFY(editor->undoState(id).value("canRedo").toBool());
+    editor->setCueNote(id, 1, "New");
+    state = editor->undoState(id);
+    QVERIFY(state.value("canRedo").toBool() == false);
+    QCOMPARE(state.value("undo").toString(), QString("Note of cue 4"));
+    // (another cuelist has a history of its own)
+    QVERIFY(editor->undoState(id + 100).value("canUndo").toBool() == false);
+    QCOMPARE(editor->undo(id + 100), -1);
+}
+
+void Backend_Test::cuelistUndoMerge()
+{
+    // the wheel on a time: the notches on the same cells within 2 s are one
+    // step, gone when the time is back where it was; other cells and other
+    // cues are steps of their own
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    const int records = undoDepth(editor, id);
+    QCOMPARE(records, 2);
+
+    // ten notches: one step, back to the time before the first one
+    const uint fade = cl->cueAt(1).fade;
+    for (int notch = 1; notch <= 10; notch++)
+        editor->setCueTimes(id, { 1 }, int(fade) + notch * 100, -1, -1);
+    QCOMPARE(cl->cueAt(1).fade, fade + 1000);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Times"));
+    QCOMPARE(editor->undo(id), 1);
+    QCOMPARE(cl->cueAt(1).fade, fade);
+    QCOMPARE(editor->redo(id), 1);
+    QCOMPARE(cl->cueAt(1).fade, fade + 1000);
+    QCOMPARE(undoDepth(editor, id), records + 1);
+
+    // more than 2 s later the wheel makes a new step
+    const uint third = cl->cueAt(2).fade;
+    editor->setCueTimes(id, { 2 }, int(third) + 100, -1, -1);
+    editor->setCueTimes(id, { 2 }, int(third) + 200, -1, -1);
+    QTest::qWait(2100);
+    editor->setCueTimes(id, { 2 }, int(third) + 300, -1, -1);
+    QCOMPARE(editor->undo(id), 2);
+    QCOMPARE(cl->cueAt(2).fade, third + 200);
+    QCOMPARE(editor->undo(id), 2);
+    QCOMPARE(cl->cueAt(2).fade, third);
+    editor->redo(id);
+    editor->redo(id);
+    QCOMPARE(cl->cueAt(2).fade, third + 300);
+    const int depth = undoDepth(editor, id);
+    QCOMPARE(depth, records + 3);
+
+    // wheeled back to where it started: no step
+    const uint delay = cl->cueAt(0).delay;
+    editor->setCueTimes(id, { 0 }, -1, -1, int(delay) + 100);
+    editor->setCueTimes(id, { 0 }, -1, -1, int(delay) + 200);
+    editor->setCueTimes(id, { 0 }, -1, -1, int(delay));
+    QCOMPARE(cl->cueAt(0).delay, delay);
+    QCOMPARE(undoDepth(editor, id), depth);
+
+    // other cues, other cells: steps of their own
+    editor->setCueTimes(id, { 0 }, int(cl->cueAt(0).fade) + 100, -1, -1);
+    editor->setCueTimes(id, { 1 }, int(cl->cueAt(1).fade) + 100, -1, -1);
+    editor->setCueTimes(id, { 1 }, -1, -1, int(cl->cueAt(1).delay) + 100);
+    QCOMPARE(undoDepth(editor, id), depth + 3);
+    // several cues at once, in any order: the same cells
+    editor->setCueTimes(id, { 0, 1 }, 500, -1, -1);
+    editor->setCueTimes(id, { 1, 0 }, 600, -1, -1);
+    QCOMPARE(undoDepth(editor, id), depth + 4);
+    // the name typed into a cue, twice: one step; Skip twice: two
+    editor->setCueName(id, 0, "A");
+    editor->setCueName(id, 0, "AB");
+    QCOMPARE(undoDepth(editor, id), depth + 5);
+    editor->setCueFlags(id, { 0 }, 1, -1);
+    editor->setCueFlags(id, { 0 }, 0, -1);
+    QCOMPARE(undoDepth(editor, id), depth + 7);
+    // an undone step is closed: the same cells again are a new step
+    editor->setCueName(id, 0, "ABC");
+    editor->undo(id);
+    editor->redo(id);
+    editor->setCueName(id, 0, "ABCD");
+    QCOMPARE(undoDepth(editor, id), depth + 9);
+}
+
+void Backend_Test::cuelistUndoLimits()
+{
+    // 50 steps per cuelist; a new show, deleting or replacing the list
+    // drop its history; what doesn't change it is no step
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    Programmer *prog = core.programmer();
+    auto canUndo = [&](quint32 list) { return editor->undoState(list).value("canUndo").toBool(); };
+
+    // 60 edits: the last 50 stay (the records of cues 2 and 3 went)
+    for (int i = 0; i < 60; i++)
+        editor->setCueFlags(id, { 1 }, (i + 1) % 2, -1);
+    int undone = 0;
+    while (canUndo(id))
+    {
+        editor->undo(id);
+        undone++;
+    }
+    QCOMPARE(undone, 50);
+    QCOMPARE(cl->cueCount(), 3);
+    while (editor->undoState(id).value("canRedo").toBool())
+        editor->redo(id);
+    QVERIFY(cl->cueAt(1).skip == false);
+
+    // a Record that asks first, an Update with the same values: no step
+    QSignalSpy undoChanged(editor, SIGNAL(undoChanged(quint32)));
+    const QVariantMap before = editor->undoState(id);
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("green", 10);
+    QCOMPARE(editor->recordCue(id, "2"), -2);
+    QVERIFY(editor->loadCue(id, 1, false));
+    QVERIFY(editor->updateCue(id, 1));
+    prog->clear();
+    QCOMPARE(editor->undoState(id), before);
+    QCOMPARE(undoChanged.count(), 0);
+
+    // creating a cuelist is no step, nor converting steps into one
+    prog->selectFixtures({ p1, p2 });
+    prog->setDimmer(128);
+    const int other = editor->create("Other");
+    prog->clear();
+    QVERIFY(other >= 0);
+    QVERIFY(canUndo(quint32(other)) == false);
+    Scene *bound = new Scene(core.doc());
+    bound->setValue(p1, 0, 0);
+    bound->setVisible(false);
+    QVERIFY(core.doc()->addFunction(bound));
+    Sequence *sequence = new Sequence(core.doc());
+    sequence->setBoundSceneID(bound->id());
+    QVERIFY(core.doc()->addFunction(sequence));
+    for (int value : { 50, 150 })
+    {
+        ChaserStep step(bound->id(), 0, 300, 0);
+        step.values = { SceneValue(p1, 0, uchar(value)) };
+        sequence->addStep(step);
+    }
+    const quint32 converted = sequence->id();
+    QCOMPARE(editor->convertFromSteps(converted), int(converted));
+    QVERIFY(canUndo(converted) == false);
+    editor->setCueName(converted, 0, "Step 1");
+    QVERIFY(canUndo(converted));
+
+    // another function in the place of a list (as when steps become a
+    // cuelist): the history was of the other one
+    editor->setCueName(quint32(other), 0, "One");
+    QVERIFY(canUndo(quint32(other)));
+    QVERIFY(core.doc()->replaceFunction(quint32(other), new Cuelist(core.doc())));
+    QVERIFY(canUndo(quint32(other)) == false);
+    QVERIFY(editor->undoState(quint32(other)).value("canRedo").toBool() == false);
+    // a list deleted: its history goes with it
+    editor->undo(converted);
+    QVERIFY(editor->undoState(converted).value("canRedo").toBool());
+    core.deleteFunction(converted);
+    QVERIFY(editor->undoState(converted).value("canRedo").toBool() == false);
+
+    // a new show: no history anywhere, and the views are told
+    QVERIFY(canUndo(id));
+    undoChanged.clear();
+    editor->clear();
+    QVERIFY(canUndo(id) == false);
+    QCOMPARE(undoChanged.count(), 1);
+    QCOMPARE(undoChanged.first().first().toUInt(), Function::invalidId());
+    editor->setCueName(id, 0, "Again");
+    QVERIFY(canUndo(id));
+    core.newShow();
+    QVERIFY(canUndo(id) == false);
+}
+
+void Backend_Test::cuelistUndoOutsideChanges()
+{
+    // an undo puts back the cues of its step, but what changed outside the
+    // editor since stays: palettes keep their values of now, a deleted
+    // palette leaves plain values, deleted fixtures don't come back
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    PaletteManager *palettes = core.palettes();
+    Programmer *prog = core.programmer();
+
+    // cue 4: both pars red, from a palette; cue 5: an FX on both
+    prog->selectFixtures({ p1, p2 });
+    prog->setColor(QColor(255, 0, 0));
+    const int warm = palettes->record("colour", "Warm");
+    QVERIFY(warm > 0);
+    QCOMPARE(editor->recordCue(id), 3);
+    prog->clear();
+    QCOMPARE(cl->cueAt(3).palettes.value(Key(p2, 1), -1), warm);
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p2, 1))), 255);
+    prog->selectFixtures({ p1, p2 });
+    prog->setFx("dimmer", { { "mode", 1 } });
+    QCOMPARE(editor->recordCue(id), 4);
+    prog->clear();
+    QCOMPARE(cl->cueAt(4).fx.count(), 1);
+    QCOMPARE(cl->cueAt(4).fx.first().fixtures, QList<quint32>({ p1, p2 }));
+
+    // a later edit, then the palette becomes blue: the cues follow it
+    editor->setCueName(id, 0, "Intro");
+    prog->selectFixtures({ p1, p2 });
+    prog->setColor(QColor(0, 0, 255));
+    QVERIFY(palettes->update(warm));
+    prog->clear();
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p2, 1))), 0);
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p2, 3))), 255);
+    // the name undone: the cue keeps the palette as it is now
+    editor->undo(id);
+    QCOMPARE(cl->cueAt(0).name, QString());
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p2, 1))), 0);
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p2, 3))), 255);
+    QCOMPARE(cl->cueAt(3).palettes.value(Key(p2, 3), -1), warm);
+    // the records too, undone and redone
+    editor->undo(id);
+    editor->undo(id);
+    QCOMPARE(cl->cueCount(), 3);
+    editor->redo(id);
+    editor->redo(id);
+    editor->redo(id);
+    QCOMPARE(cl->cueCount(), 5);
+    QCOMPARE(cl->cueAt(0).name, QString("Intro"));
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p1, 1))), 0);
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p1, 3))), 255);
+    QCOMPARE(cl->cueAt(3).palettes.value(Key(p1, 3), -1), warm);
+
+    // the palette deleted: its values stay, plain, also after an undo
+    editor->setCueNote(id, 0, "Warm");
+    palettes->remove(warm);
+    QVERIFY(cl->cueAt(3).palettes.isEmpty());
+    editor->undo(id);
+    QCOMPARE(cl->cueAt(0).note, QString());
+    QVERIFY(cl->cueAt(3).palettes.isEmpty());
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p1, 3))), 255);
+    editor->redo(id);
+    QVERIFY(cl->cueAt(3).palettes.isEmpty());
+
+    // a fixture deleted: its channels and FX leave the cues, and no undo
+    // or redo brings them back
+    auto holdsSecond = [&]() {
+        for (const Cuelist::Cue &cue : cl->cues())
+        {
+            for (auto it = cue.values.cbegin(); it != cue.values.cend(); ++it)
+                if (it.key().first == p2)
+                    return true;
+            for (const Key &key : cue.releases)
+                if (key.first == p2)
+                    return true;
+            for (const FXScene::Layer &layer : cue.fx)
+                if (layer.fixtures.contains(p2))
+                    return true;
+            for (const Cuelist::FxKey &key : cue.fxReleases)
+                if (key.second == p2)
+                    return true;
+        }
+        return false;
+    };
+    editor->setCueNote(id, 0, "One par");
+    QVERIFY(holdsSecond());
+    QVERIFY(core.doc()->deleteFixture(p2));
+    QVERIFY(holdsSecond() == false);
+    editor->undo(id);
+    QCOMPARE(cl->cueAt(0).note, QString("Warm"));
+    QVERIFY(holdsSecond() == false);
+    int undone = 0;
+    while (editor->undoState(id).value("canUndo").toBool())
+    {
+        editor->undo(id);
+        undone++;
+        QVERIFY(holdsSecond() == false);
+    }
+    QVERIFY(undone >= 5);
+    QCOMPARE(cl->cueCount(), 1);
+    while (editor->undoState(id).value("canRedo").toBool())
+    {
+        editor->redo(id);
+        QVERIFY(holdsSecond() == false);
+    }
+    QCOMPARE(cl->cueCount(), 5);
+    QCOMPARE(cl->cueAt(4).fx.count(), 1);
+    QCOMPARE(cl->cueAt(4).fx.first().fixtures, QList<quint32>({ p1 }));
+    QCOMPARE(int(cl->cueAt(3).values.value(Key(p1, 3))), 255);
+}
+
+void Backend_Test::cuelistUndoEditing()
+{
+    // the cue in the programmer gone with an undo is not edited any more;
+    // a running list plays the restored cues at once
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    Programmer *prog = core.programmer();
+
+    // cue 4 recorded and loaded, then its record undone
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("green", 90);
+    QCOMPARE(editor->recordCue(id), 3);
+    QVERIFY(editor->loadCue(id, 3));
+    QCOMPARE(editor->editing().value("index").toInt(), 3);
+    QSignalSpy editing(editor, SIGNAL(editingChanged()));
+    editor->undo(id);
+    QVERIFY(editor->editing().isEmpty());
+    QVERIFY(editing.count() > 0);
+    // redone: the cue is back, not in the programmer
+    editor->redo(id);
+    QCOMPARE(cl->cueCount(), 4);
+    QVERIFY(editor->editing().isEmpty());
+    // a cue that stays is still edited
+    QVERIFY(editor->loadCue(id, 1));
+    editor->setCueName(id, 2, "Other");
+    editor->undo(id);
+    QCOMPARE(editor->editing().value("index").toInt(), 1);
+    prog->clear();
+
+    // the list plays: an undo shows on stage at once (the dimmer of the first par)
+    editor->setCueTimes(id, { 0, 1, 2, 3 }, 0, -1, -1);
+    auto level = [&]() { return core.io()->channelValues(0).at(0).toInt(); };
+    core.playbacks()->goFunction(listId);
+    QTRY_COMPARE_WITH_TIMEOUT(level(), 255, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->status().current == 0, 3000);
+    prog->selectFixtures({ p1 });
+    prog->setDimmer(100);
+    QVERIFY(editor->updateCue(id, 0));
+    prog->clear();
+    QTRY_COMPARE_WITH_TIMEOUT(level(), 100, 3000);
+    editor->undo(id);
+    QTRY_COMPARE_WITH_TIMEOUT(level(), 255, 3000);
+    editor->redo(id);
+    QTRY_COMPARE_WITH_TIMEOUT(level(), 100, 3000);
+    QCOMPARE(cl->status().current, 0);
+    core.playbacks()->releaseFunction(listId);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning() == false, 3000);
+}
+
+void Backend_Test::cuelistUndoOptionsOnly()
+{
+    // an undo puts back only the options its step changed: a priority or a
+    // release time changed elsewhere since (Live, the playbacks) stays
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+
+    // the record of cue 3 undone after a change of priority and release time
+    core.setFunctionPriority(id, 8);
+    core.effects()->setTiming(id, -1, 300, -1);
+    editor->undo(id);
+    QCOMPARE(cl->cueCount(), 2);
+    QCOMPARE(cl->priority(), 8);
+    QCOMPARE(cl->fadeOutSpeed(), 300u);
+    editor->redo(id);
+    QCOMPARE(cl->cueCount(), 3);
+    QCOMPARE(cl->priority(), 8);
+    QCOMPARE(cl->fadeOutSpeed(), 300u);
+
+    // an option undone: that one alone
+    editor->setOption(id, "atEnd", "stay");
+    core.setFunctionPriority(id, 3);
+    editor->undo(id);
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndLoop);
+    QCOMPARE(cl->priority(), 3);
+    QCOMPARE(cl->fadeOutSpeed(), 300u);
+    QCOMPARE(cl->cueCount(), 3);
+    editor->redo(id);
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndStay);
+    QCOMPARE(cl->priority(), 3);
+    // the priority of the options is undone like the others
+    editor->setOption(id, "priority", 6);
+    QCOMPARE(cl->priority(), 6);
+    editor->undo(id);
+    QCOMPARE(cl->priority(), 3);
+    QCOMPARE(cl->atEnd(), Cuelist::AtEndStay);
+    // one option changed again and again (its - and + buttons): one step
+    editor->setOption(id, "releaseTime", 400);
+    editor->setOption(id, "releaseTime", 500);
+    QCOMPARE(cl->fadeOutSpeed(), 500u);
+    editor->undo(id);
+    QCOMPARE(cl->fadeOutSpeed(), 300u);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+}
+
+/*********************************************************************
+ * cuelists-cues G2: times per attribute and per fixture inside a cue
+ *********************************************************************/
+
+/** The times of an attribute or a fixture of a cue, in ms (-1: the cue's) */
+static Cuelist::PartTime cueTime(int fade, int delay)
+{
+    Cuelist::PartTime part;
+    part.fade = fade;
+    part.delay = delay;
+    return part;
+}
+
+/** "fade/delay", to compare them */
+static QString partText(const Cuelist::PartTime &part)
+{
+    return QString("%1/%2").arg(part.fade).arg(part.delay);
+}
+
+/** "fade/down/delay" */
+static QString timesText(const Cuelist::Times &times)
+{
+    return QString("%1/%2/%3").arg(times.fade).arg(times.down).arg(times.delay);
+}
+
+void Backend_Test::cuelistTimeGroups()
+{
+    // the attribute of a channel for the cue times: the families of the
+    // palettes, and every channel of the pan and tilt goes with the
+    // position (a rotation too, which a palette doesn't record)
+    struct Probe
+    {
+        const char *name;
+        QLCChannel::Preset preset;
+        QLCChannel::Group group;
+        int expected;
+    };
+    const QList<Probe> probes = {
+        { "Dimmer", QLCChannel::IntensityDimmer, QLCChannel::Intensity, Cuelist::TimeIntensity },
+        { "Dimmer fine", QLCChannel::IntensityMasterDimmerFine, QLCChannel::Intensity, Cuelist::TimeIntensity },
+        { "Red", QLCChannel::IntensityRed, QLCChannel::Intensity, Cuelist::TimeColour },
+        { "Hue", QLCChannel::IntensityHue, QLCChannel::Intensity, Cuelist::TimeColour },
+        { "Strobe", QLCChannel::ShutterStrobeSlowFast, QLCChannel::Shutter, Cuelist::TimeIntensity },
+        { "Iris", QLCChannel::ShutterIrisMinToMax, QLCChannel::Shutter, Cuelist::TimeBeam },
+        { "Pan", QLCChannel::PositionPan, QLCChannel::Pan, Cuelist::TimePosition },
+        { "Pan fine", QLCChannel::PositionPanFine, QLCChannel::Pan, Cuelist::TimePosition },
+        { "Pan continuous rotation", QLCChannel::Custom, QLCChannel::Pan, Cuelist::TimePosition },
+        { "Pan/Tilt speed", QLCChannel::SpeedPanTiltFastSlow, QLCChannel::Speed, Cuelist::TimePosition },
+        { "Colour wheel", QLCChannel::ColorWheel, QLCChannel::Colour, Cuelist::TimeColour },
+        { "Gobo", QLCChannel::GoboWheel, QLCChannel::Gobo, Cuelist::TimeBeam },
+        { "Zoom", QLCChannel::BeamZoomSmallBig, QLCChannel::Beam, Cuelist::TimeBeam },
+        { "Prism rotation", QLCChannel::PrismRotationSlowFast, QLCChannel::Prism, Cuelist::TimeBeam },
+        { "Effect speed", QLCChannel::Custom, QLCChannel::Speed, Cuelist::TimeBeam },
+        { "Macro", QLCChannel::Custom, QLCChannel::Effect, Cuelist::TimeBeam },
+        { "Reset", QLCChannel::Custom, QLCChannel::Maintenance, -1 },
+        { "Spare", QLCChannel::Custom, QLCChannel::Nothing, -1 },
+    };
+    for (const Probe &probe : probes)
+    {
+        QLCChannel ch;
+        ch.setName(probe.name);
+        if (probe.preset == QLCChannel::Custom)
+            ch.setGroup(probe.group);
+        else
+            ch.setPreset(probe.preset);
+        QVERIFY2(Cuelist::timeGroupOf(&ch) == probe.expected,
+                 qPrintable(QString("%1: %2").arg(probe.name).arg(Cuelist::timeGroupOf(&ch))));
+        // the palettes put it in the same family (not the rotation)
+        if (QLatin1String(probe.name) != QLatin1String("Pan continuous rotation"))
+            QCOMPARE(PaletteManager::typeOf(&ch), Cuelist::timeGroupToString(probe.expected));
+        else
+            QCOMPARE(PaletteManager::typeOf(&ch), QString());
+    }
+    QCOMPARE(Cuelist::timeGroupOf(nullptr), -1);
+
+    // the names in a show file
+    for (int group = 0; group < Cuelist::TimeGroupCount; group++)
+        QCOMPARE(Cuelist::stringToTimeGroup(Cuelist::timeGroupToString(group)), group);
+    QCOMPARE(Cuelist::timeGroupToString(Cuelist::TimePosition), QString("position"));
+    QCOMPARE(Cuelist::stringToTimeGroup("BEAM"), int(Cuelist::TimeBeam));
+    QCOMPARE(Cuelist::stringToTimeGroup("gobo"), -1);
+    QCOMPARE(Cuelist::stringToTimeGroup(QString()), -1);
+    QCOMPARE(Cuelist::timeGroupToString(-1), QString());
+    QCOMPARE(Cuelist::timeGroupToString(Cuelist::TimeGroupCount), QString());
+
+    // on a fixture of the library
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 1, 1), 1);
+    const Fixture *spot = m_doc->fixtures().first();
+    const QList<int> groups = { Cuelist::TimePosition, Cuelist::TimePosition, Cuelist::TimePosition,
+                                Cuelist::TimePosition, Cuelist::TimePosition, Cuelist::TimeIntensity,
+                                Cuelist::TimeIntensity, Cuelist::TimeColour, Cuelist::TimeBeam, Cuelist::TimeBeam,
+                                Cuelist::TimeBeam, Cuelist::TimeBeam, Cuelist::TimeBeam, -1 };
+    for (quint32 c = 0; c < spot->channels(); c++)
+        QVERIFY2(Cuelist::timeGroupOf(spot->channel(c)) == groups.at(int(c)), qPrintable(spot->channel(c)->name()));
+}
+
+void Backend_Test::cuelistAttributeTimes()
+{
+    // a cue with fade 0 and times of its own for the position: on GO the
+    // dimmer and the colour snap, the 16-bit pan waits for its delay, then
+    // fades, both bytes together. The intensity fade goes for the dimmer, up
+    // and down (DOWN "="); a DOWN of the cue wins over it. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 21, 1), 1);
+    quint32 spot = 0, par = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->name().startsWith("Spot") ? spot : par) = f->id();
+    const Key pan(spot, 0), panFine(spot, 1), dimmer(spot, 5), red(par, 0);
+    const int aPan = 0, aPanFine = 1, aDimmer = 5, aRed = 20;
+    const int tick = int(MasterTimer::tick());
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    auto about = [&](int frames, int ms) { return frames >= 0 && qAbs(frames * tick - ms) <= 3 * tick; };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { pan, 0 }, { panFine, 0 }, { dimmer, 0 }, { red, 0 } })), 0);
+    Cuelist::Cue move = testCue(2000, { { pan, 255 }, { panFine, 255 }, { dimmer, 255 }, { red, 255 } });
+    move.groupTimes.insert(Cuelist::TimePosition, cueTime(1000, 500));
+    QCOMPARE(cl->addCue(move), 1);
+    // the intensity in 1 s: down, up, then down with a DOWN of 200 ms
+    QMap<int, Cuelist::PartTime> intensity;
+    intensity.insert(Cuelist::TimeIntensity, cueTime(1000, -1));
+    Cuelist::Cue dim = testCue(3000, { { dimmer, 0 } });
+    dim.groupTimes = intensity;
+    QCOMPARE(cl->addCue(dim), 2);
+    Cuelist::Cue up = testCue(4000, { { dimmer, 255 } });
+    up.groupTimes = intensity;
+    QCOMPARE(cl->addCue(up), 3);
+    Cuelist::Cue down = testCue(5000, { { dimmer, 0 } }, 0, 200);
+    down.groupTimes = intensity;
+    QCOMPARE(cl->addCue(down), 4);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+
+    // GO: 200 ms later the dimmer and the red are there, the pan hasn't moved
+    cl->go();
+    renderFrames(m_doc, 10);
+    QCOMPARE(out(aDimmer), 255);
+    QCOMPARE(out(aRed), 255);
+    QCOMPARE(out(aPan), 0);
+    QCOMPARE(out(aPanFine), 0);
+    // at 1000 ms it is half way
+    renderFrames(m_doc, 40);
+    QVERIFY2(out(aPan) > 64 && out(aPan) < 192, qPrintable(QString::number(out(aPan))));
+    // both bytes there at 1500 ms
+    int frames = framesUntil(m_doc, [&]() { return out(aPan) == 255 && out(aPanFine) == 255; }, 200);
+    QVERIFY2(about(50 + frames, 1500), qPrintable(QString::number(frames)));
+
+    // the dimmer down in the intensity fade, the red stays
+    cl->go();
+    renderFrames(m_doc);
+    frames = framesUntil(m_doc, [&]() { return out(aDimmer) == 0; }, 200);
+    QVERIFY2(about(frames + 1, 1000), qPrintable(QString::number(frames)));
+    QCOMPARE(out(aRed), 255);
+    QCOMPARE(out(aPan), 255);
+    // up in it too
+    cl->go();
+    renderFrames(m_doc);
+    frames = framesUntil(m_doc, [&]() { return out(aDimmer) == 255; }, 200);
+    QVERIFY2(about(frames + 1, 1000), qPrintable(QString::number(frames)));
+    // down with the DOWN of the cue
+    cl->go();
+    renderFrames(m_doc);
+    frames = framesUntil(m_doc, [&]() { return out(aDimmer) == 0; }, 200);
+    QVERIFY2(about(frames + 1, 200), qPrintable(QString::number(frames)));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistFixtureTimes()
+{
+    // a fixture with times of its own: it comes in after the others; its fade
+    // wins over the one of its attribute; its [RELEASE] takes its times too.
+    // Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 3), 3);
+    quint32 p1 = 0, p2 = 0, p3 = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->address() == 0 ? p1 : f->address() == 3 ? p2 : p3) = f->id();
+    const int a1 = 0, a2 = 3, a3 = 6;
+    const int tick = int(MasterTimer::tick());
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    auto about = [&](int frames, int ms) { return frames >= 0 && qAbs(frames * tick - ms) <= 3 * tick; };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Key(p1, 0), 0 }, { Key(p2, 0), 0 }, { Key(p3, 0), 0 } })), 0);
+    // the third par 600 ms after the others
+    Cuelist::Cue in = testCue(2000, { { Key(p1, 0), 255 }, { Key(p2, 0), 255 }, { Key(p3, 0), 255 } });
+    in.fixtureTimes.insert(p3, cueTime(-1, 600));
+    QCOMPARE(cl->addCue(in), 1);
+    // the colour fades in 1.5 s, but the first par in no time
+    Cuelist::Cue dark = testCue(3000, { { Key(p1, 0), 0 }, { Key(p2, 0), 0 } });
+    dark.groupTimes.insert(Cuelist::TimeColour, cueTime(1500, -1));
+    dark.fixtureTimes.insert(p1, cueTime(0, -1));
+    QCOMPARE(cl->addCue(dark), 2);
+    // the third par released in its own 1 s
+    Cuelist::Cue release = testCue(4000, {});
+    release.releases.insert(Key(p3, 0));
+    release.fixtureTimes.insert(p3, cueTime(1000, -1));
+    QCOMPARE(cl->addCue(release), 3);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(a1), 255);
+    QCOMPARE(out(a2), 255);
+    QCOMPARE(out(a3), 0);
+    int frames = framesUntil(m_doc, [&]() { return out(a3) > 0; }, 100);
+    QVERIFY2(about(2 + frames, 600), qPrintable(QString::number(frames)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(a3) == 255; }, 3) >= 0);
+
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(a1), 0);
+    QVERIFY2(out(a2) > 200, qPrintable(QString::number(out(a2))));
+    frames = framesUntil(m_doc, [&]() { return out(a2) == 0; }, 200);
+    QVERIFY2(about(2 + frames, 1500), qPrintable(QString::number(frames)));
+    QCOMPARE(out(a3), 255);
+
+    cl->go();
+    renderFrames(m_doc, 25);
+    QVERIFY2(out(a3) > 64 && out(a3) < 192, qPrintable(QString::number(out(a3))));
+    frames = framesUntil(m_doc, [&]() { return out(a3) == 0; }, 200);
+    QVERIFY2(about(25 + frames, 1000), qPrintable(QString::number(frames)));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistTimesOverride()
+{
+    // one time for everything: the fade-in of a group on the first cue, and a
+    // BACK time. A BACK with the times of the cues takes all the times of the
+    // cue it goes back to. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(m_doc->fixtures().first()->id(), 0);
+    const int tick = int(MasterTimer::tick());
+    auto out = [&]() { return renderedValue(m_doc, 0); };
+    auto about = [&](int frames, int ms) { return frames >= 0 && qAbs(frames * tick - ms) <= 3 * tick; };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    // the colour of cue 1: 1 s later, in 2 s
+    Cuelist::Cue first = testCue(1000, { { red, 255 } });
+    first.groupTimes.insert(Cuelist::TimeColour, cueTime(2000, 1000));
+    QCOMPARE(cl->addCue(first), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { red, 0 } })), 1);
+
+    // the fade-in of a group (400 ms): no delay, no 2 s
+    cl->start(m_doc->masterTimer(), FunctionParent::master(), 0, 400);
+    renderFrames(m_doc, 10);
+    QVERIFY2(out() > 64 && out() < 192, qPrintable(QString::number(out())));
+    int frames = framesUntil(m_doc, [&]() { return out() == 255; }, 100);
+    QVERIFY2(about(10 + frames, 400), qPrintable(QString::number(frames)));
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(), 0);
+
+    // a BACK time of 300 ms
+    cl->setBackTime(300);
+    cl->back();
+    renderFrames(m_doc);
+    frames = framesUntil(m_doc, [&]() { return out() == 255; }, 100);
+    QVERIFY2(about(1 + frames, 300), qPrintable(QString::number(frames)));
+    QCOMPARE(cl->status().current, 0);
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(), 0);
+
+    // BACK with the times of the cues: cue 1's delay and fade
+    cl->setBackTime(-1);
+    cl->back();
+    renderFrames(m_doc, 40);
+    QCOMPARE(out(), 0);
+    QVERIFY(cl->status().fading);
+    frames = framesUntil(m_doc, [&]() { return out() == 255; }, 300);
+    QVERIFY2(about(40 + frames, 3000), qPrintable(QString::number(frames)));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistLengthWithParts()
+{
+    // a cue lasts as long as its longest time: Follow waits for it, the
+    // length of the list in a super scene and the status count it
+    typedef Cuelist::Key Key;
+    Cuelist::Cue cue;
+    cue.fade = 1000;
+    QVERIFY(cue.hasOwnTimes() == false);
+    QCOMPARE(cue.length(), 1000u);
+    cue.groupTimes.insert(Cuelist::TimePosition, cueTime(2000, 500));
+    QVERIFY(cue.hasOwnTimes());
+    QCOMPARE(cue.length(), 2500u);
+    // fixture 7 starts 3 s later, with the fade of its attribute
+    cue.fixtureTimes.insert(7, cueTime(-1, 3000));
+    QCOMPARE(cue.length(), 5000u);
+    QCOMPARE(timesText(cue.timesFor(7, Cuelist::TimePosition)), QString("2000/2000/3000"));
+    QCOMPARE(timesText(cue.timesFor(7, Cuelist::TimeColour)), QString("1000/1000/3000"));
+    QCOMPARE(timesText(cue.timesFor(8, Cuelist::TimePosition)), QString("2000/2000/500"));
+    QCOMPARE(timesText(cue.timesFor(8, -1)), QString("1000/1000/0"));
+    // the DOWN of the cue wins over the attribute fade, a fixture fade over it
+    cue.downFade = 6000;
+    QCOMPARE(timesText(cue.timesFor(8, Cuelist::TimePosition)), QString("2000/6000/500"));
+    QCOMPARE(cue.length(), 9000u);
+    cue.fixtureTimes.insert(9, cueTime(100, -1));
+    QCOMPARE(timesText(cue.timesFor(9, Cuelist::TimeIntensity)), QString("100/100/0"));
+    QCOMPARE(cue.length(), 9000u);
+    // an attribute time counts also where the cue doesn't change it
+    cue.downFade = -1;
+    cue.fixtureTimes.clear();
+    cue.groupTimes.insert(Cuelist::TimeBeam, cueTime(-1, 4000));
+    QCOMPARE(cue.length(), 5000u);
+    cue.groupTimes.clear();
+    QCOMPARE(cue.length(), 1000u);
+
+    // on the output: cue 2 follows when the second par of cue 1 is there (1 s)
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    quint32 p1 = 0, p2 = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->address() == 0 ? p1 : p2) = f->id();
+    const int tick = int(MasterTimer::tick());
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue first = testCue(1000, { { Key(p1, 0), 255 }, { Key(p2, 0), 255 } }, 200);
+    first.fixtureTimes.insert(p2, cueTime(600, 400));
+    QCOMPARE(cl->addCue(first), 0);
+    Cuelist::Cue second = testCue(2000, { { Key(p1, 1), 255 } }, 0, -1, 0, Cuelist::TriggerFollow, 0);
+    second.groupTimes.insert(Cuelist::TimeColour, cueTime(700, -1));
+    QCOMPARE(cl->addCue(second), 1);
+    // a super scene block: 1 s, then the 700 ms of cue 2
+    QCOMPARE(cl->totalDuration(), 1700u);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    // the status of cue 1 counts its longest time
+    renderFrames(m_doc, 24);
+    QVERIFY(cl->status().fading);
+    QVERIFY2(qAbs(cl->status().progress - 0.5) < 0.05, qPrintable(QString::number(cl->status().progress)));
+    const int frames = framesUntil(m_doc, [&]() { return cl->status().current == 1; }, 200);
+    QVERIFY2(frames > 0 && qAbs((25 + frames) * tick - 1000) <= 2 * tick, qPrintable(QString::number(frames)));
+    // and the one of cue 2 the colour time, not its own fade of 0
+    renderFrames(m_doc, 10);
+    QVERIFY(cl->status().fading);
+    QVERIFY2(cl->status().progress > 0.15 && cl->status().progress < 0.5,
+             qPrintable(QString::number(cl->status().progress)));
+    QVERIFY(framesUntil(m_doc, [&]() { return cl->status().fading == false; }, 100) > 15);
+    QCOMPARE(cl->status().progress, 1.0);
+    QCOMPARE(renderedValue(m_doc, 1), 255);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistTimesXml()
+{
+    // the times of attributes and fixtures in the show: after the other
+    // contents of the cue, in order, only the times that are set; the same
+    // show saves the same file; what a damaged file holds is skipped
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    quint32 p1 = 0, p2 = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->address() == 0 ? p1 : p2) = f->id();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Key(p1, 0), 255 } })), 0);
+    Cuelist::Cue timed = testCue(2000, { { Key(p1, 1), 100 }, { Key(p2, 1), 100 } }, 1000);
+    timed.fxReleases.insert(Cuelist::FxKey("dimmer", p1));
+    timed.groupTimes.insert(Cuelist::TimePosition, cueTime(3000, 1000));
+    timed.groupTimes.insert(Cuelist::TimeIntensity, cueTime(500, -1));
+    timed.fixtureTimes.insert(p2, cueTime(-1, 2000));
+    timed.fixtureTimes.insert(p1, cueTime(0, 0));
+    QCOMPARE(cl->addCue(timed), 1);
+
+    auto saved = [](const Function *function) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        function->saveXML(&writer);
+        buffer.close();
+        return QString::fromUtf8(buffer.data());
+    };
+    const QString text = saved(cl);
+    const QString intensity = "<Time Attr=\"intensity\" Fade=\"500\"/>";
+    const QString position = "<Time Attr=\"position\" Fade=\"3000\" Delay=\"1000\"/>";
+    const QString first = QString("<Time F=\"%1\" Fade=\"0\" Delay=\"0\"/>").arg(p1);
+    const QString second = QString("<Time F=\"%1\" Delay=\"2000\"/>").arg(p2);
+    QVERIFY2(text.contains(intensity) && text.contains(position) && text.contains(first) && text.contains(second),
+             qPrintable(text));
+    QVERIFY(text.indexOf("<FxR ") < text.indexOf(intensity));
+    QVERIFY(text.indexOf(intensity) < text.indexOf(position));
+    QVERIFY(text.indexOf(position) < text.indexOf(first));
+    QVERIFY(text.indexOf(first) < text.indexOf(second));
+    // the cue without them writes none
+    QCOMPARE(text.count("<Time "), 4);
+    QVERIFY(text.indexOf("<Time ") > text.indexOf("Number=\"2000\""));
+    // saved twice: the same
+    QCOMPARE(saved(cl), text);
+
+    // loaded: the same cues, and saved again the same file
+    {
+        Doc other(this);
+        other.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(other.loadXML(reader, false));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QVERIFY(loaded->cues() == cl->cues());
+        QCOMPARE(partText(loaded->cueAt(1).fixtureTimes.value(p1)), QString("0/0"));
+        QVERIFY(loaded->cueAt(0).hasOwnTimes() == false);
+        QCOMPARE(saved(loaded), text);
+    }
+
+    // damaged times are skipped (an attribute it doesn't know, no attribute
+    // nor fixture, no time, not numbers); out of range is an hour; and the
+    // fixtures that are not in the show go, as their channels
+    const QString handmade = QString(
+        "<Engine>"
+        "<Function ID=\"60\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\"><V F=\"%1\" C=\"0\">255</V>"
+        "<Time Attr=\"gobo\" Fade=\"100\"/><Time Fade=\"100\"/><Time Attr=\"beam\" Fade=\"x\" Delay=\"-5\"/>"
+        "<Time F=\"abc\" Fade=\"100\"/><Time Attr=\"colour\" Fade=\"99999999\"/>"
+        "<Time Attr=\"BEAM\" Delay=\"40\"/><Time F=\"%1\" Fade=\"-1\" Delay=\"300\"/>"
+        "<Time Attr=\"position\" Fade=\"10\"><Deep><Deeper/></Deep></Time>"
+        "<Time F=\"99\" Fade=\"100\"/></Cue>"
+        "<Cue Uid=\"2\" Number=\"2000\"><V F=\"%1\" C=\"1\">9</V></Cue>"
+        "</Function>"
+        "</Engine>").arg(p1);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());   // Engine
+    QVERIFY(reader.readNextStartElement());   // the cuelist
+    QVERIFY(Function::loader(reader, m_doc));
+    QVERIFY(reader.hasError() == false);
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(60));
+    QVERIFY(hand != nullptr);
+    hand->postLoad();
+    QCOMPARE(hand->cueCount(), 2);
+    const Cuelist::Cue c1 = hand->cueAt(0);
+    QCOMPARE(c1.groupTimes.keys(), QList<int>({ Cuelist::TimeColour, Cuelist::TimePosition, Cuelist::TimeBeam }));
+    QCOMPARE(partText(c1.groupTimes.value(Cuelist::TimeColour)), QString("3600000/-1"));
+    QCOMPARE(partText(c1.groupTimes.value(Cuelist::TimePosition)), QString("10/-1"));
+    QCOMPARE(partText(c1.groupTimes.value(Cuelist::TimeBeam)), QString("-1/40"));
+    QCOMPARE(c1.fixtureTimes.keys(), QList<quint32>({ p1 }));
+    QCOMPARE(partText(c1.fixtureTimes.value(p1)), QString("-1/300"));
+    QVERIFY(hand->cueAt(1).hasOwnTimes() == false);
+    QCOMPARE(hand->cueAt(1).values.value(Key(p1, 1)), uchar(9));
+
+    // a fixture removed from the show takes its times out of every cue
+    QSignalSpy edits(cl, SIGNAL(changed(quint32)));
+    m_patch->removeFixture(p2);
+    QVERIFY(edits.count() >= 1);
+    QCOMPARE(cl->cueAt(1).fixtureTimes.keys(), QList<quint32>({ p1 }));
+    QCOMPARE(cl->cueAt(1).groupTimes.count(), 2);
+}
+
+void Backend_Test::cuelistTimesImport()
+{
+    // a cuelist from an effects file, on the fixtures of this show: the
+    // times of the fixtures follow them, the ones without a match go, the
+    // times of the attributes stay
+    typedef Cuelist::Key Key;
+    auto at = [](Doc *doc, quint32 address) {
+        for (Fixture *f : doc->fixtures())
+            if (f->address() == address)
+                return f->id();
+        return Fixture::invalidId();
+    };
+
+    QByteArray exported;
+    quint32 otherPar = 0;
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(other.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+        QCOMPARE(other.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Lost", 0, 101, 1), 1);
+        const quint32 par = at(other.doc(), 0), lost = at(other.doc(), 100);
+        otherPar = par;
+        Cuelist *cl = new Cuelist(other.doc());
+        cl->setName("Song");
+        QVERIFY(other.doc()->addFunction(cl));
+        Cuelist::Cue cue = testCue(1000, { { Key(par, 0), 255 }, { Key(lost, 0), 255 } });
+        cue.groupTimes.insert(Cuelist::TimeColour, cueTime(1500, 250));
+        cue.fixtureTimes.insert(par, cueTime(700, 100));
+        cue.fixtureTimes.insert(lost, cueTime(-1, 900));
+        QCOMPARE(cl->addCue(cue), 0);
+        exported = EffectExchange::exportXml(other.doc(), cl->id());
+    }
+
+    // this show: the par at the same address after another fixture (another ID), no lost
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Other", 0, 201, 1), 1);
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = at(core.doc(), 0);
+    QVERIFY(par != otherPar);
+
+    QString error;
+    int missing = -1;
+    const quint32 id = EffectExchange::importXml(core.doc(), exported, &error, &missing);
+    QVERIFY2(id != Function::invalidId(), qPrintable(error));
+    QCOMPARE(missing, 1);
+    Cuelist *imported = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(imported != nullptr);
+    const Cuelist::Cue cue = imported->cueAt(0);
+    QCOMPARE(cue.fixtureTimes.keys(), QList<quint32>({ par }));
+    QCOMPARE(partText(cue.fixtureTimes.value(par)), QString("700/100"));
+    QCOMPARE(cue.groupTimes.keys(), QList<int>({ Cuelist::TimeColour }));
+    QCOMPARE(partText(cue.groupTimes.value(Cuelist::TimeColour)), QString("1500/250"));
+}
+
+void Backend_Test::cuelistEditorTimes()
+{
+    // the editor: the times of the cues it shows, the attribute and fixture
+    // times of one cue or several (-1 leaves a time, -2 is the cue's again),
+    // Record takes the attribute times of the cue before, a copy all of them,
+    // and every edit is an undo step
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    Programmer *prog = core.programmer();
+    QVERIFY(p1 < p2);
+    auto seconds = [](double s, int decimals) { return QLocale().toString(s, 'f', decimals) + " s"; };
+
+    // an edit: one undo step with its name, undone and redone
+    auto check = [&](const QString &label, const std::function<void()> &edit) {
+        const QList<Cuelist::Cue> before = cl->cues();
+        edit();
+        const QList<Cuelist::Cue> after = cl->cues();
+        QVERIFY2(after != before, qPrintable(label));
+        QCOMPARE(editor->undoState(id).value("undo").toString(), label);
+        editor->undo(id);
+        QVERIFY2(cl->cues() == before, qPrintable(label));
+        editor->redo(id);
+        QVERIFY2(cl->cues() == after, qPrintable(label));
+    };
+
+    // what a cue shows: its times, the four attributes, no fixtures yet
+    editor->setCueTimes(id, { 1 }, 1200, -1, 100);
+    QVariantMap times = editor->cueTimes(id, 1);
+    QCOMPARE(times.value("fade").toInt(), 1200);
+    QCOMPARE(times.value("downFade").toInt(), -1);
+    QCOMPARE(times.value("delay").toInt(), 100);
+    QCOMPARE(times.value("length").toInt(), 1300);
+    QVariantList attributes = times.value("attributes").toList();
+    QCOMPARE(attributes.count(), 4);
+    QStringList names;
+    for (const QVariant &a : std::as_const(attributes))
+    {
+        names << a.toMap().value("attribute").toString();
+        QCOMPARE(a.toMap().value("fade").toInt(), -1);
+        QCOMPARE(a.toMap().value("delay").toInt(), -1);
+    }
+    QCOMPARE(names, QStringList({ "intensity", "colour", "position", "beam" }));
+    QVERIFY(times.value("fixtures").toList().isEmpty());
+    QVERIFY(editor->cueTimes(id, 3).isEmpty());
+    QVERIFY(editor->cueTimes(id + 100, 0).isEmpty());
+    QCOMPARE(editor->cues(id).at(1).toMap().value("ownTimes").toInt(), 0);
+    QCOMPARE(editor->cues(id).at(1).toMap().value("timesText").toString(), QString());
+
+    // an attribute on two cues; -1 leaves the other time, -2 gives it back
+    // to the cue (no time left: no part)
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1, 2 }, "position", 2000, 500); });
+    QCOMPARE(partText(cl->cueAt(1).groupTimes.value(Cuelist::TimePosition)), QString("2000/500"));
+    QCOMPARE(partText(cl->cueAt(2).groupTimes.value(Cuelist::TimePosition)), QString("2000/500"));
+    QVERIFY(cl->cueAt(0).hasOwnTimes() == false);
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1 }, "Position", -1, 800); });
+    QCOMPARE(partText(cl->cueAt(1).groupTimes.value(Cuelist::TimePosition)), QString("2000/800"));
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1 }, "position", -2, -1); });
+    QCOMPARE(partText(cl->cueAt(1).groupTimes.value(Cuelist::TimePosition)), QString("-1/800"));
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1 }, "position", -1, -2); });
+    QVERIFY(cl->cueAt(1).groupTimes.isEmpty());
+    // an attribute it doesn't know: nothing, no step
+    const QVariantMap undoBefore = editor->undoState(id);
+    const QList<Cuelist::Cue> cuesBefore = cl->cues();
+    editor->setAttributeTime(id, { 1 }, "gobo", 100, 100);
+    QVERIFY(cl->cues() == cuesBefore);
+    QCOMPARE(editor->undoState(id), undoBefore);
+    // the wheel on the same time of the same cues: one step
+    const int depth = undoDepth(editor, id);
+    for (int notch = 1; notch <= 5; notch++)
+        editor->setAttributeTime(id, { 2 }, "position", 2000 + notch * 100, -1);
+    QCOMPARE(undoDepth(editor, id), depth + 1);
+    QCOMPARE(partText(cl->cueAt(2).groupTimes.value(Cuelist::TimePosition)), QString("2500/500"));
+
+    // the cues of the table: how many parts, and what they say
+    QVariantMap row = editor->cues(id).at(2).toMap();
+    QCOMPARE(row.value("ownTimes").toInt(), 1);
+    QCOMPARE(row.value("timesText").toString(), QString("Position %1 + %2").arg(seconds(0.5, 1), seconds(2.5, 1)));
+    times = editor->cueTimes(id, 2);
+    QCOMPARE(times.value("attributes").toList().at(2).toMap().value("fade").toInt(), 2500);
+    QCOMPARE(times.value("attributes").toList().at(2).toMap().value("delay").toInt(), 500);
+
+    // fixtures: added with the times of each cue (a fixture not in the show
+    // is not), the ones that have times keep them
+    editor->setCueTimes(id, { 2 }, 1500, -1, 0);
+    check("Fixture times", [&]() { editor->addFixtureTimes(id, { 1, 2 }, { p2, 9999 }); });
+    QCOMPARE(cl->cueAt(1).fixtureTimes.keys(), QList<quint32>({ p2 }));
+    QCOMPARE(partText(cl->cueAt(1).fixtureTimes.value(p2)), QString("1200/100"));
+    QCOMPARE(partText(cl->cueAt(2).fixtureTimes.value(p2)), QString("1500/0"));
+    check("Fixture times", [&]() { editor->setFixtureTimes(id, { 2 }, { p2 }, 300, -1); });
+    QCOMPARE(partText(cl->cueAt(2).fixtureTimes.value(p2)), QString("300/0"));
+    check("Fixture times", [&]() { editor->addFixtureTimes(id, { 2 }, { p1, p2 }); });
+    QCOMPARE(partText(cl->cueAt(2).fixtureTimes.value(p1)), QString("1500/0"));
+    QCOMPARE(partText(cl->cueAt(2).fixtureTimes.value(p2)), QString("300/0"));
+    // the fixtures a cue shows, by ID, with their names
+    QVariantList fixtures = editor->cueTimes(id, 2).value("fixtures").toList();
+    QCOMPARE(fixtures.count(), 2);
+    QCOMPARE(fixtures.at(0).toMap().value("fixture").toUInt(), p1);
+    QCOMPARE(fixtures.at(0).toMap().value("name").toString(), core.doc()->fixture(p1)->name());
+    QCOMPARE(fixtures.at(1).toMap().value("fade").toInt(), 300);
+    QCOMPARE(fixtures.at(1).toMap().value("delay").toInt(), 0);
+    row = editor->cues(id).at(2).toMap();
+    QCOMPARE(row.value("ownTimes").toInt(), 3);
+    QCOMPARE(row.value("timesText").toString(),
+             QString("Position %1 + %2 · 2 fixtures").arg(seconds(0.5, 1), seconds(2.5, 1)));
+    // no time left: no part; a fixture out of some cues; all of them
+    check("Fixture times", [&]() { editor->setFixtureTimes(id, { 2 }, { p1 }, -2, -2); });
+    QCOMPARE(cl->cueAt(2).fixtureTimes.keys(), QList<quint32>({ p2 }));
+    check("Fixture times", [&]() { editor->clearFixtureTimes(id, { 1, 2 }, { p2 }); });
+    QVERIFY(cl->cueAt(1).fixtureTimes.isEmpty());
+    QVERIFY(cl->cueAt(2).fixtureTimes.isEmpty());
+    editor->addFixtureTimes(id, { 2 }, { p1, p2 });
+    check("Fixture times", [&]() { editor->clearFixtureTimes(id, { 2 }, {}); });
+    QVERIFY(cl->cueAt(2).fixtureTimes.isEmpty());
+    QCOMPARE(cl->cueAt(2).groupTimes.count(), 1);
+
+    // Record: the attribute times of the cue before it, not its fixture times
+    editor->setAttributeTime(id, { 2 }, "colour", 700, -1);
+    editor->addFixtureTimes(id, { 2 }, { p1 });
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("green", 90);
+    QCOMPARE(editor->recordCue(id), 3);
+    prog->clear();
+    QVERIFY(cl->cueAt(3).groupTimes == cl->cueAt(2).groupTimes);
+    QCOMPARE(cl->cueAt(3).groupTimes.count(), 2);
+    QVERIFY(cl->cueAt(3).fixtureTimes.isEmpty());
+    // a copy: all of them
+    QCOMPARE(editor->copyCue(id, 2, "", false), 4);
+    QVERIFY(cl->cueAt(4).groupTimes == cl->cueAt(2).groupTimes);
+    QVERIFY(cl->cueAt(4).fixtureTimes == cl->cueAt(2).fixtureTimes);
+    QCOMPARE(cl->cueAt(4).fixtureTimes.count(), 1);
+
+    // the fixtures a cue changes: values, releases, FX releases
+    QCOMPARE(editor->cueFixtures(id, 0), QVariantList({ p1, p2 }));
+    QCOMPARE(editor->cueFixtures(id, 1), QVariantList({ p1 }));
+    QVERIFY(editor->releaseKeysInCue(id, 1, { QString("%1:3").arg(p2) }));
+    QCOMPARE(editor->cueFixtures(id, 1), QVariantList({ p1, p2 }));
+    QVERIFY(editor->releaseKeysInCue(id, 3, { QString("%1:dimmer").arg(p2) }));
+    QCOMPARE(editor->cueFixtures(id, 3), QVariantList({ p1, p2 }));
+    QVERIFY(editor->cueFixtures(id, 9).isEmpty());
+
+    // a fixture deleted: its times don't come back with an undo or a redo
+    editor->addFixtureTimes(id, { 0 }, { p2 });
+    QVERIFY(cl->cueAt(0).fixtureTimes.contains(p2));
+    QVERIFY(core.doc()->deleteFixture(p2));
+    QVERIFY(cl->cueAt(0).fixtureTimes.isEmpty());
+    editor->undo(id);
+    QVERIFY(cl->cueAt(0).fixtureTimes.isEmpty());
+    editor->redo(id);
+    QVERIFY(cl->cueAt(0).fixtureTimes.isEmpty());
+}
+
+/*********************************************************************
+ * cuelists-cues G3: fade curves and time fans
+ *********************************************************************/
+
+/** A part of the times of a cue with a curve (-1: the cue's) */
+static Cuelist::PartTime curvedTime(int fade, int delay, int curve)
+{
+    Cuelist::PartTime part = cueTime(fade, delay);
+    part.curve = curve;
+    return part;
+}
+
+void Backend_Test::cuelistCurves()
+{
+    // the curve of a cue shapes the fades it makes: up, and a release to
+    // what's below; a BACK time and the release of the list are linear,
+    // whatever curve the channel had; the curve of the position in the
+    // attribute times shapes the pan and tilt only. Offline frames: 25 of
+    // them are half of a fade of 1 s, where a linear fade 0 -> 255 is at 128
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 11, 1), 1);
+    quint32 par = 0, spot = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->name().startsWith("Spot") ? spot : par) = f->id();
+    const Key red(par, 0), pan(spot, 0), panFine(spot, 1), dimmer(spot, 5);
+    const int aRed = 0, aPan = 10, aDimmer = 15;
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    auto half = [&](int address) { renderFrames(m_doc, 25); return out(address); };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(1000);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { red, 0 } })), 0);
+    Cuelist::Cue slow = testCue(2000, { { red, 255 } }, 1000);
+    slow.curve = FadeChannel::CurveSlowStart;
+    QCOMPARE(cl->addCue(slow), 1);
+    // at once: no time, no curve to see
+    Cuelist::Cue dark = testCue(3000, { { red, 0 } });
+    dark.curve = FadeChannel::CurveSlowStart;
+    QCOMPARE(cl->addCue(dark), 2);
+    Cuelist::Cue fast = testCue(4000, { { red, 255 } }, 1000);
+    fast.curve = FadeChannel::CurveFastStart;
+    QCOMPARE(cl->addCue(fast), 3);
+    Cuelist::Cue release = testCue(5000, {}, 1000);
+    release.releases.insert(red);
+    release.curve = FadeChannel::CurveSlowStart;
+    QCOMPARE(cl->addCue(release), 4);
+    Cuelist::Cue again = testCue(6000, { { red, 255 } });
+    again.curve = FadeChannel::CurveSlowStart;
+    QCOMPARE(cl->addCue(again), 5);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(aRed), 0);
+
+    // slow start: far below the linear half way (64); fast start: far above it (191)
+    cl->go();
+    int value = half(aRed);
+    QVERIFY2(value > 40 && value < 90, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 255; }, 30) >= 0);
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(aRed), 0);
+    cl->go();
+    value = half(aRed);
+    QVERIFY2(value > 160 && value < 220, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 255; }, 30) >= 0);
+
+    // a BACK time: linear, though the cue it goes back to has a curve
+    cl->setBackTime(1000);
+    cl->back();
+    value = half(aRed);
+    QVERIFY2(value > 100 && value < 156, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 0; }, 30) >= 0);
+    cl->setBackTime(-1);
+    cl->go();
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 255; }, 60) >= 0);
+
+    // released with a slow start: it is still high half way (191)
+    cl->go();
+    value = half(aRed);
+    QVERIFY2(value > 160 && value < 220, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 0; }, 30) >= 0);
+
+    // the release of the list: linear, from a channel that had a curve
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(aRed), 255);
+    cl->stop(FunctionParent::master());
+    value = half(aRed);
+    QVERIFY2(value > 100 && value < 156, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aRed) == 0; }, 60) >= 0);
+    renderFrames(m_doc, 2);
+
+    // the position with a slow start of its own: the 16-bit pan is low half
+    // way, the dimmer of the same cue fades linearly
+    Cuelist *moves = new Cuelist(m_doc);
+    moves->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(moves));
+    QCOMPARE(moves->addCue(testCue(1000, { { pan, 0 }, { panFine, 0 }, { dimmer, 0 } })), 0);
+    Cuelist::Cue move = testCue(2000, { { pan, 255 }, { panFine, 255 }, { dimmer, 255 } }, 1000);
+    move.groupTimes.insert(Cuelist::TimePosition, curvedTime(-1, -1, FadeChannel::CurveSlowStart));
+    QCOMPARE(moves->addCue(move), 1);
+    moves->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(aPan), 0);
+    moves->go();
+    value = half(aPan);
+    QVERIFY2(value > 40 && value < 90, qPrintable(QString::number(value)));
+    value = out(aDimmer);
+    QVERIFY2(value > 100 && value < 156, qPrintable(QString::number(value)));
+    QVERIFY(framesUntil(m_doc, [&]() { return out(aPan) == 255 && out(aDimmer) == 255; }, 30) >= 0);
+
+    moves->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistCurvesXml()
+{
+    // the curves in the show: a Curve on the cue and on the times of an
+    // attribute, only when set (a linear cue writes none); the same show
+    // saves the same file; a curve it doesn't know is linear, a number out
+    // of range is the nearest curve
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Key(par, 0), 255 } }, 500)), 0);
+    Cuelist::Cue curved = testCue(2000, { { Key(par, 1), 100 } }, 1000);
+    curved.curve = FadeChannel::CurveSmooth;
+    curved.groupTimes.insert(Cuelist::TimeColour, curvedTime(500, -1, FadeChannel::CurveLinear));
+    curved.groupTimes.insert(Cuelist::TimePosition, curvedTime(-1, -1, FadeChannel::CurveFastStart));
+    QCOMPARE(cl->addCue(curved), 1);
+
+    auto saved = [](const Function *function) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        function->saveXML(&writer);
+        buffer.close();
+        return QString::fromUtf8(buffer.data());
+    };
+    const QString text = saved(cl);
+    QVERIFY2(text.contains("Fade=\"1000\" Curve=\"smooth\""), qPrintable(text));
+    QVERIFY2(text.contains("<Time Attr=\"colour\" Fade=\"500\" Curve=\"linear\"/>"), qPrintable(text));
+    QVERIFY2(text.contains("<Time Attr=\"position\" Curve=\"faststart\"/>"), qPrintable(text));
+    QCOMPARE(text.count("Curve="), 3);
+    QVERIFY(text.indexOf("Curve=") > text.indexOf("Number=\"2000\""));
+    QCOMPARE(saved(cl), text);
+
+    // loaded: the same cues, and saved again the same file
+    {
+        Doc other(this);
+        other.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(other.loadXML(reader, false));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QVERIFY(loaded->cues() == cl->cues());
+        QCOMPARE(loaded->cueAt(0).curve, int(FadeChannel::CurveLinear));
+        QCOMPARE(loaded->cueAt(1).curve, int(FadeChannel::CurveSmooth));
+        QCOMPARE(loaded->cueAt(1).groupTimes.value(Cuelist::TimePosition).curve, int(FadeChannel::CurveFastStart));
+        QCOMPARE(saved(loaded), text);
+    }
+
+    // the names, either case; what it doesn't know is linear
+    for (int curve = FadeChannel::CurveLinear; curve <= FadeChannel::CurveFastStart; curve++)
+        QCOMPARE(Cuelist::stringToCurve(Cuelist::curveToString(curve)), curve);
+    QCOMPARE(Cuelist::curveToString(FadeChannel::CurveSlowStart), QString("slowstart"));
+    QCOMPARE(Cuelist::stringToCurve("FastStart"), int(FadeChannel::CurveFastStart));
+    QCOMPARE(Cuelist::stringToCurve("wobbly"), int(FadeChannel::CurveLinear));
+    QCOMPARE(Cuelist::stringToCurve(QString()), int(FadeChannel::CurveLinear));
+    QCOMPARE(Cuelist::curveToString(9), QString("linear"));
+
+    const QString handmade = QString(
+        "<Engine>"
+        "<Function ID=\"61\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\" Curve=\"wobbly\"><V F=\"%1\" C=\"0\">255</V>"
+        "<Time Attr=\"beam\" Curve=\"SlowStart\"/><Time Attr=\"intensity\" Curve=\"nope\"/>"
+        "<Time F=\"%1\" Delay=\"100\" Curve=\"smooth\"/></Cue>"
+        "<Cue Uid=\"2\" Number=\"2000\" Curve=\"FASTSTART\"><V F=\"%1\" C=\"1\">9</V></Cue>"
+        "</Function>"
+        "</Engine>").arg(par);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());   // Engine
+    QVERIFY(reader.readNextStartElement());   // the cuelist
+    QVERIFY(Function::loader(reader, m_doc));
+    QVERIFY(reader.hasError() == false);
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(61));
+    QVERIFY(hand != nullptr);
+    hand->postLoad();
+    QCOMPARE(hand->cueCount(), 2);
+    const Cuelist::Cue c1 = hand->cueAt(0);
+    QCOMPARE(c1.curve, int(FadeChannel::CurveLinear));
+    QCOMPARE(c1.groupTimes.value(Cuelist::TimeBeam).curve, int(FadeChannel::CurveSlowStart));
+    QCOMPARE(partText(c1.groupTimes.value(Cuelist::TimeBeam)), QString("-1/-1"));
+    QCOMPARE(c1.groupTimes.value(Cuelist::TimeIntensity).curve, int(FadeChannel::CurveLinear));
+    QCOMPARE(c1.fixtureTimes.value(par).curve, int(FadeChannel::CurveSmooth));
+    QCOMPARE(c1.timesFor(par, Cuelist::TimeBeam).curve, int(FadeChannel::CurveSmooth));
+    QCOMPARE(hand->cueAt(1).curve, int(FadeChannel::CurveFastStart));
+
+    // the curve a channel takes: the fixture's, else the attribute's, else the cue's
+    Cuelist::Cue cue;
+    cue.curve = FadeChannel::CurveSmooth;
+    QCOMPARE(cue.timesFor(par, Cuelist::TimeColour).curve, int(FadeChannel::CurveSmooth));
+    cue.groupTimes.insert(Cuelist::TimeColour, curvedTime(-1, -1, FadeChannel::CurveLinear));
+    QCOMPARE(cue.timesFor(par, Cuelist::TimeColour).curve, int(FadeChannel::CurveLinear));
+    QCOMPARE(cue.timesFor(par, Cuelist::TimeBeam).curve, int(FadeChannel::CurveSmooth));
+    cue.fixtureTimes.insert(par, curvedTime(-1, 200, FadeChannel::CurveFastStart));
+    QCOMPARE(cue.timesFor(par, Cuelist::TimeColour).curve, int(FadeChannel::CurveFastStart));
+    // a part with a curve only is a part, and doesn't change the length
+    QVERIFY(cue.hasOwnTimes());
+    QCOMPARE(cue.length(), 1200u);
+
+    // numbers out of range: the nearest curve; a part with none left goes
+    Cuelist::Cue wild = testCue(3000, { { Key(par, 2), 10 } });
+    wild.curve = 7;
+    wild.groupTimes.insert(Cuelist::TimeBeam, curvedTime(-1, -1, 9));
+    wild.groupTimes.insert(Cuelist::TimePosition, curvedTime(-1, -1, -5));
+    QCOMPARE(hand->addCue(wild), 2);
+    const Cuelist::Cue tidy = hand->cueAt(2);
+    QCOMPARE(tidy.curve, int(FadeChannel::CurveFastStart));
+    QCOMPARE(tidy.groupTimes.keys(), QList<int>({ Cuelist::TimeBeam }));
+    QCOMPARE(tidy.groupTimes.value(Cuelist::TimeBeam).curve, int(FadeChannel::CurveFastStart));
+    wild.number = 4000;
+    wild.curve = -3;
+    QCOMPARE(hand->addCue(wild), 3);
+    QCOMPARE(hand->cueAt(3).curve, int(FadeChannel::CurveLinear));
+}
+
+void Backend_Test::cuelistEditorCurves()
+{
+    // the editor: the curve of the cues it shows, of one cue or several, of
+    // an attribute ("" leaves it, "cue" gives it back to the cue); the
+    // summary of the times; Record takes the curve of the cue before, a copy
+    // keeps it; every edit is an undo step
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    Programmer *prog = core.programmer();
+    auto seconds = [](double s, int decimals) { return QLocale().toString(s, 'f', decimals) + " s"; };
+    auto check = [&](const QString &label, const std::function<void()> &edit) {
+        const QList<Cuelist::Cue> before = cl->cues();
+        edit();
+        const QList<Cuelist::Cue> after = cl->cues();
+        QVERIFY2(after != before, qPrintable(label));
+        QCOMPARE(editor->undoState(id).value("undo").toString(), label);
+        editor->undo(id);
+        QVERIFY2(cl->cues() == before, qPrintable(label));
+        editor->redo(id);
+        QVERIFY2(cl->cues() == after, qPrintable(label));
+    };
+    editor->setCueTimes(id, { 0, 1, 2 }, 1000, -1, 0);
+
+    // linear by default, in the table and in the times
+    QCOMPARE(editor->cues(id).at(1).toMap().value("curve").toString(), QString("linear"));
+    QVariantMap times = editor->cueTimes(id, 1);
+    QCOMPARE(times.value("curve").toString(), QString("linear"));
+    for (const QVariant &a : times.value("attributes").toList())
+        QCOMPARE(a.toMap().value("curve").toString(), QString());
+
+    // the curve of two cues
+    check("Curve", [&]() { editor->setCueCurve(id, { 1, 2 }, "slowstart"); });
+    QCOMPARE(cl->cueAt(0).curve, int(FadeChannel::CurveLinear));
+    QCOMPARE(cl->cueAt(1).curve, int(FadeChannel::CurveSlowStart));
+    QCOMPARE(cl->cueAt(2).curve, int(FadeChannel::CurveSlowStart));
+    QVariantMap row = editor->cues(id).at(1).toMap();
+    QCOMPARE(row.value("curve").toString(), QString("slowstart"));
+    QCOMPARE(row.value("ownTimes").toInt(), 0);
+    QCOMPARE(row.value("timesText").toString(), QString("Slow start"));
+    QCOMPARE(editor->cueTimes(id, 2).value("curve").toString(), QString("slowstart"));
+    // a curve it doesn't know is linear
+    editor->setCueCurve(id, { 2 }, "wobbly");
+    QCOMPARE(cl->cueAt(2).curve, int(FadeChannel::CurveLinear));
+    // clicked again and again on the same cues: one step
+    const int depth = undoDepth(editor, id);
+    editor->setCueCurve(id, { 1 }, "smooth");
+    editor->setCueCurve(id, { 1 }, "faststart");
+    QCOMPARE(undoDepth(editor, id), depth + 1);
+    QCOMPARE(cl->cueAt(1).curve, int(FadeChannel::CurveFastStart));
+
+    // an attribute: a curve of its own, with no time of its own
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1 }, "position", -1, -1, "smooth"); });
+    Cuelist::PartTime part = cl->cueAt(1).groupTimes.value(Cuelist::TimePosition);
+    QCOMPARE(part.curve, int(FadeChannel::CurveSmooth));
+    QCOMPARE(partText(part), QString("-1/-1"));
+    times = editor->cueTimes(id, 1);
+    QCOMPARE(times.value("attributes").toList().at(2).toMap().value("curve").toString(), QString("smooth"));
+    QCOMPARE(times.value("attributes").toList().at(1).toMap().value("curve").toString(), QString());
+    row = editor->cues(id).at(1).toMap();
+    QCOMPARE(row.value("ownTimes").toInt(), 1);
+    QCOMPARE(row.value("timesText").toString(),
+             QString("Fast start · Position %1 + %2 (Smooth)").arg(seconds(0, 0), seconds(1, 0)));
+    // "" leaves the curve, a time changes
+    editor->setAttributeTime(id, { 1 }, "position", 500, -1);
+    part = cl->cueAt(1).groupTimes.value(Cuelist::TimePosition);
+    QCOMPARE(part.curve, int(FadeChannel::CurveSmooth));
+    QCOMPARE(part.fade, 500);
+    // linear on two cues, then the cue's again: nothing left, no part
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1, 2 }, "colour", -1, -1, "linear"); });
+    QCOMPARE(cl->cueAt(2).groupTimes.value(Cuelist::TimeColour).curve, int(FadeChannel::CurveLinear));
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1, 2 }, "colour", -1, -1, "cue"); });
+    QVERIFY(cl->cueAt(1).groupTimes.contains(Cuelist::TimeColour) == false);
+    QVERIFY(cl->cueAt(2).groupTimes.isEmpty());
+    check("Attribute times", [&]() { editor->setAttributeTime(id, { 1 }, "position", -2, -1, "cue"); });
+    QVERIFY(cl->cueAt(1).groupTimes.isEmpty());
+
+    // Record: the curve of the cue before, and its attribute curves; a copy keeps them
+    editor->setAttributeTime(id, { 2 }, "beam", -1, -1, "faststart");
+    editor->setCueCurve(id, { 2 }, "smooth");
+    prog->selectFixtures({ p1 });
+    prog->setChannelValue("green", 90);
+    QCOMPARE(editor->recordCue(id), 3);
+    prog->clear();
+    QCOMPARE(cl->cueAt(3).curve, int(FadeChannel::CurveSmooth));
+    QCOMPARE(cl->cueAt(3).groupTimes.value(Cuelist::TimeBeam).curve, int(FadeChannel::CurveFastStart));
+    QCOMPARE(editor->copyCue(id, 1, "", false), 4);
+    QCOMPARE(cl->cueAt(4).curve, int(FadeChannel::CurveFastStart));
+}
+
+void Backend_Test::cuelistTimeFan()
+{
+    // a fan of delays or fades over fixtures, in the order given: the three
+    // shapes with 5, 4 and 1 fixtures, From above To, the other time of each
+    // fixture kept, several cues at once, and one undo step
+    DtcCore core;
+    // its frames offline, at the end: the timer of the core doesn't tick
+    // between them (ticking again before the core goes: it stops what plays)
+    core.doc()->masterTimer()->stop();
+    auto ticking = qScopeGuard([&core]() { core.doc()->masterTimer()->start(); });
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 5), 5);
+    QList<quint32> pars;
+    for (Fixture *f : core.doc()->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [&](quint32 a, quint32 b) {
+        return core.doc()->fixture(a)->address() < core.doc()->fixture(b)->address();
+    });
+    QVariantList five;
+    for (quint32 fid : std::as_const(pars))
+        five.append(fid);
+    const QVariantList four = five.mid(0, 4);
+    Programmer *prog = core.programmer();
+    CuelistEditor *editor = core.cuelists();
+    prog->selectFixtures(five);
+    prog->setChannelValue("red", 255);
+    const int listId = editor->create("Fan");
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    prog->clear();
+    prog->selectFixtures(five);
+    prog->setChannelValue("green", 255);
+    QCOMPARE(editor->recordCue(id), 1);
+    prog->clear();
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+
+    // the delays and fades of fixtures in a cue (-1: none of their own)
+    auto delays = [&](int index, const QVariantList &fixtures) {
+        QList<int> list;
+        for (const QVariant &f : fixtures)
+            list.append(cl->cueAt(index).fixtureTimes.value(f.toUInt()).delay);
+        return list;
+    };
+    auto fades = [&](int index, const QVariantList &fixtures) {
+        QList<int> list;
+        for (const QVariant &f : fixtures)
+            list.append(cl->cueAt(index).fixtureTimes.value(f.toUInt()).fade);
+        return list;
+    };
+
+    // 5 fixtures, delay 0 -> 2 s: one undo step
+    const QList<Cuelist::Cue> before = cl->cues();
+    editor->fanFixtureTimes(id, { 0 }, five, "delay", 0, 2000, "line");
+    QCOMPARE(delays(0, five), QList<int>({ 0, 500, 1000, 1500, 2000 }));
+    QCOMPARE(fades(0, five), QList<int>({ -1, -1, -1, -1, -1 }));
+    QVERIFY(cl->cueAt(1).fixtureTimes.isEmpty());
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Time fan"));
+    const QList<Cuelist::Cue> after = cl->cues();
+    editor->undo(id);
+    QVERIFY(cl->cues() == before);
+    editor->redo(id);
+    QVERIFY(cl->cues() == after);
+    editor->fanFixtureTimes(id, { 0 }, five, "delay", 0, 2000, "middle");
+    QCOMPARE(delays(0, five), QList<int>({ 2000, 1000, 0, 1000, 2000 }));
+    editor->fanFixtureTimes(id, { 0 }, five, "delay", 0, 2000, "ends");
+    QCOMPARE(delays(0, five), QList<int>({ 0, 1000, 2000, 1000, 0 }));
+
+    // 4 fixtures (the fifth keeps its time)
+    editor->fanFixtureTimes(id, { 0 }, four, "delay", 0, 2000, "line");
+    QCOMPARE(delays(0, five), QList<int>({ 0, 667, 1333, 2000, 0 }));
+    editor->fanFixtureTimes(id, { 0 }, four, "delay", 0, 2000, "middle");
+    QCOMPARE(delays(0, four), QList<int>({ 2000, 667, 667, 2000 }));
+    editor->fanFixtureTimes(id, { 0 }, four, "delay", 0, 2000, "ends");
+    QCOMPARE(delays(0, four), QList<int>({ 0, 1333, 1333, 0 }));
+
+    // 1 fixture: the start of the line and of the ends, the end of the middle
+    const QVariantList one = { pars.at(2) };
+    editor->fanFixtureTimes(id, { 0 }, one, "delay", 300, 900, "line");
+    QCOMPARE(delays(0, one), QList<int>({ 300 }));
+    editor->fanFixtureTimes(id, { 0 }, one, "delay", 300, 900, "middle");
+    QCOMPARE(delays(0, one), QList<int>({ 900 }));
+    editor->fanFixtureTimes(id, { 0 }, one, "delay", 300, 900, "ends");
+    QCOMPARE(delays(0, one), QList<int>({ 300 }));
+
+    // the fades, From above To: the delays stay
+    editor->fanFixtureTimes(id, { 0 }, five, "delay", 0, 2000, "line");
+    editor->fanFixtureTimes(id, { 0 }, five, "fade", 1000, 0, "line");
+    QCOMPARE(fades(0, five), QList<int>({ 1000, 750, 500, 250, 0 }));
+    QCOMPARE(delays(0, five), QList<int>({ 0, 500, 1000, 1500, 2000 }));
+
+    // the order given (reversed), on two cues at once
+    QVariantList reversed = five;
+    std::reverse(reversed.begin(), reversed.end());
+    editor->fanFixtureTimes(id, { 0, 1 }, reversed, "delay", 0, 2000, "line");
+    QCOMPARE(delays(0, five), QList<int>({ 2000, 1500, 1000, 500, 0 }));
+    QCOMPARE(delays(1, five), QList<int>({ 2000, 1500, 1000, 500, 0 }));
+    QCOMPARE(fades(0, five), QList<int>({ 1000, 750, 500, 250, 0 }));
+    QCOMPARE(fades(1, five), QList<int>({ -1, -1, -1, -1, -1 }));
+
+    // a fixture not in the show and the same one twice don't count; times
+    // past the limits are the limits
+    editor->fanFixtureTimes(id, { 1 }, { pars.at(0), 9999, pars.at(0), pars.at(1) }, "fade", -500, 99999999, "line");
+    QCOMPARE(fades(1, { pars.at(0), pars.at(1) }), QList<int>({ 0, 3600000 }));
+    QVERIFY(cl->cueAt(1).fixtureTimes.contains(9999) == false);
+
+    // a row edited by itself afterwards
+    editor->setFixtureTimes(id, { 0 }, { pars.at(2) }, -1, 1234);
+    QCOMPARE(delays(0, five), QList<int>({ 2000, 1500, 1234, 500, 0 }));
+    QCOMPARE(fades(0, five), QList<int>({ 1000, 750, 500, 250, 0 }));
+
+    // nothing to do: no fixtures, a time it doesn't know; no step
+    const QVariantMap undoBefore = editor->undoState(id);
+    const QList<Cuelist::Cue> cuesBefore = cl->cues();
+    editor->fanFixtureTimes(id, { 0 }, {}, "delay", 0, 2000, "line");
+    editor->fanFixtureTimes(id, { 0 }, { 9999 }, "delay", 0, 2000, "line");
+    editor->fanFixtureTimes(id, { 0 }, five, "speed", 0, 2000, "line");
+    editor->fanFixtureTimes(id + 100, { 0 }, five, "delay", 0, 2000, "line");
+    QVERIFY(cl->cues() == cuesBefore);
+    QCOMPARE(editor->undoState(id), undoBefore);
+
+    // on the output: the pars come in one after the other, 500 ms apart
+    // (offline frames, cue 2 played with the fan of cue 1 reversed)
+    editor->fanFixtureTimes(id, { 1 }, five, "delay", 0, 2000, "line");
+    editor->fanFixtureTimes(id, { 1 }, five, "fade", 0, 0, "line");
+    QCOMPARE(delays(1, five), QList<int>({ 0, 500, 1000, 1500, 2000 }));
+    Doc *doc = core.doc();
+    cl->setFadeOutSpeed(0);
+    cl->start(doc->masterTimer(), FunctionParent::master());
+    renderFrames(doc, 2);
+    cl->go();
+    renderFrames(doc, 2);
+    // green of each par: 1, 4, 7, 10, 13
+    QCOMPARE(renderedValue(doc, 1), 255);
+    QCOMPARE(renderedValue(doc, 4), 0);
+    QVERIFY(framesUntil(doc, [&]() { return renderedValue(doc, 4) == 255; }, 40) >= 0);
+    QCOMPARE(renderedValue(doc, 7), 0);
+    QVERIFY(framesUntil(doc, [&]() { return renderedValue(doc, 13) == 255; }, 120) >= 0);
+    cl->stop(FunctionParent::master());
+    renderFrames(doc, 2);
+}
+
+/*********************************************************************
+ * cuelists-cues G4: cue links with repetitions, and cue actions
+ *********************************************************************/
+
+/** $count cues 1, 2, 3... on $cl: red 10, 20, 30... on $red, no fade, GO */
+static bool linkTestCues(Cuelist *cl, const Cuelist::Key &red, int count)
+{
+    for (int n = 1; n <= count; n++)
+    {
+        if (cl->addCue(testCue(n * 1000, { { red, uchar(n * 10) } })) != n - 1)
+            return false;
+    }
+    return true;
+}
+
+/** Cue $from (an index) goes to cue $to, $count times (0: always) */
+static bool linkCue(Cuelist *cl, int from, int to, int count)
+{
+    Cuelist::Cue cue = cl->cueAt(from);
+    cue.link = cl->cueAt(to).uid;
+    cue.linkCount = count;
+    return cl->replaceCue(cue) && cl->cueAt(from).link == cue.link;
+}
+
+void Backend_Test::cuelistLinks()
+{
+    // "cue 5 -> cue 2, 3 times": cues 2 to 5 play 4 times, then cue 6. The
+    // next cue of the status is the link, with the jump it makes. BACK, a
+    // jump and a pre-selected cue don't count; a release and a pass past the
+    // link count again; a forward link skips, a link to itself repeats; a
+    // link on the last cue comes before the end of the list. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(m_doc->fixtures().first()->id(), 0);
+    MasterTimer *timer = m_doc->masterTimer();
+    // a GO and its frame: the cue the list is on
+    auto go = [&](Cuelist *list) {
+        list->go();
+        renderFrames(m_doc);
+        return list->status().current;
+    };
+    auto jump = [&](Cuelist *list, int index) {
+        list->goToCue(index);
+        renderFrames(m_doc);
+        return list->status().current;
+    };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QVERIFY(linkTestCues(cl, red, 6));
+    QVERIFY(linkCue(cl, 4, 1, 3));
+
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QList<int> played = { cl->status().current };
+    QList<int> nexts, jumps, counts;
+    for (int i = 0; i < 17; i++)
+    {
+        const Cuelist::Status status = cl->status();
+        nexts << status.next;
+        jumps << status.linkJump;
+        counts << status.linkCount;
+        played << go(cl);
+    }
+    // (indexes: cue 2 is 1, cue 5 is 4)
+    QCOMPARE(played, QList<int>({ 0, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5 }));
+    QCOMPARE(nexts, QList<int>({ 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5 }));
+    QCOMPARE(jumps, QList<int>({ 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0 }));
+    QCOMPARE(counts, QList<int>({ 0, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0, 0 }));
+    QCOMPARE(renderedValue(m_doc, 0), 60);
+    // the end of a Stay list
+    QCOMPARE(go(cl), 5);
+
+    // a second pass, after the loop to cue 1, counts again
+    cl->setAtEnd(Cuelist::AtEndLoop);
+    QCOMPARE(go(cl), 0);
+    for (int i = 1; i <= 4; i++)
+        QCOMPARE(go(cl), i);
+    QCOMPARE(cl->status().next, 1);
+    QCOMPARE(cl->status().linkJump, 1);
+    QCOMPARE(cl->nextIndex(), 1);
+    QCOMPARE(go(cl), 1);
+
+    // BACK and a jump don't count, nor start the count again
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE(jump(cl, 4), 4);
+    QCOMPARE(cl->status().linkJump, 2);
+    QCOMPARE(go(cl), 1);
+    QCOMPARE(jump(cl, 4), 4);
+    QCOMPARE(cl->status().linkJump, 3);
+    QCOMPARE(cl->status().linkCount, 3);
+
+    // a pre-selected cue wins over the link, without counting
+    cl->setNextCue(5);
+    QCOMPARE(cl->status().next, 5);
+    QCOMPARE(cl->status().linkJump, 0);
+    QCOMPARE(go(cl), 5);
+    QCOMPARE(jump(cl, 4), 4);
+    QCOMPARE(cl->status().linkJump, 3);
+
+    // a release and a new start: from the first jump
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->isRunning() == false);
+    QCOMPARE(cl->status().linkJump, 0);
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE(jump(cl, 4), 4);
+    QCOMPARE(cl->status().linkJump, 1);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // a forward link skips cues, always; a link to itself repeats the cue
+    Cuelist *skip = new Cuelist(m_doc);
+    skip->setFadeOutSpeed(0);
+    skip->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(skip));
+    QVERIFY(linkTestCues(skip, red, 6));
+    QVERIFY(linkCue(skip, 1, 4, 0));
+    QVERIFY(linkCue(skip, 4, 4, 2));
+    skip->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(go(skip), 1);
+    QCOMPARE(skip->status().next, 4);
+    QCOMPARE(skip->status().linkJump, 1);
+    QCOMPARE(skip->status().linkCount, 0);
+    played = { 1 };
+    for (int i = 0; i < 5; i++)
+        played << go(skip);
+    QCOMPARE(played, QList<int>({ 1, 4, 4, 4, 5, 5 }));
+    QCOMPARE(renderedValue(m_doc, 0), 60);
+    skip->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // a link on the last cue comes before the end of the list: Stay stays
+    // once it is done (the count doesn't start again), Release releases
+    Cuelist *last = new Cuelist(m_doc);
+    last->setFadeOutSpeed(0);
+    last->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(last));
+    QVERIFY(linkTestCues(last, red, 3));
+    QVERIFY(linkCue(last, 2, 0, 1));
+    last->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    played = { last->status().current };
+    for (int i = 0; i < 7; i++)
+        played << go(last);
+    QCOMPARE(played, QList<int>({ 0, 1, 2, 0, 1, 2, 2, 2 }));
+    QVERIFY(last->isRunning());
+    last->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    last->setAtEnd(Cuelist::AtEndRelease);
+    last->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    played = { last->status().current };
+    for (int i = 0; i < 5; i++)
+        played << go(last);
+    QCOMPARE(played, QList<int>({ 0, 1, 2, 0, 1, 2 }));
+    QCOMPARE(last->status().next, -1);
+    last->go();
+    renderFrames(m_doc, 3);
+    QVERIFY(last->isRunning() == false);
+
+    // the cue a link goes to deleted: no link. A link to a cue the list
+    // doesn't have is none; to itself it stays; a count is 0 to 999, and
+    // without a link there is none
+    const quint32 target = cl->cueAt(1).uid;
+    QCOMPARE(cl->cueAt(4).link, target);
+    QVERIFY(cl->removeCue(target));
+    QCOMPARE(cl->cueAt(3).link, 0u);
+    QCOMPARE(cl->cueAt(3).linkCount, 0);
+    Cuelist::Cue cue = cl->cueAt(3);
+    cue.link = 9999;
+    cue.linkCount = 2;
+    QVERIFY(cl->replaceCue(cue));
+    QCOMPARE(cl->cueAt(3).link, 0u);
+    QCOMPARE(cl->cueAt(3).linkCount, 0);
+    cue.link = cue.uid;
+    cue.linkCount = 5000;
+    QVERIFY(cl->replaceCue(cue));
+    QCOMPARE(cl->cueAt(3).link, cue.uid);
+    QCOMPARE(cl->cueAt(3).linkCount, 999);
+    cue.linkCount = -4;
+    QVERIFY(cl->replaceCue(cue));
+    QCOMPARE(cl->cueAt(3).linkCount, 0);
+    cue.link = 0;
+    cue.linkCount = 4;
+    QVERIFY(cl->replaceCue(cue));
+    QCOMPARE(cl->cueAt(3).linkCount, 0);
+    Cuelist::Cue added = testCue(9000, {});
+    added.link = 4242;
+    added.linkCount = 1;
+    const int index = cl->addCue(added);
+    QVERIFY(index >= 0);
+    QCOMPARE(cl->cueAt(index).link, 0u);
+    QList<Cuelist::Cue> all = cl->cues();
+    all[0].link = 777;
+    all[1].link = all[0].uid;
+    cl->setCues(all);
+    QCOMPARE(cl->cueAt(0).link, 0u);
+    QCOMPARE(cl->cueAt(1).link, cl->cueAt(0).uid);
+}
+
+void Backend_Test::cuelistLinksFollow()
+{
+    // Follow on cues 2 to 6 and "cue 5 -> cue 2, 2 times": the loop runs by
+    // itself, 100 ms a cue, three times, then cue 6. With a GO on cue 2 the
+    // list waits on cue 5 for it: the link plays the trigger of the cue it
+    // goes to. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(m_doc->fixtures().first()->id(), 0);
+    const int tick = int(MasterTimer::tick());
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    for (int n = 1; n <= 6; n++)
+        QCOMPARE(cl->addCue(testCue(n * 1000, { { red, uchar(n * 10) } }, 100, -1, 0,
+                                    n == 1 ? Cuelist::TriggerGo : Cuelist::TriggerFollow, 0)), n - 1);
+    QVERIFY(linkCue(cl, 4, 1, 2));
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    // each cue it goes to, the frames it took, and on cue 5 the jump it waits for
+    QList<int> order = { cl->status().current };
+    QList<int> gaps, jumps;
+    int since = 0;
+    for (int frame = 0; frame < 300 && order.count() < 14; frame++)
+    {
+        renderFrames(m_doc);
+        since++;
+        const Cuelist::Status status = cl->status();
+        if (status.current == order.last())
+            continue;
+        order << status.current;
+        gaps << since;
+        since = 0;
+        if (status.current == 4)
+        {
+            jumps << status.linkJump;
+            QVERIFY(status.waiting);
+        }
+    }
+    QCOMPARE(order, QList<int>({ 0, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5 }));
+    QCOMPARE(jumps, QList<int>({ 1, 2, 0 }));
+    for (int frames : std::as_const(gaps))
+        QVERIFY2(qAbs(frames * tick - 100) <= tick, qPrintable(QString::number(frames)));
+    // then it stays on cue 6
+    renderFrames(m_doc, 20);
+    QCOMPARE(cl->status().current, 5);
+    QVERIFY(cl->status().waiting == false);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // cue 2 waits for a GO: so does the link
+    Cuelist::Cue two = cl->cueAt(1);
+    two.trigger = Cuelist::TriggerGo;
+    QVERIFY(cl->replaceCue(two));
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(framesUntil(m_doc, [&]() { return cl->status().current == 4; }, 100) > 0);
+    renderFrames(m_doc, 20);
+    QCOMPARE(cl->status().current, 4);
+    QCOMPARE(cl->status().next, 1);
+    QCOMPARE(cl->status().linkJump, 1);
+    QVERIFY(cl->status().waiting == false);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(framesUntil(m_doc, [&]() { return cl->status().current == 4; }, 100) > 0);
+    QCOMPARE(cl->status().linkJump, 2);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistLinksDuration()
+{
+    // the length of a list with links (a super-scene block): the chain as
+    // it plays, with its jumps; a link that loops for ever has no end, one
+    // back to cue 1 for ever is a loop. A block that starts in the middle is
+    // on the cue it would play then, with the jumps made before it, and goes
+    // on with the jumps left; a long time into a link that loops for ever
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(m_doc->fixtures().first()->id(), 0);
+    MasterTimer *timer = m_doc->masterTimer();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    // four cues, each one 100 ms after the GO of the one before (cue 1 too,
+    // after the last one)
+    for (int n = 1; n <= 4; n++)
+        QCOMPARE(cl->addCue(testCue(n * 1000, { { red, uchar(n * 10) } }, 0, -1, 0, Cuelist::TriggerWait, 100)), n - 1);
+    QCOMPARE(cl->totalDuration(), 300u);
+    // the links of the cues: (from, to, count) as indexes; none: no links
+    auto links = [&](const QList<QList<int>> &list) {
+        QList<Cuelist::Cue> cues = cl->cues();
+        for (Cuelist::Cue &cue : cues)
+            cue.link = 0;
+        for (const QList<int> &l : list)
+        {
+            cues[l.at(0)].link = cues.at(l.at(1)).uid;
+            cues[l.at(0)].linkCount = l.at(2);
+        }
+        cl->setCues(cues);
+    };
+
+    // 1 2 3, 2 3, 2 3, 4: 7 steps
+    links({ { 2, 1, 2 } });
+    QCOMPARE(cl->totalDuration(), 700u);
+    // for ever: no end
+    links({ { 2, 1, 0 } });
+    QCOMPARE(cl->totalDuration(), Function::infiniteSpeed());
+    // to itself twice: 1 2 2 2 3 4
+    links({ { 1, 1, 2 } });
+    QCOMPARE(cl->totalDuration(), 500u);
+    // forward: 1 2 4
+    links({ { 1, 3, 0 } });
+    QCOMPARE(cl->totalDuration(), 200u);
+    // back to cue 1 for ever is a loop: one cycle, its jumps included
+    links({ { 3, 0, 0 } });
+    QCOMPARE(cl->totalDuration(), 400u);
+    links({ { 3, 0, 0 }, { 2, 1, 2 } });
+    QCOMPARE(cl->totalDuration(), 800u);
+    // a Loop list: the same; a link back to cue 1 twice is part of its cycle
+    cl->setAtEnd(Cuelist::AtEndLoop);
+    links({});
+    QCOMPARE(cl->totalDuration(), 400u);
+    links({ { 3, 0, 2 } });
+    QCOMPARE(cl->totalDuration(), 1200u);
+    // a Release list: the last jumps, then cue 1's 100 ms release it
+    cl->setAtEnd(Cuelist::AtEndRelease);
+    links({ { 3, 2, 1 } });
+    QCOMPARE(cl->totalDuration(), 600u);
+    // a GO in the loop: no end
+    cl->setAtEnd(Cuelist::AtEndStay);
+    links({ { 2, 1, 2 } });
+    Cuelist::Cue two = cl->cueAt(1);
+    two.trigger = Cuelist::TriggerGo;
+    QVERIFY(cl->replaceCue(two));
+    QCOMPARE(cl->totalDuration(), Function::infiniteSpeed());
+    two.trigger = Cuelist::TriggerWait;
+    QVERIFY(cl->replaceCue(two));
+    QCOMPARE(cl->totalDuration(), 700u);
+
+    // 450 ms in: cue 3 (index 2) of the second pass, which started at 400,
+    // with one jump made. Then cue 2 about 50 ms later, cue 3, and cue 4
+    cl->start(timer, FunctionParent::master(), 450);
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 2);
+    QCOMPARE(renderedValue(m_doc, 0), 30);
+    QCOMPARE(cl->status().next, 1);
+    QCOMPARE(cl->status().linkJump, 2);
+    QCOMPARE(cl->status().linkCount, 2);
+    QList<int> order = { 2 };
+    QList<int> gaps;
+    int since = 0;
+    for (int frame = 0; frame < 100 && order.count() < 4; frame++)
+    {
+        renderFrames(m_doc);
+        since++;
+        if (cl->status().current == order.last())
+            continue;
+        order << cl->status().current;
+        gaps << since;
+        since = 0;
+    }
+    QCOMPARE(order, QList<int>({ 2, 1, 2, 3 }));
+    QVERIFY2(gaps.first() >= 2 && gaps.first() <= 4, qPrintable(QString::number(gaps.first())));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // a link that loops for ever, about 2 hours 47 minutes in: cue 3 starts at
+    // 200, 400, 600... (the walk skips the whole laps)
+    links({ { 2, 1, 0 } });
+    cl->start(timer, FunctionParent::master(), 10000050);
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 2);
+    QCOMPARE(cl->status().next, 1);
+    QCOMPARE(cl->status().linkJump, 1);
+    QCOMPARE(cl->status().linkCount, 0);
+    const int frames = framesUntil(m_doc, [&]() { return cl->status().current == 1; }, 20);
+    QVERIFY2(frames >= 2 && frames <= 4, qPrintable(QString::number(frames)));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+/** Saves $function alone */
+static QString savedFunction(const Function *function)
+{
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    function->saveXML(&writer);
+    buffer.close();
+    return QString::fromUtf8(buffer.data());
+}
+
+void Backend_Test::cuelistLinksXml()
+{
+    // links and actions in the show: Link and LinkCount only when there is
+    // a link (and a count), the actions in order after the times, their
+    // attributes sorted; the same show saves the same file; a damaged file
+    // loads what makes sense, and an older one has no links nor actions
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    QVERIFY(linkTestCues(cl, Key(par, 0), 3));
+    Cuelist::Cue second = cl->cueAt(1);
+    second.link = cl->cueAt(0).uid;
+    second.linkCount = 3;
+    second.groupTimes.insert(Cuelist::TimeColour, cueTime(500, -1));
+    second.actions = { Cuelist::CueAction({ { "target", "playbackGo" }, { "slot", "-1" }, { "functionId", "12" } }),
+                       Cuelist::CueAction({ { "value", "128" }, { "target", "bpm" } }) };
+    QVERIFY(cl->replaceCue(second));
+    QVERIFY(linkCue(cl, 2, 2, 0));
+
+    const QString text = savedFunction(cl);
+    QVERIFY2(text.contains(QString("Link=\"%1\" LinkCount=\"3\"").arg(cl->cueAt(0).uid)), qPrintable(text));
+    QVERIFY(text.contains(QString("Link=\"%1\">").arg(cl->cueAt(2).uid)));
+    QCOMPARE(text.count("Link="), 2);
+    QCOMPARE(text.count("LinkCount="), 1);
+    const QString go = "<Action functionId=\"12\" slot=\"-1\" target=\"playbackGo\"/>";
+    const QString bpm = "<Action target=\"bpm\" value=\"128\"/>";
+    QVERIFY2(text.contains(go) && text.contains(bpm), qPrintable(text));
+    QCOMPARE(text.count("<Action "), 2);
+    QVERIFY(text.indexOf("<Time ") < text.indexOf(go));
+    QVERIFY(text.indexOf(go) < text.indexOf(bpm));
+    QCOMPARE(savedFunction(cl), text);
+
+    // loaded: the same cues, saved the same
+    {
+        Doc other(this);
+        other.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(other.loadXML(reader, false));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QVERIFY(loaded->cues() == cl->cues());
+        QCOMPARE(loaded->cueAt(1).actions.count(), 2);
+        QCOMPARE(loaded->cueAt(1).actions.at(1).value("value"), QString("128"));
+        QCOMPARE(savedFunction(loaded), text);
+    }
+
+    // a damaged file: a link that isn't a uid of the list is none, a count
+    // out of range is bound (none without a link); an action without a
+    // target goes, the others stay as they are
+    const QString handmade = QString(
+        "<Engine>"
+        "<Function ID=\"61\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\" Link=\"abc\" LinkCount=\"2\"><V F=\"%1\" C=\"0\">255</V>"
+        "<Action/><Action target=\"\" functionId=\"3\"/>"
+        "<Action target=\"playbackGo\" functionId=\"x\" extra=\"1\"><Inner><Deeper/></Inner></Action>"
+        "<Action target=\"bpm\" value=\"140\"/></Cue>"
+        "<Cue Uid=\"2\" Number=\"2000\" Link=\"1\" LinkCount=\"-4\"/>"
+        "<Cue Uid=\"3\" Number=\"3000\" Link=\"3\" LinkCount=\"5000\"/>"
+        "<Cue Uid=\"4\" Number=\"4000\" Link=\"99\" LinkCount=\"1\"/>"
+        "<Cue Uid=\"5\" Number=\"5000\" LinkCount=\"7\"/>"
+        "<Cue Uid=\"6\" Number=\"6000\" Link=\"2\" LinkCount=\"zz\"/>"
+        "</Function>"
+        "</Engine>").arg(par);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());   // Engine
+    QVERIFY(reader.readNextStartElement());   // the cuelist
+    QVERIFY(Function::loader(reader, m_doc));
+    QVERIFY(reader.hasError() == false);
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(61));
+    QVERIFY(hand != nullptr);
+    QCOMPARE(hand->cueCount(), 6);
+    auto linkOf = [&](int index) {
+        return QString("%1/%2").arg(hand->cueAt(index).link).arg(hand->cueAt(index).linkCount);
+    };
+    QCOMPARE(linkOf(0), QString("0/0"));
+    QCOMPARE(linkOf(1), QString("1/0"));
+    QCOMPARE(linkOf(2), QString("3/999"));
+    QCOMPARE(linkOf(3), QString("0/0"));
+    QCOMPARE(linkOf(4), QString("0/0"));
+    QCOMPARE(linkOf(5), QString("2/0"));
+    const QList<Cuelist::CueAction> actions = hand->cueAt(0).actions;
+    QCOMPARE(actions.count(), 2);
+    QCOMPARE(actions.at(0), Cuelist::CueAction({ { "target", "playbackGo" }, { "functionId", "x" }, { "extra", "1" } }));
+    QCOMPARE(actions.at(1), Cuelist::CueAction({ { "target", "bpm" }, { "value", "140" } }));
+    QCOMPARE(hand->cueAt(0).values.value(Key(par, 0)), uchar(255));
+    // an older file (the cues of the first list without them)
+    for (int i = 1; i < 6; i++)
+        QVERIFY(hand->cueAt(i).actions.isEmpty());
+    QVERIFY(cl->cueAt(0).actions.isEmpty() && cl->cueAt(0).link == 0);
+}
+
+/** A cuelist $name with cues 1 to $count, red 10, 20... of $par, no fades */
+static Cuelist *actionTestList(Doc *doc, const QString &name, quint32 par, int count, quint32 channel = 0)
+{
+    Cuelist *cl = new Cuelist(doc);
+    cl->setName(name);
+    cl->setFadeOutSpeed(0);
+    if (doc->addFunction(cl) == false)
+    {
+        delete cl;
+        return nullptr;
+    }
+    for (int n = 1; n <= count; n++)
+        cl->addCue(testCue(n * 1000, { { Cuelist::Key(par, channel), uchar(n * 10) } }));
+    return cl;
+}
+
+/** A scene $name: $value on $channel of $par */
+static Scene *actionTestScene(Doc *doc, const QString &name, quint32 par, quint32 channel, uchar value)
+{
+    Scene *scene = new Scene(doc);
+    scene->setName(name);
+    scene->setValue(par, channel, value);
+    scene->setFadeInSpeed(0);
+    scene->setFadeOutSpeed(0);
+    if (doc->addFunction(scene) == false)
+    {
+        delete scene;
+        return nullptr;
+    }
+    return scene;
+}
+
+void Backend_Test::cueActionsRun()
+{
+    // cue 2 of A starts B, sets the BPM, releases group X and starts scene S
+    // in its group. They run with a GO, a jump, a Wait (the first cue of a
+    // start too), not with BACK nor a super-scene seek; an action on the
+    // list itself does nothing; lists that start each other stop (also when
+    // no cue repeats); releasing all the playbacks or the groups leaves the
+    // list itself; an action
+    // on a deleted function, or on one a loaded show doesn't have, does
+    // nothing. Offline frames, and the events between them: the app does
+    // the actions in its own thread
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    // (ticking again before the core goes: it stops what plays)
+    auto ticking = qScopeGuard([doc]() { doc->masterTimer()->start(); });
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    quint32 p1 = 0, p2 = 0;
+    for (Fixture *f : doc->fixtures())
+        (f->address() == 0 ? p1 : p2) = f->id();
+    CuelistEditor *editor = core.cuelists();
+    PlaybackManager *pb = core.playbacks();
+    auto frames = [&](int count) {
+        for (int i = 0; i < count; i++)
+        {
+            renderFrames(doc);
+            QCoreApplication::processEvents();
+        }
+    };
+    // (the same cue doesn't do its actions twice within 200 ms)
+    auto later = [&]() { QTest::qWait(250); };
+
+    Cuelist *a = actionTestList(doc, "A", p1, 3);
+    Cuelist *b = actionTestList(doc, "B", p1, 2, 2);
+    QVERIFY(a != nullptr && b != nullptr);
+    Scene *s = actionTestScene(doc, "S", p1, 1, 200);
+    Scene *t = actionTestScene(doc, "T", p2, 0, 150);
+    QVERIFY(s != nullptr && t != nullptr);
+    Zone *x = core.zones()->addZone("X");
+    x->addFunction(t->id());
+    Zone *y = core.zones()->addZone("Y");
+    y->addFunction(s->id());
+    const QVariantList actions = {
+        QVariantMap({ { "target", "playbackGo" }, { "functionId", b->id() } }),
+        QVariantMap({ { "target", "bpm" }, { "value", 128 } }),
+        QVariantMap({ { "target", "groupRelease" }, { "zoneId", x->id() } }),
+        QVariantMap({ { "target", "scene" }, { "functionId", s->id() }, { "mode", "on" } }) };
+    editor->setCueActions(a->id(), 1, actions);
+    QCOMPARE(a->cueAt(1).actions.count(), 4);
+    x->start(t->id());
+    frames(2);
+    QVERIFY(t->isRunning());
+    core.setBpm(100);
+
+    // GO: cue 1, nothing; GO: cue 2, its actions
+    pb->goFunction(int(a->id()));
+    frames(2);
+    QCOMPARE(a->status().current, 0);
+    QVERIFY(b->isRunning() == false);
+    QCOMPARE(core.bpm(), 100);
+    pb->goFunction(int(a->id()));
+    frames(3);
+    QCOMPARE(a->status().current, 1);
+    QVERIFY(b->isRunning());
+    QCOMPARE(b->status().current, 0);
+    QCOMPARE(core.bpm(), 128);
+    QVERIFY(t->isRunning() == false);
+    QVERIFY(s->isRunning());
+    QVERIFY(y->isActive(s->id()));
+
+    // BACK onto cue 2: nothing again
+    pb->releaseFunction(int(b->id()));
+    y->stop(s->id());
+    core.setBpm(100);
+    frames(2);
+    QVERIFY(b->isRunning() == false && s->isRunning() == false);
+    later();
+    pb->goFunction(int(a->id()));
+    frames(2);
+    QCOMPARE(a->status().current, 2);
+    pb->backFunction(int(a->id()));
+    frames(3);
+    QCOMPARE(a->status().current, 1);
+    QVERIFY(b->isRunning() == false);
+    QCOMPARE(core.bpm(), 100);
+    QVERIFY(s->isRunning() == false);
+
+    // a jump to cue 2: they run
+    pb->goToFunction(int(a->id()), 1);
+    frames(3);
+    QVERIFY(b->isRunning());
+    QCOMPARE(core.bpm(), 128);
+    QVERIFY(s->isRunning());
+
+    // an action on the list itself does nothing (a link does that). (Another
+    // undo step: the last one closed)
+    later();
+    undoDepth(editor, a->id());
+    QVariantList withItself = actions;
+    withItself.prepend(QVariantMap({ { "target", "playbackGo" }, { "functionId", a->id() } }));
+    editor->setCueActions(a->id(), 1, withItself);
+    QCOMPARE(a->cueAt(1).actions.count(), 5);
+    pb->goToFunction(int(a->id()), 1);
+    frames(4);
+    QCOMPARE(a->status().current, 1);
+    // (B went on to its cue 2)
+    QCOMPARE(b->status().current, 1);
+
+    // a super-scene seek into cue 2 of C (it waits 100 ms) does nothing; a
+    // start does the actions of cue 1, the Wait the ones of cue 2
+    Cuelist *c = actionTestList(doc, "C", p2, 2, 1);
+    QVERIFY(c != nullptr);
+    Cuelist::Cue waits = c->cueAt(1);
+    waits.trigger = Cuelist::TriggerWait;
+    waits.triggerTime = 100;
+    QVERIFY(c->replaceCue(waits));
+    editor->setCueActions(c->id(), 0, { QVariantMap({ { "target", "bpm" }, { "value", 90 } }) });
+    editor->setCueActions(c->id(), 1, { QVariantMap({ { "target", "bpm" }, { "value", 140 } }) });
+    core.setBpm(100);
+    c->start(doc->masterTimer(), FunctionParent::master(), 150);
+    frames(3);
+    QCOMPARE(c->status().current, 1);
+    QCOMPARE(core.bpm(), 100);
+    c->stop(FunctionParent::master());
+    frames(2);
+    c->start(doc->masterTimer(), FunctionParent::master());
+    frames(1);
+    QCOMPARE(c->status().current, 0);
+    QCOMPARE(core.bpm(), 90);
+    QVERIFY(framesUntil(doc, [&]() { return c->status().current == 1; }, 20) > 0);
+    QCoreApplication::processEvents();
+    QCOMPARE(core.bpm(), 140);
+
+    // P and Q start each other: they stop at once (over a second)
+    Cuelist *p = actionTestList(doc, "P", p2, 1, 2);
+    Cuelist *q = actionTestList(doc, "Q", p2, 1, 2);
+    QVERIFY(p != nullptr && q != nullptr);
+    editor->setCueActions(p->id(), 0, { QVariantMap({ { "target", "playbackGo" }, { "functionId", q->id() } }) });
+    editor->setCueActions(q->id(), 0, { QVariantMap({ { "target", "playbackGo" }, { "functionId", p->id() } }) });
+    QSignalSpy started(doc->masterTimer(), SIGNAL(cueStarted(quint32,quint32)));
+    pb->goFunction(int(p->id()));
+    frames(50);
+    int ofP = 0, ofQ = 0;
+    for (const QList<QVariant> &args : std::as_const(started))
+    {
+        ofP += args.at(0).toUInt() == p->id() ? 1 : 0;
+        ofQ += args.at(0).toUInt() == q->id() ? 1 : 0;
+    }
+    QVERIFY2(ofP >= 1 && ofP <= 2 && ofQ == 1, qPrintable(QString("%1 %2").arg(ofP).arg(ofQ)));
+
+    // E and F, six cues each, start each other on every cue (no cue comes
+    // back so soon): a GO on E is one step of each, not one a frame
+    Cuelist *listE = actionTestList(doc, "E", p2, 6, 2);
+    Cuelist *listF = actionTestList(doc, "F", p2, 6, 2);
+    QVERIFY(listE != nullptr && listF != nullptr);
+    listE->setAtEnd(Cuelist::AtEndLoop);
+    listF->setAtEnd(Cuelist::AtEndLoop);
+    for (int i = 0; i < 6; i++)
+    {
+        editor->setCueActions(listE->id(), i, { QVariantMap({ { "target", "playbackGo" }, { "functionId", listF->id() } }) });
+        editor->setCueActions(listF->id(), i, { QVariantMap({ { "target", "playbackGo" }, { "functionId", listE->id() } }) });
+    }
+    later();
+    started.clear();
+    pb->goFunction(int(listE->id()));
+    frames(50);
+    int ofE = 0, ofF = 0;
+    for (const QList<QVariant> &args : std::as_const(started))
+    {
+        ofE += args.at(0).toUInt() == listE->id() ? 1 : 0;
+        ofF += args.at(0).toUInt() == listF->id() ? 1 : 0;
+    }
+    QVERIFY2(ofE >= 1 && ofE <= 2 && ofF >= 1 && ofF <= 2, qPrintable(QString("%1 %2").arg(ofE).arg(ofF)));
+    QVERIFY(listE->isRunning() && listF->isRunning());
+
+    // R's cue 1 releases all the playbacks: the others go, R plays its cue 1
+    Cuelist *r = actionTestList(doc, "R", p1, 2, 1);
+    QVERIFY(r != nullptr);
+    editor->setCueActions(r->id(), 0, { QVariantMap({ { "target", "playbackReleaseAll" } }) });
+    pb->goFunction(int(r->id()));
+    frames(3);
+    QVERIFY(listE->isRunning() == false && listF->isRunning() == false);
+    QVERIFY(r->isRunning());
+    QCOMPARE(r->status().current, 0);
+    // started in a group, it releases all the groups, or its own one: not itself
+    pb->releaseFunction(int(r->id()));
+    frames(2);
+    QVERIFY(r->isRunning() == false);
+    Zone *z = core.zones()->addZone("Z");
+    z->addFunction(r->id());
+    for (int own = 0; own < 2; own++)
+    {
+        const int zoneId = own == 1 ? int(z->id()) : -1;
+        editor->setCueActions(r->id(), 0, { QVariantMap({ { "target", "groupRelease" }, { "zoneId", zoneId } }) });
+        y->start(s->id());
+        later();
+        z->start(r->id());
+        frames(3);
+        QVERIFY2(r->isRunning() && z->isActive(r->id()), qPrintable(QString::number(own)));
+        QCOMPARE(r->status().current, 0);
+        // (all the groups: the others too)
+        QCOMPARE(s->isRunning(), own == 1);
+        z->stop(r->id());
+        y->stop(s->id());
+        frames(2);
+        QVERIFY(r->isRunning() == false && s->isRunning() == false);
+    }
+
+    // B deleted: its actions do nothing (also in the history of A), the others still run
+    pb->releaseFunction(int(b->id()));
+    frames(2);
+    const quint32 bId = b->id();
+    core.deleteFunction(bId);
+    QVERIFY(doc->function(bId) == nullptr);
+    QVariantList now = editor->cueActions(a->id(), 1);
+    QCOMPARE(now.at(1).toMap().value("functionId").toInt(), -1);
+    QCOMPARE(now.at(1).toMap().value("text").toString(), QString("GO of (deleted)"));
+    QCOMPARE(now.at(0).toMap().value("functionId").toInt(), int(a->id()));
+    editor->undo(a->id());
+    now = editor->cueActions(a->id(), 1);
+    QCOMPARE(now.count(), 4);
+    QCOMPARE(now.at(0).toMap().value("functionId").toInt(), -1);
+    later();
+    core.setBpm(100);
+    pb->goToFunction(int(a->id()), 1);
+    frames(3);
+    QCOMPARE(core.bpm(), 128);
+
+    // a loaded show: an action on a function it doesn't have does nothing
+    const QString cId = QString::number(c->id());
+    QList<Cuelist::Cue> cues = a->cues();
+    cues[2].actions = { Cuelist::CueAction({ { "target", "scene" }, { "functionId", "4242" }, { "mode", "on" } }),
+                        Cuelist::CueAction({ { "target", "playbackRelease" }, { "functionId", cId }, { "slot", "-1" } }) };
+    a->setCues(cues);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QUrl url = QUrl::fromLocalFile(dir.filePath("actions.qxw"));
+    doc->masterTimer()->start();
+    QVERIFY(core.saveShow(url));
+    QVERIFY(core.openShow(url));
+    Cuelist *loaded = nullptr;
+    for (Function *f : doc->functionsByType(Function::CuelistType))
+        if (f->name() == QLatin1String("A"))
+            loaded = qobject_cast<Cuelist *>(f);
+    QVERIFY(loaded != nullptr);
+    const QList<Cuelist::CueAction> after = loaded->cueAt(2).actions;
+    QCOMPARE(after.count(), 2);
+    QCOMPARE(after.at(0).value("functionId"), QString("-1"));
+    QCOMPARE(after.at(1).value("functionId"), cId);
+    QVERIFY(doc->isModified() == false);
+}
+
+void Backend_Test::cuelistImportActions()
+{
+    // a cuelist that starts another one, from a show or an effects file:
+    // with it the action follows its copy, without it it does nothing (-1);
+    // an action on a group names a group of the other show (-2), all the
+    // groups stay all the groups
+    typedef Cuelist::Key Key;
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath("other.qxw");
+    QByteArray rack, alone;
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(other.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+        const quint32 par = other.doc()->fixtures().first()->id();
+        Cuelist *b = actionTestList(other.doc(), "B", par, 1);
+        Cuelist *a = actionTestList(other.doc(), "A", par, 1, 1);
+        QVERIFY(a != nullptr && b != nullptr);
+        Zone *zone = other.zones()->addZone("X");
+        zone->addFunction(b->id());
+        Cuelist::Cue cue = a->cueAt(0);
+        cue.actions = { Cuelist::CueAction({ { "target", "playbackGo" }, { "functionId", QString::number(b->id()) },
+                                             { "slot", "-1" } }),
+                        Cuelist::CueAction({ { "target", "groupRelease" }, { "zoneId", QString::number(zone->id()) } }),
+                        Cuelist::CueAction({ { "target", "groupRelease" }, { "zoneId", "-1" } }),
+                        Cuelist::CueAction({ { "target", "bpm" }, { "value", "128" } }) };
+        QVERIFY(a->replaceCue(cue));
+        Collection *both = new Collection(other.doc());
+        both->setName("Both");
+        QVERIFY(other.doc()->addFunction(both));
+        both->addFunction(a->id());
+        both->addFunction(b->id());
+        rack = EffectExchange::exportXml(other.doc(), both->id());
+        alone = EffectExchange::exportXml(other.doc(), a->id());
+        QVERIFY(other.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    // this show: other functions first, so the copies get other IDs
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = core.doc()->fixtures().first()->id();
+    for (int i = 0; i < 3; i++)
+        QVERIFY(actionTestScene(core.doc(), QString("Mine %1").arg(i), par, 0, 1) != nullptr);
+    auto actionsOf = [](const Cuelist *list) {
+        QStringList texts;
+        for (const Cuelist::CueAction &action : list->cueAt(0).actions)
+            texts << action.value("target") + ":" + action.value("functionId", action.value("zoneId", action.value("value")));
+        return texts.join(' ');
+    };
+    auto named = [&](const QString &name, const QList<quint32> &among) {
+        for (quint32 id : among)
+            if (Function *f = core.doc()->function(id))
+                if (f->name() == name && qobject_cast<Cuelist *>(f) != nullptr)
+                    return qobject_cast<Cuelist *>(f);
+        return static_cast<Cuelist *>(nullptr);
+    };
+
+    // from the show: both of them
+    const QString done = core.importFromShow(QUrl::fromLocalFile(path), false, true);
+    QVERIFY2(done.isEmpty() == false, qPrintable(core.lastError()));
+    QList<quint32> ids;
+    for (Function *f : core.doc()->functions())
+        ids << f->id();
+    Cuelist *a = named("A", ids), *b = named("B", ids);
+    QVERIFY(a != nullptr && b != nullptr);
+    QCOMPARE(actionsOf(a), QString("playbackGo:%1 groupRelease:-2 groupRelease:-1 bpm:128").arg(b->id()));
+
+    // an effects file with both (a rack): the copy of B
+    QString error;
+    int missing = -1;
+    const quint32 rackId = EffectExchange::importXml(core.doc(), rack, &error, &missing);
+    QVERIFY2(rackId != Function::invalidId(), qPrintable(error));
+    Collection *copy = qobject_cast<Collection *>(core.doc()->function(rackId));
+    QVERIFY(copy != nullptr);
+    Cuelist *a2 = named("A", copy->functions()), *b2 = named("B", copy->functions());
+    QVERIFY(a2 != nullptr && b2 != nullptr && b2 != b);
+    QCOMPARE(actionsOf(a2), QString("playbackGo:%1 groupRelease:-2 groupRelease:-1 bpm:128").arg(b2->id()));
+
+    // A alone: its GO does nothing
+    const quint32 aloneId = EffectExchange::importXml(core.doc(), alone, &error, &missing);
+    QVERIFY2(aloneId != Function::invalidId(), qPrintable(error));
+    Cuelist *a3 = qobject_cast<Cuelist *>(core.doc()->function(aloneId));
+    QVERIFY(a3 != nullptr);
+    QCOMPARE(actionsOf(a3), QString("playbackGo:-1 groupRelease:-2 groupRelease:-1 bpm:128"));
+    QCOMPARE(a3->cueAt(0).values, (QHash<Key, uchar>({ { Key(par, 1), 10 } })));
+}
+
+void Backend_Test::cuelistEditorLinksActions()
+{
+    // the editor: a link to a cue of the list (its times 0 to 999, one step
+    // for the wheel), none, or a cue it doesn't have (nothing changes); the
+    // actions it knows, in order, with their texts, and the ones it refuses;
+    // the table shows both; a copied cue leaves them; deleting the cue a
+    // link goes to says so. Each edit is one undo step
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    auto check = [&](const QString &label, const std::function<void()> &edit) {
+        const QList<Cuelist::Cue> before = cl->cues();
+        edit();
+        const QList<Cuelist::Cue> after = cl->cues();
+        QVERIFY2(after != before, qPrintable(label));
+        QCOMPARE(editor->undoState(id).value("undo").toString(), label);
+        editor->undo(id);
+        QVERIFY2(cl->cues() == before, qPrintable(label));
+        editor->redo(id);
+        QVERIFY2(cl->cues() == after, qPrintable(label));
+    };
+    Cuelist *other = actionTestList(core.doc(), "Other", p1, 2);
+    Scene *wash = actionTestScene(core.doc(), "Wash", p2, 0, 99);
+    QVERIFY(other != nullptr && wash != nullptr);
+    const quint32 first = cl->cueAt(0).uid;
+
+    // cue 3 -> cue 1, twice
+    check("Link of cue 3", [&]() { editor->setCueLink(id, 2, first, 2); });
+    QCOMPARE(cl->cueAt(2).link, first);
+    QCOMPARE(cl->cueAt(2).linkCount, 2);
+    QVariantMap row = editor->cues(id).at(2).toMap();
+    QCOMPARE(row.value("link").toUInt(), first);
+    QCOMPARE(row.value("linkNumber").toString(), QString("1"));
+    QCOMPARE(row.value("linkCount").toInt(), 2);
+    QCOMPARE(editor->cues(id).at(1).toMap().value("link").toUInt(), 0u);
+    QCOMPARE(editor->cues(id).at(1).toMap().value("linkNumber").toString(), QString());
+    // its times on the wheel: one step, bound to 0..999
+    const int depth = undoDepth(editor, id);
+    editor->setCueLink(id, 2, first, 5000);
+    QCOMPARE(cl->cueAt(2).linkCount, 999);
+    editor->setCueLink(id, 2, first, -3);
+    QCOMPARE(cl->cueAt(2).linkCount, 0);
+    editor->setCueLink(id, 2, first, 4);
+    QCOMPARE(undoDepth(editor, id), depth + 1);
+    // a cue it doesn't have, a cue out of the list: nothing; none: no times
+    const QList<Cuelist::Cue> before = cl->cues();
+    editor->setCueLink(id, 2, 9999, 1);
+    editor->setCueLink(id, 7, first, 1);
+    editor->setCueLink(id + 100, 2, first, 1);
+    QVERIFY(cl->cues() == before);
+    check("Link of cue 3", [&]() { editor->setCueLink(id, 2, 0, 7); });
+    QCOMPARE(cl->cueAt(2).link, 0u);
+    QCOMPARE(cl->cueAt(2).linkCount, 0);
+
+    // the actions of cue 2: the ones it knows, in order; the others go
+    const QVariantList actions = {
+        QVariantMap({ { "target", "playbackGo" }, { "functionId", other->id() }, { "slot", 3 }, { "text", "x" } }),
+        QVariantMap({ { "target", "scene" }, { "functionId", wash->id() }, { "mode", "bogus" } }),
+        QVariantMap({ { "target", "blackout" } }),
+        QVariantMap({ { "target", "groupRelease" }, { "zoneId", -1 } }),
+        QVariantMap({ { "target", "bpm" }, { "value", 999 } }),
+        QVariantMap({ { "target", "playbackGoTo" }, { "functionId", other->id() }, { "cue", 1 },
+                      { "cueUid", other->cueAt(1).uid } }),
+        QVariantMap({ { "target", "stopAll" } }),
+        QVariantMap({ { "target", "playbackReleaseAll" } }),
+        QVariantMap({ { "target", "scene" }, { "functionId", wash->id() }, { "mode", "off" } }),
+        QVariantMap({ { "target", "playbackRelease" }, { "functionId", other->id() } }),
+        QVariantMap() };
+    check("Actions of cue 2", [&]() { editor->setCueActions(id, 1, actions); });
+    const QVariantList shown = editor->cueActions(id, 1);
+    QStringList texts;
+    for (const QVariant &v : shown)
+        texts << v.toMap().value("text").toString();
+    QCOMPARE(texts, QStringList({ "GO of Other", "Start Wash", "Release all the groups", "BPM 300",
+                                  "Go to cue 2 of Other", "Release all playbacks", "Stop Wash", "Release Other" }));
+    const QVariantMap go = shown.at(0).toMap();
+    QCOMPARE(go.value("functionId").toInt(), int(other->id()));
+    QCOMPARE(go.value("slot").toInt(), -1);
+    QVERIFY(go.value("functionId").typeId() == QMetaType::Int);
+    QCOMPARE(shown.at(1).toMap().value("mode").toString(), QString("on"));
+    QCOMPARE(shown.at(3).toMap().value("value").toInt(), 300);
+    QCOMPARE(shown.at(4).toMap().value("cueUid").toUInt(), other->cueAt(1).uid);
+    QCOMPARE(cl->cueAt(1).actions.at(0),
+             Cuelist::CueAction({ { "target", "playbackGo" }, { "functionId", QString::number(other->id()) }, { "slot", "-1" } }));
+    row = editor->cues(id).at(1).toMap();
+    QCOMPARE(row.value("actions").toInt(), 8);
+    QVERIFY(row.value("actionsText").toString().startsWith("GO of Other, Start Wash, "));
+    QCOMPARE(editor->cues(id).at(0).toMap().value("actions").toInt(), 0);
+    // a cue moved before the one a go to names: still that cue
+    QCOMPARE(other->addCue(testCue(500, {})), 0);
+    QCOMPARE(editor->cueActions(id, 1).at(4).toMap().value("text").toString(), QString("Go to cue 2 of Other"));
+    // a group by its name, and once it is gone
+    Zone *front = core.zones()->addZone("Front");
+    editor->setCueActions(id, 0, { QVariantMap({ { "target", "groupRelease" }, { "zoneId", front->id() } }) });
+    QCOMPARE(editor->cueActions(id, 0).at(0).toMap().value("text").toString(), QString("Release the group Front"));
+    core.zones()->removeZone(core.zones()->count() - 1);
+    QCOMPARE(editor->cueActions(id, 0).at(0).toMap().value("text").toString(), QString("Release a deleted group"));
+    // none (a step of its own: the last one closed)
+    undoDepth(editor, id);
+    check("Actions of cue 1", [&]() { editor->setCueActions(id, 0, {}); });
+    QVERIFY(cl->cueAt(0).actions.isEmpty());
+
+    // a copy doesn't take them, nor the link
+    editor->setCueLink(id, 1, first, 1);
+    const int copied = editor->copyCue(id, 1, "", false);
+    QVERIFY(copied >= 0);
+    QCOMPARE(cl->cueAt(copied).link, 0u);
+    QVERIFY(cl->cueAt(copied).actions.isEmpty());
+    QCOMPARE(cl->cueAt(1).link, first);
+    QCOMPARE(cl->cueAt(1).actions.count(), 8);
+
+    // the cue a link goes to deleted: the link goes, and it says so; undo
+    // brings both back
+    QSignalSpy messages(editor, SIGNAL(message(QString)));
+    QVERIFY(editor->removeCues(id, { 0 }, false));
+    QCOMPARE(cl->cueAt(0).number, 2000);
+    QCOMPARE(cl->cueAt(0).link, 0u);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().at(0).toString(), QString("Cue 2 linked to a deleted cue: its link is gone"));
+    editor->undo(id);
+    QCOMPARE(cl->cueAt(0).uid, first);
+    QCOMPARE(cl->cueAt(1).link, first);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G7a: the flash attack and decay of a playback
+ *********************************************************************/
+
+namespace
+{
+
+/** A dimmer and a scene with its first channel at 200, on playback 1 with
+ *  a flash attack and decay of $ms */
+struct FlashRig
+{
+    DtcCore core;
+    PlaybackManager *pb = nullptr;
+    Scene *scene = nullptr;
+    quint32 dimmer = Fixture::invalidId();
+    bool ok = false;
+
+    explicit FlashRig(int ms)
+    {
+        Doc *doc = core.doc();
+        doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        pb = core.playbacks();
+        if (core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 6) != 1)
+            return;
+        dimmer = doc->fixtures().first()->id();
+        scene = new Scene(doc);
+        scene->setValue(dimmer, 0, 200);
+        if (doc->addFunction(scene) == false)
+            return;
+        pb->assign(0, 0, int(scene->id()));
+        pb->setSlotOption(0, 0, "flashAttack", ms);
+        pb->setSlotOption(0, 0, "flashDecay", ms);
+        ok = true;
+    }
+    int out(int channel) { return core.io()->channelValues(0).at(channel).toInt(); }
+    /** The level the scene plays at now (no frame to wait for) */
+    qreal intensity() const { return scene->getAttributeValue(Function::Intensity); }
+    /** Waits until the last run of the scene is over (its end drops the
+     *  overrides: a flash that starts it again would read them as full) */
+    bool ended() { return msUntil([this]() { return scene->isRunning() == false; }) >= 0; }
+};
+
+QString flashSamples(const QList<qreal> &samples)
+{
+    QStringList list;
+    for (qreal value : samples)
+        list.append(QString::number(value, 'f', 3));
+    return list.join(' ');
+}
+
+}
+
+void Backend_Test::playbackFlashTimes()
+{
+    // an attack and a decay of 400 ms: what the flash starts comes up from
+    // dark and is released after the decay; what plays goes up from its
+    // level and back to it, and plays on. The Flash button is lit until the
+    // decay is over
+    FlashRig rig(0);
+    QVERIFY(rig.ok);
+    PlaybackManager *pb = rig.pb;
+
+    /* the options: 0 - 10 s */
+    QVariantMap info = pb->slotInfo(0, 0);
+    QCOMPARE(info.value("flashAttack").toInt(), 0);
+    QCOMPARE(info.value("flashDecay").toInt(), 0);
+    pb->setSlotOption(0, 0, "flashAttack", 20000);
+    pb->setSlotOption(0, 0, "flashDecay", -5);
+    info = pb->slotInfo(0, 0);
+    QCOMPARE(info.value("flashAttack").toInt(), 10000);
+    QCOMPARE(info.value("flashDecay").toInt(), 0);
+    pb->setSlotOption(0, 0, "flashAttack", 400);
+    pb->setSlotOption(0, 0, "flashDecay", 400);
+    info = pb->slotInfo(0, 0);
+    QCOMPARE(info.value("flashAttack").toInt(), 400);
+    QCOMPARE(info.value("flashDecay").toInt(), 400);
+
+    /* a stopped scene: started dark, at full in about 400 ms */
+    QElapsedTimer clock;
+    pb->flash(0, 0, true);
+    clock.start();
+    QVERIFY(rig.scene->stopped() == false);
+    QVERIFY(rig.intensity() < 0.05);
+    info = pb->slotInfo(0, 0);
+    QVERIFY(info.value("flashing").toBool());
+    QVERIFY(info.value("flashHeld").toBool());
+    QTest::qWait(100);
+    qreal now = rig.intensity();
+    qint64 waited = clock.elapsed();
+    // on its way, where the time it really waited puts it
+    QVERIFY2(qAbs(now - qMin(1.0, waited / 400.0)) < 0.15, qPrintable(QString("%1 after %2 ms").arg(now).arg(waited)));
+    if (waited < 250)
+        QVERIFY2(now > 0.15 && now < 0.7, qPrintable(QString("%1 after %2 ms").arg(now).arg(waited)));
+    QVERIFY(msUntil([&]() { return rig.out(0) == 200; }) >= 0);
+    qint64 took = clock.elapsed();
+    QVERIFY2(took >= 250 && took <= 800, qPrintable(QString::number(took)));
+    QTRY_VERIFY_WITH_TIMEOUT(rig.intensity() == 1.0, 1000);
+    QVERIFY(pb->isFlashing(0, 0));
+
+    /* let go: down to dark in about 400 ms, then released; lit meanwhile */
+    QList<qreal> samples;
+    pb->flash(0, 0, false);
+    clock.restart();
+    info = pb->slotInfo(0, 0);
+    QVERIFY(info.value("flashing").toBool());
+    QVERIFY(info.value("flashHeld").toBool() == false);
+    QVERIFY(pb->isFlashing(0, 0));
+    QVERIFY(msUntil([&]() {
+        if (rig.scene->stopped())
+            return true;
+        samples.append(rig.intensity());
+        return false;
+    }) >= 0);
+    took = clock.elapsed();
+    QVERIFY2(took >= 250 && took <= 800, qPrintable(QString::number(took)));
+    QVERIFY2(samples.count() > 3, qPrintable(flashSamples(samples)));
+    for (int i = 1; i < samples.count(); i++)
+        QVERIFY2(samples.at(i) <= samples.at(i - 1) + 1e-9, qPrintable(flashSamples(samples)));
+    QVERIFY2(samples.first() > 0.8 && samples.last() < 0.2, qPrintable(flashSamples(samples)));
+    QVERIFY(pb->isFlashing(0, 0) == false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+
+    /* a scene that plays at 50 %: up from there and back to it; it plays on */
+    QVERIFY(rig.ended());
+    pb->setLevel(0, 0, 0.5);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 100, 3000);
+    pb->flash(0, 0, true);
+    clock.restart();
+    QVERIFY(qAbs(rig.intensity() - 0.5) < 0.01);
+    QTest::qWait(100);
+    now = rig.intensity();
+    waited = clock.elapsed();
+    QVERIFY2(qAbs(now - qMin(1.0, 0.5 + 0.5 * waited / 400.0)) < 0.1, qPrintable(QString("%1 after %2 ms").arg(now).arg(waited)));
+    QVERIFY(msUntil([&]() { return rig.out(0) == 200; }) >= 0);
+    took = clock.elapsed();
+    QVERIFY2(took >= 250 && took <= 800, qPrintable(QString::number(took)));
+    pb->flash(0, 0, false);
+    clock.restart();
+    QVERIFY(pb->isFlashing(0, 0));
+    QVERIFY(msUntil([&]() { return rig.out(0) == 100; }) >= 0);
+    took = clock.elapsed();
+    QVERIFY2(took >= 250 && took <= 800, qPrintable(QString::number(took)));
+    QTRY_VERIFY_WITH_TIMEOUT(pb->isFlashing(0, 0) == false, 1000);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 1);
+    QCOMPARE(rig.out(0), 100);
+    QCOMPARE(pb->level(0, 0), 0.5);
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+}
+
+void Backend_Test::playbackFlashTimesDuringRamps()
+{
+    // a press during the decay goes up from where it is (no dip); the fader
+    // during a decay changes where it ends, during an attack only the level
+    // after it; a GO during the decay keeps what the flash started, at its
+    // level; Flash + GO plays on; a release, stop all, release all and the
+    // fader at zero drop the ramps (nothing stays lit); the fader up from
+    // zero during the decay keeps what the flash started, at that level
+    FlashRig rig(400);
+    QVERIFY(rig.ok);
+    PlaybackManager *pb = rig.pb;
+    auto lit = [&]() { return pb->isFlashing(0, 0); };
+    QList<qreal> samples;
+    // the levels until the Flash button goes dark
+    auto sampleUntilDark = [&]() {
+        samples.clear();
+        return msUntil([&]() {
+            if (lit() == false)
+                return true;
+            samples.append(rig.intensity());
+            return false;
+        }) >= 0;
+    };
+
+    /* a press during the decay: up from where it is */
+    pb->setLevel(0, 0, 0.5);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 100, 3000);
+    pb->flash(0, 0, true);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    pb->flash(0, 0, false);
+    QVERIFY(msUntil([&]() { return rig.intensity() < 0.85; }) >= 0);
+    const qreal before = rig.intensity();
+    pb->flash(0, 0, true);
+    const qreal atPress = rig.intensity();
+    // (at most a tick of the decay below what it showed)
+    QVERIFY2(atPress > before - 0.06 && atPress <= before + 1e-9, qPrintable(QString("%1 -> %2").arg(before).arg(atPress)));
+    QVERIFY2(atPress > 0.6, qPrintable(QString::number(atPress)));
+    qreal lowest = atPress;
+    QVERIFY(msUntil([&]() {
+        lowest = qMin(lowest, rig.intensity());
+        return rig.intensity() == 1.0;
+    }) >= 0);
+    QVERIFY2(lowest >= atPress - 1e-9, qPrintable(QString("%1 < %2").arg(lowest).arg(atPress)));
+
+    /* the fader during the decay: it ends there, from where it is */
+    pb->flash(0, 0, false);
+    QVERIFY(msUntil([&]() { return rig.intensity() < 0.85; }) >= 0);
+    const qreal moving = rig.intensity();
+    pb->setLevel(0, 0, 0.25);
+    QVERIFY2(qAbs(rig.intensity() - moving) < 0.06, qPrintable(QString("%1 -> %2").arg(moving).arg(rig.intensity())));
+    QVERIFY(lit());
+    QVERIFY(sampleUntilDark());
+    QVERIFY2(samples.count() > 2, qPrintable(flashSamples(samples)));
+    for (int i = 1; i < samples.count(); i++)
+        QVERIFY2(samples.at(i) <= samples.at(i - 1) + 1e-9, qPrintable(flashSamples(samples)));
+    // (it ends at 0.25, not at the 0.5 it was going to)
+    QVERIFY2(samples.last() >= 0.25 - 1e-9 && samples.last() < 0.4, qPrintable(flashSamples(samples)));
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 50, 3000);
+    QCOMPARE(pb->state(0, 0), 1);
+    // during an attack: only the level it comes back to
+    pb->flash(0, 0, true);
+    QTest::qWait(100);
+    pb->setLevel(0, 0, 0.75);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 200, 3000);
+    pb->flash(0, 0, false);
+    QVERIFY(sampleUntilDark());
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 150, 3000);
+    QCOMPARE(pb->state(0, 0), 1);
+
+    /* a GO during the decay of what the flash started: it plays on, and the
+       decay ends at its level (it doesn't go below it) */
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+    QVERIFY(rig.ended());
+    pb->setLevel(0, 0, 0.5);
+    QCOMPARE(pb->state(0, 0), 0);
+    pb->flash(0, 0, true);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    pb->flash(0, 0, false);
+    QVERIFY(msUntil([&]() { return rig.intensity() < 0.85; }) >= 0);
+    pb->go(0, 0);
+    QVERIFY(sampleUntilDark());
+    for (qreal value : std::as_const(samples))
+        QVERIFY2(value >= 0.5 - 1e-9, qPrintable(flashSamples(samples)));
+    QTest::qWait(100);
+    QVERIFY(rig.scene->stopped() == false);
+    QCOMPARE(pb->state(0, 0), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 100, 3000);
+
+    /* Flash + GO on a stopped scene with its fader down: it comes up, and
+       plays on at full when the button comes up */
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QVERIFY(rig.ended());
+    pb->setSlotOption(0, 0, "button3", "flashGo");
+    pb->setLevel(0, 0, 0.0);
+    pb->pressButton(0, 0, 3, true);
+    QVERIFY(rig.intensity() < 0.05);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    pb->pressButton(0, 0, 3, false);
+    QCOMPARE(pb->level(0, 0), 1.0);
+    QVERIFY(lit() == false);
+    QTest::qWait(200);
+    QCOMPARE(pb->state(0, 0), 1);
+    QCOMPARE(rig.out(0), 200);
+    pb->setSlotOption(0, 0, "button3", "flash");
+
+    /* a release in the attack: nothing left to let go */
+    pb->setLevel(0, 0, 0.5);
+    pb->flash(0, 0, true);
+    QTest::qWait(60);
+    pb->release(0, 0);
+    QVERIFY(lit() == false);
+    pb->flash(0, 0, false);
+    QVERIFY(lit() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+    // stop all in a decay: the level stays
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 100, 3000);
+    pb->flash(0, 0, true);
+    QTest::qWait(60);
+    pb->flash(0, 0, false);
+    QVERIFY(lit());
+    rig.core.stopAll();
+    QVERIFY(lit() == false);
+    QCOMPARE(pb->level(0, 0), 0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+    // release all in the decay of what the flash started
+    QVERIFY(rig.ended());
+    pb->flash(0, 0, true);
+    QTest::qWait(100);
+    pb->flash(0, 0, false);
+    QVERIFY(lit());
+    pb->releaseAll();
+    QVERIFY(lit() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+    // the fader at zero in a decay releases the scene
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 100, 3000);
+    pb->flash(0, 0, true);
+    QTest::qWait(60);
+    pb->flash(0, 0, false);
+    QVERIFY(lit());
+    pb->setLevel(0, 0, 0.0);
+    QVERIFY(lit() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+
+    /* the fader up from zero in the decay of what the flash started: it
+       plays on at the level of the fader, as with a GO */
+    QVERIFY(rig.ended());
+    pb->flash(0, 0, true);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    pb->flash(0, 0, false);
+    QVERIFY(msUntil([&]() { return rig.intensity() < 0.95; }) >= 0);
+    QVERIFY(lit());
+    pb->setLevel(0, 0, 0.8);
+    QVERIFY(sampleUntilDark());
+    QTest::qWait(100);
+    QVERIFY(rig.scene->stopped() == false);
+    QCOMPARE(pb->state(0, 0), 1);
+    QCOMPARE(pb->level(0, 0), 0.8);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 160, 3000);
+}
+
+void Backend_Test::playbackFlashTimesXml()
+{
+    // FlashAttack and FlashDecay on the slots of the show file, left out
+    // when 0; a damaged value is clamped, or at once; a moved slot keeps its
+    // times, another function on the slot starts over at once
+    DtcCore core;
+    Doc *doc = core.doc();
+    PlaybackManager *pb = core.playbacks();
+    Scene *scene = new Scene(doc);
+    QVERIFY(doc->addFunction(scene));
+    Scene *other = new Scene(doc);
+    QVERIFY(doc->addFunction(other));
+    pb->assign(0, 0, int(scene->id()));
+    pb->assign(0, 1, int(other->id()));
+    pb->setSlotOption(0, 0, "flashAttack", 1500);
+    pb->setSlotOption(0, 0, "flashDecay", 250);
+    pb->setSlotOption(0, 1, "flashDecay", 800);
+    pb->setSlotOption(0, 1, "flashDecay", 0);
+    auto save = [&]() {
+        QString xml;
+        QXmlStreamWriter writer(&xml);
+        pb->saveXML(&writer);
+        return xml;
+    };
+    auto load = [&](const QString &xml) {
+        QXmlStreamReader reader(xml);
+        return reader.readNextStartElement() && pb->loadXML(reader);
+    };
+    // "attack/decay"
+    auto times = [&](int page, int slot) {
+        const QVariantMap info = pb->slotInfo(page, slot);
+        return QString("%1/%2").arg(info.value("flashAttack").toInt()).arg(info.value("flashDecay").toInt());
+    };
+
+    const QString xml = save();
+    QCOMPARE(xml.count("FlashAttack"), 1);
+    QCOMPARE(xml.count("FlashDecay"), 1);
+    QVERIFY2(xml.contains(QString("<Slot Index=\"0\" Function=\"%1\" FlashAttack=\"1500\" FlashDecay=\"250\"/>")
+                          .arg(scene->id())), qPrintable(xml));
+    QVERIFY2(xml.contains(QString("<Slot Index=\"1\" Function=\"%1\"/>").arg(other->id())), qPrintable(xml));
+
+    // read back, and saved the same
+    pb->clear();
+    QCOMPARE(times(0, 0), QString("0/0"));
+    QVERIFY(load(xml));
+    QCOMPARE(times(0, 0), QString("1500/250"));
+    QCOMPARE(times(0, 1), QString("0/0"));
+    QCOMPARE(save(), xml);
+
+    // damaged values: clamped to 10 s, or at once
+    QVERIFY(load(QString("<Playbacks><Page Name=\"X\">"
+                         "<Slot Index=\"0\" Function=\"%1\" FlashAttack=\"99999\" FlashDecay=\"abc\"/>"
+                         "<Slot Index=\"1\" Function=\"%2\" FlashAttack=\"-20\" FlashDecay=\"300\"/>"
+                         "</Page></Playbacks>").arg(scene->id()).arg(other->id())));
+    QCOMPARE(times(0, 0), QString("10000/0"));
+    QCOMPARE(times(0, 1), QString("0/300"));
+
+    // a moved slot keeps its times; another function starts over
+    pb->moveSlot(0, 0, 0, 5);
+    QCOMPARE(times(0, 5), QString("10000/0"));
+    QCOMPARE(times(0, 0), QString("0/0"));
+    pb->assign(0, 5, int(other->id()));
+    QCOMPARE(times(0, 5), QString("0/0"));
+    // (a value set again leaves the show alone)
+    doc->resetModified();
+    pb->setSlotOption(0, 1, "flashDecay", 300);
+    QVERIFY(doc->isModified() == false);
+    pb->setSlotOption(0, 1, "flashDecay", 400);
+    QVERIFY(doc->isModified());
+}
+
+void Backend_Test::playbackFlashTimesOffSlot()
+{
+    // a flash of a function (a SHOW button, a mapping on a function) has the
+    // times of the first slot that holds it, by page and then by slot; in no
+    // slot it is at once. A toggle mapping pressed during the decay holds it
+    // again (its button is lit, but no press holds it)
+    FlashRig rig(0);
+    QVERIFY(rig.ok);
+    PlaybackManager *pb = rig.pb;
+    Doc *doc = rig.core.doc();
+    const int id = int(rig.scene->id());
+    pb->clearSlot(0, 0);
+    QCOMPARE(pb->addPage("B"), 1);
+    pb->assign(1, 0, id);
+    pb->assign(0, 6, id);
+    pb->assign(0, 4, id);
+    pb->setSlotOption(0, 4, "flashAttack", 300);
+    pb->setSlotOption(0, 4, "flashDecay", 300);
+    Scene *loose = new Scene(doc);
+    loose->setValue(rig.dimmer, 1, 120);
+    QVERIFY(doc->addFunction(loose));
+
+    /* the times of playback 5 of page 1, not those of a later slot (7) or of
+       a lower slot of a later page (page 2, playback 1): both at once */
+    QElapsedTimer clock;
+    pb->flashFunction(id, true);
+    clock.start();
+    QVERIFY(rig.intensity() < 0.05);
+    QVERIFY(msUntil([&]() { return rig.out(0) == 200; }) >= 0);
+    qint64 took = clock.elapsed();
+    QVERIFY2(took >= 180 && took <= 700, qPrintable(QString::number(took)));
+    pb->flashFunction(id, false);
+    clock.restart();
+    QVERIFY(pb->functionStatus(id).value("flashing").toBool());
+    // (each of its playbacks shows it)
+    QVERIFY(pb->isFlashing(0, 4));
+    QVERIFY(pb->isFlashing(0, 6));
+    QVERIFY(pb->isFlashing(1, 0));
+    QVERIFY(msUntil([&]() { return rig.scene->stopped(); }) >= 0);
+    took = clock.elapsed();
+    QVERIFY2(took >= 180 && took <= 700, qPrintable(QString::number(took)));
+    QVERIFY(pb->functionStatus(id).value("flashing").toBool() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+
+    /* in no slot: at once */
+    pb->flashFunction(int(loose->id()), true);
+    QCOMPARE(loose->getAttributeValue(Function::Intensity), 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(1), 120, 3000);
+    pb->flashFunction(int(loose->id()), false);
+    QVERIFY(pb->functionStatus(int(loose->id())).value("flashing").toBool() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(1), 0, 3000);
+
+    /* a toggle mapping on the function: during the decay it is lit, and a
+       press holds it again, up from where it is */
+    ControlMapper *mapper = rig.core.mapping();
+    const QVariantMap toggle = { { "target", "playbackFlash" }, { "functionId", id }, { "mode", "toggle" } };
+    auto press = [&]() {
+        mapper->pressTarget(toggle, true);
+        mapper->pressTarget(toggle, false);
+    };
+    QVERIFY(rig.ended());
+    press();
+    QCOMPARE(mapper->targetState(toggle), 1);
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    press();
+    QVariantMap status = pb->functionStatus(id);
+    QVERIFY(status.value("flashing").toBool());
+    QVERIFY(status.value("flashHeld").toBool() == false);
+    QCOMPARE(mapper->targetState(toggle), 1);
+    QVERIFY(msUntil([&]() { return rig.intensity() < 0.85; }) >= 0);
+    press();
+    QVERIFY(pb->functionStatus(id).value("flashHeld").toBool());
+    QVERIFY(msUntil([&]() { return rig.intensity() == 1.0; }) >= 0);
+    QVERIFY(rig.scene->stopped() == false);
+    press();
+    QVERIFY(msUntil([&]() { return rig.scene->stopped(); }) >= 0);
+    QCOMPARE(mapper->targetState(toggle), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(0), 0, 3000);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G8: cue speed and Live Time
+ *********************************************************************/
+
+namespace
+{
+
+/** Offline frames until $address of universe 0 sends $target (at most
+ *  $max): how many it took (-1: never), with the values on the way (the
+ *  one before the first frame too) in $samples */
+int framesToValue(Doc *doc, int address, int target, int max, QList<int> *samples)
+{
+    samples->clear();
+    for (int frames = 0; frames <= max; frames++)
+    {
+        const int value = renderedValue(doc, address);
+        samples->append(value);
+        if (value == target)
+            return frames;
+        renderFrames(doc);
+    }
+    return -1;
+}
+
+/** The values go one way only, up or down (a fade that never goes back) */
+bool oneWay(const QList<int> &samples)
+{
+    bool up = true, down = true;
+    for (int i = 1; i < samples.count(); i++)
+    {
+        up = up && samples.at(i) >= samples.at(i - 1);
+        down = down && samples.at(i) <= samples.at(i - 1);
+    }
+    return up || down;
+}
+
+QString samplesText(const QList<int> &samples)
+{
+    QStringList list;
+    for (int value : samples)
+        list.append(QString::number(value));
+    return list.join(' ');
+}
+
+}
+
+void Backend_Test::cuelistCueSpeed()
+{
+    // the cue speed of the timer: the fades, delays and triggers of every
+    // cuelist go at it, also a fade that runs (from where it is, never
+    // back), as with its own live speed (a group's dial); a scene keeps its
+    // times. Offline frames of 20 ms
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    const Key red(par, 0), green(par, 1), blue(par, 2);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    QList<int> samples;
+
+    /* x1 by default, x0.1 to x10 */
+    QCOMPARE(timer->cueSpeed(), 1.0);
+    timer->setCueSpeed(50.0);
+    QCOMPARE(timer->cueSpeed(), 10.0);
+    timer->setCueSpeed(0.0);
+    QCOMPARE(timer->cueSpeed(), 0.1);
+    timer->setCueSpeed(1.0);
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { red, 0 }, { green, 0 }, { blue, 0 } })), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { red, 255 } }, 1000)), 1);
+    QCOMPARE(cl->addCue(testCue(3000, { { red, 0 } }, 1000)), 2);
+    // a Wait of 1 s after the GO of cue 4, and a Follow when it ends (in 1 s)
+    QCOMPARE(cl->addCue(testCue(4000, { { green, 255 } }, 1000)), 3);
+    QCOMPARE(cl->addCue(testCue(5000, { { blue, 255 } }, 1000, -1, 0, Cuelist::TriggerWait, 1000)), 4);
+    QCOMPARE(cl->addCue(testCue(6000, { { red, 255 } }, 0, -1, 0, Cuelist::TriggerFollow, 0)), 5);
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+
+    /* x2: a fade of 1 s ends in half the time */
+    timer->setCueSpeed(2.0);
+    cl->go();
+    int frames = framesToValue(m_doc, 0, 255, 100, &samples);
+    QVERIFY2(frames * 20 >= 350 && frames * 20 <= 800, qPrintable(samplesText(samples)));
+    QVERIFY2(oneWay(samples), qPrintable(samplesText(samples)));
+
+    /* x1, and x4 half way: what is left goes four times as fast, from where it is */
+    timer->setCueSpeed(1.0);
+    cl->go();
+    renderFrames(m_doc, 25);
+    const int half = out(0);
+    QVERIFY2(half > 90 && half < 165, qPrintable(QString::number(half)));
+    timer->setCueSpeed(4.0);
+    frames = framesToValue(m_doc, 0, 0, 100, &samples);
+    QVERIFY2(frames * 20 >= 60 && frames * 20 <= 220, qPrintable(samplesText(samples)));
+    QVERIFY2(oneWay(samples) && samples.first() == half, qPrintable(samplesText(samples)));
+
+    /* x2: the Wait comes after half its time, the Follow half the fade after it */
+    timer->setCueSpeed(2.0);
+    cl->go();
+    frames = framesUntil(m_doc, [&]() { return cl->status().current == 4; }, 100);
+    QVERIFY2(frames >= 20 && frames <= 30, qPrintable(QString::number(frames)));
+    frames = framesUntil(m_doc, [&]() { return cl->status().current == 5; }, 100);
+    QVERIFY2(frames >= 20 && frames <= 30, qPrintable(QString::number(frames)));
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(1), 255);
+    QCOMPARE(out(2), 255);
+
+    /* its own live speed (a group's dial) on a fade that runs: the same */
+    timer->setCueSpeed(1.0);
+    cl->goToCue(2);
+    renderFrames(m_doc, 25);
+    const int halfDown = out(0);
+    QVERIFY2(halfDown > 90 && halfDown < 165, qPrintable(QString::number(halfDown)));
+    cl->setSpeedFactor(4.0);
+    frames = framesToValue(m_doc, 0, 0, 100, &samples);
+    QVERIFY2(frames * 20 >= 60 && frames * 20 <= 220, qPrintable(samplesText(samples)));
+    QVERIFY2(oneWay(samples) && samples.first() == halfDown, qPrintable(samplesText(samples)));
+    cl->setSpeedFactor(1.0);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(1), 0);
+
+    /* a scene fades in its own time at any cue speed */
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(par, 1, 255);
+    scene->setFadeInSpeed(1000);
+    QVERIFY(m_doc->addFunction(scene));
+    timer->setCueSpeed(4.0);
+    scene->start(timer, FunctionParent::master());
+    frames = framesUntil(m_doc, [&]() { return out(1) == 255; }, 100);
+    QVERIFY2(frames >= 45 && frames <= 56, qPrintable(QString::number(frames)));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    timer->setCueSpeed(1.0);
+}
+
+void Backend_Test::cuelistLiveTime()
+{
+    // Live Time of the cue that fades: a new time or a factor makes its fades
+    // go on from where they are and end then, and a Follow after it waits for
+    // that end; 0 ends them now (a release too: it leaves the fader); in its
+    // delay the delay and the fade both change; the next GO has the cue's
+    // own times again; with no cue fading it does nothing. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    const Key red(par, 0), green(par, 1);
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    QList<int> samples;
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { red, 0 }, { green, 0 } })), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { red, 255 } }, 4000)), 1);
+    QCOMPARE(cl->addCue(testCue(3000, { { green, 255 } }, 0, -1, 0, Cuelist::TriggerFollow, 0)), 2);
+    QCOMPARE(cl->addCue(testCue(4000, { { red, 0 } }, 2000)), 3);
+    QCOMPARE(cl->addCue(testCue(5000, { { red, 255 } }, 2000)), 4);
+    Cuelist::Cue release = testCue(6000, {}, 2000);
+    release.releases.insert(red);
+    QCOMPARE(cl->addCue(release), 5);
+    QCOMPARE(cl->addCue(testCue(7000, { { red, 255 } }, 1000, -1, 1000)), 6);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    /* no cue fades: nothing */
+    cl->setLiveTime(500);
+    cl->scaleLiveTime(3.0);
+    renderFrames(m_doc, 2);
+    Cuelist::Status status = cl->status();
+    QCOMPARE(status.liveScale, 1.0);
+    QVERIFY(status.fading == false);
+
+    /* 4 s made 2 s at 1 s: it ends at 2.5 s, from where it was, and the
+       Follow after it waits for that end */
+    cl->go();
+    renderFrames(m_doc, 50);
+    status = cl->status();
+    QCOMPARE(status.current, 1);
+    QCOMPARE(status.fadeTotal, 4000u);
+    QVERIFY2(status.fadeElapsed >= 960 && status.fadeElapsed <= 1040, qPrintable(QString::number(status.fadeElapsed)));
+    samples = { out(0) };
+    cl->setLiveTime(2000);
+    renderFrames(m_doc);
+    samples.append(out(0));
+    status = cl->status();
+    QCOMPARE(status.fadeTotal, 2000u);
+    QCOMPARE(status.liveScale, 0.5);
+    QVERIFY(status.fading);
+    int frames = 1;
+    while (cl->status().current == 1 && frames < 200)
+    {
+        renderFrames(m_doc);
+        samples.append(out(0));
+        frames++;
+    }
+    const int ms = (50 + frames) * 20;
+    QVERIFY2(ms >= 1700 && ms <= 2600, qPrintable(QString("%1 ms: %2").arg(ms).arg(samplesText(samples))));
+    QVERIFY2(oneWay(samples) && samples.last() >= 245, qPrintable(samplesText(samples)));
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(0), 255);
+    QCOMPARE(out(1), 255);
+
+    /* the next GO: its own times again; 0 ends the fade now */
+    cl->go();
+    renderFrames(m_doc);
+    status = cl->status();
+    QCOMPARE(status.current, 3);
+    QCOMPARE(status.liveScale, 1.0);
+    QCOMPARE(status.fadeTotal, 2000u);
+    renderFrames(m_doc, 10);
+    QVERIFY2(out(0) > 150 && out(0) < 255, qPrintable(QString::number(out(0))));
+    cl->setLiveTime(0);
+    renderFrames(m_doc);
+    QCOMPARE(out(0), 0);
+    status = cl->status();
+    QVERIFY(status.fading == false);
+    QCOMPARE(status.progress, 1.0);
+
+    /* x0.5 at 1 s of 2 s: what is left takes half the time */
+    cl->go();
+    renderFrames(m_doc, 50);
+    const int halfUp = out(0);
+    QVERIFY2(halfUp > 100 && halfUp < 156, qPrintable(QString::number(halfUp)));
+    cl->scaleLiveTime(0.5);
+    frames = framesToValue(m_doc, 0, 255, 100, &samples);
+    QVERIFY2(frames >= 20 && frames <= 30, qPrintable(samplesText(samples)));
+    QVERIFY2(oneWay(samples) && samples.first() == halfUp, qPrintable(samplesText(samples)));
+    QCOMPARE(cl->status().fadeTotal, 1000u);
+    QCOMPARE(cl->status().liveScale, 0.5);
+
+    /* a release: x2 at a quarter makes it slower from there; 0 takes it to
+       what's below at once, and out of the fader */
+    cl->go();
+    renderFrames(m_doc, 25);
+    const int quarter = out(0);
+    QVERIFY2(quarter > 170 && quarter < 210, qPrintable(QString::number(quarter)));
+    cl->scaleLiveTime(2.0);
+    renderFrames(m_doc, 25);
+    // 1.5 s of 4 s (not 1 s of 2 s: 128)
+    QVERIFY2(out(0) >= 145 && out(0) <= 175, qPrintable(QString::number(out(0))));
+    cl->setLiveTime(0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(0), 0);
+    bool held = false;
+    for (const QSharedPointer<GenericFader> &fader : fadersOf(m_doc, cl->id(), true))
+        for (const FadeChannel &fc : fader->channels())
+            held = held || (fc.fixture() == par && fc.channel() == 0);
+    QVERIFY(held == false);
+    QCOMPARE(out(1), 255);
+
+    /* in its delay: x2 makes the delay and the fade twice as long */
+    cl->go();
+    renderFrames(m_doc, 25);
+    QCOMPARE(out(0), 0);
+    cl->scaleLiveTime(2.0);
+    renderFrames(m_doc, 45);
+    // still in the delay (without the change, 2/5 of the way up)
+    QCOMPARE(out(0), 0);
+    QCOMPARE(cl->status().fadeTotal, 4000u);
+    frames = framesToValue(m_doc, 0, 255, 200, &samples);
+    QVERIFY2(frames >= 95 && frames <= 115, qPrintable(samplesText(samples)));
+    QVERIFY2(oneWay(samples), qPrintable(samplesText(samples)));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistLiveTimeOtherTimes()
+{
+    // a cue that runs with other times than its own (a BACK time here; a
+    // group or block fade-in, a Chase change) takes Live Time for its run,
+    // but Store doesn't write it into the cue: it would be a time nobody
+    // saw. With its own times it does. Offline frames
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    // (ticking again before the core goes: it stops what plays)
+    auto ticking = qScopeGuard([doc]() { doc->masterTimer()->start(); });
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const Key red(doc->fixtures().first()->id(), 0);
+    PlaybackManager *pb = core.playbacks();
+    Cuelist *cl = new Cuelist(doc);
+    cl->setName("Back");
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    cl->setBackTime(1000);
+    QVERIFY(doc->addFunction(cl));
+    const int id = int(cl->id());
+    QCOMPARE(cl->addCue(testCue(1000, { { red, 0 } })), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { red, 255 } }, 10000)), 1);
+    QCOMPARE(cl->addCue(testCue(3000, { { red, 0 } })), 2);
+    pb->goToFunction(id, 2);
+    renderFrames(doc, 2);
+    QCOMPARE(cl->status().current, 2);
+
+    /* BACK onto the 10 s cue: 1 s; Live Time 2 s runs, Store refuses */
+    pb->backFunction(id);
+    renderFrames(doc, 2);
+    Cuelist::Status status = cl->status();
+    QCOMPARE(status.current, 1);
+    QCOMPARE(status.fadeTotal, 1000u);
+    QVERIFY(status.ownTimes == false);
+    QVERIFY(pb->functionStatus(id).value("ownTimes").toBool() == false);
+    pb->setLiveTimeFunction(id, 2000);
+    renderFrames(doc);
+    QCOMPARE(cl->status().liveScale, 2.0);
+    QCOMPARE(cl->status().fadeTotal, 2000u);
+    QVERIFY(pb->storeLiveTimeFunction(id) == false);
+    QCOMPARE(cl->cueAt(1).fade, 10000u);
+
+    /* a jump onto it: its own times, Store writes the new one */
+    pb->goToFunction(id, 2);
+    renderFrames(doc, 2);
+    pb->goToFunction(id, 1);
+    renderFrames(doc, 2);
+    status = cl->status();
+    QCOMPARE(status.fadeTotal, 10000u);
+    QVERIFY(status.ownTimes);
+    QVERIFY(pb->functionStatus(id).value("ownTimes").toBool());
+    pb->setLiveTimeFunction(id, 2000);
+    renderFrames(doc);
+    QVERIFY(pb->storeLiveTimeFunction(id));
+    QCOMPARE(cl->cueAt(1).fade, 2000u);
+}
+
+void Backend_Test::playbackCueSpeed()
+{
+    // the cue speed of the playbacks is the one of the timer, whoever sets
+    // it (the SHOW, a mapping), and it is not saved: a new show and an
+    // opened one are at x1. Store writes the time Live Time gave into the
+    // cue (its attribute and fixture times too), as an edit that can be
+    // undone. The mapping targets and the SHOW target
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    PlaybackManager *pb = core.playbacks();
+    ControlMapper *mapper = core.mapping();
+    ShowSurface *surface = core.surface();
+    MasterTimer *timer = doc->masterTimer();
+    QSignalSpy speedSpy(pb, SIGNAL(cueSpeedChanged()));
+    auto scaleOf = [&]() { return pb->slotInfo(0, 0).value("liveScale").toDouble(); };
+
+    /* the property is the timer's */
+    QCOMPARE(pb->cueSpeed(), 1.0);
+    pb->setCueSpeed(2.0);
+    QCOMPARE(timer->cueSpeed(), 2.0);
+    QCOMPARE(speedSpy.count(), 1);
+    timer->setCueSpeed(0.5);
+    QCOMPARE(pb->cueSpeed(), 0.5);
+    QCOMPARE(speedSpy.count(), 2);
+    pb->setCueSpeed(0.5);
+    QCOMPARE(speedSpy.count(), 2);
+
+    /* a mapping: x0.1 at the bottom, x1 in the middle, x10 at the top */
+    const QVariantMap speed = { { "target", "cueSpeed" } };
+    QVERIFY(mapper->isButton("cueSpeed") == false);
+    QCOMPARE(mapper->describeTarget(speed), QString("Cue speed (all cuelists)"));
+    mapper->setTargetLevel(speed, 1.0);
+    QVERIFY(qAbs(pb->cueSpeed() - 10.0) < 1e-6);
+    QVERIFY(qAbs(mapper->targetLevel(speed) - 1.0) < 1e-6);
+    mapper->setTargetLevel(speed, 0.0);
+    QVERIFY(qAbs(pb->cueSpeed() - 0.1) < 1e-6);
+    mapper->setTargetLevel(speed, 0.5);
+    QVERIFY(qAbs(pb->cueSpeed() - 1.0) < 1e-6);
+    QVERIFY(qAbs(mapper->targetLevel(speed) - 0.5) < 1e-6);
+
+    /* not saved: the playbacks write the same at any speed, an opened show
+       and a new one are at x1 */
+    auto playbacksXml = [&]() {
+        QByteArray data;
+        QBuffer buffer(&data);
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        pb->saveXML(&writer);
+        return data;
+    };
+    pb->setCueSpeed(1.0);
+    const QByteArray atOne = playbacksXml();
+    pb->setCueSpeed(3.0);
+    QCOMPARE(playbacksXml(), atOne);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath("speed.qxw");
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QVERIFY(file.readAll().contains("ueSpeed") == false);
+    file.close();
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    QCOMPARE(pb->cueSpeed(), 1.0);
+    pb->setCueSpeed(3.0);
+    core.newShow();
+    QCOMPARE(pb->cueSpeed(), 1.0);
+
+    /* the SHOW: a speed fader (the x text, x1 on a double click) */
+    const QVariantMap fader = { { "targets", QVariantList({ QVariantMap({ { "target", "cueSpeed" } }) }) } };
+    QVERIFY(ShowSurface::isSpeed(fader));
+    QCOMPARE(surface->resetLevel(fader), 0.5);
+    surface->setLevel(fader, 0.75);
+    QVERIFY(qAbs(pb->cueSpeed() - std::sqrt(10.0)) < 1e-6);
+    QVERIFY(qAbs(surface->level(fader) - 0.75) < 1e-6);
+    // Alt+click on the control of the playbacks: that fader on the SHOW
+    const QVariantMap where = surface->addFromTarget(speed);
+    QVERIFY(where.isEmpty() == false);
+    const QVariantMap made = surface->item(where.value("page").toInt(), where.value("section").toString(),
+                                           where.value("cell").toInt());
+    QCOMPARE(surface->faderTargets(made).first().toMap().value("target").toString(), QString("cueSpeed"));
+    pb->setCueSpeed(1.0);
+
+    /* Store: the time Live Time gave the cue goes into it, and its parts */
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = doc->fixtures().first()->id();
+    const Key red(par, 0);
+    Cuelist *cl = new Cuelist(doc);
+    cl->setName("Live");
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { red, 0 } })), 0);
+    Cuelist::Cue slow = testCue(2000, { { red, 255 } }, 4000, 3000, 200);
+    Cuelist::PartTime colour;
+    colour.fade = 2000;
+    colour.delay = 100;
+    slow.groupTimes.insert(Cuelist::TimeColour, colour);
+    Cuelist::PartTime own;
+    own.fade = 1000;
+    slow.fixtureTimes.insert(par, own);
+    QCOMPARE(cl->addCue(slow), 1);
+    QCOMPARE(cl->addCue(testCue(3000, { { red, 0 } }, 4000)), 2);
+    pb->assign(0, 0, int(cl->id()));
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->slotInfo(0, 0).value("cue").toInt(), 0, 3000);
+    QVERIFY(pb->storeLiveTime(0, 0) == false);
+    pb->go(0, 0);
+    QTRY_VERIFY_WITH_TIMEOUT(pb->slotInfo(0, 0).value("fading").toBool(), 3000);
+    QVariantMap info = pb->slotInfo(0, 0);
+    const int length = int(cl->cueAt(1).length());
+    QCOMPARE(info.value("cue").toInt(), 1);
+    QCOMPARE(info.value("fadeTotal").toInt(), length);
+    QCOMPARE(info.value("fadeBase").toInt(), length);
+    QCOMPARE(info.value("liveScale").toDouble(), 1.0);
+    pb->scaleLiveTime(0, 0, 0.5);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(scaleOf() - 0.5) < 1e-9, 3000);
+    info = pb->slotInfo(0, 0);
+    QCOMPARE(info.value("fadeTotal").toInt(), length / 2);
+    QVERIFY(qAbs(info.value("fadeBase").toInt() - length) <= 1);
+    QVERIFY(pb->storeLiveTime(0, 0));
+    const Cuelist::Cue stored = cl->cueAt(1);
+    QCOMPARE(stored.fade, 2000u);
+    QCOMPARE(stored.downFade, 1500);
+    QCOMPARE(stored.delay, 100u);
+    QCOMPARE(stored.groupTimes.value(Cuelist::TimeColour).fade, 1000);
+    QCOMPARE(stored.groupTimes.value(Cuelist::TimeColour).delay, 50);
+    QCOMPARE(stored.fixtureTimes.value(par).fade, 500);
+    QCOMPARE(stored.fixtureTimes.value(par).delay, -1);
+    QCOMPARE(stored.values.value(red), uchar(255));
+    // the run goes on with them as its own: nothing left to store
+    QCOMPARE(scaleOf(), 1.0);
+    QVERIFY(pb->storeLiveTime(0, 0) == false);
+    // an edit of the cuelist, undone as the others
+    const QVariantMap undo = core.cuelists()->undoState(cl->id());
+    QVERIFY(undo.value("canUndo").toBool());
+    QCOMPARE(undo.value("undo").toString(), QString("Live time of cue 2"));
+    core.cuelists()->undo(cl->id());
+    QCOMPARE(cl->cueAt(1).fade, 4000u);
+    QCOMPARE(cl->cueAt(1).fixtureTimes.value(par).fade, 1000);
+
+    /* the mappings: Live Time of the playback as a fader (x0.1 .. x10 of
+       the time it started with, in the middle), an encoder (10 % a step),
+       and Live Time of the selected playback */
+    pb->go(0, 0);
+    QTRY_VERIFY_WITH_TIMEOUT(pb->slotInfo(0, 0).value("cue").toInt() == 2 &&
+                             pb->slotInfo(0, 0).value("fading").toBool(), 3000);
+    const QVariantMap live = { { "target", "playbackLiveTime" }, { "pbPage", 0 }, { "slot", 0 } };
+    QVERIFY(mapper->isButton("playbackLiveTime") == false);
+    QVERIFY(mapper->describeTarget(live).startsWith("Live time of a playback"));
+    QVERIFY(qAbs(mapper->targetLevel(live) - 0.5) < 1e-6);
+    mapper->setTargetLevel(live, 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(scaleOf() - 10.0) < 0.01, 3000);
+    QCOMPARE(pb->slotInfo(0, 0).value("fadeTotal").toInt(), 40000);
+    QVERIFY(qAbs(mapper->targetLevel(live) - 1.0) < 0.01);
+
+    const int encoder = mapper->addMapping({ { "target", "playbackLiveTime" }, { "pbPage", 0 }, { "slot", 0 },
+                                             { "source", "midi" }, { "channel", 21 }, { "mode", "relative" } });
+    QVERIFY(encoder > 0);
+    const qreal before = scaleOf();
+    mapper->handleInput("midi", "MIDI|Test", 21, QString(), 65 * 2);    // one step up
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(scaleOf() - before * 1.1) < 0.01, 3000);
+    mapper->handleInput("midi", "MIDI|Test", 21, QString(), 62 * 2);    // two steps down
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(scaleOf() - before / 1.1) < 0.01, 3000);
+    QVERIFY(qAbs(pb->slotInfo(0, 0).value("fadeBase").toInt() - 4000) <= 2);
+
+    pb->select(0, 0);
+    const QVariantMap selectedLive = { { "target", "playbackSelectedLiveTime" } };
+    QCOMPARE(mapper->describeTarget(selectedLive), QString("Live time of the selected playback"));
+    mapper->setTargetLevel(selectedLive, 0.25);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(scaleOf() - std::pow(10.0, -0.5)) < 0.01, 3000);
+    QVERIFY(qAbs(mapper->targetLevel(selectedLive) - 0.25) < 0.01);
+
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QCOMPARE(scaleOf(), 1.0);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G6: Move in black
+ *********************************************************************/
+
+void Backend_Test::cuelistMoveInBlack()
+{
+    // Move in black: once the cue has finished (and the delay), a fixture
+    // that is dark and that the next cue lights takes that cue's other
+    // attributes in black, so its GO only fades it up. Not when another
+    // playback lights it, nor when the cue itself does (with the fader of
+    // the list down), nor on a cue that says no, nor on the channels of an
+    // FX; a cue pre-selected later is prepared instead; not in a Chase nor
+    // in an Override list. Offline frames of 20 ms
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    // pan 0, dimmer 3, gobo 6
+    const Key pan(spot, 0), dimmer(spot, 3), gobo(spot, 6);
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { dimmer, 255 }, { pan, 10 } })), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { dimmer, 0 } })), 1);
+    QCOMPARE(cl->addCue(testCue(3000, { { dimmer, 255 }, { pan, 200 } })), 2);
+    // cue 1 again, then GO: on cue 2 (out), with cue 3 next
+    auto toCue2 = [&]() {
+        cl->goToCue(0);
+        renderFrames(m_doc, 2);
+        cl->go();
+    };
+
+    /* off by default (delay 0, time 2 s): nothing moves before the GO */
+    QVERIFY(cl->moveInBlack() == false);
+    QCOMPARE(cl->mibDelay(), 0u);
+    QCOMPARE(cl->mibFade(), 2000u);
+    cl->setMibFade(0);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 255);
+    QCOMPARE(out(0), 10);
+    cl->go();
+    renderFrames(m_doc, 5);
+    QCOMPARE(out(3), 0);
+    QCOMPARE(out(0), 10);
+
+    /* switched on: the next cue is prepared now */
+    cl->setMoveInBlack(true);
+    renderFrames(m_doc);
+    QCOMPARE(out(0), 200);
+    QCOMPARE(out(3), 0);
+
+    /* GO 2: the dimmer goes out, then the pan takes the one of cue 3 in black */
+    cl->goToCue(0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(0), 10);
+    cl->takeChangedKeys();
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(out(3), 0);
+    QCOMPARE(out(0), 10);
+    renderFrames(m_doc);
+    QCOMPARE(out(0), 200);
+    QCOMPARE(out(3), 0);
+    // the programmer releases it as a change of the list
+    QVERIFY(cl->takeChangedKeys().contains(pan));
+
+    /* GO 3: only the dimmer changes */
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 255);
+    QCOMPARE(out(0), 200);
+    QSet<Key> changed = cl->takeChangedKeys();
+    QVERIFY(changed.contains(dimmer));
+    QVERIFY(changed.contains(pan) == false);
+
+    /* a scene lights it (HTP): it is not dark, nothing moves */
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 3, 100);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    toCue2();
+    renderFrames(m_doc, 5);
+    QCOMPARE(out(3), 100);
+    QCOMPARE(out(0), 10);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 0);
+
+    /* a cue that says no: its moves are seen at its GO */
+    Cuelist::Cue third = cl->cueAt(2);
+    third.noMib = true;
+    QVERIFY(cl->replaceCue(third));
+    toCue2();
+    renderFrames(m_doc, 5);
+    QCOMPARE(out(3), 0);
+    QCOMPARE(out(0), 10);
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 255);
+    QCOMPARE(out(0), 200);
+    third.noMib = false;
+    QVERIFY(cl->replaceCue(third));
+
+    /* a cue pre-selected after it: that one is prepared instead, in black */
+    toCue2();
+    renderFrames(m_doc, 3);
+    QCOMPARE(out(0), 200);
+    cl->setNextCue(0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(0), 10);
+    QCOMPARE(out(3), 0);
+    cl->setNextCue(-1);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(0), 200);
+
+    /* the cue lights it, with the fader of the list down: not dark */
+    cl->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 2);
+    cl->adjustAttribute(0.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 0);
+    cl->setNextCue(0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(out(0), 200);
+    cl->adjustAttribute(1.0, Function::Intensity);
+    cl->setNextCue(-1);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(3), 255);
+    QCOMPARE(out(0), 200);
+
+    /* after a delay of 300 ms: nothing moves before it */
+    cl->setMibDelay(300);
+    toCue2();
+    int frames = framesUntil(m_doc, [&]() { return out(0) == 200; }, 100);
+    QVERIFY2(frames * 20 >= 280 && frames * 20 <= 360, qPrintable(QString::number(frames)));
+    QCOMPARE(out(3), 0);
+    cl->setMibDelay(0);
+
+    /* in its own time: a move of 1 s, linear, in black all the way */
+    cl->setMibFade(1000);
+    toCue2();
+    renderFrames(m_doc, 3);
+    const int moving = out(0);
+    QVERIFY2(moving > 10 && moving < 40, qPrintable(QString::number(moving)));
+    frames = framesUntil(m_doc, [&]() { return out(0) == 200 || out(3) != 0; }, 100);
+    QVERIFY2(frames >= 40 && frames <= 55, qPrintable(QString::number(frames)));
+    QCOMPARE(out(3), 0);
+    cl->setMibFade(0);
+
+    /* an FX on the pan of cue 3: it starts at the GO; its gobo is prepared */
+    third = cl->cueAt(2);
+    FXScene::Layer wave;
+    wave.param = "pan";
+    wave.fixtures = { spot };
+    third.fx = { wave };
+    third.values.insert(gobo, 50);
+    QVERIFY(cl->replaceCue(third));
+    toCue2();
+    renderFrames(m_doc, 3);
+    QCOMPARE(out(6), 50);
+    QCOMPARE(out(0), 10);
+    QCOMPARE(out(3), 0);
+
+    /* not in a Chase nor in an Override list: the next cue is not prepared */
+    third.fx.clear();
+    third.values.remove(gobo);
+    QVERIFY(cl->replaceCue(third));
+    for (Cuelist::Mode mode : { Cuelist::ModeChase, Cuelist::ModeOverride })
+    {
+        cl->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        cl->setMode(mode);
+        // (a step of 6 s)
+        cl->setChaseBpm(10);
+        cl->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QCOMPARE(out(0), 10);
+        cl->goToCue(1);
+        renderFrames(m_doc, 10);
+        QCOMPARE(cl->status().current, 1);
+        QCOMPARE(out(3), 0);
+        QVERIFY2(out(0) == 10, qPrintable(QString("%1: %2").arg(Cuelist::modeToString(mode)).arg(out(0))));
+    }
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistMoveInBlackXml()
+{
+    // Move in black in the show: nothing with the defaults (the file stays
+    // as it was), MoveInBlack, MibDelay and MibFade on the options when not
+    // by default, NoMib on a cue that says no; loaded the same, and a copy;
+    // in a damaged file what isn't a time keeps the default
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Key(par, 0), 255 } })), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { Key(par, 0), 0 } })), 1);
+    const QString plain = savedFunction(cl);
+    QVERIFY2(plain.contains("Mib") == false && plain.contains("MoveInBlack") == false, qPrintable(plain));
+
+    // on, with the default times: only the switch
+    cl->setMoveInBlack(true);
+    QString text = savedFunction(cl);
+    QVERIFY2(text.contains("MoveInBlack=\"1\""), qPrintable(text));
+    QVERIFY(text.contains("Mib") == false);
+
+    // its times, and a cue that says no
+    cl->setMibDelay(500);
+    cl->setMibFade(3000);
+    Cuelist::Cue second = cl->cueAt(1);
+    second.noMib = true;
+    QVERIFY(cl->replaceCue(second));
+    text = savedFunction(cl);
+    QVERIFY2(text.contains("MoveInBlack=\"1\" MibDelay=\"500\" MibFade=\"3000\""), qPrintable(text));
+    QCOMPARE(text.count("NoMib=\"1\""), 1);
+    QVERIFY(text.indexOf("NoMib") > text.indexOf(QString("Number=\"2000\"")));
+    QCOMPARE(savedFunction(cl), text);
+
+    // loaded: the same options and cues, saved the same
+    {
+        Doc other(this);
+        other.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        writer.writeStartDocument();
+        QVERIFY(m_doc->saveXML(&writer));
+        writer.writeEndDocument();
+        buffer.close();
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(other.loadXML(reader, false));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QVERIFY(loaded->moveInBlack());
+        QCOMPARE(loaded->mibDelay(), 500u);
+        QCOMPARE(loaded->mibFade(), 3000u);
+        QVERIFY(loaded->cues() == cl->cues());
+        QVERIFY(loaded->cueAt(1).noMib && loaded->cueAt(0).noMib == false);
+        QCOMPARE(savedFunction(loaded), text);
+    }
+
+    // a copy keeps them
+    Function *copied = cl->createCopy(m_doc, false);
+    Cuelist *copy = qobject_cast<Cuelist *>(copied);
+    QVERIFY(copy != nullptr);
+    QVERIFY(copy->moveInBlack());
+    QCOMPARE(copy->mibDelay(), 500u);
+    QCOMPARE(copy->mibFade(), 3000u);
+    QVERIFY(copy->cueAt(1).noMib);
+    delete copied;
+
+    // back to the defaults: the file as it was
+    cl->setMoveInBlack(false);
+    cl->setMibDelay(0);
+    cl->setMibFade(Cuelist::defaultMibFade());
+    second.noMib = false;
+    QVERIFY(cl->replaceCue(second));
+    QCOMPARE(savedFunction(cl), plain);
+
+    // a damaged file: only "1" is on, a time that isn't one keeps the default
+    const QString handmade = QString(
+        "<Engine>"
+        "<Function ID=\"62\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cuelist Tracking=\"1\" MoveInBlack=\"yes\" MibDelay=\"abc\" MibFade=\"-5\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\" NoMib=\"0\"><V F=\"%1\" C=\"0\">255</V></Cue>"
+        "<Cue Uid=\"2\" Number=\"2000\" NoMib=\"1\"/>"
+        "</Function>"
+        "</Engine>").arg(par);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());   // Engine
+    QVERIFY(reader.readNextStartElement());   // the cuelist
+    QVERIFY(Function::loader(reader, m_doc));
+    QVERIFY(reader.hasError() == false);
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(62));
+    QVERIFY(hand != nullptr);
+    QVERIFY(hand->moveInBlack() == false);
+    QCOMPARE(hand->mibDelay(), 0u);
+    QCOMPARE(hand->mibFade(), 2000u);
+    QVERIFY(hand->cueAt(0).noMib == false);
+    QVERIFY(hand->cueAt(1).noMib);
+}
+
+void Backend_Test::cuelistEditorMoveInBlack()
+{
+    // the editor: the options (Move in black, its delay and time, in ms),
+    // the MIB of the cues (on by default, of one cue or several), each edit
+    // an undo step
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    QCOMPARE(cl->cueCount(), 3);
+
+    /* the options */
+    QVariantMap opts = editor->options(id);
+    QCOMPARE(opts.value("moveInBlack").toBool(), false);
+    QCOMPARE(opts.value("mibDelay").toInt(), 0);
+    QCOMPARE(opts.value("mibFade").toInt(), 2000);
+    editor->setOption(id, "moveInBlack", true);
+    QVERIFY(cl->moveInBlack());
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+    editor->setOption(id, "mibDelay", 1500);
+    editor->setOption(id, "mibFade", -20);
+    QCOMPARE(cl->mibDelay(), 1500u);
+    QCOMPARE(cl->mibFade(), 0u);
+    opts = editor->options(id);
+    QCOMPARE(opts.value("moveInBlack").toBool(), true);
+    QCOMPARE(opts.value("mibDelay").toInt(), 1500);
+    QCOMPARE(opts.value("mibFade").toInt(), 0);
+    editor->undo(id);
+    QCOMPARE(cl->mibFade(), 2000u);
+    QCOMPARE(cl->mibDelay(), 1500u);
+    editor->undo(id);
+    QCOMPARE(cl->mibDelay(), 0u);
+    QVERIFY(cl->moveInBlack());
+    editor->undo(id);
+    QVERIFY(cl->moveInBlack() == false);
+    editor->redo(id);
+    QVERIFY(cl->moveInBlack());
+
+    /* the cues: on by default, a new one too */
+    for (const QVariant &row : editor->cues(id))
+        QCOMPARE(row.toMap().value("noMib").toBool(), false);
+    editor->setCueMib(id, { 1, 2 }, false);
+    QVERIFY(cl->cueAt(0).noMib == false);
+    QVERIFY(cl->cueAt(1).noMib && cl->cueAt(2).noMib);
+    QCOMPARE(editor->cues(id).at(1).toMap().value("noMib").toBool(), true);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Move in black"));
+    editor->undo(id);
+    QVERIFY(cl->cueAt(1).noMib == false && cl->cueAt(2).noMib == false);
+    editor->redo(id);
+    QVERIFY(cl->cueAt(1).noMib && cl->cueAt(2).noMib);
+    editor->setCueMib(id, { 1 }, true);
+    QVERIFY(cl->cueAt(1).noMib == false);
+    QVERIFY(cl->cueAt(2).noMib);
+    // (an index out of range is left out)
+    editor->setCueMib(id, { 7, -1 }, false);
+    QVERIFY(cl->cueAt(0).noMib == false && cl->cueAt(1).noMib == false);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G5a: the type of a cuelist, and the submaster
+ *********************************************************************/
+
+void Backend_Test::cuelistModeXml()
+{
+    // the type of a cuelist in the show: nothing when it is Normal (the file
+    // stays as it was), Mode on the options for the others; loaded the same,
+    // and a copy; what isn't a type loads as Normal. The editor: the option,
+    // an undo step
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Key(par, 0), 255 } })), 0);
+    QCOMPARE(cl->mode(), Cuelist::ModeNormal);
+    const QString plain = savedFunction(cl);
+    QVERIFY2(plain.contains(" Mode=") == false, qPrintable(plain));
+
+    // the saved cuelist, loaded in a show of its own
+    auto loadedMode = [&](const QString &text, Cuelist::Mode *mode, QString *saved) {
+        Doc other(this);
+        QXmlStreamReader reader(text);
+        if (reader.readNextStartElement() == false || Function::loader(reader, &other) == false)
+            return false;
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        if (loaded == nullptr)
+            return false;
+        *mode = loaded->mode();
+        *saved = savedFunction(loaded);
+        return true;
+    };
+
+    /* every type: saved, loaded and copied */
+    const QList<QPair<Cuelist::Mode, QString>> modes = {
+        { Cuelist::ModeChase, "Chase" }, { Cuelist::ModeTimecode, "Timecode" },
+        { Cuelist::ModeSubmaster, "Submaster" }, { Cuelist::ModeOverride, "Override" } };
+    for (const auto &mode : modes)
+    {
+        QSignalSpy changed(cl, SIGNAL(changed(quint32)));
+        cl->setMode(mode.first);
+        QCOMPARE(cl->mode(), mode.first);
+        QCOMPARE(changed.count(), 1);
+        cl->setMode(mode.first);
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(Cuelist::modeToString(mode.first), mode.second);
+        QCOMPARE(Cuelist::stringToMode(mode.second.toLower()), mode.first);
+
+        const QString text = savedFunction(cl);
+        QVERIFY2(text.contains(QString(" Mode=\"%1\"").arg(mode.second)), qPrintable(text));
+        QCOMPARE(text.count(" Mode="), 1);
+        Cuelist::Mode loaded = Cuelist::ModeNormal;
+        QString saved;
+        QVERIFY(loadedMode(text, &loaded, &saved));
+        QCOMPARE(loaded, mode.first);
+        QCOMPARE(saved, text);
+
+        Function *copied = cl->createCopy(m_doc, false);
+        Cuelist *copy = qobject_cast<Cuelist *>(copied);
+        QVERIFY(copy != nullptr);
+        QCOMPARE(copy->mode(), mode.first);
+        delete copied;
+    }
+
+    /* back to Normal: the file as it was */
+    cl->setMode(Cuelist::ModeNormal);
+    QCOMPARE(savedFunction(cl), plain);
+
+    /* what isn't a type is Normal; the case doesn't matter */
+    QCOMPARE(Cuelist::modeToString(Cuelist::ModeNormal), QString("Normal"));
+    QCOMPARE(Cuelist::stringToMode("Fancy"), Cuelist::ModeNormal);
+    QCOMPARE(Cuelist::stringToMode(""), Cuelist::ModeNormal);
+    QCOMPARE(Cuelist::stringToMode("SUBMASTER"), Cuelist::ModeSubmaster);
+    QString handmade = plain;
+    handmade.replace("<Cuelist ", "<Cuelist Mode=\"Fancy\" ");
+    QVERIFY(handmade != plain);
+    Cuelist::Mode loaded = Cuelist::ModeChase;
+    QString saved;
+    QVERIFY(loadedMode(handmade, &loaded, &saved));
+    QCOMPARE(loaded, Cuelist::ModeNormal);
+    QCOMPARE(saved, plain);
+    handmade = plain;
+    handmade.replace("<Cuelist ", "<Cuelist Mode=\"submaster\" ");
+    QVERIFY(loadedMode(handmade, &loaded, &saved));
+    QCOMPARE(loaded, Cuelist::ModeSubmaster);
+
+    /* the editor: the option (lower case), an undo step */
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *edited = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(edited != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    QCOMPARE(editor->options(id).value("mode").toString(), QString("normal"));
+    editor->setOption(id, "mode", "submaster");
+    QCOMPARE(edited->mode(), Cuelist::ModeSubmaster);
+    QCOMPARE(editor->options(id).value("mode").toString(), QString("submaster"));
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+    // (another type right after it is the same step, as any option)
+    editor->setOption(id, "mode", "chase");
+    QCOMPARE(edited->mode(), Cuelist::ModeChase);
+    editor->undo(id);
+    QCOMPARE(edited->mode(), Cuelist::ModeNormal);
+    QVERIFY(editor->undoState(id).value("undo").toString() != QString("Cuelist options"));
+    editor->redo(id);
+    QCOMPARE(edited->mode(), Cuelist::ModeChase);
+    editor->setOption(id, "mode", "nothing");
+    QCOMPARE(edited->mode(), Cuelist::ModeNormal);
+}
+
+namespace
+{
+
+/** A submaster on playback 1: cues 1, 2 and 3 put a dimmer at 200, 100
+ *  and 50, with no fades and no release time */
+struct SubmasterRig
+{
+    DtcCore core;
+    PlaybackManager *pb = nullptr;
+    Cuelist *cl = nullptr;
+    bool ok = false;
+
+    SubmasterRig()
+    {
+        Doc *doc = core.doc();
+        doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        pb = core.playbacks();
+        if (core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1) != 1)
+            return;
+        const Cuelist::Key dimmer(doc->fixtures().first()->id(), 0);
+        cl = new Cuelist(doc);
+        cl->setName("Sub");
+        cl->setFadeOutSpeed(0);
+        cl->setMode(Cuelist::ModeSubmaster);
+        if (doc->addFunction(cl) == false)
+            return;
+        for (int i = 0; i < 3; i++)
+        {
+            if (cl->addCue(testCue(1000 * (i + 1), { { dimmer, uchar(200 >> i) } })) != i)
+                return;
+        }
+        pb->assign(0, 0, int(cl->id()));
+        ok = true;
+    }
+    int out() { return core.io()->channelValues(0).at(0).toInt(); }
+    QVariantMap info() { return pb->slotInfo(0, 0); }
+    /** The cue it plays, and the one it starts on (or the next GO plays) */
+    int cue() { return info().value("cue").toInt(); }
+    int next() { return info().value("next").toInt(); }
+};
+
+}
+
+void Backend_Test::playbackSubmaster()
+{
+    // a submaster: the fader up from zero starts it on its next cue at the
+    // level of the fader (never at full), down to zero releases it (the
+    // default, which the properties can change); a GO while it plays gives
+    // the next cue at that level; the flash flashes it (and one the flash
+    // started goes); in a group it plays as a Normal cuelist
+    SubmasterRig rig;
+    QVERIFY(rig.ok);
+    PlaybackManager *pb = rig.pb;
+    auto around = [&](int value) { return qAbs(rig.out() - value) <= 1; };
+
+    QVariantMap info = rig.info();
+    QCOMPARE(info.value("mode").toString(), QString("submaster"));
+    QVERIFY(info.value("ruledByFader").toBool());
+    QVERIFY(info.value("faderReleases").toBool());
+    QCOMPARE(info.value("faderReleasesMode").toInt(), -1);
+
+    /* the fader at 60 %: cue 1 at 60 %, not at full */
+    pb->setLevel(0, 0, 0.0);
+    QCOMPARE(pb->state(0, 0), 0);
+    pb->setLevel(0, 0, 0.6);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.cue(), 0, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(around(120), 3000);
+    QCOMPARE(pb->level(0, 0), 0.6);
+    QTest::qWait(100);
+    QVERIFY2(around(120), qPrintable(QString::number(rig.out())));
+
+    /* GO while it plays: the next cue, at the level of the fader */
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.cue(), 1, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(around(60), 3000);
+    QCOMPARE(pb->level(0, 0), 0.6);
+
+    /* the flash: at full while pressed, then back to the fader */
+    pb->flash(0, 0, true);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 100, 3000);
+    pb->flash(0, 0, false);
+    QTRY_VERIFY_WITH_TIMEOUT(around(60), 3000);
+    QCOMPARE(pb->state(0, 0), 1);
+
+    /* the fader at zero releases it */
+    pb->setLevel(0, 0, 0.0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 0, 3000);
+
+    /* a flash on it released: at full while pressed (its next cue), then gone */
+    pb->flash(0, 0, true);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 200, 3000);
+    pb->flash(0, 0, false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 0, 3000);
+    QCOMPARE(pb->level(0, 0), 0.0);
+
+    /* the properties can keep it at zero: it stays on its cue */
+    pb->setSlotOption(0, 0, "faderReleases", false);
+    QVERIFY(rig.info().value("faderReleases").toBool() == false);
+    pb->setLevel(0, 0, 0.5);
+    QTRY_VERIFY_WITH_TIMEOUT(around(100), 3000);
+    pb->setLevel(0, 0, 0.0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 1);
+    QCOMPARE(rig.cue(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 0, 3000);
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    pb->setSlotOption(0, 0, "faderReleases", -1);
+    QVERIFY(rig.info().value("faderReleases").toBool());
+
+    /* in a group: a Normal cuelist, at full with its fader down, and a GO
+       goes on */
+    Zone *zone = rig.core.zones()->addZone("A");
+    zone->addFunction(rig.cl->id());
+    QCOMPARE(pb->level(0, 0), 0.0);
+    zone->start(rig.cl->id());
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 200, 3000);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.cue(), 1, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 100, 3000);
+    zone->stop(rig.cl->id());
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 0, 3000);
+}
+
+void Backend_Test::playbackSubmasterChoose()
+{
+    // a submaster released: GO and Back only choose the cue its fader starts
+    // on (the playback shows it as the next one): past the last cue as
+    // "After the last cue" says, never before the first. Pause/Back, Go to
+    // cue, Main GO and a mapping on the function choose too, On/off does
+    // nothing, Flash + GO only flashes it. When no fader starts it (the
+    // properties, or off the playbacks) GO starts it as a Normal cuelist
+    SubmasterRig rig;
+    QVERIFY(rig.ok);
+    PlaybackManager *pb = rig.pb;
+    const int fid = int(rig.cl->id());
+    pb->setLevel(0, 0, 0.0);
+
+    /* GO with the fader down: not started, cue 2 is next */
+    QCOMPARE(rig.next(), 0);
+    pb->go(0, 0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 0);
+    QCOMPARE(rig.out(), 0);
+    QCOMPARE(pb->level(0, 0), 0.0);
+    QCOMPARE(rig.next(), 1);
+    QCOMPARE(rig.info().value("nextNumber").toString(), QString("2"));
+    // the fader up plays cue 2
+    pb->setLevel(0, 0, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.cue(), 1, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 100, 3000);
+    pb->setLevel(0, 0, 0.0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    // (released, it starts at the first cue again)
+    QTRY_COMPARE_WITH_TIMEOUT(rig.next(), 0, 3000);
+
+    /* GO past the last cue: the first (Loop); Back: never before the first */
+    pb->go(0, 0);
+    pb->go(0, 0);
+    QCOMPARE(rig.next(), 2);
+    pb->go(0, 0);
+    QCOMPARE(rig.next(), 0);
+    pb->back(0, 0);
+    QCOMPARE(rig.next(), 0);
+    pb->go(0, 0);
+    pb->go(0, 0);
+    pb->back(0, 0);
+    QCOMPARE(rig.next(), 1);
+    // Pause/Back is Back; a mapping on the function and Main GO are GO
+    pb->pauseBack(0, 0);
+    QCOMPARE(rig.next(), 0);
+    pb->goFunction(fid);
+    QCOMPARE(rig.next(), 1);
+    pb->select(0, 0);
+    pb->mainGo();
+    QCOMPARE(rig.next(), 2);
+    pb->backFunction(fid);
+    QCOMPARE(rig.next(), 1);
+    // Go to cue: that cue
+    pb->goTo(0, 0, 2);
+    QCOMPARE(rig.next(), 2);
+    pb->goToFunction(fid, 0);
+    QCOMPARE(rig.next(), 0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 0);
+
+    /* On/off: nothing. Flash + GO: only the flash, on the cue chosen */
+    pb->goTo(0, 0, 2);
+    pb->toggle(0, 0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 0);
+    QCOMPARE(rig.next(), 2);
+    pb->setSlotOption(0, 0, "button3", "flashGo");
+    pb->pressButton(0, 0, 3, true);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 50, 3000);
+    pb->pressButton(0, 0, 3, false);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 0, 3000);
+    QCOMPARE(pb->level(0, 0), 0.0);
+
+    /* After the last cue: Stay keeps the last cue, Release goes to the first */
+    rig.cl->setAtEnd(Cuelist::AtEndStay);
+    pb->goTo(0, 0, 2);
+    pb->go(0, 0);
+    QCOMPARE(rig.next(), 2);
+    rig.cl->setAtEnd(Cuelist::AtEndRelease);
+    pb->go(0, 0);
+    QCOMPARE(rig.next(), 0);
+
+    /* the fader doesn't start it (the properties): GO starts it at full */
+    pb->setSlotOption(0, 0, "faderStarts", false);
+    QVERIFY(rig.info().value("ruledByFader").toBool() == false);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 200, 3000);
+    QCOMPARE(pb->level(0, 0), 1.0);
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    pb->setSlotOption(0, 0, "faderStarts", true);
+    QVERIFY(rig.info().value("ruledByFader").toBool());
+
+    /* off the playbacks: GO starts it */
+    pb->clearSlot(0, 0);
+    QVERIFY(pb->functionStatus(fid).value("ruledByFader").toBool() == false);
+    QCOMPARE(pb->functionStatus(fid).value("mode").toString(), QString("submaster"));
+    pb->goFunction(fid);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->functionState(quint32(fid)), 1, 3000);
+    pb->releaseFunction(fid);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->functionState(quint32(fid)), 0, 3000);
+
+    /* a Normal cuelist, as before: GO with the fader down plays it at full,
+       the fader at zero keeps its cue */
+    rig.cl->setMode(Cuelist::ModeNormal);
+    pb->assign(0, 0, fid);
+    QCOMPARE(rig.info().value("mode").toString(), QString("normal"));
+    QVERIFY(rig.info().value("ruledByFader").toBool() == false);
+    QVERIFY(rig.info().value("faderReleases").toBool() == false);
+    pb->setLevel(0, 0, 0.0);
+    pb->go(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(rig.out(), 200, 3000);
+    QCOMPARE(pb->level(0, 0), 1.0);
+    pb->setLevel(0, 0, 0.0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(0, 0), 1);
+    pb->release(0, 0);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G5b: Chase cuelists
+ *********************************************************************/
+
+namespace
+{
+
+/** A Chase on an RGB par at address 0: cue 1 red, cue 2 green and cue 3
+ *  blue (each one with the other two out), at 600 BPM (a step every 100
+ *  ms: 5 offline frames) with a cut, released at once */
+Cuelist *testChase(Doc *doc, quint32 par)
+{
+    typedef Cuelist::Key Key;
+    Cuelist *cl = new Cuelist(doc);
+    cl->setFadeOutSpeed(0);
+    cl->setMode(Cuelist::ModeChase);
+    cl->setChaseBpm(600);
+    if (doc->addFunction(cl) == false)
+    {
+        delete cl;
+        return nullptr;
+    }
+    for (quint32 c = 0; c < 3; c++)
+    {
+        QHash<Key, uchar> values = { { Key(par, 0), 0 }, { Key(par, 1), 0 }, { Key(par, 2), 0 } };
+        values[Key(par, c)] = 255;
+        if (cl->addCue(testCue(int(c + 1) * 1000, values)) != int(c))
+            return nullptr;
+    }
+    return cl;
+}
+
+/** The colour the par of testChase shows on the last offline frame: 0 red,
+ *  1 green, 2 blue (at full, the other two out); -1 anything else */
+int shownColour(Doc *doc)
+{
+    for (int c = 0; c < 3; c++)
+    {
+        if (renderedValue(doc, c) == 255 && renderedValue(doc, (c + 1) % 3) == 0 &&
+            renderedValue(doc, (c + 2) % 3) == 0)
+            return c;
+    }
+    return -1;
+}
+
+/** The next $count steps of a running cuelist, in offline frames (200 at
+ *  most): the cue of each one, and in $gaps the frames since the one before */
+QList<int> chaseSteps(Doc *doc, Cuelist *cl, int count, QList<int> *gaps = nullptr)
+{
+    QList<int> steps;
+    int current = cl->status().current;
+    int since = 0;
+    for (int frame = 0; frame < 200 && steps.count() < count; frame++)
+    {
+        renderFrames(doc);
+        since++;
+        if (cl->status().current == current)
+            continue;
+        current = cl->status().current;
+        steps << current;
+        if (gaps != nullptr)
+            gaps->append(since);
+        since = 0;
+    }
+    return steps;
+}
+
+}
+
+void Backend_Test::cuelistChaseOrder()
+{
+    // a Chase plays its cues by itself, round and round: red, green, blue,
+    // red at 600 BPM (a step every 100 ms) with a cut, the stage with them.
+    // Backward, Bounce (there and back) and Random (never the same step twice
+    // in a row; the status shows the one it drew). Tracking still applies;
+    // the triggers of its cues and "After the last cue" don't count; with
+    // one cue it stays on it. Offline frames of 20 ms
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    Cuelist *cl = testChase(m_doc, par);
+    QVERIFY(cl != nullptr);
+    auto restart = [&]() {
+        cl->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        cl->start(timer, FunctionParent::master());
+        renderFrames(m_doc);
+    };
+
+    /* Forward: red, green, blue, red, a step every 5 frames */
+    QCOMPARE(cl->chaseDirection(), Cuelist::ChaseForward);
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE(shownColour(m_doc), 0);
+    QCOMPARE(cl->status().next, 1);
+    QList<int> colours;
+    QList<int> gaps;
+    for (int i = 0; i < 3; i++)
+    {
+        QCOMPARE(chaseSteps(m_doc, cl, 1, &gaps).count(), 1);
+        colours << shownColour(m_doc);
+    }
+    QCOMPARE(colours, QList<int>({ 1, 2, 0 }));
+    QCOMPARE(gaps, QList<int>({ 5, 5, 5 }));
+    // (it goes on by itself, but no trigger waits)
+    QVERIFY(cl->status().waiting == false);
+    QCOMPARE(cl->effectiveChaseBpm(), 600.0);
+
+    /* Backward: red, blue, green, red */
+    cl->setChaseDirection(Cuelist::ChaseBackward);
+    restart();
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE(cl->status().next, 2);
+    QCOMPARE(chaseSteps(m_doc, cl, 3), QList<int>({ 2, 1, 0 }));
+
+    /* Bounce: there and back, each end once */
+    cl->setChaseDirection(Cuelist::ChaseBounce);
+    restart();
+    QCOMPARE(chaseSteps(m_doc, cl, 6), QList<int>({ 1, 2, 1, 0, 1, 2 }));
+
+    /* Random: never the same step twice in a row, the one the status said;
+       every cue comes */
+    cl->setChaseDirection(Cuelist::ChaseRandom);
+    restart();
+    QSet<int> seen = { cl->status().current };
+    for (int i = 0; i < 40; i++)
+    {
+        const int was = cl->status().current;
+        const int next = cl->status().next;
+        QVERIFY2(next >= 0 && next < 3 && next != was, qPrintable(QString("%1 %2").arg(was).arg(next)));
+        const QList<int> step = chaseSteps(m_doc, cl, 1);
+        QCOMPARE(step, QList<int>({ next }));
+        QCOMPARE(shownColour(m_doc), next);
+        seen.insert(next);
+    }
+    QCOMPARE(seen.count(), 3);
+
+    /* tracking: cue 2 only changes the green, the red goes on from cue 1.
+       Follow and Wait don't hurry it; Release and Stay go round */
+    cl->setChaseDirection(Cuelist::ChaseForward);
+    QList<Cuelist::Cue> cues = cl->cues();
+    cues[1].values = { { Key(par, 1), 255 } };
+    cues[1].trigger = Cuelist::TriggerFollow;
+    cues[2].trigger = Cuelist::TriggerWait;
+    cl->setCues(cues);
+    for (Cuelist::AtEnd atEnd : { Cuelist::AtEndRelease, Cuelist::AtEndStay })
+    {
+        cl->setAtEnd(atEnd);
+        restart();
+        gaps.clear();
+        QCOMPARE(chaseSteps(m_doc, cl, 1, &gaps), QList<int>({ 1 }));
+        QCOMPARE(renderedValue(m_doc, 0), 255);
+        QCOMPARE(renderedValue(m_doc, 1), 255);
+        QCOMPARE(renderedValue(m_doc, 2), 0);
+        QCOMPARE(chaseSteps(m_doc, cl, 2, &gaps), QList<int>({ 2, 0 }));
+        QCOMPARE(shownColour(m_doc), 0);
+        QCOMPARE(gaps, QList<int>({ 5, 5, 5 }));
+        QVERIFY(cl->isRunning());
+    }
+
+    /* one cue: it stays on it, Random too */
+    cl->setCues({ cl->cueAt(0) });
+    for (Cuelist::ChaseDirection direction : { Cuelist::ChaseBounce, Cuelist::ChaseRandom })
+    {
+        cl->setChaseDirection(direction);
+        restart();
+        renderFrames(m_doc, 20);
+        QCOMPARE(cl->status().current, 0);
+        QCOMPARE(cl->status().next, 0);
+        QCOMPARE(shownColour(m_doc), 0);
+    }
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistChaseControl()
+{
+    // a Chase at 120 BPM (a step every 25 offline frames): GO takes the next
+    // step now and the next one counts from it; Back takes a step the other
+    // way now, and it runs on from there; a pause holds it; a tapped rhythm
+    // wins over its BPM until it is cleared; BeatGO steps it on its
+    // divisions only; its live speed and the cue speed make it go faster or
+    // slower
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    Cuelist *cl = testChase(m_doc, par);
+    QVERIFY(cl != nullptr);
+    cl->setChaseBpm(120);
+    QCOMPARE(cl->effectiveChaseBpm(), 120.0);
+    auto current = [&]() { return cl->status().current; };
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+
+    /* GO: the next step now, the one after it 25 frames later */
+    renderFrames(m_doc, 10);
+    QCOMPARE(current(), 0);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 25);
+
+    /* Back: a step the other way now, and on from there */
+    renderFrames(m_doc, 5);
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 25);
+    // backward: Back goes on, GO back
+    cl->setChaseDirection(Cuelist::ChaseBackward);
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 2);
+    cl->setChaseDirection(Cuelist::ChaseForward);
+
+    /* a pause holds it; GO resumes it, and its step goes on where it was */
+    renderFrames(m_doc, 10);
+    cl->setPause(true);
+    renderFrames(m_doc, 60);
+    QCOMPARE(current(), 2);
+    QCOMPARE(shownColour(m_doc), 2);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 2);
+    int frames = framesUntil(m_doc, [&]() { return current() == 0; }, 100);
+    QVERIFY2(frames >= 13 && frames <= 15, qPrintable(QString::number(frames)));
+
+    /* a tapped rhythm wins over its BPM: a step every 200 ms; cleared, its
+       BPM again */
+    cl->setTapPeriod(200);
+    QCOMPARE(cl->effectiveChaseBpm(), 300.0);
+    QList<int> gaps;
+    QCOMPARE(chaseSteps(m_doc, cl, 4, &gaps).count(), 4);
+    QVERIFY2(gaps.first() <= 10, qPrintable(QString::number(gaps.first())));
+    QCOMPARE(gaps.mid(1), QList<int>({ 10, 10, 10 }));
+    cl->setTapPeriod(0);
+    QCOMPARE(cl->effectiveChaseBpm(), 120.0);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QCOMPARE(gaps, QList<int>({ 25, 25, 25 }));
+
+    /* BeatGO: a step on each division only */
+    cl->setDriveMode(Function::DriveBeatGO);
+    const int on = current();
+    renderFrames(m_doc, 60);
+    QCOMPARE(current(), on);
+    cl->requestDivisionJump();
+    renderFrames(m_doc);
+    QCOMPARE(current(), (on + 1) % 3);
+    cl->setDriveMode(Function::DriveOff);
+
+    /* its live speed x2: a step every 12 or 13 frames; the cue speed x0.5:
+       every 50. Its BPM is the one at x1 */
+    cl->setSpeedFactor(2.0);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 5, &gaps).count(), 5);
+    for (int gap : gaps.mid(1))
+        QVERIFY2(gap == 12 || gap == 13, qPrintable(QString::number(gap)));
+    cl->setSpeedFactor(1.0);
+    timer->setCueSpeed(0.5);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QCOMPARE(gaps.mid(1), QList<int>({ 50, 50 }));
+    QCOMPARE(cl->effectiveChaseBpm(), 120.0);
+    timer->setCueSpeed(1.0);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistChaseTimes()
+{
+    // the change of a step: a part of the step (50 % of a step of a second:
+    // half a second, through the values in between, the times of the cues
+    // left out), the times of each cue, or a cut (0); the BPM of the show by
+    // the multiplier, which follows the tempo of the show
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    Cuelist *cl = testChase(m_doc, par);
+    QVERIFY(cl != nullptr);
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    cl->setChaseBpm(60);
+    cl->setChaseXfade(50);
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 30);
+    QCOMPARE(shownColour(m_doc), 0);
+
+    /* 50 %: GO crossfades in half a second, the next step a second after it */
+    cl->go();
+    renderFrames(m_doc, 13);
+    QVERIFY2(out(0) > 60 && out(0) < 200 && out(1) > 60 && out(1) < 200,
+             qPrintable(QString("%1 %2").arg(out(0)).arg(out(1))));
+    QCOMPARE(out(2), 0);
+    renderFrames(m_doc, 15);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(framesUntil(m_doc, [&]() { return cl->status().current == 2; }, 100), 23);
+
+    /* the times of each cue: cue 3 fades in 400 ms, cues 1 and 2 cut (once
+       the change to cue 3 is over: a channel that already goes to its
+       target goes on with its fade) */
+    renderFrames(m_doc, 26);
+    QCOMPARE(shownColour(m_doc), 2);
+    cl->setChaseXfade(-1);
+    Cuelist::Cue third = cl->cueAt(2);
+    third.fade = 400;
+    QVERIFY(cl->replaceCue(third));
+    cl->goToCue(0);
+    renderFrames(m_doc);
+    QCOMPARE(shownColour(m_doc), 0);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(shownColour(m_doc), 1);
+    cl->go();
+    renderFrames(m_doc, 10);
+    QVERIFY2(out(2) > 60 && out(2) < 200, qPrintable(QString::number(out(2))));
+    renderFrames(m_doc, 12);
+    QCOMPARE(shownColour(m_doc), 2);
+
+    /* 0: a cut, also on cue 3 */
+    cl->setChaseXfade(0);
+    for (int colour : { 0, 1, 2 })
+    {
+        cl->go();
+        renderFrames(m_doc);
+        QCOMPARE(shownColour(m_doc), colour);
+    }
+
+    /* the BPM of the show by the multiplier: it follows the tempo */
+    cl->setChaseShowTempo(true);
+    QCOMPARE(cl->effectiveChaseBpm(), qreal(timer->bpmNumber()));
+    timer->requestBpmNumber(300);
+    cl->setChaseMultiplier(2.0);
+    QCOMPARE(cl->effectiveChaseBpm(), 600.0);
+    QList<int> gaps;
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QCOMPARE(gaps.mid(1), QList<int>({ 5, 5 }));
+    timer->requestBpmNumber(150);
+    QCOMPARE(cl->effectiveChaseBpm(), 300.0);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QCOMPARE(gaps.mid(1), QList<int>({ 10, 10 }));
+    // its own BPM again (60 by the multiplier)
+    cl->setChaseShowTempo(false);
+    QCOMPARE(cl->effectiveChaseBpm(), 120.0);
+    timer->requestBpmNumber(120);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistChaseXml()
+{
+    // a Chase in the show: only Mode with the defaults, ChaseBpm,
+    // ChaseShowBpm, ChaseMultiplier, ChaseXfade and ChaseDirection when not
+    // by default, nothing of them for the other types; loaded the same, and
+    // a copy; in a damaged file each one in range. The setters keep them in
+    // range. The length of a lap, and a super-scene block that starts in the
+    // middle: on the step it would play then, the next one when its step ends
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    Cuelist *cl = testChase(m_doc, par);
+    QVERIFY(cl != nullptr);
+
+    /* the defaults: 120 BPM, its own, x1, a cut, Forward */
+    {
+        std::unique_ptr<Cuelist> fresh(new Cuelist(m_doc));
+        QCOMPARE(fresh->chaseBpm(), 120);
+        QVERIFY(fresh->chaseShowTempo() == false);
+        QCOMPARE(fresh->chaseMultiplier(), 1.0);
+        QCOMPARE(fresh->chaseXfade(), 0);
+        QCOMPARE(fresh->chaseDirection(), Cuelist::ChaseForward);
+        QCOMPARE(fresh->effectiveChaseBpm(), 0.0);
+    }
+    cl->setChaseBpm(120);
+    const QString defaults = savedFunction(cl);
+    QVERIFY2(defaults.contains(" Mode=\"Chase\""), qPrintable(defaults));
+    QVERIFY2(defaults.contains("ChaseBpm") == false && defaults.contains("ChaseShowBpm") == false &&
+             defaults.contains("ChaseMultiplier") == false && defaults.contains("ChaseXfade") == false &&
+             defaults.contains("ChaseDirection") == false, qPrintable(defaults));
+
+    /* the setters keep them in range, and say when one changed */
+    QSignalSpy changed(cl, SIGNAL(changed(quint32)));
+    cl->setChaseBpm(5);
+    QCOMPARE(cl->chaseBpm(), 10);
+    cl->setChaseBpm(1000);
+    QCOMPARE(cl->chaseBpm(), 600);
+    cl->setChaseBpm(600);
+    QCOMPARE(changed.count(), 2);
+    cl->setChaseMultiplier(0.3);
+    QCOMPARE(cl->chaseMultiplier(), 0.25);
+    cl->setChaseMultiplier(3.0);
+    QCOMPARE(cl->chaseMultiplier(), 4.0);
+    cl->setChaseMultiplier(1.4);
+    QCOMPARE(cl->chaseMultiplier(), 1.0);
+    cl->setChaseMultiplier(0.0);
+    QCOMPARE(cl->chaseMultiplier(), 1.0);
+    cl->setChaseXfade(-7);
+    QCOMPARE(cl->chaseXfade(), -1);
+    cl->setChaseXfade(250);
+    QCOMPARE(cl->chaseXfade(), 100);
+    QCOMPARE(Cuelist::stringToChaseDirection("bounce"), Cuelist::ChaseBounce);
+    QCOMPARE(Cuelist::stringToChaseDirection("Sideways"), Cuelist::ChaseForward);
+    QCOMPARE(Cuelist::chaseDirectionToString(Cuelist::ChaseRandom), QString("Random"));
+
+    /* saved when not by default; loaded the same, and a copy */
+    cl->setChaseBpm(90);
+    cl->setChaseShowTempo(true);
+    cl->setChaseMultiplier(0.5);
+    cl->setChaseXfade(-1);
+    cl->setChaseDirection(Cuelist::ChaseBounce);
+    const QString text = savedFunction(cl);
+    QVERIFY2(text.contains(" Mode=\"Chase\" ChaseBpm=\"90\" ChaseShowBpm=\"1\" ChaseMultiplier=\"0.5\""
+                           " ChaseXfade=\"-1\" ChaseDirection=\"Bounce\""), qPrintable(text));
+    QCOMPARE(savedFunction(cl), text);
+    {
+        Doc other(this);
+        QXmlStreamReader reader(text);
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(Function::loader(reader, &other));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QCOMPARE(loaded->mode(), Cuelist::ModeChase);
+        QCOMPARE(loaded->chaseBpm(), 90);
+        QVERIFY(loaded->chaseShowTempo());
+        QCOMPARE(loaded->chaseMultiplier(), 0.5);
+        QCOMPARE(loaded->chaseXfade(), -1);
+        QCOMPARE(loaded->chaseDirection(), Cuelist::ChaseBounce);
+        QCOMPARE(savedFunction(loaded), text);
+    }
+    Function *copied = cl->createCopy(m_doc, false);
+    Cuelist *copy = qobject_cast<Cuelist *>(copied);
+    QVERIFY(copy != nullptr);
+    QCOMPARE(copy->chaseBpm(), 90);
+    QVERIFY(copy->chaseShowTempo());
+    QCOMPARE(copy->chaseMultiplier(), 0.5);
+    QCOMPARE(copy->chaseXfade(), -1);
+    QCOMPARE(copy->chaseDirection(), Cuelist::ChaseBounce);
+    delete copied;
+
+    /* another type doesn't save them; a Chase with the defaults again: as it was */
+    cl->setMode(Cuelist::ModeNormal);
+    QVERIFY2(savedFunction(cl).contains("Chase") == false, qPrintable(savedFunction(cl)));
+    cl->setMode(Cuelist::ModeChase);
+    cl->setChaseBpm(120);
+    cl->setChaseShowTempo(false);
+    cl->setChaseMultiplier(1.0);
+    cl->setChaseXfade(0);
+    cl->setChaseDirection(Cuelist::ChaseForward);
+    QCOMPARE(savedFunction(cl), defaults);
+
+    /* a damaged file: each one in range, what isn't one keeps the default */
+    const QString handmade = QString(
+        "<Engine>"
+        "<Function ID=\"63\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cuelist Tracking=\"1\" Mode=\"Chase\" ChaseBpm=\"5000\" ChaseShowBpm=\"yes\" ChaseMultiplier=\"3\""
+        " ChaseXfade=\"250\" ChaseDirection=\"sideways\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\"><V F=\"%1\" C=\"0\">255</V></Cue>"
+        "</Function>"
+        "<Function ID=\"64\" Type=\"Cuelist\" Name=\"Hand 2\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cuelist Tracking=\"1\" Mode=\"Chase\" ChaseBpm=\"abc\" ChaseMultiplier=\"-2\" ChaseXfade=\"x\""
+        " ChaseDirection=\"random\"/>"
+        "</Function>"
+        "</Engine>").arg(par);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());   // Engine
+    for (int i = 0; i < 2; i++)
+    {
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(Function::loader(reader, m_doc));
+    }
+    QVERIFY(reader.hasError() == false);
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(63));
+    QVERIFY(hand != nullptr);
+    QCOMPARE(hand->chaseBpm(), 600);
+    QVERIFY(hand->chaseShowTempo() == false);
+    QCOMPARE(hand->chaseMultiplier(), 4.0);
+    QCOMPARE(hand->chaseXfade(), 100);
+    QCOMPARE(hand->chaseDirection(), Cuelist::ChaseForward);
+    Cuelist *hand2 = qobject_cast<Cuelist *>(m_doc->function(64));
+    QVERIFY(hand2 != nullptr);
+    QCOMPARE(hand2->chaseBpm(), 120);
+    QCOMPARE(hand2->chaseMultiplier(), 1.0);
+    QCOMPARE(hand2->chaseXfade(), 0);
+    QCOMPARE(hand2->chaseDirection(), Cuelist::ChaseRandom);
+
+    /* the length of a lap: its steps by the step; there and back for a
+       Bounce; with a tapped rhythm, by it. A Normal list of GOs has no end */
+    cl->setChaseBpm(600);
+    QCOMPARE(cl->totalDuration(), 300u);
+    cl->setChaseDirection(Cuelist::ChaseBounce);
+    QCOMPARE(cl->totalDuration(), 400u);
+    cl->setChaseDirection(Cuelist::ChaseForward);
+    cl->setTapPeriod(200);
+    QCOMPARE(cl->totalDuration(), 600u);
+    cl->setTapPeriod(0);
+    cl->setMode(Cuelist::ModeNormal);
+    QCOMPARE(cl->totalDuration(), Function::infiniteSpeed());
+    cl->setMode(Cuelist::ModeChase);
+
+    /* a block 250 ms in: on cue 3, cue 1 50 ms later */
+    cl->start(timer, FunctionParent::master(), 250);
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 2);
+    QCOMPARE(shownColour(m_doc), 2);
+    QCOMPARE(framesUntil(m_doc, [&]() { return cl->status().current == 0; }, 20), 3);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    // Backward: on cue 2; a Bounce 350 ms in: on cue 2, on its way down
+    cl->setChaseDirection(Cuelist::ChaseBackward);
+    cl->start(timer, FunctionParent::master(), 250);
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->status().next, 0);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->setChaseDirection(Cuelist::ChaseBounce);
+    cl->start(timer, FunctionParent::master(), 350);
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->status().next, 0);
+    QCOMPARE(chaseSteps(m_doc, cl, 2), QList<int>({ 0, 1 }));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistEditorChase()
+{
+    // the editor: the options of a Chase (its BPM, the BPM of the show, the
+    // multiplier, the change and the direction), kept in range, each one an
+    // undo step. The playbacks: the BPM it plays at
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, listId);
+
+    /* the defaults; a Normal list plays at no BPM */
+    QVariantMap opts = editor->options(id);
+    QCOMPARE(opts.value("chaseBpm").toInt(), 120);
+    QCOMPARE(opts.value("chaseShowTempo").toBool(), false);
+    QCOMPARE(opts.value("chaseMultiplier").toDouble(), 1.0);
+    QCOMPARE(opts.value("chaseXfade").toInt(), 0);
+    QCOMPARE(opts.value("chaseDirection").toString(), QString("forward"));
+    QCOMPARE(pb->slotInfo(0, 0).value("chaseBpm").toDouble(), 0.0);
+
+    /* each one, in range */
+    editor->setOption(id, "mode", "chase");
+    QCOMPARE(pb->slotInfo(0, 0).value("chaseBpm").toDouble(), 120.0);
+    editor->setOption(id, "chaseBpm", 9999);
+    QCOMPARE(cl->chaseBpm(), 600);
+    editor->setOption(id, "chaseBpm", 90);
+    QCOMPARE(cl->chaseBpm(), 90);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+    editor->setOption(id, "chaseMultiplier", 3);
+    QCOMPARE(cl->chaseMultiplier(), 4.0);
+    editor->setOption(id, "chaseMultiplier", 2);
+    QCOMPARE(cl->chaseMultiplier(), 2.0);
+    QCOMPARE(pb->slotInfo(0, 0).value("chaseBpm").toDouble(), 180.0);
+    editor->setOption(id, "chaseShowTempo", true);
+    QVERIFY(cl->chaseShowTempo());
+    QCOMPARE(pb->slotInfo(0, 0).value("chaseBpm").toDouble(), core.doc()->masterTimer()->bpmNumber() * 2.0);
+    editor->setOption(id, "chaseXfade", -1);
+    QCOMPARE(cl->chaseXfade(), -1);
+    editor->setOption(id, "chaseDirection", "random");
+    QCOMPARE(cl->chaseDirection(), Cuelist::ChaseRandom);
+    opts = editor->options(id);
+    QCOMPARE(opts.value("chaseBpm").toInt(), 90);
+    QCOMPARE(opts.value("chaseShowTempo").toBool(), true);
+    QCOMPARE(opts.value("chaseMultiplier").toDouble(), 2.0);
+    QCOMPARE(opts.value("chaseXfade").toInt(), -1);
+    QCOMPARE(opts.value("chaseDirection").toString(), QString("random"));
+    editor->setOption(id, "chaseDirection", "nothing");
+    QCOMPARE(cl->chaseDirection(), Cuelist::ChaseForward);
+    // a tapped rhythm: the BPM of the playback
+    cl->setTapPeriod(400);
+    QCOMPARE(pb->slotInfo(0, 0).value("chaseBpm").toDouble(), 150.0);
+    cl->setTapPeriod(0);
+
+    /* each option an undo step of its own (the same one again at once is the
+       same step: the direction is back as it was, no step) */
+    editor->undo(id);
+    QCOMPARE(cl->chaseXfade(), 0);
+    QCOMPARE(cl->chaseDirection(), Cuelist::ChaseForward);
+    editor->undo(id);
+    QVERIFY(cl->chaseShowTempo() == false);
+    editor->undo(id);
+    QCOMPARE(cl->chaseMultiplier(), 1.0);
+    QCOMPARE(cl->chaseBpm(), 90);
+    editor->undo(id);
+    QCOMPARE(cl->chaseBpm(), 120);
+    QCOMPARE(cl->mode(), Cuelist::ModeChase);
+    editor->redo(id);
+    QCOMPARE(cl->chaseBpm(), 90);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G1: the last change wins (LTP per channel)
+ *********************************************************************/
+
+void Backend_Test::cuelistLastChangeWins()
+{
+    // two cuelists of the same priority on a head: the pan follows the last
+    // GO that changed it, a GO that changes only the gobo doesn't take the
+    // pan back, and a release glides to the list that had it. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), gobo(spot, 6);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+
+    Cuelist *a = new Cuelist(m_doc);
+    a->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(a));
+    QCOMPARE(a->addCue(testCue(1000, { { pan, 10 } })), 0);
+    QCOMPARE(a->addCue(testCue(2000, { { pan, 50 } })), 1);
+    // cue 3 releases the pan in 300 ms (15 frames)
+    Cuelist::Cue release = testCue(3000, {}, 300);
+    release.releases = { pan };
+    QCOMPARE(a->addCue(release), 2);
+    Cuelist *b = new Cuelist(m_doc);
+    b->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(b));
+    QCOMPARE(b->addCue(testCue(1000, { { pan, 200 }, { gobo, 50 } })), 0);
+    QCOMPARE(b->addCue(testCue(2000, { { gobo, 80 } })), 1);
+    QCOMPARE(a->priority(), b->priority());
+
+    // the list started last has the pan, as before
+    a->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 10);
+    b->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(6), 50);
+
+    // a GO of A that changes the pan takes it, though B started later
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 1);
+    QCOMPARE(output(0), 50);
+    QCOMPARE(output(6), 50);
+
+    // a GO of B that changes only the gobo: A keeps the pan
+    b->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(b->status().current, 1);
+    QCOMPARE(output(6), 80);
+    QCOMPARE(output(0), 50);
+    renderFrames(m_doc, 20);
+    QCOMPARE(output(0), 50);
+
+    // A releases the pan in 300 ms: it glides up to the 200 of B on every
+    // frame, never down
+    a->go();
+    int previous = output(0);
+    bool between = false;
+    for (int frame = 0; frame < 25; frame++)
+    {
+        renderFrames(m_doc);
+        const int p = output(0);
+        QVERIFY2(p >= previous, qPrintable(QString("pan %1 after %2, frame %3").arg(p).arg(previous).arg(frame)));
+        if (p > 60 && p < 190)
+            between = true;
+        previous = p;
+    }
+    QVERIFY(between);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(6), 80);
+
+    a->stop(FunctionParent::master());
+    b->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(a->isRunning() == false && b->isRunning() == false);
+}
+
+void Backend_Test::cuelistLastChangeWinsRules()
+{
+    // what stays: a higher priority always wins, and the intensities of the
+    // same priority take the highest value. A scene started later takes the
+    // pan (the last one started), a GO that doesn't change it leaves it, and
+    // the next GO that changes it takes it back. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), dimmer(spot, 3);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+
+    Cuelist *a = new Cuelist(m_doc);
+    a->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(a));
+    QCOMPARE(a->addCue(testCue(1000, { { pan, 10 }, { dimmer, 100 } })), 0);
+    QCOMPARE(a->addCue(testCue(2000, { { pan, 50 }, { dimmer, 220 } })), 1);
+    QCOMPARE(a->addCue(testCue(3000, { { dimmer, 30 } })), 2);
+    Cuelist *b = new Cuelist(m_doc);
+    b->setFadeOutSpeed(0);
+    b->setPriority(8);
+    QVERIFY(m_doc->addFunction(b));
+    QCOMPARE(b->addCue(testCue(1000, { { pan, 200 }, { dimmer, 200 } })), 0);
+    QCOMPARE(b->addCue(testCue(2000, { { dimmer, 150 } })), 1);
+
+    a->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    b->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(3), 200);
+
+    // B at priority 8: its values win whatever A does, its dimmer too
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 1);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(3), 200);
+
+    // B down to the priority of A (it moves above A): the dimmers take the
+    // highest value, whichever list changed last
+    b->setPriority(a->priority());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(3), 220);
+    b->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(b->status().current, 1);
+    QCOMPARE(output(3), 220);
+    // a GO of A that changes only the dimmer leaves the pan to B
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 2);
+    QCOMPARE(output(3), 150);
+    QCOMPARE(output(0), 200);
+
+    // a scene started later takes the pan
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 0, 222);
+    QVERIFY(m_doc->addFunction(scene));
+    QCOMPARE(scene->priority(), a->priority());
+    scene->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(output(0), 222);
+    QCOMPARE(output(3), 150);
+
+    // the next GO of A that changes the pan takes it back (cue 1: it loops)
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 0);
+    QCOMPARE(output(0), 10);
+    QCOMPARE(output(3), 150);
+
+    // released: the pan goes back to the scene, the last one before A
+    a->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(a->isRunning() == false);
+    QCOMPARE(output(0), 222);
+    QCOMPARE(output(3), 150);
+
+    scene->stop(FunctionParent::master());
+    b->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistLastChangeWinsFaderCount()
+{
+    // two lists of the same priority take the pan from each other on every
+    // GO: the list keeps its tracked values in its oldest fader and never has
+    // more than three; the faders left with nothing go. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), dimmer(spot, 3), gobo(spot, 6);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+
+    Cuelist *a = new Cuelist(m_doc);
+    a->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(a));
+    QCOMPARE(a->addCue(testCue(1000, { { pan, 10 }, { gobo, 20 }, { dimmer, 200 } })), 0);
+    QCOMPARE(a->addCue(testCue(2000, { { pan, 60 } })), 1);
+    Cuelist *b = new Cuelist(m_doc);
+    b->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(b));
+    QCOMPARE(b->addCue(testCue(1000, { { pan, 200 } })), 0);
+    QCOMPARE(b->addCue(testCue(2000, { { pan, 150 } })), 1);
+
+    a->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    b->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(fadersOf(m_doc, a->id(), true).count(), 1);
+
+    // 20 GOs, one list and the other (both loop): A 60, 10, 60...; B 150, 200...
+    int most = 0;
+    for (int i = 0; i < 20; i++)
+    {
+        const bool ofA = i % 2 == 0;
+        (ofA ? a : b)->go();
+        renderFrames(m_doc, 2);
+        const bool second = (i / 2) % 2 == 0;
+        const int expected = ofA ? (second ? 60 : 10) : (second ? 150 : 200);
+        QVERIFY2(output(0) == expected, qPrintable(QString("GO %1: pan %2, not %3").arg(i).arg(output(0)).arg(expected)));
+        QCOMPARE(output(6), 20);
+        QCOMPARE(output(3), 200);
+        most = qMax(most, int(fadersOf(m_doc, a->id(), true).count()));
+    }
+    QVERIFY2(most <= 3, qPrintable(QString::number(most)));
+
+    // the oldest fader of A keeps the gobo and the dimmer, the newest one the
+    // pan; B (only the pan) is down to one
+    renderFrames(m_doc, 2);
+    const QList<QSharedPointer<GenericFader>> faders = fadersOf(m_doc, a->id(), true);
+    QCOMPARE(faders.count(), 2);
+    QCOMPARE(faders.first()->channelsCount(), 2);
+    QVERIFY(holdsChannel({ faders.first() }, spot, 3) && holdsChannel({ faders.first() }, spot, 6));
+    QCOMPARE(faders.last()->channelsCount(), 1);
+    QVERIFY(holdsChannel({ faders.last() }, spot, 0));
+    QCOMPARE(fadersOf(m_doc, b->id(), true).count(), 1);
+    // and the ones that went have left the universe
+    QCOMPARE(fadersOf(m_doc, a->id(), false).count(), 2);
+    QCOMPARE(fadersOf(m_doc, b->id(), false).count(), 1);
+
+    a->stop(FunctionParent::master());
+    b->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(fadersOf(m_doc, a->id(), false).isEmpty());
+}
+
+void Backend_Test::cuelistLastChangeWinsOlderFaders()
+{
+    // what an older fader of a list holds still follows the list: its pause,
+    // the cue speed, its level, its priority (its faders keep their order),
+    // a release and a stop. A 16-bit pan moves up as one channel, both
+    // bytes. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), panFine(spot, 1), dimmer(spot, 5), gobo(spot, 8);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+
+    Cuelist *a = new Cuelist(m_doc);
+    a->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(a));
+    QCOMPARE(a->addCue(testCue(1000, { { pan, 100 }, { panFine, 0 }, { gobo, 20 }, { dimmer, 0 } })), 0);
+    // cue 2 fades the dimmer up in 1 s (50 frames)
+    QCOMPARE(a->addCue(testCue(2000, { { dimmer, 200 } }, 1000)), 1);
+    // cue 3 changes only the coarse pan
+    QCOMPARE(a->addCue(testCue(3000, { { pan, 150 } })), 2);
+    Cuelist::Cue release = testCue(4000, {});
+    release.releases = { gobo };
+    QCOMPARE(a->addCue(release), 3);
+    Cuelist *b = new Cuelist(m_doc);
+    b->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(b));
+    QCOMPARE(b->addCue(testCue(1000, { { pan, 200 }, { panFine, 50 }, { gobo, 50 } })), 0);
+    QCOMPARE(b->addCue(testCue(2000, { { panFine, 99 } })), 1);
+
+    a->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    b->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(1), 50);
+    QCOMPARE(output(8), 50);
+
+    // A starts its dimmer fade, B takes the fine pan, and A the pan again:
+    // the fade goes on in an older fader of A
+    a->go();
+    renderFrames(m_doc, 2);
+    b->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(1), 99);
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 2);
+    // the whole 16-bit pan of A, its fine byte too, in one FadeChannel
+    QCOMPARE(output(0), 150);
+    QCOMPARE(output(1), 0);
+    QList<QSharedPointer<GenericFader>> faders = fadersOf(m_doc, a->id(), true);
+    QCOMPARE(faders.count(), 3);
+    QCOMPARE(faders.last()->channelsCount(), 1);
+    QVERIFY(holdsChannel({ faders.last() }, spot, 0));
+    QVERIFY(holdsChannel({ faders.at(1) }, spot, 5));
+    const int fading = output(5);
+    QVERIFY2(fading > 0 && fading < 100, qPrintable(QString::number(fading)));
+
+    // paused: the fade in the older fader holds too
+    a->setPause(true);
+    renderFrames(m_doc, 2);
+    const int held = output(5);
+    renderFrames(m_doc, 10);
+    QCOMPARE(output(5), held);
+    a->setPause(false);
+    // the cue speed reaches it: at x10 the rest of the 1 s fade (about 44
+    // frames) takes a few
+    timer->setCueSpeed(10.0);
+    QVERIFY(framesUntil(m_doc, [&]() { return output(5) == 200; }, 10) > 0);
+    timer->setCueSpeed(1.0);
+
+    // the level of the list scales it
+    a->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(5), 100);
+    QCOMPARE(output(0), 150);
+    a->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(5), 200);
+
+    // a new priority takes the older faders too, in their order: at 8 the
+    // gobo of A, in its oldest fader, is above B
+    QCOMPARE(output(8), 50);
+    faders = fadersOf(m_doc, a->id(), true);
+    a->setPriority(8);
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(8), 20);
+    QVERIFY(fadersOf(m_doc, a->id(), true) == faders);
+    a->setPriority(5);
+    renderFrames(m_doc, 2);
+    QVERIFY(fadersOf(m_doc, a->id(), true) == faders);
+    // (all of them above B now)
+    QCOMPARE(output(8), 20);
+
+    // cue 4 releases the gobo of the oldest fader: back to B, and the fader,
+    // left with nothing, goes
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 3);
+    QCOMPARE(output(8), 50);
+    renderFrames(m_doc, 2);
+    faders = fadersOf(m_doc, a->id(), true);
+    QCOMPARE(faders.count(), 2);
+    QVERIFY(holdsChannel(faders, spot, 8) == false);
+
+    // released in 300 ms: all of its faders fade out to what B shows
+    a->setFadeOutSpeed(300);
+    a->stop(FunctionParent::master());
+    QVERIFY(framesUntil(m_doc, [&]() { return a->isRunning() == false; }, 5) >= 0);
+    QVERIFY(framesUntil(m_doc, [&]() { return fadersOf(m_doc, a->id(), false).isEmpty(); }, 40) > 0);
+    QCOMPARE(output(0), 200);
+    QCOMPARE(output(1), 99);
+    QCOMPARE(output(8), 50);
+    QCOMPARE(output(5), 0);
+
+    b->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistLastChangeWinsFx()
+{
+    // the FX of a list play in faders of their own, which don't pass the
+    // list: it keeps one fader. An FX a GO starts while its player runs is a
+    // change too: it goes above a list of the same priority that came after
+    // it, around the base of its own list. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), tilt(spot, 1), dimmer(spot, 3), gobo(spot, 6);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+    // the lowest and highest values of $address in $frames frames
+    auto range = [&](int address, int frames) {
+        int low = 255, high = 0;
+        for (int i = 0; i < frames; i++)
+        {
+            renderFrames(m_doc);
+            low = qMin(low, output(address));
+            high = qMax(high, output(address));
+        }
+        return qMakePair(low, high);
+    };
+    auto text = [](const QPair<int, int> &r) { return QString("%1-%2").arg(r.first).arg(r.second); };
+
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 50;
+    wave.bpm = 120;
+    wave.fixtures = { spot };
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.figure = FXScene::Circle;
+    circle.swing = 20;
+    circle.swingTilt = 20;
+    circle.bpm = 120;
+    circle.fixtures = { spot };
+
+    Cuelist *a = new Cuelist(m_doc);
+    a->setName("Waves");
+    a->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(a));
+    // cue 1: the dimmer waves; pan and tilt are static. Cue 2: a gobo. Cue 3:
+    // a circle around the pan and tilt of cue 1
+    Cuelist::Cue first = testCue(1000, { { pan, 128 }, { tilt, 128 }, { dimmer, 128 } });
+    first.fx = { wave };
+    QCOMPARE(a->addCue(first), 0);
+    QCOMPARE(a->addCue(testCue(2000, { { gobo, 30 } })), 1);
+    Cuelist::Cue third = testCue(3000, {});
+    third.fx = { circle };
+    QCOMPARE(a->addCue(third), 2);
+    Cuelist *b = new Cuelist(m_doc);
+    b->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(b));
+    QCOMPARE(b->addCue(testCue(1000, { { pan, 200 } })), 0);
+
+    // the player of A writes after its fader, and a GO keeps that one fader
+    a->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 1);
+    QCOMPARE(output(6), 30);
+    QCOMPARE(fadersOf(m_doc, a->id(), true).count(), 1);
+
+    // B, started later, has the pan
+    b->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(range(0, 25), qMakePair(200, 200));
+
+    // the circle of A's GO moves the pan around the 128 of A, above B
+    a->go();
+    renderFrames(m_doc, 2);
+    QCOMPARE(a->status().current, 2);
+    const QPair<int, int> r = range(0, 50);
+    QVERIFY2(r.first < 118 && r.second > 138 && r.second < 190, qPrintable(text(r)));
+
+    a->stop(FunctionParent::master());
+    b->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G5c: Override cuelists
+ *********************************************************************/
+
+void Backend_Test::cuelistOverride()
+{
+    // an Override list over a scene: its fader crossfades the whole look
+    // (dimmer, pan, tilt) with what is below. At full it replaces it (no
+    // HTP merge), at zero it is as if it weren't there and stays loaded,
+    // also at the priority of the scene. A new type plays from the next
+    // start. The programmer stays above it. A release fades back to what is
+    // below. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), tilt(spot, 1), dimmer(spot, 3);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+    // the dimmer, the pan and the tilt
+    auto look = [&]() { return QString("%1/%2/%3").arg(output(3)).arg(output(0)).arg(output(1)); };
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 3, 200);
+    scene->setValue(spot, 0, 0);
+    scene->setValue(spot, 1, 100);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(look(), QString("200/0/100"));
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setMode(Cuelist::ModeOverride);
+    cl->setPriority(Function::maxPriority());
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { pan, 200 }, { tilt, 50 }, { dimmer, 50 } })), 0);
+
+    /* at full its look (the dimmer is 50, not the 200 below), half way, and
+       nothing of it at zero */
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("50/200/50"));
+    cl->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("125/100/75"));
+    cl->adjustAttribute(0.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("200/0/100"));
+    QVERIFY(cl->isRunning());
+    cl->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("50/200/50"));
+
+    /* at the priority of the scene (above it: it came later) it still replaces */
+    cl->setPriority(scene->priority());
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("50/200/50"));
+    cl->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("125/100/75"));
+
+    /* a new type plays from the next start. Normal: the dimmers merge
+       (HTP), the fader scales only the dimmer */
+    cl->setMode(Cuelist::ModeNormal);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("125/100/75"));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->start(timer, FunctionParent::master());
+    cl->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("200/200/50"));
+    cl->setMode(Cuelist::ModeOverride);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("200/200/50"));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->start(timer, FunctionParent::master());
+    cl->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("125/100/75"));
+
+    /* the programmer (priority 10) stays above it */
+    cl->setPriority(Function::maxPriority());
+    cl->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(look(), QString("50/200/50"));
+    {
+        ZoneManager zones(m_doc);
+        Programmer prog(m_doc, &zones);
+        prog.select(spot);
+        prog.setDimmer(30);
+        prog.setChannelValue("pan", 77);
+        renderFrames(m_doc, 2);
+        QCOMPARE(look(), QString("30/77/50"));
+        prog.clear();
+        QVERIFY(framesUntil(m_doc, [&]() { return look() == QString("50/200/50"); }, 50) >= 0);
+    }
+
+    /* released in 500 ms: back to what is below, never the other way */
+    cl->setFadeOutSpeed(500);
+    cl->stop(FunctionParent::master());
+    int dim = output(3), p = output(0), t = output(1);
+    bool between = false;
+    for (int frame = 0; frame < 30; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(output(3) >= dim && output(0) <= p && output(1) >= t,
+                 qPrintable(QString("%1 after %2/%3/%4, frame %5").arg(look()).arg(dim).arg(p).arg(t).arg(frame)));
+        dim = output(3);
+        p = output(0);
+        t = output(1);
+        if (dim > 70 && dim < 180 && p > 20 && p < 180)
+            between = true;
+    }
+    QVERIFY(between);
+    QCOMPARE(look(), QString("200/0/100"));
+    QVERIFY(fadersOf(m_doc, cl->id(), false).isEmpty());
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistOverrideFades()
+{
+    // a cue fade and the fader multiply: the first cue fades in from what is
+    // below, never past it; a cue that releases a channel: it glides back to
+    // what is below at the level of the fader, and a GO that takes it again
+    // on its way goes on from where it is. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), dimmer(spot, 3);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 3, 200);
+    scene->setValue(spot, 0, 0);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(timer, FunctionParent::master());
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setMode(Cuelist::ModeOverride);
+    cl->setPriority(Function::maxPriority());
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    // cue 1 fades in in 400 ms (20 frames)
+    QCOMPARE(cl->addCue(testCue(1000, { { pan, 200 }, { dimmer, 50 } }, 400)), 0);
+    // cue 2: the pan to 100 in 1 s (50 frames)
+    QCOMPARE(cl->addCue(testCue(2000, { { pan, 100 } }, 1000)), 1);
+    // cue 3 releases the pan in 400 ms (20 frames); cue 4 takes it again in 400 ms
+    Cuelist::Cue release = testCue(3000, {}, 400);
+    release.releases = { pan };
+    QCOMPARE(cl->addCue(release), 2);
+    QCOMPARE(cl->addCue(testCue(4000, { { pan, 200 } }, 400)), 3);
+
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(3), 200);
+    QCOMPARE(output(0), 0);
+
+    // at half the fader: the dimmer from 200 down to 125, the pan up to 100
+    cl->start(timer, FunctionParent::master());
+    cl->adjustAttribute(0.5, Function::Intensity);
+    int dim = output(3), previous = output(0);
+    for (int frame = 0; frame < 25; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(output(3) <= dim && output(3) >= 125 && output(0) >= previous,
+                 qPrintable(QString("%1/%2 after %3/%4, frame %5").arg(output(3)).arg(output(0)).arg(dim).arg(previous).arg(frame)));
+        dim = output(3);
+        previous = output(0);
+    }
+    QCOMPARE(output(0), 100);
+    QCOMPARE(output(3), 125);
+
+    // the fade at half the fader: from 100 to 50, half way after half the time
+    cl->go();
+    for (int frame = 0; frame < 60; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(output(0) <= previous, qPrintable(QString("pan %1 after %2, frame %3").arg(output(0)).arg(previous).arg(frame)));
+        if (frame == 24)
+            QVERIFY2(qAbs(output(0) - 75) <= 2, qPrintable(QString::number(output(0))));
+        QCOMPARE(output(3), 125);
+        previous = output(0);
+    }
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(output(0), 50);
+
+    // released by cue 3: down to what is below, in small steps
+    cl->go();
+    for (int frame = 0; frame < 10; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(output(0) <= previous && previous - output(0) <= 4,
+                 qPrintable(QString("pan %1 after %2, frame %3").arg(output(0)).arg(previous).arg(frame)));
+        previous = output(0);
+    }
+    QCOMPARE(cl->status().current, 2);
+    QVERIFY2(previous > 15 && previous < 35, qPrintable(QString::number(previous)));
+
+    // cue 4 takes it again on its way: from where it is, up to 100
+    cl->go();
+    for (int frame = 0; frame < 30; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(output(0) >= previous && output(0) - previous <= 6,
+                 qPrintable(QString("pan %1 after %2, frame %3").arg(output(0)).arg(previous).arg(frame)));
+        previous = output(0);
+    }
+    QCOMPARE(cl->status().current, 3);
+    QCOMPARE(output(0), 100);
+    QCOMPARE(output(3), 125);
+
+    cl->stop(FunctionParent::master());
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistOverrideFine()
+{
+    // a 16-bit pan is mixed as one value, not byte by byte, and it goes back
+    // to what is below as one value too. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "14ch Extended", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const Key pan(spot, 0), panFine(spot, 1);
+    MasterTimer *timer = m_doc->masterTimer();
+    auto wide = [&]() { return renderedValue(m_doc, 0) * 256 + renderedValue(m_doc, 1); };
+
+    // below: 10/200 (2760); the list: 11/0 (2816)
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 0, 10);
+    scene->setValue(spot, 1, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(timer, FunctionParent::master());
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setMode(Cuelist::ModeOverride);
+    cl->setPriority(Function::maxPriority());
+    cl->setFadeOutSpeed(500);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { pan, 11 }, { panFine, 0 } })), 0);
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(wide(), 2816);
+
+    // half way: 2788 (10/228; byte by byte it would be 11/100)
+    cl->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(wide(), 2788);
+    cl->adjustAttribute(0.25, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(wide(), 2774);
+    cl->adjustAttribute(0.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(wide(), 2760);
+
+    // released at full: down to 2760 as one value, never back up
+    cl->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(wide(), 2816);
+    cl->stop(FunctionParent::master());
+    int previous = wide();
+    for (int frame = 0; frame < 30; frame++)
+    {
+        renderFrames(m_doc);
+        QVERIFY2(wide() <= previous, qPrintable(QString("%1 after %2, frame %3").arg(wide()).arg(previous).arg(frame)));
+        previous = wide();
+    }
+    QCOMPARE(wide(), 2760);
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistEditorOverride()
+{
+    // the editor: switched to Override, a list at the default priority goes
+    // to the highest one, in the same undo step; another priority stays.
+    // The playbacks know the type
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, listId);
+    QCOMPARE(cl->priority(), Function::defaultPriority());
+
+    editor->setOption(id, "mode", "override");
+    QCOMPARE(cl->mode(), Cuelist::ModeOverride);
+    QCOMPARE(cl->priority(), Function::maxPriority());
+    QCOMPARE(editor->options(id).value("priority").toInt(), Function::maxPriority());
+    QCOMPARE(pb->slotInfo(0, 0).value("mode").toString(), QString("override"));
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+    editor->undo(id);
+    QCOMPARE(cl->mode(), Cuelist::ModeNormal);
+    QCOMPARE(cl->priority(), Function::defaultPriority());
+    editor->redo(id);
+    QCOMPARE(cl->mode(), Cuelist::ModeOverride);
+    QCOMPARE(cl->priority(), Function::maxPriority());
+
+    // back to Normal it keeps its priority; at another one it stays there
+    editor->setOption(id, "mode", "normal");
+    QCOMPARE(cl->priority(), Function::maxPriority());
+    editor->setOption(id, "priority", 7);
+    editor->setOption(id, "mode", "override");
+    QCOMPARE(cl->mode(), Cuelist::ModeOverride);
+    QCOMPARE(cl->priority(), 7);
+    // already Override: setting the type again changes nothing
+    editor->setOption(id, "priority", Function::defaultPriority());
+    editor->setOption(id, "mode", "override");
+    QCOMPARE(cl->priority(), Function::defaultPriority());
+    // another type never touches it
+    editor->setOption(id, "mode", "chase");
+    QCOMPARE(cl->priority(), Function::defaultPriority());
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G7b: the A/B crossfade fader
+ *********************************************************************/
+
+namespace
+{
+
+/** A cuelist of $cues (released at once), on playback 1 of $pb with its
+ *  fader an A/B crossfade */
+Cuelist *crossfadeList(Doc *doc, PlaybackManager *pb, const QList<Cuelist::Cue> &cues)
+{
+    Cuelist *cl = new Cuelist(doc);
+    cl->setName("AB");
+    cl->setFadeOutSpeed(0);
+    if (doc->addFunction(cl) == false)
+        return nullptr;
+    for (const Cuelist::Cue &cue : cues)
+    {
+        if (cl->addCue(cue) < 0)
+            return nullptr;
+    }
+    pb->assign(0, 0, int(cl->id()));
+    pb->setSlotOption(0, 0, "faderMode", "crossfade");
+    return cl;
+}
+
+}
+
+void Backend_Test::playbackCrossfadeFader()
+{
+    // the first value only tells where the fader is. Leaving its end, the
+    // next cue starts and its fade follows the fader, not the clock; the
+    // other end completes it, and the next travel, the other way, plays the
+    // following cue. Back where it started cancels it: the look and the cue
+    // before are back. GO in the middle lets it finish in the time it has
+    // left, with no new cue. The fader is no intensity. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 3), 1);
+    const quint32 fxi = m_doc->fixtures().first()->id();
+    const Key d0(fxi, 0), d1(fxi, 1), d2(fxi, 2);
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+    auto around = [&](int address, int value) { return qAbs(output(address) - value) <= 1; };
+    auto text = [&]() { return QString("%1/%2/%3").arg(output(0)).arg(output(1)).arg(output(2)); };
+
+    PlaybackManager pb(m_doc, nullptr, nullptr, nullptr);
+    Cuelist *cl = crossfadeList(m_doc, &pb, { testCue(1000, { { d0, 0 } }),
+                                              testCue(2000, { { d0, 255 } }, 1000),
+                                              testCue(3000, { { d0, 55 }, { d1, 200 } }, 1000),
+                                              testCue(4000, { { d2, 100 } }, 1000) });
+    QVERIFY(cl != nullptr);
+    QCOMPARE(pb.slotInfo(0, 0).value("faderMode").toString(), QString("crossfade"));
+
+    // cue 1 by GO, at the level of the playback
+    pb.go(0, 0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE(cl->getAttributeValue(Function::Intensity), 1.0);
+
+    /* the first value only tells where the fader is */
+    QVERIFY(pb.faderKnown(0, 0) == false);
+    pb.setLevel(0, 0, 0.0);
+    QVERIFY(pb.faderKnown(0, 0));
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual == false);
+
+    /* half way: cue 2 at half, and it stays there (no clock) */
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual);
+    QVERIFY(cl->status().fading);
+    QVERIFY2(around(0, 128), qPrintable(text()));
+    renderFrames(m_doc, 60);
+    QVERIFY2(around(0, 128), qPrintable(text()));
+    QVERIFY(qAbs(cl->status().progress - 0.5) < 0.01);
+    QCOMPARE(pb.level(0, 0), 0.5);
+    QCOMPARE(pb.slotInfo(0, 0).value("xfadePos").toDouble(), 0.5);
+    // (the hand has it: no Live Time for it)
+    QVERIFY(pb.slotInfo(0, 0).value("manual").toBool());
+    QVERIFY(pb.slotInfo(0, 0).value("fading").toBool());
+    // the playback plays at the level it had
+    QCOMPARE(pb.slotInfo(0, 0).value("level").toDouble(), 1.0);
+    QCOMPARE(cl->getAttributeValue(Function::Intensity), 1.0);
+    // back and on: the fade follows
+    pb.setLevel(0, 0, 0.25);
+    renderFrames(m_doc, 2);
+    QVERIFY2(around(0, 64), qPrintable(text()));
+    pb.setLevel(0, 0, 0.75);
+    renderFrames(m_doc, 2);
+    QVERIFY2(around(0, 191), qPrintable(text()));
+
+    /* the other end: cue 2 is complete; jitter there does nothing */
+    pb.setLevel(0, 0, 1.0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(0), 255);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual == false);
+    QVERIFY(cl->status().fading == false);
+    QVERIFY(pb.slotInfo(0, 0).value("manual").toBool() == false);
+    pb.setLevel(0, 0, 0.995);
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual == false);
+
+    /* the next travel, down: cue 3 at half (the dimmer down, the other up) */
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 2);
+    QVERIFY2(around(0, 155) && around(1, 100), qPrintable(text()));
+
+    /* back where it started: cancelled, cue 2 again, and it stays */
+    pb.setLevel(0, 0, 0.7);
+    renderFrames(m_doc, 2);
+    QVERIFY2(around(0, 195) && around(1, 60), qPrintable(text()));
+    pb.setLevel(0, 0, 1.0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(text(), QString("255/0/0"));
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual == false);
+    renderFrames(m_doc, 60);
+    QCOMPARE(text(), QString("255/0/0"));
+    QCOMPARE(cl->status().current, 1);
+
+    /* GO half way: cue 3 finishes in the 500 ms it has left; no new cue */
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 2);
+    pb.go(0, 0);
+    const int frames = framesUntil(m_doc, [&]() { return output(1) == 200; }, 100);
+    QVERIFY2(frames >= 22 && frames <= 28, qPrintable(QString::number(frames)));
+    QCOMPARE(text(), QString("55/200/0"));
+    QCOMPARE(cl->status().current, 2);
+    QVERIFY(cl->status().manual == false);
+    // the rest of that travel does nothing; the next one, up, plays cue 4
+    pb.setLevel(0, 0, 0.0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 2);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 3);
+    QVERIFY2(around(2, 50), qPrintable(text()));
+    pb.setLevel(0, 0, 1.0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(text(), QString("55/200/100"));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::playbackCrossfadeStart()
+{
+    // a stopped list: the fader leaving its end starts it on the cue it
+    // starts on, fading in with the fader (a cue with no time linearly over
+    // the travel). Back where it started: the list is released, and it
+    // starts on that cue again. The whole travel at once (a double click)
+    // completes it. Released in the middle of a travel: the rest of that
+    // travel does nothing, the next one starts it. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const Key d0(m_doc->fixtures().first()->id(), 0);
+    auto output = [&]() { return renderedValue(m_doc, 0); };
+    auto around = [&](int value) { return qAbs(output() - value) <= 1; };
+
+    PlaybackManager pb(m_doc, nullptr, nullptr, nullptr);
+    Cuelist *cl = crossfadeList(m_doc, &pb, { testCue(1000, { { d0, 80 } }), testCue(2000, { { d0, 200 } }, 1000) });
+    QVERIFY(cl != nullptr);
+    auto stopped = [&]() { return framesUntil(m_doc, [&]() { return cl->isRunning() == false; }, 20) >= 0; };
+
+    /* the end, then the first cue fading in with the fader */
+    pb.setLevel(0, 0, 0.0);
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->stopped());
+    pb.setLevel(0, 0, 0.25);
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->stopped() == false);
+    QCOMPARE(pb.state(0, 0), 2);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual);
+    QVERIFY2(around(20), qPrintable(QString::number(output())));
+    pb.setLevel(0, 0, 0.75);
+    renderFrames(m_doc, 2);
+    QVERIFY2(around(60), qPrintable(QString::number(output())));
+    // (no time: over the travel, not over a time of the clock)
+    renderFrames(m_doc, 60);
+    QVERIFY2(around(60), qPrintable(QString::number(output())));
+
+    /* back where it started: released, and it starts on cue 1 again */
+    pb.setLevel(0, 0, 0.0);
+    QVERIFY(stopped());
+    QCOMPARE(output(), 0);
+    QCOMPARE(pb.state(0, 0), 0);
+    QCOMPARE(pb.nextCue(0, 0), 0);
+
+    /* from the cue chosen to start on: cancelled, still that one (a GO too) */
+    pb.setNextCue(0, 0, 1);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY2(around(100), qPrintable(QString::number(output())));
+    pb.setLevel(0, 0, 0.0);
+    QVERIFY(stopped());
+    QCOMPARE(output(), 0);
+    QCOMPARE(pb.nextCue(0, 0), 1);
+    pb.go(0, 0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual == false);
+    QVERIFY(framesUntil(m_doc, [&]() { return output() == 200; }, 60) >= 40);
+    pb.release(0, 0);
+    QVERIFY(stopped());
+
+    /* the whole travel at once: cue 1 complete, it plays on */
+    pb.setLevel(0, 0, 1.0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual == false);
+    QCOMPARE(output(), 80);
+    renderFrames(m_doc, 5);
+    QVERIFY(cl->isRunning());
+
+    /* released in the middle of a travel (cue 2 at half): the rest of it
+       does nothing, the next travel starts it */
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY2(around(140), qPrintable(QString::number(output())));
+    pb.release(0, 0);
+    QVERIFY(stopped());
+    pb.setLevel(0, 0, 0.3);
+    renderFrames(m_doc, 3);
+    QVERIFY(cl->isRunning() == false);
+    pb.setLevel(0, 0, 0.0);
+    renderFrames(m_doc, 3);
+    QVERIFY(cl->isRunning() == false);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY2(around(40), qPrintable(QString::number(output())));
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::playbackCrossfadeTimes()
+{
+    // the delays, the down fades and the times of a fixture are in
+    // proportion to the travel (and back); the cue speed and Live Time don't
+    // change where the fader has them. A Follow after the cue waits for its
+    // end. GO in the middle: on from there by themselves, at the cue speed.
+    // Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 2, 0, 3), 2);
+    const quint32 a = m_doc->fixtures().at(0)->id();
+    const quint32 b = m_doc->fixtures().at(1)->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+    // a0/a1/b0
+    auto text = [&]() { return QString("%1/%2/%3").arg(output(0)).arg(output(1)).arg(output(3)); };
+
+    // cue 2: the dimmer a0 down in 500 ms, a1 up in 1 s, b0 (fixture B) in
+    // 2 s, all after 1 s: 3 s in all. Cue 3 follows it 200 ms later
+    Cuelist::Cue second = testCue(2000, { { Key(a, 0), 0 }, { Key(a, 1), 200 }, { Key(b, 0), 100 } }, 1000, 500, 1000);
+    Cuelist::PartTime slow;
+    slow.fade = 2000;
+    second.fixtureTimes.insert(b, slow);
+    QCOMPARE(second.length(), 3000u);
+    PlaybackManager pb(m_doc, nullptr, nullptr, nullptr);
+    Cuelist *cl = crossfadeList(m_doc, &pb, { testCue(1000, { { Key(a, 0), 200 } }), second,
+                                              testCue(3000, { { Key(a, 2), 150 } }, 0, -1, 0, Cuelist::TriggerFollow, 200),
+                                              testCue(4000, { { Key(a, 2), 0 } }, 1000),
+                                              testCue(5000, { { Key(b, 1), 90 } }, 0, -1, 0, Cuelist::TriggerFollow, 200) });
+    QVERIFY(cl != nullptr);
+    pb.go(0, 0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(text(), QString("200/0/0"));
+
+    /* at x2: the fader has them where the travel is */
+    timer->setCueSpeed(2.0);
+    pb.setLevel(0, 0, 1.0);
+    pb.setLevel(0, 0, 0.8);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    // 600 ms: all in their delay
+    QCOMPARE(text(), QString("200/0/0"));
+    // 1200 ms: 200 ms of each fade
+    pb.setLevel(0, 0, 0.6);
+    renderFrames(m_doc, 2);
+    QCOMPARE(text(), QString("120/40/10"));
+    // 1500 ms: the down fade is over
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(text(), QString("0/100/25"));
+    // and back
+    pb.setLevel(0, 0, 0.6);
+    renderFrames(m_doc, 2);
+    QCOMPARE(text(), QString("120/40/10"));
+
+    /* a new cue speed, Live Time: it stays; Follow waits */
+    timer->setCueSpeed(0.5);
+    pb.setLiveTime(0, 0, 100);
+    renderFrames(m_doc, 30);
+    QCOMPARE(text(), QString("120/40/10"));
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->status().liveScale, 1.0);
+
+    /* GO: on by themselves at x2 from 1200 ms: b0 in 900 ms (45 frames),
+       and cue 3 follows 2000 cue ms after (50 frames) */
+    timer->setCueSpeed(2.0);
+    renderFrames(m_doc);
+    pb.go(0, 0);
+    int frames = framesUntil(m_doc, [&]() { return output(3) == 100; }, 100);
+    QVERIFY2(frames >= 42 && frames <= 48, qPrintable(QString::number(frames)));
+    QCOMPARE(text(), QString("0/200/100"));
+    QCOMPARE(cl->status().current, 1);
+    const int follow = framesUntil(m_doc, [&]() { return output(2) == 150; }, 100);
+    QVERIFY2(frames + follow >= 47 && frames + follow <= 54, qPrintable(QString("%1+%2").arg(frames).arg(follow)));
+    QCOMPARE(cl->status().current, 2);
+
+    /* at x1, a travel to cue 4: cue 5 follows only once it is complete */
+    timer->setCueSpeed(1.0);
+    pb.setLevel(0, 0, 0.0);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 3);
+    QVERIFY(qAbs(output(2) - 75) <= 1);
+    renderFrames(m_doc, 30);
+    QCOMPARE(cl->status().current, 3);
+    QCOMPARE(output(4), 0);
+    pb.setLevel(0, 0, 1.0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(output(2), 0);
+    frames = framesUntil(m_doc, [&]() { return output(4) == 90; }, 100);
+    QVERIFY2(frames >= 8 && frames <= 12, qPrintable(QString::number(frames)));
+    QCOMPARE(cl->status().current, 4);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::playbackCrossfadeOptions()
+{
+    // the option: Normal cuelists only (a scene and a Chase keep the
+    // intensity); a list made another type, or the option back to
+    // Intensity, or the slot cleared, in the middle of a travel: it goes on
+    // by itself and the fader is the intensity. The show file: FaderMode,
+    // left out by default. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 2), 1);
+    const quint32 fxi = m_doc->fixtures().first()->id();
+    auto output = [&](int address) { return renderedValue(m_doc, address); };
+    auto mode = [](PlaybackManager &pb, int slot) { return pb.slotInfo(0, slot).value("faderMode").toString(); };
+
+    PlaybackManager pb(m_doc, nullptr, nullptr, nullptr);
+    Cuelist *cl = crossfadeList(m_doc, &pb, { testCue(1000, { { Key(fxi, 0), 100 } }),
+                                              testCue(2000, { { Key(fxi, 0), 200 } }, 1000) });
+    QVERIFY(cl != nullptr);
+    QCOMPARE(mode(pb, 0), QString("crossfade"));
+    pb.setSlotOption(0, 0, "faderMode", "bogus");
+    QCOMPARE(mode(pb, 0), QString("crossfade"));
+
+    /* a scene, a Chase: refused, and the fader is the intensity */
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(fxi, 1, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    pb.assign(0, 1, int(scene->id()));
+    pb.setSlotOption(0, 1, "faderMode", "crossfade");
+    QCOMPARE(mode(pb, 1), QString("level"));
+    // (up from zero: it starts it)
+    pb.setLevel(0, 1, 0.0);
+    pb.setLevel(0, 1, 0.5);
+    renderFrames(m_doc, 3);
+    QCOMPARE(output(1), 100);
+    QCOMPARE(pb.level(0, 1), 0.5);
+    QVERIFY(pb.faderKnown(0, 1));
+    pb.releaseFunction(int(scene->id()));
+    Cuelist *chase = new Cuelist(m_doc);
+    chase->setMode(Cuelist::ModeChase);
+    QVERIFY(m_doc->addFunction(chase));
+    pb.assign(0, 2, int(chase->id()));
+    pb.setSlotOption(0, 2, "faderMode", "crossfade");
+    QCOMPARE(mode(pb, 2), QString("level"));
+
+    /* the show file: only the A/B slot says so */
+    QString xml;
+    {
+        QXmlStreamWriter writer(&xml);
+        pb.saveXML(&writer);
+    }
+    QCOMPARE(xml.count("FaderMode"), 1);
+    QVERIFY2(xml.contains(QString("<Slot Index=\"0\" Function=\"%1\" FaderMode=\"crossfade\"/>").arg(cl->id())),
+             qPrintable(xml));
+    {
+        PlaybackManager other(m_doc, nullptr, nullptr, nullptr);
+        QXmlStreamReader reader(xml);
+        QVERIFY(reader.readNextStartElement() && other.loadXML(reader));
+        QCOMPARE(mode(other, 0), QString("crossfade"));
+        QCOMPARE(mode(other, 1), QString("level"));
+        QString again;
+        QXmlStreamWriter writer(&again);
+        other.saveXML(&writer);
+        QCOMPARE(again, xml);
+        // (on a scene, or an unknown value: the intensity)
+        QXmlStreamReader damaged(QString("<Playbacks><Page Name=\"X\">"
+                                         "<Slot Index=\"0\" Function=\"%1\" FaderMode=\"crossfade\"/>"
+                                         "<Slot Index=\"1\" Function=\"%2\" FaderMode=\"what\"/>"
+                                         "</Page></Playbacks>").arg(scene->id()).arg(cl->id()));
+        QVERIFY(damaged.readNextStartElement() && other.loadXML(damaged));
+        QCOMPARE(mode(other, 0), QString("level"));
+        QCOMPARE(mode(other, 1), QString("level"));
+    }
+
+    /* the list made another type in the middle of a travel: it goes on by
+       itself, and the fader is its intensity; Normal again, A/B again */
+    pb.setLevel(0, 0, 0.0);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual);
+    QVERIFY(qAbs(output(0) - 50) <= 1);
+    cl->setMode(Cuelist::ModeOverride);
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->status().manual == false);
+    QCOMPARE(mode(pb, 0), QString("level"));
+    QVERIFY(framesUntil(m_doc, [&]() { return output(0) == 100; }, 40) >= 0);
+    pb.setLevel(0, 0, 0.5);
+    QCOMPARE(pb.slotInfo(0, 0).value("level").toDouble(), 0.5);
+    pb.setLevel(0, 0, 1.0);
+    cl->setMode(Cuelist::ModeNormal);
+    QCOMPARE(mode(pb, 0), QString("crossfade"));
+
+    /* the option back to Intensity in the middle of a travel: the same */
+    pb.setLevel(0, 0, 0.0);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY(cl->status().manual);
+    QVERIFY(qAbs(output(0) - 150) <= 1);
+    pb.setSlotOption(0, 0, "faderMode", "level");
+    QCOMPARE(mode(pb, 0), QString("level"));
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->status().manual == false);
+    const int frames = framesUntil(m_doc, [&]() { return output(0) == 200; }, 60);
+    QVERIFY2(frames >= 20 && frames <= 28, qPrintable(QString::number(frames)));
+    // A/B again: where the fader is is learnt again
+    pb.setSlotOption(0, 0, "faderMode", "crossfade");
+    QVERIFY(pb.faderKnown(0, 0) == false);
+
+    /* the slot cleared in the middle of a travel: the same */
+    pb.setLevel(0, 0, 0.0);
+    pb.setLevel(0, 0, 0.5);
+    renderFrames(m_doc, 2);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual);
+    pb.clearSlot(0, 0);
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->status().manual == false);
+    QVERIFY(framesUntil(m_doc, [&]() { return output(0) == 100; }, 60) >= 0);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::playbackCrossfadeMappings()
+{
+    // a controller fader that picks up (the APC templates) on an A/B fader:
+    // its first value only tells where it is, then it drives the travels;
+    // moved on the screen, it must meet the fader there first (no GO by
+    // surprise). The real timer
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const Key d0(doc->fixtures().first()->id(), 0);
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *pb = core.playbacks();
+    auto out = [&]() { return core.io()->channelValues(0).at(0).toInt(); };
+    const QString dev = "MIDI|Test controller";
+    const quint32 cc = 48;
+    auto move = [&](int value) { mapper->handleInput("midi", dev, cc, QString(), value); };
+
+    Cuelist *cl = crossfadeList(doc, pb, { testCue(1000, { { d0, 100 } }, 1000), testCue(2000, { { d0, 200 } }, 1000),
+                                           testCue(3000, { { d0, 0 } }, 1000) });
+    QVERIFY(cl != nullptr);
+    mapper->addMapping({ { "target", "playbackFader" }, { "slot", 0 }, { "pickup", true },
+                         { "source", "midi" }, { "channel", cc } });
+
+    /* at the top: it only tells where it is */
+    QVERIFY(pb->faderKnown(-1, 0) == false);
+    move(255);
+    QVERIFY(pb->faderKnown(-1, 0));
+    QCOMPARE(pb->level(-1, 0), 1.0);
+    QTest::qWait(100);
+    QCOMPARE(pb->state(-1, 0), 0);
+
+    /* down: cue 1 at about 60 %, and it stays; at the bottom, complete */
+    move(200);
+    move(102);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(out() - 60) <= 1, 3000);
+    QTest::qWait(300);
+    QVERIFY2(qAbs(out() - 60) <= 1, qPrintable(QString::number(out())));
+    QVERIFY(cl->status().manual);
+    move(0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(), 100, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->status().manual == false, 3000);
+
+    /* the screen takes it to the top (cue 2 at once): the controller fader
+       at the bottom does nothing until it meets it there */
+    pb->setLevel(-1, 0, 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(), 200, 3000);
+    QCOMPARE(cl->status().current, 1);
+    move(10);
+    move(128);
+    QTest::qWait(100);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(pb->level(-1, 0), 1.0);
+    move(255);
+    QCOMPARE(pb->level(-1, 0), 1.0);
+    // and then down: cue 3 at half
+    move(200);
+    move(128);
+    QTRY_COMPARE_WITH_TIMEOUT(cl->status().current, 2, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(qAbs(out() - 100) <= 1, 3000);
+    QVERIFY(qAbs(pb->level(-1, 0) - 128 / 255.0) < 0.001);
+
+    pb->releaseFunction(int(cl->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(-1, 0), 0, 3000);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G5d: Timecode cuelists
+ *********************************************************************/
+
+namespace
+{
+
+/** A Timecode list on the par of testChase: cue 1 red at 00:00, cue 2 green
+ *  at 300 ms, cue 3 blue at 600 ms (each one with the other two out, no
+ *  fade) and cue 4 red again at 5 s; released at once */
+Cuelist *testTimecode(Doc *doc, quint32 par)
+{
+    Cuelist *cl = testChase(doc, par);
+    if (cl == nullptr)
+        return nullptr;
+    cl->setMode(Cuelist::ModeTimecode);
+    QList<Cuelist::Cue> cues = cl->cues();
+    Cuelist::Cue fourth = cues.first();
+    fourth.uid = 0;
+    fourth.number = 4000;
+    cues.append(fourth);
+    const QList<int> times = { 0, 300, 600, 5000 };
+    for (int i = 0; i < cues.count(); i++)
+        cues[i].time = times.at(i);
+    cl->setCues(cues);
+    return cl->cueCount() == 4 ? cl : nullptr;
+}
+
+/** The cues of $cl, with cue $index changed by $change */
+void changeCue(Cuelist *cl, int index, const std::function<void(Cuelist::Cue &)> &change)
+{
+    QList<Cuelist::Cue> cues = cl->cues();
+    change(cues[index]);
+    cl->setCues(cues);
+}
+
+}
+
+void Backend_Test::cuelistTimecodeInternal()
+{
+    // a Timecode list on its own clock, in offline frames of 20 ms: the
+    // start plays cue 1 at 00:00, cue 2 comes at 300 ms and cue 3 at 600 ms
+    // (the 16th and the 31st frame); cue 4, at 5 s, not before its time. The
+    // status has the clock (none when it is stopped), and no trigger waits.
+    // One step on fades with the times of its cue. A cue without a time is
+    // never played by the clock, and the triggers and links of the cues
+    // don't count. Before the time of the first cue the list holds nothing
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    const qint64 tick = qint64(MasterTimer::tick());
+    Cuelist *cl = testTimecode(m_doc, par);
+    QVERIFY(cl != nullptr);
+    auto current = [&]() { return cl->status().current; };
+    auto clock = [&]() { return cl->status().clock; };
+    auto restart = [&]() {
+        cl->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        cl->start(timer, FunctionParent::master());
+        renderFrames(m_doc);
+    };
+    QCOMPARE(clock(), qint64(-1));
+
+    /* cue 1 at once, cue 2 at 300 ms, cue 3 at 600 ms */
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QCOMPARE(shownColour(m_doc), 0);
+    QCOMPARE(clock(), tick);
+    QCOMPARE(cl->status().next, 1);
+    QVERIFY(cl->status().waiting == false);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 1; }, 100), 15);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(clock(), 300 + tick);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 15);
+    QCOMPARE(shownColour(m_doc), 2);
+    QCOMPARE(clock(), 600 + tick);
+
+    /* cue 4 is later than the clock: not played until its time */
+    renderFrames(m_doc, 100);
+    QCOMPARE(current(), 2);
+    QCOMPARE(shownColour(m_doc), 2);
+    QCOMPARE(clock(), 600 + 101 * tick);
+    const int toFourth = int((5000 - clock()) / tick) + 1;
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 3; }, 300), toFourth);
+    QCOMPARE(shownColour(m_doc), 0);
+    // (the clock goes on past the last cue, which stays)
+    renderFrames(m_doc, 10);
+    QCOMPARE(current(), 3);
+    QVERIFY(cl->isRunning());
+
+    /* one step on with the times of its cue: cue 2 fades in 200 ms */
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.fade = 200; });
+    restart();
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 1; }, 100), 15);
+    QVERIFY2(renderedValue(m_doc, 1) > 0 && renderedValue(m_doc, 1) < 255,
+             qPrintable(QString::number(renderedValue(m_doc, 1))));
+    renderFrames(m_doc, 10);
+    QCOMPARE(shownColour(m_doc), 1);
+
+    /* a cue without a time: never by the clock (cue 1, then cue 3); a
+       Follow, a Wait and a link don't count */
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.time = -1; cue.fade = 0; });
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.trigger = Cuelist::TriggerWait; cue.triggerTime = 100; });
+    changeCue(cl, 0, [&](Cuelist::Cue &cue) { cue.link = cl->cueAt(3).uid; });
+    QCOMPARE(cl->cueAt(0).link, cl->cueAt(3).uid);
+    restart();
+    QCOMPARE(current(), 0);
+    QCOMPARE(cl->status().next, 1);
+    QCOMPARE(cl->status().linkJump, 0);
+    renderFrames(m_doc, 20);
+    QCOMPARE(current(), 0);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() != 0; }, 100), 10);
+    QCOMPARE(current(), 2);
+    QCOMPARE(shownColour(m_doc), 2);
+
+    /* before the time of the first cue: nothing, then cue 1 at 100 ms */
+    changeCue(cl, 0, [](Cuelist::Cue &cue) { cue.time = 100; cue.link = 0; });
+    restart();
+    QCOMPARE(current(), -1);
+    QCOMPARE(cl->status().next, 0);
+    QCOMPARE(clock(), tick);
+    for (int c = 0; c < 3; c++)
+        QCOMPARE(renderedValue(m_doc, c), 0);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 0; }, 100), 5);
+    QCOMPARE(shownColour(m_doc), 0);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(clock(), qint64(-1));
+}
+
+void Backend_Test::cuelistTimecodeControl()
+{
+    // GO, Back and Go to with the own clock: GO at 100 ms plays cue 2 with
+    // its fade and the clock jumps to its time (300 ms): cue 3 300 ms
+    // later. Back: cue 1 and its time (00:00), snapped; with a BACK time,
+    // in that time. Go to cue 3: its time, snapped. GO on a cue without a
+    // time leaves the clock going. GO on the last cue: as "After the last
+    // cue" says. A pause holds the clock; the cue speed x2 and the live
+    // speed x2 make it go twice as fast
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    const qint64 tick = qint64(MasterTimer::tick());
+    Cuelist *cl = testTimecode(m_doc, par);
+    QVERIFY(cl != nullptr);
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.fade = 200; });
+    auto current = [&]() { return cl->status().current; };
+    auto clock = [&]() { return cl->status().clock; };
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 5);
+    QCOMPARE(shownColour(m_doc), 0);
+
+    /* GO at 100 ms: cue 2 now, fading in 200 ms, and the clock at its time */
+    QCOMPARE(clock(), 5 * tick);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(clock(), 300 + tick);
+    QVERIFY2(out(1) > 0 && out(1) < 255, qPrintable(QString::number(out(1))));
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 15);
+
+    /* Back: cue 2 and its time, snapped; again: cue 1 at 00:00 */
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(clock(), 300 + tick);
+    QCOMPARE(shownColour(m_doc), 1);
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QCOMPARE(clock(), tick);
+    QCOMPARE(shownColour(m_doc), 0);
+    // (nothing before the first cue)
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QCOMPARE(clock(), 2 * tick);
+    // the clock runs on from there
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 1; }, 100), 14);
+    // a BACK time: in that time
+    cl->setBackTime(200);
+    cl->back();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QVERIFY2(out(0) > 0 && out(0) < 255, qPrintable(QString::number(out(0))));
+    renderFrames(m_doc, 10);
+    QCOMPARE(shownColour(m_doc), 0);
+    cl->setBackTime(-1);
+
+    /* Go to cue 3: its time, snapped */
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.fade = 200; });
+    cl->goToCue(2);
+    renderFrames(m_doc);
+    QCOMPARE(current(), 2);
+    QCOMPARE(clock(), 600 + tick);
+    QCOMPARE(shownColour(m_doc), 2);
+
+    /* a pause holds the clock and the cue; GO goes on from there */
+    renderFrames(m_doc, 4);
+    const qint64 held = clock();
+    cl->setPause(true);
+    renderFrames(m_doc, 300);
+    QCOMPARE(clock(), held);
+    QCOMPARE(current(), 2);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(clock(), held + tick);
+    QCOMPARE(current(), 2);
+
+    /* GO: cue 4 and 5 s; on the last cue: Loop (cue 1 at 00:00), Stay, Release */
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 3);
+    QCOMPARE(clock(), 5000 + tick);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QCOMPARE(clock(), tick);
+    cl->goToCue(3);
+    renderFrames(m_doc);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 3);
+    QCOMPARE(clock(), 5000 + 2 * tick);
+    cl->setAtEnd(Cuelist::AtEndRelease);
+    cl->go();
+    renderFrames(m_doc, 2);
+    QVERIFY(cl->isRunning() == false);
+    cl->setAtEnd(Cuelist::AtEndLoop);
+
+    /* GO on a cue without a time: the clock goes on; the next cue with a
+       time at its time, one step on */
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.time = -1; });
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 5);
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(clock(), 6 * tick);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 25);
+    QCOMPARE(clock(), 600 + tick);
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.time = 300; });
+
+    /* the cue speed x2 and the live speed x2: twice as fast */
+    for (int speed = 0; speed < 2; speed++)
+    {
+        if (speed == 0)
+            timer->setCueSpeed(2.0);
+        else
+            cl->setSpeedFactor(2.0);
+        cl->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        cl->start(timer, FunctionParent::master());
+        renderFrames(m_doc);
+        QCOMPARE(clock(), 2 * tick);
+        QCOMPARE(framesUntil(m_doc, [&]() { return current() == 1; }, 100), 8);
+        QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 7);
+        timer->setCueSpeed(1.0);
+        cl->setSpeedFactor(1.0);
+    }
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::cuelistTimecodeSuperScene()
+{
+    // in a super scene the timeline is the clock: a block that starts the
+    // list 450 ms in snaps to cue 2 (its fade doesn't run, its actions are
+    // not done), cue 3 comes when the timeline is at 600 ms, with its fade.
+    // Started again at 0 (the playhead back to the start): cue 1. A block
+    // that starts before the first cue: nothing until its time. And a real
+    // super scene, played from the playhead
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    const qint64 tick = qint64(MasterTimer::tick());
+    Cuelist *cl = testTimecode(m_doc, par);
+    QVERIFY(cl != nullptr);
+    for (int i : { 1, 2 })
+        changeCue(cl, i, [](Cuelist::Cue &cue) { cue.fade = 1000; });
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.actions = { { { "target", "bpm" }, { "value", "90" } } }; });
+    QSignalSpy actions(timer, SIGNAL(cueActions(quint32,quint32)));
+    auto current = [&]() { return cl->status().current; };
+    auto clock = [&]() { return cl->status().clock; };
+
+    /* 450 ms in: cue 2 snapped, without its actions; cue 3 at 600 ms, fading */
+    cl->start(timer, FunctionParent::master(), 450);
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(clock(), 450 + tick);
+    QCOMPARE(actions.count(), 0);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 2; }, 100), 8);
+    QVERIFY2(renderedValue(m_doc, 2) > 0 && renderedValue(m_doc, 2) < 255,
+             qPrintable(QString::number(renderedValue(m_doc, 2))));
+
+    /* the playhead back to the start: cue 1 */
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->start(timer, FunctionParent::master(), 0);
+    renderFrames(m_doc);
+    QCOMPARE(current(), 0);
+    QCOMPARE(shownColour(m_doc), 0);
+    QCOMPARE(clock(), tick);
+    // (and on to cue 2 at 300 ms, with its actions this time)
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 1; }, 100), 15);
+    QCOMPARE(actions.count(), 1);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    /* a block that starts before the first cue: nothing until its time */
+    changeCue(cl, 0, [](Cuelist::Cue &cue) { cue.time = 200; });
+    cl->start(timer, FunctionParent::master(), 100);
+    renderFrames(m_doc);
+    QCOMPARE(current(), -1);
+    QCOMPARE(renderedValue(m_doc, 0), 0);
+    QCOMPARE(framesUntil(m_doc, [&]() { return current() == 0; }, 100), 5);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    changeCue(cl, 0, [](Cuelist::Cue &cue) { cue.time = 0; });
+
+    /* a super scene: the cuelist in a block from 00:00, played from 450 ms
+       (the block starts a frame after the super scene, as every block) */
+    Show *show = new Show(m_doc);
+    show->setMsTimeline(true);
+    QVERIFY(m_doc->addFunction(show));
+    Track *track = new Track(Function::invalidId(), show);
+    show->addTrack(track);
+    ShowFunction *sf = track->createShowFunction(cl->id());
+    sf->setStartTime(0);
+    sf->setDuration(10000);
+    show->start(timer, FunctionParent::master(), 450);
+    QVERIFY(framesUntil(m_doc, [&]() { return cl->isRunning(); }, 5) >= 0);
+    renderFrames(m_doc);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QVERIFY2(clock() >= 450 && clock() <= 450 + 3 * tick, qPrintable(QString::number(clock())));
+    const int frames = framesUntil(m_doc, [&]() { return current() == 2; }, 100);
+    QVERIFY2(frames >= 5 && frames <= 8, qPrintable(QString::number(frames)));
+    show->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(cl->isRunning() == false);
+}
+
+void Backend_Test::cuelistTimecodeXml()
+{
+    // the show file: a cue's Time only when it has one; TcSource and
+    // TcOffset of a Timecode list only when not by default (nothing for the
+    // other types); loaded the same, and a copy; in a damaged file each one
+    // in range. The length: the time of the last cue with a time, and its
+    // length (0 when no cue has a time)
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    Cuelist *cl = testTimecode(m_doc, par);
+    QVERIFY(cl != nullptr);
+
+    /* the defaults: a cue has no time, the own clock, no offset */
+    {
+        Cuelist::Cue cue;
+        QCOMPARE(cue.time, -1);
+        std::unique_ptr<Cuelist> fresh(new Cuelist(m_doc));
+        QCOMPARE(fresh->tcSource(), Cuelist::TcInternal);
+        QCOMPARE(fresh->tcOffset(), 0u);
+        QCOMPARE(fresh->status().clock, qint64(-1));
+    }
+    const QString text = savedFunction(cl);
+    QVERIFY2(text.contains(" Mode=\"Timecode\""), qPrintable(text));
+    QVERIFY2(text.contains("TcSource") == false && text.contains("TcOffset") == false, qPrintable(text));
+    QVERIFY2(text.contains("Number=\"1000\" Fade=\"0\" Time=\"0\"") && text.contains("Number=\"2000\" Fade=\"0\" Time=\"300\"") &&
+             text.contains("Number=\"4000\" Fade=\"0\" Time=\"5000\""), qPrintable(text));
+    // a cue without a time: no Time
+    changeCue(cl, 3, [](Cuelist::Cue &cue) { cue.time = -1; });
+    QVERIFY2(savedFunction(cl).contains("Number=\"4000\" Fade=\"0\">"), qPrintable(savedFunction(cl)));
+    changeCue(cl, 3, [](Cuelist::Cue &cue) { cue.time = 5000; });
+
+    /* a time is part of the cue: a new one is an edit */
+    QSignalSpy changed(cl, SIGNAL(changed(quint32)));
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.time = 650; });
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(cl->cueAt(2).time, 650);
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.time = 999999999; });
+    QCOMPARE(cl->cueAt(2).time, Cuelist::maxCueTime());
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.time = -20; });
+    QCOMPARE(cl->cueAt(2).time, -1);
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.time = 600; });
+
+    /* the clock and its offset: saved when not by default, loaded the same, a copy */
+    cl->setTcOffset(999999999);
+    QCOMPARE(cl->tcOffset(), uint(Cuelist::maxCueTime()));
+    cl->setTcSource(Cuelist::TcMtc);
+    cl->setTcOffset(3600000);
+    const QString mtc = savedFunction(cl);
+    QVERIFY2(mtc.contains(" Mode=\"Timecode\" TcSource=\"Mtc\" TcOffset=\"3600000\""), qPrintable(mtc));
+    {
+        Doc other(this);
+        QXmlStreamReader reader(mtc);
+        QVERIFY(reader.readNextStartElement());
+        QVERIFY(Function::loader(reader, &other));
+        Cuelist *loaded = qobject_cast<Cuelist *>(other.function(cl->id()));
+        QVERIFY(loaded != nullptr);
+        QCOMPARE(loaded->mode(), Cuelist::ModeTimecode);
+        QCOMPARE(loaded->tcSource(), Cuelist::TcMtc);
+        QCOMPARE(loaded->tcOffset(), 3600000u);
+        QCOMPARE(loaded->cueAt(1).time, 300);
+        QCOMPARE(loaded->cueAt(3).time, 5000);
+        QCOMPARE(savedFunction(loaded), mtc);
+    }
+    Function *copied = cl->createCopy(m_doc, false);
+    Cuelist *copy = qobject_cast<Cuelist *>(copied);
+    QVERIFY(copy != nullptr);
+    QCOMPARE(copy->tcSource(), Cuelist::TcMtc);
+    QCOMPARE(copy->tcOffset(), 3600000u);
+    QCOMPARE(copy->cueAt(2).time, 600);
+    delete copied;
+    QCOMPARE(Cuelist::stringToTcSource("mtc"), Cuelist::TcMtc);
+    QCOMPARE(Cuelist::stringToTcSource("ltc"), Cuelist::TcInternal);
+    QCOMPARE(Cuelist::tcSourceToString(Cuelist::TcInternal), QString("Internal"));
+
+    /* another type doesn't save them (the times of the cues stay); the
+       defaults again: as it was */
+    cl->setMode(Cuelist::ModeNormal);
+    QVERIFY2(savedFunction(cl).contains("TcSource") == false && savedFunction(cl).contains("TcOffset") == false,
+             qPrintable(savedFunction(cl)));
+    QVERIFY2(savedFunction(cl).contains("Time=\"300\""), qPrintable(savedFunction(cl)));
+    cl->setMode(Cuelist::ModeTimecode);
+    cl->setTcSource(Cuelist::TcInternal);
+    cl->setTcOffset(0);
+    QCOMPARE(savedFunction(cl), text);
+
+    /* a damaged file: what isn't a time is none, a time in range; an unknown
+       clock is the own one, an offset that isn't a number none */
+    const QString handmade = QString(
+        "<Function ID=\"71\" Type=\"Cuelist\" Name=\"Hand\">"
+        "<Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Cuelist Tracking=\"1\" Mode=\"Timecode\" TcSource=\"ltc\" TcOffset=\"x\"/>"
+        "<Cue Uid=\"1\" Number=\"1000\" Time=\"abc\"><V F=\"%1\" C=\"0\">255</V></Cue>"
+        "<Cue Uid=\"2\" Number=\"2000\" Time=\"-5\"><V F=\"%1\" C=\"1\">255</V></Cue>"
+        "<Cue Uid=\"3\" Number=\"3000\" Time=\"400000000\"><V F=\"%1\" C=\"2\">255</V></Cue>"
+        "<Cue Uid=\"4\" Number=\"4000\" Time=\"1250\"><V F=\"%1\" C=\"2\">0</V></Cue>"
+        "</Function>").arg(par);
+    QXmlStreamReader reader(handmade);
+    QVERIFY(reader.readNextStartElement());
+    QVERIFY(Function::loader(reader, m_doc));
+    Cuelist *hand = qobject_cast<Cuelist *>(m_doc->function(71));
+    QVERIFY(hand != nullptr);
+    QCOMPARE(hand->tcSource(), Cuelist::TcInternal);
+    QCOMPARE(hand->tcOffset(), 0u);
+    QCOMPARE(hand->cueAt(0).time, -1);
+    QCOMPARE(hand->cueAt(1).time, -1);
+    QCOMPARE(hand->cueAt(2).time, Cuelist::maxCueTime());
+    QCOMPARE(hand->cueAt(3).time, 1250);
+
+    /* the length: the last cue with a time, and its length */
+    QCOMPARE(cl->totalDuration(), 5000u);
+    changeCue(cl, 3, [](Cuelist::Cue &cue) { cue.fade = 1000; cue.delay = 500; });
+    QCOMPARE(cl->totalDuration(), 6500u);
+    changeCue(cl, 3, [](Cuelist::Cue &cue) { cue.time = -1; });
+    QCOMPARE(cl->totalDuration(), 600u);
+    QList<Cuelist::Cue> untimed = cl->cues();
+    for (Cuelist::Cue &cue : untimed)
+        cue.time = -1;
+    cl->setCues(untimed);
+    QCOMPARE(cl->totalDuration(), 0u);
+}
+
+void Backend_Test::cuelistEditorTimecode()
+{
+    // the editor: a list that becomes Timecode gives its cues without a time
+    // one, 5 s apart (in the same undo step); the TIME of a cue (an undo step,
+    // the wheel on it one step), none, the warning of a time before the cue
+    // before it; Record while it is stopped (or paused): 5 s after the cue
+    // before it; while the clock runs: the clock; Set to the clock (a paused
+    // list: its time exactly; a stopped list has none); a copy. The
+    // playbacks: the clock of the list
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    PlaybackManager *pb = core.playbacks();
+    Programmer *prog = core.programmer();
+    pb->assign(0, 0, listId);
+    auto times = [&]() {
+        QList<int> list;
+        for (const QVariant &cue : editor->cues(id))
+            list << cue.toMap().value("time").toInt();
+        return list;
+    };
+    auto warnings = [&]() {
+        QList<bool> list;
+        for (const QVariant &cue : editor->cues(id))
+            list << cue.toMap().value("timeWarning").toBool();
+        return list;
+    };
+    auto recordRed = [&](int value) {
+        prog->clear();
+        prog->selectFixtures({ p1 });
+        prog->setChannelValue("red", value);
+        const int index = editor->recordCue(id);
+        prog->clear();
+        return index;
+    };
+    QCOMPARE(times(), QList<int>({ -1, -1, -1 }));
+    QCOMPARE(pb->slotInfo(0, 0).value("clock").toDouble(), -1.0);
+
+    /* Timecode: the cues get times, 5 s apart, in the same step */
+    editor->setOption(id, "mode", "timecode");
+    QCOMPARE(cl->mode(), Cuelist::ModeTimecode);
+    QCOMPARE(times(), QList<int>({ 0, 5000, 10000 }));
+    editor->undo(id);
+    QCOMPARE(cl->mode(), Cuelist::ModeNormal);
+    QCOMPARE(times(), QList<int>({ -1, -1, -1 }));
+    editor->redo(id);
+    QCOMPARE(times(), QList<int>({ 0, 5000, 10000 }));
+
+    /* the time of a cue: a step (the wheel on it: one), none; the warning */
+    editor->setCueTime(id, 2, 4000);
+    editor->setCueTime(id, 2, 4100);
+    QCOMPARE(times(), QList<int>({ 0, 5000, 4100 }));
+    QCOMPARE(warnings(), QList<bool>({ false, false, true }));
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Time of cue 3"));
+    editor->undo(id);
+    QCOMPARE(times(), QList<int>({ 0, 5000, 10000 }));
+    QCOMPARE(warnings(), QList<bool>({ false, false, false }));
+    editor->setCueTime(id, 1, -1);
+    QCOMPARE(times(), QList<int>({ 0, -1, 10000 }));
+    QCOMPARE(warnings(), QList<bool>({ false, false, false }));
+    editor->setCueTime(id, 1, 5000);
+
+    /* Record, stopped: 5 s after the cue before it */
+    QCOMPARE(recordRed(30), 3);
+    QCOMPARE(times(), QList<int>({ 0, 5000, 10000, 15000 }));
+    // a copy at the end: 5 s after the last one
+    QCOMPARE(editor->copyCue(id, 0, "", false), 4);
+    QCOMPARE(cl->cueAt(4).time, 20000);
+
+    /* Set to the clock: none while it is stopped */
+    QVERIFY(editor->stampCueTime(id, 1) == false);
+    QCOMPARE(cl->cueAt(1).time, 5000);
+
+    /* while it plays: the clock (the playbacks show it) */
+    pb->goFunction(listId);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->status().clock > 200, 3000);
+    QVERIFY(pb->slotInfo(0, 0).value("clock").toDouble() >= 0);
+    const qint64 before = cl->status().clock;
+    QCOMPARE(recordRed(60), 5);
+    const qint64 after = cl->status().clock;
+    const int recorded = cl->cueAt(5).time;
+    QVERIFY2(recorded >= before && recorded <= after,
+             qPrintable(QString("%1 %2 %3").arg(before).arg(recorded).arg(after)));
+
+    /* paused: Set to the clock takes its time exactly; Record, 5 s after
+       the cue before it */
+    cl->setPause(true);
+    QTest::qWait(100);
+    const qint64 paused = cl->status().clock;
+    QTest::qWait(100);
+    QCOMPARE(cl->status().clock, paused);
+    QVERIFY(editor->stampCueTime(id, 1));
+    QCOMPARE(qint64(cl->cueAt(1).time), paused);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Time of cue 2"));
+    QCOMPARE(recordRed(90), 6);
+    QCOMPARE(cl->cueAt(6).time, recorded + 5000);
+
+    pb->releaseFunction(listId);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+    QCOMPARE(pb->slotInfo(0, 0).value("clock").toDouble(), -1.0);
+
+    /* a Normal list: Record gives no time */
+    editor->setOption(id, "mode", "normal");
+    QCOMPARE(recordRed(120), 7);
+    QCOMPARE(cl->cueAt(7).time, -1);
+}
+
+/*********************************************************************
+ * cuelists-reproduccion G5e: MIDI timecode
+ *********************************************************************/
+
+void Backend_Test::timecodeReader()
+{
+    // the MIDI timecode of an input: the MIDI plugin sends each time on
+    // channel 532 with the key "mtc:<ms>:<fps>". It reaches the MasterTimer
+    // and the status shows it, until it stops (250 ms). An empty key (DMX
+    // that comes in on that channel), other keys, other channels and keys
+    // that are not a time do nothing. No device is opened: the input is the
+    // signal of the InputOutputMap. The offsets of the cuelists in
+    // hh:mm:ss:ff, at the frame rate that came (25 until one comes), also
+    // 29.97 drop-frame
+    DtcCore core;
+    TimecodeReader *reader = core.timecode();
+    QVERIFY(reader != nullptr);
+    MasterTimer *timer = core.doc()->masterTimer();
+    InputOutputMap *io = core.doc()->inputOutputMap();
+    QCOMPARE(timer->timecode(), qint64(-1));
+    QVERIFY(reader->receiving() == false);
+    QCOMPARE(reader->status(), QString("No MIDI timecode"));
+    QCOMPARE(reader->frameRate(), 25);
+
+    /* not a timecode */
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QString());
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QStringLiteral("beat"));
+    emit io->inputValueChanged(0, 531, 5, QStringLiteral("mtc:3723160:25"));
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QStringLiteral("mtc:abc:25"));
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QStringLiteral("mtc:3723160:26"));
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QStringLiteral("mtc:3723160"));
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 5, QStringLiteral("mtc:-40:25"));
+    QCOMPARE(timer->timecode(), qint64(-1));
+    QCOMPARE(reader->frameRate(), 25);
+
+    /* a time: 01:02:03:04 at 25 fps */
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 6, QStringLiteral("mtc:3723160:25"));
+    int fps = 0;
+    QCOMPARE(timer->timecode(&fps), qint64(3723160));
+    QCOMPARE(fps, 25);
+    QVERIFY(reader->receiving());
+    QCOMPARE(reader->status(), QString("MTC 01:02:03:04 · 25 fps"));
+    // (within a frame: still that frame)
+    QCOMPARE(TimecodeReader::timecodeText(3723160 + 39, 25), QString("01:02:03:04"));
+    QCOMPARE(TimecodeReader::timecodeText(3723160 + 40, 25), QString("01:02:03:05"));
+
+    /* it stops: none after 250 ms (the frame rate stays, for the offsets) */
+    QTest::qWait(300);
+    QCOMPARE(timer->timecode(), qint64(-1));
+    QVERIFY(reader->receiving() == false);
+    QCOMPARE(reader->status(), QString("No MIDI timecode"));
+    QCOMPARE(reader->frameRate(), 25);
+
+    /* offsets: hours first */
+    QCOMPARE(reader->offsetText(3600000), QString("01:00:00:00"));
+    QCOMPARE(reader->parseOffset("01:00:00:00"), 3600000);
+    QCOMPARE(reader->parseOffset(" 1 "), 3600000);
+    QCOMPARE(reader->parseOffset("00:30"), 1800000);
+    QCOMPARE(reader->parseOffset("00:00:01;12"), 1480);
+    QCOMPARE(reader->offsetText(1480), QString("00:00:01:12"));
+    QCOMPARE(reader->parseOffset("00:00:00:25"), -1);
+    QCOMPARE(reader->parseOffset("00:61"), -1);
+    QCOMPARE(reader->parseOffset("24"), -1);
+    QCOMPARE(reader->parseOffset(""), -1);
+    QCOMPARE(reader->parseOffset("1:2:3:4:5"), -1);
+    QCOMPARE(reader->parseOffset("1:x"), -1);
+
+    /* 29.97 drop-frame: 01:00:00;00 is an hour less 3.6 ms, 00:01:00;02 the
+       frame after 00:00:59;29 */
+    emit io->inputValueChanged(0, TimecodeReader::kChannel, 7, QStringLiteral("mtc:3599996:29"));
+    QCOMPARE(reader->status(), QString("MTC 01:00:00:00 · %1 fps").arg(QLocale().toString(29.97, 'f', 2)));
+    QCOMPARE(reader->frameRate(), 29);
+    QCOMPARE(reader->parseOffset("01:00:00:00"), 3599996);
+    QCOMPARE(reader->parseOffset("00:01:00:02"), 60060);
+    QCOMPARE(reader->offsetText(60060), QString("00:01:00:02"));
+    QCOMPARE(reader->offsetText(60027), QString("00:00:59:29"));
+    QCOMPARE(reader->parseOffset("00:00:00:29"), 968);
+    QCOMPARE(reader->parseOffset("00:00:00:30"), -1);
+    QCOMPARE(TimecodeReader::timecodeText(600000, 29), QString("00:10:00:00"));
+}
+
+void Backend_Test::cuelistTimecodeMtc()
+{
+    // a Timecode list on a MIDI timecode (MasterTimer::setTimecode, as the
+    // input gives it), in offline frames of 20 ms: the timecode less the
+    // offset (01:00:00:00) is the clock. Without a timecode the run waits;
+    // the first one plays the cue of its time. A timecode that stops holds
+    // the cue and the clock; one that goes on from there plays the next cue
+    // with its times; a rewind and a locate snap to the cue of their time;
+    // before the offset the list holds nothing. GO, Back and Go to do
+    // nothing, and the cue speed doesn't move the clock. A run that starts
+    // while the timecode is past the first cue snaps to the cue of that
+    // time; on the first cue, it fades it in with its times
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    MasterTimer *timer = m_doc->masterTimer();
+    const qint64 tick = qint64(MasterTimer::tick());
+    Cuelist *cl = testTimecode(m_doc, par);
+    QVERIFY(cl != nullptr);
+    const qint64 offset = 3600000;
+    cl->setTcSource(Cuelist::TcMtc);
+    cl->setTcOffset(uint(offset));
+    auto current = [&]() { return cl->status().current; };
+    auto clock = [&]() { return cl->status().clock; };
+    auto dark = [&]() {
+        for (int c = 0; c < 3; c++)
+        {
+            if (renderedValue(m_doc, c) != 0)
+                return false;
+        }
+        return true;
+    };
+    // the timecode at the offset and $tc, a frame further on each frame
+    qint64 tc = 0;
+    auto run = [&](int frames) {
+        for (int i = 0; i < frames; i++)
+        {
+            timer->setTimecode(offset + tc, 25);
+            renderFrames(m_doc);
+            tc += tick;
+        }
+    };
+    auto runUntil = [&](const std::function<bool()> &test, int max) {
+        for (int frames = 0; frames <= max; frames++)
+        {
+            if (test())
+                return frames;
+            run(1);
+        }
+        return -1;
+    };
+
+    /* no timecode: the run waits, with nothing */
+    QCOMPARE(timer->timecode(), qint64(-1));
+    cl->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 10);
+    QVERIFY(cl->isRunning());
+    QCOMPARE(current(), -1);
+    QVERIFY(dark());
+    QCOMPARE(clock(), qint64(0));
+
+    /* the timecode comes at 00:00.1: cue 1, then cue 2 at 300 ms */
+    tc = 100;
+    run(1);
+    QCOMPARE(current(), 0);
+    QCOMPARE(shownColour(m_doc), 0);
+    QCOMPARE(clock(), qint64(100));
+    QCOMPARE(runUntil([&]() { return current() == 1; }, 100), 10);
+    QCOMPARE(clock(), qint64(300));
+    QCOMPARE(shownColour(m_doc), 1);
+
+    /* GO, Back and Go to do nothing: the timecode drives the list */
+    cl->go();
+    run(1);
+    QCOMPARE(current(), 1);
+    cl->back();
+    run(1);
+    QCOMPARE(current(), 1);
+    cl->goToCue(3);
+    run(1);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(clock(), qint64(360));
+
+    /* the timecode stops: the cue and the clock hold (past the time of cue 3 too) */
+    QTest::qWait(300);
+    QCOMPARE(timer->timecode(), qint64(-1));
+    renderFrames(m_doc, 30);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(clock(), qint64(360));
+
+    /* it goes on from there: cue 3 at 600 ms, with its fade (200 ms) */
+    changeCue(cl, 2, [](Cuelist::Cue &cue) { cue.fade = 200; });
+    QCOMPARE(runUntil([&]() { return current() == 2; }, 100), 12);
+    QVERIFY2(renderedValue(m_doc, 2) > 0 && renderedValue(m_doc, 2) < 255,
+             qPrintable(QString::number(renderedValue(m_doc, 2))));
+    run(10);
+    QCOMPARE(shownColour(m_doc), 2);
+
+    /* a rewind snaps to the cue of its time (not with the fade of cue 2) */
+    changeCue(cl, 1, [](Cuelist::Cue &cue) { cue.fade = 1000; });
+    tc = 350;
+    run(1);
+    QCOMPARE(current(), 1);
+    QCOMPARE(shownColour(m_doc), 1);
+    QCOMPARE(clock(), qint64(350));
+
+    /* a locate forwards snaps too: cue 4 at 5 s */
+    tc = 6000;
+    run(1);
+    QCOMPARE(current(), 3);
+    QCOMPARE(shownColour(m_doc), 0);
+    QCOMPARE(clock(), qint64(6000));
+
+    /* before the offset (00:59:58:00): nothing, and the clock shows 00:00 */
+    tc = -2000;
+    run(1);
+    QCOMPARE(current(), -1);
+    QVERIFY(dark());
+    QCOMPARE(clock(), qint64(0));
+
+    /* the cue speed doesn't move the clock: the timecode does */
+    timer->setCueSpeed(2.0);
+    tc = 100;
+    run(10);
+    QCOMPARE(current(), 0);
+    QCOMPARE(clock(), qint64(100 + 9 * tick));
+    timer->setCueSpeed(1.0);
+
+    /* a run that starts past the first cue: the cue of that time, snapped */
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->start(timer, FunctionParent::master());
+    tc = 650;
+    run(1);
+    QCOMPARE(current(), 2);
+    QCOMPARE(shownColour(m_doc), 2);
+    QCOMPARE(clock(), qint64(650));
+
+    /* one that starts on the first cue fades it in with its times */
+    changeCue(cl, 0, [](Cuelist::Cue &cue) { cue.fade = 200; });
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    cl->start(timer, FunctionParent::master());
+    tc = 50;
+    run(1);
+    QCOMPARE(current(), 0);
+    QVERIFY2(renderedValue(m_doc, 0) > 0 && renderedValue(m_doc, 0) < 255,
+             qPrintable(QString::number(renderedValue(m_doc, 0))));
+
+    /* its own clock again: it goes on by itself from where it is */
+    cl->setTcSource(Cuelist::TcInternal);
+    renderFrames(m_doc, 10);
+    QCOMPARE(clock(), 50 + 10 * tick);
+
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(clock(), qint64(-1));
+}
+
+void Backend_Test::cuelistEditorTimecodeMtc()
+{
+    // the editor: the clock of a Timecode list (its own or a MIDI timecode)
+    // and the offset, each one an undo step. While a MIDI timecode comes in
+    // (the signal of the input, fed by a timer: no device is opened), the
+    // clock of the list is that time less the offset: the playback shows it,
+    // Set to the clock takes it, and GO on the playback does nothing. The
+    // timecode stops: the list holds
+    DtcCore core;
+    quint32 p1 = 0, p2 = 0;
+    const int listId = undoTestList(core, &p1, &p2);
+    QVERIFY(listId >= 0);
+    const quint32 id = quint32(listId);
+    Cuelist *cl = qobject_cast<Cuelist *>(core.doc()->function(id));
+    QVERIFY(cl != nullptr);
+    CuelistEditor *editor = core.cuelists();
+    PlaybackManager *pb = core.playbacks();
+    pb->assign(0, 0, listId);
+    auto option = [&](const char *key) { return editor->options(id).value(key); };
+
+    /* the options, each one a step */
+    editor->setOption(id, "mode", "timecode");
+    QCOMPARE(option("tcSource").toString(), QString("internal"));
+    QCOMPARE(option("tcOffset").toInt(), 0);
+    editor->setOption(id, "tcSource", "mtc");
+    editor->setOption(id, "tcOffset", 3600000);
+    QCOMPARE(cl->tcSource(), Cuelist::TcMtc);
+    QCOMPARE(cl->tcOffset(), 3600000u);
+    QCOMPARE(option("tcSource").toString(), QString("mtc"));
+    QCOMPARE(option("tcOffset").toInt(), 3600000);
+    QCOMPARE(editor->undoState(id).value("undo").toString(), QString("Cuelist options"));
+    editor->undo(id);
+    QCOMPARE(cl->tcOffset(), 0u);
+    QCOMPARE(cl->tcSource(), Cuelist::TcMtc);
+    editor->undo(id);
+    QCOMPARE(cl->tcSource(), Cuelist::TcInternal);
+    QCOMPARE(cl->mode(), Cuelist::ModeTimecode);
+    editor->redo(id);
+    editor->redo(id);
+    QCOMPARE(cl->tcSource(), Cuelist::TcMtc);
+    QCOMPARE(cl->tcOffset(), 3600000u);
+    QCOMPARE(cl->cueAt(1).time, 5000);
+
+    /* a MIDI timecode that stands at 01:00:02:12 (2.48 s on the clock) */
+    InputOutputMap *io = core.doc()->inputOutputMap();
+    int serial = 0;
+    QTimer feed;
+    feed.setInterval(10);
+    connect(&feed, &QTimer::timeout, &feed, [&]() {
+        serial = serial % 254 + 1;
+        emit io->inputValueChanged(0, TimecodeReader::kChannel, uchar(serial), QStringLiteral("mtc:3602480:25"));
+    });
+    feed.start();
+    pb->goFunction(listId);
+    QTRY_COMPARE_WITH_TIMEOUT(cl->status().clock, qint64(2480), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->slotInfo(0, 0).value("clock").toDouble(), 2480.0, 3000);
+    QCOMPARE(cl->status().current, 0);
+
+    /* Set to the clock: cue 2 at 2.48 s, and the clock plays it */
+    QVERIFY(editor->stampCueTime(id, 1));
+    QCOMPARE(cl->cueAt(1).time, 2480);
+    QTRY_COMPARE_WITH_TIMEOUT(cl->status().current, 1, 3000);
+
+    /* GO on the playback does nothing */
+    pb->go(0, 0);
+    QTest::qWait(100);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->status().clock, qint64(2480));
+
+    /* the timecode stops: the list holds its cue */
+    feed.stop();
+    QTRY_VERIFY_WITH_TIMEOUT(core.timecode()->receiving() == false, 3000);
+    QTest::qWait(100);
+    QVERIFY(cl->isRunning());
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->status().clock, qint64(2480));
+
+    pb->releaseFunction(listId);
+    QTRY_COMPARE_WITH_TIMEOUT(pb->state(0, 0), 0, 3000);
+}
+
+/*********************************************************************
+ * cross-track qlc export
+ *********************************************************************/
+
+void Backend_Test::qlcExportChase()
+{
+    // a Chase in the copy for QLC+: steps that go on by themselves, each a
+    // step of its speed (its BPM, or the show tempo now, by its multiplier)
+    // with its crossfade (or the times of its cues), round and round in its
+    // direction. Its triggers and After the last cue don't count; the show
+    // tempo and a tapped rhythm are said
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const Key dimmer(0, 0);
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    // four cues left on GO with a fade of 1 s (the cue table of a Chase
+    // hides the triggers); cue 2 with a Wait shorter than its fade and a delay
+    for (int i = 0; i < 4; i++)
+    {
+        Cuelist::Cue cue;
+        cue.number = (i + 1) * 1000;
+        cue.values = { { dimmer, uchar(50 * (i + 1)) } };
+        if (i == 1)
+        {
+            cue.trigger = Cuelist::TriggerWait;
+            cue.triggerTime = 100;
+            cue.delay = 300;
+        }
+        QCOMPARE(cl->addCue(cue), i);
+    }
+    // (After the last cue as it was before it became a Chase)
+    cl->setAtEnd(Cuelist::AtEndStay);
+    cl->setMode(Cuelist::ModeChase);
+    QCOMPARE(cl->chaseBpm(), 120);
+    QCOMPARE(cl->chaseXfade(), 0);
+    auto holds = [](const QlcExchange::CueSteps &steps) {
+        QList<uint> list;
+        for (const QlcExchange::Step &step : steps.steps)
+            list << step.hold;
+        return list;
+    };
+    auto fadeIns = [](const QlcExchange::CueSteps &steps) {
+        QList<uint> list;
+        for (const QlcExchange::Step &step : steps.steps)
+            list << step.fadeIn;
+        return list;
+    };
+
+    // 120 BPM with a cut: each step lasts 0.5 s and changes at once, in a
+    // loop. No Stay, no Wait, and no delay: a change of its own has none
+    QlcExchange::CueSteps steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.steps.count(), 4);
+    QCOMPARE(holds(steps), QList<uint>({ 500, 500, 500, 500 }));
+    QCOMPARE(fadeIns(steps), QList<uint>({ 0, 0, 0, 0 }));
+    QCOMPARE(steps.steps.at(1).fadeOut, 0u);
+    QCOMPARE(steps.runOrder, Function::Loop);
+    QCOMPARE(steps.direction, Function::Forward);
+    QCOMPARE(steps.lost, QStringList());
+
+    // a crossfade of half the step, then twice as fast
+    cl->setChaseXfade(50);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(fadeIns(steps), QList<uint>({ 250, 250, 250, 250 }));
+    QCOMPARE(steps.steps.at(2).fadeOut, 250u);
+    QCOMPARE(holds(steps), QList<uint>({ 250, 250, 250, 250 }));
+    cl->setChaseMultiplier(2);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(fadeIns(steps), QList<uint>({ 125, 125, 125, 125 }));
+    QCOMPARE(holds(steps), QList<uint>({ 125, 125, 125, 125 }));
+    cl->setChaseMultiplier(1);
+
+    // the times of the cues: their fades (1 s is longer than the step: the
+    // next step waits for it; cue 3 fades in 0.2 s), and the delay of cue 2
+    cl->setChaseXfade(-1);
+    Cuelist::Cue third = cl->cueAt(2);
+    third.fade = 200;
+    QVERIFY(cl->replaceCue(third));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(fadeIns(steps), QList<uint>({ 1000, 1000, 200, 1000 }));
+    QCOMPARE(holds(steps), QList<uint>({ 0, 0, 300, 0 }));
+    QCOMPARE(steps.lost, QStringList({ "delay in 1 cue(s): the step starts at once",
+                                       "fade longer than the step in 3 cue(s): the next step waits for the fade" }));
+    cl->setChaseXfade(0);
+
+    // the directions: there and back, at random, the other way
+    cl->setChaseDirection(Cuelist::ChaseBounce);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::PingPong);
+    QCOMPARE(steps.direction, Function::Forward);
+    cl->setChaseDirection(Cuelist::ChaseRandom);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).runOrder, Function::Random);
+    cl->setChaseDirection(Cuelist::ChaseBackward);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::Loop);
+    QCOMPARE(steps.direction, Function::Backward);
+
+    // the show tempo now (150 BPM), at half of it, and a tapped rhythm:
+    // the steps keep the speed, and that is said (not the line of a
+    // tapped rhythm of the other lists)
+    cl->setChaseShowTempo(true);
+    m_doc->masterTimer()->requestBpmNumber(150);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 400, 400, 400, 400 }));
+    QCOMPARE(steps.lost, QStringList({ "Chase: the steps keep 150 BPM; the BPM of the show isn't followed" }));
+    cl->setChaseMultiplier(0.5);
+    cl->setTapPeriod(300);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 800, 800, 800, 800 }));
+    QCOMPARE(steps.lost, QStringList({ "Chase: the steps keep 75 BPM; the BPM of the show and the tapped rhythm "
+                                       "aren't followed" }));
+    cl->setChaseShowTempo(false);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 1000, 1000, 1000, 1000 }));
+    QCOMPARE(steps.lost, QStringList({ "Chase: the steps keep 60 BPM; the tapped rhythm isn't followed" }));
+    // a rate with a fraction is written in the language of the program
+    // (62,5 in Spanish), not with a point
+    cl->setChaseBpm(125);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 960, 960, 960, 960 }));
+    QCOMPARE(steps.lost, QStringList({ QString("Chase: the steps keep %1 BPM; the tapped rhythm isn't followed")
+                                           .arg(QLocale().toString(62.5, 'g', 6)) }));
+    {
+        // (whatever the language of the system is)
+        const QLocale before;
+        QLocale::setDefault(QLocale(QLocale::Spanish, QLocale::Spain));
+        auto restore = qScopeGuard([&] { QLocale::setDefault(before); });
+        QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+                 QStringList({ "Chase: the steps keep 62,5 BPM; the tapped rhythm isn't followed" }));
+    }
+    cl->setChaseBpm(120);
+    // BeatGO steps it on the beats
+    cl->setTapPeriod(0);
+    cl->setDriveMode(Function::DriveBeatGO);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+             QStringList({ "BeatGO and Pulse: the steps don't follow the beat" }));
+
+    // the copy: QLC+ gets a Sequence that plays the other way by itself, in
+    // a loop, a step each 0.5 s
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    Cuelist *strobe = new Cuelist(doc);
+    strobe->setName("Strobe");
+    for (int i = 0; i < 3; i++)
+    {
+        Cuelist::Cue cue;
+        cue.number = (i + 1) * 1000;
+        cue.values = { { dimmer, uchar(80 * (i + 1)) } };
+        QCOMPARE(strobe->addCue(cue), i);
+    }
+    strobe->setMode(Cuelist::ModeChase);
+    strobe->setChaseDirection(Cuelist::ChaseBackward);
+    QVERIFY(doc->addFunction(strobe));
+    const QString copyPath = dir.filePath("Copy.qxw");
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { strobe->id() }, { { "format", "sequence" } }),
+             qPrintable(core.lastError()));
+    QStringList read;
+    const QByteArray engine = qlcPlusEngine(fileBytes(copyPath), &read);
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    Sequence *seq = qobject_cast<Sequence *>(qlc.function(strobe->id()));
+    QVERIFY2(seq != nullptr, qPrintable(read.join(", ")));
+    QCOMPARE(seq->direction(), Function::Backward);
+    QCOMPARE(seq->runOrder(), Function::Loop);
+    QCOMPARE(seq->stepsCount(), 3);
+    for (const ChaserStep &step : seq->steps())
+    {
+        QCOMPARE(step.fadeIn, 0u);
+        QCOMPARE(step.hold, 500u);
+        QCOMPARE(step.duration, 500u);
+    }
+}
+
+void Backend_Test::qlcExportTimecode()
+{
+    // a Timecode list in the copy for QLC+: each step lasts until the time
+    // of the next cue, from the first GO (a cue without a time waits for a
+    // GO, as the last one does); the clock isn't followed, nor the time of
+    // the first cue, and that is said. Its triggers and links don't count;
+    // After the last cue does
+    typedef Cuelist::Key Key;
+    const uint untilGo = Function::infiniteSpeed();
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 1), 1);
+    const Key dimmer(0, 0);
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    // at 0:00, 0:05 and 0:12, fades of 1 s. Their triggers as they were: a
+    // Wait shorter than the fade on cue 2; and cue 3 links back to cue 1
+    const QList<int> times = { 0, 5000, 12000 };
+    for (int i = 0; i < 3; i++)
+    {
+        Cuelist::Cue cue;
+        cue.number = (i + 1) * 1000;
+        cue.values = { { dimmer, uchar(80 * (i + 1)) } };
+        cue.time = times.at(i);
+        if (i == 1)
+        {
+            cue.trigger = Cuelist::TriggerWait;
+            cue.triggerTime = 100;
+        }
+        QCOMPARE(cl->addCue(cue), i);
+    }
+    Cuelist::Cue last = cl->cueAt(2);
+    last.link = cl->cueAt(0).uid;
+    last.linkCount = 2;
+    QVERIFY(cl->replaceCue(last));
+    QCOMPARE(cl->cueAt(2).link, cl->cueAt(0).uid);
+    cl->setMode(Cuelist::ModeTimecode);
+    auto holds = [](const QlcExchange::CueSteps &steps) {
+        QList<uint> list;
+        for (const QlcExchange::Step &step : steps.steps)
+            list << step.hold;
+        return list;
+    };
+    const QString ownClock = "Timecode: the steps run from the first GO; the timeline of a super scene isn't followed";
+
+    // 5 s less the fade of cue 1, 7 s less the fade of cue 2, then a GO
+    QlcExchange::CueSteps steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 4000, 6000, untilGo }));
+    QCOMPARE(steps.steps.at(1).fadeIn, 1000u);
+    QCOMPARE(steps.runOrder, Function::Loop);
+    QCOMPARE(steps.direction, Function::Forward);
+    QCOMPARE(steps.lost, QStringList({ ownClock }));
+    // a MIDI timecode
+    cl->setTcSource(Cuelist::TcMtc);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+             QStringList({ "Timecode: the steps run from the first GO; the MIDI timecode isn't followed" }));
+    cl->setTcSource(Cuelist::TcInternal);
+
+    // the first cue at 0:05: the list holds nothing until then, the steps
+    // play it at the GO, and that is said (the steps between the cues
+    // stay; a MIDI timecode says enough with its line)
+    const QList<int> later = { 5000, 10000, 17000 };
+    auto setTimes = [&](const QList<int> &list) {
+        for (int i = 0; i < list.count(); i++)
+        {
+            Cuelist::Cue cue = cl->cueAt(i);
+            cue.time = list.at(i);
+            if (cl->replaceCue(cue) == false)
+                return false;
+        }
+        return true;
+    };
+    QVERIFY(setTimes(later));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 4000, 6000, untilGo }));
+    QCOMPARE(steps.lost, QStringList({ ownClock, "Timecode: the first step plays at the GO, not 5 s after it" }));
+    cl->setTcSource(Cuelist::TcMtc);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+             QStringList({ "Timecode: the steps run from the first GO; the MIDI timecode isn't followed" }));
+    cl->setTcSource(Cuelist::TcInternal);
+    // the earliest time counts (cue 1 without one), in the language of the
+    // program: 10,25 s in Spanish
+    Cuelist::Cue untimedFirst = cl->cueAt(0);
+    untimedFirst.time = -1;
+    QVERIFY(cl->replaceCue(untimedFirst));
+    Cuelist::Cue fraction = cl->cueAt(1);
+    fraction.time = 10250;
+    QVERIFY(cl->replaceCue(fraction));
+    {
+        const QLocale before;
+        QLocale::setDefault(QLocale(QLocale::Spanish, QLocale::Spain));
+        auto restore = qScopeGuard([&] { QLocale::setDefault(before); });
+        QVERIFY(QlcExchange::toSteps(m_doc, cl, true)
+                    .lost.contains("Timecode: the first step plays at the GO, not 10,25 s after it"));
+    }
+    QVERIFY(setTimes(times));
+
+    // cue 3 half a second after cue 2: the step of cue 2 lasts its fade
+    last = cl->cueAt(2);
+    last.time = 5500;
+    QVERIFY(cl->replaceCue(last));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ 4000, 0, untilGo }));
+    QCOMPARE(steps.lost, QStringList({ ownClock,
+                                       "fade longer than the step in 1 cue(s): the next step waits for the fade" }));
+
+    // cue 2 without a time: the steps stop there until a GO, and on it
+    Cuelist::Cue second = cl->cueAt(1);
+    second.time = -1;
+    QVERIFY(cl->replaceCue(second));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(holds(steps), QList<uint>({ untilGo, untilGo, untilGo }));
+    QCOMPARE(steps.lost, QStringList({ ownClock, "no time in 1 cue(s): the steps stop there until a GO" }));
+    second.time = 5000;
+    QVERIFY(cl->replaceCue(second));
+
+    // a GO on the last cue still does what After the last cue says
+    cl->setAtEnd(Cuelist::AtEndStay);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::SingleShot);
+    QCOMPARE(steps.lost, QStringList({ ownClock, "fade longer than the step in 1 cue(s): the next step waits for the fade",
+                                       "Stay at the end: GO on the last cue stops the steps" }));
+    cl->setAtEnd(Cuelist::AtEndRelease);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::SingleShot);
+    QCOMPARE(holds(steps), QList<uint>({ 4000, 0, untilGo }));
+}
+
+void Backend_Test::qlcExportCueParts()
+{
+    // what cues and cuelists hold that QLC+ steps can't, said under the
+    // cuelist: times of their own of attributes and fixtures (a delay of
+    // theirs is a delay of the cue), fade curves, links (a last cue linked
+    // always to the first one is a loop of the steps), actions and Move in
+    // black; and what Submaster and Override lists do instead. A Chase with
+    // a change of its own has no cue times, and neither it nor a Timecode
+    // list follows links
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 2, 0, 1), 2);
+    const Key d1(0, 0), d2(1, 0);
+    Cuelist *cl = new Cuelist(m_doc);
+    QVERIFY(m_doc->addFunction(cl));
+    for (int i = 0; i < 5; i++)
+    {
+        Cuelist::Cue cue;
+        cue.number = (i + 1) * 1000;
+        cue.values = { { d1, uchar(40 * (i + 1)) }, { d2, uchar(200 - 30 * i) } };
+        QCOMPARE(cl->addCue(cue), i);
+    }
+    // cue 1: Colour with the fade of the cue, a fixture linear: nothing lost
+    Cuelist::Cue cue = cl->cueAt(0);
+    Cuelist::PartTime part;
+    part.fade = 1000;
+    cue.groupTimes.insert(Cuelist::TimeColour, part);
+    part = Cuelist::PartTime();
+    part.curve = int(FadeChannel::CurveLinear);
+    cue.fixtureTimes.insert(1, part);
+    QVERIFY(cl->replaceCue(cue));
+    // cue 2: fixture 1 starts half a second later (the cue has no delay)
+    cue = cl->cueAt(1);
+    part = Cuelist::PartTime();
+    part.delay = 500;
+    cue.fixtureTimes.insert(0, part);
+    QVERIFY(cl->replaceCue(cue));
+    // cue 3: Position fades in 4 s, the cue in 1 s; Smooth
+    cue = cl->cueAt(2);
+    part = Cuelist::PartTime();
+    part.fade = 4000;
+    cue.groupTimes.insert(Cuelist::TimePosition, part);
+    cue.curve = int(FadeChannel::CurveSmooth);
+    QVERIFY(cl->replaceCue(cue));
+    // cue 4: a fixture with Slow start, and a link back to cue 2, 3 times
+    cue = cl->cueAt(3);
+    part = Cuelist::PartTime();
+    part.curve = int(FadeChannel::CurveSlowStart);
+    cue.fixtureTimes.insert(1, part);
+    cue.link = cl->cueAt(1).uid;
+    cue.linkCount = 3;
+    QVERIFY(cl->replaceCue(cue));
+    // cue 5: an action
+    cue = cl->cueAt(4);
+    cue.actions = { { { "target", "bpm" }, { "value", "128" } } };
+    QVERIFY(cl->replaceCue(cue));
+    QVERIFY(cl->cueAt(1).hasOwnTimes());
+    QCOMPARE(cl->cueAt(3).link, cl->cueAt(1).uid);
+    QCOMPARE(cl->cueAt(4).actions.count(), 1);
+
+    const QStringList cueLines({ "delay in 1 cue(s): the step starts at once",
+                                 "times per attribute or fixture in 1 cue(s): only the cue's fade",
+                                 "fade curves in 2 cue(s): only linear",
+                                 "links in 1 cue(s): the steps play in order",
+                                 "actions in 1 cue(s): they don't run" });
+    QlcExchange::CueSteps steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.lost, cueLines);
+    // (the steps keep their times: a GO waits for Next)
+    QCOMPARE(steps.steps.at(2).fadeIn, 1000u);
+    QCOMPARE(steps.steps.at(2).hold, Function::infiniteSpeed());
+
+    // Move in black: said, unless every cue shows its moves
+    const QString mib = "Move in black: the fixtures move as they fade up";
+    cl->setMoveInBlack(true);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost, cueLines + QStringList({ mib }));
+    QList<Cuelist::Cue> cues = cl->cues();
+    for (Cuelist::Cue &c : cues)
+        c.noMib = true;
+    cl->setCues(cues);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost, cueLines);
+    cue = cl->cueAt(2);
+    cue.noMib = false;
+    QVERIFY(cl->replaceCue(cue));
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost.last(), mib);
+
+    // a Submaster: started with a GO, not with its fader
+    cl->setMode(Cuelist::ModeSubmaster);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+             QStringList({ "Submaster: the steps start with a GO, not with the fader" }) + cueLines +
+                 QStringList({ mib }));
+    // an Override: mixed as the others (and no Move in black in it)
+    cl->setMode(Cuelist::ModeOverride);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost,
+             QStringList({ "Override: the steps mix with what's below like any others" }) + cueLines);
+    // a Chase with a cut: no cue times, no links, no Move in black; its
+    // actions still run in this program
+    cl->setMode(Cuelist::ModeChase);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).lost, QStringList({ "actions in 1 cue(s): they don't run" }));
+    // with the times of its cues: they count, the links don't
+    cl->setChaseXfade(-1);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QVERIFY(steps.lost.contains("times per attribute or fixture in 1 cue(s): only the cue's fade"));
+    QVERIFY(steps.lost.contains("fade curves in 2 cue(s): only linear"));
+    QVERIFY(steps.lost.contains("delay in 1 cue(s): the step starts at once"));
+    QVERIFY(steps.lost.contains("links in 1 cue(s): the steps play in order") == false);
+    QVERIFY(steps.lost.contains(mib) == false);
+    // a Timecode list: no links, Move in black
+    cl->setMode(Cuelist::ModeTimecode);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QVERIFY(steps.lost.contains("links in 1 cue(s): the steps play in order") == false);
+    QVERIFY(steps.lost.contains(mib));
+    cl->setMode(Cuelist::ModeNormal);
+    cl->setMoveInBlack(false);
+
+    // a Release list whose last cue links always to the first one: the
+    // steps loop (that link is the run order, not a lost link), and the last
+    // step waits for the trigger of cue 1, a Wait of 2 s
+    cl->setAtEnd(Cuelist::AtEndRelease);
+    QCOMPARE(QlcExchange::toSteps(m_doc, cl, true).runOrder, Function::SingleShot);
+    cue = cl->cueAt(4);
+    cue.link = cl->cueAt(0).uid;
+    cue.linkCount = 0;
+    QVERIFY(cl->replaceCue(cue));
+    cue = cl->cueAt(0);
+    cue.trigger = Cuelist::TriggerWait;
+    cue.triggerTime = 2000;
+    QVERIFY(cl->replaceCue(cue));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::Loop);
+    QCOMPARE(steps.steps.at(4).hold, 1000u);
+    QCOMPARE(steps.lost, cueLines);
+    // with Stay too: the link comes first
+    cl->setAtEnd(Cuelist::AtEndStay);
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::Loop);
+    QCOMPARE(steps.lost, cueLines);
+    // linked a number of times: no loop, and one more link
+    cue = cl->cueAt(4);
+    cue.linkCount = 2;
+    QVERIFY(cl->replaceCue(cue));
+    steps = QlcExchange::toSteps(m_doc, cl, true);
+    QCOMPARE(steps.runOrder, Function::SingleShot);
+    QCOMPARE(steps.steps.at(4).hold, Function::infiniteSpeed());
+    QVERIFY(steps.lost.contains("links in 2 cue(s): the steps play in order"));
+    QVERIFY(steps.lost.contains("Stay at the end: GO on the last cue stops the steps"));
+}
+
+void Backend_Test::qlcCueListControlsLeds()
+{
+    // the buttons of a QLC+ Cue List on a known controller become mappings
+    // with its kind and the LEDs learning gives: an RGB pad of the APC mini
+    // mk2 green at 100 % (pulsing when paused), one of the APC40 mkII solid
+    // green, a button with one LED 1 on and 2 blinking. The MIDI plugin of
+    // the tests: lines named like the controllers, no device
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Pads.qxw");
+    const QByteArray show =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<!DOCTYPE Workspace>\n"
+        "<Workspace xmlns=\"http://www.qlcplus.org/Workspace\" CurrentWindow=\"VirtualConsole\">\n"
+        " <Creator><Name>Q Light Controller Plus</Name><Version>4.14.4</Version><Author>Someone</Author></Creator>\n"
+        " <Engine>\n"
+        "  <Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model><Mode>Generic</Mode>"
+        "<ID>0</ID><Name>Dimmer</Name><Universe>0</Universe><Address>0</Address><Channels>1</Channels></Fixture>\n"
+        "  <Function ID=\"1\" Type=\"Scene\" Name=\"Full\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,255</FixtureVal></Function>\n"
+        "  <Function ID=\"2\" Type=\"Scene\" Name=\"Half\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<FixtureVal ID=\"0\">0,128</FixtureVal></Function>\n"
+        "  <Function ID=\"10\" Type=\"Chaser\" Name=\"Song\"><Speed FadeIn=\"0\" FadeOut=\"0\" Duration=\"0\"/>"
+        "<Direction>Forward</Direction><RunOrder>Loop</RunOrder>"
+        "<SpeedModes FadeIn=\"PerStep\" FadeOut=\"PerStep\" Duration=\"PerStep\"/>"
+        "<Step Number=\"0\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">1</Step>"
+        "<Step Number=\"1\" FadeIn=\"0\" Hold=\"4294967294\" FadeOut=\"0\">2</Step></Function>\n"
+        " </Engine>\n"
+        " <VirtualConsole>\n"
+        "  <Frame Caption=\"\">\n"
+        "   <CueList Caption=\"Song\" ID=\"0\">\n"
+        "    <Chaser>10</Chaser>\n"
+        // a pad of the mk2 (note 5), a button on its right (note 112), a
+        // scene button of the APC40 mkII (note 82), a key
+        "    <Next><Input Universe=\"0\" Channel=\"133\"/></Next>\n"
+        "    <Previous><Input Universe=\"0\" Channel=\"240\"/></Previous>\n"
+        "    <Playback><Key>P</Key></Playback>\n"
+        "    <Stop><Input Universe=\"1\" Channel=\"210\"/></Stop>\n"
+        "   </CueList>\n"
+        "  </Frame>\n"
+        " </VirtualConsole>\n"
+        "</Workspace>\n";
+    QVERIFY(writeBytes(path, show));
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY2(core.openShow(QUrl::fromLocalFile(path)), qPrintable(core.lastError()));
+    QLCIOPlugin *plugin = loadTestMidi(core);
+    QVERIFY(plugin != nullptr);
+    ControlMapper *mapper = core.mapping();
+    const QString mk2 = "Test MIDI|APC mini mk2";
+    const QString apc40 = "Test MIDI|APC40 mkII";
+    mapper->setDeviceEnabled(mk2, true);
+    mapper->setDeviceEnabled(apc40, true);
+    QCOMPARE(mapper->universeOf(mk2), 0);
+    QCOMPARE(mapper->universeOf(apc40), 1);
+    QVERIFY(mapper->mappings().isEmpty());
+
+    const QString done = core.importQlcCueLists(QUrl(), { "vc:0" }, { { "controls", true } });
+    QCOMPARE(done, QString("1 cuelist(s) made · 1 on playbacks · 4 mapping(s) made"));
+    auto mappingOf = [mapper](const QString &target) {
+        for (const QVariant &v : mapper->mappings())
+            if (v.toMap().value("target").toString() == target)
+                return v.toMap();
+        return QVariantMap();
+    };
+    auto leds = [](const QVariantMap &m) {
+        return QList<int>({ m.value("onValue").toInt(), m.value("onChannel").toInt(), m.value("pausedValue").toInt(),
+                            m.value("pausedChannel").toInt(), m.value("offValue").toInt(), m.value("offChannel").toInt() });
+    };
+    const QVariantMap go = mappingOf("playbackGo");
+    QCOMPARE(go.value("device").toString(), mk2);
+    QCOMPARE(go.value("channel").toUInt(), 133u);
+    QCOMPARE(go.value("controller").toString(), QString("apcmini2"));
+    QVERIFY(go.value("feedback").toBool());
+    QCOMPARE(leds(go), QList<int>({ 21, 7, 21, 10, 0, 0 }));
+    const QVariantMap back = mappingOf("playbackBack");
+    QCOMPARE(back.value("controller").toString(), QString("apcmini2"));
+    QCOMPARE(leds(back), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    const QVariantMap release = mappingOf("playbackRelease");
+    QCOMPARE(release.value("device").toString(), apc40);
+    QCOMPARE(release.value("controller").toString(), QString("apc40mk2"));
+    QCOMPARE(leds(release), QList<int>({ 21, 1, 21, 10, 0, 0 }));
+    // a key has no controller
+    const QVariantMap pause = mappingOf("playbackPauseBack");
+    QCOMPARE(pause.value("source").toString(), QString("key"));
+    QCOMPARE(pause.value("controller").toString(), QString());
+
+    // the same as learning gives
+    QCOMPARE(ControlMapper::controllerDefaults("midi", mk2, 133, true),
+             QVariantMap({ { "controller", "apcmini2" }, { "onValue", 21 }, { "onChannel", 7 }, { "pausedValue", 21 },
+                           { "pausedChannel", 10 }, { "offValue", 0 }, { "offChannel", 0 } }));
+    QCOMPARE(ControlMapper::controllerDefaults("midi", mk2, 133, false), QVariantMap({ { "controller", "apcmini2" } }));
+    QVERIFY(ControlMapper::controllerDefaults("midi", "Test MIDI|Some keyboard", 133, true).isEmpty());
+    QVERIFY(ControlMapper::controllerDefaults("dmx", mk2, 133, true).isEmpty());
+}
+
+/*********************************************************************
+ * cross-track selection, A/B faders on the SHOW and the phone
+ *********************************************************************/
+
+// (as in the SHOW tests)
+#define QCOMPARE_LEVEL(actual, expected) \
+    QVERIFY2(qAbs(qreal(actual) - qreal(expected)) < 0.001, \
+             qPrintable(QString("%1 is %2, expected %3").arg(#actual).arg(qreal(actual)).arg(qreal(expected))))
+
+void Backend_Test::selectedSceneCueActions()
+{
+    // the actions of a cue start scenes (in their group, or of no group) and
+    // stop them without selecting them: nobody pressed them. Also on a scene
+    // that plays already. A press still selects, and a group started from
+    // outside (Live, the phone) too. Offline frames, and the events between
+    // them: the app does the actions in its own thread
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    // (ticking again before the core goes: it stops what plays)
+    auto ticking = qScopeGuard([doc]() { doc->masterTimer()->start(); });
+    SelectionShow show(core);
+    const QList<quint32> s = show.scenes;
+    ZoneManager *zones = core.zones();
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *pb = core.playbacks();
+    auto frames = [&](int count) {
+        for (int i = 0; i < count; i++)
+        {
+            renderFrames(doc);
+            QCoreApplication::processEvents();
+        }
+    };
+    auto running = [&](quint32 fid) { return doc->function(fid)->isRunning(); };
+
+    // cue 2 starts S2 (group A), cue 3 S5 (no group), cue 4 stops S2 and
+    // starts S4 (group B)
+    Cuelist *list = actionTestList(doc, "L", doc->fixtures().first()->id(), 4);
+    QVERIFY(list != nullptr);
+    auto scene = [](quint32 fid, const QString &mode) {
+        return QVariantMap({ { "target", "scene" }, { "functionId", int(fid) }, { "mode", mode } });
+    };
+    CuelistEditor *editor = core.cuelists();
+    editor->setCueActions(list->id(), 1, { scene(s[1], "on") });
+    editor->setCueActions(list->id(), 2, { scene(s[4], "on") });
+    editor->setCueActions(list->id(), 3, { scene(s[1], "off"), scene(s[3], "on") });
+    QCOMPARE(list->cueAt(3).actions.count(), 2);
+
+    // S1 pressed: the selected scene
+    QSignalSpy changed(zones, SIGNAL(selectedSceneChanged()));
+    mapper->pressTarget(scene(s[0], "on"), true);
+    frames(2);
+    QVERIFY(show.a->isActive(s[0]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(changed.count(), 1);
+
+    pb->goFunction(int(list->id()));
+    frames(2);
+    QCOMPARE(list->status().current, 0);
+    // a scene in its group
+    pb->goFunction(int(list->id()));
+    frames(3);
+    QCOMPARE(list->status().current, 1);
+    QVERIFY(show.a->isActive(s[1]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    // a scene of no group
+    pb->goFunction(int(list->id()));
+    frames(3);
+    QCOMPARE(list->status().current, 2);
+    QVERIFY(running(s[4]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    // a stop and a start in another group
+    pb->goFunction(int(list->id()));
+    frames(3);
+    QCOMPARE(list->status().current, 3);
+    QVERIFY(show.a->isActive(s[1]) == false);
+    QVERIFY(show.b->isActive(s[3]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(changed.count(), 1);
+
+    // cue 2 again, its scene playing already (the same cue does its actions
+    // again after 200 ms)
+    show.a->start(s[1], false);
+    frames(2);
+    QVERIFY(show.a->isActive(s[1]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QTest::qWait(250);
+    pb->goToFunction(int(list->id()), 1);
+    frames(3);
+    QCOMPARE(list->status().current, 1);
+    QVERIFY(show.a->isActive(s[1]));
+    QCOMPARE(zones->selectedScene(), int(s[0]));
+    QCOMPARE(changed.count(), 1);
+
+    // presses still select: a controller or a SHOW button (pressTarget), a
+    // group started from outside
+    mapper->pressTarget(scene(s[4], "on"), true);
+    QCOMPARE(zones->selectedScene(), int(s[4]));
+    mapper->pressTarget(scene(s[2], "on"), true);
+    frames(2);
+    QVERIFY(show.a->isActive(s[2]));
+    QCOMPARE(zones->selectedScene(), int(s[2]));
+    show.b->stop(s[3]);
+    show.b->start(s[3]);
+    QCOMPARE(zones->selectedScene(), int(s[3]));
+
+    pb->releaseFunction(int(list->id()));
+    zones->stopAll(true);
+    doc->function(s[4])->stop(FunctionParent::master());
+    frames(3);
+}
+
+void Backend_Test::surfaceFlashCrossfade()
+{
+    // the Flash of a SHOW fader on the A/B fader of a playback is the flash
+    // of the playback (at full while pressed, with its attack and decay, as
+    // its own Flash button), never a travel of the crossfade, which would be
+    // GOs: its cue stays, its fader stays where it is (placed or not), and
+    // let go the playback plays as before. The other targets of the fader go
+    // to the top as always; the phone the same, with one finger or two.
+    // Offline frames
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    auto ticking = qScopeGuard([doc]() { doc->masterTimer()->start(); });
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 3), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    PlaybackManager *pb = core.playbacks();
+    ShowSurface *surface = core.surface();
+    auto frames = [&](int count) {
+        for (int i = 0; i < count; i++)
+        {
+            renderFrames(doc);
+            QCoreApplication::processEvents();
+        }
+    };
+    auto itemOf = [&](const QVariantMap &added) {
+        return surface->item(added.value("page").toInt(), added.value("section").toString(), added.value("cell").toInt());
+    };
+    auto flashHeld = [&](int slot) { return pb->slotInfo(0, slot).value("flashHeld").toBool(); };
+    auto position = [&](int slot) { return pb->slotInfo(0, slot).value("xfadePos").toDouble(); };
+
+    // playback 1: an A/B list that plays at half (the level it had), on
+    // cue 1, its fader placed at the bottom
+    Cuelist *cl = crossfadeList(doc, pb, { testCue(1000, { { Key(dim, 0), 100 } }, 1000),
+                                           testCue(2000, { { Key(dim, 0), 200 } }, 1000),
+                                           testCue(3000, { { Key(dim, 0), 50 } }, 1000) });
+    QVERIFY(cl != nullptr);
+    pb->setSlotOption(0, 0, "faderMode", "level");
+    pb->setLevel(0, 0, 0.5);
+    pb->setSlotOption(0, 0, "faderMode", "crossfade");
+    QVERIFY(pb->crossfadesAt(0, 0));
+    QVERIFY(pb->crossfadesAt(-1, 0));
+    pb->go(0, 0);
+    pb->setLevel(0, 0, 0.0);
+    frames(3);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(pb->faderKnown(0, 0));
+    QCOMPARE_LEVEL(cl->getAttributeValue(Function::Intensity), 0.5);
+    // playback 2: a scene at 30 %, its fader an intensity
+    Scene *wash = actionTestScene(doc, "Wash", dim, 2, 200);
+    QVERIFY(wash != nullptr);
+    pb->assign(0, 1, int(wash->id()));
+    pb->setLevel(0, 1, 0.3);
+    QVERIFY(pb->crossfadesAt(0, 1) == false);
+    // playback 3: an A/B list that is stopped, its fader never placed
+    Cuelist *idle = actionTestList(doc, "Idle", dim, 3, 1);
+    QVERIFY(idle != nullptr);
+    pb->assign(0, 2, int(idle->id()));
+    pb->setSlotOption(0, 2, "faderMode", "crossfade");
+    QVERIFY(pb->faderKnown(0, 2) == false);
+
+    // their faders on the SHOW (Alt+click), and one on the A/B fader and the grand master
+    const QVariantMap abWhere = surface->addFromTarget({ { "target", "playbackFader" }, { "slot", 0 } });
+    const QVariantMap ab = itemOf(abWhere);
+    QCOMPARE(ShowSurface::faderTargets(ab).first().toMap().value("target").toString(), QString("map"));
+    const QVariantMap level = itemOf(surface->addFromTarget({ { "target", "playbackFader" }, { "slot", 1 } }));
+    const QVariantMap stopped = itemOf(surface->addFromTarget({ { "target", "playbackFader" }, { "slot", 2 } }));
+    QVariantMap mixed = ab;
+    mixed.insert("targets", ShowSurface::faderTargets(ab) + QVariantList({ QVariantMap({ { "target", "grandMaster" } }) }));
+
+    /* the A/B fader: no level to give back, the flash of its playback */
+    QCOMPARE(surface->holdLevels(ab), QVariantList({ QVariantMap({ { "playbackFlash", true } }) }));
+    QVariantList held = surface->flashFader(ab);
+    QCOMPARE(held, QVariantList({ QVariantMap({ { "playbackFlash", true } }) }));
+    frames(3);
+    QVERIFY(flashHeld(0));
+    QCOMPARE_LEVEL(cl->getAttributeValue(Function::Intensity), 1.0);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual == false);
+    QCOMPARE_LEVEL(position(0), 0.0);
+    surface->restoreLevels(ab, held);
+    frames(3);
+    QVERIFY(flashHeld(0) == false);
+    QCOMPARE_LEVEL(cl->getAttributeValue(Function::Intensity), 0.5);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual == false);
+    QCOMPARE_LEVEL(position(0), 0.0);
+    QVERIFY(cl->isRunning());
+
+    /* an intensity fader goes to the top, and back */
+    held = surface->flashFader(level);
+    QCOMPARE_LEVEL(pb->level(0, 1), 1.0);
+    surface->restoreLevels(level, held);
+    QCOMPARE_LEVEL(pb->level(0, 1), 0.3);
+
+    /* both on one fader: the grand master at the top, the A/B a flash */
+    core.setGrandMaster(100);
+    held = surface->flashFader(mixed);
+    QCOMPARE(held.count(), 2);
+    frames(2);
+    QCOMPARE(core.grandMaster(), 255);
+    QVERIFY(flashHeld(0));
+    surface->restoreLevels(mixed, held);
+    frames(2);
+    QCOMPARE(core.grandMaster(), 100);
+    QVERIFY(flashHeld(0) == false);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE_LEVEL(position(0), 0.0);
+
+    /* a stopped list: the flash plays its first cue and releases it, the
+       fader is still not placed (no travel, no cue left playing) */
+    held = surface->flashFader(stopped);
+    frames(3);
+    QVERIFY(idle->isRunning());
+    QCOMPARE(idle->status().current, 0);
+    surface->restoreLevels(stopped, held);
+    QVERIFY(framesUntil(doc, [&]() { return idle->isRunning() == false; }, 50) >= 0);
+    QVERIFY(pb->faderKnown(0, 2) == false);
+
+    /* the phone: one finger, two, and a phone that goes with one on it */
+    RemoteServer *remote = core.remote();
+    remote->startOn(18921);
+    QVERIFY(remote->running());
+    QWebSocket phone;
+    auto sendJson = [&phone](const QVariantMap &m) {
+        phone.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+    };
+    auto faderFlash = [&](bool down) {
+        sendJson({ { "cmd", "faderFlash" }, { "page", abWhere.value("page") }, { "section", abWhere.value("section") },
+                   { "cell", abWhere.value("cell") }, { "down", down } });
+    };
+    phone.open(QUrl("ws://127.0.0.1:18921/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    sendJson({ { "cmd", "hello" }, { "pin", remote->pin() } });
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 1, 3000);
+    faderFlash(true);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0), 3000);
+    frames(3);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE_LEVEL(position(0), 0.0);
+    faderFlash(false);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0) == false, 3000);
+    frames(3);
+    QCOMPARE(cl->status().current, 0);
+    QVERIFY(cl->status().manual == false);
+    // two fingers: up when both are
+    faderFlash(true);
+    faderFlash(true);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0), 3000);
+    faderFlash(false);
+    QTest::qWait(200);
+    QVERIFY(flashHeld(0));
+    faderFlash(false);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0) == false, 3000);
+    // the phone goes: it goes up
+    faderFlash(true);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0), 3000);
+    phone.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 0, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(flashHeld(0) == false, 3000);
+    frames(3);
+    QCOMPARE(cl->status().current, 0);
+    QCOMPARE_LEVEL(position(0), 0.0);
+    QVERIFY(cl->isRunning());
+    remote->apply();
+    QVERIFY(remote->running() == false);
+
+    pb->releaseAll();
+    frames(3);
+}
+
+void Backend_Test::remoteCrossfadeState()
+{
+    // the phone: the strip of an A/B fader says so (the computer shows «A/B»
+    // and how far its crossfade is), with where the fader is as its level;
+    // an intensity fader, or a list made another type, doesn't
+    typedef Cuelist::Key Key;
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Dimmer", 0, 1, 1, 0, 3), 1);
+    const quint32 dim = doc->fixtures().first()->id();
+    PlaybackManager *pb = core.playbacks();
+    RemoteServer *remote = core.remote();
+
+    Cuelist *cl = crossfadeList(doc, pb, { testCue(1000, { { Key(dim, 0), 100 } }),
+                                           testCue(2000, { { Key(dim, 0), 200 } }) });
+    QVERIFY(cl != nullptr);
+    Scene *wash = actionTestScene(doc, "Wash", dim, 2, 200);
+    QVERIFY(wash != nullptr);
+    pb->assign(0, 1, int(wash->id()));
+    pb->setLevel(0, 1, 0.4);
+    Cuelist *other = actionTestList(doc, "Other", dim, 2, 1);
+    QVERIFY(other != nullptr);
+    pb->assign(0, 2, int(other->id()));
+    pb->setSlotOption(0, 2, "faderMode", "crossfade");
+    QVERIFY(pb->crossfadesAt(0, 2));
+
+    auto stateOf = [&](int slot) {
+        return remote->stateMessage().value("playbacks").toMap().value(QString("0/%1").arg(slot)).toMap();
+    };
+    QVERIFY(stateOf(0).value("crossfade").toBool());
+    QCOMPARE_LEVEL(stateOf(0).value("level").toDouble(), 0.0);
+    QVERIFY(stateOf(1).contains("crossfade") == false);
+    QCOMPARE_LEVEL(stateOf(1).value("level").toDouble(), 0.4);
+    QVERIFY(stateOf(2).value("crossfade").toBool());
+    // (made a Chase, its fader is the intensity again)
+    other->setMode(Cuelist::ModeChase);
+    QVERIFY(stateOf(2).contains("crossfade") == false);
+    QCOMPARE_LEVEL(stateOf(2).value("level").toDouble(), 1.0);
+    // back to an intensity
+    pb->setSlotOption(0, 0, "faderMode", "level");
+    QVERIFY(stateOf(0).contains("crossfade") == false);
+}
+
+#undef QCOMPARE_LEVEL
 
 #include "backend_test.moc"

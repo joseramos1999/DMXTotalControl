@@ -14,7 +14,11 @@ Unter **„Geräte“** erscheinen die Eingabegeräte, die das Programm findet, 
 2. Aktivieren Sie seinen **„Eingang“**.
 3. Hat das Gerät einen Ausgang, aktivieren Sie **„Feedback (LEDs)“**, damit das Programm seine LEDs leuchten lässt oder seine Motorfader bewegt.
 
+Bei einem Akai APC (APC mini, APC mini mk2 oder APC40 mkII) mit aktiviertem Eingang und Feedback erscheint **„Vorbereiten“**. Es versetzt den Controller in den Modus seiner Zuordnungen und sendet alle LEDs erneut. Verwenden Sie es nach dem Aus- und Einschalten des Controllers oder nach einem Moduswechsel.
+
 Eine Zuordnung für ein Gerät, das nicht angeschlossen ist, bleibt erhalten: Sie funktioniert wieder, sobald Sie es anschließen.
+
+Der Eingang eines MIDI-Geräts bringt auch seinen MIDI-Timecode (MTC) zu den [„Timecode“-Cuelists](escenas.md#optionen-der-cuelist), die ihm folgen. Es genügt, seinen **„Eingang“** zu aktivieren; eine Zuordnung ist nicht nötig.
 
 ## Lernmodus
 
@@ -46,6 +50,8 @@ Ein Bedienelement des Programms kann mehrere Zuordnungen haben (zum Beispiel ein
 
 Unter **„Zuordnungen“** zeigt jede Zeile das Bedienelement des Geräts, was es steuert, und sein Verhalten. Ein violetter Punkt steht für eine Taste, ein blauer für einen Fader. Klicken Sie auf eine Zuordnung, um sie rechts zu bearbeiten, oder drücken Sie **„Hinzufügen“**, um eine leere zu erstellen.
 
+Die Tastatur- und Controller-Tasten der Cue-Listen von QLC+ lassen sich als Zuordnungen übernehmen, und die Ihrer Cuelists gehen in die Kopie für QLC+ (siehe [Szenen](escenas.md#cuelists-und-qlc)).
+
 ## Eine Zuordnung bearbeiten
 
 ### Bedienelement
@@ -64,7 +70,7 @@ Was die Zuordnung tut. Die **Tasten**:
 
 | Ziel | Was es tut |
 |---|---|
-| Szene starten | Die gewählte Szene, in ihrer Gruppe. |
+| Szene starten | Die gewählte Szene (oder „Die ausgewählte Szene“), in ihrer Gruppe. |
 | Szene N einer Gruppe | Die Szene, die an dieser Stelle der Gruppe steht (**Szenennummer**). |
 | Gruppe freigeben / Nächste Szene einer Gruppe / Vorherige Szene einer Gruppe | In einer Gruppe oder in „Alle Gruppen“. |
 | Blackout, Alles stoppen, Alles pausieren, Tap-Tempo, BeatGO, GO, Stop | Wie ihre Tasten (GO und Stop wählen den Modus, wie in der oberen Leiste: Eine der beiden ist immer an). |
@@ -82,13 +88,29 @@ Die **Fader**:
 |---|---|
 | Grand Master | Den GM. |
 | Master einer Gruppe | Den Master dieser Gruppe. |
-| Live-Dimmer einer Szene / Live-Tempo einer Szene | Ihre Live-Schieberegler. |
+| Live-Dimmer einer Szene / Live-Tempo einer Szene | Die Live-Schieberegler der gewählten Szene (oder „Die ausgewählte Szene“). |
 | BPM | Das Tempo. |
 | Mischer: Dimmer, Farbton, Sättigung, Stroboskop-Tempo | Im gewählten Kanalzug. |
 | Fader der SHOW | Einen ganzen SHOW-Fader. |
 | Playback: Fader | Den Fader eines Playbacks. |
+| Cue-Tempo (alle Cuelists) | Das [Tempo aller Cuelists](playbacks.md#cue-tempo): unten ×0,1, in der Mitte ×1, oben ×10. |
+| Live-Zeit eines Playbacks / Live-Zeit des ausgewählten Playbacks | Die [Zeit des Cues](playbacks.md#live-zeit), der gerade überblendet. Als Fader: in der Mitte die Zeit, mit der er begonnen hat, unten ×0,1 und oben ×10. Als Endlos-Encoder oder mit Tastendrücken: 10 % mehr oder weniger pro Schritt. |
 
 Für die Playbacks wählen Sie die **Seite** („Aktuelle Seite (folgt)“, die der angezeigten Seite folgt, oder eine feste) und die Nummer des **Playbacks**. Mit **„Oder eine Cuelist oder Szene, egal wo“** wirkt die Zuordnung auf diese Cuelist oder Szene auf jedem Playback, auf dem sie liegt. Bei „zu einem Cue“ sehen Sie, zu welchem Cue es gerade führt („Jetzt: Cue 3 von Song 1“).
+
+### Die ausgewählte Szene
+
+Bei „Szene starten“, „Live-Dimmer einer Szene“ und „Live-Tempo einer Szene“ beginnt die Liste der Szenen mit **„Die ausgewählte Szene“**. Diese Zuordnung wirkt auf die Szene, die Sie zuletzt gedrückt haben.
+
+- **So wird eine Szene ausgewählt**: Sie drücken sie in Live, auf einer Taste der SHOW, auf einem Controller oder auf dem Smartphone, oder Sie starten sie mit „Nächste Szene einer Gruppe“ oder „Vorherige Szene einer Gruppe“.
+- **Das ändert sie nicht**: die Fader der SHOW, die Playbacks, die Aktionen der Cues und „Testen“ in Szenen.
+- Sie bleibt ausgewählt, wenn sie stoppt. Sie wird nicht gespeichert: Wenn Sie eine Show öffnen oder eine neue beginnen, gibt es keine.
+- Unter der Liste sehen Sie, welche es gerade ist („Jetzt: Strophe“). Ohne eine tut die Zuordnung nichts und ihre LED bleibt aus.
+- Eine Taste startet, stoppt oder blitzt die Szene, die beim Drücken ausgewählt ist, in ihrer Gruppe und nach GO / Stop. Ihre LED zeigt den Zustand dieser Szene.
+- Bei einem absoluten Fader wird **„Fader abholen (ohne Motor)“** eingeschaltet: Wechselt die Szene, springt der Pegel nicht. Der Fader übernimmt, wenn er den Pegel der neuen Szene erreicht. Sie können es ausschalten.
+- In Live hat die ausgewählte Szene einen dünnen Balken an ihrem unteren Rand, solange eine Zuordnung „Die ausgewählte Szene“ verwendet, oder im Lernmodus.
+
+Beispiel: Die Pads der APC starten Szenen und wählen sie so aus. Ein Drehregler geht auf „Live-Tempo einer Szene“ › „Die ausgewählte Szene“. Er ändert das Tempo der Szene, die Sie zuletzt gedrückt haben.
 
 ### Verhalten
 
@@ -100,6 +122,8 @@ Bei den **Tasten**:
 
 Die Playback-Tasten wirken beim Drücken, außer Flash, und haben diese Option nicht.
 
+Der Flash eines Playbacks nutzt den Anstieg und den Abfall dieses Playbacks (siehe [Eigenschaften eines Playbacks](playbacks.md#eigenschaften-eines-playbacks)). Mit „Oder eine Cuelist oder Szene, egal wo“ nutzt er die des ersten Playbacks, auf dem sie liegt; liegt sie auf keinem Playback, geht es sofort. Bei „Umschalten“ steigt er wieder, wenn Sie während des Abfalls drücken.
+
 Bei den **Fadern**:
 
 - **„Absolut: folgt dem Fader“**.
@@ -107,17 +131,21 @@ Bei den **Fadern**:
 - **„Relativ: Endlos-Encoder“** und **„Relativ: Encoder, 1 auf und 127 ab“** (Endlos-Encoder).
 - **„Von“** … **„bis“**: der Bereich, von 0 bis 100 %. **„Invertieren“** kehrt ihn um.
 - **„Schritt %“** und **„Schleife“** (inkrementell und relativ).
-- **„Fader abholen (ohne Motor)“** (absolut): Der Fader des Controllers steuert den Pegel erst, nachdem er ihn erreicht hat, ohne Sprünge.
+- **„Fader abholen (ohne Motor)“** (absolut): Der Fader des Controllers steuert den Pegel erst, nachdem er ihn erreicht hat, ohne Sprünge. Ein Motorfader braucht das nicht. Beim A/B-Fader eines Playbacks sagt der erste Wert nur, wo er steht; danach muss der Fader des Controllers den auf dem Bildschirm erreichen.
 
 ### Feedback
 
 Bei MIDI oder OSC sorgt **„Feedback“** dafür, dass das Programm **die Taste des Geräts beleuchtet** oder **seinen Motorfader bewegt**. Gesendet wird nur, was sich ändert.
 
+Ein Motorfader (absolut) bewegt sich nicht, während Sie ihn bewegen. Das Programm wartet, bis Sie ihn 0,4 s ruhen lassen, und korrigiert ihn nur, wenn sein Ziel auf einem anderen Wert gelandet ist, zum Beispiel weil etwas anderes es geändert hat. Solange Sie ihn nicht berühren, bewegen ihn der Bildschirm, eine andere Playback-Seite oder ein anderes Bedienelement sofort. Encoder und Tasten warten nicht.
+
 Für die LEDs der MIDI-Tasten:
 
 1. Wählen Sie unter **„LEDs von“** **„Beliebiger Controller (Zahlen)“** oder Ihren Controller: **Akai APC mini**, **Akai APC mini mk2** oder **Akai APC40 mkII**.
-2. Wählen Sie für **„An“**, **„Aus“** und **„Pausiert“** die Farbe in den Farbfeldern (bei einer APC) oder geben Sie bei jedem anderen Controller den Wert ein (0–127).
-3. Wählen Sie bei den RGB-Pads der APC mini mk2 auch, wie sie leuchten: **„Gedimmt“**, **„Voll“**, **„Pulsierend“** oder **„Blinkend“** (bei der APC40 mkII **„Dauerhaft“**). Ohne Auswahl leuchtet „An“ **„Voll“** und „Aus“ **„Gedimmt“**.
+2. Wählen Sie für **„An“**, **„Aus“**, **„Pausiert“** und bei Szenen **„Beim Überblenden“** die Farbe in den Farbfeldern (bei einer APC) oder geben Sie bei jedem anderen Controller den Wert ein (0–127).
+3. Wählen Sie bei den RGB-Pads auch, wie sie leuchten: **„Gedimmt“**, **„Voll“**, **„Pulsierend“** oder **„Blinkend“** bei der APC mini mk2 und **„Dauerhaft“**, **„Pulsierend“** oder **„Blinkend“** bei der APC40 mkII. Pulsierend oder blinkend wechselt das Pad zwischen der Farbe und dunkel. Ohne Auswahl leuchtet „An“ **„Voll“** (bei der APC40 mkII **„Dauerhaft“**), „Aus“ **„Gedimmt“** (bei der APC40 mkII **„Dauerhaft“**) und „Beim Überblenden“ **„Pulsierend“**.
+
+**„Beim Überblenden“** (bei „Szene starten“ und „Szene N einer Gruppe“): Schalten Sie **„Eigene Farbe beim Überblenden“** ein, dann zeigt die Taste diese Farbe, solange die Szene mit ihrer Überblendung einsetzt und solange sie mit ihrer ausblendet. Bei einer Cuelist zeigt sie die Farbe, solange ihre Cue überblendet. Ohne diese Option zeigt die Einblendung die Farbe von „An“ und die Ausblendung die von „Aus“. Eine pausierte oder wartende Szene leuchtet wie „Pausiert“.
 
 Die LEDs des Controllers gehen aus, wenn Sie das Programm schließen, eine Zuordnung löschen oder einem anderen Bedienelement zuweisen, eine andere Show öffnen oder das Gerät oder sein Feedback deaktivieren.
 
@@ -142,15 +170,19 @@ Tastaturzuordnungen funktionieren auf jeder Seite und haben Vorrang vor Tastenk�
 
 **→ Gruppen** (APC mini und mk2): Jede Pad-Spalte startet die Szenen einer Gruppe (grün: läuft; gelb: bereit; aus: keine Szene). Die Fader sind die Master der Gruppen und der letzte der Grand Master. Die Tasten unter den Pads geben die Gruppen frei; die rechten sind Blackout, Alles stoppen, Pause, Tap, BeatGO, vorherige, nächste und Flash.
 
-**→ Playbacks** (APC mini und mk2): Jede Spalte ist ein Playback 1-8 der aktuellen Playback-Seite: sein Fader (holt den Pegel ab) und, von unten, GO, Pause/Zurück, Flash und seine ersten 5 Cues (Cue 1 oben). Die Taste unter den Pads gibt es frei. Der letzte Fader ist der Grand Master; die rechten Tasten sind vorherige und nächste Seite, GO und Zurück des ausgewählten Playbacks, Blackout, Tap, BeatGO und Alles stoppen.
+**→ Playbacks** (APC mini und mk2): Jede Spalte ist ein Playback 1-8 der aktuellen Playback-Seite: sein Fader (holt den Pegel ab) und, von unten, GO, Pause/Zurück, Flash und seine ersten 5 Cues (Cue 1 oben). Die Taste unter den Pads gibt es frei. Der letzte Fader ist der Grand Master; die rechten Tasten sind vorherige und nächste Seite, GO und Zurück des ausgewählten Playbacks, Blackout, Tap, BeatGO und Alles stoppen. Ist der Fader eines Playbacks auf A/B (siehe [Der Fader](playbacks.md#der-fader)), ist jeder Weg des APC-Faders ein GO, dessen Überblendung Sie von Hand machen.
 
-**→ Playbacks** (APC40 mkII): Jede Spur ist ein Playback 1-8 der aktuellen Seite: sein Fader, GO auf der Track-Taste, Pause/Zurück auf S, Flash auf Record Arm, Auswählen und Freigeben, und seine ersten 5 Cues auf den Clips. Die Scene-Tasten wechseln zu den Seiten 1-5, die Bank-Tasten ändern Seite und Gruppe, und Play und Record sind GO und Zurück des ausgewählten Playbacks. Die Device-Regler sind die Fader der Playbacks 9-16, die Track-Regler die Master der ersten Gruppen.
+**→ Playbacks** (APC40 mkII): Jede Spur ist ein Playback 1-8 der aktuellen Seite: sein Fader, GO auf der Track-Taste, Pause/Zurück auf S, Flash auf Record Arm, Auswählen und Freigeben, und seine ersten 5 Cues auf den Clips (grün: läuft; grün pulsierend: die nächste; blau gedimmt: die übrigen). Die Scene-Tasten wechseln zu den Seiten 1-5, die Bank-Tasten ändern Seite und Gruppe, und Play und Record sind GO und Zurück des ausgewählten Playbacks. Die Device-Regler sind die Fader der Playbacks 9-16, die Track-Regler die Master der ersten Gruppen.
+
+Der APC mini mk2 wechselt von selbst in den Session-Modus und der APC40 mkII in den Ableton-Modus: beim Start des Programms, beim Öffnen einer Show, wenn Sie sein Feedback aktivieren, und mit „Alles zuordnen“. Im Note- oder Drum-Modus erreichen die Pads des mk2 die Zuordnungen nicht.
 
 > **Tipp:** Nach „Alles zuordnen“ erscheint jedes Bedienelement als normale Zuordnung in der Liste: Sie können jede einzelne ändern oder löschen, ohne die anderen zu berühren.
 
 ## Monitor
 
 **„Monitor“** zeigt die **ein- und ausgehenden Nachrichten**: Uhrzeit, **IN** oder **OUT**, das Gerät (oder „Tastatur“), die Nachricht und ihren Wert. Bewegen Sie ein Bedienelement eines aktivierten Geräts, um zu sehen, was es sendet. **„Leeren“** leert die Liste.
+
+Der Monitor zeigt die Moduswechsel, die das Programm sendet, als **OUT**: „SysEx · Session-Modus“ beim APC mini mk2 und „SysEx · Ableton-Modus“ beim APC40 mkII.
 
 Die grüne Kontrollleuchte der Zielscheibe in der oberen Leiste blinkt bei jeder eingehenden Nachricht.
 

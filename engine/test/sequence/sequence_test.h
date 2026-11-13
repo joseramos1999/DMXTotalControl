@@ -41,6 +41,8 @@ private slots:
     void loadWithScene();
     void loadWithoutScene();
     void save();
+    // DMX Total Control: the palettes of the steps
+    void palettes();
 
 private:
     Doc* m_doc;

@@ -133,7 +133,7 @@ Lo stesso menu del riquadro ha **«Apri in Scene»**, **«Modifica nel programma
 Ogni scena ha una priorità da 0 a 10; le nuove prendono quella che indichi in [Opzioni](opciones.md#riproduzione) (5 di default).
 
 - La scena con **priorità più alta comanda su tutti i canali che tocca**, zeri compresi: una scena rossa con priorità 8 sopra una blu con priorità 5 dà rosso, non magenta.
-- Con la **stessa priorità**, nei canali di intensità (dimmer, RGB…) si mescolano e vince il valore più alto; negli altri canali vince l'ultima scena avviata.
+- Con la **stessa priorità**, nei canali di intensità (dimmer, RGB…) si mescolano e vince il valore più alto; negli altri canali vince l'**ultimo cambiamento**: l'ultima scena avviata o l'ultimo GO di una cuelist che ha cambiato quel canale. Ciò che una cuelist mantiene solo dalle cue precedenti non lo riprende.
 - Se cambi la priorità di una scena in riproduzione, si applica subito.
 - Quando rilasci con dissolvenza una scena con priorità più alta, fa una dissolvenza verso ciò che c'è sotto.
 - **Il programmatore prevale su tutto**, intensità comprese. In Opzioni puoi abbassare la priorità delle modifiche dal vivo.
@@ -189,3 +189,5 @@ I riquadri delle scene, i master dei gruppi, i tasti ◀ ▶ e di rilascio di og
 
 - Con **Alt+clic** si copiano nella pagina dello SHOW aperta (vedi [Show](show.md#portare-qualsiasi-controllo-nello-show)).
 - Nella modalità Apprendi si possono assegnare a un controller (vedi [Mappature](mapeos.md#modalità-apprendi)).
+
+Mentre una mappatura usa «La scena selezionata», o nella modalità Apprendi, il riquadro della scena selezionata (l'ultima che hai premuto) ha una barra sottile sul bordo inferiore (vedi [Mappature](mapeos.md#la-scena-selezionata)).

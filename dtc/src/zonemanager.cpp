@@ -36,9 +36,11 @@ ZoneManager::ZoneManager(Doc *doc, QObject *parent)
     , m_doc(doc)
     , m_paused(false)
     , m_nextZoneId(0)
+    , m_selectedScene(-1)
 {
     // (added, removed, a new show: allFolded too)
     connect(this, SIGNAL(countChanged()), this, SIGNAL(foldedChanged()));
+    connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
 }
 
 ZoneManager::~ZoneManager()
@@ -261,6 +263,34 @@ void ZoneManager::follow(Zone *zone)
     connect(zone, SIGNAL(foldedChanged()), this, SIGNAL(foldedChanged()));
 }
 
+int ZoneManager::selectedScene() const
+{
+    return m_selectedScene;
+}
+
+void ZoneManager::selectScene(quint32 fid)
+{
+    // (only a function of the show, and only a change is told)
+    if (m_doc->function(fid) == nullptr || int(fid) == m_selectedScene)
+        return;
+    m_selectedScene = int(fid);
+    emit selectedSceneChanged();
+}
+
+void ZoneManager::clearSelection()
+{
+    if (m_selectedScene < 0)
+        return;
+    m_selectedScene = -1;
+    emit selectedSceneChanged();
+}
+
+void ZoneManager::slotFunctionRemoved(quint32 fid)
+{
+    if (int(fid) == m_selectedScene)
+        clearSelection();
+}
+
 void ZoneManager::releaseFor(Zone *source, quint32 fid)
 {
     if (source->effectiveRelease(fid) == Zone::ReleaseNone)
@@ -314,6 +344,7 @@ void ZoneManager::deleteZones()
 void ZoneManager::clear()
 {
     resetPause();
+    clearSelection();
     m_nextZoneId = 0;
     if (m_zones.isEmpty())
         return;
@@ -334,6 +365,7 @@ bool ZoneManager::loadXML(QXmlStreamReader &root)
     }
 
     resetPause();
+    clearSelection();
     beginResetModel();
     deleteZones();
     // the IDs given before, deleted groups included (the UI and the mappings

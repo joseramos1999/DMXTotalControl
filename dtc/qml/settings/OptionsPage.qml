@@ -80,6 +80,8 @@ Item {
         nameFilters: [qsTr("GDTF fixtures (*.gdtf *.zip)"), qsTr("All files (*)")]
         onAccepted: Core.library.importFiles(selectedFiles)
     }
+    // GDTF-Share: its fixtures searched, downloaded and converted
+    GdtfShareDialog { id: shareDialog }
     AppFileDialog {
         id: importDialog
         kind: "fixtures"
@@ -287,8 +289,29 @@ Item {
 
                     // the remote control: the SHOW on a phone or a tablet
                     Panel {
+                        id: remotePanel
                         Layout.fillWidth: true
                         Layout.preferredHeight: remoteColumn.implicitHeight + 24
+
+                        /** The address clicked for the QR code (it follows it when the list changes) */
+                        property string qrPicked: ""
+                        /** The address the QR code shows: the one clicked, or the
+                         *  first IP address (one that works on every phone) */
+                        readonly property int qrIndex: {
+                            const addresses = Core.remote.addresses
+                            const picked = addresses.findIndex((a) => a.url === qrPicked)
+                            if (picked >= 0)
+                                return picked
+                            return Math.max(0, addresses.findIndex((a) => a.kind !== "name"))
+                        }
+                        readonly property string qrAddress: qrIndex < Core.remote.addresses.length
+                                                            ? Core.remote.addresses[qrIndex].url : ""
+                        /** What the code carries: the address and the PIN, when there is one */
+                        readonly property string qrText: {
+                            // (read here: it follows the PIN too, which goes in the code)
+                            void Core.remote.pin
+                            return qrAddress.length ? Core.remote.shareUrl(qrAddress) : ""
+                        }
 
                         ColumnLayout {
                             id: remoteColumn
@@ -330,6 +353,40 @@ Item {
                                     onEditingFinished: Core.remote.pin = text
                                 }
                             }
+                            // the name the phones open, whatever the address of
+                            // the computer: <name>.local
+                            OptionRow {
+                                label: qsTr("Name on the network")
+                                hint: {
+                                    const name = Core.remote.name
+                                    if (name.length === 0)
+                                        return qsTr("Empty: phones use the addresses below")
+                                    // (no name on the network: the red line below says why)
+                                    if (Core.remote.discoveryError.length > 0)
+                                        return ""
+                                    const wanted = name + ".local"
+                                    const host = Core.remote.hostName
+                                    // (another computer had it: this one took name-2…)
+                                    if (host.length > 0 && host !== wanted)
+                                        return qsTr("%1 is used by another computer: this one is %2").arg(wanted).arg(host)
+                                    const named = Core.remote.addresses.find((a) => a.kind === "name")
+                                    const where = named ? named.url.replace("http://", "").replace(/\/$/, "")
+                                                        : wanted + ":" + Core.remote.port
+                                    return qsTr("Phones open it as %1, also when the address of this computer changes (iPhone, iPad and recent Android phones)").arg(where)
+                                }
+                                TextField {
+                                    Layout.preferredWidth: 180
+                                    color: Theme.text
+                                    text: Core.remote.name
+                                    placeholderText: qsTr("None")
+                                    validator: RegularExpressionValidator { regularExpression: /[A-Za-z0-9 _-]{0,63}/ }
+                                    onEditingFinished: {
+                                        Core.remote.name = text
+                                        // (as it is kept: "DMX Total" is dmx-total)
+                                        text = Qt.binding(() => Core.remote.name)
+                                    }
+                                }
+                            }
                             Text {
                                 Layout.fillWidth: true
                                 visible: Core.remote.lastError.length > 0
@@ -337,34 +394,169 @@ Item {
                                 text: Core.remote.lastError
                                 color: Theme.danger
                             }
-                            // where to open it
+                            Text {
+                                Layout.fillWidth: true
+                                visible: Core.remote.discoveryError.length > 0
+                                wrapMode: Text.WordWrap
+                                text: Core.remote.discoveryError
+                                color: Theme.danger
+                            }
+                            // where to open it: each address with its network
+                            // ("Wi-Fi", "Ethernet 2"), the best first. A click
+                            // shows its QR code (the one shown has an edge)
                             Repeater {
-                                model: Core.remote.urls
-                                delegate: RowLayout {
-                                    required property string modelData
+                                model: Core.remote.addresses
+                                delegate: Rectangle {
+                                    id: addressRow
+                                    required property var modelData
+                                    required property int index
                                     Layout.fillWidth: true
+                                    implicitHeight: addressLine.implicitHeight + 6
+                                    radius: Theme.radiusSmall
+                                    color: "transparent"
+                                    border.color: index === remotePanel.qrIndex ? Theme.accent : "transparent"
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: remotePanel.qrPicked = addressRow.modelData.url
+                                    }
+                                    RowLayout {
+                                        id: addressLine
+                                        anchors { left: parent.left; right: parent.right; leftMargin: 3; rightMargin: 3
+                                                  verticalCenter: parent.verticalCenter }
+                                        spacing: 8
+                                        // (one width for all: the addresses in a column)
+                                        Rectangle {
+                                            Layout.preferredWidth: 150
+                                            Layout.preferredHeight: 22
+                                            radius: Theme.radiusSmall
+                                            color: Theme.surfaceRaised
+                                            border.color: Theme.border
+                                            Text {
+                                                anchors { fill: parent; leftMargin: 8; rightMargin: 8 }
+                                                verticalAlignment: Text.AlignVCenter
+                                                text: addressRow.modelData.label
+                                                color: Theme.textDim
+                                                font.pixelSize: Theme.fontSmall
+                                                elide: Text.ElideRight
+                                            }
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: addressRow.modelData.url
+                                            color: Theme.accent
+                                            font.family: Theme.monoFamily
+                                            font.pixelSize: Theme.fontLarge
+                                            elide: Text.ElideRight
+                                        }
+                                        AppButton {
+                                            iconGlyph: Theme.iconQrcode
+                                            flat: true
+                                            implicitHeight: 28
+                                            ToolTip.text: qsTr("Show its QR code"); ToolTip.visible: hovered
+                                            onClicked: remotePanel.qrPicked = addressRow.modelData.url
+                                        }
+                                        AppButton {
+                                            iconGlyph: Theme.iconCopy
+                                            flat: true
+                                            implicitHeight: 28
+                                            ToolTip.text: qsTr("Copy"); ToolTip.visible: hovered
+                                            onClicked: Core.copyToClipboard(addressRow.modelData.url)
+                                        }
+                                    }
+                                }
+                            }
+                            // its QR code: the phone opens it with the camera
+                            RowLayout {
+                                Layout.fillWidth: true
+                                visible: Core.remote.running && Core.remote.onNetwork
+                                spacing: 14
+                                QrCode {
+                                    Layout.preferredWidth: 168
+                                    Layout.preferredHeight: 168
+                                    Layout.alignment: Qt.AlignTop
+                                    text: remotePanel.qrText
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignTop
                                     spacing: 8
                                     Text {
                                         Layout.fillWidth: true
-                                        text: parent.modelData
+                                        wrapMode: Text.WordWrap
+                                        text: qsTr("Scan it with the camera of the phone or the tablet to open the remote control. It must be on the same Wi-Fi network.")
+                                        color: Theme.text
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        visible: Core.remote.pin.length > 0
+                                        wrapMode: Text.WordWrap
+                                        text: qsTr("The PIN goes in the code: whoever scans it gets in without typing it")
+                                        color: Theme.textDim
+                                        font.pixelSize: Theme.fontSmall
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: remotePanel.qrAddress
                                         color: Theme.accent
                                         font.family: Theme.monoFamily
-                                        font.pixelSize: Theme.fontLarge
                                         elide: Text.ElideRight
                                     }
                                     AppButton {
-                                        iconGlyph: Theme.iconCopy
-                                        flat: true
-                                        implicitHeight: 28
-                                        ToolTip.text: qsTr("Copy"); ToolTip.visible: hovered
-                                        onClicked: Core.copyToClipboard(parent.modelData)
+                                        text: qsTr("Bigger")
+                                        iconGlyph: Theme.iconExpand
+                                        onClicked: qrPopup.open()
                                     }
                                 }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                visible: Core.remote.running && !Core.remote.onNetwork
+                                wrapMode: Text.WordWrap
+                                text: qsTr("This computer isn't on any network: connect it to the Wi-Fi of the phones")
+                                color: Theme.warning
                             }
                             Text {
                                 visible: Core.remote.running
                                 text: qsTr("%n device(s) connected", "", Core.remote.clients)
                                 color: Core.remote.clients > 0 ? Theme.success : Theme.textDim
+                            }
+                        }
+
+                        // the QR code big, to scan from a couple of metres
+                        Popup {
+                            id: qrPopup
+                            parent: Overlay.overlay
+                            anchors.centerIn: parent
+                            modal: true
+                            padding: 18
+                            // (closed when there is no address any more: switched off, no network)
+                            readonly property bool hasCode: remotePanel.qrText.length > 0
+                            onHasCodeChanged: if (!hasCode) close()
+
+                            background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: Theme.borderStrong }
+
+                            contentItem: ColumnLayout {
+                                spacing: 12
+                                QrCode {
+                                    Layout.preferredWidth: 360
+                                    Layout.preferredHeight: 360
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: remotePanel.qrText
+                                }
+                                Text {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: remotePanel.qrAddress
+                                    color: Theme.text
+                                    font.family: Theme.monoFamily
+                                    font.pixelSize: Theme.fontTitle
+                                }
+                                AppButton {
+                                    Layout.alignment: Qt.AlignRight
+                                    text: qsTr("Close")
+                                    onClicked: qrPopup.close()
+                                }
                             }
                         }
                     }
@@ -421,14 +613,12 @@ Item {
                             }
                             OptionRow {
                                 label: qsTr("GDTF fixtures")
-                                hint: qsTr("The open format the manufacturers publish on GDTF-Share (free account): import .gdtf files, folders of them or the .zip of its bulk download. %n GDTF fixture(s) in the library.", "", Core.library.gdtfCount)
+                                hint: qsTr("The open format the manufacturers publish on GDTF-Share: search and download them with your free account, or import .gdtf files, folders of them or the .zip of its bulk download. %n GDTF fixture(s) in the library.", "", Core.library.gdtfCount)
+                                // its browser (the website is in it)
                                 AppButton {
-                                    text: qsTr("GDTF-Share")
-                                    iconGlyph: Theme.iconLink
-                                    flat: true
-                                    ToolTip.text: "https://gdtf-share.com"
-                                    ToolTip.visible: hovered
-                                    onClicked: Qt.openUrlExternally("https://gdtf-share.com")
+                                    text: qsTr("GDTF-Share…")
+                                    iconGlyph: Theme.iconSearch
+                                    onClicked: shareDialog.open()
                                 }
                                 AppButton {
                                     text: Core.library.importing ? qsTr("Stop") : qsTr("Import GDTF…")
@@ -436,11 +626,50 @@ Item {
                                     onClicked: Core.library.importing ? Core.library.cancelImport() : gdtfDialog.start()
                                 }
                             }
+                            // the .gdtf kept of the downloads, with the fixes of this version
+                            // (a row of its own: the one above has its buttons)
+                            OptionRow {
+                                visible: Core.library.share.originalsCount > 0
+                                label: qsTr("Fixtures downloaded from GDTF-Share")
+                                hint: qsTr("Convert the fixtures downloaded from GDTF-Share again with this version of the program")
+                                AppButton {
+                                    text: qsTr("Convert again")
+                                    iconGlyph: Theme.iconRefresh
+                                    enabled: !Core.library.importing
+                                    onClicked: Core.library.reconvertShareDownloads()
+                                }
+                            }
+                            // the fixtures whose fixture type has a newer revision on GDTF-Share
+                            // (a row of its own: the one above has its buttons)
+                            OptionRow {
+                                visible: Core.library.share.updatesCount > 0
+                                label: qsTr("Newer revisions on GDTF-Share")
+                                hint: qsTr("%n fixture(s) of the library have a newer revision. Update shows them in GDTF-Share, where “Update all” downloads and converts them: the fixtures patched with them get it.",
+                                           "", Core.library.share.updatesCount)
+                                AppButton {
+                                    text: qsTr("Update")
+                                    iconGlyph: Theme.iconDownload
+                                    primary: true
+                                    onClicked: shareDialog.openUpdates()
+                                }
+                            }
+                            // (and the download of the newer revisions, before they are converted)
                             ProgressBar {
+                                readonly property bool downloading: Core.library.share.state === GdtfShare.Downloading
                                 Layout.fillWidth: true
-                                visible: Core.library.importing
-                                value: Core.library.importProgress
-                                indeterminate: Core.library.importProgress <= 0
+                                visible: Core.library.importing || downloading
+                                value: downloading ? Core.library.share.progress : Core.library.importProgress
+                                indeterminate: value <= 0
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                readonly property bool failed: Core.library.share.error.length > 0 && !Core.library.share.busy
+                                visible: text.length > 0
+                                wrapMode: Text.WordWrap
+                                text: failed ? Core.library.share.error
+                                             : Core.library.share.state === GdtfShare.Downloading ? Core.library.share.notice : ""
+                                color: failed ? Theme.warning : Theme.textDim
+                                font.pixelSize: Theme.fontSmall
                             }
                             OptionRow {
                                 label: qsTr("Import my QLC+ fixtures")
@@ -532,7 +761,7 @@ Item {
                             SectionTitle { text: qsTr("Updates") }
                             OptionRow {
                                 label: qsTr("Check for updates at startup")
-                                hint: qsTr("Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it. Nothing is downloaded or installed without asking you.")
+                                hint: qsTr("Once a day, on GitHub: the program, and the new fixtures of the Open Fixture Library if you downloaded it; on GDTF-Share, newer revisions of the fixtures you downloaded from it, if you saved your account. Nothing is downloaded or installed without asking you.")
                                 AppSwitch { checked: Core.updates.autoCheck; onToggled: Core.updates.autoCheck = checked }
                             }
                             OptionRow {

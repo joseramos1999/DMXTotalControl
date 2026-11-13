@@ -74,10 +74,14 @@ namespace EffectExchange
     /**
      * Read another show (DMX Total Control or QLC+) into a new Doc: its
      * fixtures (with the definitions of $source), fixture groups, functions
-     * and 2D plan. $zones gets its groups of scenes.
+     * (as a show opened is: see Function::postLoad) and 2D plan. $zones gets
+     * its groups of scenes.
+     * @param virtualConsole (may be nullptr) set to its <VirtualConsole> as
+     *        it is, empty when it has none
      * @return the Doc, to delete, or nullptr on error
      */
-    Doc *loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error);
+    Doc *loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error,
+                  QByteArray *virtualConsole = nullptr);
 
     /** The longest cycle renderToSteps records (ms), and its most steps */
     constexpr uint MaxRenderCycle = 300000;

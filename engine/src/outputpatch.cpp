@@ -257,6 +257,18 @@ QMap<QString, QVariant> OutputPatch::getPluginParameters()
     return QMap<QString, QVariant>();
 }
 
+void OutputPatch::sendSysEx(const QByteArray &message)
+{
+    // DMX Total Control: once, now (not in m_parametersCache: reconnect()
+    // doesn't send it again, and the show doesn't save it)
+    if (m_plugin == NULL || m_pluginLine == QLCIOPlugin::invalidLine() || m_lineGone)
+        return;
+    m_plugin->setParameter(m_universe, m_pluginLine, QLCIOPlugin::Output, KPluginSendSysEx, message);
+    // (a plugin without SysEx may keep any parameter it gets, and the show
+    // saves those: not this one)
+    m_plugin->unSetParameter(m_universe, m_pluginLine, QLCIOPlugin::Output, KPluginSendSysEx);
+}
+
 /*****************************************************************************
  * Value dump
  *****************************************************************************/

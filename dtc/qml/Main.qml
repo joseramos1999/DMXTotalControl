@@ -174,9 +174,16 @@ ApplicationWindow {
 
     function openShow(url) {
         if (Core.openShow(url))
-            showMessage(qsTr("Opened %1").arg(Core.showTitle))
+            showMessage(qsTr("Opened %1").arg(Core.showTitle) + qlcCueListsHint())
         else
             showMessage(Core.lastError, true)
+    }
+
+    /** A QLC+ show with cue lists and no cuelists: where they become cuelists */
+    function qlcCueListsHint() {
+        if (Core.qlcCueListCount === 0 || Core.functions.some(f => f.type === "Cuelist"))
+            return ""
+        return " · " + qsTr("%n QLC+ cue list(s): Scenes › New › QLC+ cue lists…", "", Core.qlcCueListCount)
     }
 
     /** Do $action (New, Open...: it replaces the show) once the unsaved
@@ -368,6 +375,13 @@ ApplicationWindow {
     Connections {
         target: Core.library
         function onOflUpdateFound() { window.showMessage(qsTr("New fixtures in the Open Fixture Library: update it in Options")) }
+    }
+    // and newer revisions on GDTF-Share of the fixtures downloaded from it
+    Connections {
+        target: Core.library.share
+        function onUpdatesFound(count) {
+            window.showMessage(qsTr("%n fixture(s) have a newer revision on GDTF-Share: update them in Options", "", count))
+        }
     }
 
     AppFileDialog {

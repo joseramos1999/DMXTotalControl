@@ -54,6 +54,12 @@ public:
     QVariantList mixers() const;
     /** The name of a mixer as mixers() gives it, empty for none */
     QString mixerName(int mixerId) const;
+    /** Whether there is that mixer: -1, or a fixture group that is not of
+     *  a colour effect */
+    bool hasMixer(int mixerId) const;
+    /** A setting of a mixer (a key of mixers()), as mixers() gives it: the
+     *  neutral one for a mixer nothing changed */
+    QVariant value(int mixerId, const QString &key) const;
     bool isActive() const;
 
     Q_INVOKABLE void set(int mixerId, const QString &key, const QVariant &value);
@@ -84,6 +90,8 @@ private:
         bool flashExclusive = false;
     };
 
+    /** The settings of a state, by the keys of mixers() */
+    static QVariantMap describe(const State &s);
     bool isNeutral(const State &s) const;
     /** The fixtures of a mixer */
     QList<quint32> fixturesOf(int mixerId) const;

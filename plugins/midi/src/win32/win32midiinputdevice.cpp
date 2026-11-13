@@ -27,16 +27,30 @@ static void CALLBACK MidiInProc(HMIDIIN hMidiIn, UINT wMsg,
                                 DWORD_PTR dwInstance, DWORD_PTR dwParam1,
                                 DWORD_PTR dwParam2)
 {
-    Q_UNUSED(hMidiIn)
     Q_UNUSED(dwParam2)
     Win32MidiInputDevice* self = (Win32MidiInputDevice*) dwInstance;
     Q_ASSERT(self != NULL);
+
+    // DMX Total Control: a SysEx message (a full frame of a MIDI timecode);
+    // a broken one (MIM_LONGERROR) brings its buffer back too
+    if (wMsg == MIM_LONGDATA || wMsg == MIM_LONGERROR)
+    {
+        self->processSysExBuffer(hMidiIn, (MIDIHDR*) dwParam1, wMsg == MIM_LONGDATA);
+        return;
+    }
 
     if (wMsg == MIM_DATA)
     {
         BYTE cmd = dwParam1 & 0xFF;
         BYTE data1 = (dwParam1 & 0xFF00) >> 8;
         BYTE data2 = (dwParam1 & 0xFF0000) >> 16;
+
+        // DMX Total Control: a quarter frame of a MIDI timecode
+        if (cmd == MIDI_TIME_CODE)
+        {
+            self->processQuarterFrame(data1);
+            return;
+        }
 
         if (cmd >= MIDI_BEAT_CLOCK && cmd <= MIDI_BEAT_STOP)
         {
@@ -69,8 +83,10 @@ Win32MidiInputDevice::Win32MidiInputDevice(const QVariant& uid, const QString& n
     , m_handle(NULL)
     , m_universe(MAX_MIDI_DMX_CHANNELS, char(0))
     , m_mbc_counter(UINT_MAX)
+    , m_closing(false)
 {
     qDebug() << Q_FUNC_INFO;
+    ZeroMemory(m_sysExHeaders, sizeof(m_sysExHeaders));
 }
 
 Win32MidiInputDevice::~Win32MidiInputDevice()
@@ -85,6 +101,10 @@ bool Win32MidiInputDevice::open()
     if (m_handle != NULL)
         return false;
 
+    // DMX Total Control: a MIDI timecode starts again
+    resetTimecode();
+    m_closing = false;
+
     MMRESULT result = midiInOpen(&m_handle, m_id, (DWORD_PTR) MidiInProc, (DWORD_PTR) this, CALLBACK_FUNCTION);
     if (result != MMSYSERR_NOERROR)
     {
@@ -95,6 +115,16 @@ bool Win32MidiInputDevice::open()
     }
     else
     {
+        // DMX Total Control: the buffers of the SysEx messages
+        for (int i = 0; i < SysExBuffers; i++)
+        {
+            MIDIHDR* header = &m_sysExHeaders[i];
+            ZeroMemory(header, sizeof(MIDIHDR));
+            header->lpData = m_sysExData[i];
+            header->dwBufferLength = SysExSize;
+            if (midiInPrepareHeader(m_handle, header, sizeof(MIDIHDR)) == MMSYSERR_NOERROR)
+                midiInAddBuffer(m_handle, header, sizeof(MIDIHDR));
+        }
         midiInStart(m_handle);
     }
     return true;
@@ -112,6 +142,16 @@ void Win32MidiInputDevice::close()
         qWarning() << Q_FUNC_INFO << "Unable to stop MIDI input with id:" << m_id
                    << "name:" << name() << ":" << result;
 
+    // DMX Total Control: the SysEx buffers come back (not to be queued
+    // again) and are released before the device closes
+    m_closing = true;
+    midiInReset(m_handle);
+    for (int i = 0; i < SysExBuffers; i++)
+    {
+        if (m_sysExHeaders[i].dwFlags & MHDR_PREPARED)
+            midiInUnprepareHeader(m_handle, &m_sysExHeaders[i], sizeof(MIDIHDR));
+    }
+
     result = midiInClose(m_handle);
     if (result != MMSYSERR_NOERROR)
         qWarning() << Q_FUNC_INFO << "Unable to close MIDI input with id:" << m_id
@@ -125,6 +165,18 @@ bool Win32MidiInputDevice::isOpen() const
         return true;
     else
         return false;
+}
+
+void Win32MidiInputDevice::processSysExBuffer(HMIDIIN handle, MIDIHDR* header, bool complete)
+{
+    // DMX Total Control: (a closing device gets its buffers back empty; a
+    // broken message is not read, its buffer is queued again all the same)
+    if (header == NULL)
+        return;
+    if (complete && header->dwBytesRecorded > 0)
+        processSysEx(QByteArray(header->lpData, int(header->dwBytesRecorded)));
+    if (m_closing == false)
+        midiInAddBuffer(handle, header, sizeof(MIDIHDR));
 }
 
 bool Win32MidiInputDevice::processMBC(int type)

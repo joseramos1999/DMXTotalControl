@@ -13,7 +13,11 @@ const STRINGS = {
     onComputer: "Solo en el ordenador", master: "Master", noGroup: "Sin grupo",
     go: "GO", back: "Atrás", empty: "Vacío", page: "Página", playbacks: "Playbacks",
     released: "Liberada", on: "Encendida", off: "Apagada", paused: "En pausa",
-    stopped: "Parada"
+    stopped: "Parada", start: "Iniciar", pause: "Pausa", reset: "Reiniciar",
+    universe: "Universo %1",
+    full: "Full", blackout: "Blackout", hue: "Tono", saturation: "Saturación",
+    resetColour: "Restablecer color", strobe: "Estrobo", flashExcl: "Flash excl.", fullExcl: "Full excl.",
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
   },
   en: {
     connecting: "Connecting…", offline: "No connection with DMX Total Control. Trying again…",
@@ -22,7 +26,11 @@ const STRINGS = {
     onComputer: "On the computer only", master: "Master", noGroup: "No group",
     go: "GO", back: "Back", empty: "Empty", page: "Page", playbacks: "Playbacks",
     released: "Released", on: "On", off: "Off", paused: "Paused",
-    stopped: "Stopped"
+    stopped: "Stopped", start: "Start", pause: "Pause", reset: "Reset",
+    universe: "Universe %1",
+    full: "Full", blackout: "Blackout", hue: "Hue", saturation: "Saturation",
+    resetColour: "Reset colour", strobe: "Strobe", flashExcl: "Flash excl.", fullExcl: "Full excl.",
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
   },
   pt: {
     connecting: "Conectando…", offline: "Sem conexão com o DMX Total Control. Tentando de novo…",
@@ -31,7 +39,11 @@ const STRINGS = {
     onComputer: "Só no computador", master: "Master", noGroup: "Sem grupo",
     go: "GO", back: "Voltar", empty: "Vazio", page: "Página", playbacks: "Playbacks",
     released: "Liberada", on: "Ligada", off: "Desligada", paused: "Em pausa",
-    stopped: "Parada"
+    stopped: "Parada", start: "Iniciar", pause: "Pausar", reset: "Zerar",
+    universe: "Universo %1",
+    full: "Full", blackout: "Blackout", hue: "Matiz", saturation: "Saturação",
+    resetColour: "Redefinir cor", strobe: "Strobo", flashExcl: "Flash excl.", fullExcl: "Full excl.",
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
   },
   fr: {
     connecting: "Connexion…", offline: "Pas de connexion avec DMX Total Control. Nouvel essai…",
@@ -40,7 +52,11 @@ const STRINGS = {
     onComputer: "Sur l'ordinateur seulement", master: "Master", noGroup: "Sans groupe",
     go: "GO", back: "Retour", empty: "Vide", page: "Page", playbacks: "Playbacks",
     released: "Libérée", on: "Allumée", off: "Éteinte", paused: "En pause",
-    stopped: "Arrêtée"
+    stopped: "Arrêtée", start: "Démarrer", pause: "Pause", reset: "Réinitialiser",
+    universe: "Univers %1",
+    full: "Full", blackout: "Blackout", hue: "Teinte", saturation: "Saturation",
+    resetColour: "Réinitialiser la couleur", strobe: "Stroboscope", flashExcl: "Flash excl.", fullExcl: "Full excl.",
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
   },
   it: {
     connecting: "Connessione…", offline: "Nessuna connessione con DMX Total Control. Nuovo tentativo…",
@@ -49,7 +65,11 @@ const STRINGS = {
     onComputer: "Solo sul computer", master: "Master", noGroup: "Nessun gruppo",
     go: "GO", back: "Indietro", empty: "Vuoto", page: "Pagina", playbacks: "Playback",
     released: "Rilasciata", on: "Accesa", off: "Spenta", paused: "In pausa",
-    stopped: "Ferma"
+    stopped: "Ferma", start: "Avvia", pause: "Pausa", reset: "Azzera",
+    universe: "Universo %1",
+    full: "Full", blackout: "Blackout", hue: "Tonalità", saturation: "Saturazione",
+    resetColour: "Ripristina colore", strobe: "Strobo", flashExcl: "Flash escl.", fullExcl: "Full escl.",
+    fixture1: "%1 fixture", fixtures: "%1 fixture", hz: "%1 Hz", ab: "A/B"
   },
   de: {
     connecting: "Verbinden…", offline: "Keine Verbindung mit DMX Total Control. Neuer Versuch…",
@@ -58,7 +78,11 @@ const STRINGS = {
     onComputer: "Nur am Computer", master: "Master", noGroup: "Keine Gruppe",
     go: "GO", back: "Zurück", empty: "Leer", page: "Seite", playbacks: "Playbacks",
     released: "Freigegeben", on: "An", off: "Aus", paused: "Pausiert",
-    stopped: "Gestoppt"
+    stopped: "Gestoppt", start: "Starten", pause: "Pause", reset: "Zurücksetzen",
+    universe: "Universum %1",
+    full: "Voll", blackout: "Blackout", hue: "Farbton", saturation: "Sättigung",
+    resetColour: "Farbe zurücksetzen", strobe: "Stroboskop", flashExcl: "Flash exkl.", fullExcl: "Voll exkl.",
+    fixture1: "%1 Fixture", fixtures: "%1 Fixtures", hz: "%1 Hz", ab: "A/B"
   }
 };
 // the language of the phone, if the remote has it
@@ -66,12 +90,61 @@ const LANG = ((code) => STRINGS[code] ? code : "en")((navigator.language || "en"
 const tr = (key) => STRINGS[LANG][key] || key;
 document.documentElement.lang = LANG;
 
+// what the page keeps for this visit only (the way to the name and back,
+// moveToName); a browser that keeps nothing: nothing
+const session = {
+  get: (key) => { try { return sessionStorage.getItem(key); } catch (err) { return null; } },
+  set: (key, value) => { try { sessionStorage.setItem(key, value); } catch (err) { /* (kept nowhere) */ } },
+  remove: (key) => { try { sessionStorage.removeItem(key); } catch (err) { /* (kept nowhere) */ } }
+};
+// an address of numbers, as the QR code has it ("192.168.1.20"), and the
+// page there ("http://192.168.1.20:8800/")
+const NUMERIC_HOST = /^\d{1,3}(\.\d{1,3}){3}$/;
+const NUMERIC_PAGE = /^http:\/\/\d{1,3}(\.\d{1,3}){3}:\d+\/$/;
+
+// the QR code of Options opens "#pin=…" (and "&page=…"): kept as if they
+// were typed, then taken out of the address bar and the history, so that
+// the PIN doesn't show (what follows '#' never reaches the computer). The
+// page that goes to the name and back adds "from" (the address it came
+// from) and "stay" (back on the address: it stays there). Whether it had a
+// PIN
+function takeFromAddress() {
+  if (!location.hash)
+    return false;
+  const given = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, "", location.pathname + location.search);
+  if (/^\d+$/.test(given.get("page") || ""))
+    localStorage.setItem("dtc.page", given.get("page"));
+  // (only an address of numbers of this program: never a page elsewhere)
+  if (NUMERIC_PAGE.test(given.get("from") || ""))
+    session.set("dtc.from", given.get("from"));
+  if (given.has("stay"))
+    session.set("dtc.stay", "1");
+  if (!given.has("pin"))
+    return false;
+  localStorage.setItem("dtc.pin", given.get("pin").trim());
+  return true;
+}
+takeFromAddress();
+
 let socket = null;
 let layout = null;
 let state = null;
 let pageIndex = Number(localStorage.getItem("dtc.page") || 0);
 let pin = localStorage.getItem("dtc.pin") || "";
 let updaters = [];
+// the DMX levels of the universes the page shows (universe -> 512 bytes),
+// sent by the computer only while they are on screen; the sections that
+// draw them, and the universes they show
+const levels = new Map();
+let levelPainters = [];
+let watched = [];
+// the timers count on the clock of the computer (ms): the clock of the
+// phone minus clockOffset (set by the layout and the "clock" messages)
+let clockOffset = 0;
+function serverNow() {
+  return performance.now() - clockOffset;
+}
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -90,7 +163,12 @@ function send(message) {
 
 function connect() {
   socket = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/");
-  socket.onopen = () => send({ cmd: "hello", pin: pin });
+  let opened = false;
+  socket.onopen = () => {
+    opened = true;
+    failures = 0;
+    send({ cmd: "hello", pin: pin });
+  };
   socket.onmessage = (event) => {
     const m = JSON.parse(event.data);
     if (m.type === "auth") {
@@ -105,11 +183,26 @@ function connect() {
         $("status").classList.add("ok");
       }
     } else if (m.type === "layout") {
+      if (m.clock !== undefined)
+        clockOffset = performance.now() - m.clock;
       layout = m;
       render();
+      moveToName();
+    } else if (m.type === "clock") {
+      clockOffset = performance.now() - m.now;
     } else if (m.type === "state") {
       state = m;
       update();
+    } else if (m.type === "levels") {
+      const changed = [];
+      for (const u in m.universes || {}) {
+        const bytes = atob(m.universes[u]), values = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++)
+          values[i] = bytes.charCodeAt(i);
+        levels.set(Number(u), values);
+        changed.push(Number(u));
+      }
+      paintLevels(changed);
     }
   };
   socket.onclose = () => {
@@ -118,14 +211,100 @@ function connect() {
     $("status").classList.remove("ok");
     $("offlineText").textContent = tr("offline");
     $("offline").classList.remove("hidden");
+    if (!opened)
+      nameFailed();
     setTimeout(connect, 2000);
   };
+}
+
+/* ------------------------------------------------------------ the name */
+
+/* A page opened by an address of numbers (the QR code: every phone opens
+   it) goes to the name of the computer (http://dmxtotalcontrol.local:8800/)
+   when it reaches this same computer by it: an icon of the home screen made
+   then still opens it when the router gives the computer another address.
+   It asks once per visit, after a layout; a phone that can't stays on the
+   address without noticing anything. The PIN and the page go along after
+   '#' (the name is another site for the browser: what the page keeps here
+   isn't there), and the address it came from too */
+let nameAsked = false;
+function moveToName() {
+  if (nameAsked || !layout.host || !layout.instance || !layout.port)
+    return;
+  if (!NUMERIC_HOST.test(location.hostname) || session.get("dtc.stay"))
+    return;
+  nameAsked = true;
+  // (once: back here, when the name stops working, it stays)
+  session.set("dtc.stay", "1");
+  const instance = layout.instance, page = "http://" + layout.host + ":" + layout.port + "/";
+  whoIsAt(page).then((who) => {
+    // (no answer, or another computer: an old answer for the name)
+    if (who && who.id === instance)
+      goTo(page, { from: location.origin + "/" });
+  });
+}
+
+/* The name stopped answering (3 tries in a row, none opened): back to the
+   address it came from, when that one answers (none does when the computer
+   is off or the program closed: the name is tried again) */
+let failures = 0, goingBack = false;
+function nameFailed() {
+  const from = session.get("dtc.from");
+  if (!from || goingBack || ++failures < 3)
+    return;
+  goingBack = true;
+  whoIsAt(from).then((who) => {
+    goingBack = false;
+    failures = 0;
+    // (the name answered meanwhile: it stays)
+    if (!who || !who.id || (socket && socket.readyState === WebSocket.OPEN))
+      return;
+    session.remove("dtc.from");
+    goTo(from, { stay: "1" });
+  });
+}
+
+// the program that answers at the page $page ({id, host}), or null when
+// none does within 2.5 s
+function whoIsAt(page) {
+  if (typeof fetch !== "function")
+    return Promise.resolve(null);
+  const abort = typeof AbortController === "function" ? new AbortController() : null;
+  const late = new Promise((resolve) => setTimeout(() => {
+    if (abort) abort.abort();
+    resolve(null);
+  }, 2500));
+  const asked = fetch(page + "whoami", { cache: "no-store", signal: abort ? abort.signal : undefined })
+    .then((reply) => reply.ok ? reply.json() : null)
+    .catch(() => null);
+  return Promise.race([asked, late]);
+}
+
+// to the page $page, with the PIN, the page shown and $more after '#',
+// once no finger is on the screen (nothing held down is let go of)
+function goTo(page, more) {
+  if (fingers.size > 0) {
+    setTimeout(() => goTo(page, more), 300);
+    return;
+  }
+  const carried = new URLSearchParams(more);
+  if (pin)
+    carried.set("pin", pin);
+  carried.set("page", String(pageIndex));
+  location.replace(page + "#" + carried.toString());
 }
 
 $("pinForm").addEventListener("submit", (e) => {
   e.preventDefault();
   pin = $("pinInput").value.trim();
   localStorage.setItem("dtc.pin", pin);
+  send({ cmd: "hello", pin: pin });
+});
+// (the code scanned again while the page is open: only what follows '#' changes)
+window.addEventListener("hashchange", () => {
+  if (!takeFromAddress())
+    return;
+  pin = localStorage.getItem("dtc.pin") || "";
   send({ cmd: "hello", pin: pin });
 });
 $("blackout").addEventListener("click", () => send({ cmd: "global", action: "blackout" }));
@@ -212,10 +391,33 @@ function flashKey(pbPage, slot) {
 function flashMessage(pbPage, slot, down) {
   return { cmd: "playback", action: "flash", pbPage: pbPage, slot: slot, down: down };
 }
-document.addEventListener("pointerup", (e) => holdUp(e.pointerId));
-document.addEventListener("pointercancel", (e) => holdUp(e.pointerId));
-// (the phone put away with a finger on something)
-document.addEventListener("visibilitychange", () => { if (document.hidden) releaseHolds(true); });
+// the fingers on the screen now (the page goes to the name only with none)
+const fingers = new Set();
+document.addEventListener("pointerdown", (e) => fingers.add(e.pointerId), true);
+function fingerUp(e) {
+  fingers.delete(e.pointerId);
+  holdUp(e.pointerId);
+}
+document.addEventListener("pointerup", fingerUp);
+document.addEventListener("pointercancel", fingerUp);
+// (the phone put away with a finger on something; and no DMX levels while
+// the page isn't seen, the ones of now when it is again)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    releaseHolds(true);
+    fingers.clear();
+  }
+  watchLevels();
+});
+
+/* The DMX levels: the computer sends the universes the page shows (none
+   while the page is hidden), and the sections draw them as they come */
+function watchLevels() {
+  send({ cmd: "monitor", universes: document.hidden ? [] : watched });
+}
+function paintLevels(universes) {
+  levelPainters.forEach((p) => { if (!universes || universes.indexOf(p.universe) >= 0) p.paint(); });
+}
 
 function hsvToHex(h, s, v) {
   const f = (n) => {
@@ -301,6 +503,8 @@ function sizeCanvas(canvas) {
 function render() {
   updaters = [];
   holdPainters = [];
+  levelPainters = [];
+  watched = [];
   const pages = layout ? layout.pages : [];
   $("title").textContent = layout && layout.title ? layout.title : "DMX Total Control";
   document.title = $("title").textContent;
@@ -327,11 +531,14 @@ function render() {
   surface.innerHTML = "";
   if (pages.length === 0) {
     surface.appendChild(el("div", "placeholder", tr("noPages")));
+    watchLevels();
     return;
   }
   surface.appendChild(buildNode(pages[pageIndex].root));
   paintHolds();
   update();
+  // (the levels of the universes this page shows, and no others)
+  watchLevels();
 }
 
 function buildNode(node) {
@@ -397,6 +604,15 @@ function stateValue(item, st) {
   return st.value !== undefined ? st.value : rangeValue(item, st.level);
 }
 
+/* The time of a timer section, as the program shows it (SectionView): mm:ss
+   or h:mm:ss, and the tenths of a stopwatch */
+function timerText(ms, countdown) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const pad = (n) => (n < 10 ? "0" : "") + n;
+  return (h > 0 ? h + ":" + pad(m) : pad(m)) + ":" + pad(sec) + (countdown ? "" : "." + Math.floor((ms % 1000) / 100));
+}
+
 const TYPE_COLOURS = {
   Scene: "#3d8bfd", Chaser: "#f59f00", Sequence: "#f76707", EFX: "#ae3ec9", RGBMatrix: "#2fb344",
   CurveFX: "#e8590c", FXScene: "#be4bdb", Collection: "#17a2b8", Show: "#d6336c", Cuelist: "#f03e3e",
@@ -438,10 +654,13 @@ function playbackStrip(node, slot, pbPage) {
   strip.appendChild(track);
   strip.appendChild(value);
   let level = 0, dragging = false, empty = true;
+  // an A/B fader is no intensity: «A/B» and how far its crossfade is, as on
+  // the computer (each travel is a GO)
+  let crossfade = false, fading = "";
   const show = (v) => {
     fill.style.height = (v * 100) + "%";
     knob.style.bottom = (v * 100) + "%";
-    value.textContent = empty ? "" : Math.round(v * 100) + "%";
+    value.textContent = empty ? "" : crossfade ? tr("ab") + fading : Math.round(v * 100) + "%";
   };
   show(0);
   // (the state does not move a fader while a finger drags it)
@@ -481,6 +700,8 @@ function playbackStrip(node, slot, pbPage) {
       bar.style.width = "0%";
       go.className = "go";
       if (flash) flash.classList.remove("active");
+      crossfade = false;
+      track.classList.remove("ab");
       if (!dragging) { level = 0; show(0); }
       return;
     }
@@ -500,10 +721,13 @@ function playbackStrip(node, slot, pbPage) {
     cue.classList.toggle("on", running);
     bar.style.width = running ? (Math.max(0, Math.min(1, p.progress)) * 100) + "%" : "0%";
     if (flash) flash.classList.toggle("active", !!p.flashing);
-    if (!dragging) {
+    crossfade = !!p.crossfade;
+    fading = running ? " " + Math.round(Math.max(0, Math.min(1, p.progress)) * 100) + "%" : "";
+    track.classList.toggle("ab", crossfade);
+    // (a finger on it: the fader stays under it, its text goes on)
+    if (!dragging)
       level = p.level;
-      show(level);
-    }
+    show(level);
   });
   return strip;
 }
@@ -525,6 +749,165 @@ function rhythmBar(button, functionId) {
     halves[0].classList.toggle("lit", left);
     halves[1].classList.toggle("lit", !left);
   });
+}
+
+/* A bar the finger drags sideways (the hue, saturation and strobe speed of a
+   mixer): filled up to its value, or a rainbow (the hue), and its knob */
+function hbar(rainbow, onMove, onEnd) {
+  const bar = el("div", "hbar"), fill = el("div", rainbow ? "rainbow" : "fill"), knob = el("div", "knob");
+  bar.appendChild(fill);
+  bar.appendChild(knob);
+  drag(bar, (e, first) => {
+    const r = bar.getBoundingClientRect();
+    onMove(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), first);
+  }, onEnd);
+  return {
+    bar: bar, fill: fill,
+    show(v) {
+      if (!rainbow) fill.style.width = (v * 100) + "%";
+      // (the knob, 10 px, inside the bar at both ends)
+      knob.style.left = "calc(" + (v * 100) + "% - " + (v * 10) + "px)";
+    }
+  };
+}
+
+// "1 fixture", "3 fixtures" (French and Portuguese: 0 is singular too, as the program says)
+function fixturesText(n) {
+  const one = LANG === "fr" || LANG === "pt" ? n <= 1 : n === 1;
+  return tr(one ? "fixture1" : "fixtures").replace("%1", n);
+}
+
+/* A strip of the live mixer, as on the computer (MixerStrip): the dimmer
+   with Full and Blackout, the colour (hue, saturation) and its reset, the
+   strobe and its speed, Flash and Flash excl. (while a finger is on them)
+   and Full excl. Its border lights while a flash or a full is on, and goes
+   red on blackout */
+function mixerStrip(m) {
+  const strip = el("div", "mstrip");
+  strip.appendChild(el("div", "name", m.name || ""));
+  strip.appendChild(el("div", "count", fixturesText(m.fixtures || 0)));
+  // what it shows: the settings of the computer, and what a finger moves
+  const v = { dimmer: 1, colour: false, hue: 0, saturation: 1, strobeHz: 8 };
+  // the controls a finger is on (and 400 ms after): the state doesn't move
+  // them; then what the computer made of the last move (the state comes
+  // only when it changes)
+  const busy = {};
+  const grab = (key) => { clearTimeout(busy[key]); busy[key] = true; };
+  const letGo = (key) => {
+    busy[key] = setTimeout(() => {
+      delete busy[key];
+      const settings = state && state.mixers ? state.mixers[String(m.id)] : null;
+      if (settings && settings[key] !== undefined) v[key] = settings[key];
+      paint();
+    }, 400);
+  };
+  const set = (key, value) => sendSoon("mx" + m.id + key, { cmd: "mixer", mixer: m.id, key: key, value: value });
+  // the buttons lit by their setting
+  const lit = new Map();
+  const toggle = (key, text, cls) => {
+    const b = el("button", cls || "", text);
+    // (on a tap: a swipe that starts on it scrolls the strips)
+    b.addEventListener("click", () => send({ cmd: "mixer", mixer: m.id, key: key, toggle: true }));
+    lit.set(key, b);
+    return b;
+  };
+  const flash = (key, text) => {
+    const b = el("button", "flash warn", text), held = "mixer/" + m.id + "/" + key;
+    b.addEventListener("pointerdown", (e) => {
+      capture(b, e.pointerId);
+      holdDown(held, e.pointerId, { cmd: "mixerFlash", mixer: m.id, key: key, down: true },
+               { cmd: "mixerFlash", mixer: m.id, key: key, down: false });
+    });
+    holdPainters.push(() => b.classList.toggle("pressed", holds.has(held)));
+    lit.set(key, b);
+    return b;
+  };
+
+  // the dimmer: its fader, the % and Full and Blackout beside it
+  const dim = el("div", "dim"), track = el("div", "track"), fill = el("div", "fill"), knob = el("div", "knob");
+  track.appendChild(fill);
+  track.appendChild(knob);
+  const side = el("div", "side"), percent = el("div", "value", "");
+  side.appendChild(percent);
+  side.appendChild(toggle("full", tr("full")));
+  side.appendChild(toggle("blackout", tr("blackout"), "danger"));
+  dim.appendChild(track);
+  dim.appendChild(side);
+  strip.appendChild(dim);
+  drag(track, (e, first) => {
+    if (first) grab("dimmer");
+    const r = track.getBoundingClientRect();
+    v.dimmer = Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+    paint();
+    set("dimmer", v.dimmer);
+  }, () => letGo("dimmer"));
+
+  // the colour: it replaces the one of the scenes until it is reset
+  strip.appendChild(el("div", "label", tr("hue")));
+  const hue = hbar(true, (x, first) => {
+    if (first) grab("hue");
+    v.hue = x;
+    v.colour = true;
+    paint();
+    set("hue", x);
+  }, () => letGo("hue"));
+  strip.appendChild(hue.bar);
+  strip.appendChild(el("div", "label", tr("saturation")));
+  const saturation = hbar(false, (x, first) => {
+    if (first) grab("saturation");
+    v.saturation = x;
+    v.colour = true;
+    paint();
+    set("saturation", x);
+  }, () => letGo("saturation"));
+  strip.appendChild(saturation.bar);
+  const reset = el("button", "", tr("resetColour"));
+  reset.addEventListener("click", () => send({ cmd: "mixer", mixer: m.id, key: "resetColour" }));
+  strip.appendChild(reset);
+
+  // the strobe, 0.5 to 20 Hz by 0.5
+  strip.appendChild(toggle("strobe", tr("strobe"), "warn"));
+  const hz = hbar(false, (x, first) => {
+    if (first) grab("strobeHz");
+    v.strobeHz = 0.5 + Math.round(x * 39) * 0.5;
+    paint();
+    set("strobeHz", v.strobeHz);
+  }, () => letGo("strobeHz"));
+  strip.appendChild(hz.bar);
+  const hzText = el("div", "value", "");
+  strip.appendChild(hzText);
+
+  // the flashes: on while a finger is on them
+  strip.appendChild(flash("flash", tr("flash")));
+  strip.appendChild(flash("flashExclusive", tr("flashExcl")));
+  strip.appendChild(toggle("fullExclusive", tr("fullExcl"), "warn"));
+
+  const paint = () => {
+    const on = v.flash || v.flashExclusive || v.full || v.fullExclusive;
+    strip.classList.toggle("lit", !!on);
+    strip.classList.toggle("dark", !on && !!v.blackout);
+    fill.style.height = (v.dimmer * 100) + "%";
+    knob.style.bottom = (v.dimmer * 100) + "%";
+    // (in the colour of the mixer, as on the computer)
+    fill.style.background = v.colour ? hsvToHex(v.hue, v.saturation, 1) : "";
+    percent.textContent = Math.round(v.dimmer * 100) + "%";
+    hue.show(v.hue);
+    saturation.show(v.saturation);
+    saturation.fill.style.background = hsvToHex(v.hue, 1, 1);
+    hz.show((v.strobeHz - 0.5) / 19.5);
+    hzText.textContent = tr("hz").replace("%1", v.strobeHz.toLocaleString(LANG, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+    reset.disabled = !v.colour;
+    lit.forEach((b, key) => b.classList.toggle("on", !!v[key]));
+  };
+  paint();
+  updaters.push((s) => {
+    const settings = (s.mixers || {})[String(m.id)];
+    if (!settings) return;
+    for (const k in settings)
+      if (!busy[k]) v[k] = settings[k];
+    paint();
+  });
+  return strip;
 }
 
 const BUILDERS = {
@@ -782,7 +1165,7 @@ const BUILDERS = {
         buttons.push({ b: b, id: sc.id });
       });
       col.appendChild(list);
-      const master = el("div", "master"), fill = el("div", "fill"), label = el("span", "", tr("master"));
+      const master = el("div", "master hbar"), fill = el("div", "fill"), label = el("span", "", tr("master"));
       master.appendChild(fill);
       master.appendChild(label);
       let dragging = false;
@@ -807,6 +1190,14 @@ const BUILDERS = {
     content.appendChild(box);
   },
 
+  // the live mixer: a strip per mixer (all the fixtures, then each fixture
+  // group), side by side as on the computer, sideways when they don't fit
+  mixer(content, node) {
+    const box = el("div", "mixers");
+    (node.mixers || []).forEach((m) => box.appendChild(mixerStrip(m)));
+    content.appendChild(box);
+  },
+
   clock(content, node) {
     const box = el("div", "clock"), time = el("div", "time"), date = el("div", "date");
     box.appendChild(time);
@@ -818,6 +1209,54 @@ const BUILDERS = {
     };
     tick();
     const timer = setInterval(() => { if (!box.isConnected) clearInterval(timer); else tick(); }, 1000);
+    content.appendChild(box);
+  },
+
+  // a stopwatch or a countdown: the one of the computer (started, paused
+  // or reset here or there, it is the same timer)
+  timer(content, node) {
+    const countdown = node.mode === "countdown", total = (node.minutes || 5) * 60000;
+    const box = el("div", "timer"), time = el("div", "time"), row = el("div", "row");
+    const toggle = el("button"), reset = el("button");
+    const at = { cmd: "timer", page: pageIndex, section: node.id };
+    toggle.addEventListener("click", () => send(Object.assign({ action: "toggle" }, at)));
+    reset.addEventListener("click", () => send(Object.assign({ action: "reset" }, at)));
+    reset.appendChild(el("span", "icon", ""));
+    reset.appendChild(document.createTextNode(" " + tr("reset")));
+    row.appendChild(toggle);
+    row.appendChild(reset);
+    box.appendChild(time);
+    box.appendChild(row);
+    // Start or Pause, as it runs
+    let running = null;
+    const paint = (now) => {
+      if (now === running) return;
+      running = now;
+      toggle.textContent = "";
+      toggle.appendChild(el("span", "icon", running ? "" : ""));
+      toggle.appendChild(document.createTextNode(" " + tr(running ? "pause" : "start")));
+      toggle.classList.toggle("on", running);
+    };
+    const elapsed = () => {
+      const t = state && state.timers ? state.timers[node.id] : null;
+      if (!t) return 0;
+      return t.running ? Math.max(0, serverNow() - t.origin) : t.elapsed;
+    };
+    // the time as on the computer: orange in the last minute of a
+    // countdown, red at zero
+    const tick = () => {
+      const ms = elapsed(), shown = countdown ? Math.max(0, total - ms) : ms;
+      time.textContent = timerText(shown, countdown);
+      time.classList.toggle("over", countdown && shown <= 0);
+      time.classList.toggle("soon", countdown && shown > 0 && shown < 60000);
+    };
+    paint(false);
+    tick();
+    updaters.push((s) => {
+      paint(!!(s.timers && s.timers[node.id] && s.timers[node.id].running));
+      tick();
+    });
+    const timer = setInterval(() => { if (!box.isConnected) clearInterval(timer); else tick(); }, 100);
     content.appendChild(box);
   },
 
@@ -856,6 +1295,34 @@ const BUILDERS = {
       s.running.forEach((name) => box.appendChild(el("div", "", name)));
     });
     content.appendChild(box);
+  },
+
+  // the DMX levels of a universe, as on the computer: its 512 channels in
+  // 32 × 16 cells of the accent colour, brighter with the value
+  monitor(content, node) {
+    const universe = Math.max(0, node.universe || 0);
+    const box = el("div", "monitor"), canvas = el("canvas");
+    box.appendChild(el("div", "universe", tr("universe").replace("%1", universe + 1)));
+    box.appendChild(canvas);
+    if (watched.indexOf(universe) < 0)
+      watched.push(universe);
+    const draw = () => {
+      const { ctx, w, h } = sizeCanvas(canvas);
+      ctx.clearRect(0, 0, w, h);
+      const cw = (w - 31) / 32, ch = (h - 15) / 16;
+      if (cw <= 0 || ch <= 0) return;
+      const values = levels.get(universe);
+      ctx.fillStyle = getComputedStyle(box).getPropertyValue("--accent").trim() || "#3d8bfd";
+      for (let i = 0; i < 512; i++) {
+        ctx.globalAlpha = 0.06 + 0.9 * (values ? values[i] || 0 : 0) / 255;
+        ctx.fillRect((i % 32) * (cw + 1), Math.floor(i / 32) * (ch + 1), cw, ch);
+      }
+      ctx.globalAlpha = 1;
+    };
+    levelPainters.push({ universe: universe, paint: draw });
+    content.appendChild(box);
+    // (once it is laid out: the canvas has no size before)
+    requestAnimationFrame(draw);
   },
 
   image(content, node) {
@@ -971,6 +1438,6 @@ function update() {
   paintHolds();
 }
 
-window.addEventListener("resize", () => update());
+window.addEventListener("resize", () => { update(); paintLevels(); });
 $("offlineText").textContent = tr("connecting");
 connect();

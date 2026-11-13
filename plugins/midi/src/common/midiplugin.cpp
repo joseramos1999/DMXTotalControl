@@ -33,6 +33,8 @@
 #include "midiplugin.h"
 #include "qlcconfig.h"
 #include "qlcfile.h"
+// (DMX Total Control: KPluginSendSysEx)
+#include "outputpatch.h"
 
 /*****************************************************************************
  * Initialization
@@ -223,6 +225,9 @@ bool MidiPlugin::openInput(quint32 input, quint32 universe)
     {
         connect(dev, SIGNAL(valueChanged(QVariant,ushort,uchar)),
                 this, SLOT(slotValueChanged(QVariant,ushort,uchar)));
+        // DMX Total Control: and the MIDI timecode
+        connect(dev, SIGNAL(keyValueChanged(QVariant,ushort,uchar,QString)),
+                this, SLOT(slotKeyValueChanged(QVariant,ushort,uchar,QString)));
         addToMap(universe, input, Input);
         return dev->open();
     }
@@ -240,6 +245,8 @@ void MidiPlugin::closeInput(quint32 input, quint32 universe)
         dev->close();
         disconnect(dev, SIGNAL(valueChanged(QVariant,ushort,uchar)),
                    this, SLOT(slotValueChanged(QVariant,ushort,uchar)));
+        disconnect(dev, SIGNAL(keyValueChanged(QVariant,ushort,uchar,QString)),
+                   this, SLOT(slotKeyValueChanged(QVariant,ushort,uchar,QString)));
     }
 }
 
@@ -369,6 +376,19 @@ void MidiPlugin::slotValueChanged(const QVariant& uid, ushort channel, uchar val
     }
 }
 
+void MidiPlugin::slotKeyValueChanged(const QVariant& uid, ushort channel, uchar value, const QString& key)
+{
+    // DMX Total Control: the MIDI timecode, with its time in the key
+    for (int i = 0; i < m_enumerator->inputDevices().size(); i++)
+    {
+        if (m_enumerator->inputDevices().at(i)->uid() == uid)
+        {
+            emit valueChanged(UINT_MAX, i, channel, value, key);
+            break;
+        }
+    }
+}
+
 /*****************************************************************************
  * Configuration
  *****************************************************************************/
@@ -450,6 +470,14 @@ bool MidiPlugin::canConfigure() const
 void MidiPlugin::setParameter(quint32 universe, quint32 line, Capability type,
                               QString name, QVariant value)
 {
+    // DMX Total Control: a SysEx message to send now (OutputPatch::sendSysEx),
+    // not a parameter: nothing is kept
+    if (type == Output && name == KPluginSendSysEx)
+    {
+        sendSysEx(line, value.toByteArray());
+        return;
+    }
+
     MidiDevice *dev = NULL;
     if (type == Input)
         dev = qobject_cast<MidiDevice*>(inputDevice(line));

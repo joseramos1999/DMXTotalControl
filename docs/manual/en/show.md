@@ -119,6 +119,7 @@ A SHOW fader can control **several things at once**. In its properties, under **
 | **Speed of a scene** | The live speed of that scene (×0.1 to ×10, like the movement speed). |
 | **Play a scene (its speed)** | Like “Play a scene (its intensity)”, but the fader is its speed: all the way down the scene is stopped; when you raise it, it starts in its group and the travel is its speed, ×0.1 just above the bottom, ×1 in the middle and ×10 at the top. The text says “Stopped” while it is not playing, and the fader follows the scene if it is stopped or played from somewhere else. The speed is for that run only: once stopped, the scene goes back to the speed it had (its Live speed does not change). A double click puts it at ×1 (and plays it if it was stopped). Like the intensity one, it adds its scene to its group and holds it: several at once play together (also several scenes of the same exclusive group on one fader), and only lowering it all the way stops it. |
 | **BPM** | The show tempo, from 20 to 300. |
+| **Cue speed (all cuelists)** | The [speed of every cuelist](playbacks.md#cue-speed): its fades (also the ones that are running), delays, Follow and Wait. From ×0.1 to ×10, like the movement speed. It is not saved with the show. |
 
 The difference between the two scene elements: **“Play a scene (its intensity)”** is the scene itself, and it starts and stops it; **“Dimmer of a scene (does not play it)”** only dims it, also when it is played from somewhere else. You can use them together: with the dimmer at 50 % and the fader that plays it at 80 %, the scene comes out at 40 %.
 
@@ -126,9 +127,9 @@ Press **“Add another element”** to add another one and the bin icon to remov
 
 With **Range**, **From** … **to** … (from 0 to 100 %), the travel of the fader covers only that part of what it moves, on all its elements. For example, the speed of a scene from 20 to 80 %, or a dimmer from 0 to 60 % so that it never goes above that. With “From” greater than “to”, or with **“Invert”**, the fader works the other way round. A fader that plays a scene stops it at the end where the value is lowest (all the way down; all the way up if it is inverted), even if “From” is not 0.
 
-The fader text shows the real value (the %, the BPM or, if it only controls speeds, the × multiplier), not where the fader is. If another control takes the value outside the range, the fader stays at the end. A fader that only controls speeds (of the movement or of scenes, one or several) goes back to ×1 with a double click.
+The fader text shows the real value (the %, the BPM or, if it only controls speeds, the × multiplier), not where the fader is. If another control takes the value outside the range, the fader stays at the end. A fader that only controls speeds (of the movement, of scenes or of the cues, one or several) goes back to ×1 with a double click.
 
-Under each fader there is a **“Flash”** button: it takes the fader all the way up its travel while you press it and, when you let go, it gives back exactly what was there before. You remove it or add it with the “Flash button: full while pressed” switch in its properties.
+Under each fader there is a **“Flash”** button: it takes the fader all the way up its travel while you press it and, when you let go, it gives back exactly what was there before. You remove it or add it with the “Flash button: full while pressed” switch in its properties. On the A/B fader of a playback, the Flash is the playback’s own: it takes it to full while you press it, with its attack and decay, without moving the crossfade or going to another cue (see [The flash](playbacks.md#the-flash)).
 
 > **Tip:** a fader with “Master of a group” for your washes and “Dimmer of fixtures” for the audience PARs gives you a single fader to bring down the whole front.
 
@@ -167,11 +168,11 @@ In edit mode, drop a scene on a strip to put it on that playback.
 ## Utilities
 
 - **Clock**: the time and date of the computer.
-- **Timer**: **“Start”** / **“Pause”** and **“Reset”**. In countdown it turns orange in the last minute and red when it reaches zero. It keeps counting even if you change page.
+- **Timer**: **“Start”** / **“Pause”** and **“Reset”**. In countdown it turns orange in the last minute and red when it reaches zero. It keeps counting even if you change page. The [remote control](remoto.md) shows the same timer. When you open another show, it goes back to zero.
 - **Rhythm**: **GO**, **Stop** and **BeatGO**.
 - **Notes**: the text you write in its properties (the running order, reminders for the operator…).
 - **Playing now**: what is playing, with the stop button next to each scene.
-- **DMX levels**: a grid with the 512 channels of the chosen universe.
+- **DMX levels**: a grid with the 512 channels of the chosen universe. The [remote control](remoto.md) shows it too.
 - **Image**: whole or filling the section.
 
 ## Pages

@@ -294,6 +294,34 @@ void Universe::setFaderFunctionPriority(QSharedPointer<GenericFader> fader, int 
         moveFaderLocked(fader, sortPriority);
 }
 
+bool Universe::isTopOfPriority(const QSharedPointer<GenericFader> &fader,
+                               const QList<QSharedPointer<GenericFader>> &ignore)
+{
+    // DMX Total Control
+    QMutexLocker fadersLocker(&m_fadersMutex);
+    const int index = m_faders.indexOf(fader);
+    if (index < 0)
+        return false;
+
+    for (int i = index + 1; i < m_faders.count(); i++)
+    {
+        const QSharedPointer<GenericFader> &f = m_faders.at(i);
+        if (f.isNull() || f->deleteRequested() || f->isFadingOut() || ignore.contains(f))
+            continue;
+        if (f->priority() == fader->priority())
+            return false;
+    }
+    return true;
+}
+
+void Universe::raiseFader(const QSharedPointer<GenericFader> &fader)
+{
+    // DMX Total Control
+    QMutexLocker fadersLocker(&m_fadersMutex);
+    if (m_faders.contains(fader))
+        moveFaderLocked(fader, fader->priority());
+}
+
 void Universe::moveFaderLocked(QSharedPointer<GenericFader> fader, int sortPriority)
 {
     m_faders.removeAll(fader);

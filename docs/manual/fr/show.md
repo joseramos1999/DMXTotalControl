@@ -119,6 +119,7 @@ Un fader du SHOW peut contrôler **plusieurs choses à la fois**. Dans ses propr
 | **Vitesse d’une scène** | La vitesse en direct de cette scène (×0,1 à ×10, comme celle du mouvement). |
 | **Lancer une scène (sa vitesse)** | Comme « Lancer une scène (son intensité) », mais le fader est sa vitesse : tout en bas la scène est arrêtée ; en le montant, elle démarre dans son groupe et la course est sa vitesse, ×0,1 juste au-dessus du bas, ×1 au milieu et ×10 en haut. Le texte affiche « Arrêtée » tant qu’elle ne joue pas, et le fader suit la scène si on l’arrête ou la lance d’ailleurs. La vitesse ne vaut que pour cette fois : une fois arrêtée, la scène reprend la vitesse qu’elle avait (celle du Direct ne change pas). Un double-clic la met à ×1 (et la lance si elle était arrêtée). Comme celui d’intensité, il ajoute sa scène à son groupe et la retient : plusieurs à la fois jouent ensemble (y compris plusieurs scènes d’un même groupe exclusif sur un fader), et seul le descendre tout en bas l’arrête. |
 | **BPM** | Le tempo du show, de 20 à 300. |
+| **Vitesse des cues (toutes les cuelists)** | La [vitesse de toutes les cuelists](playbacks.md#vitesse-des-cues) : leurs fondus (y compris ceux en cours), délais, Suivre et Attendre. De ×0,1 à ×10, comme celle du mouvement. Elle n’est pas enregistrée avec le show. |
 
 La différence entre les deux éléments de scène : **« Lancer une scène (son intensité) »** est la scène elle-même, et il la lance et l’arrête ; **« Dimmer d’une scène (sans la lancer) »** ne fait que l’atténuer, même quand elle est lancée d’ailleurs. Vous pouvez utiliser les deux en même temps : avec le dimmer à 50 % et le fader qui la lance à 80 %, la scène sort à 40 %.
 
@@ -126,9 +127,9 @@ Appuyez sur **« Ajouter un autre élément »** pour en ajouter un et sur l�
 
 Avec **Plage**, **De** … **à** … (de 0 à 100 %), la course du fader ne couvre que cette partie de ce qu’il pilote, pour tous ses éléments. Par exemple, la vitesse d’une scène de 20 à 80 %, ou un dimmer de 0 à 60 % pour qu’il ne dépasse pas cette valeur. Avec « De » au-dessus de « à », ou avec **« Inverser »**, le fader fonctionne à l’envers. Un fader qui lance une scène l’arrête à l’extrémité où la valeur est la plus basse (tout en bas ; tout en haut s’il est inversé), même si « De » n’est pas 0.
 
-Le texte du fader affiche la valeur réelle (le %, le BPM ou, s’il ne contrôle que des vitesses, le multiplicateur ×), pas la position du fader. Si un autre contrôle amène la valeur hors de la plage, le fader reste à l’extrémité. Un fader qui ne contrôle que des vitesses (du mouvement ou de scènes, une ou plusieurs) revient à ×1 avec un double-clic.
+Le texte du fader affiche la valeur réelle (le %, le BPM ou, s’il ne contrôle que des vitesses, le multiplicateur ×), pas la position du fader. Si un autre contrôle amène la valeur hors de la plage, le fader reste à l’extrémité. Un fader qui ne contrôle que des vitesses (du mouvement, de scènes ou des cues, une ou plusieurs) revient à ×1 avec un double-clic.
 
-Sous chaque fader, il y a un bouton **« Flash »** : il le porte tout en haut de sa course tant que vous appuyez et, quand vous relâchez, il rend exactement ce qu’il y avait. Il s’enlève ou se remet avec l’interrupteur « Bouton flash : à fond tant qu’on appuie » de ses propriétés.
+Sous chaque fader, il y a un bouton **« Flash »** : il le porte tout en haut de sa course tant que vous appuyez et, quand vous relâchez, il rend exactement ce qu’il y avait. Il s’enlève ou se remet avec l’interrupteur « Bouton flash : à fond tant qu’on appuie » de ses propriétés. Sur le fader A/B d’un playback, le Flash est celui du playback : il le met à fond tant que vous appuyez, avec son attaque et sa retombée, sans bouger le fondu enchaîné ni passer à une autre cue (voir [Le flash](playbacks.md#le-flash)).
 
 > **Conseil :** un fader avec « Master d’un groupe » de vos washes et « Dimmer de fixtures » des PAR du public vous donne un seul fader pour baisser toute la face.
 
@@ -167,11 +168,11 @@ En mode édition, déposez une scène sur une bande pour la mettre sur ce playba
 ## Utilitaires
 
 - **Horloge** : heure et date de l’ordinateur.
-- **Minuteur** : **« Démarrer »** / **« Pause »** et **« Réinitialiser »**. En compte à rebours, il devient orange dans la dernière minute et rouge en arrivant à zéro. Il continue de compter même si vous changez de page.
+- **Minuteur** : **« Démarrer »** / **« Pause »** et **« Réinitialiser »**. En compte à rebours, il devient orange dans la dernière minute et rouge en arrivant à zéro. Il continue de compter même si vous changez de page. La [télécommande](remoto.md) affiche le même minuteur. À l’ouverture d’un autre show, il revient à zéro.
 - **Rythme** : **GO**, **Stop** et **BeatGO**.
 - **Notes** : le texte que vous écrivez dans ses propriétés (la conduite, des consignes pour l’opérateur…).
 - **En cours** : ce qui joue, avec le bouton d’arrêt à côté de chaque scène.
-- **Niveaux DMX** : une grille avec les 512 canaux de l’univers choisi.
+- **Niveaux DMX** : une grille avec les 512 canaux de l’univers choisi. La [télécommande](remoto.md) l’affiche aussi.
 - **Image** : entière ou remplissant la section.
 
 ## Pages

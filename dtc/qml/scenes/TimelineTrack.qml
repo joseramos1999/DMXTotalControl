@@ -40,6 +40,8 @@ Item {
     readonly property bool hidden: !!track.hidden
     readonly property bool locked: !!track.locked
     readonly property bool selected: editor.selectedTrack === trackId
+    // blocks dragged from other tracks land here
+    readonly property bool dropTarget: editor.dragTargets.indexOf(trackId) >= 0
     // which lane is open: "", "dimmer" or "phase" (kept by the editor)
     readonly property string lane: editor.lanes[trackId] !== undefined ? editor.lanes[trackId]
                                  : (track.dimmer || []).length ? "dimmer" : (track.phase || []).length ? "phase" : ""
@@ -48,6 +50,14 @@ Item {
 
     width: parent ? parent.width : 0
     height: rowHeight + laneHeight
+    // (rebuilt in the middle of dragging a point or drawing the rectangle:
+    // the drag is over)
+    Component.onDestruction: {
+        if (laneArea.dragging >= 0 && editor)
+            editor.dragging = false
+        if (editor && emptyArea && emptyArea.pressed)
+            editor.endBand()
+    }
 
     component HeaderButton: AppButton {
         implicitWidth: 24
@@ -63,7 +73,8 @@ Item {
         height: parent.height
         color: trackItem.selected ? Qt.alpha(Theme.accent, 0.15) : Theme.surfaceRaised
         border.color: Theme.border
-        MouseArea { anchors.fill: parent; onClicked: editor.selectedTrack = trackItem.trackId }
+        // (the focus last: a value typed in a field may draw the tracks again)
+        MouseArea { anchors.fill: parent; onClicked: { editor.selectedTrack = trackItem.trackId; editor.forceActiveFocus() } }
 
         Column {
             anchors { fill: parent; margins: 4 }
@@ -77,7 +88,7 @@ Item {
                 elide: Text.ElideRight
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: editor.selectedTrack = trackItem.trackId
+                    onClicked: { editor.selectedTrack = trackItem.trackId; editor.forceActiveFocus() }
                     onDoubleClicked: editor.renameTrack(trackItem.trackId, trackItem.track.name)
                 }
             }
@@ -159,13 +170,68 @@ Item {
             border.color: Theme.border
             border.width: 1
         }
-        // a click on the empty track: the cursor goes there
+        // the empty track: a click moves the cursor there (and selects no
+        // block, but with Ctrl or Shift); a drag draws a rectangle that
+        // selects the blocks it touches (added with Ctrl or Shift). The right
+        // button: Paste here, Select all
         MouseArea {
+            id: emptyArea
             anchors.fill: parent
-            onClicked: (ev) => {
-                editor.selectedTrack = trackItem.trackId
-                editor.selectBlock(-1, trackItem.trackId)
-                editor.cursor = editor.snap(editor.msAt(ev.x))
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            preventStealing: true
+            onPressed: (ev) => {
+                // (a value typed in a field goes to its block first; it draws
+                // the tracks again, this one too: then the press is a click,
+                // and there is no menu)
+                let owner = editor
+                let trackId = trackItem.trackId
+                let revision = Core.timeline.revision
+                owner.forceActiveFocus()
+                let redrawn = Core.timeline.revision !== revision
+                if (ev.button === Qt.RightButton) {
+                    if (!redrawn) {
+                        emptyMenu.ms = owner.snap(owner.msAt(ev.x))
+                        emptyMenu.popup()
+                    }
+                    return
+                }
+                if (redrawn) {
+                    owner.clickTrack(trackId, ev.x, ev.modifiers)
+                    return
+                }
+                owner.pressBand(emptyArea, ev.x, ev.y)
+            }
+            onPositionChanged: (ev) => { if (emptyArea.pressedButtons & Qt.LeftButton) editor.dragBand(emptyArea, ev.x, ev.y) }
+            onReleased: (ev) => {
+                if (ev.button !== Qt.LeftButton)
+                    return
+                if (editor.banding)
+                    editor.endBand((ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                else
+                    editor.clickTrack(trackItem.trackId, ev.x, ev.modifiers)
+            }
+            onCanceled: editor.endBand()
+        }
+        AppMenu {
+            id: emptyMenu
+            // where it was opened
+            property int ms: 0
+            MenuItem {
+                text: qsTr("Paste here")
+                enabled: Core.timeline.clipboardCount > 0
+                // the cursor and the selected track first (the tracks are
+                // drawn again: what it needs is taken first)
+                onTriggered: {
+                    let owner = editor
+                    let trackId = trackItem.trackId
+                    owner.cursor = emptyMenu.ms
+                    owner.selectedTrack = trackId
+                    owner.paste(emptyMenu.ms, trackId)
+                }
+            }
+            MenuItem {
+                text: qsTr("Select all")
+                onTriggered: editor.selectAll()
             }
         }
 
@@ -185,15 +251,19 @@ Item {
             anchors.fill: parent
             keys: ["dtc-timeline-scene"]
             enabled: !trackItem.locked
+            // (the block added draws the tracks again: what it needs is taken
+            // first)
             onDropped: (drop) => {
-                let ms = editor.snap(editor.msAt(drop.x))
-                let id = Core.timeline.addBlock(editor.showId, trackItem.trackId, drop.source.functionId, ms)
-                editor.selectBlock(id, trackItem.trackId)
+                let owner = editor
+                let trackId = trackItem.trackId
+                let ms = owner.snap(owner.msAt(drop.x))
                 drop.accept()
+                owner.selectBlock(Core.timeline.addBlock(owner.showId, trackId, drop.source.functionId, ms), trackId)
             }
+            // (and while selected blocks are dragged onto it)
             Rectangle {
                 anchors.fill: parent
-                visible: parent.containsDrag
+                visible: parent.containsDrag || trackItem.dropTarget
                 color: Qt.alpha(Theme.accent, 0.12)
                 border.color: Theme.accent
             }
@@ -319,6 +389,7 @@ Item {
                     i = pts.indexOf(added)
                 }
                 laneArea.dragging = i
+                editor.dragging = true
             }
             onPositionChanged: (ev) => {
                 if (laneArea.dragging < 0)
@@ -329,12 +400,14 @@ Item {
                 laneArea.points = pts
             }
             onReleased: {
+                editor.dragging = false
                 if (laneArea.dragging >= 0) {
                     laneArea.dragging = -1
                     laneArea.points = laneArea.points.slice().sort((a, b) => a.time - b.time)
                     laneArea.save()
                 }
             }
+            onCanceled: { laneArea.dragging = -1; editor.dragging = false }
             onDoubleClicked: (ev) => {
                 let i = laneArea.pointAt(ev.x, ev.y)
                 if (i >= 0) {

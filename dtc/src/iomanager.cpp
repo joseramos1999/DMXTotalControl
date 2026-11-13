@@ -286,12 +286,21 @@ void IOManager::slotUniverseWritten(quint32 universe, const QByteArray &data)
 
 QVariantList IOManager::channelValues(int universe) const
 {
-    QByteArray data = m_lastValues.value(quint32(universe));
+    const QByteArray data = lastValues(universe);
     QVariantList values;
     values.reserve(512);
     for (int i = 0; i < 512; i++)
-        values.append(i < data.size() ? int(uchar(data.at(i))) : 0);
+        values.append(int(uchar(data.at(i))));
     return values;
+}
+
+QByteArray IOManager::lastValues(int universe) const
+{
+    // (a universe that wrote nothing yet, or isn't there: all at zero)
+    const QByteArray data = m_lastValues.value(quint32(universe));
+    if (data.size() == 512)
+        return data;
+    return data.leftJustified(512, '\0', true);
 }
 
 void IOManager::slotPluginConfigurationChanged()

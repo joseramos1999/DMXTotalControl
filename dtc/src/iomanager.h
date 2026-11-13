@@ -72,6 +72,9 @@ public:
 
     /** Last output values of a universe (512 values, after the grand master) */
     Q_INVOKABLE QVariantList channelValues(int universe) const;
+    /** The same as bytes: always 512, zeros where nothing was written (the
+     *  DMX levels of the remote control) */
+    QByteArray lastValues(int universe) const;
 
 signals:
     void universesChanged();

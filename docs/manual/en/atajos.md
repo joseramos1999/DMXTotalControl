@@ -68,10 +68,23 @@ See [the command line](programar.md#command-line).
 | Key or gesture | What it does |
 |---|---|
 | **Space** | Play or stop from the cursor |
-| **Del** | Deletes the selected block |
+| **Del** / **Backspace** | Deletes the selected blocks |
+| **Ctrl+A** | Selects every block on the tracks in view |
+| **Ctrl+D** | Duplicates the selected blocks right after themselves |
+| **Ctrl+C** | Copies the selected blocks |
+| **Ctrl+X** | Cuts the selected blocks (those on locked tracks are only copied) |
+| **Ctrl+V** | Pastes the copied blocks at the cursor, from the selected track |
+| **Ctrl+Z** | Undoes the last change (not while you type in a field) |
+| **Ctrl+Y** / **Ctrl+Shift+Z** | Redoes what was undone |
+| **Ctrl+click** on a block | Adds it to the selection or takes it out |
+| **Shift+click** on a block | Selects from the last block chosen to this one |
+| Dragging on an empty part of the tracks | Draws a rectangle that selects the blocks it touches (with **Ctrl** or **Shift**, they are added) |
+| Right click on an empty part of a track | “Paste here” and “Select all” |
 | **Ctrl+wheel** | Zoom on the timeline |
 | **Shift+wheel** | Move through time |
 | Double click on the ruler | Play from there |
+
+The block keys don't act while you type in a field. See [Selecting several blocks](escenas.md#selecting-several-blocks) and [Copy and paste](escenas.md#copy-and-paste).
 
 ## Faders and sliders
 
@@ -92,6 +105,8 @@ After you click a fader or a slider:
 | Double click on a cue or a step | Loads it into the programmer |
 | Double click on the number of a cue | Changes its number |
 | Wheel over a clicked time | ±0.1 s (with **Shift**, ±1 s) |
+| **Ctrl+Z** | Undoes the last edit of the open cuelist (in a field with typed text, that text first) |
+| **Ctrl+Y** / **Ctrl+Shift+Z** | Redoes what was undone |
 | **Esc** in a field | Leaves the value as it was |
 
 ## Mouse and modifiers
@@ -101,7 +116,7 @@ After you click a fader or a slider:
 | **Alt+click** | Almost any control | Takes it to the open SHOW page |
 | **Shift+click** | Learn mode | Uses the control instead of mapping it |
 | **Ctrl+click** | Flash buttons of the mixer | Keeps the flash on until the next click |
-| **Ctrl+click** / **Shift+click** | Fixtures, groups and 2D plan (Program and Patch), scene list | Adds to the selection or removes from it |
+| **Ctrl+click** / **Shift+click** | Fixtures, groups and 2D plan (Program and Patch), scene list, blocks of a super scene | Adds to the selection or removes from it |
 | Wheel | 2D plan | Zoom |
 | Drag with the right or middle button | 2D plan | Moves the view (double click: centres it) |
 | Right click | 15° button of the 2D plan | Rotates the other way |

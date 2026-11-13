@@ -47,6 +47,7 @@
 #include "commandline.h"
 #include "cuelisteditor.h"
 #include "playbackmanager.h"
+#include "timecodereader.h"
 
 class QXmlStreamReader;
 class QXmlStreamWriter;
@@ -108,6 +109,8 @@ class DtcCore : public QObject
     Q_PROPERTY(CommandLine *commands READ commands CONSTANT)
     Q_PROPERTY(CuelistEditor *cuelists READ cuelists CONSTANT)
     Q_PROPERTY(PlaybackManager *playbacks READ playbacks CONSTANT)
+    /** The MIDI timecode that comes in (Timecode cuelists) */
+    Q_PROPERTY(TimecodeReader *timecode READ timecode CONSTANT)
     /** A session that crashed left the recovery copy of a show (its changes
      *  that weren't saved): it can be recovered. Of which show (its title)
      *  and when the copy was made */
@@ -120,6 +123,9 @@ class DtcCore : public QObject
     /** The files the open show names that are not there: its sounds, videos
      *  and pictures (paths of this machine) */
     Q_PROPERTY(QStringList missingFiles READ missingFiles NOTIFY missingFilesChanged)
+    /** The cue lists of the QLC+ Virtual Console of the show, when it was
+     *  opened (see qlcCueLists): they can become cuelists */
+    Q_PROPERTY(int qlcCueListCount READ qlcCueListCount NOTIFY fileNameChanged)
 
 public:
     explicit DtcCore(QObject *parent = nullptr);
@@ -145,6 +151,7 @@ public:
     CommandLine *commands() const;
     CuelistEditor *cuelists() const;
     PlaybackManager *playbacks() const;
+    TimecodeReader *timecode() const;
 
     QString appName() const;
     QString appVersion() const;
@@ -196,6 +203,50 @@ public:
      *  into this one. The scenes go on the fixtures of this show that match
      *  theirs. @return what was imported, empty on error (see lastError) */
     Q_INVOKABLE QString importFromShow(const QUrl &url, bool patch, bool scenes);
+
+    /** Every cuelist, for a copy for QLC+, by name: [{ id, name, cues, lost }],
+     *  lost: what QLC+ won't get of it in $format ("sequence" or "chaser"),
+     *  one line each; with $controls, of its keys and controller buttons too */
+    Q_INVOKABLE QVariantList qlcExportInfo(const QString &format, bool controls = false) const;
+    /** Where a copy for QLC+ goes first: "<show title> (QLC+).qxw" in the
+     *  folder of the show */
+    Q_INVOKABLE QUrl qlcCopyUrl() const;
+    /**
+     * Save a copy of the show for QLC+ in $url: the cuelists $ids become
+     * QLC+ steps with their IDs, so what plays them (super scenes, racks,
+     * groups) plays the steps. The show open doesn't change (its file, its
+     * modified state, its backup, the recent shows).
+     * @param options format: "sequence" (one step list, the default) or
+     *        "chaser" (a scene for each cue); virtualConsole (true): a Cue
+     *        List for each one in the Virtual Console; controls (false): its
+     *        buttons take the keys and the controller buttons of the GO,
+     *        Back, Pause/Back and Release of the cuelist
+     * @return false on error (see lastError)
+     */
+    Q_INVOKABLE bool saveCopyForQlc(const QUrl &url, const QVariantList &ids, const QVariantMap &options);
+
+    /**
+     * What of a QLC+ show can become cuelists: the cue lists of its Virtual
+     * Console first, then the chasers and sequences none of them plays (see
+     * QlcExchange::candidates). Of this show, or of the show $url.
+     * @return [{ key ("vc:<index>" or "fn:<id>"), kind ("vcCueList",
+     *         "Chaser" or "Sequence"), name, functionId, steps, warnings
+     *         (what doesn't play the same), exists (the name of a cuelist of
+     *         this show with its name, or ""), enabled, checked (as the
+     *         dialog starts) }], empty on error (see lastError)
+     */
+    Q_INVOKABLE QVariantList qlcCueLists(const QUrl &url = QUrl());
+    /**
+     * Make cuelists of the $keys of qlcCueLists($url). From another show only
+     * the cuelists come in, on the fixtures of this show that match theirs.
+     * @param options replace (this show only, false): the cuelists take the
+     *        place and the ID of their steps; playbacks (true): on the free
+     *        playbacks of the current page; controls (false): the keys and
+     *        controller buttons of their Cue Lists become mappings
+     * @return what was made, empty on error (see lastError)
+     */
+    Q_INVOKABLE QString importQlcCueLists(const QUrl &url, const QVariantList &keys, const QVariantMap &options);
+    int qlcCueListCount() const;
 
     /** Open the last show of the previous session, if the settings ask for it */
     void openStartupShow();
@@ -321,12 +372,20 @@ private:
     void checkFiles();
     bool loadWorkspace(QXmlStreamReader &reader);
     void loadSection(QXmlStreamReader &reader);
-    /** The current element of $reader as it is (QLC+ sections kept) */
-    static QByteArray copyElement(QXmlStreamReader &reader);
-    static void copyToken(QXmlStreamReader &reader, QXmlStreamWriter &writer);
+    /** The QLC+ Virtual Console of the show, empty when it has none */
+    QByteArray virtualConsole() const;
     void setFileName(const QString &fileName);
     void setLastError(const QString &error);
-    bool writeWorkspace(const QString &path);
+    /** What a copy for QLC+ writes in place of the show (saveCopyForQlc) */
+    struct QlcCopy;
+    /** Write the show to $path; with $copy, the copy for QLC+ instead */
+    bool writeWorkspace(const QString &path, const QlcCopy *copy = nullptr);
+    /** The sections of QLC+ a copy for QLC+ writes: the Virtual Console with
+     *  the Cue Lists of $copy */
+    QList<QByteArray> qlcSections(const QlcCopy &copy) const;
+    /** The cuelists $ids in the order of their Cue Lists: the ones on
+     *  playbacks by page and slot, then the others by name */
+    QList<Cuelist *> qlcOrder(const QVariantList &ids) const;
     /** Open $file as the show $show (its file name; empty: untitled). The
      *  files it names are relative to the folder of $show (of $file when
      *  untitled) */
@@ -365,6 +424,7 @@ private:
     CommandLine *m_commands;
     CuelistEditor *m_cuelists;
     PlaybackManager *m_playbacks;
+    TimecodeReader *m_timecode;
     QTimer *m_autosaveTimer;
     /** The steps of the scenes with steps that play (the beats of the FX at
      *  the BPM of the show), looked at every frame or so */
@@ -398,6 +458,8 @@ private:
     /** The sections of the workspace this application doesn't use (QLC+
      *  Virtual Console, Simple Desk...), written back as they were read */
     QList<QByteArray> m_foreignSections;
+    /** See qlcCueListCount() */
+    int m_qlcCueListCount = 0;
     QElapsedTimer m_tapTimer;
     QList<qint64> m_tapIntervals;
     /** Folders created by the user, so the empty ones are kept */

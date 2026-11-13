@@ -68,10 +68,23 @@ Vedi [la riga di comando](programar.md#riga-di-comando).
 | Tasto o gesto | Cosa fa |
 |---|---|
 | **Spazio** | Riproduce o ferma dal cursore |
-| **Canc** | Elimina il blocco selezionato |
+| **Canc** / **Backspace** | Elimina i blocchi selezionati |
+| **Ctrl+A** | Seleziona tutti i blocchi delle tracce visibili |
+| **Ctrl+D** | Duplica i blocchi selezionati subito dopo |
+| **Ctrl+C** | Copia i blocchi selezionati |
+| **Ctrl+X** | Taglia i blocchi selezionati (quelli delle tracce bloccate vengono solo copiati) |
+| **Ctrl+V** | Incolla i blocchi copiati sul cursore, a partire dalla traccia selezionata |
+| **Ctrl+Z** | Annulla l'ultima modifica (non mentre scrivi in un campo) |
+| **Ctrl+Y** / **Ctrl+Maiusc+Z** | Ripete ciò che è stato annullato |
+| **Ctrl+clic** su un blocco | Lo aggiunge alla selezione o lo toglie |
+| **Maiusc+clic** su un blocco | Seleziona dall'ultimo blocco scelto fino a questo |
+| Trascinare in una zona vuota delle tracce | Disegna un rettangolo che seleziona i blocchi che tocca (con **Ctrl** o **Maiusc**, si aggiungono) |
+| Clic destro su una zona vuota di una traccia | «Incolla qui» e «Seleziona tutto» |
 | **Ctrl+rotella** | Zoom sulla timeline |
 | **Maiusc+rotella** | Spostarsi nel tempo |
 | Doppio clic sul righello | Riproduce da lì |
+
+I tasti dei blocchi non agiscono mentre scrivi in un campo. Vedi [Selezionare più blocchi](escenas.md#selezionare-più-blocchi) e [Copiare e incollare](escenas.md#copiare-e-incollare).
 
 ## Fader e cursori
 
@@ -92,6 +105,8 @@ Dopo aver fatto clic su un fader o un cursore:
 | Doppio clic su una cue o un passo | Lo carica nel programmatore |
 | Doppio clic sul numero di una cue | Ne cambia il numero |
 | Rotella su un tempo premuto | ±0,1 s (con **Maiusc**, ±1 s) |
+| **Ctrl+Z** | Annulla l'ultima modifica della cuelist aperta (in un campo con del testo scritto, prima quel testo) |
+| **Ctrl+Y** / **Ctrl+Maiusc+Z** | Ripete ciò che è stato annullato |
 | **Esc** in un campo | Lascia il valore com'era |
 
 ## Mouse e modificatori
@@ -101,7 +116,7 @@ Dopo aver fatto clic su un fader o un cursore:
 | **Alt+clic** | Quasi qualsiasi controllo | Lo porta nella pagina dello SHOW aperta |
 | **Maiusc+clic** | Modalità Apprendi | Usa il controllo invece di mapparlo |
 | **Ctrl+clic** | Tasti Flash del mixer | Lasciano il flash acceso fino al clic successivo |
-| **Ctrl+clic** / **Maiusc+clic** | Fixture, gruppi e pianta 2D (Programma e Patch), elenco delle scene | Aggiunge o toglie dalla selezione |
+| **Ctrl+clic** / **Maiusc+clic** | Fixture, gruppi e pianta 2D (Programma e Patch), elenco delle scene, blocchi di una super scena | Aggiunge o toglie dalla selezione |
 | Rotella | Pianta 2D | Zoom |
 | Trascinare con il tasto destro o centrale | Pianta 2D | Sposta la vista (doppio clic: la centra) |
 | Clic destro | Tasto 15° della pianta 2D | Ruota nell'altro senso |

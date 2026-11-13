@@ -50,6 +50,9 @@ class MonitorProperties;
 
 #define KXMLQLCEngine QStringLiteral("Engine")
 #define KXMLQLCStartupFunction QStringLiteral("Autostart")
+/** DMX Total Control: the functions QLC+ doesn't know, in a copy of the show
+ *  for QLC+ (it skips the element whole and reads on) */
+#define KXMLDTCFunctions QStringLiteral("DtcFunctions")
 
 class Doc final : public QObject
 {

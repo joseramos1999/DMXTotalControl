@@ -37,6 +37,8 @@ private slots:
     void load_legacy_sequence();
     void save();
     void save_sequence();
+    // DMX Total Control: the palettes of the values
+    void palettes();
 };
 
 #endif

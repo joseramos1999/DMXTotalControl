@@ -24,6 +24,7 @@
 
 #include "chaserstep_test.h"
 #include "chaserstep.h"
+#include "fixture.h"
 #include "scene.h"
 #include "doc.h"
 
@@ -347,6 +348,99 @@ void ChaserStep_Test::save_sequence()
     QString valText = xmlReader.readElementText();
     QCOMPARE(valText, QString("1:0,255,2,100,3,200:3:0,255,1,100"));
 
+}
+
+/* DMX Total Control: the palettes of the values of a sequence step, an
+   attribute QLC+ doesn't read */
+void ChaserStep_Test::palettes()
+{
+    typedef QPair<quint32, quint32> Key;
+    ChaserStep step(1, 2, 3, 4);
+    step.values << SceneValue(1, 0, 50) << SceneValue(1, 2, 100) << SceneValue(3, 0, 255) << SceneValue(3, 1, 0);
+    step.palettes.insert(Key(3, 1), 7);
+    step.palettes.insert(Key(3, 0), 7);
+    step.palettes.insert(Key(1, 2), 12);
+    // (a channel the step has no value for is not saved)
+    step.palettes.insert(Key(1, 9), 12);
+
+    // the copies keep them
+    ChaserStep copy(step);
+    QCOMPARE(copy.palettes, step.palettes);
+    ChaserStep assigned;
+    assigned = step;
+    QCOMPARE(assigned.palettes, step.palettes);
+
+    // saved sorted (the file doesn't change from one save to the next),
+    // the values as before
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly | QIODevice::Text);
+    QXmlStreamWriter xmlWriter(&buffer);
+    QVERIFY(step.saveXML(&xmlWriter, 0, true));
+    xmlWriter.setDevice(NULL);
+    buffer.close();
+    QVERIFY2(buffer.data().contains("Palettes=\"1:2:12,3:0:7,3:1:7\">1:0,50,2,100:3:0,255</Step>"),
+             buffer.data().constData());
+
+    // read back
+    buffer.open(QIODevice::ReadOnly | QIODevice::Text);
+    QXmlStreamReader xmlReader(&buffer);
+    xmlReader.readNextStartElement();
+    ChaserStep loaded;
+    int number = -1;
+    QVERIFY(loaded.loadXML(xmlReader, number, NULL));
+    QCOMPARE(loaded.palettes.count(), 3);
+    QCOMPARE(loaded.palettes.value(Key(1, 2)), 12);
+    QCOMPARE(loaded.palettes.value(Key(3, 0)), 7);
+    QCOMPARE(loaded.palettes.value(Key(3, 1)), 7);
+    QCOMPARE(loaded.values.count(), 3);
+    buffer.close();
+
+    // none: not written; a step of a chaser doesn't write them
+    ChaserStep plain = step;
+    plain.palettes.clear();
+    QBuffer plainBuffer;
+    plainBuffer.open(QIODevice::WriteOnly | QIODevice::Text);
+    QXmlStreamWriter plainWriter(&plainBuffer);
+    QVERIFY(plain.saveXML(&plainWriter, 0, true));
+    QVERIFY(step.saveXML(&plainWriter, 1, false));
+    plainWriter.setDevice(NULL);
+    QVERIFY(plainBuffer.data().contains("Palettes") == false);
+
+    // a step of QLC+ has none; what is not fixture:channel:palette is
+    // skipped, and with a show the fixtures that aren't in it
+    auto load = [](const QByteArray &xml, Doc *doc) {
+        QBuffer in;
+        in.setData(xml);
+        in.open(QIODevice::ReadOnly | QIODevice::Text);
+        QXmlStreamReader reader(&in);
+        reader.readNextStartElement();
+        ChaserStep s;
+        int n = -1;
+        s.loadXML(reader, n, doc);
+        return s;
+    };
+    ChaserStep qlc = load("<Step Number=\"0\" FadeIn=\"0\" Hold=\"0\" FadeOut=\"0\" Values=\"2\">1:0,10,1,20</Step>", NULL);
+    QVERIFY(qlc.palettes.isEmpty());
+    QCOMPARE(qlc.values.count(), 2);
+
+    ChaserStep damaged = load("<Step Number=\"0\" FadeIn=\"0\" Hold=\"0\" FadeOut=\"0\" Values=\"2\" "
+                              "Palettes=\"1:2:5,bad,3:x:1,4:1,2:3:-1,:1:2,6:1:2:3,5:0:8\">1:2,10</Step>", NULL);
+    QCOMPARE(damaged.palettes.count(), 2);
+    QCOMPARE(damaged.palettes.value(Key(1, 2)), 5);
+    QCOMPARE(damaged.palettes.value(Key(5, 0)), 8);
+    QCOMPARE(damaged.values.count(), 1);
+
+    Doc doc(this);
+    Fixture *fxi = new Fixture(&doc);
+    fxi->setChannels(4);
+    QVERIFY(doc.addFixture(fxi));
+    const QByteArray xml = QString("<Step Number=\"0\" FadeIn=\"0\" Hold=\"0\" FadeOut=\"0\" Values=\"2\" "
+                                   "Palettes=\"%1:1:3,%2:1:3\">%1:1,255:%2:1,255</Step>")
+                               .arg(fxi->id()).arg(fxi->id() + 9).toUtf8();
+    ChaserStep inShow = load(xml, &doc);
+    QCOMPARE(inShow.palettes.count(), 1);
+    QCOMPARE(inShow.palettes.value(Key(fxi->id(), 1)), 3);
+    QCOMPARE(inShow.values.count(), 1);
 }
 
 QTEST_APPLESS_MAIN(ChaserStep_Test)

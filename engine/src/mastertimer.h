@@ -75,15 +75,18 @@ public:
     static uint tick();
 
     /** DMX Total Control: run one tick now, without the timer thread
-     *  (offline rendering, e.g. turning effects into steps) */
+     *  (offline rendering, e.g. turning effects into steps). The universe
+     *  threads get no frame from it: the caller renders the universes
+     *  (Universe::renderFrame) */
     void renderTick();
 
 signals:
     void tickReady();
 
 private:
-    /** Execute one timer tick (called by MasterTimerPrivate) */
-    void timerTick();
+    /** Execute one timer tick (called by MasterTimerPrivate). DMX Total
+     *  Control: $wakeUniverses false (an offline tick) emits no tickReady */
+    void timerTick(bool wakeUniverses = true);
 
 private:
     /** The timer tick frequency in Hertz */
@@ -118,6 +121,24 @@ public:
     /** DMX Total Control: a cuelist tells it went to a cue (from its write
      *  method, in the timer thread): emits cueStarted */
     void notifyCueStarted(quint32 functionId, quint32 cueUid) { emit cueStarted(functionId, cueUid); }
+    /** DMX Total Control: the same for a cue with actions, started by a GO,
+     *  a Follow, a Wait or a jump: emits cueActions */
+    void notifyCueActions(quint32 functionId, quint32 cueUid) { emit cueActions(functionId, cueUid); }
+
+    /** DMX Total Control: the speed of every cuelist (its fades, delays,
+     *  Follow and Wait), on top of its own live speed: 2 plays them twice as
+     *  fast. 0.1 - 10, 1 by default; not saved. Any thread; the cuelists
+     *  read it on each frame, also for the fades that run */
+    void setCueSpeed(qreal speed);
+    qreal cueSpeed() const;
+
+    /** DMX Total Control: the time of a MIDI timecode that came in (ms from
+     *  00:00:00:00) and its frame rate (24, 25, 29: 29.97 drop-frame, 30).
+     *  Any thread; the Timecode cuelists that follow it read it each frame */
+    void setTimecode(qint64 ms, int fps);
+    /** The last time setTimecode got, and its frame rate in $fps; -1 when
+     *  none came in the last 250 ms (a source that stopped, or none) */
+    qint64 timecode(int *fps = nullptr) const;
 
     /** DMX Total Control: call it before $function is deleted (and after it
      *  left the Doc). It stops, and this returns once the timer thread holds
@@ -139,6 +160,11 @@ signals:
     /** DMX Total Control: a cuelist went to a cue (GO, BACK, jump, follow).
      *  Emitted in the timer thread (receivers in the GUI thread get it queued) */
     void cueStarted(quint32 functionId, quint32 cueUid);
+    /** DMX Total Control: a cue with actions started (not by a BACK, nor a
+     *  super-scene seek): the app does them. Emitted in the timer thread */
+    void cueActions(quint32 functionId, quint32 cueUid);
+    /** DMX Total Control: setCueSpeed changed it (in the thread that called it) */
+    void cueSpeedChanged();
 
 private:
     /** Execute one timer tick for each registered Function */
@@ -157,6 +183,16 @@ private:
 
     /** DMX Total Control: the ticks done (see releaseFunction) */
     std::atomic<quint64> m_ticksDone;
+
+    /** DMX Total Control: see setCueSpeed */
+    std::atomic<double> m_cueSpeed;
+
+    /** DMX Total Control: see setTimecode; when it came in (m_timecodeClock
+     *  ms, -1: never) */
+    std::atomic<qint64> m_timecode;
+    std::atomic<int> m_timecodeFps;
+    std::atomic<qint64> m_timecodeAt;
+    QElapsedTimer m_timecodeClock;
 
     /*************************************************************************
      * DMX Sources

@@ -43,6 +43,9 @@ class ZoneManager : public QAbstractListModel
     Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY pausedChanged)
     /** Every group is folded in Live (false without groups) */
     Q_PROPERTY(bool allFolded READ allFolded NOTIFY foldedChanged)
+    /** The scene pressed last (-1: none), the target of the mappings on
+     *  "the selected scene" */
+    Q_PROPERTY(int selectedScene READ selectedScene NOTIFY selectedSceneChanged)
 
 public:
     enum Roles
@@ -90,6 +93,13 @@ public:
      *  them all while one is unfolded, else unfolds them all) */
     Q_INVOKABLE void setAllFolded(bool folded);
 
+    /** The selected scene: the last one pressed in Live, on the SHOW, on a
+     *  controller or on the phone, or the one next/previous started (not a
+     *  fader of the SHOW, a playback, nor the jump at the end of a scene). It stays selected after it stops;
+     *  it is not saved: a new or opened show has none, a deleted one goes */
+    int selectedScene() const;
+    void selectScene(quint32 fid);
+
     /** Apply the release mode of a scene about to start in a group to all the groups */
     void releaseFor(Zone *source, quint32 fid);
     /** Whether $fid starting in $source stops $running, which $zone plays
@@ -106,6 +116,11 @@ signals:
     void pausedChanged();
     /** A group folded or unfolded, or the groups changed (allFolded) */
     void foldedChanged();
+    void selectedSceneChanged();
+
+private slots:
+    /** A deleted scene isn't selected any more */
+    void slotFunctionRemoved(quint32 fid);
 
 private:
     /** IDs are never given twice in a show (deleted groups included) */
@@ -115,6 +130,8 @@ private:
     void resetPause();
     /** A new group tells when it folds */
     void follow(Zone *zone);
+    /** No scene selected (a new or opened show) */
+    void clearSelection();
 
 private:
     Doc *m_doc;
@@ -124,6 +141,8 @@ private:
     QSet<quint32> m_pausedFunctions;
     /** The ID of the next group: above every ID given in the show */
     quint32 m_nextZoneId;
+    /** The function ID of the selected scene, -1: none */
+    int m_selectedScene;
 };
 
 #endif

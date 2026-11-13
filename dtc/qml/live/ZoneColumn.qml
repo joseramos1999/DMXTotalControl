@@ -408,6 +408,9 @@ Rectangle {
                     large: column.operatorMode
                     flash: !!tileCell.info.flash
                     tap: tileCell.info.tap || 0
+                    // (only while a mapping drives it, or to learn one)
+                    selected: (Core.mapping.usesSelectedScene || Core.mapping.learnMode)
+                              && Core.zones.selectedScene === tileCell.modelData
                     onPressedDown: column.zoneObject.press(tileCell.modelData)
                     onReleasedUp: column.zoneObject.unpress(tileCell.modelData)
                     onContextRequested: {

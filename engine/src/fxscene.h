@@ -90,6 +90,11 @@ public:
         bool panInvert;
         bool tiltInvert;
         bool reverse;
+        /** DMX Total Control: how far behind the others the fixture goes, in
+         *  degrees of the wave (360: a cycle; in a step, one place), and how
+         *  much later it does the FX, in ms. Always 0 for the layer itself */
+        int shift = 0;
+        int delay = 0;
 
         bool operator==(const Shape &other) const;
         bool operator!=(const Shape &other) const { return !(*this == other); }
@@ -109,8 +114,17 @@ public:
         std::optional<bool> panInvert;
         std::optional<bool> tiltInvert;
         std::optional<bool> reverse;
+        /** DMX Total Control: its shift (degrees behind, 0-1440) and its delay
+         *  (ms behind, 0-60000), set by hand. They add to the wave and the
+         *  phase, and stay when the shape goes back to the layer's */
+        std::optional<int> shift;
+        std::optional<int> delay;
 
         bool isEmpty() const;
+        /** Whether it does the shape, size, direction or phase its own way */
+        bool hasShape() const;
+        /** Whether it has a shift or a delay */
+        bool hasOffset() const;
         bool operator==(const Own &other) const;
         bool operator!=(const Own &other) const { return !(*this == other); }
     };
@@ -155,6 +169,10 @@ public:
         QList<quint32> fixtures;
         /** DMX Total Control: the fixtures that do something their own way */
         QMap<quint32, Own> own;
+        /** DMX Total Control: a dimmer layer on fixtures without a dimmer dims
+         *  their colour (a virtual dimmer) from this level, 0-255; -1: auto
+         *  (the base of the real dimmers of the layer, or full) */
+        int virtualBase = -1;
 
         bool isPanTilt() const { return param == QLatin1String("pantilt"); }
         /** The shape of the layer, and the one of $fixture with what it does its own way */
@@ -165,7 +183,8 @@ public:
         QMap<quint32, Own> tidyOwn() const;
         /** DMX Total Control: the fields a layer doesn't use (and doesn't save) don't count:
          *  figure and swingTilt without pan/tilt, groupSize without grouping, seed
-         *  unless the order is random; neither does what $own has in vain (tidyOwn) */
+         *  unless the order is random, virtualBase but on the dimmer; neither does
+         *  what $own has in vain (tidyOwn) */
         bool operator==(const Layer &other) const;
         bool operator!=(const Layer &other) const { return !(*this == other); }
     };
@@ -238,6 +257,26 @@ public:
      *  several heads; -1 for the channels of the whole fixture */
     static int headOf(const Fixture *fixture, quint32 channel);
 
+    /** DMX Total Control: the virtual dimmer of a fixture without a dimmer (RGB
+     *  only...): its emitters (red, green, blue, white, amber, UV, lime,
+     *  indigo) that the grand master scales, each with its fine channel or
+     *  QLCChannel::invalid(). A dimmer FX dims them all together. Empty when
+     *  the fixture has a dimmer (channelFor finds one) */
+    static QList<QPair<quint32, quint32>> virtualDimmerChannels(const Fixture *fixture);
+    /** DMX Total Control: whether an FX on $param moves something of $fixture:
+     *  pan and tilt for "pantilt", its channel, or a virtual dimmer for "dimmer" */
+    static bool hasParam(const Fixture *fixture, const QString &param);
+    /** DMX Total Control: the channels (and their fine channels, or
+     *  QLCChannel::invalid()) a layer on $param plays on $fixture, the
+     *  emitters of a virtual dimmer included */
+    static QList<QPair<quint32, quint32>> layerChannels(const Fixture *fixture, const QString &param);
+    /** DMX Total Control: the level the virtual dimmer of a dimmer layer starts
+     *  from when it is auto: the base in $values of the first fixture of
+     *  $order with a real dimmer that has one (a mixed rig goes together),
+     *  else full (255) */
+    static int autoVirtualBase(const Doc *doc, const QList<quint32> &order,
+                               const QHash<QPair<quint32, quint32>, uchar> &values);
+
     /** The set (0..sets-1) of each fixture of $order once grouped, and how many sets */
     static QList<int> groupSets(const Doc *doc, const QList<quint32> &order, int grouping, int groupSize, int *sets);
     /** The fixtures of a layer in the order of the effect */
@@ -250,6 +289,12 @@ public:
      *  Control: the layer going at $bpm (x1), which turns its wait (ms) into cycles: for
      *  a layer that follows the BPM, the BPM of the show or its tapped rhythm (syncedBpm) */
     static qreal positionOf(const Layer &layer, const Shape &shape, qreal cyclePos, int set, int sets, qreal bpm);
+    /** DMX Total Control: the delay of $shape in cycles of $layer going at
+     *  $bpm (x1), as its wait: when the FX starts, the fixture waits at its
+     *  base until the layer has gone that far */
+    static qreal delayCycles(const Layer &layer, const Shape &shape, qreal bpm);
+    /** DMX Total Control: the longest delay of a fixture of its layers, in ms */
+    uint longestDelay() const;
     /** DMX Total Control: the BPM the layers that follow it go at: its tapped rhythm,
      *  or else the BPM of the show */
     qreal syncedBpm() const;
@@ -361,12 +406,34 @@ private:
         int twinSet;
         bool hasBase;
         quint32 base;
+        /** DMX Total Control: the virtual dimmer that dims it (m_scalers), or -1 */
+        int scaler = -1;
+    };
+
+    /** DMX Total Control: the virtual dimmer of a fixture without a dimmer: a
+     *  dimmer layer on it scales its emitters (the targets with its index) */
+    struct Scaler
+    {
+        quint32 fixture;
+        int layer;
+        int set;
+        int sets;
+        int index;
+        int twinSet;
+        /** the level it dims from when the layer's is auto (autoVirtualBase) */
+        int autoBase;
     };
 
     void buildTargets();
+    /** DMX Total Control: the scale (0..1) of each virtual dimmer at this
+     *  frame, as the dimmer layer would set a dimmer */
+    QList<qreal> scalerLevels(const QList<QList<bool>> &twins, qreal phaseShift, qreal syncedBpm,
+                              qreal size, qreal fadeFactor) const;
     QSharedPointer<GenericFader> getFader(Universe *universe);
 
     QList<Target> m_targets;
+    /** DMX Total Control: the virtual dimmers of the targets */
+    QList<Scaler> m_scalers;
     /** DMX Total Control: the fixtures of each layer in the order of the effect */
     QList<QList<quint32>> m_layerOrders;
     QList<qreal> m_layerPos;

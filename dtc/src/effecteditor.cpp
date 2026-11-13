@@ -25,6 +25,7 @@
 #include <QDebug>
 
 #include "effecteditor.h"
+#include "palettemanager.h"
 #include "appsettings.h"
 #include "zonemanager.h"
 #include "programmer.h"
@@ -194,6 +195,7 @@ QVariantMap EffectEditor::info(quint32 id) const
         map.insert("fixtures", fx->fixtures().count());
         QVariantList layers;
         const QList<FXScene::Layer> list = fx->layers();
+        const QHash<QPair<quint32, quint32>, uchar> values = fx->values();
         for (int i = 0; i < list.count(); i++)
         {
             QVariantMap layer = FxTools::layerToMap(list.at(i));
@@ -204,8 +206,14 @@ QVariantMap EffectEditor::info(quint32 id) const
             layer.insert("index", i);
             layer.insert("count", fixtures.count());
             layer.insert("sets", sets);
-            // the fixtures that do it their own way (made in the programmer)
-            layer.insert("ownCount", list.at(i).tidyOwn().count());
+            // the fixtures that do it their own way (made in the programmer).
+            // DMX Total Control: apart from the shift and the delay, which
+            // its fixtures show (in the order of the effect)
+            layer.insert("ownCount", FxTools::ownShapeCount(list.at(i)));
+            layer.insert("offsetCount", FxTools::offsetCount(list.at(i)));
+            layer.insert("rows", FxTools::fixtureRows(m_doc, list.at(i), fx->fixtures(), {}));
+            // DMX Total Control: the fixtures without a dimmer it dims, and from what level
+            layer.insert(FxTools::virtualDimmer(m_doc, list.at(i), fixtures, values));
             layers.append(layer);
         }
         map.insert("layers", layers);
@@ -482,6 +490,25 @@ quint32 EffectEditor::duplicate(quint32 id)
  * Steps
  *********************************************************************/
 
+// the $written values of step $index now come from the palettes $refs say
+// (the others of the step keep theirs), as a scene recorded over
+static void keepStepPalettes(Sequence *sequence, int index, const QList<SceneValue> &written,
+                             const QHash<QPair<quint32, quint32>, int> &refs)
+{
+    if (index < 0 || index >= sequence->stepsCount())
+        return;
+    ChaserStep step = sequence->steps().at(index);
+    QHash<QPair<quint32, quint32>, int> palettes = step.palettes;
+    for (const SceneValue &scv : written)
+        palettes.remove(qMakePair(scv.fxi, scv.channel));
+    for (auto it = refs.cbegin(); it != refs.cend(); ++it)
+        palettes.insert(it.key(), it.value());
+    if (palettes == step.palettes)
+        return;
+    step.palettes = palettes;
+    sequence->replaceStep(step, index);
+}
+
 int EffectEditor::createSteps(const QString &name, int zoneIndex)
 {
     QList<SceneValue> values = m_programmer->sceneValues();
@@ -522,6 +549,8 @@ int EffectEditor::createSteps(const QString &name, int zoneIndex)
     bound->setName(tr("%1 (channels)").arg(sequence->name()));
 
     sequence->applyDumpValues(values, -1);
+    // the values that come from palettes keep coming from them
+    keepStepPalettes(sequence, 0, values, m_programmer->paletteRefs());
     setStepTimes(quint32(id), QVariantList() << 0, 0, DEFAULT_STEP_HOLD, 0);
     return id;
 }
@@ -533,6 +562,8 @@ QVariantList EffectEditor::steps(quint32 id) const
     if (sequence == nullptr)
         return list;
 
+    // (built without a programmer or palettes in some tests)
+    const PaletteManager *palettes = m_programmer != nullptr ? m_programmer->palettes() : nullptr;
     const QList<ChaserStep> chaserSteps = sequence->steps();
     for (int i = 0; i < chaserSteps.count(); i++)
     {
@@ -543,6 +574,10 @@ QVariantList EffectEditor::steps(quint32 id) const
             if (scv.value > 0)
                 lit++;
         }
+        // the palettes it uses, in the order of the palettes
+        QSet<int> used;
+        for (int pid : step.palettes)
+            used.insert(pid);
 
         QVariantMap s;
         s.insert("index", i);
@@ -555,6 +590,7 @@ QVariantList EffectEditor::steps(quint32 id) const
         s.insert("fadeOut", step.fadeOut);
         s.insert("channels", lit);
         s.insert("note", step.note);
+        s.insert("palettes", palettes != nullptr ? palettes->namesOf(used) : QStringList());
         list.append(s);
     }
     return list;
@@ -631,6 +667,8 @@ bool EffectEditor::addStep(quint32 id, int after)
     }
     // speedAdd: an infinite hold stays infinite (a plain + overflows)
     step.duration = Function::speedAdd(step.fadeIn, step.hold);
+    // the values that come from palettes keep coming from them
+    step.palettes = m_programmer->paletteRefs();
     sequence->replaceStep(step, last);
 
     if (after >= 0 && after + 1 < last)
@@ -647,8 +685,11 @@ bool EffectEditor::updateStep(quint32 id, int index)
     if (sequence == nullptr || index < 0 || index >= sequence->stepsCount() || values.isEmpty())
         return false;
 
-    extendBoundScene(m_doc, sequence, values);
+    // (steps that lost their channels take no values, and no palettes)
+    const bool extended = extendBoundScene(m_doc, sequence, values);
     sequence->applyDumpValues(values, index);
+    if (extended)
+        keepStepPalettes(sequence, index, values, m_programmer->paletteRefs());
     touch(id);
     return true;
 }
@@ -659,7 +700,9 @@ bool EffectEditor::loadStep(quint32 id, int index)
     if (sequence == nullptr || index < 0 || index >= sequence->stepsCount())
         return false;
 
-    m_programmer->loadValues(sequence->steps().at(index).values);
+    // with the palettes its values come from: they light up on the selection
+    const ChaserStep step = sequence->steps().at(index);
+    m_programmer->loadValues(step.values, step.palettes);
     return true;
 }
 
@@ -1757,6 +1800,71 @@ void EffectEditor::removeFxLayer(quint32 id, int index)
     fx->setLayers(layers);
     m_doc->setModified();
     emit edited(id);
+}
+
+/** DMX Total Control: the FX scene $id of $doc when it has a layer $index, else nullptr */
+static FXScene *fxWithLayer(Doc *doc, quint32 id, int index)
+{
+    FXScene *fx = qobject_cast<FXScene *>(doc->function(id));
+    if (fx == nullptr || index < 0 || index >= fx->layers().count())
+        return nullptr;
+    return fx;
+}
+
+/** $layers go to $fx: whether they changed it (its targets stay: the
+ *  shifts and delays are read every frame) */
+static bool storeFxLayers(FXScene *fx, const QList<FXScene::Layer> &layers)
+{
+    if (layers == fx->layers())
+        return false;
+    fx->setLayers(layers);
+    return true;
+}
+
+void EffectEditor::setFxOffset(quint32 id, int index, quint32 fixtureId, const QString &key, int value)
+{
+    FXScene *fx = fxWithLayer(m_doc, id, index);
+    if (fx == nullptr || FxTools::offsetKeys().contains(key) == false)
+        return;
+    QList<FXScene::Layer> layers = fx->layers();
+    // a fixture of the layer (one with none of its own has the ones of the scene)
+    if (FXScene::orderedFixtures(layers.at(index), fx->fixtures()).contains(fixtureId) == false)
+        return;
+    FxTools::setOffset(layers[index], { fixtureId }, key, value);
+    if (storeFxLayers(fx, layers))
+    {
+        m_doc->setModified();
+        emit edited(id);
+    }
+}
+
+void EffectEditor::fanFxOffset(quint32 id, int index, const QString &key, int last)
+{
+    FXScene *fx = fxWithLayer(m_doc, id, index);
+    if (fx == nullptr || FxTools::offsetKeys().contains(key) == false)
+        return;
+    // over all its fixtures, in the order of the effect
+    QList<FXScene::Layer> layers = fx->layers();
+    FxTools::fanOffset(layers[index], FXScene::orderedFixtures(layers.at(index), fx->fixtures()), key, last);
+    if (storeFxLayers(fx, layers))
+    {
+        m_doc->setModified();
+        emit edited(id);
+    }
+}
+
+void EffectEditor::clearFxOffsets(quint32 id, int index)
+{
+    FXScene *fx = fxWithLayer(m_doc, id, index);
+    if (fx == nullptr)
+        return;
+    QList<FXScene::Layer> layers = fx->layers();
+    FxTools::clearOwn(layers[index], FxTools::offsetKeys());
+    if (storeFxLayers(fx, layers))
+    {
+        m_doc->setModified();
+        emit edited(id);
+    }
 }
 
 QVariantList EffectEditor::fxPreview(quint32 id, int index, qreal cyclePos) const

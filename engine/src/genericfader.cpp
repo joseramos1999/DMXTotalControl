@@ -142,6 +142,26 @@ void GenericFader::removeChannel(quint32 fixtureID, quint32 channel)
     m_channelCache.remove(hash);
 }
 
+bool GenericFader::channelCopy(quint32 fixtureID, quint32 channel, FadeChannel *out) const
+{
+    // DMX Total Control: the fine channel of a pair is kept with its coarse
+    // one, as channelFaderLocked keeps it
+    QReadLocker l(&m_channelsLock);
+    quint32 hash = channelHash(fixtureID, channel);
+    if (m_channels.contains(hash) == false && m_handleSecondary)
+    {
+        const QSharedPointer<FadeChannel> channelTemplate = m_channelCache.value(hash);
+        if (channelTemplate.isNull() == false && channelTemplate->primaryChannel() != QLCChannel::invalid())
+            hash = channelHash(fixtureID, channelTemplate->primaryChannel());
+    }
+
+    auto it = m_channels.constFind(hash);
+    if (it == m_channels.cend())
+        return false;
+    *out = it.value();
+    return true;
+}
+
 void GenericFader::refreshFixtures(const Doc *doc, quint32 universeID)
 {
     // DMX Total Control: new channels detect the fixtures again
@@ -251,6 +271,52 @@ FadeChannel &GenericFader::channelFaderLocked(const Doc *doc, Universe *universe
     return channelIterator.value();
 }
 
+void GenericFader::forEachChannel(const std::function<void(FadeChannel &)> &updater)
+{
+    // DMX Total Control: as updateChannel, on all of them
+    QWriteLocker l(&m_channelsLock);
+    for (FadeChannel &fc : m_channels)
+        updater(fc);
+}
+
+quint32 GenericFader::valueBelow(const Universe *universe, quint32 address, int count)
+{
+    // DMX Total Control
+    quint32 value = 0;
+    for (int i = 0; i < count; i++)
+        value = (value << 8) + universe->valueBelow(int(address) + i);
+    return value;
+}
+
+quint32 GenericFader::mixBelow(const FadeChannel &fc, quint32 below, qreal level)
+{
+    // DMX Total Control: a channel that can't fade jumps as soon as the
+    // level is up
+    const qint64 own = qint64(fc.current());
+    if (fc.canFade() == false)
+        return level > 0 ? quint32(own) : below;
+    const qint64 maxValue = (qint64(1) << (8 * fc.channelCount())) - 1;
+    const qint64 out = qint64(below) + qRound64(qreal(own - qint64(below)) * level);
+    return quint32(qBound(qint64(0), out, maxValue));
+}
+
+uint GenericFader::stepOf(int flags, uint elapsedMs) const
+{
+    // DMX Total Control: a hand crossfade sets the time of a Manual channel:
+    // a step of 0 ms only takes a new target (one going to what's below).
+    // Fading out, it runs on the clock
+    return (flags & FadeChannel::Manual) && m_fadeOut == false ? 0 : elapsedMs;
+}
+
+bool GenericFader::leaves(int flags, const FadeChannel &fc) const
+{
+    // DMX Total Control: a Manual channel stays at its end: the hand can
+    // bring it back
+    if ((flags & FadeChannel::Manual) && m_fadeOut == false)
+        return false;
+    return (m_fadeOut || (flags & FadeChannel::AutoRemove)) && fc.isReady();
+}
+
 void GenericFader::write(Universe *universe, uint elapsedMs)
 {
     if (m_monitoring)
@@ -286,6 +352,22 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
                 fc.setTarget(universe->valueBelow(address + i), i);
         }
 
+        // DMX Total Control: an Override cuelist. The level mixes its value
+        // with what the faders below send (both bytes of a pair as one): at
+        // 0 what's below, at full its value, which replaces it (no HTP)
+        if (flags & FadeChannel::MixBelow)
+        {
+            if (m_paused == false)
+                fc.nextStep(stepOf(flags, elapsedMs));
+            const quint32 out = mixBelow(fc, valueBelow(universe, address, channelCount), compIntensity);
+            fc.setModulatedOutput(out);
+            for (int i = 0; i < channelCount; i++)
+                universe->write(int(address) + i, uchar(out >> (8 * (channelCount - 1 - i))), true);
+            if (leaves(flags, fc))
+                it.remove();
+            continue;
+        }
+
         // DMX Total Control: an FX layer. Its base (fading in) or, without a
         // base, what the faders below send now, plus the offset of the wave
         if (flags & FadeChannel::Modulated)
@@ -314,6 +396,14 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
                 offset = qint64(qreal(offset) * compIntensity);
 
             quint32 value = quint32(qBound(qint64(0), base + offset, maxValue));
+            // DMX Total Control: a virtual dimmer dims the value, as a dimmer
+            // would. On what's below, the fader of an intensity scales its
+            // effect too: at 0 what's below stays. (1: the exact value)
+            qreal scale = fc.modulationScale();
+            if (below && (flags & FadeChannel::Intensity))
+                scale = 1.0 + (scale - 1.0) * compIntensity;
+            if (scale != 1.0)
+                value = quint32(qBound(qint64(0), qRound64(qreal(value) * scale), maxValue));
             fc.setModulatedOutput(value);
             const uchar coarse = uchar(wide ? value >> 8 : value);
             if (below)
@@ -333,8 +423,9 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
         }
 
         // Calculate the next step
+        // DMX Total Control: a Manual channel at the time its crossfade set
         if (m_paused == false)
-            fc.nextStep(elapsedMs);
+            fc.nextStep(stepOf(flags, elapsedMs));
 
         quint32 value = fc.current();
 
@@ -395,7 +486,7 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
         // they hide the HTP values of the lower faders. A single channel
         // flagged AutoRemove (a cuelist releasing it) leaves too, once it
         // has reached what's below
-        if ((m_fadeOut || (flags & FadeChannel::AutoRemove)) && fc.isReady())
+        if (leaves(flags, fc))
             it.remove();
     }
 
@@ -486,10 +577,12 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
         else if ((fc.flags() & FadeChannel::Relative) == 0)
         {
             // DMX Total Control: a channel already fading to what's below
-            // (SetTarget) holds output values: scaling it again would dip
+            // (SetTarget) holds output values: scaling it again would dip.
+            // One mixed with what's below keeps its own value: it goes on
+            // mixing it, as it goes to what's below
             if (fc.canFade() && (fc.flags() & FadeChannel::Intensity) &&
                 (fc.flags() & FadeChannel::CrossFade) == 0 &&
-                (fc.flags() & FadeChannel::SetTarget) == 0)
+                (fc.flags() & (FadeChannel::SetTarget | FadeChannel::MixBelow)) == 0)
                 fc.setStart(fc.current(intensity() * parentIntensity()));
             else
                 fc.setStart(fc.current());
@@ -504,6 +597,8 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
         fc.setReady(false);
         fc.setFadeTime(fc.canFade() ? fadeTime : 0);
         fc.setDelay(delays.value(fc.fixture(), 0));
+        // DMX Total Control: a release is linear (not the curve of a cue)
+        fc.setCurve(FadeChannel::CurveLinear);
         // if flashing, remove the flag and treat
         // it like a regular fade out to target
         fc.removeFlag(FadeChannel::Flashing);

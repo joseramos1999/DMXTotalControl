@@ -26,6 +26,8 @@ import DMXTotalControl.Backend
  * A block of a super scene: drag it (to another track too), drag its edges
  * to resize it, drag the handles of its top corners for the fades. A scene
  * that loops shows where each cycle ends; audio shows its waveform.
+ * Ctrl+click adds it to the selection or takes it out, Shift+click selects
+ * from the last block clicked; dragging a selected block moves them all.
  */
 Item {
     id: blockItem
@@ -35,8 +37,12 @@ Item {
     property int trackId: -1
     property bool trackLocked: false
 
-    readonly property bool selected: editor.selectedBlock === block.id
+    readonly property bool selected: editor.selectedBlocks.indexOf(block.id) >= 0
+    // the only one selected: its fades can be dragged
+    readonly property bool single: selected && editor.selectedBlocks.length === 1
     readonly property bool locked: !!block.locked || trackLocked
+    // moved with another block of the selection that is dragged
+    readonly property bool following: editor.dragBlock >= 0 && editor.dragBlock !== block.id && selected && !locked
     readonly property bool audio: block.type === "Audio"
     readonly property real px: editor.pxPerMs
 
@@ -47,18 +53,22 @@ Item {
     property real deltaMs: 0
     readonly property bool dragging: mode !== "" && (Math.abs(deltaMs) > 0 || mode === "move" && Math.abs(dragY) > 4)
     property real dragY: 0
+    // pressed when it was one of several selected: a click selects it alone
+    property bool inGroup: false
 
-    // where it is drawn, the drag included
-    readonly property real startMs: mode === "move" || mode === "left" ? Math.max(0, editor.snap(block.start + deltaMs)) : block.start
+    // where it is drawn, the drag included (the group moves as the editor says)
+    readonly property real startMs: mode === "move" || following ? block.start + editor.dragDeltaMs
+                                  : mode === "left" ? Math.max(0, editor.snap(block.start + deltaMs)) : block.start
     readonly property real endMs: mode === "right" ? Math.max(block.start + 100, editor.snap(block.start + block.duration + deltaMs))
                                  : mode === "left" ? block.start + block.duration
                                  : startMs + block.duration
     readonly property real fadeInMs: mode === "fadeIn" ? Math.max(0, Math.min(block.duration, block.fadeIn + deltaMs)) : block.fadeIn
     readonly property real fadeOutMs: mode === "fadeOut" ? Math.max(0, Math.min(block.duration, block.fadeOut - deltaMs)) : block.fadeOut
+    readonly property bool moving: dragging || following && editor.groupMoving
 
     x: startMs * px - editor.scrollX
-    y: 4 + (mode === "move" ? dragY : 0)
-    z: dragging ? 10 : (selected ? 2 : 1)
+    y: 4 + (mode === "move" || following ? editor.dragY : 0)
+    z: moving ? 10 : (selected ? 2 : 1)
     width: Math.max(4, (endMs - startMs) * px)
     height: parent ? parent.height - 8 : 50
 
@@ -70,7 +80,7 @@ Item {
         color: Qt.rgba(blockItem.tint.r, blockItem.tint.g, blockItem.tint.b, blockItem.selected ? 0.6 : 0.38)
         border.color: blockItem.selected ? Qt.lighter(blockItem.tint, 1.5) : blockItem.tint
         border.width: blockItem.selected ? 2 : 1
-        opacity: blockItem.dragging ? 0.8 : 1
+        opacity: blockItem.moving ? 0.8 : 1
         clip: true
 
         // the waveform of the audio
@@ -178,7 +188,7 @@ Item {
 
     // the handles of the fades
     Rectangle {
-        visible: blockItem.selected && !blockItem.locked
+        visible: blockItem.single && !blockItem.locked
         x: Math.min(blockItem.width - 10, fades.fin) - 5
         y: -5
         width: 10; height: 10; radius: 5
@@ -186,7 +196,7 @@ Item {
         border.color: blockItem.tint
     }
     Rectangle {
-        visible: blockItem.selected && !blockItem.locked
+        visible: blockItem.single && !blockItem.locked
         x: Math.max(0, blockItem.width - fades.fout) - 5
         y: -5
         width: 10; height: 10; radius: 5
@@ -204,9 +214,9 @@ Item {
             if (blockItem.locked)
                 return "move"
             let y = my - 6
-            if (blockItem.selected && y < 8 && Math.abs(mx - fades.fin) < 8)
+            if (blockItem.single && y < 8 && Math.abs(mx - fades.fin) < 8)
                 return "fadeIn"
-            if (blockItem.selected && y < 8 && Math.abs(mx - (blockItem.width - fades.fout)) < 8)
+            if (blockItem.single && y < 8 && Math.abs(mx - (blockItem.width - fades.fout)) < 8)
                 return "fadeOut"
             if (mx < 6 && blockItem.width > 16)
                 return "left"
@@ -222,12 +232,48 @@ Item {
         }
 
         onPressed: (ev) => {
-            editor.selectBlock(blockItem.block.id, blockItem.trackId)
+            let owner = editor
+            let id = blockItem.block.id
+            let trackId = blockItem.trackId
+            blockItem.inGroup = false
+            // first a value typed in a field goes to its own block (the field
+            // loses the focus), and Delete comes to the editor. That value
+            // draws the blocks again, this one too: it is selected, not
+            // dragged
+            let revision = Core.timeline.revision
+            owner.forceActiveFocus()
+            let redrawn = Core.timeline.revision !== revision
             if (ev.button === Qt.RightButton) {
-                blockMenu.popup()
+                // (the menu acts on the selection when the block is in it)
+                if (!owner.isSelected(id))
+                    owner.selectOnly(id, trackId)
+                if (!redrawn)
+                    blockMenu.popup()
                 return
             }
+            // Ctrl and Shift select, they don't drag
+            if (ev.modifiers & Qt.ControlModifier) {
+                owner.toggleBlock(id, trackId)
+                return
+            }
+            if (ev.modifiers & Qt.ShiftModifier) {
+                owner.selectRange(id, trackId)
+                return
+            }
+            let inGroup = owner.isSelected(id) && owner.selectedBlocks.length > 1
+            if (owner.isSelected(id)) {
+                owner.anchorBlock = id
+                owner.selectedTrack = trackId
+            } else {
+                owner.selectOnly(id, trackId)
+            }
+            if (redrawn)
+                return
+            blockItem.inGroup = inGroup
             blockItem.mode = blockItem.locked ? "" : zoneAt(ev.x, ev.y)
+            editor.dragging = blockItem.mode !== ""
+            if (blockItem.mode === "move")
+                editor.startGroupDrag(id)
             let p = mapToItem(editor, ev.x, ev.y)
             blockItem.pressX = p.x
             blockItem.pressY = p.y
@@ -239,26 +285,43 @@ Item {
                 return
             let p = mapToItem(editor, ev.x, ev.y)
             blockItem.deltaMs = (p.x - blockItem.pressX) / blockItem.px
-            if (blockItem.mode === "move")
+            if (blockItem.mode === "move") {
+                // this block snaps to the grid, the others keep their distance;
+                // the first one stops at 0
                 blockItem.dragY = p.y - blockItem.pressY
+                editor.dragY = blockItem.dragY
+                editor.dragDeltaMs = Math.max(-editor.groupMinStart,
+                                              editor.snap(blockItem.block.start + blockItem.deltaMs) - blockItem.block.start)
+                editor.dragGroupTo(blockItem.trackId, p.y)
+            }
         }
         onReleased: (ev) => {
+            // (where the mouse is before the block goes back to its row)
+            let p = mapToItem(editor, ev.x, ev.y)
             let mode = blockItem.mode
             let wasDragging = blockItem.dragging
             blockItem.mode = ""
-            if (mode === "" || !wasDragging && mode !== "move")
-                return
+            editor.dragging = false
             let id = blockItem.block.id
             let showId = editor.showId
             if (mode === "move") {
-                // to the track under the mouse
-                let p = mapToItem(editor, ev.x, ev.y)
-                let target = editor.trackAt(p.y)
-                if (wasDragging || (target >= 0 && target !== blockItem.trackId)) {
-                    let start = Math.max(0, editor.snap(blockItem.block.start + blockItem.deltaMs))
-                    Core.timeline.moveBlock(showId, id, target >= 0 ? target : blockItem.trackId, start)
-                }
-            } else if (mode === "left") {
+                // to the tracks under the mouse (released on another track
+                // without a drag too)
+                editor.dragGroupTo(blockItem.trackId, p.y)
+                let ids = editor.dragIds, delta = Math.round(editor.dragDeltaMs), rows = editor.dragRows
+                editor.endGroupDrag()
+                if (wasDragging || rows !== 0)
+                    Core.timeline.moveBlocks(showId, ids, delta, rows)
+                else if (blockItem.inGroup)
+                    editor.selectOnly(id, blockItem.trackId)
+                return
+            }
+            // a click on a block of several: it alone
+            if (!wasDragging && blockItem.inGroup)
+                editor.selectOnly(id, blockItem.trackId)
+            if (mode === "" || !wasDragging)
+                return
+            if (mode === "left") {
                 let end = blockItem.block.start + blockItem.block.duration
                 let start = Math.min(end - 100, Math.max(0, editor.snap(blockItem.block.start + blockItem.deltaMs)))
                 Core.timeline.resizeBlock(showId, id, start, end - start)
@@ -271,24 +334,44 @@ Item {
                 Core.timeline.setBlock(showId, id, "fadeOut", Math.round(blockItem.fadeOutMs))
             }
         }
-        onCanceled: blockItem.mode = ""
+        onCanceled: { blockItem.mode = ""; editor.dragging = false; editor.endGroupDrag() }
         onDoubleClicked: if (!blockItem.audio) editor.openFunction(blockItem.block.functionId)
     }
+    // (rebuilt in the middle of a drag: the drag is over)
+    Component.onDestruction: if (mode !== "" && editor) { editor.dragging = false; editor.endGroupDrag() }
 
+    // on the selection, when the block is in it; Loop or Stretch and Lock or
+    // Unlock as this block is
     AppMenu {
         id: blockMenu
+        // (taken when it opens: a binding on every block would follow every
+        // change of the selection)
+        property var ids: []
+        onAboutToShow: ids = editor.targets(blockItem.block.id)
         MenuItem {
             text: blockItem.block.stretch ? qsTr("Loop the scene in the block") : qsTr("Stretch the scene to fit the block")
             enabled: !blockItem.audio && blockItem.block.cycle > 0
-            onTriggered: Core.timeline.setBlock(editor.showId, blockItem.block.id, "stretch", !blockItem.block.stretch)
+            onTriggered: Core.timeline.setBlocks(editor.showId, editor.stretchable(blockMenu.ids), "stretch", !blockItem.block.stretch)
+        }
+        MenuItem {
+            text: qsTr("Copy")
+            onTriggered: editor.copy(blockMenu.ids)
+        }
+        MenuItem {
+            text: qsTr("Cut")
+            // (the blocks are drawn again: the editor is taken first)
+            onTriggered: {
+                let owner = editor
+                owner.cut(blockMenu.ids)
+            }
         }
         MenuItem {
             text: qsTr("Duplicate")
-            onTriggered: editor.selectBlock(Core.timeline.duplicateBlock(editor.showId, blockItem.block.id), blockItem.trackId)
+            onTriggered: editor.duplicate(blockMenu.ids)
         }
         MenuItem {
             text: blockItem.block.locked ? qsTr("Unlock") : qsTr("Lock")
-            onTriggered: Core.timeline.setBlock(editor.showId, blockItem.block.id, "locked", !blockItem.block.locked)
+            onTriggered: Core.timeline.setBlocks(editor.showId, blockMenu.ids, "locked", !blockItem.block.locked)
         }
         MenuItem {
             text: qsTr("Open the scene")
@@ -298,8 +381,13 @@ Item {
         MenuSeparator {}
         MenuItem {
             text: qsTr("Delete")
-            enabled: !blockItem.trackLocked
-            onTriggered: Core.timeline.removeBlock(editor.showId, blockItem.block.id)
+            enabled: editor.deletable(blockMenu.ids).length > 0
+            // (the blocks are drawn again: the editor is taken first)
+            onTriggered: {
+                let owner = editor
+                Core.timeline.removeBlocks(owner.showId, blockMenu.ids)
+                owner.selectOnly(-1)
+            }
         }
     }
 }

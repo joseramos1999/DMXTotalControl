@@ -119,6 +119,7 @@ Un fader dello SHOW può controllare **più cose insieme**. Nelle sue proprietà
 | **Velocità di una scena** | La velocità dal vivo di quella scena (da ×0,1 a ×10, come quella del movimento). |
 | **Avvia una scena (la sua velocità)** | Come «Avvia una scena (la sua intensità)», ma il fader è la sua velocità: in fondo la scena è ferma; alzandolo, parte nel suo gruppo e la corsa è la sua velocità, ×0,1 appena sopra il fondo, ×1 a metà e ×10 in cima. Il testo dice «Ferma» finché non suona, e il fader segue la scena se la si ferma o la si avvia da un'altra parte. La velocità vale solo per quella volta: una volta ferma, la scena torna alla velocità che aveva (quella del Live non cambia). Un doppio clic la porta a ×1 (e la avvia se era ferma). Come quello di intensità, aggiunge la sua scena al suo gruppo e la trattiene: diversi insieme suonano insieme (anche più scene di uno stesso gruppo esclusivo su un fader), e solo abbassarlo fino in fondo la ferma. |
 | **BPM** | Il tempo dello show, da 20 a 300. |
+| **Velocità delle cue (tutte le cuelist)** | La [velocità di tutte le cuelist](playbacks.md#velocità-delle-cue): le loro dissolvenze (anche quelle in corso), ritardi, Segui e Attendi. Da ×0,1 a ×10, come quella del movimento. Non si salva con lo show. |
 
 La differenza tra i due di scena: **«Avvia una scena (la sua intensità)»** è la scena stessa, e la avvia e la ferma; **«Dimmer di una scena (senza avviarla)»** la attenua soltanto, anche quando viene avviata da un altro punto. Si possono usare insieme: con il dimmer al 50 % e il fader che la avvia all'80 %, la scena esce al 40 %.
 
@@ -126,9 +127,9 @@ Premi **«Aggiungi un altro elemento»** per aggiungerne un altro e l'icona del 
 
 Con **Intervallo**, **Da** … **a** … (da 0 a 100 %), la corsa del fader copre solo quella parte di ciò che muove, in tutti i suoi elementi. Per esempio, la velocità di una scena dal 20 all'80 %, o un dimmer da 0 a 60 % perché non vada oltre. Con «Da» maggiore di «a», o con **«Inverti»**, il fader va al contrario. Un fader che avvia una scena la ferma all'estremo dove il valore è più basso (in fondo; in cima se è invertito), anche se «Da» non è 0.
 
-Il testo del fader mostra il valore reale (la %, i BPM o, se controlla solo velocità, il moltiplicatore ×), non dove si trova il fader. Se un altro controllo porta il valore fuori dall'intervallo, il fader resta all'estremo. Un fader che controlla solo velocità (del movimento o di scene, una o più) torna a ×1 con un doppio clic.
+Il testo del fader mostra il valore reale (la %, i BPM o, se controlla solo velocità, il moltiplicatore ×), non dove si trova il fader. Se un altro controllo porta il valore fuori dall'intervallo, il fader resta all'estremo. Un fader che controlla solo velocità (del movimento, di scene o delle cue, una o più) torna a ×1 con un doppio clic.
 
-Sotto ogni fader c'è un tasto **«Flash»**: lo porta in cima alla sua corsa finché lo premi e, quando lo rilasci, ripristina esattamente ciò che c'era. Si toglie o si mette con l'interruttore «Tasto flash: al massimo finché è premuto» nelle sue proprietà.
+Sotto ogni fader c'è un tasto **«Flash»**: lo porta in cima alla sua corsa finché lo premi e, quando lo rilasci, ripristina esattamente ciò che c'era. Si toglie o si mette con l'interruttore «Tasto flash: al massimo finché è premuto» nelle sue proprietà. Sul fader A/B di un playback, il Flash è quello del playback: lo porta al massimo finché lo premi, con il suo attacco e la sua discesa, senza muovere la dissolvenza incrociata né passare a un'altra cue (vedi [Il flash](playbacks.md#il-flash)).
 
 > **Consiglio:** un fader con «Master di un gruppo» dei tuoi wash e «Dimmer di fixture» dei PAR sul pubblico ti dà un solo fader per abbassare tutto il frontale.
 
@@ -167,11 +168,11 @@ Nella modalità modifica, rilascia una scena su una striscia per metterla su que
 ## Utilità
 
 - **Orologio**: ora e data del computer.
-- **Timer**: **«Avvia»** / **«Pausa»** e **«Azzera»**. Nel conto alla rovescia diventa arancione nell'ultimo minuto e rosso quando arriva a zero. Continua a contare anche se cambi pagina.
+- **Timer**: **«Avvia»** / **«Pausa»** e **«Azzera»**. Nel conto alla rovescia diventa arancione nell'ultimo minuto e rosso quando arriva a zero. Continua a contare anche se cambi pagina. Il [controllo remoto](remoto.md) mostra lo stesso timer. Quando apri un altro show, torna a zero.
 - **Ritmo**: **GO**, **Stop** e **BeatGO**.
 - **Note**: il testo che scrivi nelle sue proprietà (la scaletta, avvisi per l'operatore…).
 - **In riproduzione ora**: ciò che è in riproduzione, con il tasto per fermarla accanto a ogni scena.
-- **Livelli DMX**: una griglia con i 512 canali dell'universo scelto.
+- **Livelli DMX**: una griglia con i 512 canali dell'universo scelto. Anche il [controllo remoto](remoto.md) la mostra.
 - **Immagine**: intera o a riempire la sezione.
 
 ## Pagine

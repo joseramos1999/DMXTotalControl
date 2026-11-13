@@ -25,25 +25,33 @@
 #include <QTcpSocket>
 #include <QWebSocket>
 #include <QFileInfo>
+#include <QCollator>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QUrlQuery>
 #include <QTimer>
+#include <QUuid>
 #include <QFile>
 #include <QUrl>
 #include <QDebug>
 #include <QColor>
 #include <functional>
+#include <algorithm>
 
 #include "remoteserver.h"
 #include "playbackmanager.h"
+#include "mdnsresponder.h"
+#include "qrcode.h"
 #include "showsurface.h"
 #include "zonemanager.h"
 #include "controlmapper.h"
 #include "drivecontrol.h"
 #include "livemixer.h"
+#include "iomanager.h"
 #include "dtccore.h"
 #include "zone.h"
 
+#include "inputoutputmap.h"
 #include "mastertimer.h"
 #include "function.h"
 #include "doc.h"
@@ -51,6 +59,7 @@
 #define KSettingRemoteEnabled QStringLiteral("remote/enabled")
 #define KSettingRemotePort    QStringLiteral("remote/port")
 #define KSettingRemotePin     QStringLiteral("remote/pin")
+#define KSettingRemoteName    QStringLiteral("remote/name")
 
 RemoteServer::RemoteServer(DtcCore *core, QObject *parent)
     : QObject(parent)
@@ -58,10 +67,16 @@ RemoteServer::RemoteServer(DtcCore *core, QObject *parent)
     , m_server(nullptr)
     , m_ws(nullptr)
     , m_tick(new QTimer(this))
+    , m_network(new QTimer(this))
+    , m_mdns(new MdnsResponder(this))
+    , m_instance(QUuid::createUuid().toString(QUuid::WithoutBraces))
     , m_layoutDirty(false)
 {
     m_tick->setInterval(120);
     connect(m_tick, &QTimer::timeout, this, &RemoteServer::slotTick);
+    m_network->setInterval(5000);
+    connect(m_network, &QTimer::timeout, this, &RemoteServer::slotNetworkCheck);
+    connect(m_mdns, &MdnsResponder::hostChanged, this, &RemoteServer::slotHostChanged);
     connect(m_core->surface(), &ShowSurface::pagesChanged, this, &RemoteServer::slotLayoutChanged);
     connect(m_core->surface(), &ShowSurface::cleared, this, &RemoteServer::slotShowCleared);
     connect(m_core, &DtcCore::functionsChanged, this, &RemoteServer::slotLayoutChanged);
@@ -79,6 +94,9 @@ RemoteServer::RemoteServer(DtcCore *core, QObject *parent)
     connect(m_core->zones(), &ZoneManager::modelReset, this, &RemoteServer::slotZonesChanged);
     connect(m_core->zones(), &ZoneManager::rowsMoved, this, &RemoteServer::slotZonesChanged);
     slotZonesChanged();
+    // the mixers (fixture groups added, deleted, renamed, fixtures patched)
+    connect(m_core->mixer(), &LiveMixer::mixersChanged, this, &RemoteServer::slotMixersChanged);
+    slotMixersChanged();
 }
 
 RemoteServer::~RemoteServer()
@@ -137,6 +155,79 @@ void RemoteServer::setPin(const QString &pin)
     emit settingsChanged();
 }
 
+QString RemoteServer::name() const
+{
+    return QSettings().value(KSettingRemoteName, QStringLiteral("dmxtotalcontrol")).toString();
+}
+
+/** $text as a name of the network can be (a label of DNS: letters, digits
+ *  and '-', 63 at most) */
+static QString networkName(const QString &text)
+{
+    QString name;
+    for (const QChar c : text.toLower())
+    {
+        if (c == ' ' || c == '_' || c == '-')
+            name.append('-');
+        else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+            name.append(c);
+    }
+    static const QRegularExpression ends("^-+|-+$");
+    name.remove(ends);
+    name.truncate(63);
+    return name.remove(ends);
+}
+
+void RemoteServer::setName(const QString &name)
+{
+    const QString kept = networkName(name);
+    if (kept == this->name())
+        return;
+    QSettings().setValue(KSettingRemoteName, kept);
+    emit settingsChanged();
+    // the phones find it by the new name (none: by the addresses only)
+    if (running())
+        startDiscovery();
+}
+
+QString RemoteServer::hostName() const
+{
+    return running() ? m_mdns->hostName() : QString();
+}
+
+QString RemoteServer::discoveryError() const
+{
+    if (running() == false)
+        return QString();
+    if (m_mdns->failed())
+        return tr("Phones can't find it by name: the network port 5353 isn't available");
+    // (the name and name-2 … name-9 are taken: until the networks change)
+    if (m_mdns->gaveUp())
+        return tr("Phones can't find it by name: %1 and %1-2 … %1-9 are used by other computers").arg(m_mdns->name());
+    return QString();
+}
+
+MdnsResponder *RemoteServer::discovery() const
+{
+    return m_mdns;
+}
+
+void RemoteServer::startDiscovery()
+{
+    if (name().isEmpty())
+        m_mdns->stop();
+    else
+        m_mdns->start(name());
+}
+
+void RemoteServer::slotHostChanged()
+{
+    readAddresses();
+    emit addressesChanged();
+    // (the layout has the name: a phone on an address can go to it now)
+    slotLayoutChanged();
+}
+
 bool RemoteServer::running() const
 {
     return m_server != nullptr && m_server->isListening();
@@ -147,15 +238,105 @@ QStringList RemoteServer::urls() const
     QStringList list;
     if (running() == false)
         return list;
-    for (const QHostAddress &address : QNetworkInterface::allAddresses())
-    {
-        if (address.protocol() != QAbstractSocket::IPv4Protocol || address.isLoopback() || address.isLinkLocal())
-            continue;
-        list.append(QString("http://%1:%2/").arg(address.toString()).arg(m_server->serverPort()));
-    }
+    for (const QVariant &address : m_addresses)
+        list.append(address.toMap().value("url").toString());
     if (list.isEmpty())
         list.append(QString("http://127.0.0.1:%1/").arg(m_server->serverPort()));
     return list;
+}
+
+QVariantList RemoteServer::addresses() const
+{
+    return m_addresses;
+}
+
+bool RemoteServer::onNetwork() const
+{
+    return running() == false || m_addresses.isEmpty() == false;
+}
+
+QVariantList RemoteServer::describeAddresses(const QList<NetworkAddress> &found, int port, const QString &host)
+{
+    // (the names Windows gives the adapters of virtual machines, WSL and
+    // VPNs; a wrong guess only changes the order)
+    static const QRegularExpression virtualName(
+        "vethernet|virtualbox|vmware|hyper-v|wsl|vpn|tap|tun|zerotier|tailscale|hamachi",
+        QRegularExpression::CaseInsensitiveOption);
+    auto rank = [](const NetworkAddress &address) {
+        if (address.name.contains(virtualName))
+            return 2;
+        if (address.type == QNetworkInterface::Wifi)
+            return 0;
+        if (address.type == QNetworkInterface::Ethernet)
+            return 1;
+        return 2;
+    };
+
+    QList<NetworkAddress> usable;
+    for (const NetworkAddress &address : found)
+    {
+        if (address.ip.protocol() != QAbstractSocket::IPv4Protocol || address.ip.isLoopback() || address.ip.isLinkLocal())
+            continue;
+        usable.append(address);
+    }
+    // (by name with the numbers as numbers, "Ethernet 2" before "Ethernet
+    // 10"; stable: the addresses of one network as the system gives them)
+    QCollator byName;
+    byName.setNumericMode(true);
+    byName.setCaseSensitivity(Qt::CaseInsensitive);
+    std::stable_sort(usable.begin(), usable.end(), [&rank, &byName](const NetworkAddress &a, const NetworkAddress &b) {
+        if (rank(a) != rank(b))
+            return rank(a) < rank(b);
+        return byName.compare(a.name, b.name) < 0;
+    });
+
+    static const char *const kinds[] = { "wifi", "ethernet", "other" };
+    QVariantList list;
+    for (const NetworkAddress &address : std::as_const(usable))
+        list.append(QVariantMap({ { "url", QString("http://%1:%2/").arg(address.ip.toString()).arg(port) },
+                                  { "label", address.name },
+                                  { "kind", QString::fromLatin1(kinds[rank(address)]) } }));
+    // the name first: it opens the computer on any of them, whatever its
+    // address there (none on no network: nothing would answer it)
+    if (host.isEmpty() == false && list.isEmpty() == false)
+        list.prepend(QVariantMap({ { "url", QString("http://%1:%2/").arg(host).arg(port) },
+                                   { "label", tr("By name") },
+                                   { "kind", QStringLiteral("name") } }));
+    return list;
+}
+
+/** The addresses of the networks this computer is on now */
+static QList<RemoteServer::NetworkAddress> networkAddresses()
+{
+    QList<RemoteServer::NetworkAddress> found;
+    for (const QNetworkInterface &network : QNetworkInterface::allInterfaces())
+    {
+        const QNetworkInterface::InterfaceFlags flags = network.flags();
+        if (flags.testFlag(QNetworkInterface::IsUp) == false || flags.testFlag(QNetworkInterface::IsRunning) == false
+            || flags.testFlag(QNetworkInterface::IsLoopBack))
+            continue;
+        for (const QNetworkAddressEntry &entry : network.addressEntries())
+            found.append({ network.humanReadableName(), network.type(), entry.ip() });
+    }
+    return found;
+}
+
+bool RemoteServer::readAddresses()
+{
+    QVariantList addresses;
+    if (running())
+        addresses = describeAddresses(networkAddresses(), m_server->serverPort(), m_mdns->hostName());
+    if (addresses == m_addresses)
+        return false;
+    m_addresses = addresses;
+    return true;
+}
+
+void RemoteServer::slotNetworkCheck()
+{
+    m_mdns->refreshInterfaces();
+    if (readAddresses())
+        emit addressesChanged();
 }
 
 int RemoteServer::clients() const
@@ -166,6 +347,18 @@ int RemoteServer::clients() const
 QString RemoteServer::lastError() const
 {
     return m_lastError;
+}
+
+QStringList RemoteServer::qrCode(const QString &text) const
+{
+    return QrCode::encode(text.toUtf8()).rows();
+}
+
+QString RemoteServer::shareUrl(const QString &url) const
+{
+    if (pin().isEmpty())
+        return url;
+    return url + "#pin=" + QString::fromLatin1(QUrl::toPercentEncoding(pin()));
 }
 
 void RemoteServer::apply()
@@ -195,8 +388,12 @@ void RemoteServer::apply()
     {
         m_lastError.clear();
         m_tick->start();
+        m_network->start();
+        startDiscovery();
     }
+    readAddresses();
     emit runningChanged();
+    emit addressesChanged();
 }
 
 void RemoteServer::startOn(int port)
@@ -207,15 +404,22 @@ void RemoteServer::startOn(int port)
     connect(m_server, &QTcpServer::newConnection, this, &RemoteServer::slotNewConnection);
     connect(m_ws, &QWebSocketServer::newConnection, this, &RemoteServer::slotWebSocket);
     if (m_server->listen(QHostAddress::Any, quint16(port)))
+    {
         m_tick->start();
+        m_network->start();
+        startDiscovery();
+    }
     else
         qWarning() << "[Remote]" << m_server->errorString();
+    readAddresses();
     emit runningChanged();
+    emit addressesChanged();
 }
 
 void RemoteServer::stop()
 {
     m_tick->stop();
+    m_network->stop();
     for (QWebSocket *socket : std::as_const(m_sockets))
     {
         socket->disconnect(this);
@@ -224,6 +428,8 @@ void RemoteServer::stop()
     }
     m_sockets.clear();
     m_authorized.clear();
+    m_watch.clear();
+    m_sentLevels.clear();
     // (the flashes and the SHOW buttons the phones held go up)
     const QList<QWebSocket *> holding = m_flashes.keys();
     for (QWebSocket *socket : holding)
@@ -233,13 +439,20 @@ void RemoteServer::stop()
     for (QWebSocket *socket : pressing)
         releasePresses(socket);
     m_presses.clear();
+    const QList<QWebSocket *> flashing = m_mixerFlashes.keys();
+    for (QWebSocket *socket : flashing)
+        releaseMixerFlashes(socket);
     delete m_server;
     m_server = nullptr;
     delete m_ws;
     m_ws = nullptr;
+    // (the name too: a goodbye)
+    m_mdns->stop();
     // (an error of a start that failed: stopped, or trying again)
     m_lastError.clear();
+    m_addresses.clear();
     emit runningChanged();
+    emit addressesChanged();
     emit clientsChanged();
 }
 
@@ -305,12 +518,21 @@ void RemoteServer::serveHttp(QTcpSocket *socket, const QByteArray &request)
     QByteArray status = "200 OK";
     QByteArray type;
     QByteArray body;
+    QByteArray headers = "Cache-Control: no-cache\r\n";
 
     QUrl url(line.size() >= 2 ? QString::fromUtf8(line.at(1)) : QString("/"));
     const QString path = url.path();
     QString file;
     if (line.value(0) != "GET")
         status = "405 Method Not Allowed";
+    else if (path == "/whoami")
+    {
+        // which computer answers here: the page opened by an address asks it
+        // by the name (another origin), and never from a cache
+        body = whoAmI();
+        type = "application/json";
+        headers = "Cache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\n";
+    }
     else if (path == "/" || path == "/index.html")
         file = ":/remote/index.html";
     else if (path == "/remote.js")
@@ -336,7 +558,8 @@ void RemoteServer::serveHttp(QTcpSocket *socket, const QByteArray &request)
                          query.queryItemValue("cell").isEmpty() ? -1 : query.queryItemValue("cell").toInt());
     }
 
-    if (status == "200 OK")
+    // (a file, when it isn't answered already)
+    if (status == "200 OK" && type.isEmpty())
     {
         QFile f(file);
         if (file.isEmpty() || f.open(QIODevice::ReadOnly) == false)
@@ -355,10 +578,15 @@ void RemoteServer::serveHttp(QTcpSocket *socket, const QByteArray &request)
     QByteArray response = "HTTP/1.1 " + status + "\r\n"
                           "Content-Type: " + (type.isEmpty() ? QByteArray("text/plain") : type) + "\r\n"
                           "Content-Length: " + QByteArray::number(body.size()) + "\r\n"
-                          "Cache-Control: no-cache\r\n"
+                          + headers +
                           "Connection: close\r\n\r\n";
     socket->write(response + body);
     socket->disconnectFromHost();
+}
+
+QByteArray RemoteServer::whoAmI() const
+{
+    return QJsonDocument(QJsonObject({ { "id", m_instance }, { "host", hostName() } })).toJson(QJsonDocument::Compact);
 }
 
 QString RemoteServer::imagePath(int page, const QString &section, int cell) const
@@ -393,10 +621,13 @@ void RemoteServer::slotSocketGone()
         return;
     m_sockets.removeAll(socket);
     m_authorized.remove(socket);
+    m_watch.remove(socket);
+    m_sentLevels.remove(socket);
     // a phone that goes away with a finger on a flash (or on a SHOW button,
-    // or the Flash of a fader): it goes up
+    // the Flash of a fader, a flash of the mixer): it goes up
     releaseFlashes(socket);
     releasePresses(socket);
+    releaseMixerFlashes(socket);
     socket->deleteLater();
     emit clientsChanged();
 }
@@ -425,14 +656,14 @@ bool RemoteServer::trackPress(QWebSocket *socket, const QVariantMap &message)
             if (hold.item.isEmpty())
                 return true;
             hold.fader = fader;
-            if (fader)
-                hold.levels = surface->holdLevels(hold.item);
         }
         hold.count++;
+        // the Flash of a fader with the first finger (a second one finds it
+        // there already: an A/B fader gets one flash of its playback)
+        if (fader && hold.count == 1)
+            hold.levels = surface->flashFader(hold.item);
         m_presses[socket].insert(key, hold);
-        if (fader)
-            surface->setLevel(hold.item, 1.0);
-        else
+        if (fader == false)
             surface->press(hold.item);
         return true;
     }
@@ -470,6 +701,59 @@ void RemoteServer::releasePresses(QWebSocket *socket)
         for (int i = 0; i < hold.count; i++)
             m_core->surface()->release(hold.item);
     }
+}
+
+bool RemoteServer::trackMixerFlash(QWebSocket *socket, const QVariantMap &message)
+{
+    if (message.value("cmd").toString() != "mixerFlash")
+        return false;
+    bool ok = false;
+    const int id = message.value("mixer").toInt(&ok);
+    const QString key = message.value("key").toString();
+    if (ok == false || (key != "flash" && key != "flashExclusive"))
+        return true;
+    const QString held = QString("%1/%2").arg(id).arg(key);
+    LiveMixer *mixer = m_core->mixer();
+
+    if (message.value("down").toBool())
+    {
+        if (mixer->hasMixer(id) == false)
+            return true;
+        m_mixerFlashes[socket][held]++;
+        mixer->set(id, key, true);
+        return true;
+    }
+    // (an up of something this phone doesn't hold: not somebody else's hold)
+    auto holds = m_mixerFlashes.find(socket);
+    if (holds == m_mixerFlashes.end() || holds.value().contains(held) == false)
+        return true;
+    if (--holds.value()[held] > 0)
+        return true;
+    holds.value().remove(held);
+    if (holds.value().isEmpty())
+        m_mixerFlashes.erase(holds);
+    mixerFlashUp(held);
+    return true;
+}
+
+void RemoteServer::releaseMixerFlashes(QWebSocket *socket)
+{
+    const QHash<QString, int> held = m_mixerFlashes.take(socket);
+    for (auto it = held.cbegin(); it != held.cend(); ++it)
+        mixerFlashUp(it.key());
+}
+
+void RemoteServer::mixerFlashUp(const QString &held)
+{
+    // (another phone holds it too: on until that one lets go)
+    for (const QHash<QString, int> &holds : std::as_const(m_mixerFlashes))
+        if (holds.contains(held))
+            return;
+    const int slash = int(held.lastIndexOf('/'));
+    const int id = held.left(slash).toInt();
+    // (its fixture group deleted meanwhile: nothing to put off)
+    if (m_core->mixer()->hasMixer(id))
+        m_core->mixer()->set(id, held.mid(slash + 1), false);
 }
 
 bool RemoteServer::trackFlash(QWebSocket *socket, QVariantMap &message)
@@ -543,6 +827,9 @@ void RemoteServer::slotShowCleared()
     for (auto socket = m_flashes.begin(); socket != m_flashes.end(); ++socket)
         for (auto it = socket.value().begin(); it != socket.value().end(); ++it)
             it.value().gone = true;
+    // (the mixer goes back to neutral with the show: the flashes of the
+    // mixer the phones hold are forgotten, and their up does nothing)
+    m_mixerFlashes.clear();
 }
 
 void RemoteServer::releaseFlashes(QWebSocket *socket)
@@ -610,14 +897,44 @@ void RemoteServer::slotTextMessage(const QString &text)
     if (m_authorized.contains(socket) == false)
         return;
 
-    if (trackPress(socket, message) == false)
+    // (the DMX levels a phone shows: its own, not a command of the show)
+    if (message.value("cmd").toString() == "monitor")
+    {
+        // (the page shown: its levels at once)
+        watchLevels(socket, message.value("universes").toList());
+        sendLevels();
+    }
+    else if (trackPress(socket, message) == false && trackMixerFlash(socket, message) == false)
     {
         if (trackFlash(socket, message) == false)
             return;
         handleCommand(message);
     }
-    // what changed goes back at once
-    slotTick();
+    // what changed goes back at once. The levels wait for the tick: a finger
+    // on a fader sends a command at every frame
+    sendState();
+}
+
+void RemoteServer::watchLevels(QWebSocket *socket, const QVariantList &universes)
+{
+    const int count = int(m_core->doc()->inputOutputMap()->universesCount());
+    QSet<int> watched;
+    for (const QVariant &v : universes)
+    {
+        bool ok = false;
+        const int universe = v.toInt(&ok);
+        if (ok == false || universe < 0 || universe >= count)
+            continue;
+        watched.insert(universe);
+        if (watched.count() >= 4)
+            break;
+    }
+    // (a page shown again, another page: its levels as they are now)
+    m_sentLevels.remove(socket);
+    if (watched.isEmpty())
+        m_watch.remove(socket);
+    else
+        m_watch.insert(socket, watched);
 }
 
 void RemoteServer::slotLayoutChanged()
@@ -659,15 +976,50 @@ void RemoteServer::slotZoneEdited()
     slotLayoutChanged();
 }
 
+void RemoteServer::slotMixersChanged()
+{
+    // what the layout has of the mixers: their order, names and fixtures
+    // (the mixers say they changed with each setting too, a dimmer that
+    // moves: the state carries that, the page isn't laid out again)
+    QString mixers;
+    for (const QVariant &v : m_core->mixer()->mixers())
+    {
+        const QVariantMap mixer = v.toMap();
+        mixers += mixer.value("id").toString() + '\x1f' + mixer.value("name").toString() + '\x1f'
+                  + mixer.value("fixtures").toString() + '\x1e';
+    }
+    if (mixers == m_mixersLaidOut)
+        return;
+    m_mixersLaidOut = mixers;
+    slotLayoutChanged();
+}
+
 void RemoteServer::slotTick()
 {
     if (m_authorized.isEmpty())
         return;
+    sendState();
+    sendLevels();
+}
+
+void RemoteServer::sendState()
+{
     if (m_layoutDirty)
     {
         m_layoutDirty = false;
         broadcast(layoutMessage());
         m_lastState.clear();
+    }
+    // the clock while a timer runs: when it starts, then every 10 s
+    ShowSurface *surface = m_core->surface();
+    if (surface->anyTimerRunning() == false)
+    {
+        m_clockSent.invalidate();
+    }
+    else if (m_clockSent.isValid() == false || m_clockSent.elapsed() >= 10000)
+    {
+        m_clockSent.start();
+        broadcast({ { "type", "clock" }, { "now", surface->clock() } });
     }
     QVariantMap state = stateMessage();
     QByteArray json = QJsonDocument(QJsonObject::fromVariantMap(state)).toJson(QJsonDocument::Compact);
@@ -678,6 +1030,33 @@ void RemoteServer::slotTick()
     for (QWebSocket *socket : std::as_const(m_sockets))
         if (m_authorized.contains(socket))
             socket->sendTextMessage(text);
+}
+
+void RemoteServer::sendLevels()
+{
+    IOManager *io = m_core->io();
+    // (a copy: a phone that goes while it is sent to leaves the list)
+    const QHash<QWebSocket *, QSet<int>> watching = m_watch;
+    for (auto watch = watching.cbegin(); watch != watching.cend(); ++watch)
+    {
+        QWebSocket *socket = watch.key();
+        if (m_authorized.contains(socket) == false)
+            continue;
+        // (only what changed since this phone's last levels)
+        QHash<int, QByteArray> &sent = m_sentLevels[socket];
+        QVariantMap universes;
+        for (int universe : watch.value())
+        {
+            const QByteArray values = io->lastValues(universe);
+            auto last = sent.constFind(universe);
+            if (last != sent.cend() && last.value() == values)
+                continue;
+            sent.insert(universe, values);
+            universes.insert(QString::number(universe), QString::fromLatin1(values.toBase64()));
+        }
+        if (universes.isEmpty() == false)
+            send(socket, { { "type", "levels" }, { "universes", universes } });
+    }
 }
 
 /*********************************************************************
@@ -732,6 +1111,7 @@ QString RemoteServer::itemLabel(const QVariantMap &item, const QString &sectionT
         else if (target == "sceneSpeed") names.append(tr("Speed of %1").arg(functionName(t.value("functionId"))));
         else if (target == "mixerDimmer") names.append(tr("Dimmer"));
         else if (target == "moveSpeed") names.append(tr("Movement speed"));
+        else if (target == "cueSpeed") names.append(tr("Cue speed"));
         else if (target == "map") names.append(m_core->mapping()->describeTarget(t.value("map").toMap()));
     }
     return names.join(" + ");
@@ -757,7 +1137,7 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
     out.insert("type", type);
     out.insert("title", node.value("title"));
     for (const char *key : { "cols", "rows", "text", "fontSize", "seconds", "date", "fit", "mode", "minutes",
-                             "playbackPage", "first", "showBack", "showFlash", "showCue", "background" })
+                             "playbackPage", "first", "showBack", "showFlash", "showCue", "background", "universe" })
         if (node.contains(key))
             out.insert(key, node.value(key));
 
@@ -831,6 +1211,18 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
     {
         out.insert("image", QString("/image?page=%1&section=%2").arg(page).arg(sid));
     }
+    else if (type == "mixer")
+    {
+        // the strips of the mixers, as on the computer (their settings: the state)
+        QVariantList mixers;
+        for (const QVariant &v : m_core->mixer()->mixers())
+        {
+            const QVariantMap mixer = v.toMap();
+            mixers.append(QVariantMap({ { "id", mixer.value("id") }, { "name", mixer.value("name") },
+                                        { "fixtures", mixer.value("fixtures") } }));
+        }
+        out.insert("mixers", mixers);
+    }
     return out;
 }
 
@@ -856,7 +1248,12 @@ QVariantMap RemoteServer::layoutMessage() const
                                  { "showFlash", true }, { "showCue", true }, { "items", QVariantMap() } });
         pages.append(QVariantMap({ { "name", tr("Playbacks") }, { "root", root } }));
     }
-    return { { "type", "layout" }, { "title", m_core->showTitle() }, { "theme", m_core->settings()->theme() }, { "pages", pages } };
+    // (and the clock the timers count on, for the phone to count on it too;
+    // this program and its name, for a phone on an address to go to the name)
+    return { { "type", "layout" }, { "title", m_core->showTitle() }, { "theme", m_core->settings()->theme() },
+             { "pages", pages }, { "clock", m_core->surface()->clock() },
+             { "instance", m_instance }, { "host", hostName() },
+             { "port", running() ? int(m_server->serverPort()) : port() } };
 }
 
 QVariantMap RemoteServer::stepsState() const
@@ -901,28 +1298,51 @@ QVariantMap RemoteServer::playbacksState() const
             if (info.value("empty").toBool())
                 continue;
             const QString color = info.value("color").toString();
-            map.insert(QString("%1/%2").arg(page).arg(slot), QVariantMap({
+            const bool crossfade = info.value("faderMode").toString() == "crossfade";
+            QVariantMap state({
                 { "name", info.value("name") },
                 { "type", info.value("type") },
                 { "color", color },
                 { "state", info.value("state") },
-                { "level", info.value("level") },
+                // (an A/B fader: where it is, not the intensity)
+                { "level", crossfade ? info.value("xfadePos") : info.value("level") },
                 { "flashing", info.value("flashing") },
                 { "cueNumber", info.value("cueNumber") },
                 { "cueName", info.value("cueName") },
                 { "nextNumber", info.value("nextNumber") },
                 { "nextName", info.value("nextName") },
                 // (by 5 %: the state is sent only when something changed)
-                { "progress", qRound(info.value("progress").toDouble() * 20) / 20.0 } }));
+                { "progress", qRound(info.value("progress").toDouble() * 20) / 20.0 } });
+            // an A/B fader: the strip says «A/B» and how far its crossfade
+            // is, not an intensity (only then: the state stays small)
+            if (crossfade)
+                state.insert("crossfade", true);
+            map.insert(QString("%1/%2").arg(page).arg(slot), state);
         }
     }
     return map;
 }
 
+QVariantMap RemoteServer::mixersState() const
+{
+    QVariantMap mixers;
+    for (const QVariant &v : m_core->mixer()->mixers())
+    {
+        // (its name and fixtures are in the layout)
+        QVariantMap settings = v.toMap();
+        const QString id = settings.take("id").toString();
+        settings.remove("name");
+        settings.remove("fixtures");
+        mixers.insert(id, settings);
+    }
+    return mixers;
+}
+
 QVariantMap RemoteServer::stateMessage() const
 {
     ShowSurface *surface = m_core->surface();
-    QVariantMap items, colours, positions;
+    QVariantMap items, colours, positions, timers;
+    bool mixerShown = false;
 
     // the controls of every page: lit buttons, levels of faders and dials
     std::function<void(const QVariantMap &, int)> walk = [&](const QVariantMap &node, int page) {
@@ -954,6 +1374,18 @@ QVariantMap RemoteServer::stateMessage() const
         {
             positions.insert(prefix, surface->xy(page, sid));
         }
+        else if (type == "timer")
+        {
+            // (running, when it started on the clock: the same while it runs)
+            if (surface->timerRunning(sid))
+                timers.insert(sid, QVariantMap({ { "running", true }, { "origin", surface->timerOrigin(sid) } }));
+            else
+                timers.insert(sid, QVariantMap({ { "running", false }, { "elapsed", qint64(surface->timerElapsed(sid)) } }));
+        }
+        else if (type == "mixer")
+        {
+            mixerShown = true;
+        }
     };
     const QVariantList pages = surface->pages();
     for (int p = 0; p < pages.count(); p++)
@@ -977,7 +1409,7 @@ QVariantMap RemoteServer::stateMessage() const
         if (f->isVisible() && f->isRunning())
             running.append(f->name());
 
-    return {
+    QVariantMap state({
         { "type", "state" },
         { "blackout", m_core->blackout() },
         { "grandMaster", m_core->grandMaster() / 255.0 },
@@ -988,13 +1420,27 @@ QVariantMap RemoteServer::stateMessage() const
         { "items", items },
         { "colours", colours },
         { "xy", positions },
+        { "timers", timers },
         { "zones", zones },
         { "running", running },
         { "playbacks", playbacksState() },
         { "playbackPage", m_core->playbacks()->currentPage() },
         { "playbackPages", m_core->playbacks()->pageCount() },
         { "playbackPageNames", m_core->playbacks()->pageNames() }
-    };
+    });
+    // the settings of the mixers, only while a page shows them
+    if (mixerShown)
+        state.insert("mixers", mixersState());
+    return state;
+}
+
+/** The mixer a message of the phone is for (mixer): false for none (not a
+ *  number, or a mixer that isn't there) */
+static bool mixerOf(LiveMixer *mixer, const QVariantMap &message, int &id)
+{
+    bool ok = false;
+    id = message.value("mixer").toInt(&ok);
+    return ok && mixer->hasMixer(id);
 }
 
 void RemoteServer::handleCommand(const QVariantMap &message)
@@ -1042,6 +1488,17 @@ void RemoteServer::handleCommand(const QVariantMap &message)
     {
         surface->releaseSection(page, section);
     }
+    else if (cmd == "timer")
+    {
+        // (a timer section of the page the phone shows, nothing else)
+        if (surface->section(page, section).value("type").toString() != "timer")
+            return;
+        const QString action = message.value("action").toString();
+        if (action == "toggle")
+            surface->timerToggle(section);
+        else if (action == "reset")
+            surface->timerReset(section);
+    }
     else if (cmd == "scene")
     {
         if (Zone *zone = m_core->zones()->zoneById(message.value("zone").toUInt()))
@@ -1051,6 +1508,35 @@ void RemoteServer::handleCommand(const QVariantMap &message)
     {
         if (Zone *zone = m_core->zones()->zoneById(message.value("zone").toUInt()))
             zone->setMaster(qBound(0.0, message.value("value").toDouble(), 1.0));
+    }
+    else if (cmd == "mixer")
+    {
+        LiveMixer *mixer = m_core->mixer();
+        const QString key = message.value("key").toString();
+        int id = 0;
+        if (mixerOf(mixer, message, id) == false)
+            return;
+        bool number = false;
+        const double value = message.value("value").toDouble(&number);
+        if (key == "resetColour")
+            mixer->resetColour(id);
+        else if (key == "dimmer" || key == "hue" || key == "saturation" || key == "strobeHz")
+        {
+            if (number)
+                mixer->set(id, key, value);
+        }
+        // (the other way it is now: two phones that press it don't fight)
+        else if ((key == "full" || key == "blackout" || key == "strobe" || key == "fullExclusive")
+                 && message.value("toggle").toBool())
+            mixer->set(id, key, !mixer->value(id, key).toBool());
+    }
+    else if (cmd == "mixerFlash")
+    {
+        // (the phones' go through trackMixerFlash: let go of when they go)
+        const QString key = message.value("key").toString();
+        int id = 0;
+        if ((key == "flash" || key == "flashExclusive") && mixerOf(m_core->mixer(), message, id))
+            m_core->mixer()->set(id, key, message.value("down").toBool());
     }
     else if (cmd == "grandMaster")
     {

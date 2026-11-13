@@ -284,6 +284,47 @@ Item {
                 elide: Text.ElideRight
             }
 
+            // the speed of every cuelist: x0.1 .. x10 on a logarithmic slider, x1 in the middle
+            Item {
+                id: cueSpeedBox
+                Layout.preferredWidth: 150
+                implicitHeight: 52
+                readonly property real speed: Core.playbacks.cueSpeed
+                readonly property bool changed: Math.abs(speed - 1) > 0.005
+                HoverHandler { id: cueSpeedHover }
+                ToolTip.text: qsTr("The speed of every cuelist: fades, delays, Follow and Wait (double click: ×1)")
+                ToolTip.visible: cueSpeedHover.hovered
+                ToolTip.delay: 500
+
+                Text {
+                    anchors { left: parent.left; top: parent.top; topMargin: 4 }
+                    text: qsTr("Cue speed")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                }
+                Text {
+                    anchors { right: parent.right; top: parent.top; topMargin: 4 }
+                    text: "×" + cueSpeedBox.speed.toLocaleString(Qt.locale(), 'f', cueSpeedBox.speed < 1 ? 2 : 1)
+                    // amber: not x1
+                    color: cueSpeedBox.changed ? Theme.warning : Theme.textDim
+                    font.family: Theme.monoFamily
+                    font.pixelSize: Theme.fontSmall
+                    font.weight: cueSpeedBox.changed ? Font.Bold : Font.Normal
+                }
+                HSlider {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 2 }
+                    // Space stays Main GO
+                    focusPolicy: Qt.NoFocus
+                    from: -1
+                    to: 1
+                    value: Math.log(cueSpeedBox.speed) / Math.LN10
+                    resetValue: 0
+                    fillColor: cueSpeedBox.changed ? Theme.warning : Theme.accent
+                    onMoved: Core.playbacks.cueSpeed = Math.pow(10, value)
+                }
+                MapTarget { target: ({ target: "cueSpeed" }) }
+            }
+
             AppButton {
                 text: qsTr("Release all")
                 iconGlyph: Theme.iconStop

@@ -114,6 +114,14 @@ RowLayout {
                         font.weight: paramRow.modelData.key === "pantilt" ? Font.DemiBold : Font.Normal
                         elide: Text.ElideRight
                     }
+                    // the dimmer of fixtures without one: the FX dims their colour
+                    Text {
+                        visible: !!paramRow.modelData.virtual
+                        text: qsTr("virtual")
+                        color: Theme.textDim
+                        font.pixelSize: 9
+                        font.italic: true
+                    }
                     // it has an FX on the selection
                     Text {
                         visible: !!paramRow.modelData.active
@@ -289,6 +297,15 @@ RowLayout {
             color: Theme.textDim
             font.pixelSize: Theme.fontSmall
         }
+        // a dimmer FX on fixtures without a dimmer
+        Text {
+            Layout.fillWidth: true
+            visible: panel.hasSelection && panel.param === "dimmer" && (panel.fx.virtualCount || 0) > 0
+            wrapMode: Text.WordWrap
+            text: qsTr("%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).", "", panel.fx.virtualCount || 0)
+            color: Theme.textDim
+            font.pixelSize: Theme.fontSmall
+        }
         RowLayout {
             Layout.fillWidth: true
             visible: panel.hasSelection && (panel.fx.ownSelected || 0) > 0
@@ -323,16 +340,31 @@ RowLayout {
             Layout.fillHeight: true
             visible: panel.hasSelection && panel.param.length > 0
             clip: true
-            contentHeight: fxControls.implicitHeight
+            contentHeight: fxColumn.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ScrollBar {}
-            FxControls {
-                id: fxControls
+            ColumnLayout {
+                id: fxColumn
                 width: parent.width - 12
-                fx: panel.fx
-                sets: panel.fx.sets || 1
-                partial: !!panel.fx.partial
-                onEdit: (props) => panel.edit(props)
+                spacing: 8
+                FxControls {
+                    id: fxControls
+                    Layout.fillWidth: true
+                    fx: panel.fx
+                    sets: panel.fx.sets || 1
+                    partial: !!panel.fx.partial
+                    onEdit: (props) => panel.edit(props)
+                }
+                // each fixture's shift and delay, typed by hand
+                FxFixtureOffsets {
+                    Layout.fillWidth: true
+                    visible: !!panel.fx.active
+                    rows: panel.fx.rows || []
+                    selectionBased: true
+                    onSetOffset: (fixtureId, key, value) => Core.programmer.setFxOffset(panel.param, fixtureId, key, value)
+                    onFan: (key, last) => Core.programmer.fanFxOffset(panel.param, key, last)
+                    onClearAll: Core.programmer.clearFxOffsets(panel.param)
+                }
             }
         }
 
@@ -400,11 +432,23 @@ RowLayout {
                                     border.color: Theme.border
                                     FxShape {
                                         anchors { left: parent.left; right: parent.right; top: parent.top; margins: 3 }
+                                        // (a curve stops before the 1·2·3; a figure is small, in the middle)
+                                        anchors.rightMargin: perFixtureBadge.visible && !macro.modelData.panTilt
+                                                             ? perFixtureBadge.implicitWidth + 6 : 3
                                         height: 22
                                         figure: !!macro.modelData.panTilt
                                         value: macro.modelData.panTilt ? macro.modelData.figure : macro.modelData.mode
                                         color: Theme.functionColor(macro.modelData.panTilt ? "EFX" : "FXScene")
                                         lineWidth: 1.2
+                                    }
+                                    // saved fixture by fixture: each one what the one in its place did
+                                    Text {
+                                        id: perFixtureBadge
+                                        anchors { right: parent.right; top: parent.top; margins: 3 }
+                                        visible: !!macro.modelData.perFixture
+                                        text: "1·2·3"
+                                        color: Theme.textDim
+                                        font.pixelSize: Theme.fontSmall
                                     }
                                     Text {
                                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 3 }
@@ -435,7 +479,8 @@ RowLayout {
                                         }
                                     }
                                     ToolTip.visible: macroMouse.containsMouse
-                                    ToolTip.text: macro.modelData.factory ? macro.modelData.name : qsTr("%1 (right click: rename or delete)").arg(macro.modelData.name)
+                                    ToolTip.text: (macro.modelData.factory ? macro.modelData.name : qsTr("%1 (right click: rename or delete)").arg(macro.modelData.name))
+                                                  + (macro.modelData.perFixture ? "\n" + qsTr("Saved fixture by fixture: %n fixture(s)", "", macro.modelData.fixtureCount) : "")
                                 }
                             }
                         }

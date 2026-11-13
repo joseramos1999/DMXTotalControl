@@ -20,6 +20,7 @@
 #ifndef SHOWSURFACE_H
 #define SHOWSURFACE_H
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QVariant>
 #include <QColor>
@@ -89,7 +90,8 @@ class Doc;
  * x10, for that run only: stopped, it plays at its own speed again),
  * "mixerDimmer" (mixerId), "moveSpeed" (groupId: the speed of the movement
  * of a fixture group, -1 all the moving heads: their pan/tilt FX and the
- * steps that move them, x0.1 to x10), "bpm", "map" (map: a fader
+ * steps that move them, x0.1 to x10), "bpm", "cueSpeed" (the speed of every
+ * cuelist, x0.1 to x10), "map" (map: a fader
  * target of the mappings). Older items have a single "target" with its keys.
  * "min", "max" (0-100 %) and "invert": the part of what it drives that the
  * travel covers (faders and dials). "flash": a button under the fader puts it
@@ -106,6 +108,8 @@ class ShowSurface : public QObject
     Q_PROPERTY(int revision READ revision NOTIFY revisionChanged)
     /** The page the SHOW shows (where Alt+click puts new controls) */
     Q_PROPERTY(int currentPage READ currentPage WRITE setCurrentPage NOTIFY currentPageChanged)
+    /** Changes whenever a timer starts, pauses, resets or goes */
+    Q_PROPERTY(int timerRevision READ timerRevision NOTIFY timersChanged)
 
 public:
     ShowSurface(Doc *doc, ZoneManager *zones, QObject *parent = nullptr);
@@ -195,9 +199,18 @@ public:
      *  the minimum */
     Q_INVOKABLE void stepLevel(const QVariantMap &item, int notches);
     /** Flash: the values of the targets as they are, and back to them
-     *  exactly (also out of the range of the fader) */
+     *  exactly (also out of the range of the fader). The A/B fader of a
+     *  playback has no value to give back: { "playbackFlash": true }, the
+     *  flash of the playback flashFader() gives it, which restoreLevels()
+     *  lets go of */
     Q_INVOKABLE QVariantList holdLevels(const QVariantMap &item) const;
     Q_INVOKABLE void restoreLevels(const QVariantMap &item, const QVariantList &levels);
+    /** The Flash of a fader, pressed: its targets at the top of the travel
+     *  (setLevel(item, 1)), and what restoreLevels() gives back
+     *  (holdLevels()). On an A/B fader of a playback a level is a travel (a
+     *  GO): it gets the flash of the playback instead, at full while
+     *  pressed with its attack and decay, as its own Flash button */
+    Q_INVOKABLE QVariantList flashFader(const QVariantMap &item);
     /** The targets of a fader item (older items: their single target) */
     Q_INVOKABLE static QVariantList faderTargets(const QVariantMap &item);
     /** A fader or dial whose targets are all speeds (of the movement, of
@@ -251,6 +264,28 @@ public:
 
     int revision() const;
 
+    /*********************************************************************
+     * Timers
+     *********************************************************************/
+    /** The timer sections (by section ID: the IDs are of the whole show)
+     *  count here, for the SHOW and the phones alike: they keep counting on
+     *  another page, and they start again at zero with another show. Not
+     *  saved */
+    Q_INVOKABLE bool timerRunning(const QString &sectionId) const;
+    /** The time counted, in ms */
+    Q_INVOKABLE double timerElapsed(const QString &sectionId) const;
+    /** Start or pause a timer section (nothing for another section) */
+    Q_INVOKABLE void timerToggle(const QString &sectionId);
+    /** Back to zero, paused */
+    Q_INVOKABLE void timerReset(const QString &sectionId);
+    int timerRevision() const;
+    /** The ms of the clock the timers count on, since the program started */
+    qint64 clock() const;
+    /** When a running timer would have started on the clock had it never
+     *  paused: clock() - timerElapsed(), the same while it runs */
+    qint64 timerOrigin(const QString &sectionId) const;
+    bool anyTimerRunning() const;
+
     /** The pictures of the SHOW (picture sections and buttons), as saved:
      *  paths or file URLs */
     QStringList images() const;
@@ -271,6 +306,7 @@ signals:
     void controlAdded(const QVariantMap &where);
     /** The show was closed (another one opens): what the controls held is gone */
     void cleared();
+    void timersChanged();
 
 private slots:
     void slotChanged();
@@ -388,6 +424,9 @@ private:
     QSet<quint32> controlledScenes(const QStringList &kinds, bool shownOnly = false) const;
     /** At the bottom of the travel, a scene or a playback fader stops it */
     static bool bottomStops(const QVariantMap &target);
+    /** A "map" target on the fader of a playback that is an A/B crossfade:
+     *  its Flash is the flash of the playback */
+    bool flashesPlayback(const QVariantMap &target) const;
     /** The scenes the targets of a control start ("scene", "sceneRun") */
     static QList<quint32> startedScenes(const QVariantList &targets);
 
@@ -410,6 +449,26 @@ private:
     QHash<int, qreal> m_speedLevels;
     /** The fixture groups of the speed faders moved, the last one moved last */
     QList<int> m_speedOrder;
+
+    /** A timer section that was started: running since $start (on the
+     *  clock), with $acc ms counted before */
+    struct Timer
+    {
+        bool running = false;
+        qint64 start = 0;
+        qint64 acc = 0;
+    };
+    QHash<QString, Timer> m_timers;
+    QElapsedTimer m_clock;
+    int m_timerRevision;
+    /** Whether $sectionId is a timer section of a page */
+    bool isTimer(const QString &sectionId) const;
+    /** The timers of sections that aren't timers any more (removed, another
+     *  type, their page removed) go */
+    void pruneTimers();
+    /** No timers (another show) */
+    void clearTimers();
+    void timersEdited();
 };
 
 #endif

@@ -620,4 +620,94 @@ void Sequence_Test::save()
     QCOMPARE(fstep, 3);
 }
 
+/* DMX Total Control: a palette changed or deleted, a fixture removed. The
+   steps keep their references (ChaserStep::palettes) */
+void Sequence_Test::palettes()
+{
+    typedef QPair<quint32, quint32> Key;
+    Fixture *fxi = new Fixture(m_doc);
+    fxi->setAddress(0);
+    fxi->setUniverse(0);
+    fxi->setChannels(4);
+    QVERIFY(m_doc->addFixture(fxi));
+    Fixture *fxi2 = new Fixture(m_doc);
+    fxi2->setAddress(10);
+    fxi2->setUniverse(0);
+    fxi2->setChannels(4);
+    QVERIFY(m_doc->addFixture(fxi2));
+    const quint32 a = fxi->id(), b = fxi2->id();
+
+    Scene *scene = new Scene(m_doc);
+    for (quint32 c = 0; c < 3; c++)
+    {
+        scene->setValue(SceneValue(a, c, 0));
+        scene->setValue(SceneValue(b, c, 0));
+    }
+    QVERIFY(m_doc->addFunction(scene));
+    Sequence *seq = new Sequence(m_doc);
+    seq->setBoundSceneID(scene->id());
+    QVERIFY(m_doc->addFunction(seq));
+
+    // step 1: channels 0 and 1 from palette 5, channel 2 of a from palette 6;
+    // step 2 the same values by hand
+    ChaserStep step(scene->id());
+    step.values = { SceneValue(a, 0, 10), SceneValue(a, 1, 20), SceneValue(a, 2, 30),
+                    SceneValue(b, 0, 10), SceneValue(b, 1, 20), SceneValue(b, 2, 0) };
+    step.palettes = { { Key(a, 0), 5 }, { Key(a, 1), 5 }, { Key(a, 2), 6 }, { Key(b, 0), 5 }, { Key(b, 1), 5 } };
+    QVERIFY(seq->addStep(step));
+    ChaserStep hand(scene->id());
+    hand.values = step.values;
+    QVERIFY(seq->addStep(hand));
+    auto valueOf = [&](int index, quint32 fixture, quint32 channel) {
+        for (const SceneValue &scv : seq->steps().at(index).values)
+            if (scv.fxi == fixture && scv.channel == channel)
+                return int(scv.value);
+        return -1;
+    };
+
+    // palette 5 changed: 100 on the channels 0, the same 20 on channel 1 of
+    // a, nothing any more on channel 1 of b (-1: a plain value). Said once
+    QSignalSpy changed(seq, SIGNAL(changed(quint32)));
+    auto palette5 = [&](quint32 fixture, quint32 channel) {
+        if (channel == 0)
+            return 100;
+        return fixture == b ? -1 : 20;
+    };
+    seq->applyPalette(5, palette5);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(valueOf(0, a, 0), 100);
+    QCOMPARE(valueOf(0, b, 0), 100);
+    QCOMPARE(valueOf(0, a, 1), 20);
+    QCOMPARE(valueOf(0, b, 1), 20);
+    QCOMPARE(valueOf(0, a, 2), 30);
+    QCOMPARE(seq->steps().at(0).palettes,
+             (QHash<Key, int>({ { Key(a, 0), 5 }, { Key(a, 1), 5 }, { Key(a, 2), 6 }, { Key(b, 0), 5 } })));
+    // the step by hand doesn't follow
+    QCOMPARE(valueOf(1, a, 0), 10);
+    QVERIFY(seq->steps().at(1).palettes.isEmpty());
+
+    // the same again, or a palette no step uses: nothing changes, nothing said
+    seq->applyPalette(5, palette5);
+    seq->applyPalette(9, palette5);
+    QCOMPARE(changed.count(), 1);
+
+    // deleted: the values stay, without the references
+    seq->forgetPalette(5);
+    QCOMPARE(changed.count(), 2);
+    QCOMPARE(seq->steps().at(0).palettes, (QHash<Key, int>({ { Key(a, 2), 6 } })));
+    QCOMPARE(valueOf(0, a, 0), 100);
+    seq->forgetPalette(5);
+    QCOMPARE(changed.count(), 2);
+
+    // a fixture removed: its references go with its values
+    ChaserStep linked = seq->steps().at(0);
+    linked.palettes.insert(Key(b, 0), 6);
+    QVERIFY(seq->replaceStep(linked, 0));
+    changed.clear();
+    QVERIFY(m_doc->deleteFixture(b));
+    QCOMPARE(seq->steps().at(0).palettes, (QHash<Key, int>({ { Key(a, 2), 6 } })));
+    QCOMPARE(valueOf(0, b, 0), -1);
+    QCOMPARE(changed.count(), 1);
+}
+
 QTEST_APPLESS_MAIN(Sequence_Test)

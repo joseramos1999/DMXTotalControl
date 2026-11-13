@@ -133,7 +133,7 @@ Le même menu de la tuile contient **« Ouvrir dans Scènes »**, **« Modifi
 Chaque scène a une priorité de 0 à 10 ; les nouvelles prennent celle que vous indiquez dans [Options](opciones.md#lecture) (5 par défaut).
 
 - La scène de **priorité la plus haute commande tous les canaux qu’elle touche**, zéros compris : une scène rouge de priorité 8 sur une bleue de priorité 5 donne du rouge, pas du magenta.
-- À **priorité égale**, sur les canaux d’intensité (dimmer, RGB…) elles se mélangent et la valeur la plus haute l’emporte ; sur les autres canaux, la dernière scène lancée l’emporte.
+- À **priorité égale**, sur les canaux d’intensité (dimmer, RGB…) elles se mélangent et la valeur la plus haute l’emporte ; sur les autres canaux, le **dernier changement** l’emporte : la dernière scène lancée ou le dernier GO d’une cuelist qui a changé ce canal. Ce qu’une cuelist ne fait que garder des cues précédentes, elle ne le reprend pas.
 - Si vous changez la priorité d’une scène qui joue, elle s’applique immédiatement.
 - Quand vous libérez une scène de priorité plus haute avec un fondu, elle fait un fondu vers ce qu’il y a en dessous.
 - **Le programmeur prime sur tout**, intensités comprises. Dans Options, vous pouvez baisser la priorité des modifications en direct.
@@ -189,3 +189,5 @@ Les tuiles de scène, les masters des groupes, les boutons ◀ ▶ et de libéra
 
 - Avec **Alt+clic**, ils sont copiés sur la page du SHOW ouverte (voir [Show](show.md#envoyer-nimporte-quel-contrôle-au-show)).
 - En mode Mapper, ils peuvent être assignés à un contrôleur (voir [Mappages](mapeos.md#mode-mapper)).
+
+Tant qu’un mappage utilise « La scène sélectionnée », ou en mode Mapper, la tuile de la scène sélectionnée (la dernière sur laquelle vous avez appuyé) porte une fine barre sur son bord inférieur (voir [Mappages](mapeos.md#la-scène-sélectionnée)).

@@ -439,6 +439,10 @@ void Show::moveTrack(Track *track, int direction)
     qDebug() << Q_FUNC_INFO << "Direction:" << direction << ", trackID:" << trkID << ", swapID:" << swapID;
     if (swapID == trkID || (direction > 0 && trkID == maxID))
         return;
+    // DMX Total Control: the first track up when there is no track 0 (it was
+    // deleted): nothing to swap with (an empty track was made, and crashed)
+    if (m_tracks.contains(quint32(swapID)) == false)
+        return;
 
     swapTrack = m_tracks[swapID];
     m_tracks[swapID] = track;

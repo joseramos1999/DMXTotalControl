@@ -38,6 +38,8 @@ private slots:
     void fadeTime();
     void nextStep();
     void calculateCurrent();
+    // DMX Total Control: the curves of a fade
+    void curves();
 };
 
 #endif

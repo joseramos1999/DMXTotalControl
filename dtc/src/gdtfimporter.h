@@ -22,6 +22,7 @@
 
 #include <QByteArray>
 #include <QStringList>
+#include <QDateTime>
 #include <QDir>
 
 #include <functional>
@@ -44,14 +45,29 @@ class QZipReader;
  *   groups, colours and presets, so the programmer knows what they do;
  * - beam angle, power, lamp and size.
  *
- * Only the first DMX break of a mode is used (the engine patches a fixture
- * on one address); virtual channels (without DMX) are left out.
+ * The engine patches a fixture on one address: a mode with several DMX
+ * breaks (two DMX inputs, or a part on a universe of its own) keeps its name
+ * for the first one, and each other break is one more mode, "Standard (DMX
+ * break 2)", with only its channels (from address 1), patched as a fixture
+ * of its own. Those modes come after the others, so the modes of the file
+ * keep their order. Virtual channels (without DMX) are left out: a .qxf
+ * channel always has an address.
  *
  * Everything here works without the UI and in any thread.
  */
 class GdtfImporter
 {
 public:
+    /** What tells one fixture type, and its version, from the others */
+    struct Info
+    {
+        /** Without braces, in capitals; empty when it has none (all zeros) */
+        QString fixtureTypeId;
+        /** Of its last revision */
+        QString revisionText;
+        QDateTime revisionDate;
+    };
+
     struct Result
     {
         bool ok = false;
@@ -61,6 +77,9 @@ public:
         QString file;
         QString error;
         QStringList warnings;
+        /** See Info */
+        QString fixtureTypeId;
+        QString revisionText;
     };
 
     /**
@@ -71,10 +90,14 @@ public:
     static Result convert(const QByteArray &gdtf, const QDir &target,
                           const std::function<bool(const QString &, const QString &)> &taken = nullptr);
 
+    /** The name of the .qxf convert() writes for a fixture */
+    static QString qxfName(const QString &manufacturer, const QString &model);
+
     /** The definition of a .gdtf, or nullptr (see $error). Wheel pictures are
-     *  written to $wheelsDir when given. The caller owns it */
+     *  written to $wheelsDir when given; $info gets its fixture type id and
+     *  revision, when given. The caller owns it */
     static QLCFixtureDef *read(const QByteArray &gdtf, QString *error, QStringList *warnings,
-                               const QDir *wheelsDir = nullptr);
+                               const QDir *wheelsDir = nullptr, Info *info = nullptr);
 
     /** CIE 1931 xyY ("0.3127,0.3290,100") to an sRGB colour at full brightness */
     static QColor cieToColor(const QString &xyY);

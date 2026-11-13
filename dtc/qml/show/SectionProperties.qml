@@ -133,11 +133,11 @@ Flickable {
         const index = Core.mapping.cueIndexOf(item.map)
         return index < cueList.length ? index : -1
     }
-    readonly property var targets: ["scene", "sceneDimmer", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "sceneRun", "bpm"]
+    readonly property var targets: ["scene", "sceneDimmer", "group", "grandMaster", "mixerDimmer", "moveSpeed", "sceneSpeed", "sceneRun", "bpm", "cueSpeed"]
     readonly property var targetNames: [qsTr("Play a scene (its intensity)"), qsTr("Dimmer of a scene (does not play it)"),
                                         qsTr("Master of a group"), qsTr("Grand master"), qsTr("Dimmer of fixtures"),
                                         qsTr("Movement speed of moving heads"), qsTr("Speed of a scene"),
-                                        qsTr("Play a scene (its speed)"), qsTr("BPM")]
+                                        qsTr("Play a scene (its speed)"), qsTr("BPM"), qsTr("Cue speed (all cuelists)")]
     readonly property var fixtureGroupChoices: [{ id: -1, name: qsTr("All the moving heads") }].concat(Core.patch.groups)
 
     // the elements of a fader
@@ -808,8 +808,7 @@ Flickable {
                 readonly property bool needsPalette: props.item !== undefined &&
                     props.type === "buttons" && props.item.action === "palette"
                 readonly property var paletteList: Core.palettes.palettes.map(p => ({
-                    id: p.id, color: p.color,
-                    name: ({ intensity: "INT", position: "POS", colour: "COL", beam: "BEAM" })[p.type] + " " + p.number + " · " + p.name }))
+                    id: p.id, color: p.color, name: p.code + " · " + p.name }))
                 readonly property var paletteGroups: [{ id: -1, name: qsTr("Its own fixtures") }].concat(Core.patch.groups)
                 Caption { visible: parent.needsPalette; text: qsTr("Palette") }
                 ComboBox {

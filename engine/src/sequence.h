@@ -20,6 +20,8 @@
 #ifndef SEQUENCE_H
 #define SEQUENCE_H
 
+#include <functional>
+
 #include "chaser.h"
 #include "scene.h"
 #include "chaserrunner.h"
@@ -79,6 +81,16 @@ public:
      *  Steps are normalized against the bound Scene channel set, preserving
      *  existing values and initializing newly introduced channels to 0. */
     void applyDumpValues(const QList<SceneValue> &dumpedValues, int targetStepIndex = -1);
+
+    /*********************************************************************
+     * DMX Total Control: palettes (ChaserStep::palettes)
+     *********************************************************************/
+    /** A palette changed: every step value that refers to $paletteId takes
+     *  valueOf(fixture, channel); -1 drops the reference and keeps the value.
+     *  The step on stage plays the new values at once */
+    void applyPalette(int paletteId, const std::function<int(quint32, quint32)> &valueOf);
+    /** A palette was deleted: its values stay, without the reference */
+    void forgetPalette(int paletteId);
 
 protected:
     /** The Scene ID associated to this Sequence */

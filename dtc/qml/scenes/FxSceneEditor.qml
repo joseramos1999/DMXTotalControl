@@ -203,21 +203,43 @@ RowLayout {
                     onClicked: Core.effects.setFxLayer(editor.info.id, editor.current, { linked: checked })
                 }
             }
+            // a dimmer FX on fixtures without a dimmer
+            Text {
+                Layout.fillWidth: true
+                visible: editor.currentLayer.param === "dimmer" && (editor.currentLayer.virtualCount || 0) > 0
+                wrapMode: Text.WordWrap
+                text: qsTr("%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).", "", editor.currentLayer.virtualCount || 0)
+                color: Theme.textDim
+                font.pixelSize: Theme.fontSmall
+            }
 
             Flickable {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                contentHeight: controls.implicitHeight
+                contentHeight: layerColumn.implicitHeight
                 boundsBehavior: Flickable.StopAtBounds
                 ScrollBar.vertical: ScrollBar {}
-                FxControls {
-                    id: controls
+                ColumnLayout {
+                    id: layerColumn
                     width: parent.width - 12
-                    fx: editor.currentLayer
-                    sets: editor.currentLayer.sets || 1
-                    tappedBpm: editor.tappedBpm
-                    onEdit: (props) => Core.effects.setFxLayer(editor.info.id, editor.current, props)
+                    spacing: 8
+                    FxControls {
+                        id: controls
+                        Layout.fillWidth: true
+                        fx: editor.currentLayer
+                        sets: editor.currentLayer.sets || 1
+                        tappedBpm: editor.tappedBpm
+                        onEdit: (props) => Core.effects.setFxLayer(editor.info.id, editor.current, props)
+                    }
+                    // each fixture's shift and delay, live too; the buttons go over all of them
+                    FxFixtureOffsets {
+                        Layout.fillWidth: true
+                        rows: editor.currentLayer.rows || []
+                        onSetOffset: (fixtureId, key, value) => Core.effects.setFxOffset(editor.info.id, editor.current, fixtureId, key, value)
+                        onFan: (key, last) => Core.effects.fanFxOffset(editor.info.id, editor.current, key, last)
+                        onClearAll: Core.effects.clearFxOffsets(editor.info.id, editor.current)
+                    }
                 }
             }
 

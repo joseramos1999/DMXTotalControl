@@ -46,6 +46,9 @@ ColumnLayout {
     signal edit(var props)
 
     readonly property bool panTilt: !!fx.panTilt
+    /** A dimmer FX on fixtures without a dimmer: it dims their colour */
+    readonly property bool virtualDimmer: fx.param === "dimmer" && (fx.virtualCount || 0) > 0
+    readonly property string virtualTip: qsTr("Fixtures without a dimmer (RGB only): the FX dims their colour from this level. Auto: like the dimmers of the FX, or full")
     // the speed slider: 0..1 -> 0..360 BPM, finer at the slow end
     function bpmToSlider(bpm) { return Math.sqrt(Math.max(0, Math.min(360, bpm)) / 360) }
     function sliderToBpm(v) { return Math.round(v * v * 360 * 10) / 10 }
@@ -150,6 +153,36 @@ ColumnLayout {
                 Layout.minimumWidth: 62
                 text: controls.fx.syncBpm ? (controls.tappedBpm > 0 ? Math.round(controls.tappedBpm) + " BPM" : qsTr("show"))
                                           : (controls.fx.bpm || 0) === 0 ? qsTr("stop") : Math.round(controls.fx.bpm || 0) + " BPM"
+            }
+
+            // the fixtures without a dimmer: the level their colour is dimmed from
+            Caption {
+                Layout.preferredWidth: 92
+                Layout.minimumWidth: 92
+                visible: controls.virtualDimmer
+                text: qsTr("Virtual dimmer")
+            }
+            HSlider {
+                visible: controls.virtualDimmer
+                Layout.minimumWidth: 60
+                Layout.preferredWidth: 120
+                Layout.fillWidth: true
+                from: 0; to: 100; stepSize: 1
+                resetValue: 100
+                value: Math.round((controls.fx.virtualLevel === undefined ? 255 : controls.fx.virtualLevel) * 100 / 255)
+                onMoved: controls.edit({ virtualBase: Math.round(value * 255 / 100) })
+                ToolTip.text: controls.virtualTip; ToolTip.visible: hovered
+            }
+            AppButton {
+                visible: controls.virtualDimmer
+                Layout.preferredWidth: 62
+                Layout.minimumWidth: 62
+                implicitHeight: 24
+                checkable: true
+                checked: (controls.fx.virtualBase === undefined ? -1 : controls.fx.virtualBase) < 0
+                text: checked ? qsTr("Auto") : Math.round((controls.fx.virtualLevel || 0) * 100 / 255) + " %"
+                ToolTip.text: controls.virtualTip; ToolTip.visible: hovered
+                onClicked: controls.edit({ virtualBase: checked ? -1 : (controls.fx.virtualLevel || 0) })
             }
         }
     }

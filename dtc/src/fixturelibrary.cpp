@@ -36,6 +36,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QSignalBlocker>
 #include <QTimer>
 
 #include <memory>
@@ -98,21 +99,31 @@ FixtureLibrary::FixtureLibrary(Doc *doc, QObject *parent)
     , m_importProgress(0)
     , m_oflDownloadUrl(OFL_DOWNLOAD_URL)
     , m_oflCommitsUrl(OFL_COMMITS_URL)
+    , m_share(new GdtfShare(this))
 {
     // (an update found before, and not downloaded yet; from the settings
     // alone: the user folder is only made when something needs it)
     const QDateTime downloaded = settingTime(KSettingOflDownloaded);
     m_oflUpdate = downloaded.isValid() && settingTime(KSettingOflLatest) > downloaded;
+    // what was downloaded from GDTF-Share counts the fixtures still in the
+    // library, and is converted as the GDTF files are
+    connect(this, &FixtureLibrary::libraryChanged, m_share, &GdtfShare::indexChanged);
+    connect(m_share, &GdtfShare::downloaded, this, &FixtureLibrary::importShareDownloads);
 }
 
 FixtureLibrary::~FixtureLibrary()
 {
-    // a GDTF import still running stops between two files
-    if (m_importThread != nullptr)
-    {
-        m_cancelImport = true;
-        m_importThread->wait();
-    }
+    // a GDTF import still running stops between two files, and the
+    // downloads waiting for it aren't kept
+    cancelImport();
+    if (m_importThread == nullptr)
+        return;
+    m_importThread->wait();
+    // (its end never comes: the .qxf it wrote are recorded now, and the
+    // downloads it didn't convert go. Nobody listens any more)
+    const QSignalBlocker blocker(m_share);
+    m_share->recordImports(m_unfinished.records);
+    m_share->discardDownloads(m_unfinished.discarded);
 }
 
 QDir FixtureLibrary::genericDefinitionDirectory()
@@ -240,6 +251,11 @@ bool FixtureLibrary::oflChecking() const
 QStringList FixtureLibrary::oflNewFixtures() const
 {
     return m_oflNew;
+}
+
+GdtfShare *FixtureLibrary::share() const
+{
+    return m_share;
 }
 
 void FixtureLibrary::setOpenFixtureLibraryUrls(const QString &download, const QString &commits)
@@ -468,6 +484,12 @@ int FixtureLibrary::importFiles(const QList<QUrl> &urls)
     int copied = 0;
     QList<GdtfJob> gdtf;
     auto isGdtf = [](const QString &name) { return name.endsWith(".gdtf", Qt::CaseInsensitive); };
+    auto file = [](const QString &path, const QString &entry) {
+        GdtfJob job;
+        job.path = path;
+        job.entry = entry;
+        return job;
+    };
     for (const QUrl &url : urls)
     {
         QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
@@ -475,10 +497,10 @@ int FixtureLibrary::importFiles(const QList<QUrl> &urls)
         if (fi.isDir())
         {
             QDir dir(path);
-            for (const QString &file : dir.entryList(QStringList() << "*.qxf", QDir::Files))
-                copied += importQxf(dir.filePath(file), target);
-            for (const QString &file : dir.entryList(QStringList() << "*.gdtf", QDir::Files))
-                gdtf.append({ dir.filePath(file), QString() });
+            for (const QString &name : dir.entryList(QStringList() << "*.qxf", QDir::Files))
+                copied += importQxf(dir.filePath(name), target);
+            for (const QString &name : dir.entryList(QStringList() << "*.gdtf", QDir::Files))
+                gdtf.append(file(dir.filePath(name), QString()));
         }
         else if (fi.suffix().compare("zip", Qt::CaseInsensitive) == 0)
         {
@@ -487,11 +509,11 @@ int FixtureLibrary::importFiles(const QList<QUrl> &urls)
             QZipReader zip(path);
             for (const QZipReader::FileInfo &info : zip.fileInfoList())
                 if (info.isFile && isGdtf(info.filePath))
-                    gdtf.append({ path, info.filePath });
+                    gdtf.append(file(path, info.filePath));
         }
         else if (isGdtf(path))
         {
-            gdtf.append({ path, QString() });
+            gdtf.append(file(path, QString()));
         }
         else
         {
@@ -533,15 +555,20 @@ void FixtureLibrary::startGdtf(const QList<GdtfJob> &jobs, int copied)
 
     const QDir target = gdtfDirectory();
     QThread *thread = QThread::create([this, jobs, target, taken, copied]() {
-        QStringList written, errors;
-        int failed = 0, warnings = 0;
+        GdtfOutcome outcome;
+        for (const GdtfJob &job : jobs)
+        {
+            if (job.source == GdtfSource::Share)
+                outcome.downloads++;
+        }
         std::unique_ptr<QZipReader> zip;
         QString zipPath;
         auto isTaken = [&taken](const QString &manufacturer, const QString &model) {
             return taken.contains((manufacturer + '|' + model).toLower());
         };
 
-        for (int i = 0; i < jobs.count() && m_cancelImport == false; i++)
+        int i = 0;
+        for (; i < jobs.count() && m_cancelImport == false; i++)
         {
             const GdtfJob &job = jobs.at(i);
             QByteArray data;
@@ -565,13 +592,14 @@ void FixtureLibrary::startGdtf(const QList<GdtfJob> &jobs, int copied)
             GdtfImporter::Result result = GdtfImporter::convert(data, target, isTaken);
             if (result.ok)
             {
-                written.append(result.file);
-                warnings += int(result.warnings.count());
+                addConverted(&outcome, job, result);
             }
             else
             {
-                failed++;
-                errors.append(QString("%1: %2").arg(name, result.error));
+                outcome.failed++;
+                outcome.errors.append(QString("%1: %2").arg(name, result.error));
+                if (job.source == GdtfSource::Share)
+                    outcome.discarded.append(job.path);
             }
 
             if (i % 10 == 9 || i + 1 == jobs.count())
@@ -583,10 +611,17 @@ void FixtureLibrary::startGdtf(const QList<GdtfJob> &jobs, int copied)
                 }, Qt::QueuedConnection);
             }
         }
+        // (stopped: the downloads not converted aren't kept either)
+        for (; i < jobs.count(); i++)
+        {
+            if (jobs.at(i).source == GdtfSource::Share)
+                outcome.discarded.append(jobs.at(i).path);
+        }
 
-        QMetaObject::invokeMethod(this, [this, written, failed, warnings, errors, copied]() {
-            finishGdtf(written, failed, warnings, errors, copied);
-        }, Qt::QueuedConnection);
+        // (for the program closing before its end is told)
+        m_unfinished = outcome;
+        QMetaObject::invokeMethod(this, [this, outcome, copied]() { finishGdtf(outcome, copied); },
+                                  Qt::QueuedConnection);
     });
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
     m_importThread = thread;
@@ -594,11 +629,36 @@ void FixtureLibrary::startGdtf(const QList<GdtfJob> &jobs, int copied)
     thread->start();
 }
 
-void FixtureLibrary::finishGdtf(const QStringList &written, int failed, int warnings, const QStringList &errors, int copied)
+void FixtureLibrary::addConverted(GdtfOutcome *outcome, const GdtfJob &job, const GdtfImporter::Result &result)
+{
+    outcome->written.append(result.file);
+    outcome->warnings += int(result.warnings.count());
+    outcome->fixtures.append(QVariantMap({ { "manufacturer", result.manufacturer }, { "model", result.model },
+                                           { "rid", job.rid } }));
+    // (a .gdtf kept, converted again, is still the download it was)
+    if (job.source == GdtfSource::Kept)
+        return;
+
+    GdtfShare::Imported imported;
+    imported.file = result.file;
+    imported.manufacturer = result.manufacturer;
+    imported.model = result.model;
+    imported.uuid = job.uuid.isEmpty() ? result.fixtureTypeId : job.uuid;
+    imported.rid = job.rid;
+    imported.revision = job.revision;
+    imported.revisionText = result.revisionText;
+    imported.modified = job.modified;
+    if (job.source == GdtfSource::Share)
+        imported.original = job.path;
+    outcome->records.append(imported);
+}
+
+void FixtureLibrary::finishGdtf(const GdtfOutcome &outcome, int copied)
 {
     // the new ones join the library, the ones imported again are updated (the
     // fixtures patched with them too)
     QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const QStringList &written = outcome.written;
     int added = 0;
     int kept = 0;
     for (const QString &path : written)
@@ -625,16 +685,23 @@ void FixtureLibrary::finishGdtf(const QStringList &written, int failed, int warn
         }
     }
 
-    m_importErrors = errors;
+    // where each one came from, once they are in the library
+    m_share->recordImports(outcome.records);
+    m_share->discardDownloads(outcome.discarded);
+    m_lastImported = outcome.fixtures;
+
+    m_importErrors = outcome.errors;
     QString status = m_cancelImport ? tr("GDTF import stopped: %n fixture(s) converted", "", int(written.count()))
                                     : tr("GDTF: %n fixture(s) converted", "", int(written.count()));
+    if (outcome.downloads > 0)
+        status = tr("GDTF-Share: %n fixture(s) downloaded", "", outcome.downloads) + " · " + status;
     status += " · " + tr("%n new in the library", "", added);
     if (copied > 0)
         status += " · " + tr("%n .qxf file(s) imported", "", copied);
-    if (failed > 0)
-        status += " · " + tr("%n couldn't be read", "", failed);
-    if (warnings > 0)
-        status += " · " + tr("%n warning(s)", "", warnings);
+    if (outcome.failed > 0)
+        status += " · " + tr("%n couldn't be read", "", outcome.failed);
+    if (outcome.warnings > 0)
+        status += " · " + tr("%n warning(s)", "", outcome.warnings);
     if (kept > 0)
         status += " · " + keptMessage(kept);
     setStatus(status);
@@ -643,6 +710,31 @@ void FixtureLibrary::finishGdtf(const QStringList &written, int failed, int warn
     m_importThread = nullptr;
     emit importChanged();
     emit libraryChanged();
+
+    // the downloads that waited for it
+    if (m_pendingJobs.isEmpty() == false)
+        startGdtf(m_pendingJobs.takeFirst(), 0);
+}
+
+void FixtureLibrary::importShareDownloads(const QList<GdtfShare::Download> &downloads)
+{
+    QList<GdtfJob> jobs;
+    for (const GdtfShare::Download &download : downloads)
+    {
+        GdtfJob job;
+        job.path = download.path;
+        job.source = GdtfSource::Share;
+        job.rid = download.rid;
+        job.uuid = download.uuid;
+        job.revision = download.revision;
+        job.modified = download.modified;
+        jobs.append(job);
+    }
+    // another import running: they wait for it (they are downloaded already)
+    if (m_importThread != nullptr)
+        m_pendingJobs.append(jobs);
+    else
+        startGdtf(jobs, 0);
 }
 
 int FixtureLibrary::installDefinition(QLCFixtureDef *def)
@@ -716,6 +808,25 @@ int FixtureLibrary::installDefinition(QLCFixtureDef *def)
 void FixtureLibrary::cancelImport()
 {
     m_cancelImport = true;
+    // and the downloads waiting for it: not converted, not kept
+    QStringList discarded;
+    for (const QList<GdtfJob> &jobs : std::as_const(m_pendingJobs))
+    {
+        for (const GdtfJob &job : jobs)
+            discarded.append(job.path);
+    }
+    m_pendingJobs.clear();
+    m_share->discardDownloads(discarded);
+}
+
+void FixtureLibrary::cancelShare()
+{
+    // the import first: the downloads that arrived whole, which the share
+    // hands over as it stops, come after it and are still converted
+    if (importing())
+        cancelImport();
+    if (m_share->busy())
+        m_share->cancel();
 }
 
 bool FixtureLibrary::importing() const
@@ -731,6 +842,11 @@ qreal FixtureLibrary::importProgress() const
 QStringList FixtureLibrary::importErrors() const
 {
     return m_importErrors;
+}
+
+QVariantList FixtureLibrary::lastImported() const
+{
+    return m_lastImported;
 }
 
 int FixtureLibrary::gdtfCount() const
@@ -764,6 +880,24 @@ int FixtureLibrary::importFromQlcPlus()
 
     setStatus(tr("No QLC+ user fixtures found"));
     return 0;
+}
+
+int FixtureLibrary::reconvertShareDownloads()
+{
+    QList<GdtfJob> jobs;
+    for (const QString &path : m_share->originals())
+    {
+        GdtfJob job;
+        job.path = path;
+        job.source = GdtfSource::Kept;
+        jobs.append(job);
+    }
+    if (jobs.isEmpty())
+        return 0;
+    // (another import running: it says so, and nothing starts)
+    const bool running = m_importThread != nullptr;
+    startGdtf(jobs, 0);
+    return running ? 0 : int(jobs.count());
 }
 
 void FixtureLibrary::downloadOpenFixtureLibrary()

@@ -66,7 +66,9 @@ Um die SHOW-Seiten von einem Smartphone oder Tablet im selben WLAN zu bedienen, 
 - **Fernsteuerung an**.
 - **Port**: Ändern Sie ihn, wenn ein anderes Programm ihn nutzt (standardmäßig 8800). Ist er belegt, erscheint ein Hinweis in Rot.
 - **PIN**: wird auf jedem Gerät einmal abgefragt. Leer: Jeder im Netzwerk kann die Fernsteuerung nutzen.
-- Die **Adressen**, die Sie im Browser des Smartphones öffnen müssen, mit einer Taste zum Kopieren.
+- **Name im Netzwerk**: Das Smartphone öffnet die Fernsteuerung mit `http://dmxtotalcontrol.local:8800/`, auch wenn sich die Adresse des Computers ändert (iPhone, iPad und neuere Android-Smartphones). Nutzt ein anderer Computer den Namen schon, nimmt dieser `dmxtotalcontrol-2`. Leer: kein Name. Ist der Netzwerkport 5353 nicht verfügbar oder nutzen andere Computer den Namen und `-2` bis `-9`, erscheint ein Hinweis in Rot.
+- Die **Adressen**, die Sie im Browser des Smartphones öffnen müssen, mit einer Taste zum Kopieren. Vor jeder steht der Name ihres Netzwerks, wie Windows es nennt („WLAN“, „Ethernet 2“). Zuerst kommt die Adresse **„Über den Namen“**, dann das WLAN, dann das Kabel (Ethernet) und zuletzt virtuelle Adapter und VPNs. Die Liste aktualisiert sich von selbst wenige Sekunden, nachdem ein Netzwerk verbunden oder getrennt wurde. Ist der Computer in keinem Netzwerk, erscheint stattdessen ein Hinweis.
+- Ein **QR-Code** der umrandeten Adresse (anfangs die erste numerische), um sie mit der Kamera des Smartphones zu öffnen. Klicken Sie auf eine andere Adresse, um sie zu wechseln. Gibt es eine PIN, steckt sie im Code und das Smartphone kommt ohne Abfrage hinein. **„Größer“** zeigt ihn groß.
 - Wie viele Geräte verbunden sind.
 
 Siehe [Fernsteuerung](remoto.md).
@@ -77,7 +79,9 @@ Zeigt, wie viele Fixture-Definitionen verfügbar sind (die integrierte Bibliothe
 
 - **Open Fixture Library**: **„Herunterladen“** (braucht Internet). Ist sie heruntergeladen, sehen Sie, wie viele Fixtures sie enthält und wann sie heruntergeladen wurde, und die Taste wird zu **„Aktualisieren“**: Sie holt die neuen und verbesserten Fixtures und behält Ihre Fixtures sowie die, die es in der Bibliothek nicht mehr gibt. Gibt es Neues, wird darauf hingewiesen und die Taste hervorgehoben (siehe [Fixtures](fixtures.md#open-fixture-library)).
 - **Fixture-Dateien importieren**: **„Importieren…“** von `.qxf`-Definitionen (dem Format von QLC+), `.gdtf`-Dateien oder einer `.zip` damit.
-- **GDTF-Fixtures**: **„GDTF-Share“** öffnet die Website; **„GDTF importieren…“** importiert Dateien, Ordner oder die `.zip` des Sammel-Downloads. Zeigt, wie viele GDTF-Fixtures in der Bibliothek sind.
+- **GDTF-Fixtures**: **„GDTF-Share…“** sucht Fixtures auf GDTF-Share, lädt sie herunter und importiert sie (siehe [Fixtures](fixtures.md#gdtf-share)); **„GDTF importieren…“** importiert Dateien, Ordner oder die `.zip` des Sammel-Downloads. Zeigt, wie viele GDTF-Fixtures in der Bibliothek sind.
+- **Von GDTF-Share heruntergeladene Fixtures**: erscheint, wenn es welche gibt. **„Erneut konvertieren“** konvertiert sie mit dieser Programmversion neu, aus der aufbewahrten `.gdtf` (siehe [Fixtures](fixtures.md#erneut-konvertieren)).
+- **Neuere Revisionen auf GDTF-Share**: erscheint, wenn GDTF-Fixtures der Bibliothek eine neuere Revision auf GDTF-Share haben. **„Aktualisieren“** zeigt sie in GDTF-Share, wo **„Alle aktualisieren“** die neueste jedes Fixtures herunterlädt und konvertiert: Die damit gepatchten Fixtures erhalten sie. Gezählt werden die Fixtures, die Sie von GDTF-Share heruntergeladen haben. Eine von Hand importierte Datei zählt, wenn der Text ihrer letzten Revision genau einer Revision auf GDTF-Share entspricht. Grundlage ist die letzte GDTF-Share-Liste, die das Programm hat (siehe [Fixtures](fixtures.md#neuere-revisionen)).
 - **Meine QLC+-Fixtures importieren**: **„Importieren“** kopiert die Fixtures, die Sie in QLC+ erstellt haben.
 - **Ordner für Benutzer-Fixtures**: **„Ordner öffnen“**.
 
@@ -85,7 +89,7 @@ All das wird unter [Fixtures](fixtures.md) erklärt.
 
 ## Updates
 
-- **Beim Start nach Updates suchen**: einmal täglich, auf GitHub: das Programm und, falls Sie die Open Fixture Library heruntergeladen haben, ob sie neue Fixtures hat (ein Hinweis zeigt es an). Ohne Ihre Zustimmung wird nichts heruntergeladen oder installiert. Ohne Internet stört es nicht.
+- **Beim Start nach Updates suchen**: einmal täglich, auf GitHub: das Programm und, falls Sie die Open Fixture Library heruntergeladen haben, ob sie neue Fixtures hat (ein Hinweis zeigt es an). Falls Sie Ihr GDTF-Share-Konto gespeichert haben, meldet es sich auch bei GDTF-Share an und zeigt, ob die dort heruntergeladenen Fixtures neuere Revisionen haben (jede Revision wird einmal gemeldet). Ohne Ihre Zustimmung wird nichts heruntergeladen oder installiert. Ohne Internet stört es nicht.
 - **Testversionen einbeziehen**: Neuerungen früher, weniger getestet.
 
 Darunter sehen Sie den Status („Sie haben die neueste Version“, „Version … ist erschienen“) und die Tasten:

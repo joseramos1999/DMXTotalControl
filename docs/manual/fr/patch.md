@@ -22,14 +22,16 @@ Dans l’en-tête, vous choisissez la vue et vous avez les outils pour ajouter 
    - **Univers** et **Adresse** : l’adresse se place toute seule sur la première libre de l’univers.
    - **Écart** : canaux libres entre un fixture et le suivant.
    - Avec plus d’un fixture, **« En faire un groupe »** et le nom du **Groupe**.
-4. En bas, vous voyez les adresses qu’ils vont utiliser (« Utilise les adresses 1 à 20 »). S’ils ne tiennent pas dans ce qui reste de l’univers, ils passent au suivant.
+4. En bas, vous voyez les adresses qu’ils vont utiliser (« Utilise les adresses 1 à 20 »). S’ils ne tiennent pas dans ce qui reste de l’univers, ils passent au suivant. Si le mode a d’autres *DMX breaks* (un fixture GDTF avec deux entrées DMX), un avis vous demande de patcher aussi son mode « (DMX break 2) », à sa propre adresse.
 5. Appuyez sur **« Patcher le fixture »** ou **« Patcher N fixtures »**.
 
 La fenêtre reste ouverte pour continuer à ajouter, avec l’adresse déjà sur la suivante libre. Si quelque chose ne peut pas être patché (les adresses sont occupées, par exemple), la raison apparaît en rouge en bas. Appuyez sur **« Fermer »** quand vous avez terminé.
 
 Pour des dimmers isolés, choisissez **Generic › Generic Dimmer** : au lieu d’un mode, vous indiquez combien de **Canaux**.
 
-> **Conseil :** si vous ne trouvez pas votre fixture, téléchargez l’[Open Fixture Library](fixtures.md#open-fixture-library), importez son GDTF ou créez-le dans la page [Fixtures](fixtures.md).
+**« Rechercher sur GDTF-Share… »**, en bas, ouvre [GDTF-Share](fixtures.md#gdtf-share) : téléchargez le fixture et appuyez sur **« Le patcher »** pour qu’il soit choisi ici.
+
+> **Conseil :** si vous ne trouvez pas votre fixture, cherchez-le sur GDTF-Share, téléchargez l’[Open Fixture Library](fixtures.md#open-fixture-library), importez son GDTF ou créez-le dans la page [Fixtures](fixtures.md).
 
 ## La liste
 

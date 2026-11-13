@@ -133,7 +133,7 @@ El mismo menú de la ficha tiene **«Abrir en Escenas»**, **«Editar en el prog
 Cada escena tiene una prioridad de 0 a 10; las nuevas toman la que indiques en [Opciones](opciones.md#reproducción) (5 por defecto).
 
 - La escena de **mayor prioridad manda en todos los canales que toca**, ceros incluidos: una escena roja de prioridad 8 sobre una azul de prioridad 5 da rojo, no magenta.
-- Con la **misma prioridad**, en los canales de intensidad (dimmer, RGB…) se mezclan y gana el valor más alto; en el resto de canales gana la última escena lanzada.
+- Con la **misma prioridad**, en los canales de intensidad (dimmer, RGB…) se mezclan y gana el valor más alto; en el resto de canales gana el **último cambio**: la última escena lanzada o el último GO de una cuelist que cambió ese canal. Lo que una cuelist solo mantiene de cues anteriores no lo retoma.
 - Si cambias la prioridad de una escena que suena, se aplica al momento.
 - Al liberar una escena de mayor prioridad con fundido, hace un fundido hacia lo que hay debajo.
 - **El programador manda sobre todo**, intensidades incluidas. En Opciones puedes bajar la prioridad de la edición en vivo.
@@ -189,3 +189,5 @@ Las fichas de escena, los masters de los grupos, los botones ◀ ▶ y de libera
 
 - Con **Alt+clic** se copian a la página del SHOW que esté abierta (consulta [Show](show.md#llevar-cualquier-control-al-show)).
 - En el modo Mapear se pueden asignar a un controlador (consulta [Mapeos](mapeos.md#modo-mapear)).
+
+Mientras algún mapeo use «La escena seleccionada», o en el modo Mapear, la ficha de la escena seleccionada (la última que pulsaste) lleva una barra fina en su borde inferior (consulta [Mapeos](mapeos.md#la-escena-seleccionada)).

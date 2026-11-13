@@ -68,10 +68,23 @@ Voir [la ligne de commande](programar.md#ligne-de-commande).
 | Touche ou geste | Ce qu’il fait |
 |---|---|
 | **Espace** | Lecture ou arrêt depuis le curseur |
-| **Suppr** | Supprime le bloc sélectionné |
+| **Suppr** / **Retour arrière** | Supprime les blocs sélectionnés |
+| **Ctrl+A** | Sélectionne tous les blocs des pistes visibles |
+| **Ctrl+D** | Duplique les blocs sélectionnés juste après eux |
+| **Ctrl+C** | Copie les blocs sélectionnés |
+| **Ctrl+X** | Coupe les blocs sélectionnés (ceux des pistes verrouillées sont seulement copiés) |
+| **Ctrl+V** | Colle les blocs copiés au curseur, à partir de la piste sélectionnée |
+| **Ctrl+Z** | Annule la dernière modification (pas pendant la saisie dans un champ) |
+| **Ctrl+Y** / **Ctrl+Maj+Z** | Rétablit ce qui a été annulé |
+| **Ctrl+clic** sur un bloc | L’ajoute à la sélection ou l’en retire |
+| **Maj+clic** sur un bloc | Sélectionne du dernier bloc choisi jusqu’à celui-ci |
+| Faire glisser sur une zone vide des pistes | Dessine un rectangle qui sélectionne les blocs qu’il touche (avec **Ctrl** ou **Maj**, ils s’ajoutent) |
+| Clic droit sur une zone vide d’une piste | « Coller ici » et « Tout sélectionner » |
 | **Ctrl+molette** | Zoom sur la timeline |
 | **Maj+molette** | Se déplacer dans le temps |
 | Double-clic sur la règle | Lecture à partir de là |
+
+Les touches des blocs n’agissent pas pendant la saisie dans un champ. Voir [Sélectionner plusieurs blocs](escenas.md#sélectionner-plusieurs-blocs) et [Copier et coller](escenas.md#copier-et-coller).
 
 ## Faders et curseurs
 
@@ -92,6 +105,8 @@ Après avoir cliqué sur un fader ou un curseur :
 | Double-clic sur une cue ou un pas | Le charge dans le programmeur |
 | Double-clic sur le numéro d’une cue | Change son numéro |
 | Molette sur un temps cliqué | ±0,1 s (avec **Maj**, ±1 s) |
+| **Ctrl+Z** | Annule la dernière modification de la cuelist ouverte (dans un champ avec du texte saisi, d’abord ce texte) |
+| **Ctrl+Y** / **Ctrl+Maj+Z** | Rétablit ce qui a été annulé |
 | **Échap** dans un champ | Laisse la valeur telle qu’elle était |
 
 ## Souris et modificateurs
@@ -101,7 +116,7 @@ Après avoir cliqué sur un fader ou un curseur :
 | **Alt+clic** | Presque n’importe quel contrôle | L’envoie sur la page du SHOW ouverte |
 | **Maj+clic** | Mode Mapper | Utilise le contrôle au lieu de le mapper |
 | **Ctrl+clic** | Boutons Flash du mixeur | Gardent le flash allumé jusqu’au clic suivant |
-| **Ctrl+clic** / **Maj+clic** | Fixtures, groupes et plan 2D (Programmer et Patch), liste des scènes | Ajoute à la sélection ou en retire |
+| **Ctrl+clic** / **Maj+clic** | Fixtures, groupes et plan 2D (Programmer et Patch), liste des scènes, blocs d’une super scène | Ajoute à la sélection ou en retire |
 | Molette | Plan 2D | Zoom |
 | Glisser avec le bouton droit ou celui du milieu | Plan 2D | Déplace la vue (double-clic : la recentre) |
 | Clic droit | Bouton 15° du plan 2D | Tourne dans l’autre sens |

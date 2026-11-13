@@ -71,27 +71,38 @@ quint32 FXScene::totalDuration()
 
 bool FXScene::Shape::operator==(const Shape &o) const
 {
+    // DMX Total Control: the shift and the delay of the fixture too
     return mode == o.mode && figure == o.figure && swing == o.swing && swingTilt == o.swingTilt &&
            phase == o.phase && rotate == o.rotate && panInvert == o.panInvert &&
-           tiltInvert == o.tiltInvert && reverse == o.reverse;
+           tiltInvert == o.tiltInvert && reverse == o.reverse && shift == o.shift && delay == o.delay;
 }
 
 bool FXScene::Own::isEmpty() const
 {
-    return !mode && !figure && !swing && !swingTilt && !phase && !rotate &&
-           !panInvert && !tiltInvert && !reverse;
+    return hasShape() == false && hasOffset() == false;
+}
+
+bool FXScene::Own::hasShape() const
+{
+    return mode || figure || swing || swingTilt || phase || rotate || panInvert || tiltInvert || reverse;
+}
+
+bool FXScene::Own::hasOffset() const
+{
+    return shift || delay;
 }
 
 bool FXScene::Own::operator==(const Own &o) const
 {
     return mode == o.mode && figure == o.figure && swing == o.swing && swingTilt == o.swingTilt &&
            phase == o.phase && rotate == o.rotate && panInvert == o.panInvert &&
-           tiltInvert == o.tiltInvert && reverse == o.reverse;
+           tiltInvert == o.tiltInvert && reverse == o.reverse && shift == o.shift && delay == o.delay;
 }
 
 FXScene::Shape FXScene::Layer::shape() const
 {
-    return { mode, figure, swing, swingTilt, phase, rotate, panInvert, tiltInvert, reverse };
+    // (DMX Total Control: a layer has no shift nor delay: those are its fixtures')
+    return { mode, figure, swing, swingTilt, phase, rotate, panInvert, tiltInvert, reverse, 0, 0 };
 }
 
 FXScene::Shape FXScene::Layer::shapeOf(quint32 fixture) const
@@ -112,6 +123,8 @@ FXScene::Shape FXScene::Layer::shapeOf(quint32 fixture) const
     s.panInvert = o.panInvert.value_or(s.panInvert);
     s.tiltInvert = o.tiltInvert.value_or(s.tiltInvert);
     s.reverse = o.reverse.value_or(s.reverse);
+    s.shift = o.shift.value_or(0);
+    s.delay = o.delay.value_or(0);
     return s;
 }
 
@@ -134,6 +147,9 @@ QMap<quint32, FXScene::Own> FXScene::Layer::tidyOwn() const
         if (panTilt == false || o.panInvert == panInvert) o.panInvert.reset();
         if (panTilt == false || o.tiltInvert == tiltInvert) o.tiltInvert.reset();
         if (panTilt == false || o.reverse == reverse) o.reverse.reset();
+        // DMX Total Control: no shift or delay is the layer's
+        if (o.shift == 0) o.shift.reset();
+        if (o.delay == 0) o.delay.reset();
         if (o.isEmpty() == false)
             tidy.insert(it.key(), o);
     }
@@ -155,6 +171,8 @@ bool FXScene::Layer::operator==(const Layer &o) const
            order == o.order && (order != Shuffled || seed == o.seed) &&
            phase == o.phase && wait == o.wait && rotate == o.rotate && panInvert == o.panInvert &&
            tiltInvert == o.tiltInvert && reverse == o.reverse && linked == o.linked && fixtures == o.fixtures &&
+           // DMX Total Control: the level of the virtual dimmer, on a dimmer layer
+           (param != QLatin1String("dimmer") || virtualBase == o.virtualBase) &&
            (own.isEmpty() && o.own.isEmpty() ? true : tidyOwn() == o.tidyOwn());
 }
 
@@ -678,6 +696,91 @@ quint32 FXScene::channelFor(const Fixture *fixture, const QString &param, quint3
     return found;
 }
 
+/** DMX Total Control: a channel that gives light of a colour (not CMY) */
+static bool isEmitter(const QLCChannel *ch)
+{
+    if (ch == NULL || ch->group() != QLCChannel::Intensity)
+        return false;
+    switch (ch->colour())
+    {
+        case QLCChannel::Red: case QLCChannel::Green: case QLCChannel::Blue:
+        case QLCChannel::White: case QLCChannel::Amber: case QLCChannel::UV:
+        case QLCChannel::Lime: case QLCChannel::Indigo:
+            return true;
+        default:
+            return false;
+    }
+}
+
+QList<QPair<quint32, quint32>> FXScene::virtualDimmerChannels(const Fixture *fixture)
+{
+    QList<QPair<quint32, quint32>> list;
+    if (fixture == NULL || channelFor(fixture, QStringLiteral("dimmer")) != QLCChannel::invalid())
+        return list;
+
+    // the emitters the grand master dims: not the CMY, nor the ones whose
+    // 'Dimmer' option is off
+    for (quint32 c = 0; c < fixture->channels(); c++)
+    {
+        const QLCChannel *ch = fixture->channel(c);
+        if (isEmitter(ch) == false || ch->controlByte() != QLCChannel::MSB ||
+            fixture->channelFollowsGrandMaster(int(c)) == false)
+            continue;
+        // its fine channel: the LSB of the same colour right after it (as channelFor)
+        quint32 fine = QLCChannel::invalid();
+        const QLCChannel *next = fixture->channel(c + 1);
+        if (next != NULL && next->controlByte() == QLCChannel::LSB && next->group() == ch->group() &&
+            next->colour() == ch->colour())
+            fine = c + 1;
+        list.append(qMakePair(c, fine));
+    }
+    return list;
+}
+
+bool FXScene::hasParam(const Fixture *fixture, const QString &param)
+{
+    if (fixture == NULL)
+        return false;
+    if (param == QLatin1String("pantilt"))
+        return channelFor(fixture, QStringLiteral("pan")) != QLCChannel::invalid() &&
+               channelFor(fixture, QStringLiteral("tilt")) != QLCChannel::invalid();
+    if (channelFor(fixture, param) != QLCChannel::invalid())
+        return true;
+    return param == QLatin1String("dimmer") && virtualDimmerChannels(fixture).isEmpty() == false;
+}
+
+QList<QPair<quint32, quint32>> FXScene::layerChannels(const Fixture *fixture, const QString &param)
+{
+    QList<QPair<quint32, quint32>> list;
+    const QStringList params = param == QLatin1String("pantilt") ? QStringList({ "pan", "tilt" }) : QStringList({ param });
+    for (const QString &p : params)
+    {
+        quint32 fine = QLCChannel::invalid();
+        const quint32 c = channelFor(fixture, p, &fine);
+        if (c != QLCChannel::invalid())
+            list.append(qMakePair(c, fine));
+    }
+    // without a dimmer, the emitters of its virtual dimmer
+    if (list.isEmpty() && param == QLatin1String("dimmer"))
+        list = virtualDimmerChannels(fixture);
+    return list;
+}
+
+int FXScene::autoVirtualBase(const Doc *doc, const QList<quint32> &order,
+                             const QHash<QPair<quint32, quint32>, uchar> &values)
+{
+    for (quint32 fid : order)
+    {
+        const quint32 c = channelFor(doc != NULL ? doc->fixture(fid) : NULL, QStringLiteral("dimmer"));
+        if (c == QLCChannel::invalid())
+            continue;
+        auto it = values.constFind(qMakePair(fid, c));
+        if (it != values.constEnd())
+            return it.value();
+    }
+    return 255;
+}
+
 QList<int> FXScene::groupSets(const Doc *doc, const QList<quint32> &order, int grouping, int groupSize, int *sets)
 {
     const int n = order.count();
@@ -798,6 +901,9 @@ qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos
     // DMX Total Control: its wait (ms) in cycles at the BPM it goes at (one
     // that follows the BPM kept its own, unused, in layer.bpm)
     bpm = qMax(0.0, bpm);
+    // DMX Total Control: its shift and its delay put it behind the others,
+    // on top of the wave and the phase
+    cyclePos -= qreal(shape.shift) / 360.0 + delayCycles(layer, shape, bpm);
     cyclePos += qreal(shape.phase) / 360.0;
     sets = qMax(1, sets);
     // from the last to the first set
@@ -839,6 +945,25 @@ qreal FXScene::positionOf(const Layer &layer, const Shape &shape, qreal cyclePos
     return local - std::floor(local);
 }
 
+qreal FXScene::delayCycles(const Layer &layer, const Shape &shape, qreal bpm)
+{
+    // (the same conversion as the wait)
+    return qreal(shape.delay) / 60000.0 * qMax(0.0, bpm) * layer.multiplier;
+}
+
+uint FXScene::longestDelay() const
+{
+    QMutexLocker locker(&m_mutex);
+    uint longest = 0;
+    for (const Layer &layer : m_layers)
+    {
+        const QMap<quint32, Own> own = layer.tidyOwn();
+        for (const Own &o : own)
+            longest = qMax(longest, uint(o.delay.value_or(0)));
+    }
+    return longest;
+}
+
 QVariantList FXScene::previewLayer(int index, qreal cyclePos) const
 {
     QVariantList list;
@@ -864,6 +989,9 @@ QVariantList FXScene::previewLayer(int index, qreal cyclePos) const
         const Shape shape = layer.shapeOf(order.at(i));
         const int set = i < twins.count() && twins.at(i) ? setOf.at(order.count() - 1 - i) : setOf.at(i);
         qreal pos = positionOf(layer, shape, cyclePos, set, sets, bpm);
+        // DMX Total Control: a fixture with a delay waits at its base when the FX starts
+        if (shape.delay > 0 && cyclePos < delayCycles(layer, shape, bpm))
+            pos = -1.0;
         if (layer.isPanTilt())
         {
             // as the layer moves it
@@ -1033,6 +1161,9 @@ void FXScene::saveLayerXML(QXmlStreamWriter *doc, const Layer &layer)
         doc->writeAttribute("Linked", "1");
     if (layer.fixtures.isEmpty() == false)
         doc->writeAttribute("Fixtures", idList(layer.fixtures));
+    // DMX Total Control: the level of the virtual dimmer, when it is not auto
+    if (layer.param == QLatin1String("dimmer") && layer.virtualBase >= 0)
+        doc->writeAttribute("VirtualBase", QString::number(layer.virtualBase));
 
     // DMX Total Control: what its fixtures do their own way
     const QMap<quint32, Own> own = layer.tidyOwn();
@@ -1050,6 +1181,10 @@ void FXScene::saveLayerXML(QXmlStreamWriter *doc, const Layer &layer)
         if (o.panInvert) doc->writeAttribute("PanInvert", *o.panInvert ? "1" : "0");
         if (o.tiltInvert) doc->writeAttribute("TiltInvert", *o.tiltInvert ? "1" : "0");
         if (o.reverse) doc->writeAttribute("Reverse", *o.reverse ? "1" : "0");
+        // DMX Total Control: its shift and its delay (an Own with only these is
+        // dropped by older versions, which play the FX without them)
+        if (o.shift) doc->writeAttribute("Shift", QString::number(*o.shift));
+        if (o.delay) doc->writeAttribute("Delay", QString::number(*o.delay));
     }
     doc->writeEndElement();
 }
@@ -1084,6 +1219,10 @@ FXScene::Layer FXScene::loadLayerXML(const QXmlStreamAttributes &attrs)
     layer.linked = attrs.value("Linked") == QLatin1String("1");
     for (const QString &fid : attrs.value("Fixtures").toString().split(',', Qt::SkipEmptyParts))
         layer.fixtures.append(fid.toUInt());
+    // DMX Total Control: the level of the virtual dimmer (not a number: auto)
+    bool virtualOk = false;
+    const int virtualBase = attrs.value("VirtualBase").toInt(&virtualOk);
+    layer.virtualBase = virtualOk ? qBound(-1, virtualBase, 255) : -1;
     return layer;
 }
 
@@ -1132,6 +1271,8 @@ FXScene::Layer FXScene::loadLayerXML(QXmlStreamReader &root)
         o.panInvert = flag("PanInvert");
         o.tiltInvert = flag("TiltInvert");
         o.reverse = flag("Reverse");
+        o.shift = number("Shift", 0, 1440);
+        o.delay = number("Delay", 0, 60000);
         if (o.isEmpty() == false)
             layer.own.insert(fixture, o);
     }
@@ -1256,8 +1397,11 @@ void FXScene::postLoad()
 void FXScene::buildTargets()
 {
     m_targets.clear();
+    m_scalers.clear();
     m_layerOrders.clear();
     QSet<QPair<quint32, quint32>> modulated;
+    // DMX Total Control: the fixtures a virtual dimmer dims already
+    QSet<quint32> scaled;
 
     for (int l = 0; l < m_layers.count(); l++)
     {
@@ -1272,6 +1416,19 @@ void FXScene::buildTargets()
             Fixture *fxi = doc()->fixture(order.at(i));
             if (fxi == NULL)
                 continue;
+
+            // DMX Total Control: a dimmer layer on a fixture without a dimmer
+            // dims its colour: a virtual dimmer (the first such layer), whose
+            // emitters come after the other layers
+            if (layer.param == QLatin1String("dimmer") && channelFor(fxi, layer.param) == QLCChannel::invalid())
+            {
+                if (scaled.contains(fxi->id()) == false && virtualDimmerChannels(fxi).isEmpty() == false)
+                {
+                    scaled.insert(fxi->id());
+                    m_scalers.append({ fxi->id(), l, setOf.at(i), sets, i, setOf.at(order.count() - 1 - i), 255 });
+                }
+                continue;
+            }
 
             QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
             for (const QString &param : params)
@@ -1306,6 +1463,58 @@ void FXScene::buildTargets()
                     modulated.insert(qMakePair(t.fixture, fine));
                 m_targets.append(t);
             }
+        }
+    }
+
+    // DMX Total Control: the emitters of the virtual dimmers, now that every
+    // layer has its channels: a colour layer keeps its channel whatever the
+    // order of the layers, and the dimmer scales it; the others get a target
+    // of their own, on their base or on what is below
+    for (int s = 0; s < m_scalers.count(); s++)
+    {
+        Scaler &scaler = m_scalers[s];
+        scaler.autoBase = autoVirtualBase(doc(), m_layerOrders.at(scaler.layer), m_values);
+        Fixture *fxi = doc()->fixture(scaler.fixture);
+        const QList<QPair<quint32, quint32>> emitters = virtualDimmerChannels(fxi);
+        for (const QPair<quint32, quint32> &emitter : emitters)
+        {
+            bool taken = false;
+            for (Target &t : m_targets)
+            {
+                if (t.fixture == scaler.fixture && t.channel == emitter.first && t.layer >= 0 && t.scaler < 0)
+                {
+                    t.scaler = s;
+                    taken = true;
+                }
+            }
+            if (taken || modulated.contains(qMakePair(scaler.fixture, emitter.first)))
+                continue;
+
+            Target t;
+            t.fixture = scaler.fixture;
+            t.universe = fxi->universe();
+            t.channel = emitter.first;
+            // (8 bit past the end of the universe, as the layers)
+            t.fine = emitter.second;
+            if (t.fine != QLCChannel::invalid() && fxi->address() + t.fine >= UNIVERSE_SIZE)
+                t.fine = QLCChannel::invalid();
+            t.layer = -1;
+            t.tilt = false;
+            t.set = scaler.set;
+            t.sets = scaler.sets;
+            t.index = scaler.index;
+            t.twinSet = scaler.twinSet;
+            auto msb = m_values.constFind(qMakePair(t.fixture, t.channel));
+            t.hasBase = msb != m_values.constEnd();
+            t.base = t.hasBase ? quint32(msb.value()) : 0;
+            if (t.fine != QLCChannel::invalid())
+                t.base = (t.base << 8) + quint32(m_values.value(qMakePair(t.fixture, t.fine), 0));
+            t.scaler = s;
+
+            modulated.insert(qMakePair(t.fixture, t.channel));
+            if (emitter.second != QLCChannel::invalid())
+                modulated.insert(qMakePair(t.fixture, emitter.second));
+            m_targets.append(t);
         }
     }
 
@@ -1395,6 +1604,32 @@ int FXScene::beats() const
     return m_beats.loadRelaxed() & 0x7fffffff;
 }
 
+QList<qreal> FXScene::scalerLevels(const QList<QList<bool>> &twins, qreal phaseShift, qreal syncedBpm,
+                                   qreal size, qreal fadeFactor) const
+{
+    QList<qreal> levels;
+    for (const Scaler &s : m_scalers)
+    {
+        // where the fixture is in the wave of the layer, as for a dimmer
+        const Layer &layer = m_layers.at(s.layer);
+        const Shape shape = layer.shapeOf(s.fixture);
+        const QList<bool> &mirror = twins.at(s.layer);
+        const int set = s.index < mirror.count() && mirror.at(s.index) ? s.twinSet : s.set;
+        const qreal layerBpm = layer.syncBpm ? syncedBpm : layer.bpm;
+        qreal pos = positionOf(layer, shape, m_layerPos.at(s.layer) + phaseShift, set, s.sets, layerBpm);
+        if (shape.delay > 0 && m_layerPos.at(s.layer) < delayCycles(layer, shape, layerBpm))
+            pos = -1.0;
+        const qreal level = pos >= 0.0 ? modeValue(shape.mode, pos) : 0.0;
+        // its level fades in from full (a dimmer fades from what the stage
+        // shows) and the wave grows in with it
+        const int from = layer.virtualBase >= 0 ? layer.virtualBase : s.autoBase;
+        const qreal base = 255.0 + (qreal(from) - 255.0) * fadeFactor;
+        const qreal value = base + level * qreal(shape.swing) / 100.0 * 0.5 * 255.0 * size * fadeFactor;
+        levels.append(qBound(0.0, value, 255.0) / 255.0);
+    }
+    return levels;
+}
+
 void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
 {
     // DMX Total Control: paused, the faders hold too (the base of a layer
@@ -1415,9 +1650,13 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
         buildTargets();
         for (const Target &o : std::as_const(old))
         {
+            // DMX Total Control: of the same kind, modulated (a layer or a
+            // virtual dimmer) or static: a channel that leaves the virtual
+            // dimmer is static again, not scaled any more
+            const bool oldModulated = o.layer >= 0 || o.scaler >= 0;
             bool kept = false;
             for (const Target &t : std::as_const(m_targets))
-                if (t.fixture == o.fixture && t.channel == o.channel && (t.layer >= 0) == (o.layer >= 0))
+                if (t.fixture == o.fixture && t.channel == o.channel && (t.layer >= 0 || t.scaler >= 0) == oldModulated)
                     kept = true;
             if (kept || o.universe >= quint32(universes.count()))
                 continue;
@@ -1489,6 +1728,9 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
     for (int l = 0; l < m_layers.count(); l++)
         twins.append(l < m_layerOrders.count() ? mirrorTwins(m_layers.at(l), m_layerOrders.at(l)) : QList<bool>());
 
+    // DMX Total Control: the level of each virtual dimmer at this frame
+    const QList<qreal> scales = scalerLevels(twins, phaseShift, syncedBpm, size, fadeFactor);
+
     const bool startValues = m_valuesStarted == false || rebuilt;
     for (const Target &t : std::as_const(m_targets))
     {
@@ -1499,7 +1741,7 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
         if (fader.isNull())
             continue;
 
-        if (t.layer < 0)
+        if (t.layer < 0 && t.scaler < 0)
         {
             // a static value: set once, it fades in like a scene
             if (startValues == false)
@@ -1519,34 +1761,48 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
             continue;
         }
 
-        const Layer &layer = m_layers.at(t.layer);
-        // DMX Total Control: what the fixture does its own way, on the clock of the layer
-        const Shape shape = layer.shapeOf(t.fixture);
-        // in a mirror, the place in the wave of its twin
-        const QList<bool> &mirror = twins.at(t.layer);
-        const int set = t.index < mirror.count() && mirror.at(t.index) ? t.twinSet : t.set;
-        qreal pos = positionOf(layer, shape, m_layerPos.at(t.layer) + phaseShift, set, t.sets,
-                               layer.syncBpm ? syncedBpm : layer.bpm);
-        qreal level = 0.0;
-        int swing = shape.swing;
-        if (pos >= 0.0)
-        {
-            if (layer.isPanTilt())
-            {
-                QPointF p = panTiltPoint(shape, pos);
-                level = t.tilt ? p.y() : p.x();
-                if (t.tilt)
-                    swing = shape.swingTilt;
-            }
-            else
-            {
-                level = modeValue(shape.mode, pos);
-            }
-        }
-
         const bool wide = t.fine != QLCChannel::invalid();
-        const qreal range = wide ? 65535.0 : 255.0;
-        const qint32 offset = qint32(std::round(level * qreal(swing) / 100.0 * 0.5 * range * size * fadeFactor));
+        // DMX Total Control: the emitter of a virtual dimmer that no layer
+        // moves sends its base (or what is below) dimmed, without a wave
+        qint32 offset = 0;
+        if (t.layer >= 0)
+        {
+            const Layer &layer = m_layers.at(t.layer);
+            // DMX Total Control: what the fixture does its own way, on the clock of the layer
+            const Shape shape = layer.shapeOf(t.fixture);
+            // in a mirror, the place in the wave of its twin
+            const QList<bool> &mirror = twins.at(t.layer);
+            const int set = t.index < mirror.count() && mirror.at(t.index) ? t.twinSet : t.set;
+            const qreal layerBpm = layer.syncBpm ? syncedBpm : layer.bpm;
+            qreal pos = positionOf(layer, shape, m_layerPos.at(t.layer) + phaseShift, set, t.sets, layerBpm);
+            // DMX Total Control: a fixture with a delay waits at its base (or what
+            // is below) when the FX starts: the layer is at 0 at the start, for a
+            // new layer and at the first tapped beat of a row; one that goes on
+            // never waits again
+            if (shape.delay > 0 && m_layerPos.at(t.layer) < delayCycles(layer, shape, layerBpm))
+                pos = -1.0;
+            qreal level = 0.0;
+            int swing = shape.swing;
+            if (pos >= 0.0)
+            {
+                if (layer.isPanTilt())
+                {
+                    QPointF p = panTiltPoint(shape, pos);
+                    level = t.tilt ? p.y() : p.x();
+                    if (t.tilt)
+                        swing = shape.swingTilt;
+                }
+                else
+                {
+                    level = modeValue(shape.mode, pos);
+                }
+            }
+
+            const qreal range = wide ? 65535.0 : 255.0;
+            offset = qint32(std::round(level * qreal(swing) / 100.0 * 0.5 * range * size * fadeFactor));
+        }
+        // DMX Total Control: dimmed by its virtual dimmer
+        const qreal scale = t.scaler >= 0 ? scales.at(t.scaler) : 1.0;
         const bool hasBase = t.hasBase;
         const quint32 base = t.base;
         // the base fades in when the scene starts; a live edit applies at once
@@ -1589,7 +1845,7 @@ void FXScene::write(MasterTimer *timer, QList<Universe *> universes)
                     fc.setFadeTime(initial && fc.canFade() ? fadeIn : 0);
                 }
             }
-            fc.setModulation(offset, hasBase == false, fineAddress);
+            fc.setModulation(offset, hasBase == false, fineAddress, scale);
         });
     }
     m_valuesStarted = true;

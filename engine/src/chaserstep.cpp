@@ -21,6 +21,7 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 #include <QDebug>
+#include <algorithm>
 
 #include "chaserstep.h"
 #include "function.h"
@@ -28,6 +29,9 @@
 
 #define KXMLQLCSequenceSceneValues  QStringLiteral("Values")
 #define KXMLQLCStepNote             QStringLiteral("Note")
+/* DMX Total Control: the palettes of the values, "fixture:channel:palette,..."
+   (an attribute: QLC+ ignores it and reads the text as before) */
+#define KXMLDTCStepPalettes         QStringLiteral("Palettes")
 
 ChaserStep::ChaserStep(quint32 aFid, uint aFadeIn, uint aHold, uint aFadeOut)
     : fid(aFid)
@@ -46,6 +50,7 @@ ChaserStep::ChaserStep(const ChaserStep& cs)
     , fadeOut(cs.fadeOut)
     , duration(cs.duration)
     , values(cs.values)
+    , palettes(cs.palettes) // DMX Total Control
     , note(cs.note)
 {
 }
@@ -60,6 +65,7 @@ ChaserStep &ChaserStep::operator=(const ChaserStep &step)
         fadeOut = step.fadeOut;
         duration = step.duration;
         values = step.values;
+        palettes = step.palettes; // DMX Total Control
         note = step.note;
     }
 
@@ -193,6 +199,27 @@ bool ChaserStep::loadXML(QXmlStreamReader &root, int& stepNumber, Doc *doc)
     if (attrs.hasAttribute(KXMLQLCStepNote) == true)
         note = attrs.value(KXMLQLCStepNote).toString();
 
+    // DMX Total Control: the palettes of the values (what is not
+    // fixture:channel:palette, or a fixture not in the show, is skipped)
+    palettes.clear();
+    if (attrs.hasAttribute(KXMLDTCStepPalettes) == true)
+    {
+        const QStringList refs = attrs.value(KXMLDTCStepPalettes).toString().split(',', Qt::SkipEmptyParts);
+        for (const QString &ref : refs)
+        {
+            const QStringList parts = ref.trimmed().split(':');
+            bool fixtureOk = false, channelOk = false, paletteOk = false;
+            const quint32 fixture = parts.value(0).toUInt(&fixtureOk);
+            const quint32 channel = parts.value(1).toUInt(&channelOk);
+            const int palette = parts.value(2).toInt(&paletteOk);
+            if (parts.count() != 3 || fixtureOk == false || channelOk == false || paletteOk == false || palette < 0)
+                continue;
+            if (doc != NULL && doc->fixture(fixture) == NULL)
+                continue;
+            palettes.insert(qMakePair(fixture, channel), palette);
+        }
+    }
+
     if (attrs.hasAttribute(KXMLQLCSequenceSceneValues) == true)
     {
         QString stepValues = root.readElementText();
@@ -282,6 +309,25 @@ bool ChaserStep::saveXML(QXmlStreamWriter *doc, int stepNumber, bool isSequence)
     {
         /* it's a sequence step. Save values accordingly */
         doc->writeAttribute(KXMLQLCSequenceSceneValues, QString::number(values.count()));
+
+        // DMX Total Control: the palettes of its values, sorted (the file
+        // doesn't change from one save to the next). An attribute, before the text
+        QList<QPair<quint32, quint32>> keys;
+        for (int i = 0; i < values.count() && palettes.isEmpty() == false; i++)
+        {
+            const QPair<quint32, quint32> key(values.at(i).fxi, values.at(i).channel);
+            if (palettes.contains(key))
+                keys.append(key);
+        }
+        if (keys.isEmpty() == false)
+        {
+            std::sort(keys.begin(), keys.end());
+            QStringList refs;
+            for (const QPair<quint32, quint32> &key : std::as_const(keys))
+                refs.append(QString("%1:%2:%3").arg(key.first).arg(key.second).arg(palettes.value(key)));
+            doc->writeAttribute(KXMLDTCStepPalettes, refs.join(','));
+        }
+
         QString stepValues;
         quint32 fixtureID = Fixture::invalidId();
         foreach (SceneValue scv, values)

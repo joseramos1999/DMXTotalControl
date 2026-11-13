@@ -20,6 +20,8 @@
 #ifndef GENERICFADER
 #define GENERICFADER
 
+// DMX Total Control: forEachChannel
+#include <functional>
 #include <QObject>
 #include <QList>
 #include <QHash>
@@ -101,6 +103,11 @@ public:
      *  $fixtureID (it doesn't need the fixture: it may be deleted) */
     void removeChannel(quint32 fixtureID, quint32 channel);
 
+    /** DMX Total Control: a copy of the FadeChannel of the channel $channel
+     *  of the fixture $fixtureID into $out (a coarse/fine pair is one, by its
+     *  coarse channel). False when the fader doesn't hold it */
+    bool channelCopy(quint32 fixtureID, quint32 channel, FadeChannel *out) const;
+
     /** DMX Total Control: the fixtures moved or changed (mode, options):
      *  the channels follow them (address, type), those of the fixtures gone
      *  or now in another universe than $universeID leave the fader */
@@ -141,6 +148,10 @@ public:
         FadeChannel &fc = channelFaderLocked(doc, universe, fixtureID, channel);
         updater(fc);
     }
+
+    /** DMX Total Control: changes every channel the fader holds, with the
+     *  channel lock held, as updateChannel (a running fade gets new times) */
+    void forEachChannel(const std::function<void(FadeChannel &)> &updater);
 
     /** Get/Set the intensities of all channels in a 0.0 - 1.0 range */
     qreal intensity() const;
@@ -202,6 +213,20 @@ private:
     QHash<quint32, QSharedPointer<FadeChannel>> m_channelCache;
 
     FadeChannel &channelFaderLocked(const Doc *doc, Universe *universe, quint32 fixtureID, quint32 channel);
+
+    /** DMX Total Control: what the faders below send on $count channels
+     *  from $address, as one value (16 bit for a pair) */
+    static quint32 valueBelow(const Universe *universe, quint32 address, int count);
+    /** DMX Total Control: a MixBelow channel's value mixed with $below by
+     *  $level (0: $below, 1: its own value) */
+    static quint32 mixBelow(const FadeChannel &fc, quint32 below, qreal level);
+    /** DMX Total Control: the ms a channel steps in a frame of $elapsedMs:
+     *  0 for a Manual one (a hand crossfade sets its time), unless the
+     *  fader fades out */
+    uint stepOf(int flags, uint elapsedMs) const;
+    /** DMX Total Control: a channel at its end leaves the fader (fading
+     *  out, or AutoRemove); a Manual one stays, unless the fader fades out */
+    bool leaves(int flags, const FadeChannel &fc) const;
 };
 
 /** @} */

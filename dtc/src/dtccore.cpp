@@ -40,12 +40,17 @@
 #include <QUrl>
 #include <QScopeGuard>
 #include <QDebug>
+#include <algorithm>
+#include <functional>
+#include <memory>
+#include <vector>
 
 #include "dtccore.h"
 #include "zonemanager.h"
 #include "patchmanager.h"
 #include "programmer.h"
 #include "effectexchange.h"
+#include "qlcexchange.h"
 #include "timelineeditor.h"
 #include "zone.h"
 #include "scenetaps.h"
@@ -71,6 +76,9 @@
 #include "audio.h"
 #include "video.h"
 #include "sequence.h"
+#include "chaserstep.h"
+#include "scene.h"
+#include "cuelist.h"
 #include "showfunction.h"
 #include "track.h"
 #include "show.h"
@@ -137,6 +145,8 @@ DtcCore::DtcCore(QObject *parent)
     m_playbacks = new PlaybackManager(m_doc, m_programmer, m_cuelists, m_settings, this);
     // (PB 3 selects a playback; GO and BACK go through the playbacks)
     m_commands->setPlaybacks(m_playbacks);
+    // the MIDI timecode of the inputs that are on, for the Timecode cuelists
+    m_timecode = new TimecodeReader(m_doc, this);
     m_surface = new ShowSurface(m_doc, m_zones, this);
     // a scene a fader of the SHOW holds up: only that fader stops it, not
     // a playback releasing it, nor trying it or stopping it in the editors
@@ -152,8 +162,8 @@ DtcCore::DtcCore(QObject *parent)
     m_remote = new RemoteServer(this, this);
     // updates from the releases on GitHub (main() starts the check)
     m_updates = new UpdateChecker(this);
-    // the LEDs of the known controllers (APC note offs, APC40 mkII Ableton
-    // mode), once the event loop runs
+    // the LEDs of the known controllers (APC note offs, APC mini mk2 Session
+    // mode, APC40 mkII Ableton mode), once the event loop runs
     QTimer::singleShot(0, m_mapping, &ControlMapper::initControllers);
 
     connect(m_settings, SIGNAL(liveEditChanged()), this, SLOT(slotLiveEditChanged()));
@@ -410,6 +420,11 @@ CuelistEditor *DtcCore::cuelists() const
 PlaybackManager *DtcCore::playbacks() const
 {
     return m_playbacks;
+}
+
+TimecodeReader *DtcCore::timecode() const
+{
+    return m_timecode;
 }
 
 void DtcCore::slotLiveEditChanged()
@@ -905,6 +920,7 @@ void DtcCore::clearShow(bool restart)
     SceneTaps::clear();
     m_folders.clear();
     m_foreignSections.clear();
+    m_qlcCueListCount = 0;
     m_doc->masterTimer()->stop();
     m_clearing = true;
     m_doc->clearContents();
@@ -1040,13 +1056,17 @@ bool DtcCore::loadShow(const QString &path, const QString &show)
     // it go, as when it is deleted: a function made later gets its ID. A
     // jump to a missing function jumps nowhere; the cues that name a missing
     // palette keep plain values (the palette IDs the SHOW and the mappings
-    // name stay taken)
+    // name stay taken), an action of a cue on a missing function does nothing
     for (Function *f : m_doc->functions())
     {
         if (f->jumpTo() >= 0 && m_doc->function(quint32(f->jumpTo())) == nullptr)
             f->setJumpTo(Function::jumpNone());
     }
     m_palettes->afterLoad(qMax(highestPaletteId(m_surface->pages()), highestPaletteId(m_mapping->mappings())));
+    // the cue lists of a QLC+ show, that can become cuelists ("Opened..." says so)
+    for (const QlcExchange::Candidate &candidate : QlcExchange::candidates(m_doc, virtualConsole()))
+        m_qlcCueListCount += candidate.kind == QLatin1String("vcCueList") ? 1 : 0;
+    m_cuelists->afterLoad();
 
     // give every fixture a spot in the 2D plan (shows from QLC+ may have none)
     m_patch->autoLayout(false);
@@ -1194,7 +1214,7 @@ bool DtcCore::loadWorkspace(QXmlStreamReader &reader)
             // the QLC+ UI sections (Virtual Console, Simple Desk...): not used
             // here, kept as they are so that saving gives them back to QLC+
             qDebug() << "Keeping workspace section" << reader.name().toString();
-            QByteArray section = copyElement(reader);
+            QByteArray section = QlcExchange::copyElement(reader);
             if (reader.hasError() == false)
                 m_foreignSections.append(section);
         }
@@ -1203,59 +1223,15 @@ bool DtcCore::loadWorkspace(QXmlStreamReader &reader)
     return true;
 }
 
-QByteArray DtcCore::copyElement(QXmlStreamReader &reader)
+QByteArray DtcCore::virtualConsole() const
 {
-    // from its start to its end element, which stays the current token
-    // (like skipCurrentElement)
-    QByteArray xml;
-    QXmlStreamWriter writer(&xml);
-    int depth = 0;
-    while (reader.hasError() == false)
+    for (const QByteArray &section : m_foreignSections)
     {
-        if (reader.isStartElement())
-            depth++;
-        else if (reader.isEndElement())
-            depth--;
-        copyToken(reader, writer);
-        if (depth <= 0 || reader.atEnd())
-            break;
-        reader.readNext();
+        QXmlStreamReader reader(section);
+        if (reader.readNextStartElement() && reader.name() == QLatin1String("VirtualConsole"))
+            return section;
     }
-    return xml;
-}
-
-void DtcCore::copyToken(QXmlStreamReader &reader, QXmlStreamWriter &writer)
-{
-    // by qualified names: the elements stay in the namespace of the workspace
-    switch (reader.tokenType())
-    {
-        case QXmlStreamReader::StartElement:
-            writer.writeStartElement(reader.qualifiedName().toString());
-            for (const QXmlStreamAttribute &attr : reader.attributes())
-                writer.writeAttribute(attr.qualifiedName().toString(), attr.value().toString());
-        break;
-        case QXmlStreamReader::EndElement:
-            writer.writeEndElement();
-        break;
-        case QXmlStreamReader::Characters:
-            if (reader.isCDATA())
-                writer.writeCDATA(reader.text().toString());
-            else if (reader.isWhitespace() == false)
-                writer.writeCharacters(reader.text().toString());
-        break;
-        case QXmlStreamReader::Comment:
-            writer.writeComment(reader.text().toString());
-        break;
-        case QXmlStreamReader::ProcessingInstruction:
-            writer.writeProcessingInstruction(reader.processingInstructionTarget().toString(),
-                                              reader.processingInstructionData().toString());
-        break;
-        case QXmlStreamReader::EntityReference:
-            writer.writeEntityReference(reader.name().toString());
-        break;
-        default:
-        break;
-    }
+    return QByteArray();
 }
 
 void DtcCore::loadSection(QXmlStreamReader &reader)
@@ -1290,7 +1266,17 @@ void DtcCore::loadSection(QXmlStreamReader &reader)
     }
 }
 
-bool DtcCore::writeWorkspace(const QString &path)
+struct DtcCore::QlcCopy
+{
+    /** the cuelists left out of the Engine */
+    QSet<quint32> replaced;
+    /** writes the QLC+ functions that take their place */
+    std::function<void(QXmlStreamWriter *)> writeFunctions;
+    /** the Cue Lists of the Virtual Console that play them */
+    QList<QlcExchange::VcCueList> widgets;
+};
+
+bool DtcCore::writeWorkspace(const QString &path, const QlcCopy *copy)
 {
     // written aside, and put in place of the show only when all of it was
     // written (a full disk, a drive gone: the show stays as it was)
@@ -1310,6 +1296,9 @@ bool DtcCore::writeWorkspace(const QString &path)
 
     doc.writeStartElement(KXMLDTCWorkspace);
     doc.writeAttribute("xmlns", QString("%1%2").arg(KXMLQLCplusNamespace, KXMLDTCWorkspace));
+    // (QLC+ opens a copy for it on the Virtual Console, with its Cue Lists)
+    if (copy != nullptr && copy->widgets.isEmpty() == false)
+        doc.writeAttribute("CurrentWindow", "VirtualConsole");
 
     doc.writeStartElement(KXMLQLCCreator);
     doc.writeTextElement(KXMLQLCCreatorName, APPNAME);
@@ -1317,16 +1306,30 @@ bool DtcCore::writeWorkspace(const QString &path)
     doc.writeTextElement(KXMLQLCCreatorAuthor, QLCFile::currentUserName());
     doc.writeEndElement();
 
-    m_doc->saveXML(&doc);
+    if (copy == nullptr)
+    {
+        m_doc->saveXML(&doc);
+    }
+    else
+    {
+        // the Engine of the show, with the steps in place of the cuelists
+        QByteArray engine;
+        QXmlStreamWriter buffer(&engine);
+        m_doc->saveXML(&buffer);
+        QXmlStreamReader reader(engine);
+        reader.readNextStartElement();
+        QlcExchange::writeEngine(reader, doc, copy->replaced, copy->writeFunctions);
+    }
 
     // the sections of QLC+ (Virtual Console, Simple Desk...) of the show opened
-    for (const QByteArray &section : std::as_const(m_foreignSections))
+    const QList<QByteArray> sections = copy != nullptr ? qlcSections(*copy) : m_foreignSections;
+    for (const QByteArray &section : sections)
     {
         QXmlStreamReader reader(section);
         while (reader.atEnd() == false && reader.hasError() == false)
         {
             reader.readNext();
-            copyToken(reader, doc);
+            QlcExchange::copyToken(reader, doc);
         }
     }
 
@@ -1426,6 +1429,486 @@ bool DtcCore::saveShow(const QUrl &url)
         emit lastAutosaveChanged();
     }
     return true;
+}
+
+/*********************************************************************
+ * A copy for QLC+
+ *********************************************************************/
+
+/** The cuelists of $doc by name */
+static QList<Cuelist *> cuelistsByName(const Doc *doc)
+{
+    QList<Cuelist *> cuelists;
+    for (Function *f : doc->functions())
+    {
+        if (Cuelist *cl = qobject_cast<Cuelist *>(f))
+            cuelists.append(cl);
+    }
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::stable_sort(cuelists.begin(), cuelists.end(), [&collator](const Cuelist *a, const Cuelist *b) {
+        return collator.compare(a->name(), b->name()) < 0;
+    });
+    return cuelists;
+}
+
+/** Whether $a and $b are the same file (one may not be there yet) */
+static bool sameFile(const QString &a, const QString &b)
+{
+    const QString realA = QFileInfo(a).canonicalFilePath();
+    const QString realB = QFileInfo(b).canonicalFilePath();
+    if (realA.isEmpty() == false && realB.isEmpty() == false)
+        return showKey(realA) == showKey(realB);
+    return showKey(a) == showKey(b);
+}
+
+QVariantList DtcCore::qlcExportInfo(const QString &format, bool controls) const
+{
+    const bool sequence = format != QLatin1String("chaser");
+    QVariantList list;
+    for (const Cuelist *cl : cuelistsByName(m_doc))
+    {
+        QStringList lost = QlcExchange::toSteps(m_doc, cl, sequence).lost;
+        if (controls)
+        {
+            QlcExchange::VcCueList widget;
+            QlcExchange::controlsOf(cl->id(), m_mapping, m_playbacks, &widget, &lost);
+        }
+        QVariantMap info;
+        info.insert("id", cl->id());
+        info.insert("name", cl->name());
+        info.insert("cues", cl->cueCount());
+        info.insert("lost", lost);
+        list.append(info);
+    }
+    return list;
+}
+
+QUrl DtcCore::qlcCopyUrl() const
+{
+    // (an example: in the folder of the shows, as for Save as)
+    const QString folder = dialogFolder("show").toLocalFile();
+    return localFileUrl(QDir(folder).filePath(showTitle() + QStringLiteral(" (QLC+)") + KExtWorkspace));
+}
+
+QList<Cuelist *> DtcCore::qlcOrder(const QVariantList &ids) const
+{
+    QSet<quint32> chosen;
+    for (const QVariant &id : ids)
+        chosen.insert(id.toUInt());
+
+    QList<Cuelist *> order;
+    auto take = [&](Function *f) {
+        Cuelist *cl = qobject_cast<Cuelist *>(f);
+        if (cl != nullptr && chosen.contains(cl->id()) && order.contains(cl) == false)
+            order.append(cl);
+    };
+    for (int page = 0; page < m_playbacks->pageCount(); page++)
+    {
+        for (int slot = 0; slot < PlaybackManager::maxSlots(); slot++)
+        {
+            const int id = m_playbacks->functionAt(page, slot);
+            if (id >= 0)
+                take(m_doc->function(quint32(id)));
+        }
+    }
+    for (Cuelist *cl : cuelistsByName(m_doc))
+        take(cl);
+    return order;
+}
+
+bool DtcCore::saveCopyForQlc(const QUrl &url, const QVariantList &ids, const QVariantMap &options)
+{
+    QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+    if (path.isEmpty())
+    {
+        setLastError(tr("No file name given"));
+        return false;
+    }
+    if (path.endsWith(KExtWorkspace, Qt::CaseInsensitive) == false)
+        path += KExtWorkspace;
+
+    const QList<Cuelist *> cuelists = qlcOrder(ids);
+    if (cuelists.isEmpty())
+    {
+        setLastError(tr("Choose at least one cuelist"));
+        return false;
+    }
+    if (m_fileName.isEmpty() == false && sameFile(path, m_fileName))
+    {
+        setLastError(tr("Choose another name: that file is this show"));
+        return false;
+    }
+    const bool sequence = options.value("format").toString() != QLatin1String("chaser");
+    const bool virtualConsole = options.value("virtualConsole", true).toBool();
+    // (the keys and controller buttons go on the buttons of the Cue Lists)
+    const bool controls = virtualConsole && options.value("controls", false).toBool();
+
+    // the steps that take the place of the cuelists, with their IDs: made
+    // here for the copy, never added to the show. Their scenes take IDs no
+    // function of the show has
+    std::vector<std::unique_ptr<Function>> made;
+    quint32 nextId = 0;
+    for (const Function *f : m_doc->functions())
+        nextId = qMax(nextId, f->id() + 1);
+    auto newId = [&]() {
+        while (m_doc->function(nextId) != nullptr)
+            nextId++;
+        return nextId++;
+    };
+
+    QlcCopy copy;
+    for (const Cuelist *cl : cuelists)
+    {
+        const QlcExchange::CueSteps steps = QlcExchange::toSteps(m_doc, cl, sequence);
+        std::unique_ptr<Chaser> chaser(sequence ? new Sequence(m_doc) : new Chaser(m_doc));
+        chaser->setID(cl->id());
+        chaser->setName(cl->name());
+        chaser->setPath(cl->path(true));
+        chaser->setVisible(cl->isVisible());
+        chaser->setPriority(cl->priority());
+        chaser->setRunOrder(steps.runOrder);
+        // (a Chase that plays its cues the other way)
+        chaser->setDirection(steps.direction);
+        chaser->setFadeInSpeed(cl->fadeInSpeed());
+        chaser->setFadeOutSpeed(cl->fadeOutSpeed());
+        chaser->setFadeInMode(Chaser::PerStep);
+        chaser->setFadeOutMode(Chaser::PerStep);
+        chaser->setDurationMode(Chaser::PerStep);
+
+        auto addStep = [&](quint32 fid, const QlcExchange::Step &step, const QString &note) {
+            ChaserStep chaserStep(fid, step.fadeIn, step.hold, step.fadeOut);
+            chaserStep.duration = step.hold == Function::infiniteSpeed() ? step.hold : step.fadeIn + step.hold;
+            chaserStep.note = note;
+            if (sequence)
+                chaserStep.values = step.values;
+            chaser->addStep(chaserStep);
+        };
+
+        if (sequence)
+        {
+            // one hidden scene with every channel of the steps (at zero, as
+            // QLC+ keeps it), and each step with all of its values
+            auto bound = std::make_unique<Scene>(m_doc);
+            bound->setID(newId());
+            bound->setName(cl->name());
+            bound->setPath(cl->path(true));
+            bound->setVisible(false);
+            for (const SceneValue &scv : steps.channels)
+            {
+                bound->addFixture(scv.fxi);
+                bound->setValue(scv);
+            }
+            qobject_cast<Sequence *>(chaser.get())->setBoundSceneID(bound->id());
+            for (const QlcExchange::Step &step : steps.steps)
+                addStep(bound->id(), step, step.note);
+            made.push_back(std::move(bound));
+        }
+        else
+        {
+            // a scene for each cue, in a folder of the cuelist
+            const QString folder = cl->path(true).isEmpty() ? cl->name() : cl->path(true) + "/" + cl->name();
+            for (const QlcExchange::Step &step : steps.steps)
+            {
+                auto scene = std::make_unique<Scene>(m_doc);
+                scene->setID(newId());
+                scene->setName(step.label);
+                scene->setPath(folder);
+                for (const SceneValue &scv : step.values)
+                {
+                    scene->addFixture(scv.fxi);
+                    scene->setValue(scv);
+                }
+                addStep(scene->id(), step, step.note);
+                made.push_back(std::move(scene));
+            }
+        }
+        made.push_back(std::move(chaser));
+
+        copy.replaced.insert(cl->id());
+        if (virtualConsole)
+        {
+            QlcExchange::VcCueList widget;
+            widget.caption = cl->name();
+            widget.functionId = cl->id();
+            widget.nextPrev = steps.nextPrevBehavior;
+            widget.solo = steps.solo;
+            if (controls)
+                QlcExchange::controlsOf(cl->id(), m_mapping, m_playbacks, &widget, nullptr);
+            copy.widgets.append(widget);
+        }
+    }
+    // (the scenes before what plays them: QLC+ reads the steps against them)
+    copy.writeFunctions = [&made](QXmlStreamWriter *writer) {
+        for (const std::unique_ptr<Function> &f : made)
+            f->saveXML(writer);
+    };
+
+    // the files of the show (audio, images) relative to the copy
+    const QString workspace = m_doc->workspacePath();
+    m_doc->setWorkspacePath(QFileInfo(path).absolutePath());
+    const bool ok = writeWorkspace(path, &copy);
+    m_doc->setWorkspacePath(workspace);
+    return ok;
+}
+
+QList<QByteArray> DtcCore::qlcSections(const QlcCopy &copy) const
+{
+    QList<QByteArray> sections = m_foreignSections;
+    if (copy.widgets.isEmpty())
+        return sections;
+
+    // the Cue Lists join the Virtual Console of the show (a QLC+ show), or
+    // have one of their own
+    for (QByteArray &section : sections)
+    {
+        QXmlStreamReader reader(section);
+        if (reader.readNextStartElement() && reader.name() == QLatin1String("VirtualConsole"))
+        {
+            section = QlcExchange::mergeVirtualConsole(section, copy.widgets, nullptr);
+            return sections;
+        }
+    }
+    sections.prepend(QlcExchange::newVirtualConsole(copy.widgets, 0));
+    return sections;
+}
+
+/*********************************************************************
+ * QLC+ cue lists
+ *********************************************************************/
+
+int DtcCore::qlcCueListCount() const
+{
+    return m_qlcCueListCount;
+}
+
+/** The cuelist of $doc named $name (in any case), or nullptr */
+static const Cuelist *cuelistNamed(const Doc *doc, const QString &name)
+{
+    for (const Function *f : doc->functions())
+    {
+        const Cuelist *cl = qobject_cast<const Cuelist *>(f);
+        if (cl != nullptr && cl->name().compare(name, Qt::CaseInsensitive) == 0)
+            return cl;
+    }
+    return nullptr;
+}
+
+/** The show $url read aside, with its Virtual Console in $console; nullptr
+ *  (and $error) when it can't be read */
+static Doc *loadQlcShow(Doc *doc, const QUrl &url, QByteArray *console, QString *error)
+{
+    const QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+    return EffectExchange::loadShow(doc, path, nullptr, error, console);
+}
+
+QVariantList DtcCore::qlcCueLists(const QUrl &url)
+{
+    setLastError(QString());
+    // this show, or another one read aside
+    QByteArray console = virtualConsole();
+    std::unique_ptr<Doc> other;
+    if (url.isEmpty() == false)
+    {
+        QString error;
+        other.reset(loadQlcShow(m_doc, url, &console, &error));
+        if (other == nullptr)
+        {
+            setLastError(error);
+            return QVariantList();
+        }
+    }
+    Doc *source = other != nullptr ? other.get() : m_doc;
+
+    QList<QlcExchange::Candidate> found = QlcExchange::candidates(source, console);
+    // the steps alone are checked only when there are no cue lists
+    const bool consoleLists = std::any_of(found.cbegin(), found.cend(), [](const QlcExchange::Candidate &c) {
+        return c.kind == QLatin1String("vcCueList");
+    });
+    QVariantList list;
+    for (QlcExchange::Candidate &candidate : found)
+    {
+        QlcExchange::checkSteps(source, &candidate, m_doc->masterTimer()->beatTimeDuration());
+        const Cuelist *same = cuelistNamed(m_doc, candidate.name);
+        QVariantMap info;
+        info.insert("key", candidate.key);
+        info.insert("kind", candidate.kind);
+        info.insert("name", candidate.name);
+        info.insert("functionId", candidate.functionId);
+        info.insert("steps", candidate.steps);
+        info.insert("warnings", candidate.warnings);
+        info.insert("exists", same != nullptr ? same->name() : QString());
+        info.insert("enabled", candidate.enabled);
+        info.insert("checked", candidate.enabled && same == nullptr &&
+                               (candidate.kind == QLatin1String("vcCueList") || consoleLists == false));
+        list.append(info);
+    }
+    return list;
+}
+
+/** The buttons of the Cue Lists of $candidate (all of them, when several
+ *  play its steps) as mappings of the cuelist $id: Next its GO, Previous its
+ *  Back, Playback its Pause/Back, Stop its release. What isn't mapped goes
+ *  to $lost. @return how many mappings were made */
+static int mapCueListControls(ControlMapper *mapper, const QlcExchange::Candidate &candidate, quint32 id,
+                              QStringList *lost)
+{
+    const QStringList targets = QlcExchange::cueListTargets();
+    int count = 0;
+    for (const QlcExchange::VcCueListInfo &info : candidate.lists)
+    {
+        const QList<QlcExchange::VcControl> buttons = { info.next, info.previous, info.playback, info.stop };
+        for (int b = 0; b < buttons.count(); b++)
+        {
+            // (one at a time: a later button sees the mappings of the one before)
+            for (const QVariantMap &m : QlcExchange::mappingsFrom(buttons.at(b), targets.at(b), id, mapper, lost))
+            {
+                mapper->addMapping(m);
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+QString DtcCore::importQlcCueLists(const QUrl &url, const QVariantList &keys, const QVariantMap &options)
+{
+    QByteArray console = virtualConsole();
+    std::unique_ptr<Doc> other;
+    if (url.isEmpty() == false)
+    {
+        QString error;
+        other.reset(loadQlcShow(m_doc, url, &console, &error));
+        if (other == nullptr)
+        {
+            setLastError(error);
+            return QString();
+        }
+    }
+    Doc *source = other != nullptr ? other.get() : m_doc;
+    // (the steps of another show stay in it)
+    const bool replace = other == nullptr && options.value("replace", false).toBool();
+    const int beatMs = m_doc->masterTimer()->beatTimeDuration();
+
+    QHash<QString, QlcExchange::Candidate> byKey;
+    for (const QlcExchange::Candidate &candidate : QlcExchange::candidates(source, console))
+        byKey.insert(candidate.key, candidate);
+
+    // the cuelists in the order of $keys, made beside their steps (in the
+    // other show first) or in their place; and what each one comes from
+    QList<quint32> made;
+    QList<QlcExchange::Candidate> madeFrom;
+    QStringList errors;
+    int notConverted = 0;
+    for (const QVariant &key : keys)
+    {
+        const auto it = byKey.constFind(key.toString());
+        if (it == byKey.cend())
+            continue;
+        QlcExchange::StepsImport steps;
+        QString error;
+        Cuelist *cl = QlcExchange::toCuelist(source, it.value(), beatMs, &steps, &error);
+        if (cl == nullptr)
+        {
+            errors << QStringLiteral("%1: %2").arg(it.value().name, error);
+            continue;
+        }
+        if (replace)
+        {
+            // (it deletes the cuelist when it can't)
+            if (m_cuelists->replaceSteps(qobject_cast<Chaser *>(source->function(it.value().functionId)), cl) == false)
+                continue;
+        }
+        else if (source->addFunction(cl) == false)
+        {
+            delete cl;
+            continue;
+        }
+        made.append(cl->id());
+        madeFrom.append(it.value());
+        notConverted += steps.notConverted;
+    }
+
+    // from another show: only the cuelists, on the fixtures of this one
+    int missing = 0;
+    if (other != nullptr && made.isEmpty() == false)
+    {
+        const QHash<quint32, quint32> copies = EffectExchange::importFunctions(m_doc, other.get(), made, &missing);
+        QList<quint32> ids;
+        QList<QlcExchange::Candidate> from;
+        for (int i = 0; i < made.count(); i++)
+        {
+            if (copies.contains(made.at(i)) == false)
+                continue;
+            ids.append(copies.value(made.at(i)));
+            from.append(madeFrom.at(i));
+        }
+        made = ids;
+        madeFrom = from;
+    }
+    if (made.isEmpty())
+    {
+        setLastError(errors.isEmpty() ? tr("Choose at least one cue list") : errors.join(QLatin1Char('\n')));
+        return QString();
+    }
+
+    // on the free playbacks of this page (one that took the place of steps
+    // on this page is there already)
+    int placed = 0;
+    int full = 0;
+    if (options.value("playbacks", true).toBool())
+    {
+        const int page = m_playbacks->currentPage();
+        auto onPage = [&](quint32 id) {
+            for (int slot = 0; slot < PlaybackManager::maxSlots(); slot++)
+                if (m_playbacks->functionAt(page, slot) == int(id))
+                    return true;
+            return false;
+        };
+        for (quint32 id : std::as_const(made))
+        {
+            if (onPage(id) == false)
+            {
+                const int slot = m_playbacks->firstFreeSlot(page);
+                if (slot < 0)
+                {
+                    full++;
+                    continue;
+                }
+                m_playbacks->assign(page, slot, int(id));
+            }
+            placed++;
+        }
+    }
+
+    // the keys and controller buttons of their Cue Lists, as mappings
+    int mappings = 0;
+    QStringList notMapped;
+    if (options.value("controls", false).toBool())
+    {
+        for (int i = 0; i < made.count(); i++)
+            mappings += mapCueListControls(m_mapping, madeFrom.at(i), made.at(i), &notMapped);
+    }
+
+    QStringList done;
+    done << tr("%n cuelist(s) made", "", int(made.count()));
+    if (placed > 0)
+        done << tr("%n on playbacks", "", placed);
+    if (full > 0)
+        done << tr("%n with no free playback", "", full);
+    if (mappings > 0)
+        done << tr("%n mapping(s) made", "", mappings);
+    if (notConverted > 0)
+        done << tr("%n step(s) not converted", "", notConverted);
+    if (missing > 0)
+        done << tr("%n fixture(s) not found in this show", "", missing);
+    done << notMapped << errors;
+
+    m_doc->setModified();
+    emit functionsChanged();
+    emit modifiedChanged();
+    return done.join(QStringLiteral(" · "));
 }
 
 void DtcCore::openStartupShow()

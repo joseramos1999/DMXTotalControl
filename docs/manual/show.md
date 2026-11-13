@@ -119,6 +119,7 @@ Un fader del SHOW puede controlar **varias cosas a la vez**. En sus propiedades,
 | **Velocidad de una escena** | La velocidad en vivo de esa escena (×0,1 a ×10, como la de movimiento). |
 | **Lanzar una escena (su velocidad)** | Como «Lanzar una escena (su intensidad)», pero el fader es su velocidad: abajo del todo la escena está parada; al subirlo, arranca en su grupo y el recorrido es su velocidad, ×0,1 justo encima de abajo, ×1 en medio y ×10 arriba. El texto dice «Parada» mientras no suena, y el fader sigue a la escena si la paran o la lanzan desde otro sitio. La velocidad es solo de esa vez: al pararse, la escena vuelve a la que tenía (la de Directo no cambia). Un doble clic la pone a ×1 (y la lanza si estaba parada). Como el de intensidad, suma su escena a su grupo y la sujeta: varios a la vez suenan juntos (también varias escenas de un mismo grupo exclusivo en un fader), y solo bajarlo del todo la para. |
 | **BPM** | El tempo del show, de 20 a 300. |
+| **Velocidad de las cues (todas las cuelists)** | La [velocidad de todas las cuelists](playbacks.md#velocidad-de-las-cues): sus fundidos (también los que están en curso), retardos, Seguir y Esperar. De ×0,1 a ×10, como la de movimiento. No se guarda con el show. |
 
 La diferencia entre los dos de escena: **«Lanzar una escena (su intensidad)»** es la escena misma, y la arranca y la para; **«Dimmer de una escena (sin lanzarla)»** solo la atenúa, también cuando la lanzan desde otro sitio. Se pueden usar a la vez: con el dimmer al 50 % y el fader que la lanza al 80 %, la escena sale al 40 %.
 
@@ -126,9 +127,9 @@ Pulsa **«Añadir otro elemento»** para sumar otro y el icono de la papelera pa
 
 Con **Rango**, **De** … **a** … (de 0 a 100 %), el recorrido del fader cubre solo esa parte de lo que mueve, en todos sus elementos. Por ejemplo, la velocidad de una escena de 20 a 80 %, o un dimmer de 0 a 60 % para que no pase de ahí. Con «De» mayor que «a», o con **«Invertir»**, el fader va al revés. Un fader que lanza una escena la para en el extremo donde el valor es más bajo (abajo del todo; arriba del todo si está invertido), aunque «De» no sea 0.
 
-El texto del fader muestra el valor real (el %, el BPM o, si solo controla velocidades, el multiplicador ×), no dónde está el fader. Si otro control lleva el valor fuera del rango, el fader se queda en el extremo. Un fader que solo controla velocidades (de movimiento o de escenas, una o varias) vuelve a ×1 con un doble clic.
+El texto del fader muestra el valor real (el %, el BPM o, si solo controla velocidades, el multiplicador ×), no dónde está el fader. Si otro control lleva el valor fuera del rango, el fader se queda en el extremo. Un fader que solo controla velocidades (de movimiento, de escenas o de las cues, una o varias) vuelve a ×1 con un doble clic.
 
-Debajo de cada fader hay un botón **«Flash»**: lo lleva arriba del todo de su recorrido mientras lo pulsas y, al soltar, devuelve exactamente lo que había. Se quita o se pone con el interruptor «Botón flash: al máximo mientras se pulsa» de sus propiedades.
+Debajo de cada fader hay un botón **«Flash»**: lo lleva arriba del todo de su recorrido mientras lo pulsas y, al soltar, devuelve exactamente lo que había. Se quita o se pone con el interruptor «Botón flash: al máximo mientras se pulsa» de sus propiedades. En el fader A/B de un playback, el Flash es el del playback: lo pone a tope mientras lo pulsas, con su ataque y su caída, sin mover el fundido cruzado ni pasar a otra cue (ver [El flash](playbacks.md#el-flash)).
 
 > **Consejo:** un fader con «Master de un grupo» de tus washes y «Dimmer de fixtures» de los PAR del público te da un solo fader para bajar todo el frontal.
 
@@ -167,11 +168,11 @@ En el modo edición, suelta una escena sobre una tira para ponerla en ese playba
 ## Utilidades
 
 - **Reloj**: hora y fecha del ordenador.
-- **Temporizador**: **«Iniciar»** / **«Pausa»** y **«Reiniciar»**. En cuenta atrás se pone naranja en el último minuto y rojo al llegar a cero. Sigue contando aunque cambies de página.
+- **Temporizador**: **«Iniciar»** / **«Pausa»** y **«Reiniciar»**. En cuenta atrás se pone naranja en el último minuto y rojo al llegar a cero. Sigue contando aunque cambies de página. El [control remoto](remoto.md) muestra el mismo temporizador. Al abrir otro show, vuelve a cero.
 - **Ritmo**: **GO**, **Stop** y **BeatGO**.
 - **Notas**: el texto que escribas en sus propiedades (la escaleta, avisos para el operador…).
 - **Sonando ahora**: lo que suena, con el botón de parar al lado de cada escena.
-- **Niveles DMX**: una cuadrícula con los 512 canales del universo elegido.
+- **Niveles DMX**: una cuadrícula con los 512 canales del universo elegido. El [control remoto](remoto.md) también la muestra.
 - **Imagen**: entera o llenando la sección.
 
 ## Páginas

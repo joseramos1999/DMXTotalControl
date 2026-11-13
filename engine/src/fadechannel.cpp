@@ -40,10 +40,12 @@ FadeChannel::FadeChannel()
     , m_fadeTime(0)
     , m_elapsed(0)
     , m_delay(0)
+    , m_curve(CurveLinear)
     , m_modOffset(0)
     , m_modOutput(0)
     , m_modBelow(false)
     , m_modFine(QLCChannel::invalid())
+    , m_modScale(1.0)
 {
 }
 
@@ -62,10 +64,12 @@ FadeChannel::FadeChannel(const FadeChannel& ch)
     , m_fadeTime(ch.m_fadeTime)
     , m_elapsed(ch.m_elapsed)
     , m_delay(ch.m_delay)
+    , m_curve(ch.m_curve)
     , m_modOffset(ch.m_modOffset)
     , m_modOutput(ch.m_modOutput)
     , m_modBelow(ch.m_modBelow)
     , m_modFine(ch.m_modFine)
+    , m_modScale(ch.m_modScale)
 {
     //qDebug() << Q_FUNC_INFO;
 }
@@ -84,10 +88,12 @@ FadeChannel::FadeChannel(const Doc *doc, quint32 fxi, quint32 channel)
     , m_fadeTime(0)
     , m_elapsed(0)
     , m_delay(0)
+    , m_curve(CurveLinear)
     , m_modOffset(0)
     , m_modOutput(0)
     , m_modBelow(false)
     , m_modFine(QLCChannel::invalid())
+    , m_modScale(1.0)
 {
     m_channels.append(channel);
     autoDetect(doc);
@@ -115,10 +121,12 @@ FadeChannel &FadeChannel::operator=(const FadeChannel &fc)
         m_fadeTime = fc.m_fadeTime;
         m_elapsed = fc.m_elapsed;
         m_delay = fc.m_delay;
+        m_curve = fc.m_curve;
         m_modOffset = fc.m_modOffset;
         m_modOutput = fc.m_modOutput;
         m_modBelow = fc.m_modBelow;
         m_modFine = fc.m_modFine;
+        m_modScale = fc.m_modScale;
     }
 
     return *this;
@@ -444,11 +452,28 @@ uint FadeChannel::delay() const
     return m_delay;
 }
 
-void FadeChannel::setModulation(qint32 offset, bool onBelow, quint32 fineAddress)
+void FadeChannel::setCurve(int curve)
+{
+    m_curve = curve;
+}
+
+int FadeChannel::curve() const
+{
+    return m_curve;
+}
+
+void FadeChannel::setModulation(qint32 offset, bool onBelow, quint32 fineAddress, qreal scale)
 {
     m_modOffset = offset;
     m_modBelow = onBelow;
     m_modFine = fineAddress;
+    // DMX Total Control: the virtual dimmer
+    m_modScale = qBound(0.0, scale, 1.0);
+}
+
+qreal FadeChannel::modulationScale() const
+{
+    return m_modScale;
 }
 
 quint32 FadeChannel::modulationFine() const
@@ -495,7 +520,16 @@ uchar FadeChannel::calculateCurrent(uint fadeTime, uint elapsedTime)
         // shorter than its fade) still gets to its last unit
         bool rampUp = m_target > m_start ? true : false;
         m_current = rampUp ? m_target - m_start : m_start - m_target;
-        m_current = quint32(qRound64(qreal(m_current) * (qreal(elapsedTime) / qreal(fadeTime))));
+        // DMX Total Control: how far the fade is, shaped by its curve
+        qreal progress = qreal(elapsedTime) / qreal(fadeTime);
+        switch (m_curve)
+        {
+            case CurveSmooth: progress = progress * progress * (3.0 - 2.0 * progress); break;
+            case CurveSlowStart: progress = progress * progress; break;
+            case CurveFastStart: progress = 1.0 - (1.0 - progress) * (1.0 - progress); break;
+            default: break;
+        }
+        m_current = quint32(qRound64(qreal(m_current) * progress));
         m_current = rampUp ? m_start + m_current : m_start - m_current;
         //qDebug() << "channel" << channel() << "start" << m_start << "target" << m_target << "current" << m_current << "fade" << fadeTime << "elapsed" << elapsedTime ;
     }

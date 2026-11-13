@@ -78,8 +78,9 @@ public:
      *********************************************************************/
     /** New step scene, with the programmer as first step. @return the ID or -1 */
     Q_INVOKABLE int createSteps(const QString &name, int zoneIndex = -1);
-    /** [{ index, fadeIn, hold, fadeOut, channels, waits }]: $waits is a step
-     *  that holds until GO (an infinite hold, QLC+ manual chasers), its hold 0 */
+    /** [{ index, fadeIn, hold, fadeOut, channels, waits, note, palettes }]: $waits
+     *  is a step that holds until GO (an infinite hold, QLC+ manual chasers),
+     *  its hold 0; $palettes the names of the palettes its values come from */
     Q_INVOKABLE QVariantList steps(quint32 id) const;
     /** Add the programmer as a new step after $after (-1: at the end) */
     Q_INVOKABLE bool addStep(quint32 id, int after = -1);
@@ -181,6 +182,14 @@ public:
     /** Change a layer of a scene with FX (the linked ones share the timing) */
     Q_INVOKABLE void setFxLayer(quint32 id, int index, const QVariantMap &props);
     Q_INVOKABLE void removeFxLayer(quint32 id, int index);
+    /** DMX Total Control: the shift (degrees) or the delay (ms) of a fixture
+     *  of a layer ($key: FxTools::offsetKeys), live while the scene plays */
+    Q_INVOKABLE void setFxOffset(quint32 id, int index, quint32 fixtureId, const QString &key, int value);
+    /** Spread $key over all the fixtures of a layer, in the order of the
+     *  effect: 0 on the first, $last on the last */
+    Q_INVOKABLE void fanFxOffset(quint32 id, int index, const QString &key, int last);
+    /** The fixtures of a layer lose their shift and delay */
+    Q_INVOKABLE void clearFxOffsets(quint32 id, int index);
     /** Each fixture of a layer at $cyclePos, for a preview */
     Q_INVOKABLE QVariantList fxPreview(quint32 id, int index, qreal cyclePos) const;
     /** The shapes, to draw them */

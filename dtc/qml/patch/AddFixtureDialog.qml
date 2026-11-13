@@ -37,6 +37,15 @@ Popup {
     readonly property bool isDimmer: model === "Generic Dimmer"
     readonly property int channelsPerFixture: isDimmer ? dimmerChannels.value
                                                        : (modeCombo.currentIndex >= 0 && modes.length > 0 ? modes[modeCombo.currentIndex].channels : 0)
+    /** The modes of the other DMX breaks of the mode chosen (a GDTF fixture
+     *  with two DMX inputs, or a part on a universe of its own): each one
+     *  is patched as a fixture of its own, at its own address */
+    readonly property var breakModes: {
+        if (isDimmer || modeCombo.currentIndex < 0 || modeCombo.currentIndex >= modes.length)
+            return []
+        const prefix = modes[modeCombo.currentIndex].name + " (DMX break "
+        return modes.filter(m => m.name.startsWith(prefix)).map(m => m.name)
+    }
 
     parent: Overlay.overlay
     anchors.centerIn: parent
@@ -62,6 +71,37 @@ Popup {
         search.forceActiveFocus()
     }
     onChannelsPerFixtureChanged: refreshAddress()
+
+    /** Choose $name among the models of the manufacturer shown */
+    function pickModel(name) {
+        model = name
+        modes = Core.patch.modes(manufacturer, name)
+        modeCombo.currentIndex = 0
+        nameField.text = name === "Generic Dimmer" ? qsTr("Dimmer") : name
+    }
+    /** Choose $name of $maker, ready to patch (also one just imported
+     *  from GDTF-Share: the manufacturers are read again) */
+    function choose(maker, name) {
+        allManufacturers = Core.patch.manufacturers()
+        search.text = ""
+        manufacturer = maker
+        pickModel(name)
+        Qt.callLater(() => {
+            manufList.positionViewAtIndex(allManufacturers.indexOf(maker), ListView.Contain)
+            modelList.positionViewAtIndex(modelList.model.indexOf(name), ListView.Contain)
+        })
+    }
+    /** Developer option --patch-view share: the GDTF-Share browser over it */
+    function openShare() {
+        shareDialog.open()
+    }
+
+    // GDTF-Share: a fixture downloaded (or in the library already) is patched here
+    GdtfShareDialog {
+        id: shareDialog
+        fromPatch: true
+        onPatchWanted: (maker, name) => dialog.choose(maker, name)
+    }
 
     /** Where the fixtures go, the way addFixtures places them: a fixture
      *  that doesn't fit in what is left of a universe starts the next one */
@@ -155,7 +195,8 @@ Popup {
                     id: modelList
                     anchors { fill: parent; margins: 4 }
                     clip: true
-                    model: dialog.manufacturer.length ? Core.patch.models(dialog.manufacturer) : []
+                    // (read again after an import: a fixture of GDTF-Share joins the library)
+                    model: dialog.manufacturer.length && Core.library.definitionsCount >= 0 ? Core.patch.models(dialog.manufacturer) : []
                     ScrollBar.vertical: ScrollBar {}
                     delegate: ItemDelegate {
                         required property string modelData
@@ -163,12 +204,7 @@ Popup {
                         height: 32
                         text: modelData
                         highlighted: modelData === dialog.model
-                        onClicked: {
-                            dialog.model = modelData
-                            dialog.modes = Core.patch.modes(dialog.manufacturer, modelData)
-                            modeCombo.currentIndex = 0
-                            nameField.text = modelData === "Generic Dimmer" ? qsTr("Dimmer") : modelData
-                        }
+                        onClicked: dialog.pickModel(modelData)
                     }
                     Text {
                         anchors.centerIn: parent
@@ -255,13 +291,26 @@ Popup {
                     }
                 }
 
-                Text {
+                ColumnLayout {
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 12 }
-                    wrapMode: Text.WordWrap
-                    visible: dialog.channelsPerFixture > 0
-                    text: dialog.rangeText()
-                    color: Theme.textDim
-                    font.pixelSize: Theme.fontSmall
+                    spacing: 6
+                    Text {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        visible: dialog.channelsPerFixture > 0
+                        text: dialog.rangeText()
+                        color: Theme.textDim
+                        font.pixelSize: Theme.fontSmall
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
+                        visible: dialog.breakModes.length > 0
+                        text: qsTr("This mode has %n more DMX break(s): patch the mode “%1” too, at its own address.", "",
+                                   dialog.breakModes.length).arg(dialog.breakModes.join(", "))
+                        color: Theme.warning
+                        font.pixelSize: Theme.fontSmall
+                    }
                 }
             }
         }
@@ -275,6 +324,12 @@ Popup {
                 color: dialog.error.length > 0 ? Theme.danger : Theme.textFaint
                 font.pixelSize: Theme.fontSmall
                 wrapMode: Text.WordWrap
+            }
+            AppButton {
+                text: qsTr("Search GDTF-Share…")
+                iconGlyph: Theme.iconSearch
+                flat: true
+                onClicked: shareDialog.open()
             }
             AppButton { text: qsTr("Close"); onClicked: dialog.close() }
             AppButton {

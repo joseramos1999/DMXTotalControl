@@ -28,6 +28,8 @@
 #undef protected
 
 #include "grandmaster.h"
+#include "genericfader.h"
+#include "fadechannel.h"
 
 void Universe_Test::init()
 {
@@ -781,6 +783,62 @@ void Universe_Test::stopsAtOnce()
     qDeleteAll(universes);
     // (before: 20 ms each on average, about 480 ms)
     QVERIFY2(timer.elapsed() < 200, qPrintable(QString("%1 ms").arg(timer.elapsed())));
+}
+
+void Universe_Test::topOfPriority()
+{
+    // DMX Total Control: of the faders of a priority, the last one writes
+    // its LTP values last (they win); raised, a fader goes after the others
+    m_uni->setChannelCapability(0, QLCChannel::Pan);
+    auto pan = [](uchar value) {
+        FadeChannel fc;
+        fc.addChannel(0);
+        fc.setStart(value);
+        fc.setCurrent(value);
+        fc.setTarget(value);
+        return fc;
+    };
+    QSharedPointer<GenericFader> a = m_uni->requestFader(Universe::Auto, 5);
+    QSharedPointer<GenericFader> b = m_uni->requestFader(Universe::Auto, 5);
+    QSharedPointer<GenericFader> live = m_uni->requestFader(Universe::Auto, 5, true);
+    QSharedPointer<GenericFader> high = m_uni->requestFader(Universe::Auto, 8);
+    a->add(pan(10));
+    b->add(pan(20));
+
+    QVERIFY(m_uni->isTopOfPriority(a) == false);
+    QVERIFY(m_uni->isTopOfPriority(b));
+    // the ones above their priority (a live edit) don't count
+    QVERIFY(m_uni->isTopOfPriority(live));
+    QVERIFY(m_uni->isTopOfPriority(high));
+    // nor the ones it is told to ignore
+    QVERIFY(m_uni->isTopOfPriority(a, { b }));
+    // nor a fader of another universe
+    QSharedPointer<GenericFader> stranger(new GenericFader());
+    QVERIFY(m_uni->isTopOfPriority(stranger) == false);
+    m_uni->renderFrame(20);
+    QCOMPARE(int(m_uni->preGMValue(0)), 20);
+
+    // raised: after b, still below the higher ones
+    m_uni->raiseFader(a);
+    QVERIFY(m_uni->isTopOfPriority(a));
+    QVERIFY(m_uni->isTopOfPriority(b) == false);
+    QList<QSharedPointer<GenericFader>> faders = m_uni->faders();
+    QCOMPARE(faders.count(), 4);
+    QVERIFY(faders.indexOf(b) < faders.indexOf(a));
+    QVERIFY(faders.indexOf(a) < faders.indexOf(live));
+    QVERIFY(faders.indexOf(live) < faders.indexOf(high));
+    m_uni->renderFrame(20);
+    QCOMPARE(int(m_uni->preGMValue(0)), 10);
+    m_uni->raiseFader(stranger);
+    QCOMPARE(m_uni->faders().count(), 4);
+
+    // fading out or deleted, a fader doesn't count
+    a->setFadeOut(true, 0);
+    QVERIFY(m_uni->isTopOfPriority(b));
+    a->setFadeOut(false, 0);
+    QVERIFY(m_uni->isTopOfPriority(b) == false);
+    a->requestDelete();
+    QVERIFY(m_uni->isTopOfPriority(b));
 }
 
 QTEST_APPLESS_MAIN(Universe_Test)

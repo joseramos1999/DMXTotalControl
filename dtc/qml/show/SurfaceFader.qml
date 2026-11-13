@@ -54,8 +54,8 @@ Rectangle {
         return "×" + factor.toLocaleString(Qt.locale(), 'f', factor < 1 ? 2 : 1)
     }
     // where the fader is on its travel, and what its first target is at (the text)
-    readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.level(item) }
-    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; return Core.surface.value(item) }
+    readonly property real level: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; Core.playbacks.cueSpeed; return Core.surface.level(item) }
+    readonly property real value: { Core.surface.revision; Core.grandMaster; Core.bpm; Core.mixer.mixers; Core.playbacks.cueSpeed; return Core.surface.value(item) }
 
     function targetName(t) {
         switch (t.target) {
@@ -86,6 +86,7 @@ Rectangle {
             return qsTr("Dimmer of %1").arg(m ? m.name : "?")
         }
         case "moveSpeed": return qsTr("Movement speed")
+        case "cueSpeed": return qsTr("Cue speed")
         case "map":
             // (a playback is named by what its slot holds now, a function by its name)
             Core.surface.revision
@@ -141,7 +142,8 @@ Rectangle {
             minimumPixelSize: 7
             elide: Text.ElideRight
         }
-        // the top of its travel while pressed, then each target back to what it was
+        // the top of its travel while pressed, then each target back to what
+        // it was (an A/B fader of a playback: the flash of the playback)
         AppButton {
             id: flashButton
             property var saved: []
@@ -152,7 +154,7 @@ Rectangle {
             text: qsTr("Flash")
             highlighted: pressed
             accentColor: Theme.warning
-            onPressed: { saved = Core.surface.holdLevels(cell.item); Core.surface.setLevel(cell.item, 1) }
+            onPressed: saved = Core.surface.flashFader(cell.item)
             onReleased: Core.surface.restoreLevels(cell.item, saved)
             onCanceled: Core.surface.restoreLevels(cell.item, saved)
         }

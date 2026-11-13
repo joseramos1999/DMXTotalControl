@@ -50,13 +50,20 @@
 #define KXMLDTCPlaybackButton3      QStringLiteral("Button3")
 #define KXMLDTCPlaybackFaderStarts  QStringLiteral("FaderStarts")
 #define KXMLDTCPlaybackFaderRelease QStringLiteral("FaderReleases")
+#define KXMLDTCPlaybackFlashAttack  QStringLiteral("FlashAttack")
+#define KXMLDTCPlaybackFlashDecay   QStringLiteral("FlashDecay")
+#define KXMLDTCPlaybackFaderMode    QStringLiteral("FaderMode")
 
 namespace
 {
 /** Below this, a fader is down: moving it up starts the playback, and GO plays at full */
 const qreal kFaderDown = 0.05;
+/** An A/B fader this near an end is at that end (a controller fader jitters there) */
+const qreal kCrossfadeEdge = 0.01;
 const int kDefaultSlots = 10;
 const int kMinSlots = 4;
+/** How often a flash attack or decay moves on, ms */
+const int kRampTick = 20;
 }
 
 PlaybackManager::PlaybackManager(Doc *doc, Programmer *programmer, CuelistEditor *cuelists,
@@ -83,6 +90,13 @@ PlaybackManager::PlaybackManager(Doc *doc, Programmer *programmer, CuelistEditor
     m_pollTimer->setInterval(100);
     connect(m_pollTimer, &QTimer::timeout, this, &PlaybackManager::slotPoll);
 
+    // the flash attacks and decays, only while one runs
+    m_rampClock.start();
+    m_rampTimer = new QTimer(this);
+    m_rampTimer->setInterval(kRampTick);
+    m_rampTimer->setTimerType(Qt::PreciseTimer);
+    connect(m_rampTimer, &QTimer::timeout, this, &PlaybackManager::slotFlashRamps);
+
     // engine signals go by name (MinGW)
     connect(m_doc, SIGNAL(functionRemoved(quint32)), this, SLOT(slotFunctionRemoved(quint32)));
     connect(m_doc, SIGNAL(functionReplaced(quint32)), this, SLOT(slotFunctionReplaced(quint32)));
@@ -92,11 +106,14 @@ PlaybackManager::PlaybackManager(Doc *doc, Programmer *programmer, CuelistEditor
     // a GO inside a running cuelist (or a Follow) changes no running state: tell it at once
     connect(m_doc->masterTimer(), SIGNAL(cueStarted(quint32,quint32)),
             this, SLOT(slotCueStarted(quint32,quint32)));
+    // the cue speed lives in the timer: whoever sets it (the SHOW, a mapping)
+    connect(m_doc->masterTimer(), SIGNAL(cueSpeedChanged()), this, SIGNAL(cueSpeedChanged()));
 }
 
 PlaybackManager::~PlaybackManager()
 {
     m_pollTimer->stop();
+    m_rampTimer->stop();
 }
 
 int PlaybackManager::revision() const
@@ -203,7 +220,11 @@ void PlaybackManager::removePage(int page)
     // drive it by itself now
     QHash<int, quint32> removedSlots;
     for (auto it = m_pages.at(p).slotMap.cbegin(); it != m_pages.at(p).slotMap.cend(); ++it)
+    {
         removedSlots.insert(it.key(), it.value().functionId);
+        if (it.value().crossfade)
+            dropCrossfade(it.value().functionId);
+    }
     QList<int> newIndexes;
     for (int i = 0; i < m_pages.count(); i++)
         newIndexes.append(i < p ? i : i == p ? -1 : i - 1);
@@ -334,11 +355,37 @@ bool PlaybackManager::isAction(const QString &action)
 
 bool PlaybackManager::faderReleases(const Slot &slot, const Function *f)
 {
-    // by default a cuelist keeps its cue when its fader goes down,
-    // a scene stops, like the scene faders of the SHOW
+    // by default a cuelist keeps its cue when its fader goes down, a
+    // submaster and a scene stop, like the scene faders of the SHOW
     if (slot.faderReleases < 0)
-        return f == nullptr || f->type() != Function::CuelistType;
+    {
+        const Cuelist *cl = qobject_cast<const Cuelist *>(f);
+        return cl == nullptr || cl->mode() == Cuelist::ModeSubmaster;
+    }
     return slot.faderReleases > 0;
+}
+
+bool PlaybackManager::crossfades(const Slot &slot, const Function *f)
+{
+    // (a list made another type keeps the option: its fader is the intensity)
+    const Cuelist *cl = qobject_cast<const Cuelist *>(f);
+    return slot.crossfade && cl != nullptr && cl->mode() == Cuelist::ModeNormal;
+}
+
+bool PlaybackManager::ruledByFader(const Function *f) const
+{
+    const Cuelist *cl = qobject_cast<const Cuelist *>(f);
+    if (cl == nullptr || cl->mode() != Cuelist::ModeSubmaster)
+        return false;
+    for (const Page &page : m_pages)
+    {
+        for (const Slot &entry : page.slotMap)
+        {
+            if (entry.functionId == cl->id() && entry.faderStarts)
+                return true;
+        }
+    }
+    return false;
 }
 
 bool PlaybackManager::isPlaying(const Function *f)
@@ -349,6 +396,11 @@ bool PlaybackManager::isPlaying(const Function *f)
 bool PlaybackManager::isFlashing(quint32 functionId) const
 {
     return m_flashHolds.value(functionId, 0) > 0;
+}
+
+bool PlaybackManager::isFlashLit(quint32 functionId) const
+{
+    return isFlashing(functionId) || m_flashRamps.contains(functionId);
 }
 
 bool PlaybackManager::hasAssigned() const
@@ -377,6 +429,8 @@ void PlaybackManager::assign(int page, int slot, int functionId)
         return;
 
     // another function: the options of the slot were for the one before
+    if (it != slotMap.cend() && it.value().crossfade)
+        dropCrossfade(it.value().functionId);
     Slot entry;
     entry.functionId = quint32(functionId);
     slotMap.insert(slot, entry);
@@ -389,8 +443,11 @@ void PlaybackManager::assign(int page, int slot, int functionId)
 void PlaybackManager::clearSlot(int page, int slot)
 {
     const int p = resolvePage(page);
-    if (p < 0 || m_pages[p].slotMap.remove(slot) == 0)
+    if (p < 0 || m_pages.at(p).slotMap.contains(slot) == false)
         return;
+    const Slot entry = m_pages[p].slotMap.take(slot);
+    if (entry.crossfade)
+        dropCrossfade(entry.functionId);
 
     // what it plays keeps playing
     fixSelection();
@@ -494,6 +551,27 @@ void PlaybackManager::setSlotOption(int page, int slot, const QString &key, cons
         entry.faderReleases = value.typeId() == QMetaType::Bool ? (value.toBool() ? 1 : 0)
                                                                 : qBound(-1, value.toInt(), 1);
     }
+    else if (key == QLatin1String("flashAttack") || key == QLatin1String("flashDecay"))
+    {
+        // (a flash that runs keeps the times it started with)
+        int &time = key == QLatin1String("flashAttack") ? entry.flashAttack : entry.flashDecay;
+        const int ms = qBound(0, value.toInt(), maxFlashTime());
+        if (ms == time)
+            return;
+        time = ms;
+    }
+    else if (key == QLatin1String("faderMode"))
+    {
+        // the A/B crossfade is for Normal cuelists only
+        const QString mode = value.toString();
+        const bool crossfade = mode == QLatin1String("crossfade");
+        const Cuelist *cl = qobject_cast<const Cuelist *>(function(entry.functionId));
+        if ((crossfade == false && mode != QLatin1String("level")) ||
+            (crossfade && (cl == nullptr || cl->mode() != Cuelist::ModeNormal)) || crossfade == entry.crossfade)
+            return;
+        entry.crossfade = crossfade;
+        dropCrossfade(entry.functionId);
+    }
     else
     {
         return;
@@ -552,7 +630,7 @@ int PlaybackManager::state(int page, int slot) const
 bool PlaybackManager::isFlashing(int page, int slot) const
 {
     const Slot *entry = slotAt(page, slot);
-    return entry != nullptr && isFlashing(entry->functionId);
+    return entry != nullptr && isFlashLit(entry->functionId);
 }
 
 bool PlaybackManager::isSelected(int page, int slot) const
@@ -605,15 +683,25 @@ void PlaybackManager::fillStatus(QVariantMap &info, Function *f) const
     info.insert("paused", playing && f->isPaused());
     info.insert("state", f != nullptr ? functionState(fid) : -1);
     info.insert("level", f != nullptr ? m_levels.value(fid, 1.0) : 0.0);
-    info.insert("flashing", f != nullptr && isFlashing(fid));
+    // (lit until its decay is over; held: a press holds it now)
+    info.insert("flashing", f != nullptr && isFlashLit(fid));
+    info.insert("flashHeld", f != nullptr && isFlashing(fid));
 
     int current = -1, next = -1, count = 0;
+    int linkJump = 0, linkCount = 0;
     qreal progress = playing ? 1.0 : 0.0;
+    const Cuelist::Status status = cl != nullptr ? cl->status() : Cuelist::Status();
     if (cl != nullptr)
     {
         cueIndexes(cl, &current, &next);
         count = cl->cueCount();
-        progress = current >= 0 ? cl->status().progress : 0.0;
+        progress = current >= 0 ? status.progress : 0.0;
+        // the next cue is a jump of a link: which one, of how many (0: always)
+        if (playing && current >= 0)
+        {
+            linkJump = status.linkJump;
+            linkCount = status.linkCount;
+        }
     }
     const Cuelist::Cue cue = cl != nullptr && current >= 0 ? cl->cueAt(current) : Cuelist::Cue();
     const Cuelist::Cue nextCue = cl != nullptr && next >= 0 ? cl->cueAt(next) : Cuelist::Cue();
@@ -623,8 +711,32 @@ void PlaybackManager::fillStatus(QVariantMap &info, Function *f) const
     info.insert("next", next);
     info.insert("nextNumber", next >= 0 ? Cuelist::numberToString(nextCue.number) : QString());
     info.insert("nextName", next >= 0 ? nextCue.name : QString());
+    info.insert("linkJump", linkJump);
+    info.insert("linkCount", linkCount);
     info.insert("cueCount", count);
     info.insert("progress", progress);
+    // the type of list (its tag), and whether its fader rules it
+    info.insert("mode", cl != nullptr ? Cuelist::modeToString(cl->mode()).toLower() : QString());
+    info.insert("ruledByFader", ruledByFader(f));
+    // a Chase: the steps a minute it plays at (its BPM, the show tempo or a
+    // tapped rhythm); 0 for the other lists
+    info.insert("chaseBpm", cl != nullptr ? cl->effectiveChaseBpm() : 0.0);
+
+    // Live Time: the time of the cue that fades, as it runs
+    const bool live = playing && current >= 0;
+    info.insert("fading", live && status.fading);
+    info.insert("fadeTotal", live ? int(status.fadeTotal) : 0);
+    info.insert("fadeElapsed", live ? int(status.fadeElapsed) : 0);
+    info.insert("liveScale", live ? status.liveScale : 1.0);
+    // it runs with the cue's own times: Live Time can be stored in it
+    info.insert("ownTimes", live && status.ownTimes);
+    // the A/B fader has the fade in its hand (no Live Time for it)
+    info.insert("manual", live && status.manual);
+    // DMX Total Control: the clock of a Timecode list that plays (ms; -1: none)
+    info.insert("clock", playing && status.clock >= 0 ? double(status.clock) : -1.0);
+    // (the middle of a Live Time fader)
+    info.insert("fadeBase", live && status.liveScale > 0 ? int(qRound(qreal(status.fadeTotal) / status.liveScale))
+                                                       : int(cue.length()));
 }
 
 void PlaybackManager::fillOptions(QVariantMap &info, const Slot &slot, const Function *f)
@@ -638,6 +750,9 @@ void PlaybackManager::fillOptions(QVariantMap &info, const Slot &slot, const Fun
     info.insert("faderReleases", faderReleases(slot, f));
     // what the properties show: -1 the default for the type, 0 no, 1 yes
     info.insert("faderReleasesMode", slot.faderReleases);
+    info.insert("flashAttack", slot.flashAttack);
+    info.insert("flashDecay", slot.flashDecay);
+    info.insert("faderMode", crossfades(slot, f) ? QStringLiteral("crossfade") : QStringLiteral("level"));
 }
 
 QVariantMap PlaybackManager::slotInfo(int page, int slot) const
@@ -655,6 +770,8 @@ QVariantMap PlaybackManager::slotInfo(int page, int slot) const
     if (entry != nullptr && entry->label.isEmpty() == false)
         info.insert("name", entry->label);
     info.insert("selected", p >= 0 && isSelected(p, slot));
+    // where an A/B fader is (the strip shows it instead of the level)
+    info.insert("xfadePos", entry != nullptr && crossfades(*entry, f) ? m_crossfades.value(f->id()).pos : 0.0);
     return info;
 }
 
@@ -725,9 +842,17 @@ void PlaybackManager::startFunction(Function *f, int cueIndex)
     ensurePolling();
 }
 
+qreal PlaybackManager::effectiveLevel(quint32 functionId) const
+{
+    auto ramp = m_flashRamps.constFind(functionId);
+    if (ramp != m_flashRamps.cend())
+        return rampValue(ramp.value());
+    return isFlashing(functionId) ? 1.0 : m_levels.value(functionId, 1.0);
+}
+
 void PlaybackManager::applyLevel(Function *f)
 {
-    const qreal level = isFlashing(f->id()) ? 1.0 : m_levels.value(f->id(), 1.0);
+    const qreal level = effectiveLevel(f->id());
 
     // a super scene has no intensity of its own: a level per track
     if (Show *show = qobject_cast<Show *>(f))
@@ -786,6 +911,7 @@ void PlaybackManager::releaseIt(Function *f)
     if (m_heldByFader == nullptr || m_heldByFader(f->id()) == false)
         f->stop(playbackParent());
     dropFlashHolds(f->id());
+    m_flashRamps.remove(f->id());
     m_startedByFlash.remove(f->id());
     m_held.remove(f->id());
 }
@@ -793,6 +919,7 @@ void PlaybackManager::releaseIt(Function *f)
 void PlaybackManager::dropFlashHolds(quint32 functionId)
 {
     m_flashHolds.remove(functionId);
+    m_flashDecays.remove(functionId);
     // (their releases find nothing to let go)
     for (auto it = m_flashPresses.begin(); it != m_flashPresses.end();)
     {
@@ -824,6 +951,7 @@ void PlaybackManager::forgetRuntime(quint32 functionId)
 {
     m_showOverrides.remove(functionId);
     dropFlashHolds(functionId);
+    m_flashRamps.remove(functionId);
     m_startedByFlash.remove(functionId);
     m_held.remove(functionId);
 }
@@ -866,6 +994,19 @@ void PlaybackManager::go(int page, int slot)
     goFunction(int(entry->functionId));
 }
 
+void PlaybackManager::chooseStartCue(Cuelist *cuelist, int step)
+{
+    const int count = cuelist->cueCount();
+    if (count == 0)
+        return;
+    int current, next;
+    cueIndexes(cuelist, &current, &next);
+    int index = qMax(0, next + step);
+    if (index >= count)
+        index = cuelist->atEnd() == Cuelist::AtEndStay ? count - 1 : 0;
+    cuelist->setStartCue(index);
+}
+
 void PlaybackManager::goFunction(int functionId)
 {
     Function *f = functionId >= 0 ? function(quint32(functionId)) : nullptr;
@@ -873,10 +1014,17 @@ void PlaybackManager::goFunction(int functionId)
         return;
     const quint32 fid = f->id();
     // a GO keeps a playback a flash started
-    m_startedByFlash.remove(fid);
+    keepFlashStart(fid);
 
     if (Cuelist *cl = qobject_cast<Cuelist *>(f))
     {
+        // a stopped submaster: its fader starts it, GO only chooses the cue
+        if (isPlaying(cl) == false && ruledByFader(cl))
+        {
+            chooseStartCue(cl, 1);
+            bump();
+            return;
+        }
         releaseOthersOnGo(fid);
         // (paused: GO only resumes it)
         if (isPlaying(cl))
@@ -921,6 +1069,13 @@ void PlaybackManager::back(int page, int slot)
 void PlaybackManager::backFunction(int functionId)
 {
     Function *f = functionId >= 0 ? function(quint32(functionId)) : nullptr;
+    // a stopped submaster: the cue before, for its fader
+    if (f != nullptr && isPlaying(f) == false && ruledByFader(f))
+    {
+        chooseStartCue(qobject_cast<Cuelist *>(f), -1);
+        bump();
+        return;
+    }
     if (isPlaying(f) == false)
         return;
 
@@ -953,6 +1108,12 @@ void PlaybackManager::pauseBack(int page, int slot)
 void PlaybackManager::pauseBackFunction(int functionId)
 {
     Function *f = functionId >= 0 ? function(quint32(functionId)) : nullptr;
+    // a stopped submaster has no fade to pause: Back
+    if (f != nullptr && isPlaying(f) == false && ruledByFader(f))
+    {
+        backFunction(functionId);
+        return;
+    }
     if (isPlaying(f) == false)
         return;
 
@@ -1015,9 +1176,11 @@ void PlaybackManager::toggle(int page, int slot)
     const Slot *entry = slotAt(page, slot);
     if (entry == nullptr)
         return;
-    if (isPlaying(function(entry->functionId)))
+    Function *f = function(entry->functionId);
+    if (isPlaying(f))
         release(page, slot);
-    else
+    // (a stopped submaster: its fader starts it)
+    else if (ruledByFader(f) == false)
         go(page, slot);
 }
 
@@ -1056,7 +1219,14 @@ void PlaybackManager::goToFunction(int functionId, int cueIndex)
     {
         if (cueIndex >= cl->cueCount())
             return;
-        m_startedByFlash.remove(fid);
+        // a stopped submaster: the cue its fader starts on, as a GO
+        if (isPlaying(cl) == false && ruledByFader(cl))
+        {
+            cl->setStartCue(cueIndex);
+            bump();
+            return;
+        }
+        keepFlashStart(fid);
         releaseOthersOnGo(fid);
         // (goToCue resumes a paused list)
         if (isPlaying(cl))
@@ -1071,7 +1241,7 @@ void PlaybackManager::goToFunction(int functionId, int cueIndex)
     {
         if (cueIndex >= chaser->stepsCount())
             return;
-        m_startedByFlash.remove(fid);
+        keepFlashStart(fid);
         // a stopped chaser keeps it and starts from that step
         ChaserAction action;
         action.m_action = ChaserSetStepIndex;
@@ -1122,11 +1292,15 @@ void PlaybackManager::flashPress(int page, int slot, int button, bool down)
     if (down)
     {
         const Slot *entry = slotAt(page, slot);
-        if (entry == nullptr || function(entry->functionId) == nullptr)
+        Function *f = entry != nullptr ? function(entry->functionId) : nullptr;
+        if (f == nullptr)
             return;
-        const quint32 fid = entry->functionId;
-        m_flashPresses[key].append(fid);
-        flashFunction(int(fid), true);
+        // (with the flash times of this slot)
+        const int attack = entry->flashAttack;
+        const int decay = entry->flashDecay;
+        m_flashPresses[key].append(f->id());
+        flashDown(f, attack, decay);
+        bump();
         return;
     }
 
@@ -1147,49 +1321,195 @@ void PlaybackManager::flashFunction(int functionId, bool down)
     Function *f = functionId >= 0 ? function(quint32(functionId)) : nullptr;
     if (f == nullptr)
         return;
-    const quint32 fid = f->id();
 
     if (down)
     {
-        // several buttons can hold the same function (clones, mappings)
-        m_flashHolds.insert(fid, m_flashHolds.value(fid, 0) + 1);
-        if (isPlaying(f) == false)
-        {
-            m_startedByFlash.insert(fid);
-            startFunction(f);
-        }
-        else
-        {
-            applyLevel(f);
-        }
+        // (a SHOW button, a mapping on a function: the times of its first slot)
+        int attack = 0, decay = 0;
+        flashTimesOf(f->id(), &attack, &decay);
+        flashDown(f, attack, decay);
     }
     else
     {
-        const int holds = m_flashHolds.value(fid, 0);
-        if (holds <= 0)
+        if (isFlashing(f->id()) == false)
             return;
-        if (holds > 1)
+        flashUp(f);
+    }
+    bump();
+}
+
+void PlaybackManager::flashTimesOf(quint32 functionId, int *attack, int *decay) const
+{
+    *attack = 0;
+    *decay = 0;
+    for (const Page &page : m_pages)
+    {
+        for (const Slot &entry : page.slotMap)
         {
-            m_flashHolds.insert(fid, holds - 1);
-        }
-        else
-        {
-            dropFlashHolds(fid);
-            // what the flash started goes; the rest gets its level back. (A
-            // run that someone else stopped and started again in this frame
-            // isn't the one the flash started: it stays)
-            if (m_startedByFlash.remove(fid))
+            if (entry.functionId == functionId)
             {
-                if (isPlaying(f) && f->isStartedBy(playbackParent()))
-                    releaseIt(f);
-            }
-            else if (isPlaying(f))
-            {
-                applyLevel(f);
+                *attack = entry.flashAttack;
+                *decay = entry.flashDecay;
+                return;
             }
         }
     }
-    bump();
+}
+
+void PlaybackManager::flashDown(Function *f, int attack, int decay)
+{
+    const quint32 fid = f->id();
+    const bool playing = isPlaying(f);
+    // up from where it is (a press during a decay: no dip); one the flash
+    // starts comes up from dark
+    const qreal from = playing ? effectiveLevel(fid) : 0.0;
+
+    // several buttons can hold the same function (clones, mappings)
+    m_flashHolds.insert(fid, m_flashHolds.value(fid, 0) + 1);
+    m_flashDecays.insert(fid, decay);
+    if (attack > 0 && from < 1.0)
+        startRamp(fid, from, 1.0, attack, false);
+    else
+        m_flashRamps.remove(fid);
+
+    if (playing == false)
+    {
+        // (the ramp is there first: its first frame is dark)
+        m_startedByFlash.insert(fid);
+        startFunction(f);
+    }
+    else
+    {
+        applyLevel(f);
+    }
+}
+
+void PlaybackManager::flashUp(Function *f)
+{
+    const quint32 fid = f->id();
+    const int holds = m_flashHolds.value(fid, 0);
+    if (holds <= 0)
+        return;
+    if (holds > 1)
+    {
+        m_flashHolds.insert(fid, holds - 1);
+        return;
+    }
+
+    const int decay = m_flashDecays.value(fid, 0);
+    const qreal from = effectiveLevel(fid);
+    dropFlashHolds(fid);
+
+    // back to its level in the decay time; what the flash started goes to
+    // dark, and is released at the end (it stays started by the flash until
+    // then: a GO meanwhile keeps it). A run that someone else stopped and
+    // started again in this frame isn't the one the flash started
+    const bool started = m_startedByFlash.contains(fid);
+    const qreal to = started ? 0.0 : m_levels.value(fid, 1.0);
+    if (decay > 0 && isPlaying(f) && (started == false || f->isStartedBy(playbackParent())) &&
+        qAbs(from - to) > 0.001)
+    {
+        startRamp(fid, from, to, decay, started);
+        applyLevel(f);
+        return;
+    }
+
+    // at once: what the flash started goes; the rest gets its level back
+    // (the run of someone else stays)
+    m_flashRamps.remove(fid);
+    if (m_startedByFlash.remove(fid))
+    {
+        if (isPlaying(f) && f->isStartedBy(playbackParent()))
+            releaseIt(f);
+    }
+    else if (isPlaying(f))
+    {
+        applyLevel(f);
+    }
+}
+
+void PlaybackManager::keepFlashStart(quint32 functionId)
+{
+    m_startedByFlash.remove(functionId);
+    auto it = m_flashRamps.find(functionId);
+    if (it != m_flashRamps.end() && it->releaseAtEnd)
+    {
+        it->releaseAtEnd = false;
+        retargetRamp(it.value(), m_levels.value(functionId, 1.0));
+    }
+}
+
+qreal PlaybackManager::rampValue(const FlashRamp &ramp) const
+{
+    const qint64 elapsed = m_rampClock.elapsed() - ramp.start;
+    if (ramp.duration <= 0 || elapsed >= ramp.duration)
+        return ramp.to;
+    const qreal t = qMax(qreal(0.0), qreal(elapsed) / qreal(ramp.duration));
+    return ramp.from + (ramp.to - ramp.from) * t;
+}
+
+void PlaybackManager::startRamp(quint32 functionId, qreal from, qreal to, int duration, bool releaseAtEnd)
+{
+    FlashRamp ramp;
+    ramp.from = from;
+    ramp.to = to;
+    ramp.start = m_rampClock.elapsed();
+    ramp.duration = duration;
+    ramp.releaseAtEnd = releaseAtEnd;
+    m_flashRamps.insert(functionId, ramp);
+    if (m_rampTimer->isActive() == false)
+        m_rampTimer->start();
+}
+
+void PlaybackManager::retargetRamp(FlashRamp &ramp, qreal to)
+{
+    // from where it is now, in the time it had left: no jump
+    const qint64 now = m_rampClock.elapsed();
+    ramp.from = rampValue(ramp);
+    ramp.duration = int(qMax(qint64(0), ramp.start + ramp.duration - now));
+    ramp.start = now;
+    ramp.to = to;
+}
+
+void PlaybackManager::slotFlashRamps()
+{
+    const qint64 now = m_rampClock.elapsed();
+    bool ended = false;
+    // (a release at the end changes the ramps: by their IDs)
+    const QList<quint32> ids = m_flashRamps.keys();
+    for (quint32 id : ids)
+    {
+        auto it = m_flashRamps.find(id);
+        if (it == m_flashRamps.end())
+            continue;
+        Function *f = function(id);
+        if (f == nullptr)
+        {
+            m_flashRamps.erase(it);
+            continue;
+        }
+        if (now - it->start < it->duration)
+        {
+            if (isPlaying(f))
+                applyLevel(f);
+            continue;
+        }
+
+        // the end: at full (an attack), at its level (a decay), or released
+        // (the decay of what the flash started, when the run is still ours)
+        const bool release = it->releaseAtEnd;
+        m_flashRamps.erase(it);
+        ended = true;
+        if (release && m_startedByFlash.remove(id) && isPlaying(f) && f->isStartedBy(playbackParent()))
+            releaseIt(f);
+        else if (isPlaying(f))
+            applyLevel(f);
+    }
+    if (m_flashRamps.isEmpty())
+        m_rampTimer->stop();
+    // (the Flash button goes dark)
+    if (ended)
+        bump();
 }
 
 void PlaybackManager::pressButton(int page, int slot, int button, bool down)
@@ -1225,10 +1545,11 @@ void PlaybackManager::pressButton(int page, int slot, int button, bool down)
         {
             go(page, slot);
         }
-        else if (m_startedByFlash.remove(fid))
+        else if (ruledByFader(f) == false && m_startedByFlash.remove(fid))
         {
             // a stopped one started with the flash: that start is its GO (not
-            // a second cue), and it plays on when the button comes up
+            // a second cue), and it plays on when the button comes up. (Not a
+            // submaster: only its fader starts it, the flash only flashes it)
             m_lastGoPage = resolvePage(page);
             m_lastGoSlot = slot;
             levelUpForGo(fid);
@@ -1263,15 +1584,49 @@ void PlaybackManager::setLevel(int page, int slot, qreal level)
     const quint32 fid = f->id();
 
     level = qBound(0.0, level, 1.0);
+    // an A/B fader is no intensity: it plays at the level it had
+    if (crossfades(options, f))
+    {
+        crossfadeTo(qobject_cast<Cuelist *>(f), level);
+        bump();
+        return;
+    }
     const qreal old = m_levels.value(fid, 1.0);
     m_levels.insert(fid, level);
+    // a decay ends at the new level (during an attack, only the level
+    // changes: it comes back after the flash). What the flash started goes
+    // to dark anyway
+    auto ramp = m_flashRamps.find(fid);
+    if (ramp != m_flashRamps.end() && isFlashing(fid) == false && ramp->releaseAtEnd == false)
+        retargetRamp(ramp.value(), level);
     // (a flash holds it at full: the level comes back after it)
     if (isPlaying(f) && isFlashing(fid) == false)
         applyLevel(f);
 
-    // the fader up from 0 starts it, down to 0 releases it (by default only scenes)
-    if (options.faderStarts && isPlaying(f) == false && old < kFaderDown && level >= kFaderDown)
-        goFunction(int(fid));
+    // the fader up from 0 starts it, down to 0 releases it (by default only
+    // scenes and submasters). A submaster starts at the level of its fader,
+    // never at full, on its next cue (a GO would only choose that cue).
+    // During the decay of what a flash started it plays already: it is kept
+    // at the level of the fader, as with a GO (not a second cue)
+    const bool faderUp = options.faderStarts && old < kFaderDown && level >= kFaderDown;
+    if (faderUp && isPlaying(f) && isFlashing(fid) == false && m_startedByFlash.contains(fid))
+    {
+        keepFlashStart(fid);
+        if (f->type() == Function::CuelistType)
+            releaseOthersOnGo(fid);
+    }
+    else if (faderUp && isPlaying(f) == false)
+    {
+        if (ruledByFader(f))
+        {
+            releaseOthersOnGo(fid);
+            startFunction(f);
+        }
+        else
+        {
+            goFunction(int(fid));
+        }
+    }
     else if (faderReleases(options, f) && isPlaying(f) && old > 0.0 && level <= 0.0)
         releaseIt(f);
     bump();
@@ -1280,7 +1635,93 @@ void PlaybackManager::setLevel(int page, int slot, qreal level)
 qreal PlaybackManager::level(int page, int slot) const
 {
     const Slot *entry = slotAt(page, slot);
-    return entry != nullptr ? m_levels.value(entry->functionId, 1.0) : 0.0;
+    if (entry == nullptr)
+        return 0.0;
+    // (an A/B fader: where it is)
+    if (crossfades(*entry, function(entry->functionId)))
+        return m_crossfades.value(entry->functionId).pos;
+    return m_levels.value(entry->functionId, 1.0);
+}
+
+bool PlaybackManager::faderKnown(int page, int slot) const
+{
+    const Slot *entry = slotAt(page, slot);
+    return entry == nullptr || crossfades(*entry, function(entry->functionId)) == false ||
+           m_crossfades.value(entry->functionId).end >= 0;
+}
+
+bool PlaybackManager::crossfadesAt(int page, int slot) const
+{
+    const Slot *entry = slotAt(page, slot);
+    return entry != nullptr && crossfades(*entry, function(entry->functionId));
+}
+
+void PlaybackManager::crossfadeTo(Cuelist *cuelist, qreal pos)
+{
+    const quint32 fid = cuelist->id();
+    Crossfade &xfade = m_crossfades[fid];
+    // the first value only tells where the fader is
+    if (xfade.end < 0)
+    {
+        xfade.end = pos >= 0.5 ? 1 : 0;
+        xfade.pos = pos;
+        return;
+    }
+    xfade.pos = pos;
+    const qreal travel = qAbs(pos - xfade.end);
+
+    // it leaves its end: a GO, the next cue fading with the fader (a
+    // stopped list starts on its cue)
+    if (xfade.active == false)
+    {
+        if (travel <= kCrossfadeEdge)
+            return;
+        keepFlashStart(fid);
+        releaseOthersOnGo(fid);
+        if (isPlaying(cuelist))
+        {
+            cuelist->manualGo();
+        }
+        else
+        {
+            levelUpForGo(fid);
+            cuelist->setStartManual(true);
+            startFunction(cuelist);
+        }
+        xfade.active = true;
+    }
+
+    if (travel >= 1.0 - kCrossfadeEdge)
+    {
+        // at the other end the cue is complete: the next travel, the
+        // other way, plays the following one
+        cuelist->setManualPosition(1.0);
+        cuelist->endManual(Cuelist::ManualComplete);
+        xfade.end = 1 - xfade.end;
+        xfade.active = false;
+    }
+    else if (travel <= kCrossfadeEdge)
+    {
+        // back where it started: cancelled, the cue before is back
+        cuelist->setManualPosition(0.0);
+        cuelist->endManual(Cuelist::ManualCancel);
+        xfade.active = false;
+    }
+    else
+    {
+        cuelist->setManualPosition(travel);
+    }
+}
+
+void PlaybackManager::dropCrossfade(quint32 functionId)
+{
+    auto it = m_crossfades.find(functionId);
+    if (it == m_crossfades.end())
+        return;
+    Cuelist *cl = qobject_cast<Cuelist *>(function(functionId));
+    if (it->active && cl != nullptr && isPlaying(cl))
+        cl->endManual(Cuelist::ManualOnClock);
+    m_crossfades.erase(it);
 }
 
 void PlaybackManager::mainGo()
@@ -1304,8 +1745,10 @@ void PlaybackManager::mainBack()
         emit message(tr("Select a playback first"), true);
 }
 
-void PlaybackManager::releaseAll()
+void PlaybackManager::releaseAll(int except)
 {
+    // (all of them but $except)
+    const auto other = [except](quint32 id) { return except < 0 || id != quint32(except); };
     QSet<quint32> ids;
     for (const Page &page : std::as_const(m_pages))
         for (const Slot &entry : page.slotMap)
@@ -1321,22 +1764,105 @@ void PlaybackManager::releaseAll()
     for (quint32 id : std::as_const(ids))
     {
         Function *f = function(id);
-        if (isPlaying(f))
+        if (other(id) && isPlaying(f))
             releaseIt(f);
     }
     // what they held at full and plays on (off the slots: a GO from a
-    // cleared slot, a group) gets its level back
-    const QList<quint32> held = m_flashHolds.keys();
-    m_flashHolds.clear();
-    m_flashPresses.clear();
-    m_startedByFlash.clear();
-    for (quint32 id : held)
+    // cleared slot, a group) gets its level back, also in an attack or a decay
+    QList<quint32> held = m_flashHolds.keys();
+    held.append(m_flashRamps.keys());
+    held.removeIf([&](quint32 id) { return other(id) == false; });
+    m_flashHolds.removeIf([&](QHash<quint32, int>::iterator it) { return other(it.key()); });
+    m_flashDecays.removeIf([&](QHash<quint32, int>::iterator it) { return other(it.key()); });
+    m_flashRamps.removeIf([&](QHash<quint32, FlashRamp>::iterator it) { return other(it.key()); });
+    if (m_flashRamps.isEmpty())
+        m_rampTimer->stop();
+    for (auto it = m_flashPresses.begin(); it != m_flashPresses.end();)
+    {
+        it.value().removeIf(other);
+        if (it.value().isEmpty())
+            it = m_flashPresses.erase(it);
+        else
+            ++it;
+    }
+    m_startedByFlash.removeIf(other);
+    for (quint32 id : std::as_const(held))
     {
         Function *f = function(id);
         if (isPlaying(f))
             applyLevel(f);
     }
     bump();
+}
+
+/*********************************************************************
+ * Cue speed and Live Time
+ *********************************************************************/
+
+qreal PlaybackManager::cueSpeed() const
+{
+    return m_doc->masterTimer()->cueSpeed();
+}
+
+void PlaybackManager::setCueSpeed(qreal speed)
+{
+    // (the timer tells cueSpeedChanged)
+    m_doc->masterTimer()->setCueSpeed(speed);
+}
+
+void PlaybackManager::setLiveTime(int page, int slot, int ms)
+{
+    const Slot *entry = slotAt(page, slot);
+    if (entry != nullptr)
+        setLiveTimeFunction(int(entry->functionId), ms);
+}
+
+void PlaybackManager::scaleLiveTime(int page, int slot, qreal factor)
+{
+    const Slot *entry = slotAt(page, slot);
+    if (entry != nullptr)
+        scaleLiveTimeFunction(int(entry->functionId), factor);
+}
+
+bool PlaybackManager::storeLiveTime(int page, int slot)
+{
+    const Slot *entry = slotAt(page, slot);
+    return entry != nullptr && storeLiveTimeFunction(int(entry->functionId));
+}
+
+void PlaybackManager::setLiveTimeFunction(int functionId, int ms)
+{
+    // (the cuelist does it on its next frame, when a cue fades)
+    Cuelist *cl = functionId >= 0 ? qobject_cast<Cuelist *>(function(quint32(functionId))) : nullptr;
+    if (cl != nullptr && ms >= 0 && isPlaying(cl))
+        cl->setLiveTime(uint(ms));
+}
+
+void PlaybackManager::scaleLiveTimeFunction(int functionId, qreal factor)
+{
+    Cuelist *cl = functionId >= 0 ? qobject_cast<Cuelist *>(function(quint32(functionId))) : nullptr;
+    if (cl != nullptr && factor > 0 && isPlaying(cl))
+        cl->scaleLiveTime(factor);
+}
+
+bool PlaybackManager::storeLiveTimeFunction(int functionId)
+{
+    Cuelist *cl = functionId >= 0 ? qobject_cast<Cuelist *>(function(quint32(functionId))) : nullptr;
+    if (cl == nullptr || m_cuelists == nullptr || isPlaying(cl) == false)
+        return false;
+    const Cuelist::Status status = cl->status();
+    const int index = cl->indexOfUid(status.currentUid);
+    if (index < 0 || qAbs(status.liveScale - 1.0) < 1e-6)
+        return false;
+    // (a BACK time, a fade-in or a Chase change: not the times of the cue,
+    // a scale of them would be a time nobody saw)
+    if (status.ownTimes == false)
+        return false;
+    // the cue takes the times it runs with; the run goes on with them as its own
+    m_cuelists->scaleCueTimes(cl->id(), index, status.liveScale);
+    cl->liveTimeStored();
+    bump();
+    return true;
 }
 
 /*********************************************************************
@@ -1457,7 +1983,7 @@ void PlaybackManager::poll(bool force)
         ids.insert(f->id());
 
     QHash<quint32, QList<int>> signatures;
-    QHash<quint32, int> progress;
+    QHash<quint32, QPair<int, qint64>> progress;
     bool active = false;
     for (quint32 id : std::as_const(ids))
     {
@@ -1468,8 +1994,9 @@ void PlaybackManager::poll(bool force)
         if (playing || f->isRunning())
             active = true;
 
-        QList<int> signature = { playing, playing && f->isPaused(), -1, -1, 0, 0, isFlashing(id) };
+        QList<int> signature = { playing, playing && f->isPaused(), -1, -1, 0, 0, isFlashLit(id), 0, 0, 1000, 0 };
         int step = 0;
+        qint64 clock = -1;
         if (Cuelist *cl = qobject_cast<Cuelist *>(f))
         {
             const Cuelist::Status status = cl->status();
@@ -1477,12 +2004,21 @@ void PlaybackManager::poll(bool force)
             signature[3] = status.next;
             signature[4] = status.fading;
             signature[5] = status.waiting;
+            signature[7] = status.linkJump;
+            // a Live Time change
+            signature[8] = int(status.fadeTotal);
+            signature[9] = qRound(status.liveScale * 1000.0);
+            // the speed of a Chase (the show tempo, a tapped rhythm)
+            signature[10] = qRound(cl->effectiveChaseBpm() * 10.0);
             // in steps of 5 %
             if (playing && status.current >= 0)
                 step = qRound(status.progress * 20.0);
+            // DMX Total Control: the clock of a Timecode list, as it shows (tenths)
+            if (playing && status.clock >= 0)
+                clock = status.clock / 100;
         }
         signatures.insert(id, signature);
-        progress.insert(id, step);
+        progress.insert(id, qMakePair(step, clock));
     }
 
     const bool changed = signatures != m_signatures;
@@ -1545,6 +2081,7 @@ void PlaybackManager::slotFunctionRemoved(quint32 id)
     }
 
     m_levels.remove(id);
+    m_crossfades.remove(id);
     forgetRuntime(id);
     m_signatures.remove(id);
     m_progress.remove(id);
@@ -1568,6 +2105,7 @@ void PlaybackManager::slotFunctionReplaced(quint32 id)
     // the same ID, a new function (steps converted to a cuelist): its slots
     // and level stay, the runtime of the old one goes
     forgetRuntime(id);
+    m_crossfades.remove(id);
     bump();
 }
 
@@ -1586,12 +2124,17 @@ void PlaybackManager::slotFunctionChanged(quint32 id)
 
 void PlaybackManager::resetLive()
 {
-    // the flashes are let go: what they hold at full gets its level back
-    const QList<quint32> flashing = m_flashHolds.keys();
+    // the flashes are let go: what they hold at full, or bring up or down,
+    // gets its level back
+    QList<quint32> flashing = m_flashHolds.keys();
+    flashing.append(m_flashRamps.keys());
     m_flashHolds.clear();
+    m_flashDecays.clear();
+    m_flashRamps.clear();
+    m_rampTimer->stop();
     m_flashPresses.clear();
     m_startedByFlash.clear();
-    for (quint32 id : flashing)
+    for (quint32 id : std::as_const(flashing))
     {
         Function *f = function(id);
         if (isPlaying(f))
@@ -1613,12 +2156,18 @@ void PlaybackManager::clear()
 
     m_levels.clear();
     m_flashHolds.clear();
+    m_flashDecays.clear();
+    m_flashRamps.clear();
+    m_rampTimer->stop();
     m_flashPresses.clear();
     m_startedByFlash.clear();
     m_held.clear();
     m_showOverrides.clear();
+    m_crossfades.clear();
     m_signatures.clear();
     m_progress.clear();
+    // (not saved: every show opens at x1)
+    setCueSpeed(1.0);
 
     emit pagesChanged();
     emit pageChanged();
@@ -1696,6 +2245,12 @@ bool PlaybackManager::loadXML(QXmlStreamReader &root)
                 const int releases = slotAttrs.value(KXMLDTCPlaybackFaderRelease).toInt(&releasesOk);
                 if (releasesOk)
                     entry.faderReleases = qBound(-1, releases, 1);
+                // (not there, or not a number: at once)
+                entry.flashAttack = qBound(0, slotAttrs.value(KXMLDTCPlaybackFlashAttack).toInt(), maxFlashTime());
+                entry.flashDecay = qBound(0, slotAttrs.value(KXMLDTCPlaybackFlashDecay).toInt(), maxFlashTime());
+                // (an A/B fader on a cuelist only)
+                entry.crossfade = slotAttrs.value(KXMLDTCPlaybackFaderMode) == QLatin1String("crossfade") &&
+                                  qobject_cast<Cuelist *>(function(fid)) != nullptr;
                 page.slotMap.insert(index, entry);
 
                 // clones carry the same level: the last one read wins (a
@@ -1759,6 +2314,12 @@ bool PlaybackManager::saveXML(QXmlStreamWriter *doc) const
                 doc->writeAttribute(KXMLDTCPlaybackFaderStarts, entry.faderStarts ? "1" : "0");
             if (entry.faderReleases >= 0)
                 doc->writeAttribute(KXMLDTCPlaybackFaderRelease, QString::number(entry.faderReleases));
+            if (entry.flashAttack > 0)
+                doc->writeAttribute(KXMLDTCPlaybackFlashAttack, QString::number(entry.flashAttack));
+            if (entry.flashDecay > 0)
+                doc->writeAttribute(KXMLDTCPlaybackFlashDecay, QString::number(entry.flashDecay));
+            if (entry.crossfade)
+                doc->writeAttribute(KXMLDTCPlaybackFaderMode, QStringLiteral("crossfade"));
             doc->writeEndElement();
         }
         doc->writeEndElement();

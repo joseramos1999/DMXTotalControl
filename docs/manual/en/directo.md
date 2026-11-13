@@ -133,7 +133,7 @@ The same tile menu has **“Open in Scenes”**, **“Edit in the programmer”*
 Each scene has a priority from 0 to 10; new ones take the one you set in [Options](opciones.md#playback) (5 by default).
 
 - The scene with the **highest priority rules on every channel it touches**, zeros included: a red scene with priority 8 over a blue one with priority 5 gives red, not magenta.
-- With the **same priority**, the intensity channels (dimmer, RGB…) are mixed and the highest value wins; on the other channels the last scene played wins.
+- With the **same priority**, the intensity channels (dimmer, RGB…) are mixed and the highest value wins; on the other channels the **last change** wins: the last scene played, or the last GO of a cuelist that changed that channel. What a cuelist only keeps from earlier cues is not taken back.
 - If you change the priority of a playing scene, it applies at once.
 - When you release a higher priority scene with a fade, it fades to what is underneath.
 - **The programmer overrides everything**, intensities included. In Options you can lower the priority of the live edits.
@@ -189,3 +189,5 @@ The scene tiles, the group masters, the ◀ ▶ and release buttons of each grou
 
 - With **Alt+click** they are copied to the SHOW page that is open (see [Show](show.md#bringing-any-control-to-the-show)).
 - In Learn mode they can be assigned to a controller (see [Mappings](mapeos.md#learn-mode)).
+
+While a mapping uses “The selected scene”, or in Learn mode, the tile of the selected scene (the last one you pressed) has a thin bar along its bottom edge (see [Mappings](mapeos.md#the-selected-scene)).

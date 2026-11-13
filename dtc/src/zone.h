@@ -119,8 +119,10 @@ public:
      *  with no program around (Toggle), start it or stop it */
     Q_INVOKABLE void trigger(quint32 fid);
     /** Start $fid, releasing the scenes it replaces (its group, if
-     *  exclusive, and its release mode), but those faders hold (hold()) */
-    Q_INVOKABLE void start(quint32 fid);
+     *  exclusive, and its release mode), but those faders hold (hold()).
+     *  A press: it becomes the selected scene ($selectIt false: an action
+     *  of a cue starts it, nobody pressed it) */
+    Q_INVOKABLE void start(quint32 fid, bool selectIt = true);
     /** Stop $fid; not one a fader holds up: only its fader stops it */
     Q_INVOKABLE void stop(quint32 fid);
     /** Release the group: every scene, but those faders hold up. $held:
@@ -215,6 +217,8 @@ private:
     void stopScene(quint32 fid);
     /** What this group keeps of a scene it played, gone (stopped or not) */
     void forgetScene(quint32 fid);
+    /** A scene of this group pressed or started: the selected scene */
+    void select(quint32 fid);
 
 private:
     Doc *m_doc;

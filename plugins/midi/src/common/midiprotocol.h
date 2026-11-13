@@ -147,4 +147,8 @@ namespace QLCMIDIProtocol
 #define CHANNEL_OFFSET_MBC_BEAT            530
 #define CHANNEL_OFFSET_MBC_STOP            531
 
+// DMX Total Control: the MIDI timecode (see MtcDecoder): a value that changes
+// each time, and the time in the key, "mtc:<ms>:<fps>"
+#define CHANNEL_OFFSET_MTC                 532
+
 #endif

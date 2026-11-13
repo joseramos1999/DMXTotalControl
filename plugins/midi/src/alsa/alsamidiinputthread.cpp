@@ -252,6 +252,11 @@ void AlsaMidiInputThread::readEvent()
                     data1 = ev->data.control.value;
                 break;
 
+                // DMX Total Control: a quarter frame of a MIDI timecode
+                case SND_SEQ_EVENT_QFRAME:
+                    device->processQuarterFrame(uchar(ev->data.control.value));
+                break;
+
                 default:
                 break;
             }
@@ -281,6 +286,12 @@ void AlsaMidiInputThread::readEvent()
                 cmd = MIDI_BEAT_CLOCK;
 
             qDebug()  << "MIDI clock: " << cmd;
+        }
+        else if (ev->type == SND_SEQ_EVENT_SYSEX)
+        {
+            // DMX Total Control: a SysEx message (a full frame of a MIDI timecode)
+            device->processSysEx(QByteArray(static_cast<const char*>(ev->data.ext.ptr),
+                                            int(ev->data.ext.len)));
         }
 
         // ALSA API is a bit controversial on this. snd_seq_event_input() says

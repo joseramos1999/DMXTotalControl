@@ -37,6 +37,10 @@ class QLCIOPlugin;
  *  took its number, and wait while it isn't there */
 #define KPluginLinesByName "linesByName"
 
+/** DMX Total Control: the plugin parameter that sends a SysEx message on
+ *  a line (MIDI) at once. It is never kept: see OutputPatch::sendSysEx() */
+#define KPluginSendSysEx "DTCSendSysEx"
+
 #define KXMLQLCOutputPatch          QStringLiteral("Patch")
 #define KXMLQLCOutputPatchUniverse  QStringLiteral("Universe")
 #define KXMLQLCOutputPatchPlugin    QStringLiteral("Plugin")
@@ -102,6 +106,12 @@ public:
 
     /** Retrieve the map of custom parameters set to the patched plugin */
     QMap<QString, QVariant> getPluginParameters();
+
+    /** DMX Total Control: send a SysEx $message on the line (a controller
+     *  put in a mode). Unlike setPluginParameter() it is not kept: not sent
+     *  again on reconnect(), never saved with the show (a plugin that keeps
+     *  any parameter forgets it at once). A line gone or none: nothing */
+    void sendSysEx(const QByteArray &message);
 
 signals:
     void outputNameChanged();

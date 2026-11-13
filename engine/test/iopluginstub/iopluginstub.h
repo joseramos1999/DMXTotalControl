@@ -116,6 +116,19 @@ public:
 public:
     int m_configureCalled;
     bool m_canConfigure;
+
+    /*********************************************************************
+     * Parameters
+     *********************************************************************/
+public:
+    /** @reimp (DMX Total Control: it notes each one, then keeps it as
+     *  QLCIOPlugin does) */
+    void setParameter(quint32 universe, quint32 line, Capability type,
+                      QString name, QVariant value) override;
+
+public:
+    /** DMX Total Control: the parameters set, in order: (name, value) */
+    QList <QPair<QString, QVariant> > m_parametersSet;
 };
 
 #endif

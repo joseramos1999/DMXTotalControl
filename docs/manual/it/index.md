@@ -4,13 +4,13 @@ DMX Total Control è un programma libero per controllare l'illuminazione DMX da 
 
 Con DMX Total Control puoi:
 
-- Patchare le fixture del tuo impianto con una libreria di migliaia di definizioni, più la Open Fixture Library, l'importazione GDTF e le tue fixture.
+- Patchare le fixture del tuo impianto con una libreria di migliaia di definizioni, più la Open Fixture Library, GDTF-Share, l'importazione GDTF e le tue fixture.
 - Dare dimmer, colore, posizione, gobo e qualsiasi altro canale alle fixture selezionate, con palette, FX e una riga di comando.
 - Registrare scene statiche, passi, FX, super scene con timeline e audio, e cuelist con tracking.
 - Avviarle in Live per gruppi, nei Playback con GO o dal tuo SHOW.
 - Inviare il DMX tramite interfacce DMX USB, Art-Net o sACN, e controllare tutto da MIDI, OSC, ingresso DMX o tastiera.
 
-Gli show si salvano in file `.qxw`, lo stesso formato che usa QLC+, quindi puoi aprire show fatti con QLC+. Se il programma è già aperto e apri uno show da Esplora file (doppio clic sul file), si apre nella stessa finestra, che passa in primo piano (prima ti chiede delle modifiche non salvate).
+Gli show si salvano in file `.qxw`, lo stesso formato che usa QLC+, quindi puoi aprire show fatti con QLC+. QLC+ non legge le cuelist: per portarle in QLC+, salva una copia per QLC+ (vedi [Scene](escenas.md#cuelist-e-qlc)). Se il programma è già aperto e apri uno show da Esplora file (doppio clic sul file), si apre nella stessa finestra, che passa in primo piano (prima ti chiede delle modifiche non salvate).
 
 ## Come aprire questo manuale
 
@@ -84,7 +84,7 @@ Inizia da **Primi passi** se è la prima volta. Le altre pagine spiegano ogni pa
 5. [Programma](programar.md): selezione, gruppi, pianta 2D, dimmer, colore, posizione, funzioni, fader, palette, FX, ventaglio, cieco, evidenziare e localizzare, riga di comando, registrare e aggiornare.
 6. [Scene](escenas.md): tutti i tipi di scena, super scene, cuelist con tracking, cartelle, importare ed esportare.
 7. [Patch](patch.md): aggiungere fixture, indirizzi, universi, numeri, gruppi di fixture, pianta 2D, limiti, matrici LED e importare da un altro show.
-8. [Fixture](fixtures.md): la libreria, il creatore di fixture, la Open Fixture Library, GDTF e le tue fixture.
+8. [Fixture](fixtures.md): la libreria, il creatore di fixture, la Open Fixture Library, GDTF-Share, GDTF e le tue fixture.
 9. [Uscite](salidas.md): universi, interfacce DMX USB, Art-Net e sACN, e il monitor dei livelli DMX.
 10. [Mappature](mapeos.md): MIDI, OSC, ingresso DMX e tastiera, la modalità Apprendi e i modelli per Akai APC.
 11. [Opzioni](opciones.md): lingua, tema, dimensione, avvio, blocco, salvataggio automatico, priorità, controllo remoto, libreria, aggiornamenti.

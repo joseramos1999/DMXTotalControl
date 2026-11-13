@@ -66,7 +66,9 @@ Pour utiliser les pages du SHOW depuis un téléphone ou une tablette sur le mê
 - **Télécommande activée**.
 - **Port** : changez-le si un autre programme l’utilise (par défaut, 8800). S’il est occupé, un avertissement apparaît en rouge.
 - **PIN** : demandé une fois sur chaque appareil. Vide, tout le monde sur le réseau peut l’utiliser.
-- Les **adresses** à ouvrir dans le navigateur du téléphone, avec un bouton pour les copier.
+- **Nom sur le réseau** : le téléphone ouvre la télécommande avec `http://dmxtotalcontrol.local:8800/`, même quand l’adresse de l’ordinateur change (iPhone, iPad et téléphones Android récents). Si un autre ordinateur utilise déjà le nom, celui-ci prend `dmxtotalcontrol-2`. Vide, il n’y a pas de nom. Si le port réseau 5353 n’est pas disponible, ou si d’autres ordinateurs utilisent le nom et `-2` à `-9`, un avertissement apparaît en rouge.
+- Les **adresses** à ouvrir dans le navigateur du téléphone, avec un bouton pour les copier. Devant chacune figure le nom de son réseau, tel que Windows l’appelle (« Wi-Fi », « Ethernet 2 »). L’adresse **« Par son nom »** vient en premier, puis le Wi-Fi, le câble (Ethernet), et enfin les adaptateurs virtuels et les VPN. La liste se met à jour toute seule quelques secondes après la connexion ou la déconnexion d’un réseau. Si l’ordinateur n’est sur aucun réseau, un avertissement apparaît à la place.
+- Un **code QR** de l’adresse encadrée (au début, la première numérique), pour l’ouvrir avec l’appareil photo du téléphone. Cliquez sur une autre adresse pour la changer. S’il y a un PIN, le code le contient et le téléphone entre sans le demander. **« Plus grand »** l’affiche en grand.
 - Le nombre d’appareils connectés.
 
 Voir [Télécommande](remoto.md).
@@ -77,7 +79,9 @@ Indique combien de définitions de fixtures sont disponibles (la bibliothèque i
 
 - **Open Fixture Library** : **« Télécharger »** (nécessite internet). Une fois téléchargée, vous voyez combien de fixtures elle contient et quand elle a été téléchargée, et le bouton devient **« Mettre à jour »** : il apporte les fixtures nouveaux et améliorés, et conserve vos fixtures et ceux que la bibliothèque n’a plus. S’il y a des nouveautés, le programme le signale et le bouton est mis en évidence (voir [Fixtures](fixtures.md#open-fixture-library)).
 - **Importer des fichiers de fixtures** : **« Importer… »** des définitions `.qxf` (le format de QLC+), des fichiers `.gdtf` ou un `.zip` qui les contient.
-- **Fixtures GDTF** : **« GDTF-Share »** ouvre son site ; **« Importer GDTF… »** importe des fichiers, des dossiers ou le `.zip` de son téléchargement groupé. Indique combien de fixtures GDTF se trouvent dans la bibliothèque.
+- **Fixtures GDTF** : **« GDTF-Share… »** recherche, télécharge et importe des fixtures de GDTF-Share (voir [Fixtures](fixtures.md#gdtf-share)) ; **« Importer GDTF… »** importe des fichiers, des dossiers ou le `.zip` de son téléchargement groupé. Indique combien de fixtures GDTF se trouvent dans la bibliothèque.
+- **Fixtures téléchargés depuis GDTF-Share** : apparaît quand il y en a. **« Convertir à nouveau »** les convertit de nouveau avec cette version du programme, à partir du `.gdtf` conservé (voir [Fixtures](fixtures.md#convertir-à-nouveau)).
+- **Révisions plus récentes sur GDTF-Share** : apparaît quand des fixtures GDTF de la bibliothèque ont une révision plus récente sur GDTF-Share. **« Mettre à jour »** les affiche dans GDTF-Share, où **« Tout mettre à jour »** télécharge la plus récente de chacun et la convertit : les fixtures patchés avec eux la reçoivent. Compte ceux que vous avez téléchargés depuis GDTF-Share. Un fichier importé à la main compte si le texte de sa dernière révision correspond à une seule révision de GDTF-Share. Utilise la dernière liste de GDTF-Share que le programme possède (voir [Fixtures](fixtures.md#révisions-plus-récentes)).
 - **Importer mes fixtures QLC+** : **« Importer »** copie les fixtures que vous avez créés dans QLC+.
 - **Dossier des fixtures utilisateur** : **« Ouvrir le dossier »**.
 
@@ -85,7 +89,7 @@ Tout cela est expliqué dans [Fixtures](fixtures.md).
 
 ## Mises à jour
 
-- **Rechercher les mises à jour au démarrage** : une fois par jour, sur GitHub : le programme et, si vous avez téléchargé l’Open Fixture Library, si elle a de nouveaux fixtures (un avis le signale). Rien n’est téléchargé ni installé sans vous le demander. Sans internet, cela ne gêne pas.
+- **Rechercher les mises à jour au démarrage** : une fois par jour, sur GitHub : le programme et, si vous avez téléchargé l’Open Fixture Library, si elle a de nouveaux fixtures (un avis le signale). Si vous avez enregistré votre compte GDTF-Share, il se connecte aussi à GDTF-Share et signale si les fixtures que vous y avez téléchargés ont des révisions plus récentes (chaque révision est signalée une fois). Rien n’est téléchargé ni installé sans vous le demander. Sans internet, cela ne gêne pas.
 - **Inclure les versions de test** : les nouveautés plus tôt, moins testées.
 
 En dessous s’affichent l’état (« Vous avez la dernière version », « La version … est disponible ») et les boutons :

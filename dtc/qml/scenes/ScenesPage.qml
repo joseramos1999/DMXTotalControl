@@ -102,6 +102,12 @@ Item {
         target: Core
         function onFunctionsChanged() { page.refresh() }
     }
+    // an update of a palette changes the values of the steps that use it,
+    // a rename their names (the editor doesn't say it)
+    Connections {
+        target: Core.palettes
+        function onPalettesChanged() { if (page.info.type === "Sequence") page.refresh() }
+    }
     // running state, for the try button
     Timer {
         interval: 400
@@ -232,7 +238,7 @@ Item {
                 AppButton {
                     iconGlyph: Theme.iconList
                     flat: true
-                    visible: page.info.type === "Sequence"
+                    visible: page.info.type === "Sequence" || page.info.type === "Chaser"
                     ToolTip.text: qsTr("Convert to a cuelist: each step becomes a cue that holds what changes")
                     ToolTip.visible: hovered
                     onClicked: convertConfirm.open()
@@ -243,6 +249,16 @@ Item {
                     ToolTip.text: qsTr("Export to a file, to load it in other shows")
                     ToolTip.visible: hovered
                     onClicked: exportDialog.start()
+                }
+                // QLC+ doesn't read cuelists: a copy of the show where they are its steps
+                AppButton {
+                    visible: page.info.type === "Cuelist"
+                    iconGlyph: Theme.iconSaveAs
+                    text: "QLC+"
+                    flat: true
+                    ToolTip.text: qsTr("Save a copy for QLC+: the cuelists as QLC+ steps, with a cue list for each one in its Virtual Console")
+                    ToolTip.visible: hovered
+                    onClicked: qlcDialog.start()
                 }
                 AppButton {
                     iconGlyph: Theme.iconCopy
@@ -392,6 +408,8 @@ Item {
         MenuItem { text: qsTr("Super scene (timeline with audio)"); onTriggered: page.created(Core.effects.createSuperScene("")) }
         MenuSeparator {}
         MenuItem { text: qsTr("Import from a file…"); onTriggered: importDialog.start() }
+        // the chasers, sequences and Virtual Console cue lists of a QLC+ show
+        MenuItem { text: qsTr("QLC+ cue lists…"); onTriggered: qlcImport.start() }
     }
 
     AppFileDialog {
@@ -403,6 +421,8 @@ Item {
         nameFilters: [qsTr("DMX Total Control effects (*.dtcfx)")]
         onAccepted: Core.effects.exportEffect(page.currentId, selectedFile)
     }
+    QlcExportDialog { id: qlcDialog; onMessage: (text, isError) => page.message(text, isError) }
+    QlcImportDialog { id: qlcImport; onMessage: (text, isError) => page.message(text, isError) }
     AppFileDialog {
         id: importDialog
         kind: "effects"
@@ -457,7 +477,10 @@ Item {
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
-                text: qsTr("Each step becomes a cue with what it changes from the step before; timed steps follow each other with Wait. Its groups, SHOW buttons and mappings play the cuelist. The steps are gone.")
+                // (a chaser: its scenes stay)
+                text: page.info.type === "Chaser"
+                      ? qsTr("Each step becomes a cue with its scene, and releases what the step before had and it doesn't; timed steps follow each other with Wait. Its groups, SHOW buttons and mappings play the cuelist. The chaser is gone; its scenes stay.")
+                      : qsTr("Each step becomes a cue with what it changes from the step before; timed steps follow each other with Wait. Its groups, SHOW buttons and mappings play the cuelist. The steps are gone.")
                 color: Theme.textDim
             }
             RowLayout {

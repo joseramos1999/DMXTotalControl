@@ -135,9 +135,9 @@ En la barra de la línea de comandos:
 
 ## Paletas
 
-Una **paleta** guarda un valor de intensidad, posición, color o haz para cada fixture. Las escenas y cues grabadas con una paleta la usan **por referencia**: si actualizas la paleta, cambian solas (las ediciones en vivo también).
+Una **paleta** guarda un valor de intensidad, posición, color o haz para cada fixture, o **todo** a la vez. Las escenas, las cues y los pasos grabados con una paleta la usan **por referencia**: si actualizas la paleta, cambian solos (las ediciones en vivo también).
 
-En **Paletas** hay cuatro columnas: **Intensidad**, **Posición**, **Color** y **Haz**.
+En **Paletas** hay cinco columnas: **Intensidad**, **Posición**, **Color**, **Haz** y **Todo**.
 
 ### Grabar una paleta
 
@@ -146,11 +146,25 @@ En **Paletas** hay cuatro columnas: **Intensidad**, **Posición**, **Color** y *
 
 La paleta se crea con un nombre y un número («Color 1», COL 1). Desde ese momento, lo que grabes con ella la sigue.
 
+### Paletas de todo
+
+La columna **Todo** graba de una vez todos los valores que la selección tiene en el programador (dimmer, color, posición, gobos, zoom…), menos los canales de mantenimiento (lámpara, reset). Se crea como «Todo 1», PAL 1. Los valores que venían de otra paleta (por ejemplo, de POS 1) pasan a venir de esta: una paleta no guarda otras paletas.
+
+Al ponerla, pone todo eso. En otro tipo de fixture, mezcla su color y el resto va por atributos, como las demás paletas. En la línea de comandos es `PAL 1` (o PALETA 1), porque `ALL` y `TODO` ya seleccionan todos los fixtures.
+
 ### Usar una paleta
 
-Selecciona fixtures y haz clic en la paleta: se aplica a la selección. Una paleta se marca cuando está puesta en la selección (más fuerte si lo está en toda). En un fixture que no se grabó en la paleta, usa los valores de otro del mismo tipo o sus atributos: un color se mezcla en RGB o CMY, o va al hueco más parecido de la rueda de color.
+Selecciona fixtures y haz clic en la paleta: se aplica a la selección. Una paleta se marca cuando está puesta en la selección (más fuerte si lo está en toda). En un fixture que no se grabó en la paleta, usa los valores de otro del mismo tipo (repartidos si es un abanico, ver abajo) o sus atributos: un color se mezcla en RGB o CMY, o va al hueco más parecido de la rueda de color.
 
-También: `COL 2`, `POS 1`, `BEAM 3` o `INT 4` en la línea de comandos.
+También: `COL 2`, `POS 1`, `BEAM 3`, `INT 4` o `PAL 5` (la de todo) en la línea de comandos.
+
+### Abanico en una paleta
+
+Si grabas una paleta con valores distintos en cada fixture (un abanico de posición, una rampa de dimmer, un arcoíris), la paleta guarda el orden en que los seleccionaste. Al ponerla en fixtures que no se grabaron, el abanico **se reparte entre ellos en el orden de la selección**: el primero toma los valores del primero grabado, el último los del último, y los de en medio, lo que hay entre ellos. Pan, tilt, dimmer, colores y zoom pasan de forma suave; ruedas y gobos toman el valor del grabado más cercano. En otro tipo de fixture, el color es la mezcla que toca en su sitio y el resto viene del grabado más cercano.
+
+Cada fixture recuerda su sitio en el abanico, aunque después pongas la paleta con otra selección. Las escenas, las cues y los pasos grabados con ella siguen a la paleta, y volver a ponerla da lo mismo. Para repartirla de otra forma, selecciona los fixtures en el nuevo orden y elige **«Repartir de nuevo por la selección»**. En un grupo del SHOW o de un mapeo, se reparte en el orden del grupo.
+
+Una paleta grabada en un solo fixture de cada tipo, o con los mismos valores en todos, funciona igual que antes.
 
 ### El menú de una paleta
 
@@ -158,11 +172,12 @@ Clic derecho en una paleta:
 
 - **«Aplicar a la selección»**.
 - **«Cargar sus fixtures en el programador»**.
+- **«Repartir de nuevo por la selección»**: da a los fixtures seleccionados un sitio nuevo en el abanico de la paleta, en el orden de la selección. Lo que los usa cambia también.
 - **«Actualizar con el programador»**: añade o cambia los valores del programador en la paleta. Las escenas que la usan cambian también.
 - **«Grabar encima»**: la graba de nuevo solo con lo que hay ahora.
 - **«Renombrar…»**, **«Cambiar su número…»** y **«Eliminar»** (las escenas se quedan con los valores).
 
-Un icono de enlace en la paleta indica que hay escenas que la usan; el texto al pasar el ratón dice cuántas.
+Un icono de enlace en la paleta indica que hay escenas que la usan; el texto al pasar el ratón dice cuántas, y en cuántos fixtures más se reparte.
 
 > **Consejo:** las paletas se pueden poner en el [SHOW](show.md) (acción «Una paleta»), en el [control remoto](remoto.md) y en un [mapeo](mapeos.md), sobre sus fixtures o sobre un grupo, como edición en vivo. Alt+clic en una paleta la lleva al SHOW.
 
@@ -179,12 +194,15 @@ En **FX** hay tres zonas: los parámetros y los FX en marcha a la izquierda, los
 3. Pulsa **«Empezar FX»**, o haz clic en una **macro**.
 4. Ajusta los controles: el FX cambia en directo.
 
+Los fixtures sin dimmer (solo RGB, RGBW…) también tienen **Dimmer**, marcado «virtual»: el FX atenúa su color como lo haría un dimmer, con todas sus cabezas a la vez. Las macros de intensidad (persecución, pulso, estrobo…) también funcionan en ellos. El CMY, las ruedas de color y los canales con la opción **Dimmer** apagada en el Patch no cambian. Es solo para los FX: el fader **Dimmer** del panel Rápido y `@` siguen sin dimmer en estos fixtures.
+
 ### Los controles del FX
 
 - **La figura o el modo** (el dibujo de la izquierda): haz clic en él para elegir otro. Para pan/tilt hay **12 figuras** (círculo, ocho, cuadrado, triángulo, diamante, línea de pan, línea de tilt, diagonal, trébol, lissajous, ballyhoo y cruz). Para el resto, **22 modos**: la línea de puntos es el valor base y la onda va por encima, por debajo o a los dos lados; los modos 9 a 12 son para persecuciones, con paso.
 - **Amplitud** (de 0 a 250 %). En pan/tilt, **«Amplitud pan»** y **«Amplitud tilt»** por separado.
 - **Velocidad**, en BPM. **½** y **×2** la dividen o la doblan. **«BPM del show»** hace que siga el tempo del show (un fader o dial de BPM del SHOW, o un mapeo de BPM o Tap). Grabado en una escena FX, sigue en su lugar el ritmo que marques pulsando el botón de la escena, si lo tiene ([Directo](directo.md#ritmo-de-una-escena-con-pasos)). **«Multiplicador»**: de ×¼ a ×8.
 - Solo pan/tilt: **«Invertir pan»**, **«Invertir tilt»**, **«Al revés»** y **«Girar»** (0–359°).
+- Solo en un FX de dimmer con fixtures sin dimmer: **«Dimmer virtual»**, el nivel desde el que se atenúa su color (0–100 %). Con **«Auto»** es el de los dimmers del mismo FX o, si no hay, a tope. Al mover el nivel queda fijo; el botón de al lado vuelve a «Auto». El color de debajo (el del programador, el de la escena o lo que mandan las escenas de debajo) es su base, y un FX de color en el mismo fixture se suma.
 
 ### Timing del FX
 
@@ -196,6 +214,8 @@ Cómo se reparte el FX entre los fixtures:
 - **«Orden»**: «Selección», «Invertido», «Aleatorio» (con un botón para otro orden aleatorio) o «Por número».
 - **«Espera»**: tiempo en la base después de cada pasada.
 - **«Fase»**.
+
+Para un desfase o un retardo propio de cada luminaria, consulta [«Por luminaria»](programar.md#desfase-y-retardo-por-luminaria).
 
 Debajo, una vista previa animada dibuja cada fixture como se mueve.
 
@@ -217,6 +237,17 @@ Un FX sigue siendo **uno solo** aunque cambies parte de sus luminarias. Si selec
 - En «FX en marcha» se ve cuántas tienen algo propio («N propias»).
 - **«Como el resto»** quita lo propio de las seleccionadas: vuelven a hacer lo mismo que el FX.
 
+### Desfase y retardo por luminaria
+
+Debajo de los controles de un FX en marcha, **«Por luminaria»** (se despliega con su flecha) lista sus luminarias en el orden del FX: número, nombre, su sitio en la ola o en el paso, y dos casillas que cambias a mano. Las seleccionadas se ven resaltadas. Un cambio suena al momento, sobre el mismo reloj.
+
+- **«Desfase»** (0–1440°): cuánto va por detrás de las demás en la ola. 360° es un ciclo entero y, en un FX con paso, un sitio. Se suma a la ola y a la fase.
+- **«Retardo»** (hasta 60 s): cuánto tiempo después hace el FX. Al empezar el FX (al lanzar su escena o su cue, o un FX nuevo en el programador) espera ese tiempo en su base, así que las luminarias arrancan una detrás de otra. Después sigue ese tiempo por detrás. Va en segundos aunque el FX siga el BPM del show; para seguir el tempo, usa el desfase.
+- **«Repartir el desfase…»** y **«Repartir el retardo…»** piden el valor de la última y reparten desde 0 entre las seleccionadas, en el orden del FX.
+- **«Sin desfase ni retardo»** los quita de las seleccionadas.
+
+Cambiar la fase o el timing los conserva, y «Como el resto» no los toca. No es lo mismo que la fase propia de unas luminarias: esa fase sustituye a la del FX; el desfase se suma a ella. Si pones un retardo más largo que el tiempo que lleva el FX en marcha, esa luminaria espera en su base hasta llegar a él. El desfase y el retardo se graban con la escena o la cue.
+
 ### El espejo
 
 Si las luminarias que van al revés (o con el pan o el tilt invertido propio) están **todas en una mitad** del FX, cada una sigue la ola de su pareja del otro lado, así que la ola también sale en espejo. El panel lo indica con «Espejo: …».
@@ -234,6 +265,14 @@ A la derecha, las **macros FX** de fábrica por categorías: **Posición** (cír
 
 **«Guardar como macro…»** guarda los FX del programador como una macro tuya, en **«Mías»**, para todos los shows. Clic derecho en una macro tuya: **«Renombrar»** o **«Eliminar»**.
 
+Una macro tuya guarda lo que hacía cada luminaria del FX, por su sitio en él (el orden en que las seleccionaste):
+
+- sus valores base: un abanico de posiciones, colores distintos;
+- lo que hacía a su manera: la forma, el tamaño, el sentido, las inversiones (un espejo);
+- su desfase y su retardo.
+
+Al aplicarla, la primera luminaria seleccionada recibe lo de la primera, la segunda lo de la segunda, y así. Con más o menos luminarias, la primera y la última reciben lo de la primera y la última, y las de en medio se reparten: los abanicos y los retardos se estiran, y el espejo se mantiene. Las ruedas de color y de gobos, el prisma y el shutter no se reparten: cada luminaria toma el valor de su sitio más cercano. Si todas tenían los mismos valores y nada a su manera, la macro sirve para cualquier selección, como las de fábrica. Las macros guardadas luminaria a luminaria llevan la marca **1·2·3**; pasa el ratón por encima para ver cuántas luminarias tenían.
+
 ## Línea de comandos
 
 La línea de comandos funciona como la de una consola. Al abrir Programar recibe el teclado: escribe y pulsa **Intro**. Al lado se ve qué ha hecho, o por qué no lo entiende.
@@ -248,7 +287,7 @@ La línea de comandos funciona como la de una consola. Al abrir Programar recibe
 | `@ FULL` / `@ OUT` | Dimmer a tope o a cero. `@ @` también es a tope. |
 | `@ 0 THRU 100` | Abanico de dimmer, del 0 % en el primero al 100 % en el último. |
 | `@ + 10` / `@ - 10` | Sube o baja el dimmer un 10 %. |
-| `POS 1`, `COL 2`, `BEAM 3`, `INT 4` | Aplica la paleta de posición, color, haz o intensidad con ese número. |
+| `POS 1`, `COL 2`, `BEAM 3`, `INT 4`, `PAL 5` | Aplica la paleta de posición, color, haz, intensidad o de todo con ese número. |
 | `LOCATE` | Localizar. |
 | `HIGHLIGHT` | Resaltar (alterna). |
 | `NEXT` / `PREV` | De una en una por la selección. |
@@ -257,7 +296,7 @@ La línea de comandos funciona como la de una consola. Al abrir Programar recibe
 
 Se pueden encadenar: `1 THRU 4 @ FULL COL 2` selecciona, pone el dimmer a tope y aplica la paleta de color 2.
 
-Las palabras también valen en español: HASTA, GRUPO, TODO, LLENO, TOPE, CERO, INTENSIDAD, POSICION, COLOR, HAZ, LIMPIAR, RESALTAR, LOCALIZAR, SIGUIENTE, ANTERIOR, LIBERAR, IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR… y abreviadas: THR, FL, GRP (o G), CLR, LOC, HI, SIG, ANT, REL.
+Las palabras también valen en español: HASTA, GRUPO, TODO, LLENO, TOPE, CERO, INTENSIDAD, POSICION, COLOR, HAZ, PALETA, LIMPIAR, RESALTAR, LOCALIZAR, SIGUIENTE, ANTERIOR, LIBERAR, IR, ATRÁS, GRABAR, ACTUALIZAR, ELIMINAR… y abreviadas: THR, FL, GRP (o G), CLR, LOC, HI, SIG, ANT, REL.
 
 ### Comandos de cuelists
 
@@ -280,7 +319,7 @@ Si un comando se para a medias (por ejemplo, no existe la paleta), lo que ya hiz
 
 - **↑ ↓** recorren los últimos comandos.
 - **Esc** vacía la línea (con la línea vacía, Esc es «Parar todo»).
-- El botón del **teclado** abre un teclado en pantalla para pantallas táctiles, con números, THRU, @, FULL, OUT, GROUP, INT, POS, COL, BEAM, NEXT, PREV, ALL, LOCATE, CLR y las teclas de cuelists (CUE, el punto decimal, REC, UPD, GO, BACK, DELETE, PB). Se queda abierto mientras eliges fixtures.
+- El botón del **teclado** abre un teclado en pantalla para pantallas táctiles, con números, THRU, @, FULL, OUT, GROUP, INT, POS, COL, BEAM, PAL, HIGHLIGHT, REL, CLEAR, NEXT, PREV, ALL, LOCATE, CLR y las teclas de cuelists (CUE, el punto decimal, REC, UPD, GO, BACK, DELETE, PB). CLR vacía la línea; CLEAR, el programador. Se queda abierto mientras eliges fixtures.
 
 ## Grabar
 

@@ -25,6 +25,7 @@
 #include <QDir>
 #include <QUuid>
 #include <QDebug>
+#include <climits>
 #include <cmath>
 
 #include "fxtools.h"
@@ -71,6 +72,8 @@ QVariantMap FxTools::layerToMap(const FXScene::Layer &layer)
         { "tiltInvert", layer.tiltInvert },
         { "reverse", layer.reverse },
         { "linked", layer.linked },
+        // DMX Total Control: the level of the virtual dimmer (-1: auto)
+        { "virtualBase", layer.virtualBase },
         { "fixtures", fixtures }
     };
 }
@@ -99,6 +102,7 @@ FXScene::Layer FxTools::layerFromMap(const QVariantMap &map, const FXScene::Laye
     if (map.contains("tiltInvert")) layer.tiltInvert = map.value("tiltInvert").toBool();
     if (map.contains("reverse")) layer.reverse = map.value("reverse").toBool();
     if (map.contains("linked")) layer.linked = map.value("linked").toBool();
+    if (map.contains("virtualBase")) layer.virtualBase = qBound(-1, map.value("virtualBase").toInt(), 255);
     if (map.contains("fixtures"))
     {
         layer.fixtures.clear();
@@ -175,8 +179,215 @@ void FxTools::clearOwn(FXScene::Layer &layer, const QStringList &keys, const QLi
         if (keys.contains("panInvert")) own.panInvert.reset();
         if (keys.contains("tiltInvert")) own.tiltInvert.reset();
         if (keys.contains("reverse")) own.reverse.reset();
+        if (keys.contains("shift")) own.shift.reset();
+        if (keys.contains("delay")) own.delay.reset();
     }
     layer.own = layer.tidyOwn();
+}
+
+QStringList FxTools::offsetKeys()
+{
+    return { "shift", "delay" };
+}
+
+void FxTools::setOffset(FXScene::Layer &layer, const QList<quint32> &fixtures, const QString &key, int value)
+{
+    const bool shift = key == QLatin1String("shift");
+    if (shift == false && key != QLatin1String("delay"))
+        return;
+    // up to 4 cycles behind, up to a minute later
+    value = shift ? qBound(0, value, 1440) : qBound(0, value, 60000);
+    for (quint32 fixture : fixtures)
+    {
+        FXScene::Own &own = layer.own[fixture];
+        if (shift)
+            own.shift = value;
+        else
+            own.delay = value;
+    }
+    layer.own = layer.tidyOwn();
+}
+
+void FxTools::fanOffset(FXScene::Layer &layer, const QList<quint32> &inEffectOrder, const QString &key, int last)
+{
+    // linear, from 0 on the first; one alone gets the value of the last
+    const int n = int(inEffectOrder.count());
+    for (int i = 0; i < n; i++)
+        setOffset(layer, { inEffectOrder.at(i) }, key, n == 1 ? last : qRound(qreal(last) * i / (n - 1)));
+}
+
+int FxTools::ownShapeCount(const FXScene::Layer &layer)
+{
+    const QMap<quint32, FXScene::Own> tidy = layer.tidyOwn();
+    int count = 0;
+    for (const FXScene::Own &own : tidy)
+        count += own.hasShape() ? 1 : 0;
+    return count;
+}
+
+int FxTools::offsetCount(const FXScene::Layer &layer)
+{
+    const QMap<quint32, FXScene::Own> tidy = layer.tidyOwn();
+    int count = 0;
+    for (const FXScene::Own &own : tidy)
+        count += own.hasOffset() ? 1 : 0;
+    return count;
+}
+
+QVariantList FxTools::fixtureRows(const Doc *doc, const FXScene::Layer &layer, const QList<quint32> &sceneFixtures,
+                                  const QList<quint32> &selected)
+{
+    // the sets as FXScene::positionOf finds them
+    const QList<quint32> order = FXScene::orderedFixtures(layer, sceneFixtures);
+    int sets = 1;
+    const QList<int> setOf = FXScene::groupSets(doc, order, layer.grouping, layer.groupSize, &sets);
+    const QList<bool> twins = FXScene::mirrorTwins(layer, order);
+    const int step = layer.step < 0 ? sets : layer.step;
+    const int wave = layer.wave < 0 ? sets : layer.wave;
+
+    QVariantList rows;
+    for (int i = 0; i < order.count(); i++)
+    {
+        const quint32 fid = order.at(i);
+        const FXScene::Shape shape = layer.shapeOf(fid);
+        // a mirror: the place of its twin; a mode that travels back: from the last set
+        int set = i < twins.count() && twins.at(i) ? setOf.at(order.count() - 1 - i) : setOf.at(i);
+        if (FXScene::modeReversed(shape.mode) && layer.isPanTilt() == false)
+            set = sets - 1 - set;
+        const Fixture *fxi = doc != nullptr ? doc->fixture(fid) : nullptr;
+        rows.append(QVariantMap({
+            { "id", fid },
+            { "name", fxi != nullptr ? fxi->name() : QString() },
+            { "selected", selected.contains(fid) },
+            { "place", step == 0 && wave > 0 ? qRound(360.0 * (set % wave) / wave) : -1 },
+            { "step", step > 0 ? set % step + 1 : 0 },
+            { "shift", shape.shift },
+            { "delay", shape.delay },
+            // DMX Total Control: a dimmer FX dims its colour
+            { "virtual", layer.param == QLatin1String("dimmer") && FXScene::virtualDimmerChannels(fxi).isEmpty() == false }
+        }));
+    }
+    return rows;
+}
+
+QVariantMap FxTools::virtualDimmer(const Doc *doc, const FXScene::Layer &layer, const QList<quint32> &fixtures,
+                                   const QHash<QPair<quint32, quint32>, uchar> &values)
+{
+    // (only a dimmer FX has one: the others don't look at the fixtures)
+    if (layer.param != QLatin1String("dimmer"))
+        return { { "virtualCount", 0 }, { "virtualBase", layer.virtualBase },
+                 { "virtualLevel", layer.virtualBase >= 0 ? layer.virtualBase : 255 } };
+
+    const QList<quint32> order = FXScene::orderedFixtures(layer, fixtures);
+    int count = 0;
+    if (doc != nullptr)
+    {
+        for (quint32 fid : order)
+            count += FXScene::virtualDimmerChannels(doc->fixture(fid)).isEmpty() ? 0 : 1;
+    }
+    const int level = layer.virtualBase >= 0 ? layer.virtualBase : FXScene::autoVirtualBase(doc, order, values);
+    return { { "virtualCount", count }, { "virtualBase", layer.virtualBase }, { "virtualLevel", level } };
+}
+
+QVariantMap FxTools::ownToMap(const FXScene::Own &own)
+{
+    QVariantMap map;
+    if (own.mode) map.insert("mode", *own.mode);
+    if (own.figure) map.insert("figure", *own.figure);
+    if (own.swing) map.insert("swing", *own.swing);
+    if (own.swingTilt) map.insert("swingTilt", *own.swingTilt);
+    if (own.phase) map.insert("phase", *own.phase);
+    if (own.rotate) map.insert("rotate", *own.rotate);
+    if (own.panInvert) map.insert("panInvert", *own.panInvert);
+    if (own.tiltInvert) map.insert("tiltInvert", *own.tiltInvert);
+    if (own.reverse) map.insert("reverse", *own.reverse);
+    if (own.shift) map.insert("shift", *own.shift);
+    if (own.delay) map.insert("delay", *own.delay);
+    return map;
+}
+
+FXScene::Own FxTools::ownFromMap(const QVariantMap &map)
+{
+    // bounded as a layer takes them; a value that isn't a number is not there
+    auto number = [&map](const char *key, int low, int high) -> std::optional<int> {
+        bool ok = false;
+        const int value = map.value(key).toInt(&ok);
+        if (map.contains(key) == false || ok == false)
+            return std::nullopt;
+        return qBound(low, value, high);
+    };
+    auto degrees = [&number](const char *key) -> std::optional<int> {
+        const std::optional<int> value = number(key, INT_MIN, INT_MAX);
+        if (value.has_value() == false)
+            return std::nullopt;
+        return ((*value % 360) + 360) % 360;
+    };
+    auto flag = [&map](const char *key) -> std::optional<bool> {
+        if (map.contains(key) == false)
+            return std::nullopt;
+        return map.value(key).toBool();
+    };
+    FXScene::Own own;
+    own.mode = number("mode", 1, FXScene::ModeCount);
+    own.figure = number("figure", 0, int(FXScene::FigureCount) - 1);
+    own.swing = number("swing", 0, 250);
+    own.swingTilt = number("swingTilt", 0, 250);
+    own.phase = degrees("phase");
+    own.rotate = degrees("rotate");
+    own.panInvert = flag("panInvert");
+    own.tiltInvert = flag("tiltInvert");
+    own.reverse = flag("reverse");
+    own.shift = number("shift", 0, 1440);
+    own.delay = number("delay", 0, 60000);
+    return own;
+}
+
+bool FxTools::interpolates(const QString &param)
+{
+    // (an unknown channel spreads too)
+    static const QStringList discrete = { "colorwheel", "colormacro", "gobo", "prism", "shutter" };
+    return discrete.contains(param) == false;
+}
+
+int FxTools::nearestPlace(int i, int n, int m)
+{
+    if (n == m)
+        return qBound(0, i, qMax(0, m - 1));
+    if (n <= 1 || m <= 1)
+        return 0;
+    return qBound(0, qRound(qreal(i) * (m - 1) / (n - 1)), m - 1);
+}
+
+FxTools::FixtureLook FxTools::lookAt(const QList<FixtureLook> &looks, int i, int n)
+{
+    const int m = int(looks.count());
+    if (m == 0)
+        return FixtureLook();
+
+    // the shape and the slots of its nearest place: a mirror stays a mirror
+    FixtureLook look = looks.at(nearestPlace(i, n, m));
+    // the numbers in between the two places around it: a fan stays a fan
+    qreal t = 0;
+    if (n == m)
+        t = nearestPlace(i, n, m);
+    else if (n > 1 && m > 1)
+        t = qBound(0.0, qreal(i) * (m - 1) / (n - 1), qreal(m - 1));
+    const int low = int(std::floor(t));
+    const int high = qMin(m - 1, int(std::ceil(t)));
+    const qreal f = t - low;
+    const FixtureLook &a = looks.at(low);
+    const FixtureLook &b = looks.at(high);
+    auto between = [f](int from, int to) { return qRound(from + (to - from) * f); };
+    for (auto it = a.bases.cbegin(); it != a.bases.cend(); ++it)
+    {
+        if (interpolates(it.key()) && b.bases.contains(it.key()))
+            look.bases.insert(it.key(), between(it.value(), b.bases.value(it.key())));
+    }
+    const int shift = between(a.own.shift.value_or(0), b.own.shift.value_or(0));
+    const int delay = between(a.own.delay.value_or(0), b.own.delay.value_or(0));
+    look.own.shift = shift > 0 ? std::optional<int>(shift) : std::nullopt;
+    look.own.delay = delay > 0 ? std::optional<int>(delay) : std::nullopt;
+    return look;
 }
 
 QVariantList FxTools::modeCurve(int mode, int samples)
@@ -278,6 +489,19 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
             layer.grouping = FXScene::Mirror;
             layer.groupSize = 2;
         }
+        // DMX Total Control: its start offset is the phase, and the one of each
+        // fixture its shift: the effect puts them ahead, a shift goes behind
+        layer.phase = efx->startOffset() % 360;
+        QList<quint32> offsetDone;
+        for (EFXFixture *ef : efx->fixtures())
+        {
+            const quint32 fid = ef->head().fxi;
+            if (offsetDone.contains(fid))
+                continue;
+            offsetDone.append(fid);
+            if (ef->startOffset() % 360 != 0)
+                FxTools::setOffset(layer, { fid }, "shift", (360 - ef->startOffset() % 360) % 360);
+        }
         QList<FXScene::Layer> layers = { layer };
 
         // "Control dimmer": the heads lit on the stroke, dark on the way back,
@@ -294,6 +518,8 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
             dimmer.grouping = layer.grouping;
             dimmer.groupSize = layer.groupSize;
             dimmer.reverse = layer.reverse;
+            // (DMX Total Control: each dimmer with the start offset of its fixture)
+            dimmer.own = layer.own;
             dimmer.linked = true;
             layers.first().linked = true;
             layers.append(dimmer);
@@ -400,6 +626,38 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
 /*********************************************************************
  * Macros
  *********************************************************************/
+
+/** DMX Total Control: what each fixture of a layer did, in a macro file:
+ *  [{ bases: { param: 0-255 }, own: { ...FxTools::ownToMap } }]. ("fixtures"
+ *  would be the IDs of a layer) */
+static QJsonArray looksToJson(const QList<FxTools::FixtureLook> &looks)
+{
+    QJsonArray array;
+    for (const FxTools::FixtureLook &look : looks)
+    {
+        QJsonObject bases;
+        for (auto it = look.bases.cbegin(); it != look.bases.cend(); ++it)
+            bases.insert(it.key(), it.value());
+        array.append(QJsonObject({ { "bases", bases }, { "own", QJsonObject::fromVariantMap(FxTools::ownToMap(look.own)) } }));
+    }
+    return array;
+}
+
+static QList<FxTools::FixtureLook> looksFromJson(const QJsonArray &array)
+{
+    QList<FxTools::FixtureLook> looks;
+    for (const QJsonValue &value : array)
+    {
+        const QJsonObject obj = value.toObject();
+        FxTools::FixtureLook look;
+        const QJsonObject bases = obj.value("bases").toObject();
+        for (auto it = bases.begin(); it != bases.end(); ++it)
+            look.bases.insert(it.key(), qBound(0, it.value().toInt(), 255));
+        look.own = FxTools::ownFromMap(obj.value("own").toObject().toVariantMap());
+        looks.append(look);
+    }
+    return looks;
+}
 
 FxMacros::FxMacros(Programmer *programmer, QObject *parent)
     : QObject(parent)
@@ -531,7 +789,13 @@ QVariantList FxMacros::macros() const
         for (const Macro &m : *group)
         {
             const FXScene::Layer &first = m.layers.isEmpty() ? FXScene::Layer() : m.layers.first();
+            // DMX Total Control: saved fixture by fixture, on how many
+            int fixtureCount = 0;
+            for (const QList<FxTools::FixtureLook> &looks : m.looks)
+                fixtureCount = qMax(fixtureCount, int(looks.count()));
             list.append(QVariantMap({
+                { "perFixture", fixtureCount > 0 },
+                { "fixtureCount", fixtureCount },
                 { "id", m.id },
                 { "name", m.name },
                 { "category", m.category },
@@ -560,7 +824,7 @@ bool FxMacros::apply(const QString &id)
     const Macro *m = find(id);
     if (m == nullptr || m_programmer == nullptr)
         return false;
-    return m_programmer->applyFxMacro(m->layers, m->bases) > 0;
+    return m_programmer->applyFxMacro(m->layers, m->bases, m->looks) > 0;
 }
 
 QString FxMacros::save(const QString &name)
@@ -575,19 +839,30 @@ QString FxMacros::save(const QString &name)
     m.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
     m.name = name.trimmed().isEmpty() ? tr("Macro %1").arg(m_user.count() + 1) : name.trimmed();
     m.category = "user";
-    // the macro is global: no fixtures (nor what some of them did their own
-    // way); the bases come from the last selected fixture
+    // the macro is global: no fixtures. DMX Total Control: what each of them
+    // did goes by its place in the FX (its bases, its own way, its shift and
+    // delay); when they all did the same, nothing: it is for any selection
     for (FXScene::Layer layer : layers)
     {
-        layer.fixtures.clear();
-        layer.own.clear();
         bool known = false;
         for (const FXScene::Layer &l : std::as_const(m.layers))
             known = known || l.param == layer.param;
-        if (known == false)
-            m.layers.append(layer);
+        if (known)
+            continue;
+        QList<FxTools::FixtureLook> looks = m_programmer->fxFixtureLooks(layer);
+        // (the bases of the first fixture: what an older version gives them all)
+        if (looks.isEmpty() == false)
+            m.bases.insert(looks.constFirst().bases);
+        bool same = true;
+        for (const FxTools::FixtureLook &look : std::as_const(looks))
+            same = same && look.own.isEmpty() && look.bases == looks.constFirst().bases;
+        if (same)
+            looks.clear();
+        layer.fixtures.clear();
+        layer.own.clear();
+        m.layers.append(layer);
+        m.looks.append(looks);
     }
-    m.bases = m_programmer->fxBaseValues(m.layers);
     m_user.append(m);
     write();
     emit macrosChanged();
@@ -652,8 +927,11 @@ void FxMacros::load()
         for (const QJsonValue &l : obj.value("layers").toArray())
         {
             FXScene::Layer layer = FxTools::layerFromMap(l.toObject().toVariantMap());
-            if (layer.param.isEmpty() == false)
-                m.layers.append(layer);
+            if (layer.param.isEmpty())
+                continue;
+            m.layers.append(layer);
+            // DMX Total Control: what each fixture did (older files: nothing)
+            m.looks.append(looksFromJson(l.toObject().value("looks").toArray()));
         }
         QJsonObject bases = obj.value("bases").toObject();
         for (auto it = bases.begin(); it != bases.end(); ++it)
@@ -669,12 +947,21 @@ bool FxMacros::write() const
     for (const Macro &m : m_user)
     {
         QJsonArray layers;
-        for (const FXScene::Layer &l : m.layers)
+        for (int i = 0; i < m.layers.count(); i++)
         {
+            const FXScene::Layer &l = m.layers.at(i);
             QVariantMap map = FxTools::layerToMap(l);
             map.remove("fixtures");
             map.remove("panTilt");
-            layers.append(QJsonObject::fromVariantMap(map));
+            // DMX Total Control: an auto virtual dimmer is the default
+            if (l.param != QLatin1String("dimmer") || l.virtualBase < 0)
+                map.remove("virtualBase");
+            QJsonObject layer = QJsonObject::fromVariantMap(map);
+            // DMX Total Control: what each fixture did, when they didn't all do the same
+            const QList<FxTools::FixtureLook> looks = m.looks.value(i);
+            if (looks.isEmpty() == false)
+                layer.insert("looks", looksToJson(looks));
+            layers.append(layer);
         }
         QJsonObject bases;
         for (auto it = m.bases.cbegin(); it != m.bases.cend(); ++it)

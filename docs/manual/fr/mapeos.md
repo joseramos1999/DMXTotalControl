@@ -14,7 +14,11 @@ Dans **« Appareils »** apparaissent les appareils d’entrée que le program
 2. Activez son **« Entrée »**.
 3. Si l’appareil a une sortie, activez **« Feedback (LED) »** pour que le programme allume ses LED ou bouge ses faders motorisés.
 
+Sur une Akai APC (APC mini, APC mini mk2 ou APC40 mkII) dont l’entrée et le feedback sont activés apparaît **« Préparer »**. Ce bouton met le contrôleur dans le mode qu’utilisent ses mappages et renvoie toutes ses LED. Utilisez-le après avoir éteint et rallumé le contrôleur ou après avoir changé son mode.
+
 Le mappage d’un appareil non connecté est conservé : il fonctionne à nouveau quand vous le connectez.
+
+L’entrée d’un appareil MIDI amène aussi son timecode MIDI (MTC) aux [cuelists « Timecode »](escenas.md#options-de-la-cuelist) qui le suivent. Il suffit d’activer son **« Entrée »** ; aucun mappage n’est nécessaire.
 
 ## Mode Mapper
 
@@ -46,6 +50,8 @@ Un contrôle du programme peut avoir plusieurs mappages (par exemple, un pad d�
 
 Dans **« Mappages »**, chaque ligne affiche le contrôle de l’appareil, ce qu’il pilote et son comportement. Un point violet indique un bouton et un point bleu un fader. Cliquez sur un mappage pour le modifier à droite, ou appuyez sur **« Ajouter »** pour en créer un vide.
 
+Les touches et les boutons du contrôleur des listes de cues de QLC+ peuvent arriver comme mappages, et ceux de vos cuelists vont dans la copie pour QLC+ (voir [Scènes](escenas.md#cuelists-et-qlc)).
+
 ## Modifier un mappage
 
 ### Contrôle
@@ -64,7 +70,7 @@ Ce que fait le mappage. Les **boutons** :
 
 | Destination | Ce qu’il fait |
 |---|---|
-| Lancer une scène | La scène choisie, dans son groupe. |
+| Lancer une scène | La scène choisie (ou « La scène sélectionnée »), dans son groupe. |
 | Scène N d’un groupe | La scène qui occupe cette place dans le groupe (**Numéro de scène**). |
 | Libérer un groupe / Scène suivante d’un groupe / Scène précédente d’un groupe | Dans un groupe ou dans « Tous les groupes ». |
 | Blackout, Tout arrêter, Tout mettre en pause, Tap tempo, BeatGO, GO, Stop | Comme leurs boutons (GO et Stop choisissent le mode, comme dans la barre du haut : l’un des deux est toujours allumé). |
@@ -82,13 +88,29 @@ Les **faders** :
 |---|---|
 | Grand master | Le GM. |
 | Master d’un groupe | Le master de ce groupe. |
-| Dimmer en direct d’une scène / Vitesse en direct d’une scène | Ses curseurs en direct. |
+| Dimmer en direct d’une scène / Vitesse en direct d’une scène | Les curseurs en direct de la scène choisie (ou « La scène sélectionnée »). |
 | BPM | Le tempo. |
 | Mixeur : dimmer, teinte, saturation, vitesse du stroboscope | Sur la bande choisie. |
 | Fader du SHOW | Un fader du SHOW entier. |
 | Playback : fader | Le fader d’un playback. |
+| Vitesse des cues (toutes les cuelists) | La [vitesse de toutes les cuelists](playbacks.md#vitesse-des-cues) : ×0,1 en bas, ×1 au milieu, ×10 en haut. |
+| Temps en direct d’un playback / Temps en direct du playback sélectionné | Le [temps de la cue](playbacks.md#temps-en-direct) en cours de fondu. En fader : au milieu, le temps avec lequel elle a commencé ; en bas ×0,1 et en haut ×10. En encodeur ou par pressions : 10 % de plus ou de moins par pas. |
 
 Pour les playbacks, vous choisissez la **page** (« Page actuelle (suit) », qui suit la page affichée, ou une page fixe) et le numéro de **Playback**. Avec **« Ou une cuelist ou une scène, où qu’elle soit »**, le mappage agit sur cette cuelist ou cette scène sur n’importe quel playback où elle se trouve. Dans « aller à une cue », vous voyez à quelle cue il mène maintenant (« Maintenant : cue 3 de Chanson 1 »).
+
+### La scène sélectionnée
+
+Dans « Lancer une scène », « Dimmer en direct d’une scène » et « Vitesse en direct d’une scène », la liste des scènes commence par **« La scène sélectionnée »**. Ce mappage agit sur la dernière scène sur laquelle vous avez appuyé.
+
+- **Sélectionnent une scène** : appuyer dessus dans Direct, sur un bouton du SHOW, sur un contrôleur ou sur le téléphone, et la lancer avec « Scène suivante d’un groupe » ou « Scène précédente d’un groupe ».
+- **Ne la changent pas** : les faders du SHOW, les playbacks, les actions des cues et « Essayer » dans Scènes.
+- Elle reste sélectionnée quand elle s’arrête. Elle n’est pas enregistrée : à l’ouverture d’un show ou d’un nouveau show, il n’y en a aucune.
+- Sous la liste, vous voyez laquelle c’est maintenant (« Maintenant : Couplet »). Sans aucune, le mappage ne fait rien et sa LED reste éteinte.
+- Un bouton lance, arrête ou flashe la scène sélectionnée au moment où vous appuyez, dans son groupe et selon GO / Stop. Sa LED montre l’état de cette scène.
+- Sur un fader absolu, **« Reprendre le fader (sans moteur) »** s’active : quand la scène change, le niveau ne saute pas. Le fader prend la main quand il rejoint le niveau de la nouvelle scène. Vous pouvez le désactiver.
+- Dans Direct, la scène sélectionnée porte une fine barre sur son bord inférieur, tant qu’un mappage utilise « La scène sélectionnée » ou en mode Mapper.
+
+Exemple : les pads de l’APC lancent des scènes, et ainsi les sélectionnent. Un bouton rotatif va sur « Vitesse en direct d’une scène » › « La scène sélectionnée ». Il change la vitesse de la dernière scène sur laquelle vous avez appuyé.
 
 ### Comportement
 
@@ -100,6 +122,8 @@ Pour les **boutons** :
 
 Les boutons de playback agissent à l’appui, sauf le flash, et n’ont pas cette option.
 
+Le flash d’un playback utilise l’attaque et la retombée de ce playback (voir [Propriétés d’un playback](playbacks.md#propriétés-dun-playback)). Avec « Ou une cuelist ou une scène, où qu’elle soit », il utilise celles du premier playback qui la contient ; si elle n’est sur aucun playback, c’est immédiat. Avec « Bascule », un appui pendant la retombée le fait remonter.
+
 Pour les **faders** :
 
 - **« Absolu : suit le fader »**.
@@ -107,17 +131,21 @@ Pour les **faders** :
 - **« Relatif : encodeur sans fin »** et **« Relatif : encodeur, 1 monte et 127 descend »** (encodeurs sans fin).
 - **« De »** … **« à »** : la plage, de 0 à 100 %. **« Inverser »** la retourne.
 - **« Pas % »** et **« En boucle »** (incrémental et relatif).
-- **« Reprendre le fader (sans moteur) »** (absolu) : le fader du contrôleur ne pilote le niveau qu’après l’avoir rejoint, sans sauts.
+- **« Reprendre le fader (sans moteur) »** (absolu) : le fader du contrôleur ne pilote le niveau qu’après l’avoir rejoint, sans sauts. Avec un fader motorisé, ce n’est pas nécessaire. Sur le fader A/B d’un playback, la première valeur reçue dit seulement où il est ; ensuite, le fader du contrôleur doit rejoindre celui de l’écran.
 
 ### Feedback
 
 En MIDI ou OSC, **« Feedback »** fait que le programme **allume le bouton de l’appareil** ou **bouge son fader motorisé**. Seul ce qui change est envoyé.
 
+Un fader motorisé (absolu) ne bouge pas pendant que vous le bougez. Le programme attend que vous le laissiez immobile 0,4 s et ne le corrige que si sa cible a fini à une autre valeur, par exemple parce qu’autre chose l’a changée. Tant que vous n’y touchez pas, l’écran, une autre page de playbacks ou un autre contrôle le bougent aussitôt. Les encodeurs et les boutons n’attendent pas.
+
 Pour les LED des boutons MIDI :
 
 1. Dans **« LED de »**, choisissez **« Tout contrôleur (numéros) »** ou votre contrôleur : **Akai APC mini**, **Akai APC mini mk2** ou **Akai APC40 mkII**.
-2. Pour **« Activé »**, **« Désactivé »** et **« En pause »**, choisissez la couleur dans les échantillons (sur une APC) ou tapez la valeur (0–127) pour tout autre contrôleur.
-3. Sur les pads RGB de l’APC mini mk2, choisissez aussi comment ils s’allument : **« Atténué »**, **« Plein »**, **« Pulsé »** ou **« Clignotant »** (sur l’APC40 mkII, **« Fixe »**). Sans rien choisir, « Activé » s’allume en **« Plein »** et « Désactivé » en **« Atténué »**.
+2. Pour **« Activé »**, **« Désactivé »**, **« En pause »** et, sur les scènes, **« En fondu »**, choisissez la couleur dans les échantillons (sur une APC) ou tapez la valeur (0–127) pour tout autre contrôleur.
+3. Sur les pads RGB, choisissez aussi comment ils s’allument : **« Atténué »**, **« Plein »**, **« Pulsé »** ou **« Clignotant »** sur l’APC mini mk2, et **« Fixe »**, **« Pulsé »** ou **« Clignotant »** sur l’APC40 mkII. En pulsé ou en clignotant, le pad alterne entre la couleur et le noir. Sans rien choisir, « Activé » s’allume en **« Plein »** (**« Fixe »** sur l’APC40 mkII), « Désactivé » en **« Atténué »** (**« Fixe »** sur l’APC40 mkII) et « En fondu » en **« Pulsé »**.
+
+**« En fondu »** (sur « Lancer une scène » et « Scène N d’un groupe ») : activez **« Couleur propre pendant le fondu »** et le bouton prend cette couleur pendant que la scène entre avec son fondu et pendant qu’elle sort avec le sien. Sur une cuelist, il la prend pendant le fondu de sa cue. Sinon, à l’entrée il s’allume comme « Activé » et à la sortie comme « Désactivé ». Une scène en pause ou en attente s’allume comme « En pause ».
 
 Les LED du contrôleur s’éteignent quand vous fermez le programme, quand vous effacez un mappage ou le déplacez vers un autre contrôle, quand vous ouvrez un autre show ou quand vous désactivez l’appareil ou son feedback.
 
@@ -142,15 +170,19 @@ Les mappages de clavier fonctionnent sur n’importe quelle page et ont la prior
 
 **→ Groupes** (APC mini et mk2) : chaque colonne de pads lance les scènes d’un groupe (vert : en cours ; jaune : prête ; éteint : pas de scène). Les faders sont les masters des groupes et le dernier le grand master. Les boutons sous les pads libèrent les groupes ; ceux de droite sont blackout, tout arrêter, pause, tap, BeatGO, précédent, suivant et flash.
 
-**→ Playbacks** (APC mini et mk2) : chaque colonne est un playback 1-8 de la page de playbacks actuelle : son fader (il reprend le niveau) et, depuis le bas, GO, Pause/Retour, Flash et ses 5 premières cues (la cue 1 en haut). Le bouton sous les pads le libère. Le dernier fader est le grand master ; les boutons de droite sont page précédente et suivante, GO et Retour du playback sélectionné, blackout, tap, BeatGO et tout arrêter.
+**→ Playbacks** (APC mini et mk2) : chaque colonne est un playback 1-8 de la page de playbacks actuelle : son fader (il reprend le niveau) et, depuis le bas, GO, Pause/Retour, Flash et ses 5 premières cues (la cue 1 en haut). Le bouton sous les pads le libère. Le dernier fader est le grand master ; les boutons de droite sont page précédente et suivante, GO et Retour du playback sélectionné, blackout, tap, BeatGO et tout arrêter. Si le fader d’un playback est en A/B (voir [Le fader](playbacks.md#le-fader)), chaque course du fader de l’APC est un GO dont vous faites le fondu à la main.
 
-**→ Playbacks** (APC40 mkII) : chaque piste est un playback 1-8 de la page actuelle : son fader, GO sur le bouton de piste, Pause/Retour sur S, Flash sur l’armement d’enregistrement, sélectionner et libérer, et ses 5 premières cues sur les clips. Les boutons de scène vont aux pages 1-5, les boutons de banque changent la page et le groupe, et Play et Record sont GO et Retour du playback sélectionné. Les potentiomètres device sont les faders des playbacks 9-16 et les potentiomètres de piste, les masters des premiers groupes.
+**→ Playbacks** (APC40 mkII) : chaque piste est un playback 1-8 de la page actuelle : son fader, GO sur le bouton de piste, Pause/Retour sur S, Flash sur l’armement d’enregistrement, sélectionner et libérer, et ses 5 premières cues sur les clips (vert : en cours ; vert pulsé : la suivante ; bleu atténué : les autres). Les boutons de scène vont aux pages 1-5, les boutons de banque changent la page et le groupe, et Play et Record sont GO et Retour du playback sélectionné. Les potentiomètres device sont les faders des playbacks 9-16 et les potentiomètres de piste, les masters des premiers groupes.
+
+L’APC mini mk2 passe d’elle-même en mode Session, et l’APC40 mkII en mode Ableton : au démarrage du programme, à l’ouverture d’un show, quand vous activez son feedback et avec « Tout mapper ». En mode Note ou Batterie, les pads de la mk2 n’atteignent pas les mappages.
 
 > **Conseil :** après « Tout mapper », chaque contrôle apparaît comme un mappage normal dans la liste : vous pouvez changer n’importe lequel, ou l’effacer, sans toucher aux autres.
 
 ## Moniteur
 
 **« Moniteur »** affiche les **messages entrants et sortants** : l’heure, **IN** ou **OUT**, l’appareil (ou « Clavier »), le message et sa valeur. Bougez un contrôle d’un appareil activé pour voir ce qu’il envoie. **« Effacer »** vide la liste.
+
+Le moniteur affiche en **OUT** les changements de mode envoyés par le programme : « SysEx · mode Session » sur l’APC mini mk2 et « SysEx · mode Ableton » sur l’APC40 mkII.
 
 Le voyant vert de la cible, dans la barre du haut, clignote à chaque message reçu.
 

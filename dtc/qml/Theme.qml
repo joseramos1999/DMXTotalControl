@@ -199,6 +199,7 @@ QtObject {
     readonly property string iconFolderPlus: "\uf65e"
     readonly property string iconLink: "\uf0c1"
     readonly property string iconCopy: "\uf0c5"
+    readonly property string iconQrcode: "\uf029"
     readonly property string iconStar: "\uf005"
     readonly property string iconWand: "\uf72b"
     readonly property string iconTarget: "\uf05b"
@@ -224,6 +225,14 @@ QtObject {
     readonly property string iconLightbulb: "\uf0eb"
     readonly property string iconStepForward: "\uf051"
     readonly property string iconStepBackward: "\uf048"
+    // arrow-rotate-left and arrow-rotate-right
+    readonly property string iconUndo: "\uf0e2"
+    readonly property string iconRedo: "\uf01e"
+    // paste (a clipboard) and scissors. Copy is a word: iconCopy is Duplicate
+    readonly property string iconPaste: "\uf0ea"
+    readonly property string iconCut: "\uf0c4"
+    readonly property string iconClock: "\uf017"
+    readonly property string iconWarning: "\uf071"
     readonly property string iconArrowsH: ""
     readonly property string iconArrowsV: ""
 
@@ -355,6 +364,33 @@ QtObject {
         case "Cuelist": return qsTr("Cuelist")
         case "Audio": return qsTr("Audio")
         default: return type
+        }
+    }
+
+    /** A time on the clock of a Timecode cuelist: "00:01:23.40" with
+     *  $decimals of a second (2: the ms too when it has them); "" for none */
+    function clockText(ms, decimals) {
+        if (ms === undefined || ms < 0)
+            return ""
+        const d = decimals === 2 && ms % 10 !== 0 ? 3 : decimals
+        const unit = Math.pow(10, 3 - d)
+        let rest = Math.floor(ms / unit) * unit
+        const h = Math.floor(rest / 3600000); rest -= h * 3600000
+        const m = Math.floor(rest / 60000); rest -= m * 60000
+        const two = (n) => (n < 10 ? "0" : "") + n
+        const s = Math.floor(rest / 1000)
+        const fraction = d > 0 ? "." + String(Math.floor((rest % 1000) / unit)).padStart(d, "0") : ""
+        return two(h) + ":" + two(m) + ":" + two(s) + fraction
+    }
+
+    /** The tag of a type of cuelist (its mode); "" for a normal one */
+    function cuelistTag(mode) {
+        switch (mode) {
+        case "chase": return qsTr("CHASE")
+        case "timecode": return qsTr("TC")
+        case "submaster": return qsTr("SUB")
+        case "override": return qsTr("OVR")
+        default: return ""
         }
     }
 

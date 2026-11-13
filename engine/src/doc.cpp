@@ -1420,6 +1420,17 @@ bool Doc::loadXML(QXmlStreamReader &doc, bool loadIO)
         {
             monitorProperties()->loadXML(doc, this);
         }
+        else if (doc.name() == KXMLDTCFunctions)
+        {
+            // DMX Total Control: our functions in a copy for QLC+
+            while (doc.readNextStartElement())
+            {
+                if (doc.name() == KXMLQLCFunction)
+                    Function::loader(doc, this);
+                else
+                    doc.skipCurrentElement();
+            }
+        }
         else
         {
             qWarning() << Q_FUNC_INFO << "Unknown engine tag:" << doc.name();

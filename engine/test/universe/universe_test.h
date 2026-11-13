@@ -62,6 +62,8 @@ private slots:
     void zeroIntensityChannelsEfficiency2();
 
     void stopsAtOnce();
+    // DMX Total Control: the last fader of a priority, and raising one
+    void topOfPriority();
 
 private:
 

@@ -60,6 +60,10 @@ MasterTimer::MasterTimer(Doc* doc)
     , d_ptr(new MasterTimerPrivate(this))
     , m_stopAllFunctions(false)
     , m_ticksDone(0)
+    , m_cueSpeed(1.0)
+    , m_timecode(-1)
+    , m_timecodeFps(0)
+    , m_timecodeAt(-1)
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     , m_dmxSourceListMutex(QMutex::Recursive)
 #endif
@@ -71,6 +75,9 @@ MasterTimer::MasterTimer(Doc* doc)
 {
     Q_ASSERT(doc != NULL);
     Q_ASSERT(d_ptr != NULL);
+
+    // DMX Total Control: how old the last MIDI timecode is
+    m_timecodeClock.start();
 
     QSettings settings;
     QVariant var = settings.value(MASTERTIMER_FREQUENCY);
@@ -109,7 +116,7 @@ void MasterTimer::stop()
     m_startQueue.clear();
 }
 
-void MasterTimer::timerTick()
+void MasterTimer::timerTick(bool wakeUniverses)
 {
     Doc *doc = qobject_cast<Doc*> (parent());
     Q_ASSERT(doc != NULL);
@@ -160,6 +167,13 @@ void MasterTimer::timerTick()
 
     // DMX Total Control: the functions of this tick are out of its hands
     m_ticksDone++;
+
+    // DMX Total Control: an offline tick wakes no universe thread. Its caller
+    // renders the universes (Universe::renderFrame); a running thread would
+    // process the same faders at the same time, in real time, and zero the
+    // intensities of its frame while the caller reads them
+    if (wakeUniverses == false)
+        return;
 
     //qDebug() << ">>>>>>>> MASTERTIMER TICK";
     emit tickReady();
@@ -253,6 +267,40 @@ bool MasterTimer::isTicking() const
 int MasterTimer::runningFunctions() const
 {
     return m_functionList.size();
+}
+
+void MasterTimer::setCueSpeed(qreal speed)
+{
+    // DMX Total Control: the cue speed of every cuelist
+    const double bounded = qBound(0.1, double(speed), 10.0);
+    if (m_cueSpeed.exchange(bounded) != bounded)
+        emit cueSpeedChanged();
+}
+
+qreal MasterTimer::cueSpeed() const
+{
+    return m_cueSpeed.load();
+}
+
+/** DMX Total Control: a MIDI timecode older than this has stopped */
+static const qint64 kTimecodeStale = 250;
+
+void MasterTimer::setTimecode(qint64 ms, int fps)
+{
+    // DMX Total Control: (the time first, then when it came)
+    m_timecode = ms;
+    m_timecodeFps = fps;
+    m_timecodeAt = m_timecodeClock.elapsed();
+}
+
+qint64 MasterTimer::timecode(int *fps) const
+{
+    const qint64 at = m_timecodeAt.load();
+    if (at < 0 || m_timecodeClock.elapsed() - at > kTimecodeStale)
+        return -1;
+    if (fps != nullptr)
+        *fps = m_timecodeFps.load();
+    return m_timecode.load();
 }
 
 void MasterTimer::releaseFunction(Function *function)
@@ -544,5 +592,5 @@ void MasterTimer::requestBeat()
 
 void MasterTimer::renderTick()
 {
-    timerTick();
+    timerTick(false);
 }

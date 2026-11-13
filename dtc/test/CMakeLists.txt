@@ -25,6 +25,7 @@ add_executable(dtc_backend_test
     ../src/aim.cpp ../src/aim.h
     ../src/cpuload.cpp ../src/cpuload.h
     ../src/fixturelibrary.cpp ../src/fixturelibrary.h
+    ../src/gdtfshare.cpp ../src/gdtfshare.h
     ../src/gdtfimporter.cpp ../src/gdtfimporter.h
     ../src/programmer.cpp ../src/programmer.h
     ../src/zone.cpp ../src/zone.h
@@ -35,11 +36,14 @@ add_executable(dtc_backend_test
     ../src/timelineeditor.cpp ../src/timelineeditor.h
     ../src/fxtools.cpp ../src/fxtools.h
     ../src/remoteserver.cpp ../src/remoteserver.h
+    ../src/qrcode.cpp ../src/qrcode.h
+    ../src/mdnsresponder.cpp ../src/mdnsresponder.h
     ../src/updatechecker.cpp ../src/updatechecker.h
     ../src/palettemanager.cpp ../src/palettemanager.h
     ../src/commandline.cpp ../src/commandline.h
     ../src/cuelisteditor.cpp ../src/cuelisteditor.h
     ../src/playbackmanager.cpp ../src/playbackmanager.h
+    ../src/timecodereader.cpp ../src/timecodereader.h
     # the remote control page and its icon font
     ../remote/remote.qrc
     ../icons/icons.qrc
@@ -47,6 +51,7 @@ add_executable(dtc_backend_test
     ../src/showsurface.cpp ../src/showsurface.h
     ../src/drivecontrol.cpp ../src/drivecontrol.h
     ../src/effectexchange.cpp ../src/effectexchange.h
+    ../src/qlcexchange.cpp ../src/qlcexchange.h
     ../src/livemixer.cpp ../src/livemixer.h
     ../src/controlmapper.cpp ../src/controlmapper.h
     ../src/dtccore.cpp ../src/dtccore.h
@@ -68,7 +73,31 @@ target_compile_definitions(dtc_backend_test PRIVATE
     DTC_OSC_PLUGIN="${CMAKE_BINARY_DIR}/plugins/osc"
     DTC_LOOPBACK_PLUGIN="${CMAKE_BINARY_DIR}/plugins/loopback/src"
     DTC_ICONS="${CMAKE_CURRENT_SOURCE_DIR}/../icons"
+    # the interface and its catalogues (interfaceTranslated)
+    DTC_QML="${CMAKE_CURRENT_SOURCE_DIR}/../qml"
+    DTC_SOURCES="${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    DTC_I18N="${CMAKE_CURRENT_SOURCE_DIR}/../i18n"
 )
+# a MIDI plugin of the tests: lines named like the controllers, no device
+# (in a folder of its own, which the tests load)
+add_library(dtc_testmidi SHARED
+    testmidi/testmidiplugin.cpp testmidi/testmidiplugin.h
+    ../../plugins/interfaces/qlcioplugin.cpp ../../plugins/interfaces/qlcioplugin.h
+)
+target_include_directories(dtc_testmidi PRIVATE
+    ../../plugins/interfaces
+    ../../engine/src
+)
+target_link_libraries(dtc_testmidi PRIVATE
+    Qt${QT_MAJOR_VERSION}::Core
+    Qt${QT_MAJOR_VERSION}::Gui
+)
+set_target_properties(dtc_testmidi PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/testmidi"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/testmidi")
+add_dependencies(dtc_backend_test dtc_testmidi)
+target_compile_definitions(dtc_backend_test PRIVATE DTC_TEST_MIDI_PLUGIN="${CMAKE_CURRENT_BINARY_DIR}/testmidi")
+
 # the MIDI plugin, when it is built (an APC connected here gets its LEDs ready)
 if(TARGET midiplugin)
     target_compile_definitions(dtc_backend_test PRIVATE DTC_MIDI_PLUGIN="$<TARGET_FILE_DIR:midiplugin>")
@@ -84,6 +113,10 @@ target_link_libraries(dtc_backend_test PRIVATE
     Qt${QT_MAJOR_VERSION}::Test
     qlcplusengine
 )
+# (GdtfShare: the saved password, DPAPI)
+if(WIN32)
+    target_link_libraries(dtc_backend_test PRIVATE crypt32)
+endif()
 set_target_properties(dtc_backend_test PROPERTIES AUTORCC ON)
 
 # the built-in manual (DtcCore::manualPage)

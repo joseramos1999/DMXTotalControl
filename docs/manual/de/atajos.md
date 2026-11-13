@@ -68,10 +68,23 @@ Siehe [die Befehlszeile](programar.md#befehlszeile).
 | Taste oder Geste | Was sie tut |
 |---|---|
 | **Leertaste** | Ab dem Cursor abspielen oder stoppen |
-| **Entf** | Löscht den ausgewählten Block |
+| **Entf** / **Rücktaste** | Löscht die ausgewählten Blöcke |
+| **Strg+A** | Wählt alle Blöcke der sichtbaren Spuren aus |
+| **Strg+D** | Dupliziert die ausgewählten Blöcke direkt dahinter |
+| **Strg+C** | Kopiert die ausgewählten Blöcke |
+| **Strg+X** | Schneidet die ausgewählten Blöcke aus (die auf gesperrten Spuren werden nur kopiert) |
+| **Strg+V** | Fügt die kopierten Blöcke am Cursor ein, ab der ausgewählten Spur |
+| **Strg+Z** | Macht die letzte Änderung rückgängig (nicht beim Tippen in einem Feld) |
+| **Strg+Y** / **Strg+Umschalt+Z** | Stellt das Rückgängiggemachte wieder her |
+| **Strg+Klick** auf einen Block | Fügt ihn der Auswahl hinzu oder entfernt ihn |
+| **Umschalt+Klick** auf einen Block | Wählt vom zuletzt gewählten Block bis zu diesem aus |
+| Ziehen auf einer leeren Stelle der Spuren | Zeichnet ein Rechteck, das die berührten Blöcke auswählt (mit **Strg** oder **Umschalt** kommen sie hinzu) |
+| Rechtsklick auf eine leere Stelle einer Spur | „Hier einfügen“ und „Alles auswählen“ |
 | **Strg+Mausrad** | Zoom auf der Zeitleiste |
 | **Umschalt+Mausrad** | In der Zeit scrollen |
 | Doppelklick auf das Lineal | Ab dort abspielen |
+
+Die Tasten für Blöcke wirken nicht, während Sie in einem Feld tippen. Siehe [Mehrere Blöcke auswählen](escenas.md#mehrere-blöcke-auswählen) und [Kopieren und einfügen](escenas.md#kopieren-und-einfügen).
 
 ## Fader und Schieberegler
 
@@ -92,6 +105,8 @@ Nachdem Sie auf einen Fader oder Schieberegler geklickt haben:
 | Doppelklick auf einen Cue oder Schritt | Lädt ihn in den Programmer |
 | Doppelklick auf die Nummer eines Cues | Ändert seine Nummer |
 | Mausrad über einer angeklickten Zeit | ±0,1 s (mit **Umschalt** ±1 s) |
+| **Strg+Z** | Macht die letzte Änderung der geöffneten Cuelist rückgängig (in einem Feld mit getipptem Text zuerst diesen Text) |
+| **Strg+Y** / **Strg+Umschalt+Z** | Stellt das Rückgängiggemachte wieder her |
 | **Esc** in einem Feld | Lässt den Wert, wie er war |
 
 ## Maus und Zusatztasten
@@ -101,7 +116,7 @@ Nachdem Sie auf einen Fader oder Schieberegler geklickt haben:
 | **Alt+Klick** | Fast jedes Bedienelement | Bringt es auf die geöffnete SHOW-Seite |
 | **Umschalt+Klick** | Lernmodus | Bedient das Bedienelement, statt es zuzuordnen |
 | **Strg+Klick** | Flash-Tasten des Mischers | Lassen den Flash bis zum nächsten Klick eingerastet |
-| **Strg+Klick** / **Umschalt+Klick** | Fixtures, Gruppen und 2D-Plan (Programmieren und Patch), Szenenliste | Fügt der Auswahl hinzu oder entfernt daraus |
+| **Strg+Klick** / **Umschalt+Klick** | Fixtures, Gruppen und 2D-Plan (Programmieren und Patch), Szenenliste, Blöcke einer Superszene | Fügt der Auswahl hinzu oder entfernt daraus |
 | Mausrad | 2D-Plan | Zoom |
 | Ziehen mit der rechten oder mittleren Maustaste | 2D-Plan | Verschiebt die Ansicht (Doppelklick: zentriert sie) |
 | Rechtsklick | Taste 15° im 2D-Plan | Dreht andersherum |

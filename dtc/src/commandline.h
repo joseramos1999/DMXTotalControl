@@ -40,6 +40,7 @@ class Doc;
  *   @ 0 THRU 100      the dimmer spread over the selection
  *   @ + 10  @ - 10    the dimmer up or down
  *   POS 3  COL 2  BEAM 1  INT 4    a palette on the selection
+ *   PAL 5             a palette of every attribute ("all") on the selection
  *   LOCATE  HIGHLIGHT  NEXT  PREV  ALL  REL  CLEAR
  *
  * and on the selected cuelist:

@@ -328,6 +328,8 @@ uint Zone::fadeOut() const
 
 void Zone::trigger(quint32 fid)
 {
+    // (a press selects it, whatever it does: with Stop too)
+    select(fid);
     const bool active = m_active.contains(fid);
     // a scene started paused plays at the second press (with Stop, it stops)
     if (active && SceneTaps::mode() != SceneTaps::Stop && m_waiting.remove(fid))
@@ -364,9 +366,20 @@ void Zone::trigger(quint32 fid)
     }
 }
 
-void Zone::start(quint32 fid)
+void Zone::start(quint32 fid, bool selectIt)
 {
+    // (not in startScene(): a fader of the SHOW or a jump doesn't select it)
+    if (selectIt)
+        select(fid);
     startScene(fid, true);
+}
+
+void Zone::select(quint32 fid)
+{
+    if (m_functions.contains(fid) == false)
+        return;
+    if (ZoneManager *manager = qobject_cast<ZoneManager *>(parent()))
+        manager->selectScene(fid);
 }
 
 void Zone::startScene(quint32 fid, bool release)
@@ -1002,6 +1015,7 @@ void Zone::slotLoopsFinished(quint32 fid)
     if (jump == Function::jumpNone())
         return;
 
+    // (startScene(), not start(): nobody pressed it, so it isn't selected)
     // next or previous scene of this group
     if (jump == Function::jumpNext() || jump == Function::jumpPrevious())
     {
@@ -1010,7 +1024,7 @@ void Zone::slotLoopsFinished(quint32 fid)
         if (index < 0 || count < 2)
             return;
         int direction = jump == Function::jumpNext() ? 1 : -1;
-        start(m_functions.at(((index + direction) % count + count) % count));
+        startScene(m_functions.at(((index + direction) % count + count) % count), true);
         return;
     }
 
@@ -1018,7 +1032,7 @@ void Zone::slotLoopsFinished(quint32 fid)
     quint32 target = quint32(jump);
     if (m_functions.contains(target))
     {
-        start(target);
+        startScene(target, true);
         return;
     }
     if (ZoneManager *manager = qobject_cast<ZoneManager *>(parent()))
@@ -1028,7 +1042,7 @@ void Zone::slotLoopsFinished(quint32 fid)
             Zone *zone = manager->zone(i);
             if (zone->functionIDs().contains(target))
             {
-                zone->start(target);
+                zone->startScene(target, true);
                 return;
             }
         }

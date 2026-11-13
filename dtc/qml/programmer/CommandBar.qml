@@ -148,7 +148,7 @@ Rectangle {
 
             ToolTip.visible: hovered && text.length === 0
             ToolTip.delay: 600
-            ToolTip.text: qsTr("Type a command and press Enter:\n1 THRU 8 · 1 + 3 - 2 · GROUP 2 · ALL\n@ 50 · @ 5 (= 50 %) · @ FULL · @ 0 THRU 100 · @ + 10\nPOS 1 · COL 2 · BEAM 3 · INT 4\nLOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR\nCuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3\n↑ ↓: the last commands")
+            ToolTip.text: qsTr("Type a command and press Enter:\n1 THRU 8 · 1 + 3 - 2 · GROUP 2 · ALL\n@ 50 · @ 5 (= 50 %) · @ FULL · @ 0 THRU 100 · @ + 10\nPOS 1 · COL 2 · BEAM 3 · INT 4 · PAL 5\nLOCATE · HIGHLIGHT · NEXT · PREV · REL · CLEAR\nCuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE CUE 4 · PB 3\n↑ ↓: the last commands")
         }
         Text {
             Layout.fillWidth: true
@@ -244,6 +244,7 @@ Rectangle {
             "1", "2", "3", "GROUP",
             "0", "OUT", "CLR", "ENTER",
             "INT", "POS", "COL", "BEAM",
+            "PAL", "HIGHLIGHT", "REL", "CLEAR",
             "NEXT", "PREV", "ALL", "LOCATE",
             // cuelists: act on the selected cuelist
             "CUE", ".", "REC", "UPD",
@@ -262,6 +263,8 @@ Rectangle {
                     text: modelData === "BACKSPACE" ? "" : modelData
                     iconGlyph: modelData === "BACKSPACE" ? "" : ""
                     primary: modelData === "ENTER"
+                    // (HIGHLIGHT, smaller, to fit the key)
+                    textSize: modelData.length > 7 ? Theme.fontSmall : Theme.fontNormal
                     font.family: /^[0-9]$/.test(modelData) ? Theme.monoFamily : Theme.fontFamily
                     onClicked: bar.key(modelData)
                 }

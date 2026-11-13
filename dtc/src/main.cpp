@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     parser.addOption(learnOption);
     QCommandLineOption mappingOption("mapping", "Developer: open the Mappings page with this mapping ID selected.", "id");
     parser.addOption(mappingOption);
-    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, matrix).", "view");
+    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, matrix, add, share: the GDTF-Share browser of Add fixtures).", "view");
     parser.addOption(patchViewOption);
     QCommandLineOption playOption("play", "Developer: play this scene ID on start, outside of the groups (with --page 6: the DMX levels).", "id");
     parser.addOption(playOption);
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
     parser.addOption(pbDialogOption);
     QCommandLineOption pbNextOption("pb-next", "Developer: 1.7 seconds after start (after --pb-go), Next on a cue of a playback of the current page (slot:cue index).", "slot:cue");
     parser.addOption(pbNextOption);
-    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), rclick:x,y clicks the right button, drag:x1,y1,x2,y2 drags. Steps separated by ';'.", "steps");
+    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), rclick:x,y clicks the right button, drag:x1,y1,x2,y2 drags (drag:x1,y1,x2,y2,shift or ,ctrl with that key held). Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
     QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
     parser.addOption(guideOption);
@@ -260,6 +260,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<IOManager>(DTC_QML_BACKEND, 1, 0, "IOManager", "Owned by Core");
     qmlRegisterUncreatableType<AppSettings>(DTC_QML_BACKEND, 1, 0, "AppSettings", "Owned by Core");
     qmlRegisterUncreatableType<FixtureLibrary>(DTC_QML_BACKEND, 1, 0, "FixtureLibrary", "Owned by Core");
+    qmlRegisterUncreatableType<GdtfShare>(DTC_QML_BACKEND, 1, 0, "GdtfShare", "Owned by FixtureLibrary");
     qmlRegisterUncreatableType<EffectEditor>(DTC_QML_BACKEND, 1, 0, "EffectEditor", "Owned by Core");
     qmlRegisterUncreatableType<TimelineEditor>(DTC_QML_BACKEND, 1, 0, "TimelineEditor", "Owned by Core");
     qmlRegisterUncreatableType<FxMacros>(DTC_QML_BACKEND, 1, 0, "FxMacros", "Owned by Core");
@@ -273,6 +274,7 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<CommandLine>(DTC_QML_BACKEND, 1, 0, "CommandLine", "Owned by Core");
     qmlRegisterUncreatableType<CuelistEditor>(DTC_QML_BACKEND, 1, 0, "CuelistEditor", "Owned by Core");
     qmlRegisterUncreatableType<PlaybackManager>(DTC_QML_BACKEND, 1, 0, "PlaybackManager", "Owned by Core");
+    qmlRegisterUncreatableType<TimecodeReader>(DTC_QML_BACKEND, 1, 0, "TimecodeReader", "Owned by Core");
 
     if (parser.positionalArguments().isEmpty() == false)
     {
@@ -524,19 +526,23 @@ int main(int argc, char *argv[])
                 else if (step.startsWith(QLatin1String("drag:")))
                 {
                     // drag:x1,y1,x2,y2: pressed at the first point, moved in
-                    // ten steps to the second, released there
+                    // ten steps to the second, released there (drag:x1,y1,
+                    // x2,y2,ctrl or ,shift: with that key held)
                     const QStringList p = arg.split(QLatin1Char(','));
-                    if (p.count() == 4)
+                    if (p.count() == 4 || p.count() == 5)
                     {
                         const QPointF from(p.at(0).toDouble(), p.at(1).toDouble());
                         const QPointF to(p.at(2).toDouble(), p.at(3).toDouble());
-                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, from, window->mapToGlobal(from), Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+                        const QString held = p.value(4);
+                        const Qt::KeyboardModifiers mods = held == QLatin1String("shift") ? Qt::ShiftModifier
+                                                         : held == QLatin1String("ctrl") ? Qt::ControlModifier : Qt::NoModifier;
+                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, from, window->mapToGlobal(from), Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress, mods);
                         for (int i = 1; i <= 10; i++)
                         {
                             const QPointF at = from + (to - from) * (i / 10.0);
-                            WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, at, window->mapToGlobal(at), Qt::LeftButton, Qt::NoButton, QEvent::MouseMove);
+                            WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, at, window->mapToGlobal(at), Qt::LeftButton, Qt::NoButton, QEvent::MouseMove, mods);
                         }
-                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, to, window->mapToGlobal(to), Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+                        WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, to, window->mapToGlobal(to), Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease, mods);
                     }
                 }
                 QQuickItem *focus = window->activeFocusItem();
@@ -576,6 +582,14 @@ int main(int argc, char *argv[])
         core.updates()->checkOnStartup();
         // and new fixtures in the Open Fixture Library, if it is downloaded
         core.library()->checkOnStartup(core.updates()->autoCheck());
+        // and newer revisions on GDTF-Share of the fixtures downloaded from it
+        core.library()->share()->checkOnStartup(core.updates()->autoCheck());
+    }
+    else
+    {
+        // (the screenshots show the newer revisions the saved list knows:
+        // nothing is asked)
+        core.library()->share()->checkOnStartup(false);
     }
 
     const int result = app.exec();

@@ -11,7 +11,7 @@ When you add fixtures in the [Patch](patch.md#adding-fixtures) you choose from a
 - **The built-in library**: thousands of fixtures from many manufacturers, in `.qxf` format.
 - **The generic fixtures**: 16 basic fixtures under the manufacturer **Generic** (RGB, RGBA, RGBW, RGBWA, RGBWA+UV and white LED PARs, an 8-segment LED bar, spot, beam and wash heads, scanner, strobe, blinder, laser, smoke machine and hazer), plus the **Generic Dimmer**.
 - **The Open Fixture Library**, if you download it.
-- **The GDTF fixtures** you import.
+- **The GDTF fixtures** you download from GDTF-Share or import.
 - **Your fixtures**: the ones you create on this page or import.
 
 In [Options › Fixture library](opciones.md#fixture-library) you see how many definitions are available and you find everything you need to extend the library.
@@ -80,19 +80,71 @@ To bring it up to date, press **“Update”** (the same button). If “Check fo
 
 A download that cannot be read, or that is cut off, changes nothing.
 
+## GDTF-Share
+
+GDTF-Share is the website where manufacturers publish their fixtures in GDTF. The program uses it with your own free account.
+
+Open it with **“GDTF-Share…”** in **Options › Fixture library › GDTF fixtures**, or with **“Search GDTF-Share…”** in **Patch › Add fixtures**. At the bottom, **“gdtf-share.com”** opens its website.
+
+### The account
+
+Press **“Sign in”** and type your gdtf-share.com user name and password. They are only sent to gdtf-share.com. If you have no account, **“Create a free account”** opens its website.
+
+- Without **“Remember on this computer”**, the password stays in memory only, until you close the program: it is asked for once per session.
+- With it, it is saved encrypted for your Windows user: anyone using that Windows account can sign in with it.
+- The user name is always remembered.
+
+Once signed in, the button shows your user name. Its menu has **“Sign out”** (the saved password stays for the next time) and, if you saved it, **“Forget the saved password”**, which deletes it from the computer. After you sign out with a saved password, the **“Sign in”** button opens that menu: **“Sign in”** and **“Forget the saved password”**.
+
+### Searching
+
+The GDTF-Share list is saved on the computer and works without internet. Its date is at the top (“List of…”). It is downloaded again when it is more than 20 hours old, or with **“Refresh”** (the arrows). If GDTF-Share sends an empty list, the previous one stays.
+
+- Type part of the manufacturer or the name, in any order.
+- The filters: **“All”**, **“From manufacturers”** (uploaded by the manufacturer itself), **“In my library”** and **“Updates”** (those of your library with a newer revision).
+- On the left, the manufacturers of what you find, and how many fixtures each one has.
+- Each fixture shows who uploaded it (**Manufacturer** or **User**), its rating, and whether it is **In library**, has a **Newer revision** or you imported it **From a file**.
+- At most 400 are shown: type more to narrow the list.
+
+### Downloading and importing
+
+Choose a fixture: its details are on the right (who uploaded it, the revision, the GDTF version, the size and the channels of each mode).
+
+1. To get an older revision, choose it in **Revisions**.
+2. Press **“Download and import”**. It is downloaded and converted as with “Import GDTF”, with a progress bar. **“Cancel”** stops it. If you download several at once, the ones that already arrived are still imported. The original `.gdtf` is kept (see “Convert again”, below).
+3. From Add fixtures, **“Patch it”** chooses the fixture to patch (also one that was already in your library).
+
+If the fixture is already in your library, the button is **“Update to this revision”** or **“Download again”**. If you have another upload of the same fixture, you are warned: the new one replaces it.
+
+### Newer revisions
+
+A fixture of your library has a newer revision when GDTF-Share has a later revision of the same fixture. This counts the ones you downloaded from GDTF-Share, and those imported from a file whose last revision has the same text as exactly one revision on GDTF-Share.
+
+- In GDTF-Share, **“Updates”** lists them and **“Update all”** downloads the newest revision of each one. The fixtures patched with them get it.
+- In **Options › Fixture library**, the row **“Newer revisions on GDTF-Share”** tells you how many there are, and **“Update”** opens GDTF-Share on “Updates”.
+- With the saved password and **“Check for updates at startup”** on ([Options](opciones.md#updates)), the program signs in by itself once a day at startup, downloads the list and tells you if the fixtures you downloaded from GDTF-Share have newer revisions. Each revision is told once. If it can't, it says nothing.
+
+### Convert again
+
+The program keeps the `.gdtf` of each fixture you download from GDTF-Share. **“Convert again”**, in **Options › Fixture library › Fixtures downloaded from GDTF-Share**, converts them again with the version of the program you have, without downloading them: this way they get the improvements of a new version. The fixtures patched with them get the change. The row appears when there are fixtures downloaded from GDTF-Share.
+
 ## Importing GDTF
 
 GDTF is the open format that manufacturers publish on GDTF-Share (with a free account).
 
-1. Download the `.gdtf` files of your fixtures (or the `.zip` of a GDTF-Share multiple download). The **“GDTF-Share”** button in Options opens its website.
+1. Download the `.gdtf` files of your fixtures from gdtf-share.com (or the `.zip` of its multiple download). To search and download them from the program, see GDTF-Share, above.
 2. In **Options › Fixture library › GDTF fixtures**, press **“Import GDTF…”** and choose the files, folders or the `.zip`.
 3. They are converted in the background, with a progress bar. **“Stop”** stops the import.
 
 When it finishes, it tells you how many were converted and, if any could not be read, why. If the same fixture is already in another library, the GDTF one is added as “(GDTF)” and you can use both. Importing it again updates it.
 
-For each mode, the first *DMX break* is used; virtual channels (without DMX) are left out.
+A mode with several *DMX breaks* (two DMX inputs, or a part on another universe) becomes several modes. The first break keeps the name of the mode. Each of the others is another mode, for example “Standard (DMX break 2)”, with only its channels, from address 1. Patch it as another fixture, at its own address: **“Add fixtures”** reminds you when you choose the mode.
 
-Some channels change their function with the value of another channel (for example, the prism rotation only turns with the prism on “rotation”). In them the functions that do nothing are left out and, where there are several, each range carries their names together (for example, “0 deg / Stop”). To see it on a fixture imported before, import its `.gdtf` again.
+Virtual channels (without DMX) are left out. They are not needed: an RGB fixture without a dimmer lights up through its colours, and the grand master lowers them.
+
+Some channels change their function with the value of another channel (for example, the prism rotation only turns with the prism on “rotation”). In them the functions that do nothing are left out and, where there are several, each range carries their names together (for example, “0 deg / Stop”).
+
+To see these changes on a fixture imported before, import its `.gdtf` again. For the ones downloaded from GDTF-Share, press “Convert again”.
 
 ## Importing fixture files
 
@@ -104,4 +156,4 @@ If you created fixtures in QLC+ on this computer, **Options › “Import my QLC
 
 ## Formats that cannot be imported
 
-Libraries of other programs in closed or encrypted formats cannot be imported. Most fixtures are in the Open Fixture Library or on GDTF-Share; for the ones that are missing, create them on this page.
+Libraries of other programs in closed or encrypted formats cannot be imported. Most fixtures are in the Open Fixture Library or on GDTF-Share, which you can search from the program; for the ones that are missing, create them on this page.

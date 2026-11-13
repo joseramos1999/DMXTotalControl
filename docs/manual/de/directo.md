@@ -133,7 +133,7 @@ Dasselbe Menü der Kachel enthält **„Unter Szenen öffnen“**, **„Im Progr
 Jede Szene hat eine Priorität von 0 bis 10; neue Szenen bekommen die, die Sie unter [Optionen](opciones.md#wiedergabe) festlegen (standardmäßig 5).
 
 - Die Szene mit der **höheren Priorität bestimmt alle Kanäle, die sie berührt**, Nullen eingeschlossen: Eine rote Szene mit Priorität 8 über einer blauen mit Priorität 5 ergibt Rot, nicht Magenta.
-- Bei **gleicher Priorität** werden die Intensitätskanäle (Dimmer, RGB…) gemischt, und der höchste Wert gewinnt; bei allen anderen Kanälen gewinnt die zuletzt gestartete Szene.
+- Bei **gleicher Priorität** werden die Intensitätskanäle (Dimmer, RGB…) gemischt, und der höchste Wert gewinnt; bei allen anderen Kanälen gewinnt die **letzte Änderung**: die zuletzt gestartete Szene oder der letzte GO einer Cuelist, der diesen Kanal geändert hat. Was eine Cuelist nur aus früheren Cues behält, holt sie sich nicht zurück.
 - Ändern Sie die Priorität einer laufenden Szene, gilt das sofort.
 - Wird eine Szene mit höherer Priorität mit Überblendung freigegeben, blendet sie zu dem über, was darunter liegt.
 - **Der Programmer hat Vorrang vor allem**, Intensitäten eingeschlossen. Unter Optionen können Sie die Priorität der Live-Änderungen senken.
@@ -189,3 +189,5 @@ Die Szenenkacheln, die Master der Gruppen, die Tasten ◀ ▶ und Freigeben jede
 
 - Mit **Alt+Klick** werden sie auf die gerade geöffnete SHOW-Seite kopiert (siehe [Show](show.md#jedes-bedienelement-in-die-show-holen)).
 - Im Lernmodus lassen sie sich einem Controller zuordnen (siehe [Zuordnungen](mapeos.md#lernmodus)).
+
+Solange eine Zuordnung „Die ausgewählte Szene“ verwendet, oder im Lernmodus, hat die Kachel der ausgewählten Szene (die Sie zuletzt gedrückt haben) einen dünnen Balken an ihrem unteren Rand (siehe [Zuordnungen](mapeos.md#die-ausgewählte-szene)).
