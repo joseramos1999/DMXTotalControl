@@ -102,6 +102,33 @@
         <source>Search GDTF-Share…</source>
         <translation>Buscar no GDTF-Share…</translation>
     </message>
+    <message>
+        <source>Choose the fixture for “%1”</source>
+        <translation>Escolha o fixture para “%1”</translation>
+    </message>
+    <message>
+        <source>A generic dimmer with the channels of the table</source>
+        <translation>Um dimmer genérico com os canais da tabela</translation>
+    </message>
+    <message numerus="yes">
+        <source>The table says %n channel(s)</source>
+        <translation>
+            <numerusform>A tabela diz %n canal</numerusform>
+            <numerusform>A tabela diz %n canais</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The table doesn&apos;t say how many channels</source>
+        <translation>A tabela não diz quantos canais</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Use this fixture</source>
+        <translation>Usar este fixture</translation>
+    </message>
 </context>
 <context>
     <name>AimSettingsDialog</name>
@@ -6231,6 +6258,243 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     </message>
 </context>
 <context>
+    <name>PatchImportDialog</name>
+    <message>
+        <source>No name</source>
+        <translation>Sem nome</translation>
+    </message>
+    <message>
+        <source>Exact</source>
+        <translation>Exato</translation>
+    </message>
+    <message>
+        <source>By channel count</source>
+        <translation>Pelo número de canais</translation>
+    </message>
+    <message>
+        <source>Similar name</source>
+        <translation>Nome parecido</translation>
+    </message>
+    <message>
+        <source>Remembered</source>
+        <translation>Lembrado</translation>
+    </message>
+    <message>
+        <source>Chosen by hand</source>
+        <translation>Escolhido à mão</translation>
+    </message>
+    <message>
+        <source>Not in the library</source>
+        <translation>Não está na biblioteca</translation>
+    </message>
+    <message>
+        <source>Not imported</source>
+        <translation>Não é importado</translation>
+    </message>
+    <message>
+        <source>Don&apos;t import</source>
+        <translation>Não importar</translation>
+    </message>
+    <message>
+        <source>Generic dimmer</source>
+        <translation>Dimmer genérico</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n channel(s)</source>
+        <translation>
+            <numerusform>%n canal</numerusform>
+            <numerusform>%n canais</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>in universe %1</source>
+        <translation>no universo %1</translation>
+    </message>
+    <message>
+        <source>in universes %1 to %2</source>
+        <translation>nos universos %1 a %2</translation>
+    </message>
+    <message>
+        <source>Import a patch</source>
+        <translation>Importar um patch</translation>
+    </message>
+    <message>
+        <source>The fixture table (CSV) your visualizer exports. Check what each type of fixture becomes: nothing changes until you press Import.</source>
+        <translation>A tabela de fixtures (CSV) que o seu programa de visualização exporta. Confira no que cada tipo de fixture se transforma: nada muda até você clicar em Importar.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) in the table</source>
+        <translation>
+            <numerusform>%n fixture na tabela</numerusform>
+            <numerusform>%n fixtures na tabela</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>of %n type(s)</source>
+        <translation>
+            <numerusform>de %n tipo</numerusform>
+            <numerusform>de %n tipos</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Fixture types</source>
+        <translation>Tipos de fixture</translation>
+    </message>
+    <message>
+        <source>channels not given</source>
+        <translation>canais não informados</translation>
+    </message>
+    <message>
+        <source>Change</source>
+        <translation>Alterar</translation>
+    </message>
+    <message>
+        <source>Choose from the library…</source>
+        <translation>Escolher da biblioteca…</translation>
+    </message>
+    <message>
+        <source>Find it in the library again</source>
+        <translation>Procurar de novo na biblioteca</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Opções</translation>
+    </message>
+    <message>
+        <source>Stage plan</source>
+        <translation>Planta do palco</translation>
+    </message>
+    <message>
+        <source>Place them on the stage plan</source>
+        <translation>Colocá-los na planta do palco</translation>
+    </message>
+    <message>
+        <source>The table doesn&apos;t say where the fixtures are: the new ones go to free places of the plan.</source>
+        <translation>A tabela não diz onde estão os fixtures: os novos vão para lugares livres da planta.</translation>
+    </message>
+    <message>
+        <source>View</source>
+        <translation>Vista</translation>
+    </message>
+    <message>
+        <source>From above</source>
+        <translation>De cima</translation>
+    </message>
+    <message>
+        <source>From the front</source>
+        <translation>De frente</translation>
+    </message>
+    <message>
+        <source>As the audience sees the rig: the highest fixtures at the top of the plan. Follow aims with the plan seen from above.</source>
+        <translation>Como o público vê a montagem: os fixtures mais altos no alto da planta. O Follow mira com a planta vista de cima.</translation>
+    </message>
+    <message>
+        <source>Seen from above, the audience at the bottom of the plan.</source>
+        <translation>Visto de cima, com o público embaixo da planta.</translation>
+    </message>
+    <message>
+        <source>This rig hangs at different heights: it reads better from the front.</source>
+        <translation>Esta montagem está pendurada em alturas diferentes: fica mais clara de frente.</translation>
+    </message>
+    <message>
+        <source>This rig is spread from front to back: it reads better from above.</source>
+        <translation>Esta montagem se estende de frente para trás: fica mais clara de cima.</translation>
+    </message>
+    <message>
+        <source>The plan grows to %1 × %2 m to hold the rig.</source>
+        <translation>A planta cresce para %1 × %2 m para caber a montagem.</translation>
+    </message>
+    <message>
+        <source>The rig fits in the plan (%1 × %2 m).</source>
+        <translation>A montagem cabe na planta (%1 × %2 m).</translation>
+    </message>
+    <message>
+        <source>Groups</source>
+        <translation>Grupos</translation>
+    </message>
+    <message>
+        <source>A group for each fixture type</source>
+        <translation>Um grupo para cada tipo de fixture</translation>
+    </message>
+    <message>
+        <source>A group for each layer (%1)</source>
+        <translation>Um grupo para cada camada (%1)</translation>
+    </message>
+    <message>
+        <source>The groups of the table</source>
+        <translation>Os grupos da tabela</translation>
+    </message>
+    <message>
+        <source>Fixtures already in the show</source>
+        <translation>Fixtures que já estão no show</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) imported before, or with the same name and fixture, will be updated: mode, address, name, number and place.</source>
+        <translation>
+            <numerusform>%n fixture importado antes, ou com o mesmo nome e fixture, será atualizado: modo, endereço, nome, número e lugar.</numerusform>
+            <numerusform>%n fixtures importados antes, ou com o mesmo nome e fixture, serão atualizados: modo, endereço, nome, número e lugar.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>None of them comes from this table: the fixtures of the table are added.</source>
+        <translation>Nenhum vem desta tabela: os fixtures da tabela são adicionados.</translation>
+    </message>
+    <message numerus="yes">
+        <source>Remove the %n fixture(s) imported before that are no longer in the table</source>
+        <translation>
+            <numerusform>Remover %n fixture importado antes que não está mais na tabela</numerusform>
+            <numerusform>Remover os %n fixtures importados antes que não estão mais na tabela</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n removed</source>
+        <translation>
+            <numerusform>%n removido</numerusform>
+            <numerusform>%n removidos</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n row(s) not imported</source>
+        <translation>
+            <numerusform>%n linha não importada</numerusform>
+            <numerusform>%n linhas não importadas</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message numerus="yes">
+        <source>Import %n fixture(s)</source>
+        <translation>
+            <numerusform>Importar %n fixture</numerusform>
+            <numerusform>Importar %n fixtures</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new</source>
+        <translation>
+            <numerusform>%n novo</numerusform>
+            <numerusform>%n novos</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n updated</source>
+        <translation>
+            <numerusform>%n atualizado</numerusform>
+            <numerusform>%n atualizados</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>On the plan: %1</source>
+        <translation>Na planta: %1</translation>
+    </message>
+    <message>
+        <source>(from its name in the table)</source>
+        <translation>(pelo nome na tabela)</translation>
+    </message>
+</context>
+<context>
     <name>PatchManager</name>
     <message>
         <source>Dimmers</source>
@@ -6367,6 +6631,143 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Unable to patch line %1</source>
         <translation>Não foi possível patchear a linha %1</translation>
+    </message>
+    <message>
+        <source>Unable to read %1</source>
+        <translation>Não foi possível ler %1</translation>
+    </message>
+    <message>
+        <source>The file is empty</source>
+        <translation>O arquivo está vazio</translation>
+    </message>
+    <message>
+        <source>This isn&apos;t a fixture table (CSV). Missing: %1</source>
+        <translation>Não é uma tabela de fixtures (CSV). Falta: %1</translation>
+    </message>
+    <message>
+        <source>The table has no fixtures</source>
+        <translation>A tabela não tem fixtures</translation>
+    </message>
+    <message>
+        <source>%1 channels in the library, %2 in the table</source>
+        <translation>%1 canais na biblioteca, %2 na tabela</translation>
+    </message>
+    <message>
+        <source>%1 %2 is in the library, with no mode like this one</source>
+        <translation>%1 %2 está na biblioteca, sem um modo como este</translation>
+    </message>
+    <message>
+        <source>The table doesn&apos;t say how many channels it has: 1</source>
+        <translation>A tabela não diz quantos canais tem: 1</translation>
+    </message>
+    <message>
+        <source>Line %1</source>
+        <translation>Linha %1</translation>
+    </message>
+    <message>
+        <source>%1: no universe or address (not imported)</source>
+        <translation>%1: sem universo ou endereço (não é importado)</translation>
+    </message>
+    <message>
+        <source>%1: universe %2 is too high (not imported)</source>
+        <translation>%1: o universo %2 é alto demais (não é importado)</translation>
+    </message>
+    <message>
+        <source>%1: addresses %2-%3 go past the end of universe %4 (not imported)</source>
+        <translation>%1: os endereços %2-%3 passam do fim do universo %4 (não é importado)</translation>
+    </message>
+    <message>
+        <source>Fixture</source>
+        <translation>Fixture</translation>
+    </message>
+    <message>
+        <source>%1: its second DMX break (%2) is not imported</source>
+        <translation>%1: o seu segundo DMX break (%2) não é importado</translation>
+    </message>
+    <message>
+        <source>%1: addresses %2-%3 of universe %4 are used by %5 (not imported)</source>
+        <translation>%1: os endereços %2-%3 do universo %4 são usados por %5 (não é importado)</translation>
+    </message>
+    <message>
+        <source>%1 overlaps %2 in universe %3 (not imported)</source>
+        <translation>%1 se sobrepõe a %2 no universo %3 (não é importado)</translation>
+    </message>
+    <message>
+        <source>%1: number %2 is too high: it gets another one</source>
+        <translation>%1: o número %2 é alto demais: recebe outro</translation>
+    </message>
+    <message>
+        <source>%1: number %2 is taken by %3: it gets another one</source>
+        <translation>%1: o número %2 já é de %3: recebe outro</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n universe(s) will be added to the show</source>
+        <translation>
+            <numerusform>%n universo será adicionado ao show</numerusform>
+            <numerusform>%n universos serão adicionados ao show</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Nothing to import</source>
+        <translation>Nada para importar</translation>
+    </message>
+    <message>
+        <source>Nothing to import: %1</source>
+        <translation>Nada para importar: %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n removed</source>
+        <translation>
+            <numerusform>%n removido</numerusform>
+            <numerusform>%n removidos</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n row(s) of the table not imported</source>
+        <translation>
+            <numerusform>%n linha da tabela não importada</numerusform>
+            <numerusform>%n linhas da tabela não importadas</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 is too big for a fixture table</source>
+        <translation>%1 é grande demais para uma tabela de fixtures</translation>
+    </message>
+    <message>
+        <source>%1: Invert Pan is “%2”, neither yes nor no</source>
+        <translation>%1: em Invert Pan está “%2”, que não é nem sim nem não</translation>
+    </message>
+    <message>
+        <source>%1: Invert Tilt is “%2”, neither yes nor no</source>
+        <translation>%1: em Invert Tilt está “%2”, que não é nem sim nem não</translation>
+    </message>
+    <message numerus="yes">
+        <source>Imported %n fixture(s): %1, %2</source>
+        <translation>
+            <numerusform>%n fixture importado: %1, %2</numerusform>
+            <numerusform>%n fixtures importados: %1, %2</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n new</source>
+        <translation>
+            <numerusform>%n novo</numerusform>
+            <numerusform>%n novos</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n updated</source>
+        <translation>
+            <numerusform>%n atualizado</numerusform>
+            <numerusform>%n atualizados</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n problem(s)</source>
+        <translation>
+            <numerusform>%n problema</numerusform>
+            <numerusform>%n problemas</numerusform>
+        </translation>
     </message>
 </context>
 <context>
@@ -6647,8 +7048,8 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Aparência</translation>
     </message>
     <message>
-        <source>How the selected fixtures look on the plan</source>
-        <translation>Como os fixtures selecionados aparecem no plano</translation>
+        <source>How the selected fixtures look on the plan: their shape and their icon</source>
+        <translation>Como os fixtures selecionados aparecem na planta: a forma e o ícone</translation>
     </message>
     <message>
         <source>Round</source>
@@ -6848,6 +7249,26 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>All files (*)</source>
         <translation>Todos os arquivos (*)</translation>
+    </message>
+    <message>
+        <source>Patch from a visualizer (CSV)…</source>
+        <translation>Patch de um programa de visualização (CSV)…</translation>
+    </message>
+    <message>
+        <source>Import the patch of a visualizer</source>
+        <translation>Importar o patch de um programa de visualização</translation>
+    </message>
+    <message>
+        <source>Fixture tables (*.csv)</source>
+        <translation>Tabelas de fixtures (*.csv)</translation>
+    </message>
+    <message>
+        <source>Icon</source>
+        <translation>Ícone</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automático</translation>
     </message>
 </context>
 <context>
@@ -9750,6 +10171,18 @@ Adicione alguns na página Patch.</translation>
         <source>AUDIENCE</source>
         <translation>PÚBLICO</translation>
     </message>
+    <message>
+        <source>Fixture types (%1)</source>
+        <translation>Tipos de fixture (%1)</translation>
+    </message>
+    <message>
+        <source>Generic dimmer</source>
+        <translation>Dimmer genérico</translation>
+    </message>
+    <message>
+        <source>Click: select them. Ctrl+click: add them to the selection</source>
+        <translation>Clique: seleciona-os. Ctrl+clique: adiciona-os à seleção</translation>
+    </message>
 </context>
 <context>
     <name>StaticEditor</name>
@@ -10366,6 +10799,82 @@ Adicione alguns na página Patch.</translation>
     <message>
         <source>OVR</source>
         <translation>OVR</translation>
+    </message>
+    <message>
+        <source>Moving head</source>
+        <translation>Moving head</translation>
+    </message>
+    <message>
+        <source>Scanner</source>
+        <translation>Scanner</translation>
+    </message>
+    <message>
+        <source>Wash / PAR</source>
+        <translation>Wash / PAR</translation>
+    </message>
+    <message>
+        <source>LED bar</source>
+        <translation>Barra de LED</translation>
+    </message>
+    <message>
+        <source>Strobe</source>
+        <translation>Strobo</translation>
+    </message>
+    <message>
+        <source>Blinder</source>
+        <translation>Blinder</translation>
+    </message>
+    <message>
+        <source>Dimmer / conventional</source>
+        <translation>Dimmer / convencional</translation>
+    </message>
+    <message>
+        <source>Laser</source>
+        <translation>Laser</translation>
+    </message>
+    <message>
+        <source>Smoke</source>
+        <translation>Fumaça</translation>
+    </message>
+    <message>
+        <source>Hazer</source>
+        <translation>Hazer</translation>
+    </message>
+    <message>
+        <source>CO2 jet</source>
+        <translation>Jato de CO2</translation>
+    </message>
+    <message>
+        <source>Flame</source>
+        <translation>Chama</translation>
+    </message>
+    <message>
+        <source>Cold spark</source>
+        <translation>Faíscas frias</translation>
+    </message>
+    <message>
+        <source>Confetti</source>
+        <translation>Confete</translation>
+    </message>
+    <message>
+        <source>Bubbles</source>
+        <translation>Bolhas</translation>
+    </message>
+    <message>
+        <source>Snow</source>
+        <translation>Neve</translation>
+    </message>
+    <message>
+        <source>Fan</source>
+        <translation>Ventilador</translation>
+    </message>
+    <message>
+        <source>Effect</source>
+        <translation>Efeito</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Outro</translation>
     </message>
 </context>
 <context>

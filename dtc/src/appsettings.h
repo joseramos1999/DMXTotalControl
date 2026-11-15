@@ -41,6 +41,9 @@ class AppSettings : public QObject
     Q_PROPERTY(int uiScale READ uiScale WRITE setUiScale NOTIFY uiScaleChanged)
     /** The first steps guide was offered (at the first start) */
     Q_PROPERTY(bool guideShown READ guideShown WRITE setGuideShown NOTIFY guideShownChanged)
+    /** The legend of the stage plan (its fixture types): "open", "closed",
+     *  or "" until the user opens or closes it (open with two types or more) */
+    Q_PROPERTY(QString planLegend READ planLegend WRITE setPlanLegend NOTIFY planLegendChanged)
     Q_PROPERTY(bool autosaveEnabled READ autosaveEnabled WRITE setAutosaveEnabled NOTIFY autosaveChanged)
     Q_PROPERTY(int autosaveMinutes READ autosaveMinutes WRITE setAutosaveMinutes NOTIFY autosaveChanged)
     Q_PROPERTY(bool openLastShow READ openLastShow WRITE setOpenLastShow NOTIFY openLastShowChanged)
@@ -133,6 +136,9 @@ public:
     bool guideShown() const;
     void setGuideShown(bool shown);
 
+    QString planLegend() const;
+    void setPlanLegend(const QString &state);
+
     /** The folder a file dialog of $kind (image, audio...) chose a file in last */
     QString dialogFolder(const QString &kind) const;
     void setDialogFolder(const QString &kind, const QString &folder);
@@ -157,6 +163,7 @@ signals:
     void themeChanged();
     void uiScaleChanged();
     void guideShownChanged();
+    void planLegendChanged();
 
 private:
     QSettings m_settings;

@@ -35,6 +35,7 @@ set(SRC_FILES
     src/gdtfimporter.cpp src/gdtfimporter.h
     src/iomanager.cpp src/iomanager.h
     src/patchmanager.cpp src/patchmanager.h src/patchplan.cpp
+    src/patchimport.cpp src/patchtable.cpp src/patchtable.h src/patchkinds.cpp
     src/programmer.cpp src/programmer.h
     src/zone.cpp src/zone.h
     src/zonemanager.cpp src/zonemanager.h
@@ -130,6 +131,7 @@ set(QML_FILES
     qml/patch/FixtureOptionsDialog.qml
     qml/patch/AimSettingsDialog.qml
     qml/patch/MatrixDialog.qml
+    qml/patch/PatchImportDialog.qml
     qml/patch/PatchGrid.qml
     qml/fixtures/FixtureEditorPage.qml
     qml/fixtures/CapabilitiesDialog.qml

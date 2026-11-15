@@ -21,6 +21,7 @@
 #define PATCHMANAGER_H
 
 #include <QObject>
+#include <QUrl>
 #include <QSizeF>
 #include <QPointF>
 #include <QHash>
@@ -59,15 +60,24 @@ class PatchManager : public QObject
     Q_PROPERTY(QVariantList groups READ groups NOTIFY groupsChanged)
     Q_PROPERTY(QSizeF stageSize READ stageSize NOTIFY stageSizeChanged)
     Q_PROPERTY(QVariantList selections READ selections NOTIFY selectionsChanged)
+    Q_PROPERTY(QVariantList fixtureTypes READ fixtureTypes NOTIFY fixturesChanged)
+    Q_PROPERTY(QStringList fixtureKinds READ fixtureKindList CONSTANT)
 
 public:
     PatchManager(Doc *doc, QObject *parent = nullptr);
     ~PatchManager();
 
     /** [{ id, name, manufacturer, model, mode, type, universe, address,
-     *     channels, x, y, positioned }]
+     *     channels, x, y, positioned, heads, cells, kind, icon, typeKey,
+     *     colorIndex }]
      *  Addresses are 1-based, as displayed to the user.
-     *  x/y is the position in the 2D stage plan, in millimeters */
+     *  x/y is the position in the 2D stage plan, in millimeters.
+     *  cells: the plan draws it as a row of cells, one per head (a bar, a
+     *  matrix, a dimmer pack; not a generic dimmer standing in for one
+     *  effect, a CO2 jet with two channels); kind: what its glyph on the
+     *  plan shows (fixtureKind(), with the icon chosen by hand); icon: the
+     *  one chosen by hand ("" when automatic); typeKey and colorIndex: its
+     *  type in fixtureTypes() */
     QVariantList fixtures() const;
     int fixturesCount() const;
 
@@ -144,6 +154,42 @@ public:
      *  @param copies set to the ID of the copy of each fixture, by its ID in $from
      *  @return the number of fixtures added */
     int importFixtures(Doc *from, QHash<quint32, quint32> *copies = nullptr);
+
+    /*********************************************************************
+     * Patch import: the fixture table (CSV) a visualizer exports
+     * (patchimport.cpp)
+     *********************************************************************/
+    /**
+     * What importing the table in $file would do, with $options: { choices:
+     * { typeKey: { manufacturer, model, mode } | { generic: true } |
+     * { skip: true } | { auto: true } }, place, view ("top", "front"; empty:
+     * the last one used, else the one that suits the rig), groupsByType,
+     * groupsByLayer, groupsFromTable, removeMissing }. Nothing changes.
+     * @return { ok, error, fileName, rows, universeFrom, universeTo,
+     *  types: [{ key, fixture, mode, channels, count, status ("exact",
+     *  "similar", "channels", "remembered", "manual", "generic", "skip"),
+     *  generic, manufacturer, model, modeName, modeChannels, note,
+     *  foundManufacturer, foundModel (not found: where to look by hand) }],
+     *  newCount, updateCount, skippedRows, notImported, removeCount,
+     *  removeNames (of the ones removeMissing takes), problems: [text],
+     *  layers, hasGroups, hasPositions, view,
+     *  suggestedView, stage: { width, height }, stageNow, newUniverses,
+     *  options: the options in effect }
+     */
+    Q_INVOKABLE QVariantMap tablePreview(const QUrl &file, const QVariantMap &options = QVariantMap());
+    QVariantMap tablePreviewData(const QByteArray &data, const QVariantMap &options = QVariantMap());
+    /**
+     * Import the table in $file as tablePreview() shows it, in one step:
+     * the fixtures imported earlier from it (by their identifier, or by
+     * their name and fixture type) are updated, the others added; the
+     * choices of fixtures made by hand and the view are remembered.
+     * @return what was done (for a message), empty when nothing could be
+     *  (lastError() says why)
+     */
+    Q_INVOKABLE QString importTable(const QUrl &file, const QVariantMap &options = QVariantMap());
+    QString importTableData(const QByteArray &data, const QVariantMap &options = QVariantMap());
+    /** The identifier of the table fixture $id was imported from (empty: none) */
+    QString importIdentifier(quint32 id) const;
 
     /*********************************************************************
      * Fixture groups
@@ -239,6 +285,50 @@ public:
     /** How fixtures look in the plan: "round", "square" or "rectangle" */
     Q_INVOKABLE void setFixtureShape(const QVariantList &ids, const QString &shape);
     void clearPlan();
+
+    /*********************************************************************
+     * Kinds of fixture: the glyph of each fixture on the plan, and the
+     * types of the show its colours and legend follow (patchkinds.cpp)
+     *********************************************************************/
+    /** The kinds, in the order of the Look menu of the plan: movinghead,
+     *  scanner, wash, ledbar, strobe, blinder, dimmer, laser, smoke, hazer,
+     *  co2, flame, spark, confetti, bubbles, snow, fan, effect, other */
+    static QStringList fixtureKinds();
+    QStringList fixtureKindList() const { return fixtureKinds(); }
+    /**
+     * The kind of a fixture: the $icon chosen for it by hand, when it is
+     * one; else what the words of its definition's $manufacturer and $model
+     * say where they say more than its QLC+ $type (an "Effect" called "CO2
+     * Jet": co2; a "Dimmer" called "Blinder": blinder; a "Moving Head"
+     * called "Beam" or "Wash" stays a moving head); else its type. A Generic
+     * definition looks at the words of the fixture's own $name first, by
+     * the same rules; a generic dimmer (Generic › Generic, what stands in
+     * for a fixture the library doesn't have) takes any kind its name says
+     * ("CO2 1", "FLAME 3", "BLINDER1")
+     */
+    static QString fixtureKind(const QString &manufacturer, const QString &model, const QString &type,
+                               const QString &name = QString(), const QString &icon = QString());
+    /** The kind the words of $text say, whatever the type ("" when none):
+     *  whole words or their start, in several languages, without caring
+     *  for case or accents. The special effects first ("Strobe Flame" is a
+     *  flame), then blinder, strobe... */
+    static QString kindFromWords(const QString &text);
+    /** The kind of a QLC+ fixture type ("Moving Head": movinghead) */
+    static QString kindOfType(const QString &type);
+    /** The fixture types of the show, as the plan colours them and its
+     *  legend lists them, in the order of their lowest fixture ID: [{ key,
+     *  manufacturer, model (both empty: a generic dimmer), kind,
+     *  colorIndex, count, ids }]. One type per definition, its kind that
+     *  of its first fixture without an icon chosen by hand (an icon chosen
+     *  on some of them changes their glyph, not their type nor colour);
+     *  the generic dimmers, a type for each kind they stand in for
+     *  (blinders, CO2 jets) */
+    QVariantList fixtureTypes() const;
+    /** The icon of fixtures $ids on the plan: one of fixtureKinds(); empty
+     *  (or "auto") goes back to the one fixtureKind() finds */
+    Q_INVOKABLE void setFixtureIcon(const QVariantList &ids, const QString &kind);
+    /** The icon chosen for fixture $id ("" when automatic) */
+    QString fixtureIcon(quint32 id) const;
     /** What each fixture shows now: [{ id, dimmer (0-1), colors: ["#rrggbb"
      *  per head, dimmer included], strobe, gobo, goboImage }] */
     Q_INVOKABLE QVariantList liveStates() const;
@@ -325,6 +415,23 @@ private:
     void setPositions(const QHash<quint32, QPointF> &positions);
     QPointF position(quint32 id) const;
     void writeIdentify();
+    /** A fixture type of fixtureTypes() */
+    struct TypeEntry
+    {
+        QString key;
+        QString manufacturer;
+        QString model;
+        QString kind;
+        QList<quint32> ids;
+    };
+    /** The types of the show, by their lowest fixture ID (each list sorted) */
+    QList<TypeEntry> typeEntries() const;
+    /** fixtureKind() of a patched fixture */
+    QString kindOf(const Fixture *fxi) const;
+    /** What a table import does (patchimport.cpp) */
+    struct TablePlan;
+    void planTable(const QByteArray &data, const QVariantMap &options, TablePlan *plan) const;
+    QVariantMap previewMap(const TablePlan &plan) const;
 
 private:
     Doc *m_doc;
@@ -351,6 +458,13 @@ private:
     int m_lastSelectionId;
     /** The shape of the fixtures in the plan, when not round */
     QHash<quint32, QString> m_shapes;
+    /** The icon of the fixtures in the plan, when chosen (by hand, or by a
+     *  patch import for a generic dimmer standing in for another fixture) */
+    QHash<quint32, QString> m_icons;
+    /** The icon the last patch import gave each fixture, when it gave one:
+     *  a new import keeps the one chosen by hand since, unless the type's
+     *  match changed */
+    QHash<quint32, QString> m_importIcons;
     /** Follow: how each moving head hangs, when not the default */
     struct AimSetup
     {
@@ -367,6 +481,9 @@ private:
         }
     };
     QHash<quint32, AimSetup> m_aims;
+    /** The identifier of the table row each fixture was imported from
+     *  (saved in the plan: a new import updates the same fixtures) */
+    QHash<quint32, QString> m_importIds;
     /** The fixture numbers */
     QHash<quint32, int> m_numbers;
     /** Between beginLoading and endLoading, and what to tell then */

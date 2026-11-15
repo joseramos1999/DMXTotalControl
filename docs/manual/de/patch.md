@@ -107,17 +107,27 @@ Die Werkzeuge (sie arbeiten mit der Auswahl und in ihrer Reihenfolge):
 - **„Auswählen“**: Klick oder Rechteck zum Auswählen.
 - **„Verschieben“**: zieht die Fixtures (die ganze Auswahl bewegt sich) oder die Ansicht.
 - **„Raster“**: „Frei“, 10 cm, 25 cm, 50 cm oder 1 m: wo die Fixtures beim Verschieben landen.
-- **„Aussehen“**: wie die ausgewählten Fixtures dargestellt werden: „Rund“, „Quadrat“ oder „Rechteck“.
+- **„Aussehen“**: wie die ausgewählten Fixtures dargestellt werden: „Rund“, „Quadrat“ oder „Rechteck“, und ihr **„Symbol“** (siehe [Symbole, Farben und Legende](patch.md#symbole-farben-und-legende)).
 - **„Anordnen“**: ordnet sie als „Linie“, „Linie, von vorne nach hinten“, „Kreis“, „Raster, nach Zeilen“, „Raster, Zickzack“, „Raster, nach Spalten“ oder „Raster, Zickzack nach Spalten“ an, mit dem **Abstand (cm)** und den **Spalten** daneben.
 - **„Ausrichten“**: „Links“, „Mitte“, „Rechts“, „Hinten“, „Mitte“, „Vorne“, „In der Breite verteilen“ und „In der Tiefe verteilen“.
 - **15°** (Rechtsklick: andersherum) und **90°**: drehen die Auswahl.
 - **„Höhe und Ausrichtung“**: wo die ausgewählten Moving Heads hängen, für [Follow](patch.md#höhe-und-ausrichtung-follow).
 
-Moving Heads haben einen kleinen Pfeil am Rand: Er zeigt, wohin sie schauen. Die Namen sehr dicht beieinanderliegender Fixtures werden ausgeblendet, damit sie sich nicht überlappen: Zoomen Sie hinein, um sie zu lesen.
+Moving Heads haben einen kleinen Pfeil am Rand (eine Kerbe, wenn der Plan sie klein zeigt): Er zeigt, wohin sie schauen. Die Namen sehr dicht beieinanderliegender Fixtures werden ausgeblendet, damit sie sich nicht überlappen: Zoomen Sie hinein, um sie zu lesen.
 
 Das **Mausrad** zoomt, die **rechte** oder die mittlere Maustaste verschieben die Ansicht, und ein Doppelklick mit ihnen zentriert sie. Die Tasten in der Ecke zoomen ebenfalls.
 
 > **Tipp:** Ordnen Sie die Fixtures in der Reihenfolge an, in der die Effekte laufen sollen: Wählen Sie sie von links nach rechts aus und verwenden Sie „Anordnen › Linie“.
+
+### Symbole, Farben und Legende
+
+Jedes Fixture zeigt auf dem Plan das Symbol dessen, was es ist: Moving Head, Scanner, Wash oder PAR, LED-Leiste, Stroboskop, Blinder, Dimmer oder konventionell, Laser, Nebel, Hazer, CO2-Jet, Flamme, Kaltfunken, Konfetti, Seifenblasen, Schnee, Ventilator, Effekt oder andere. Das sagt sein Fixture-Typ, außer der Name seines Modells sagt mehr: Ein „Effect“ namens „CO2 Jet“ ist ein CO2-Jet und ein Dimmer namens „Blinder“ ein Blinder, aber ein Moving Head namens „Beam“ oder „Wash“ bleibt ein Moving Head. Ein generischer Dimmer, der für jedes Fixture stehen kann, bekommt das Symbol seines eigenen Namens („CO2 1“, „FLAME 3“, „BLINDER1“). LED-Leisten und Matrizen zeigen ihre Zellen; die anderen Fixtures mit mehreren Zellen (ein Blinder mit mehreren Lampen, ein Stroboskop mit mehreren Segmenten) haben das Symbol neben ihren Zellen.
+
+Um es von Hand zu wählen, wählen Sie die Fixtures aus und verwenden Sie **„Aussehen“ › „Symbol“**; **„Automatisch“** kehrt zu seinem eigenen zurück. Das gewählte Symbol wird mit der Show gespeichert.
+
+Jeder Fixture-Typ der Show hat außerdem seine Farbe, im Symbol und am Rand, bei jedem Öffnen der Show dieselbe: Zwei Typen mit demselben Symbol unterscheiden sich durch ihre Farbe. Ein von Hand gewähltes Symbol ändert die Farbe eines Fixtures aus der Bibliothek nicht. Live zeigen eingeschaltete Fixtures ihr Licht und ausgeschaltete ihr Symbol.
+
+Die **Legende** oben links im Plan listet die Fixture-Typen mit ihrem Symbol, ihrer Farbe und ihrer Anzahl auf (die generischen Dimmer nach dem, wofür sie stehen). Ein Klick auf einen Typ wählt alle seine Fixtures aus, auch im Plan von Programmieren; **Strg+Klick** oder **Umschalt+Klick** fügt sie der Auswahl hinzu. Ein Klick auf ihren Titel klappt sie zu oder auf, und das wird gemerkt. Die Bühne wird neben oder unter die Legende gelegt, damit diese kein Fixture verdeckt.
 
 ### Höhe und Ausrichtung (Follow)
 
@@ -168,6 +178,27 @@ Es entstehen ein Fixture pro Pixelzeile, eine Gruppe für die Farbeffekte und ih
 - **„Patch einer anderen Show…“**: ihre Fixtures. Sie kommen auf dieselben Adressen, wenn diese frei sind; sonst auf die nächsten.
 - **„Szenen einer anderen Show…“**: ihre Szenen, zugeordnet zu den passenden Fixtures dieser Show (nach Adresse und Modell, nach Name oder nach Modell). Sie kommen in Gruppen mit demselben Namen.
 - **„Patch und Szenen einer anderen Show…“**: beides.
+- **„Patch aus einer Visualisierungssoftware (CSV)…“**: die Fixture-Tabelle, die Ihre Visualisierungssoftware exportiert; siehe [Einen Patch aus einer Visualisierungssoftware importieren](patch.md#einen-patch-aus-einer-visualisierungssoftware-importieren).
+
+## Einen Patch aus einer Visualisierungssoftware importieren
+
+Wenn Sie das Rig in einer Visualisierungssoftware planen, exportieren Sie deren Fixture-Tabelle (CSV) und importieren Sie sie: DMX Total Control patcht dieselben Fixtures, in dieselben Universen und auf dieselben Adressen, mit ihren Namen, Nummern und ihrem Platz im Plan.
+
+1. Drücken Sie **„Importieren“ › „Patch aus einer Visualisierungssoftware (CSV)…“** und wählen Sie die Datei.
+2. Das Fenster **„Patch importieren“** zeigt, wie viele Fixtures die Tabelle hat, von wie vielen Typen und in welchen Universen. Nichts ändert sich, bis Sie **„Importieren“** drücken.
+3. Unter **„Fixture-Typen“** zeigt jeder Typ der Tabelle (Fixture, Modus und Kanäle), was daraus wird und wie er in der Bibliothek gefunden wurde: **„Genau“** (dasselbe Modell und derselbe Modus), **„Nach Kanalzahl“** (der Modus mit diesen Kanälen), **„Ähnlicher Name“**, **„Gemerkt“** oder **„Von Hand gewählt“**. Ein **„Ähnlicher Name“** erscheint in Orange, damit Sie ihn prüfen: es ist ein Modell mit ähnlichem Namen, nicht dasselbe. Ist er nicht in der Bibliothek, wird er als **„Generischer Dimmer“** mit seinen Kanälen gepatcht, in Orange: alles bleibt trotzdem auf seinen Adressen. Jeder Typ zeigt auch das Symbol, das seine Fixtures auf dem Plan haben werden; wird er als generischer Dimmer gepatcht, bekommt er das, was sein Name in der Tabelle sagt (ein „CO2 Jet“ erscheint als CO2-Jet; ein „Flame“ als Flamme).
+4. **„Ändern“** wählt ein anderes Fixture und einen anderen Modus (**„Aus der Bibliothek wählen…“**), einen generischen Dimmer oder **„Nicht importieren“**. Was Sie von Hand wählen, wird für den nächsten Import dieses Typs gemerkt.
+5. Unter **„Optionen“**:
+   - **„Auf dem Bühnenplan platzieren“**, mit der **Ansicht**: **„Von oben“** (das Publikum unten im Plan) oder **„Von vorne“** (wie das Publikum das Rig sieht: die höchsten Fixtures oben). Die Ansicht von vorne wird vorgeschlagen, wenn das Rig in verschiedenen Höhen hängt, und die zuletzt benutzte wird gemerkt. Der Plan wächst, damit das Rig hineinpasst (er schrumpft nie).
+   - **Gruppen**: eine für jeden Fixture-Typ, eine für jede Ebene (wenn die Tabelle mehr als eine hat) und die der Spalte „Groups“ der Tabelle.
+6. Unter den Typen stehen die Probleme, vor dem Import: Adressen, die schon ein anderes Fixture oder eine andere Zeile belegt (diese Zeilen werden nicht importiert), Zeilen ohne Universum oder Adresse, Universen über 128, Adressen über 512, ein zweiter DMX-Break (nicht importiert), Fixture-Nummern, die schon ein anderes Fixture hat oder die zu hoch sind (sie bekommen eine andere), ein invertierter Pan oder Tilt, der weder Ja noch Nein ist, und die Universen, die der Show hinzugefügt werden.
+7. Drücken Sie **„N Fixtures importieren“**. Eine Meldung zeigt, wie viele neu sind und wie viele aktualisiert wurden, und ob ein Problem bleibt.
+
+**Aus jeder Zeile** werden das Fixture und sein Modus, Universum und Adresse, der Name (die Spalte „Unit“) und die Fixture-Nummer importiert: die der Spalte „Channel“, sonst die der anderen Spalte für die Fixture-Nummer, sonst eine automatische. Die Höhe jedes Moving Heads, ob er steht (in der Tabelle umgedreht) oder hängt, und sein invertierter Pan oder Tilt kommen in seine [Höhe und Ausrichtung](patch.md#höhe-und-ausrichtung-follow), ob Sie sie auf dem Plan platzieren oder nicht.
+
+**Ein erneuter Import** der Tabelle (nachdem Sie das Rig in der Visualisierungssoftware geändert haben) aktualisiert dieselben Fixtures: sie werden an der Kennung jeder Zeile der Tabelle erkannt, oder am gleichen Namen und Fixture, und Modus, Adresse, Name, Nummer und Platz im Plan ändern sich. Die, die nicht mehr in der Tabelle sind, bleiben, außer Sie haken **„Die N vorher importierten Fixtures entfernen, die nicht mehr in der Tabelle sind“** an (darunter stehen ihre Namen). Ein Symbol, das Sie danach von Hand wählen, bleibt erhalten, außer das Fixture, als das sein Typ gepatcht wird, ändert sich.
+
+> **Grenzen:** von jedem Fixture wird nur der erste DMX-Break importiert, und von den Rotationen zählt nur, ob ein Kopf umgedreht ist (die Ausrichtung wird nicht importiert). Von oben gesehen landen übereinander hängende Fixtures zusammen im Plan: um sie getrennt zu sehen, nutzen Sie die Ansicht von vorne.
 
 ## Fixtures löschen
 

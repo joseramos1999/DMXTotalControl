@@ -231,6 +231,7 @@ RowLayout {
             selection: Core.programmer.selection
             aiming: true
             showNames: false
+            showLegend: false
             target: xy.aim.active ? ({ x: xy.aim.x, y: xy.aim.y }) : null
             aimedIds: xy.aim.active ? xy.aim.aimed : []
             onPointPicked: (x, y) => Core.programmer.aimAt(x, y, xy.aimHeight * 1000)

@@ -90,6 +90,32 @@ Item {
 
     signal message(string text, bool isError)
 
+    /** A menu entry with a glyph before its text (the icons of the plan),
+     *  ticked when selected */
+    component IconMenuItem: CheckMenuItem {
+        id: iconItem
+        property string glyph: ""
+        // (twenty of them fit in a small window)
+        implicitHeight: 26
+        contentItem: Row {
+            leftPadding: iconItem.indicator ? iconItem.indicator.width + iconItem.spacing : 0
+            spacing: 8
+            IconLabel {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 18
+                icon: iconItem.glyph
+                size: 13
+                color: iconItem.palette.windowText
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: iconItem.text
+                font: iconItem.font
+                color: iconItem.palette.windowText
+            }
+        }
+    }
+
     // the shape tools of the plan, on the selection in its order
     function arrange(shape, options) {
         options.spacing = spacingSpin.value * 10
@@ -97,8 +123,24 @@ Item {
         Core.patch.arrange(selectedIds, shape, options)
     }
     /** Developer option --patch-view: list, grid, plan, live, limits, matrix,
-     *  add (Add fixtures), share (its GDTF-Share browser) */
+     *  add (Add fixtures), share (its GDTF-Share browser), import (the Import
+     *  menu), look (the plan with its Look menu open on the fixtures of the
+     *  last type, on its Icon entry: --keys "key:Right" opens it) */
     function devOpen(what) {
+        if (what === "import") {
+            Qt.callLater(() => importMenu.popup(importButton, 0, importButton.height + 4))
+            return
+        }
+        if (what === "look") {
+            view = "plan"
+            const types = Core.patch.fixtureTypes
+            selectedIds = types.length > 0 ? types[types.length - 1].ids.slice() : []
+            Qt.callLater(() => {
+                lookMenu.popup(lookButton, 0, lookButton.height + 4)
+                lookMenu.currentIndex = 4
+            })
+            return
+        }
         if (what === "add" || what === "share") {
             addDialog.open()
             if (what === "share")
@@ -115,6 +157,13 @@ Item {
         stagePlan.live = what === "live"
         if (what === "plan" || what === "live")
             selectedIds = fixtures.filter(f => f.name.startsWith("Spot")).map(f => f.id)
+    }
+    /** Developer options --patch-import and --patch-import-pick: the preview of
+     *  the import of a table, with the library picker of its first type */
+    function devImport(url, pick) {
+        tableImportDialog.openFile(url)
+        if (pick)
+            tableImportDialog.devPick()
     }
     function saveSelection(groupId) {
         let ids = selectedIds.slice()
@@ -227,6 +276,7 @@ Item {
             }
 
             AppButton {
+                id: importButton
                 text: qsTr("Import")
                 iconGlyph: Theme.iconImport
                 onClicked: importMenu.popup()
@@ -235,6 +285,9 @@ Item {
                     MenuItem { text: qsTr("Patch of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = false; importDialog.start() } }
                     MenuItem { text: qsTr("Scenes of another show…"); onTriggered: { importDialog.patch = false; importDialog.scenes = true; importDialog.start() } }
                     MenuItem { text: qsTr("Patch and scenes of another show…"); onTriggered: { importDialog.patch = true; importDialog.scenes = true; importDialog.start() } }
+                    MenuSeparator {}
+                    // the fixture table a visualizer exports
+                    MenuItem { text: qsTr("Patch from a visualizer (CSV)…"); onTriggered: tableFileDialog.start() }
                 }
             }
             AppButton {
@@ -899,11 +952,12 @@ Item {
                             currentIndex: 3
                         }
                         AppButton {
+                            id: lookButton
                             text: qsTr("Look")
                             iconGlyph: Theme.iconCircle
                             implicitHeight: 28
                             enabled: page.selectedIds.length > 0
-                            ToolTip.text: qsTr("How the selected fixtures look on the plan")
+                            ToolTip.text: qsTr("How the selected fixtures look on the plan: their shape and their icon")
                             ToolTip.visible: hovered
                             ToolTip.delay: 500
                             onClicked: lookMenu.popup()
@@ -912,6 +966,37 @@ Item {
                                 MenuItem { text: qsTr("Round"); onTriggered: Core.patch.setFixtureShape(page.selectedIds, "round") }
                                 MenuItem { text: qsTr("Square"); onTriggered: Core.patch.setFixtureShape(page.selectedIds, "square") }
                                 MenuItem { text: qsTr("Rectangle"); onTriggered: Core.patch.setFixtureShape(page.selectedIds, "rectangle") }
+                                MenuSeparator {}
+                                // the glyph of each kind of fixture: the one its
+                                // fixture and name give, or one chosen by hand
+                                AppMenu {
+                                    id: iconMenu
+                                    title: qsTr("Icon")
+                                    /** The icon chosen for the selected fixtures when they
+                                     *  all have the same ("": automatic), else "mixed" */
+                                    readonly property string current: {
+                                        const icons = page.selectedFixtures().map(f => f.icon)
+                                        return icons.length > 0 && icons.every(i => i === icons[0]) ? icons[0] : "mixed"
+                                    }
+                                    IconMenuItem {
+                                        text: qsTr("Automatic")
+                                        selected: iconMenu.current === ""
+                                        onTriggered: Core.patch.setFixtureIcon(page.selectedIds, "")
+                                    }
+                                    MenuSeparator {}
+                                    Instantiator {
+                                        model: Core.patch.fixtureKinds
+                                        delegate: IconMenuItem {
+                                            required property string modelData
+                                            glyph: Theme.kindIcon(modelData)
+                                            text: Theme.kindName(modelData)
+                                            selected: iconMenu.current === modelData
+                                            onTriggered: Core.patch.setFixtureIcon(page.selectedIds, modelData)
+                                        }
+                                        onObjectAdded: (index, object) => iconMenu.insertItem(index + 2, object)
+                                        onObjectRemoved: (index, object) => iconMenu.removeItem(object)
+                                    }
+                                }
                             }
                         }
                         Rectangle { width: 1; height: 28; color: Theme.border }
@@ -1108,6 +1193,17 @@ Item {
         onMessage: (text) => page.message(text, false)
     }
     TextPrompt { id: prompt }
+    PatchImportDialog {
+        id: tableImportDialog
+        onMessage: (text, isError) => page.message(text, isError)
+    }
+    AppFileDialog {
+        id: tableFileDialog
+        kind: "patchtable"
+        title: qsTr("Import the patch of a visualizer")
+        nameFilters: [qsTr("Fixture tables (*.csv)"), qsTr("All files (*)")]
+        onAccepted: tableImportDialog.openFile(selectedFile)
+    }
 
     AppFileDialog {
         id: importDialog

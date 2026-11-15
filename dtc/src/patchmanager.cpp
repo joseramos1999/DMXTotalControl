@@ -184,6 +184,14 @@ void PatchManager::applyPatch(Doc *doc, Fixture *fxi, QLCFixtureDef *def, QLCFix
 QVariantList PatchManager::fixtures() const
 {
     MonitorProperties *monitor = m_doc->monitorProperties();
+    // the type of each fixture: its kind and the colour of the plan
+    const QList<TypeEntry> types = typeEntries();
+    QHash<quint32, int> typeOf;
+    for (int t = 0; t < types.count(); t++)
+    {
+        for (quint32 id : types.at(t).ids)
+            typeOf.insert(id, t);
+    }
     QVariantList list;
     for (Fixture *fxi : m_doc->fixtures())
     {
@@ -226,8 +234,13 @@ QVariantList PatchManager::fixtures() const
         info.insert("limited", limited(QLCChannel::Intensity, QLCChannel::NoColour) ||
                                (hasPan && limited(QLCChannel::Pan, -1)) || (hasTilt && limited(QLCChannel::Tilt, -1)));
 
-        // the plan draws fixtures with several heads (bars, matrices) as a row of cells
+        // its glyph (with the icon chosen by hand)
+        const QString kind = kindOf(fxi);
+        // the plan draws fixtures with several heads (bars, matrices, dimmer
+        // packs) as a row of cells; not a generic dimmer standing in for one
+        // thing (a CO2 jet or a flame with two channels: a head each)
         info.insert("heads", fxi->heads());
+        info.insert("cells", fxi->heads() > 1 && !(generic && kind != QLatin1String("dimmer")));
         info.insert("width", mode != nullptr ? mode->physical().width() : 0);
 
         bool positioned = monitor != nullptr && monitor->containsFixture(fxi->id());
@@ -237,6 +250,12 @@ QVariantList PatchManager::fixtures() const
         info.insert("y", pos.y());
         info.insert("rotation", positioned ? monitor->fixtureRotation(fxi->id(), 0, 0).z() : 0.0);
         info.insert("shape", m_shapes.value(fxi->id(), "round"));
+        // its glyph, the icon chosen by hand, and its type (the colour)
+        const int type = typeOf.value(fxi->id(), -1);
+        info.insert("kind", kind);
+        info.insert("icon", m_icons.value(fxi->id()));
+        info.insert("typeKey", type >= 0 ? types.at(type).key : QString());
+        info.insert("colorIndex", type);
         // a moving head: the way it faces and how high it hangs (Follow)
         bool aimable = false;
         for (quint32 c = 0; c < fxi->channels() && aimable == false; c++)
@@ -1250,7 +1269,10 @@ void PatchManager::slotDocCleared()
     stopIdentify();
     m_numbers.clear();
     m_shapes.clear();
+    m_icons.clear();
+    m_importIcons.clear();
     m_aims.clear();
+    m_importIds.clear();
     m_groupOrder.clear();
 }
 
@@ -1435,9 +1457,12 @@ void PatchManager::slotFixtureAdded(quint32 id)
 void PatchManager::slotFixtureGone(quint32 id)
 {
     m_numbers.remove(id);
-    // Doc gives its ID to the next fixture patched: not its shape
+    // Doc gives its ID to the next fixture patched: not its shape nor its icon
     m_shapes.remove(id);
+    m_icons.remove(id);
+    m_importIcons.remove(id);
     m_aims.remove(id);
+    m_importIds.remove(id);
 }
 
 /*********************************************************************
@@ -1627,9 +1652,14 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
     }
     if (root.name() == KXMLDTCPlan)
     {
-        // how the fixtures look in the plan, and how the moving heads hang
+        // how the fixtures look in the plan (shape and icon), how the moving
+        // heads hang, and the table row each one was imported from
         m_shapes.clear();
+        m_icons.clear();
+        m_importIcons.clear();
         m_aims.clear();
+        m_importIds.clear();
+        const QStringList kinds = fixtureKinds();
         while (root.readNextStartElement())
         {
             const QXmlStreamAttributes attrs = root.attributes();
@@ -1639,6 +1669,16 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
                 QString shape = attrs.value("Shape").toString();
                 if (shape == "square" || shape == "rectangle")
                     m_shapes.insert(id, shape);
+                // (a kind this version doesn't know: automatic)
+                const QString icon = attrs.value("Icon").toString();
+                if (kinds.contains(icon))
+                    m_icons.insert(id, icon);
+                const QString importIcon = attrs.value("ImportIcon").toString();
+                if (kinds.contains(importIcon))
+                    m_importIcons.insert(id, importIcon);
+                const QString importId = attrs.value("ImportId").toString().trimmed();
+                if (importId.isEmpty() == false)
+                    m_importIds.insert(id, importId);
                 AimSetup setup;
                 bool ok = false;
                 const int height = attrs.value("Height").toInt(&ok);
@@ -1709,16 +1749,16 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
 
 bool PatchManager::saveXML(QXmlStreamWriter *doc) const
 {
-    if (m_shapes.isEmpty() == false || m_aims.isEmpty() == false)
+    if (m_shapes.isEmpty() == false || m_aims.isEmpty() == false || m_importIds.isEmpty() == false ||
+        m_icons.isEmpty() == false || m_importIcons.isEmpty() == false)
     {
         doc->writeStartElement(KXMLDTCPlan);
         // by fixture: the same show is the same file (a hash has no order)
-        QList<quint32> ids = m_shapes.keys();
-        for (quint32 id : m_aims.keys())
-        {
-            if (m_shapes.contains(id) == false)
-                ids.append(id);
-        }
+        QSet<quint32> each(m_shapes.keyBegin(), m_shapes.keyEnd());
+        for (const QHash<quint32, QString> *more : { &m_icons, &m_importIcons, &m_importIds })
+            each.unite(QSet<quint32>(more->keyBegin(), more->keyEnd()));
+        each.unite(QSet<quint32>(m_aims.keyBegin(), m_aims.keyEnd()));
+        QList<quint32> ids(each.cbegin(), each.cend());
         std::sort(ids.begin(), ids.end());
         for (quint32 id : std::as_const(ids))
         {
@@ -1728,6 +1768,14 @@ bool PatchManager::saveXML(QXmlStreamWriter *doc) const
             doc->writeAttribute("ID", QString::number(id));
             if (m_shapes.contains(id))
                 doc->writeAttribute("Shape", m_shapes.value(id));
+            // its icon, when chosen; the one a patch import gave it
+            if (m_icons.contains(id))
+                doc->writeAttribute("Icon", m_icons.value(id));
+            if (m_importIcons.contains(id))
+                doc->writeAttribute("ImportIcon", m_importIcons.value(id));
+            // the row of the table it came from (a patch import)
+            if (m_importIds.contains(id))
+                doc->writeAttribute("ImportId", m_importIds.value(id));
             // how a moving head hangs, what isn't the default
             const AimSetup setup = m_aims.value(id);
             if (setup.height >= 0)

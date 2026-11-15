@@ -157,8 +157,12 @@ int main(int argc, char *argv[])
     parser.addOption(learnOption);
     QCommandLineOption mappingOption("mapping", "Developer: open the Mappings page with this mapping ID selected.", "id");
     parser.addOption(mappingOption);
-    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, matrix, add, share: the GDTF-Share browser of Add fixtures).", "view");
+    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, matrix, add, share: the GDTF-Share browser of Add fixtures; import: the Import menu; look: the Look menu of the plan, on its Icon entry).", "view");
     parser.addOption(patchViewOption);
+    QCommandLineOption patchImportOption("patch-import", "Developer: the preview of a patch import from this fixture table (CSV).", "file.csv");
+    parser.addOption(patchImportOption);
+    QCommandLineOption patchImportPickOption("patch-import-pick", "Developer: with --patch-import, the library picker of a fixture type of the table (the first one not found).");
+    parser.addOption(patchImportPickOption);
     QCommandLineOption playOption("play", "Developer: play this scene ID on start, outside of the groups (with --page 6: the DMX levels).", "id");
     parser.addOption(playOption);
     QCommandLineOption sizeOption("size", "Developer: the size of the window (1440x900), for screenshots.", "WxH");
@@ -356,6 +360,11 @@ int main(int argc, char *argv[])
         window->setProperty("startMapping", parser.value(mappingOption).toInt());
     if (window && parser.isSet(patchViewOption))
         window->setProperty("startPatchView", parser.value(patchViewOption));
+    if (window && parser.isSet(patchImportOption))
+    {
+        window->setProperty("startPatchImportPick", parser.isSet(patchImportPickOption));
+        window->setProperty("startPatchImport", QUrl::fromLocalFile(QFileInfo(parser.value(patchImportOption)).absoluteFilePath()));
+    }
     if (window && parser.isSet(playOption))
     {
         core.effects()->togglePreview(parser.value(playOption).toUInt());

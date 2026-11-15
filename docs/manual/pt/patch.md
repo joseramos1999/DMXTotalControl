@@ -107,17 +107,27 @@ As ferramentas (trabalham sobre a seleção e na ordem dela):
 - **“Selecionar”**: clique ou retângulo para selecionar.
 - **“Mover”**: arraste os fixtures (a seleção inteira se move) ou a vista.
 - **“Grade”**: “Livre”, 10 cm, 25 cm, 50 cm ou 1 m: onde os fixtures caem ao serem movidos.
-- **“Aparência”**: como os fixtures selecionados aparecem: “Redondo”, “Quadrado” ou “Retângulo”.
+- **“Aparência”**: como os fixtures selecionados aparecem: “Redondo”, “Quadrado” ou “Retângulo”, e o seu **“Ícone”** (veja [Ícones, cores e legenda](patch.md#ícones-cores-e-legenda)).
 - **“Organizar”**: posiciona-os em “Linha”, “Linha, da frente para o fundo”, “Círculo”, “Grade, por linhas”, “Grade, em zigue-zague”, “Grade, por colunas” ou “Grade, em zigue-zague por colunas”, com o **Espaçamento (cm)** e as **Colunas** ao lado.
 - **“Alinhar”**: “Esquerda”, “Centro”, “Direita”, “Fundo”, “Meio”, “Frente”, “Distribuir na largura” e “Distribuir na profundidade”.
 - **15°** (botão direito: para o outro lado) e **90°**: giram a seleção.
 - **“Altura e orientação”**: onde estão pendurados os moving heads selecionados, para o [Follow](patch.md#altura-e-orientação-follow).
 
-Os moving heads têm uma pequena seta na borda: para onde eles apontam. Os nomes dos fixtures muito próximos ficam ocultos para não se sobreporem: aproxime o zoom para lê-los.
+Os moving heads têm uma pequena seta na borda (um entalhe, quando o plano os mostra pequenos): para onde eles apontam. Os nomes dos fixtures muito próximos ficam ocultos para não se sobreporem: aproxime o zoom para lê-los.
 
 A **roda** do mouse faz zoom, o **botão direito** ou o do meio arrastam a vista e um clique duplo com eles a centraliza. Os botões do canto também fazem zoom.
 
 > **Dica:** posicione os fixtures na ordem em que você quer que os efeitos corram: selecione-os da esquerda para a direita e use “Organizar › Linha”.
+
+### Ícones, cores e legenda
+
+Cada fixture mostra no plano o ícone do que ele é: moving head, scanner, wash ou PAR, barra de LED, strobo, blinder, dimmer ou convencional, laser, fumaça, hazer, jato de CO2, chama, faíscas frias, confete, bolhas, neve, ventilador, efeito ou outro. Quem diz é o tipo do fixture, a não ser que o nome do modelo diga mais: um “Effect” chamado “CO2 Jet” é um jato de CO2 e um dimmer chamado “Blinder” é um blinder, mas um moving head chamado “Beam” ou “Wash” continua sendo um moving head. Um dimmer genérico, que pode estar no lugar de qualquer fixture, recebe o ícone do seu próprio nome (“CO2 1”, “FLAME 3”, “BLINDER1”). As barras de LED e as matrizes mostram as suas células; os outros fixtures com várias células (um blinder de várias lâmpadas, um strobo de vários segmentos) têm o ícone ao lado das suas células.
+
+Para escolhê-lo à mão, selecione os fixtures e use **“Aparência” › “Ícone”**; **“Automático”** volta ao dele. O ícone escolhido é salvo com o show.
+
+Cada tipo de fixture do show tem também a sua cor, no ícone e na borda, a mesma toda vez que você abre o show: dois tipos com o mesmo ícone se distinguem pela cor. Um ícone escolhido à mão em um fixture da biblioteca não muda a sua cor. Ao vivo, os fixtures acesos mostram a sua luz e os apagados, o seu ícone.
+
+A **legenda**, no canto superior esquerdo do plano, lista os tipos de fixture com o seu ícone, a sua cor e quantos são (os dimmers genéricos, pelo que representam). Um clique em um tipo seleciona todos os fixtures dele, também no plano de Programar; **Ctrl+clique** ou **Shift+clique** os adiciona à seleção. Um clique no título dela a recolhe ou a expande, e isso é lembrado. O palco fica ao lado ou abaixo da legenda, para que ela não cubra nenhum fixture.
 
 ### Altura e orientação (Follow)
 
@@ -168,6 +178,27 @@ Os limites atuam na saída: cenas, efeitos e edição ao vivo mantêm seus valor
 - **“Patch de outro show…”**: os fixtures dele. Vão para os mesmos endereços se estiverem livres; se não, para os seguintes.
 - **“Cenas de outro show…”**: as cenas dele, atribuídas aos fixtures deste show que coincidem (por endereço e modelo, por nome ou por modelo). Entram em grupos com o mesmo nome.
 - **“Patch e cenas de outro show…”**: as duas coisas.
+- **“Patch de um programa de visualização (CSV)…”**: a tabela de fixtures que o seu programa de visualização exporta; veja [Importar um patch de um programa de visualização](patch.md#importar-um-patch-de-um-programa-de-visualização).
+
+## Importar um patch de um programa de visualização
+
+Se você desenha a montagem num programa de visualização, exporte a tabela de fixtures dele (CSV) e importe-a: o DMX Total Control patcheia os mesmos fixtures, nos mesmos universos e endereços, com os seus nomes, números e lugar na planta.
+
+1. Clique em **“Importar” › “Patch de um programa de visualização (CSV)…”** e escolha o arquivo.
+2. A janela **“Importar um patch”** diz quantos fixtures a tabela traz, de quantos tipos e em quais universos. Nada muda até você clicar em **“Importar”**.
+3. Em **“Tipos de fixture”**, cada tipo da tabela (fixture, modo e canais) diz no que se transforma e como foi encontrado na biblioteca: **“Exato”** (o mesmo modelo e modo), **“Pelo número de canais”** (o modo com esses canais), **“Nome parecido”**, **“Lembrado”** ou **“Escolhido à mão”**. Um **“Nome parecido”** aparece em laranja para você conferir: é um modelo com um nome parecido, não o mesmo. Se não está na biblioteca, é patcheado como **“Dimmer genérico”** com os seus canais, em laranja: tudo fica nos seus endereços do mesmo jeito. Cada tipo mostra também o ícone que os seus fixtures terão no plano; se for patcheado como dimmer genérico, recebe o que o nome dele na tabela diz (um “CO2 Jet” aparece como jato de CO2; um “Flame”, como chama).
+4. **“Alterar”** escolhe outro fixture e modo (**“Escolher da biblioteca…”**), um dimmer genérico ou **“Não importar”**. O que você escolhe à mão é lembrado na próxima vez que importar esse tipo.
+5. Em **“Opções”**:
+   - **“Colocá-los na planta do palco”**, com a **Vista**: **“De cima”** (o público embaixo da planta) ou **“De frente”** (como o público vê a montagem: os fixtures mais altos no alto). A vista de frente é proposta quando a montagem está pendurada em alturas diferentes, e a última que você usou é lembrada. A planta cresce para caber a montagem (nunca encolhe).
+   - **Grupos**: um para cada tipo de fixture, um para cada camada (se a tabela tiver mais de uma) e os da coluna “Groups” da tabela.
+6. Embaixo dos tipos ficam os problemas, antes de importar: endereços que outro fixture ou outra linha já usa (essas linhas não são importadas), linhas sem universo ou endereço, universos acima de 128, endereços que passam de 512, um segundo DMX break (não é importado), números de fixture que outro fixture já tem ou altos demais (recebem outro), um pan ou tilt invertido que não é nem sim nem não, e os universos adicionados ao show.
+7. Clique em **“Importar N fixtures”**. Um aviso diz quantos são novos e quantos foram atualizados, e se ficou algum problema.
+
+**De cada linha** são importados o fixture e o seu modo, o universo e o endereço, o nome (a coluna “Unit”) e o número de fixture: o da coluna “Channel”, senão o da outra coluna de número de fixture, senão um automático. A altura de cada cabeça móvel, se está em pé (virada ao contrário na tabela) ou pendurada, e o seu pan ou tilt invertido vão para a sua [altura e orientação](patch.md#altura-e-orientação-follow), colocando-os na planta ou não.
+
+**Importar de novo** a tabela (depois de mudar a montagem no programa de visualização) atualiza os mesmos fixtures: ele os reconhece pelo identificador de cada linha da tabela, ou pelo mesmo nome e fixture, e muda o modo, o endereço, o nome, o número e o lugar na planta. Os que não estão mais na tabela ficam, a não ser que você marque **“Remover os N fixtures importados antes que não estão mais na tabela”** (embaixo aparecem os nomes deles). Um ícone que você escolher à mão depois é mantido, a não ser que mude o fixture com que o tipo dele é patcheado.
+
+> **Limites:** de cada fixture só se importa o primeiro DMX break, e das rotações só se usa se a cabeça está virada ao contrário (a orientação não é importada). Vistos de cima, os fixtures pendurados um sobre o outro ficam juntos na planta: para vê-los separados, use a vista de frente.
 
 ## Excluir fixtures
 

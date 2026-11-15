@@ -48,10 +48,12 @@
 #include <QNetworkCookieJar>
 #include <QUrlQuery>
 #include <QUuid>
+#include <QRawFont>
 #include "rgbimage.h"
 #include "rgbtext.h"
 
 #include "patchmanager.h"
+#include "patchtable.h"
 #include "fixturelibrary.h"
 #include "programmer.h"
 #include "zonemanager.h"
@@ -769,6 +771,45 @@ private slots:
     void selectedSceneCueActions();
     void surfaceFlashCrossfade();
     void remoteCrossfadeState();
+    // patch import
+    // the fixture table (CSV) a visualizer exports: the parser (quotes, BOM,
+    // semicolons, decimal commas, units, missing columns); the matcher of
+    // manufacturer, model and mode on a small library; the whole import into
+    // a show (addresses, universes added, names, numbers, groups, the plan
+    // seen from the front and from above and its growth, the aim height and
+    // inversions, the generic dimmer when not found, a second DMX break and
+    // overlaps said); a new import that updates by identifier and by name,
+    // and removes; the choices and the view remembered; the show file keeps
+    // the identifiers where QLC+ doesn't look; the limits (universes past
+    // 128, a file too big or not text); a new import that keeps the height
+    // and inversions without placing, says what a row overlaps (never the
+    // fixture it updates) and keeps the fixtures of rows not imported
+    void patchTableCsv();
+    void patchTableMatch();
+    void patchImportRig();
+    void patchImportUpdate();
+    void patchImportRemembered();
+    void patchImportShowFile();
+    void patchImportLimits();
+    void patchImportAgain();
+
+    // plan icons
+    // the kind of each fixture (its glyph on the stage plan): the QLC+
+    // types, the words of a definition where they say more than its type (a
+    // CO2 jet, a flame, a blinder...; a moving head called "Beam" stays
+    // one), the name of a generic dimmer, the icon chosen by hand; each kind
+    // its own glyph of the icon font, with a name; the types of the show the
+    // plan colours and its legend lists, by their lowest ID (the legend open
+    // or folded, remembered); the icon chosen
+    // by hand, saved in the program's part of the show (QLC+ still reads
+    // it); a patch import gives the generic dimmers standing in for a
+    // fixture the kind of the table's name, and a new import keeps the icon
+    // chosen by hand since, unless the type's match changed
+    void planKindRules();
+    void planKindGlyphs();
+    void planFixtureTypes();
+    void planIconByHand();
+    void planIconImport();
 
 private:
     Doc *m_doc = nullptr;
@@ -49036,6 +49077,1581 @@ void Backend_Test::remoteCrossfadeState()
     // back to an intensity
     pb->setSlotOption(0, 0, "faderMode", "level");
     QVERIFY(stateOf(0).contains("crossfade") == false);
+}
+
+/*********************************************************************
+ * Patch import: the fixture table (CSV) a visualizer exports
+ *********************************************************************/
+
+namespace
+{
+
+/** The columns of the fixture table a visualizer exports, in its order */
+const QStringList kTableHeader = {
+    "Fixture", "Optics", "Wattage", "Unit", "Circuit", "Channel", "Groups", "DMX Universe", "DMX Channel",
+    "DMX Mode", "DMX Channels", "DMX Universe #2", "DMX Channel #2", "DMX Mode #2", "DMX Channels #2",
+    "P3 Fixture Number", "Layer", "Focus", "Filters", "Gobos", "Accessories", "Purpose", "Note", "Weight",
+    "Location", "Position X", "Position Y", "Position Z", "Rotation X", "Rotation Y", "Rotation Z", "Focus Pan",
+    "Focus Tilt", "Invert Pan", "Pan Range", "Pan Start Limit", "Pan End Limit", "Invert Tilt", "Tilt Range",
+    "Tilt Start Limit", "Tilt End Limit", "Zoom", "Framing Shutters", "Identifier", "External Identifier"
+};
+
+/** A table with a line for each of $rows (column: value, the others empty)
+ *  and $separator: a value with it, a quote or a line break in quotes, as
+ *  the visualizer writes it */
+QByteArray fixtureTable(const QList<QVariantMap> &rows, QChar separator = QLatin1Char(','))
+{
+    auto quote = [separator](QString value) {
+        if (value.contains(separator) || value.contains(QLatin1Char('"')) || value.contains(QLatin1Char('\n')))
+            value = QLatin1Char('"') + value.replace(QLatin1String("\""), QLatin1String("\"\"")) + QLatin1Char('"');
+        return value;
+    };
+    QStringList lines = { kTableHeader.join(separator) };
+    for (const QVariantMap &row : rows)
+    {
+        QStringList cells;
+        for (const QString &column : kTableHeader)
+            cells.append(quote(row.value(column).toString()));
+        lines.append(cells.join(separator));
+    }
+    return (lines.join(QLatin1String("\r\n")) + QLatin1String("\r\n")).toUtf8();
+}
+
+/** A row of a table: a fixture type, its unit, universe, address, mode and
+ *  channels, a place (m, decimal commas), and its identifier */
+QVariantMap tableRow(const QString &fixture, const QString &unit, const QString &universe, const QString &address,
+                     const QString &mode, int channels, const QString &x, const QString &y, const QString &z,
+                     const QString &identifier)
+{
+    return QVariantMap({ { "Fixture", fixture }, { "Unit", unit }, { "DMX Universe", universe },
+                         { "DMX Channel", address }, { "DMX Mode", mode }, { "DMX Channels", QString::number(channels) },
+                         { "Position X", x }, { "Position Y", y }, { "Position Z", z }, { "Identifier", identifier },
+                         { "Weight", "7,8kg" }, { "Rotation X", "-90°" }, { "Zoom", "108,5°" } });
+}
+
+/** A fixture of the library written into the user folder: $modes (name,
+ *  channels) of dimmer channels, or pan and tilt first (a moving head) */
+bool writeTableFixture(const QString &manufacturer, const QString &model, const QList<QPair<QString, int>> &modes,
+                       bool movingHead = false)
+{
+    QLCFixtureDef def;
+    def.setManufacturer(manufacturer);
+    def.setModel(model);
+    def.setType(movingHead ? QLCFixtureDef::MovingHead : QLCFixtureDef::Dimmer);
+    int most = 0;
+    for (const auto &mode : modes)
+        most = qMax(most, mode.second);
+    QList<QLCChannel *> channels;
+    for (int i = 0; i < most; i++)
+    {
+        QLCChannel *ch = new QLCChannel();
+        const bool pan = movingHead && i == 0;
+        const bool tilt = movingHead && i == 1;
+        ch->setName(pan ? QString("Pan") : tilt ? QString("Tilt") : QString("Dimmer %1").arg(i + 1));
+        ch->setGroup(pan ? QLCChannel::Pan : tilt ? QLCChannel::Tilt : QLCChannel::Intensity);
+        ch->addCapability(new QLCCapability(0, 255, "Level"));
+        def.addChannel(ch);
+        channels.append(ch);
+    }
+    for (const auto &m : modes)
+    {
+        QLCFixtureMode *mode = new QLCFixtureMode(&def);
+        mode->setName(m.first);
+        for (int i = 0; i < m.second; i++)
+            mode->insertChannel(channels.at(i), quint32(i));
+        def.addMode(mode);
+    }
+    QDir dir = QLCFixtureDefCache::userDefinitionDirectory();
+    dir.mkpath(".");
+    const QString file = QString(manufacturer + "-" + model).replace(' ', '-') + ".qxf";
+    return def.saveXML(dir.filePath(file)) == QFile::NoError;
+}
+
+Fixture *fixtureNamed(Doc *doc, const QString &name)
+{
+    for (Fixture *fxi : doc->fixtures())
+    {
+        if (fxi->name() == name)
+            return fxi;
+    }
+    return nullptr;
+}
+
+/** The fixtures of the group $name of $patch, in their order; -1 in it: no such group */
+QList<int> groupNamed(PatchManager *patch, const QString &name)
+{
+    for (const QVariant &v : patch->groups())
+    {
+        const QVariantMap group = v.toMap();
+        if (group.value("name").toString() != name)
+            continue;
+        QList<int> ids;
+        for (const QVariant &id : group.value("fixtures").toList())
+            ids.append(id.toInt());
+        return ids;
+    }
+    return { -1 };
+}
+
+/** The type $fixture of a preview of tablePreview() */
+QVariantMap previewType(const QVariantMap &preview, const QString &fixture)
+{
+    for (const QVariant &v : preview.value("types").toList())
+    {
+        if (v.toMap().value("fixture").toString() == fixture)
+            return v.toMap();
+    }
+    return QVariantMap();
+}
+
+/** Whether a problem of $preview has every one of $words */
+bool hasProblem(const QVariantMap &preview, const QStringList &words)
+{
+    for (const QString &problem : preview.value("problems").toStringList())
+    {
+        if (std::all_of(words.cbegin(), words.cend(), [&](const QString &w) { return problem.contains(w); }))
+            return true;
+    }
+    return false;
+}
+
+QPointF planOf(Doc *doc, const Fixture *fxi)
+{
+    const QVector3D p = doc->monitorProperties()->fixturePosition(fxi->id(), 0, 0);
+    return QPointF(p.x(), p.y());
+}
+
+} // namespace
+
+void Backend_Test::patchTableCsv()
+{
+    // RFC 4180: quotes, doubled quotes, separators and line breaks inside
+    // quotes; the line each record starts on
+    QList<int> lines;
+    const QList<QStringList> records = PatchTable::parseCsv(
+        "a,\"b,c\",\"say \"\"hi\"\"\"\r\n\"two\r\nlines\",,x\n\nlast", ',', &lines);
+    QCOMPARE(records.count(), 4);
+    QCOMPARE(records.at(0), QStringList({ "a", "b,c", "say \"hi\"" }));
+    QCOMPARE(records.at(1), QStringList({ "two\nlines", "", "x" }));
+    QCOMPARE(records.at(2), QStringList({ "" }));
+    QCOMPARE(records.at(3), QStringList({ "last" }));
+    QCOMPARE(lines, QList<int>({ 1, 2, 4, 5 }));
+
+    // the separator the header line has most of, outside its quotes
+    QCOMPARE(PatchTable::separator("Fixture;DMX Universe;\"a,b,c\";DMX Channel"), QChar(';'));
+    QCOMPARE(PatchTable::separator("Fixture,DMX Universe,\"a;b;c\""), QChar(','));
+    QCOMPARE(PatchTable::separator("Fixture\tDMX Universe\tDMX Channel"), QChar('\t'));
+
+    // lengths and numbers in any locale, with their units
+    auto length = [](const QString &text) {
+        double mm = -1;
+        return PatchTable::parseLength(text, &mm) ? mm : qQNaN();
+    };
+    QCOMPARE(length("-24,38m"), -24380.0);
+    QCOMPARE(length("14.127 m"), 14127.0);
+    QCOMPARE(length("2"), 2000.0);
+    QCOMPARE(length("250mm"), 250.0);
+    QCOMPARE(length("12,5 cm"), 125.0);
+    QCOMPARE(length("10ft"), 3048.0);
+    QCOMPARE(length("10'"), 3048.0);
+    QCOMPARE(length("6in"), 152.4);
+    QCOMPARE(length("6\""), 152.4);
+    QCOMPARE(length("3' 4\""), 1016.0);
+    QCOMPARE(length("-3'4\""), -1016.0);
+    QCOMPARE(length("1.234,5mm"), 1234.5);
+    QVERIFY(qIsNaN(length("")));
+    QVERIFY(qIsNaN(length("left")));
+    QVERIFY(qIsNaN(length("12 km")));
+    double value = 0;
+    QVERIFY(PatchTable::parseNumber("-90°", &value));
+    QCOMPARE(value, -90.0);
+    QVERIFY(PatchTable::parseNumber("108,5°", &value));
+    QCOMPARE(value, 108.5);
+    QVERIFY(PatchTable::parseNumber("7,8kg", &value));
+    QCOMPARE(value, 7.8);
+    QVERIFY(PatchTable::parseNumber("kg", &value) == false);
+    QCOMPARE(PatchTable::parseYesNo("Yes"), 1);
+    QCOMPARE(PatchTable::parseYesNo(" No "), 0);
+    QCOMPARE(PatchTable::parseYesNo("Sí"), 1);
+    QCOMPARE(PatchTable::parseYesNo("nein"), 0);
+    QCOMPARE(PatchTable::parseYesNo(""), -1);
+    QCOMPARE(PatchTable::parseYesNo("maybe"), -1);
+    // (the languages of the visualizer: Italian, Dutch, Polish)
+    QCOMPARE(PatchTable::parseYesNo("Sì"), 1);
+    QCOMPARE(PatchTable::parseYesNo("Nee"), 0);
+    QCOMPARE(PatchTable::parseYesNo("Tak"), 1);
+    QCOMPARE(PatchTable::parseYesNo("Nie"), 0);
+    // turned upside down: a moving head standing on its base
+    QVERIFY(PatchTable::upsideDown(QVector3D(0, 0, 0)) == false);
+    QVERIFY(PatchTable::upsideDown(QVector3D(0, 15, 0)) == false);
+    QVERIFY(PatchTable::upsideDown(QVector3D(-90, 0, 15)) == false);
+    QVERIFY(PatchTable::upsideDown(QVector3D(0, 0, 180)));
+    QVERIFY(PatchTable::upsideDown(QVector3D(0, 0, -180)));
+    QVERIFY(PatchTable::upsideDown(QVector3D(180, 30, 0)));
+    QVERIFY(PatchTable::upsideDown(QVector3D(180, 0, 180)) == false);
+    QVERIFY(PatchTable::upsideDown(QVector3D(0, 0, 135)));
+    // only the first records, when asked (the header before the rest)
+    QCOMPARE(PatchTable::parseCsv("a,b\r\nc,d\r\ne", ',', nullptr, 1), QList<QStringList>({ { "a", "b" } }));
+    QCOMPARE(PatchTable::parseCsv("a,\"b\r\nc\"\r\nd", ',', nullptr, 1), QList<QStringList>({ { "a", "b\nc" } }));
+    QCOMPARE(PatchTable::parseCsv("a,b", ',', nullptr, 1), QList<QStringList>({ { "a", "b" } }));
+
+    // the table as the visualizer writes it: UTF-8 with a BOM, commas,
+    // values with decimal commas in quotes
+    QVariantMap beam = tableRow("Acme Beam 5R", "1 FILA BEAM1", "3", "85", "16-Bit", 24,
+                                "-24,413m", "13,924m", "-16,99m", "495dbc2a-0000-4000-8000-000000000001");
+    beam.insert("Invert Pan", "Yes");
+    beam.insert("Invert Tilt", "No");
+    beam.insert("Channel", "101");
+    beam.insert("Layer", "TRUSS");
+    beam.insert("Groups", "Beams, Back");
+    beam.insert("Note", "hung \"upside down\", on the truss\nsecond line");
+    beam.insert("Rotation X", "0°");
+    beam.insert("Rotation Z", "-180°");
+    QVariantMap blinder = tableRow("Acme Blinder 1 WW", "BLINDER1", "1", "31", "1 Channel", 1,
+                                   "-20,525m", "15,123m", "-19,431m", "a1d852c0-0000-4000-8000-000000000002");
+    blinder.insert("P3 Fixture Number", "7");
+    blinder.insert("Layer", "FLOOR");
+    blinder.insert("DMX Universe #2", "2");
+    blinder.insert("DMX Channel #2", "1");
+    QVariantMap empty;
+    QVariantMap bad = tableRow("Acme Strobe", "STROBE", "", "x", "", 0, "", "1m", "", "");
+    // (neither yes nor no: kept to be said, not taken as a no)
+    bad.insert("Invert Pan", "Peut-être");
+    bad.insert("Rotation X", "");
+    QByteArray csv = "\xEF\xBB\xBF" + fixtureTable({ beam, blinder, empty, bad });
+    PatchTable::Table table = PatchTable::read(csv, "fixtures.csv");
+    QCOMPARE(table.error, PatchTable::NoError);
+    QCOMPARE(table.rows.count(), 3);
+    const PatchTable::Row &b = table.rows.at(0);
+    QCOMPARE(b.line, 2);
+    QCOMPARE(b.fixture, QString("Acme Beam 5R"));
+    QCOMPARE(b.unit, QString("1 FILA BEAM1"));
+    QCOMPARE(b.universe, 3);
+    QCOMPARE(b.address, 85);
+    QCOMPARE(b.mode, QString("16-Bit"));
+    QCOMPARE(b.channels, 24);
+    QCOMPARE(b.number, 101);
+    QCOMPARE(b.layer, QString("TRUSS"));
+    QCOMPARE(b.groups, QStringList({ "Beams", "Back" }));
+    QVERIFY(b.hasPosition);
+    QCOMPARE(b.position, QVector3D(-24413, 13924, -16990));
+    QVERIFY(b.hasRotation);
+    QCOMPARE(b.rotation, QVector3D(0, 0, -180));
+    QVERIFY(b.invertPanGiven && b.invertPan);
+    QVERIFY(b.invertTiltGiven && b.invertTilt == false);
+    QVERIFY(b.invertPanText.isEmpty() && b.invertTiltText.isEmpty());
+    QCOMPARE(b.identifier, QString("495dbc2a-0000-4000-8000-000000000001"));
+    QVERIFY(b.secondBreak == false);
+    // (the note has a line break in its quotes: the next row is two lines on)
+    const PatchTable::Row &l = table.rows.at(1);
+    QCOMPARE(l.line, 4);
+    QCOMPARE(l.number, 7);
+    QVERIFY(l.secondBreak);
+    QCOMPARE(l.secondUniverse, 2);
+    QCOMPARE(l.secondAddress, 1);
+    QVERIFY(l.invertPanGiven == false);
+    // a row with no universe and an address that isn't one: 0, as they are written
+    const PatchTable::Row &s = table.rows.at(2);
+    QCOMPARE(s.universe, 0);
+    QCOMPARE(s.address, 0);
+    QCOMPARE(s.addressText, QString("x"));
+    QCOMPARE(s.channels, 0);
+    QVERIFY(s.hasPosition == false);
+    QVERIFY(s.hasRotation == false);
+    QVERIFY(s.invertPanGiven == false);
+    QCOMPARE(s.invertPanText, QString("Peut-être"));
+    QVERIFY(s.invertTiltText.isEmpty());
+    QCOMPARE(table.layers, QStringList({ "TRUSS", "FLOOR" }));
+    QVERIFY(table.hasGroups);
+
+    // with semicolons and no BOM (a locale with decimal commas), the header
+    // names in another case, CRLF and LF lines
+    QByteArray semi = fixtureTable({ beam, blinder }, ';');
+    semi.replace("DMX Universe;", "dmx universe;");
+    semi.replace("\r\n", "\n");
+    table = PatchTable::read(semi);
+    QCOMPARE(table.error, PatchTable::NoError);
+    QCOMPARE(table.rows.count(), 2);
+    QCOMPARE(table.rows.at(0).universe, 3);
+    QCOMPARE(table.rows.at(0).position, QVector3D(-24413, 13924, -16990));
+    QCOMPARE(table.rows.at(0).groups, QStringList({ "Beams", "Back" }));
+    QCOMPARE(table.rows.at(1).address, 31);
+    // not UTF-8: Latin-1
+    table = PatchTable::read("Fixture,DMX Universe,DMX Channel,Unit\r\nAcme Par,1,1,Caf\xe9\r\n");
+    QCOMPARE(table.rows.count(), 1);
+    QCOMPARE(table.rows.at(0).unit, QString("Café"));
+
+    // the required columns missing; nothing in the file
+    table = PatchTable::read("Fixture,Universe,Address\r\nAcme Par,1,1\r\n");
+    QCOMPARE(table.error, PatchTable::MissingColumns);
+    QCOMPARE(table.missingColumns, QStringList({ "DMX Universe", "DMX Channel" }));
+    QCOMPARE(PatchTable::read("").error, PatchTable::Empty);
+    QCOMPARE(PatchTable::read("\xEF\xBB\xBF \r\n").error, PatchTable::Empty);
+    // not text (an archive with the names of the columns inside): none of them
+    const QByteArray zip = QByteArray("PK\x03\x04\x14") + QByteArray(3, '\0') +
+                           "Fixture,DMX Universe,DMX Channel\r\nAcme,1,1\r\n";
+    table = PatchTable::read(zip);
+    QCOMPARE(table.error, PatchTable::MissingColumns);
+    QCOMPARE(table.missingColumns, QStringList({ "Fixture", "DMX Universe", "DMX Channel" }));
+    // (UTF-16 has zero bytes of its own)
+    const QString utf16 = "Fixture,DMX Universe,DMX Channel\r\nAcme Par,2,7\r\n";
+    QByteArray utf16Data("\xFF\xFE");
+    utf16Data.append(reinterpret_cast<const char *>(utf16.utf16()), utf16.size() * 2);
+    table = PatchTable::read(utf16Data);
+    QCOMPARE(table.error, PatchTable::NoError);
+    QCOMPARE(table.rows.count(), 1);
+    QCOMPARE(table.rows.at(0).address, 7);
+    // (and what the patch says of them)
+    QCOMPARE(m_patch->tablePreviewData("").value("ok").toBool(), false);
+    const QString error = m_patch->tablePreviewData("Fixture,Universe\r\n").value("error").toString();
+    QVERIFY2(error.contains("DMX Universe") && error.contains("DMX Channel"), qPrintable(error));
+    QVERIFY(m_patch->importTableData("Fixture,Universe\r\n").isEmpty());
+    QCOMPARE(m_patch->lastError(), error);
+    QCOMPARE(m_doc->fixtures().count(), 0);
+}
+
+void Backend_Test::patchTableMatch()
+{
+    // the words of the names, and how alike they are
+    QCOMPARE(PatchTable::tokens("MH1 Profile, 16bit Channels"), QStringList({ "mh", "1", "profile", "16", "bit", "ch" }));
+    QCOMPARE(PatchTable::normalised("MAC-2000 Profile II"), QString("mac2000profileii"));
+    QCOMPARE(PatchTable::similarity("Spot 300", "spot-300"), 1.0);
+    QCOMPARE(PatchTable::similarity("Mode B", "B"), 2.0 / 3.0);
+    QCOMPARE(PatchTable::similarity("Rush Blinder 1 WW", "Rush MH1 Profile"), 0.5);
+    QCOMPARE(PatchTable::typeKey("Acme MAC", "16-Bit", 24), QString("acmemac|16bit|24"));
+
+    // the mode: its name, its channel count (one, or the most alike of
+    // several), its name with another count, the most alike, none
+    const QList<PatchTable::ModeInfo> modes = { { "24 Channel - 16 Bit", 24 }, { "20 Channel - 8 Bit", 20 },
+                                                { "Mode A", 12 }, { "Mode B", 12 }, { "Extended", 14 } };
+    PatchTable::How how = PatchTable::NotFound;
+    QCOMPARE(PatchTable::matchMode(modes, "extended", 14, &how), 4);
+    QCOMPARE(how, PatchTable::Exact);
+    QCOMPARE(PatchTable::matchMode(modes, "16-Bit", 24, &how), 0);
+    QCOMPARE(how, PatchTable::ByChannels);
+    QCOMPARE(PatchTable::matchMode(modes, "B", 12, &how), 3);
+    QCOMPARE(how, PatchTable::ByChannels);
+    QCOMPARE(PatchTable::matchMode(modes, "Extended", 16, &how), 4);
+    QCOMPARE(how, PatchTable::Exact);
+    QCOMPARE(PatchTable::matchMode(modes, "8 Bit", 0, &how), 1);
+    QCOMPARE(how, PatchTable::Similar);
+    QCOMPARE(PatchTable::matchMode(modes, "Pixel", 36, &how), -1);
+    QCOMPARE(how, PatchTable::NotFound);
+    // (alike words with another channel count: it would take the addresses
+    // of the next fixture; the count not said, it is taken)
+    QCOMPARE(PatchTable::matchMode({ { "4ch", 4 } }, "1 Channel", 1, &how), -1);
+    QCOMPARE(PatchTable::matchMode({ { "4ch", 4 } }, "1 Channel", 0, &how), 0);
+    QCOMPARE(how, PatchTable::Similar);
+    QCOMPARE(PatchTable::matchMode({ { "Only", 7 } }, "", 0, &how), 0);
+    QCOMPARE(PatchTable::matchMode({}, "Only", 7, &how), -1);
+
+    // a small library: the generic fixtures, and fixtures in the user folder
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Table", "Spot 300", { { "16-bit", 20 }, { "Basic", 12 } }, true));
+    QVERIFY(writeTableFixture("DTC Table Pro", "Spot 300", { { "Standard", 14 } }, true));
+    QVERIFY(writeTableFixture("DTC Table", "Wash 7", { { "8 Channel", 8 } }));
+    QVERIFY(writeTableFixture("DTC Table", "Wash 7 (GDTF)", { { "8 Channel", 8 }, { "Extended", 16 } }));
+    QVERIFY(writeTableFixture("DTC Table", "Bar 12", { { "Mode A", 12 }, { "Mode B", 12 }, { "Pixel Mode", 36 } }));
+    QVERIFY(writeTableFixture("DTC Table", "Blinder 1", { { "4ch", 4 } }));
+    QVERIFY(writeTableFixture("DTC Table Professional", "Blinder 1 WW", { { "1 Chan", 1 }, { "4 Chan", 4 } }));
+    QVERIFY(m_doc->fixtureDefCache()->load(QLCFixtureDefCache::userDefinitionDirectory()));
+    const PatchTable::Library library = PatchTable::library(m_doc->fixtureDefCache());
+    PatchTable::Match m;
+
+    auto check = [&](const QString &fixture, const QString &mode, int channels, PatchTable::How how,
+                     const QString &manufacturer, const QString &model, const QString &modeName) {
+        const PatchTable::Match m = PatchTable::match(library, fixture, mode, channels);
+        const QString got = QString("%1 | %2 | %3 | %4").arg(int(m.how)).arg(m.manufacturer, m.model, m.mode);
+        const QString wanted = QString("%1 | %2 | %3 | %4").arg(int(how)).arg(manufacturer, model, modeName);
+        if (got != wanted)
+            qWarning() << fixture << mode << channels << "got" << got << "wanted" << wanted;
+        return got == wanted;
+    };
+    // its name and its mode's; the longest manufacturer the string starts with
+    QVERIFY(check("DTC Table Spot 300", "Basic", 12, PatchTable::Exact, "DTC Table", "Spot 300", "Basic"));
+    QVERIFY(check("DTC Table Pro Spot 300", "Standard", 14, PatchTable::Exact, "DTC Table Pro", "Spot 300", "Standard"));
+    // case and punctuation
+    QVERIFY(check("dtc-table SPOT-300", "16 Bit", 20, PatchTable::Exact, "DTC Table", "Spot 300", "16-bit"));
+    // the mode by its channel count
+    QVERIFY(check("DTC Table Spot 300", "Extended 16-Bit", 20, PatchTable::ByChannels, "DTC Table", "Spot 300", "16-bit"));
+    QVERIFY(check("DTC Table Bar 12", "B", 12, PatchTable::ByChannels, "DTC Table", "Bar 12", "Mode B"));
+    // its name with another count (the patch says so)
+    QVERIFY(check("DTC Table Bar 12", "Pixel Mode", 40, PatchTable::Exact, "DTC Table", "Bar 12", "Pixel Mode"));
+    // the model by its words
+    QVERIFY(check("DTC Table Spot 300 Mk2", "Basic", 12, PatchTable::Similar, "DTC Table", "Spot 300", "Basic"));
+    // the QLC+ fixture before its GDTF twin, unless only the twin has the mode
+    QVERIFY(check("DTC Table Wash 7", "8 Channel", 8, PatchTable::Exact, "DTC Table", "Wash 7", "8 Channel"));
+    QVERIFY(check("DTC Table Wash 7", "Extended", 16, PatchTable::Exact, "DTC Table", "Wash 7 (GDTF)", "Extended"));
+    // no manufacturer: the model alone, by its name
+    QVERIFY(check("Spot 300", "Standard", 14, PatchTable::Exact, "DTC Table Pro", "Spot 300", "Standard"));
+    // a manufacturer whose name goes on (as GDTF-Share names them)
+    QVERIFY(check("DTC Table Blinder 1 WW", "1 Channel", 1, PatchTable::ByChannels, "DTC Table Professional",
+                  "Blinder 1 WW", "1 Chan"));
+    // a model with its name but no mode of that channel count
+    m = PatchTable::match(library, "DTC Table Blinder 1", "1 Channel", 1);
+    QCOMPARE(m.how, PatchTable::NotFound);
+    QCOMPARE(m.foundModel, QString("Blinder 1"));
+    // the generic fixtures of the library
+    QVERIFY(check("Generic Moving Head Spot", "Standard", 11, PatchTable::ByChannels, "Generic", "Moving Head Spot",
+                  "11ch Standard"));
+    QVERIFY(check("Generic moving-head spot", "14CH EXTENDED", 14, PatchTable::Exact, "Generic", "Moving Head Spot",
+                  "14ch Extended"));
+    // not found: no model like it, or a model with no mode like it
+    QVERIFY(check("DTC Table Blinder 2", "1 Channel", 1, PatchTable::NotFound, "", "", ""));
+    // (where to look for it by hand: the manufacturer the table names)
+    QCOMPARE(PatchTable::match(library, "DTC Table Blinder 2", "1 Channel", 1).foundManufacturer, QString("DTC Table"));
+    QVERIFY(PatchTable::match(library, "DTC Table Blinder 2", "1 Channel", 1).foundModel.isEmpty());
+    QVERIFY(check("Martini DTC Table Spot 300", "Basic", 12, PatchTable::NotFound, "", "", ""));
+    m = PatchTable::match(library, "DTC Table Wash 7", "Pixel", 3);
+    QCOMPARE(m.how, PatchTable::NotFound);
+    QCOMPARE(m.foundManufacturer, QString("DTC Table"));
+    QCOMPARE(m.foundModel, QString("Wash 7"));
+    QCOMPARE(PatchTable::match(PatchTable::Library(), "DTC Table Wash 7", "8 Channel", 8).how, PatchTable::NotFound);
+
+    // similar words, but another fixture of the family: another number, or
+    // another kind (a wash isn't a profile); the same ones with more words are
+    QVERIFY(PatchTable::similarity("Rush MH 5 Profile", "Rush MH1 Profile") >= 0.6);
+    QVERIFY(PatchTable::similarModelAllowed("Spot 300", "Spot 300 Mk2"));
+    QVERIFY(PatchTable::similarModelAllowed("Rush MH1 Profile", "Rush MH 5 Profile") == false);
+    QVERIFY(PatchTable::similarModelAllowed("Robin 300E Spot", "Robin 600E Spot") == false);
+    QVERIFY(PatchTable::similarModelAllowed("MAC Quantum Profile", "MAC Quantum Wash") == false);
+    QVERIFY(PatchTable::similarModelAllowed("MAC Viper Wash", "MAC Viper Profile") == false);
+    QVERIFY(PatchTable::similarModelAllowed("MAC Viper", "MAC Viper Profile") == false);
+    QVERIFY(writeTableFixture("DTC Near", "Rush MH1 Profile", { { "Basic", 16 } }, true));
+    QVERIFY(writeTableFixture("DTC Near", "Robin 300E Spot", { { "Mode 1", 20 } }, true));
+    QVERIFY(writeTableFixture("DTC Near", "MAC Quantum Profile", { { "Standard", 14 } }, true));
+    QVERIFY(m_doc->fixtureDefCache()->load(QLCFixtureDefCache::userDefinitionDirectory()));
+    const PatchTable::Library family = PatchTable::library(m_doc->fixtureDefCache());
+    const QStringList others = { "DTC Near Rush MH 5 Profile", "DTC Near Robin 600E Spot", "DTC Near MAC Quantum Wash" };
+    for (const QString &fixture : others)
+    {
+        m = PatchTable::match(family, fixture, "Basic", 16);
+        QVERIFY2(m.how == PatchTable::NotFound && m.foundModel.isEmpty(), qPrintable(fixture + " → " + m.model));
+        QCOMPARE(m.foundManufacturer, QString("DTC Near"));
+    }
+    m = PatchTable::match(family, "DTC Near MAC Quantum Profile XB", "Std", 14);
+    QCOMPARE(m.how, PatchTable::Similar);
+    QCOMPARE(m.model, QString("MAC Quantum Profile"));
+    QCOMPARE(m.mode, QString("Standard"));
+}
+
+void Backend_Test::patchImportRig()
+{
+    // a rig of a visualizer into a show: two strobes, three moving heads, a
+    // blinder the library doesn't have; and rows it can't patch
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Rig", "Strobe 3000", { { "3-Channel", 3 }, { "Extended", 14 } }));
+    QVERIFY(writeTableFixture("DTC Rig", "Beam 5R", { { "16 Bit", 24 }, { "8 Bit", 20 } }, true));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+    QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "House", 0, 100, 1, 0, 4), 1);
+    patch->setStageSize(4000, 3000);
+    const quint32 universes = doc->inputOutputMap()->universesCount();
+    QVERIFY(universes < 6);
+
+    QVariantMap strobe1 = tableRow("DTC Rig Strobe 3000", "STROBE 1", "1", "1", "Extended", 14, "-2,5m", "6m", "-10m", "id-s1");
+    strobe1.insert("Layer", "TRUSS");
+    QVariantMap strobe2 = tableRow("DTC Rig Strobe 3000", "STROBE 2", "1", "15", "Extended", 14, "2,5m", "6m", "-10m", "id-s2");
+    strobe2.insert("Layer", "TRUSS");
+    strobe2.insert("Channel", "1");
+    strobe2.insert("Groups", "Front, Wash");
+    QVariantMap beam1 = tableRow("DTC Rig Beam 5R", "BEAM 1", "3", "1", "Extended 16-Bit", 24, "-4m", "10m", "-12m", "id-b1");
+    beam1.insert("Layer", "TRUSS");
+    beam1.insert("Invert Pan", "Yes");
+    beam1.insert("Invert Tilt", "No");
+    beam1.insert("Channel", "21");
+    QVariantMap beam2 = tableRow("DTC Rig Beam 5R", "BEAM 2", "3", "25", "Extended 16-Bit", 24, "4m", "10m", "-12m", "id-b2");
+    beam2.insert("Layer", "TRUSS");
+    beam2.insert("Invert Pan", "No");
+    beam2.insert("Invert Tilt", "Yes");
+    beam2.insert("P3 Fixture Number", "22");
+    beam2.insert("Rotation X", "0°");
+    beam2.insert("Rotation Y", "15°");
+    QVariantMap blinder1 = tableRow("Nobody Blinder 1 WW", "BLINDER 1", "1", "31", "1 Channel", 1, "0m", "4m", "-11m", "id-l1");
+    blinder1.insert("Layer", "FLOOR");
+    // on the house lights, which stay; on STROBE 1; a second DMX break; no
+    // address; past the end of the universe
+    QVariantMap blinder2 = tableRow("Nobody Blinder 1 WW", "BLINDER 2", "1", "100", "1 Channel", 1, "1m", "4m", "-11m", "id-l2");
+    QVariantMap strobe3 = tableRow("DTC Rig Strobe 3000", "STROBE 3", "1", "10", "Extended", 14, "0m", "6m", "-10m", "id-s3");
+    QVariantMap beam3 = tableRow("DTC Rig Beam 5R", "BEAM 3", "6", "1", "Extended 16-Bit", 24, "0m", "8m", "-12m", "id-b3");
+    beam3.insert("Layer", "FLOOR");
+    beam3.insert("DMX Universe #2", "7");
+    beam3.insert("DMX Channel #2", "1");
+    beam3.insert("Rotation X", "0°");
+    beam3.insert("Rotation Z", "180°");
+    QVariantMap beam4 = tableRow("DTC Rig Beam 5R", "BEAM 4", "", "", "Extended 16-Bit", 24, "0m", "8m", "-12m", "id-b4");
+    QVariantMap strobe4 = tableRow("DTC Rig Strobe 3000", "STROBE 4", "2", "505", "Extended", 14, "0m", "6m", "-10m", "id-s4");
+    const QByteArray csv = fixtureTable({ strobe1, beam1, blinder1, strobe2, blinder2, beam2, strobe3, beam3, beam4, strobe4 });
+
+    // what it would do: nothing changes yet
+    QVariantMap preview = patch->tablePreviewData(csv);
+    QVERIFY2(preview.value("ok").toBool(), qPrintable(preview.value("error").toString()));
+    QCOMPARE(doc->fixtures().count(), 1);
+    QCOMPARE(preview.value("rows").toInt(), 10);
+    QCOMPARE(preview.value("universeFrom").toInt(), 1);
+    QCOMPARE(preview.value("universeTo").toInt(), 6);
+    QCOMPARE(preview.value("types").toList().count(), 3);
+    QVariantMap type = previewType(preview, "DTC Rig Strobe 3000");
+    QCOMPARE(type.value("status").toString(), QString("exact"));
+    QCOMPARE(type.value("count").toInt(), 4);
+    QCOMPARE(type.value("modeName").toString(), QString("Extended"));
+    type = previewType(preview, "DTC Rig Beam 5R");
+    QCOMPARE(type.value("status").toString(), QString("channels"));
+    QCOMPARE(type.value("modeName").toString(), QString("16 Bit"));
+    type = previewType(preview, "Nobody Blinder 1 WW");
+    QCOMPARE(type.value("status").toString(), QString("generic"));
+    QVERIFY(type.value("generic").toBool());
+    QCOMPARE(type.value("modeChannels").toInt(), 1);
+    QCOMPARE(preview.value("newCount").toInt(), 6);
+    QCOMPARE(preview.value("updateCount").toInt(), 0);
+    QCOMPARE(preview.value("skippedRows").toInt(), 4);
+    QCOMPARE(preview.value("newUniverses").toInt(), int(6 - universes));
+    const QString problems = preview.value("problems").toStringList().join("\n");
+    QVERIFY2(hasProblem(preview, { "BLINDER 2", "House" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "STROBE 3", "STROBE 1" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "BEAM 3", "second DMX break", "7.1" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "BEAM 4", "no universe" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "STROBE 4", "505-518" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "STROBE 2", "number 1", "House" }), qPrintable(problems));
+    // (first: the universes added; the test runs without a translation)
+    QCOMPARE(preview.value("problems").toStringList().first(),
+             QString("%1 universe(s) will be added to the show").arg(6 - universes));
+    // hung at different heights: seen from the front; the plan grows
+    QCOMPARE(preview.value("suggestedView").toString(), QString("front"));
+    QCOMPARE(preview.value("view").toString(), QString("front"));
+    QCOMPARE(preview.value("stage").toMap().value("width").toDouble(), 10000.0);
+    QCOMPARE(preview.value("stage").toMap().value("height").toDouble(), 8000.0);
+    const QVariantMap options = preview.value("options").toMap();
+    QVERIFY(options.value("place").toBool());
+    QVERIFY(options.value("groupsByType").toBool());
+    QVERIFY(options.value("groupsByLayer").toBool());
+    QVERIFY(options.value("groupsFromTable").toBool());
+    QVERIFY(options.value("removeMissing").toBool() == false);
+
+    // (the message says the problems of the rows imported: the second DMX
+    // break, the number taken)
+    const QString done = patch->importTableData(csv);
+    QCOMPARE(done, QString("Imported 6 fixture(s): 6 new, 0 updated · 4 row(s) of the table not imported · 2 problem(s)"));
+    QCOMPARE(doc->fixtures().count(), 7);
+    QVERIFY(doc->inputOutputMap()->universesCount() >= 6);
+
+    // at their addresses, with their names, fixture and mode
+    struct Expected { const char *name; quint32 universe; quint32 address; const char *model; const char *mode; int number; };
+    const QList<Expected> expected = {
+        { "STROBE 1", 0, 0, "Strobe 3000", "Extended", 23 },
+        { "STROBE 2", 0, 14, "Strobe 3000", "Extended", 24 },
+        { "BLINDER 1", 0, 30, "Generic", "1 Channel", 25 },
+        { "BEAM 1", 2, 0, "Beam 5R", "16 Bit", 21 },
+        { "BEAM 2", 2, 24, "Beam 5R", "16 Bit", 22 },
+        { "BEAM 3", 5, 0, "Beam 5R", "16 Bit", 26 },
+    };
+    QHash<QString, Fixture *> byName;
+    for (const Expected &e : expected)
+    {
+        Fixture *fxi = fixtureNamed(doc, e.name);
+        QVERIFY2(fxi != nullptr, e.name);
+        byName.insert(e.name, fxi);
+        QCOMPARE(fxi->universe(), e.universe);
+        QCOMPARE(fxi->address(), e.address);
+        QCOMPARE(fxi->fixtureDef()->model(), QString(e.model));
+        QCOMPARE(fxi->fixtureMode()->name(), QString(e.mode));
+        QCOMPARE(patch->fixtureNumber(fxi->id()), e.number);
+    }
+    QCOMPARE(byName.value("BLINDER 1")->channels(), quint32(1));
+    QCOMPARE(patch->fixtureNumber(fixtureNamed(doc, "House")->id()), 1);
+    QCOMPARE(patch->importIdentifier(byName.value("BEAM 1")->id()), QString("id-b1"));
+    QVERIFY(patch->importIdentifier(fixtureNamed(doc, "House")->id()).isEmpty());
+
+    // the groups: by fixture type, by layer (two of them), the table's
+    auto ids = [&](const QStringList &names) {
+        QList<int> list;
+        for (const QString &name : names)
+            list.append(int(byName.value(name)->id()));
+        return list;
+    };
+    QCOMPARE(groupNamed(patch, "DTC Rig Strobe 3000"), ids({ "STROBE 1", "STROBE 2" }));
+    QCOMPARE(groupNamed(patch, "DTC Rig Beam 5R"), ids({ "BEAM 1", "BEAM 2", "BEAM 3" }));
+    QCOMPARE(groupNamed(patch, "Nobody Blinder 1 WW"), ids({ "BLINDER 1" }));
+    QCOMPARE(groupNamed(patch, "TRUSS"), ids({ "STROBE 1", "STROBE 2", "BEAM 1", "BEAM 2" }));
+    QCOMPARE(groupNamed(patch, "FLOOR"), ids({ "BLINDER 1", "BEAM 3" }));
+    QCOMPARE(groupNamed(patch, "Front"), ids({ "STROBE 2" }));
+    QCOMPARE(groupNamed(patch, "Wash"), ids({ "STROBE 2" }));
+
+    // the plan from the front: x across as the audience sees it, the
+    // highest at the top; it grew to hold the rig, with a metre around
+    QCOMPARE(patch->stageSize(), QSizeF(10000, 8000));
+    QCOMPARE(planOf(doc, byName.value("STROBE 1")), QPointF(2500, 5000));
+    QCOMPARE(planOf(doc, byName.value("STROBE 2")), QPointF(7500, 5000));
+    QCOMPARE(planOf(doc, byName.value("BEAM 1")), QPointF(1000, 1000));
+    QCOMPARE(planOf(doc, byName.value("BEAM 2")), QPointF(9000, 1000));
+    QCOMPARE(planOf(doc, byName.value("BEAM 3")), QPointF(5000, 3000));
+    QCOMPARE(planOf(doc, byName.value("BLINDER 1")), QPointF(5000, 7000));
+
+    // the moving heads: how high they hang, their pan or tilt the other way
+    QVariantMap aim = patch->aimSettings({ byName.value("BEAM 1")->id() });
+    QCOMPARE(aim.value("height").toInt(), 10000);
+    QCOMPARE(aim.value("panInverted").toBool(), true);
+    QCOMPARE(aim.value("tiltInverted").toBool(), false);
+    aim = patch->aimSettings({ byName.value("BEAM 2")->id() });
+    QCOMPARE(aim.value("panInverted").toBool(), false);
+    QCOMPARE(aim.value("tiltInverted").toBool(), true);
+    QCOMPARE(patch->aimSettings({ byName.value("BEAM 3")->id() }).value("height").toInt(), 8000);
+    // turned upside down in the table: it stands; the others hang
+    QCOMPARE(patch->aimSettings({ byName.value("BEAM 3")->id() }).value("standing").toBool(), true);
+    QCOMPARE(patch->aimSettings({ byName.value("BEAM 1")->id() }).value("standing").toBool(), false);
+    QCOMPARE(patch->aimSettings({ byName.value("BEAM 2")->id() }).value("standing").toBool(), false);
+    // (the channels are not inverted: what goes out is the same)
+    QVERIFY(patch->fixtureOptions(byName.value("BEAM 1")->id()).value("invertPan").toBool() == false);
+    QCOMPARE(patch->aimSettings({ byName.value("STROBE 1")->id() }).value("count").toInt(), 0);
+
+    // again, seen from above: the same fixtures, the audience (+z) at the
+    // bottom of the plan; the plan doesn't shrink
+    preview = patch->tablePreviewData(csv, { { "view", "top" } });
+    QCOMPARE(preview.value("updateCount").toInt(), 6);
+    QCOMPARE(preview.value("newCount").toInt(), 0);
+    QCOMPARE(patch->importTableData(csv, { { "view", "top" } }),
+             QString("Imported 6 fixture(s): 0 new, 6 updated · 4 row(s) of the table not imported · 2 problem(s)"));
+    QCOMPARE(doc->fixtures().count(), 7);
+    QCOMPARE(fixtureNamed(doc, "STROBE 1"), byName.value("STROBE 1"));
+    QCOMPARE(patch->stageSize(), QSizeF(10000, 8000));
+    QCOMPARE(planOf(doc, byName.value("STROBE 1")), QPointF(2500, 5000));
+    QCOMPARE(planOf(doc, byName.value("BEAM 1")), QPointF(1000, 3000));
+    QCOMPARE(planOf(doc, byName.value("BEAM 3")), QPointF(5000, 3000));
+    QCOMPARE(planOf(doc, byName.value("BLINDER 1")), QPointF(5000, 4000));
+    QCOMPARE(groupNamed(patch, "DTC Rig Beam 5R"), ids({ "BEAM 1", "BEAM 2", "BEAM 3" }));
+    QCOMPARE(patch->groups().count(), 7);
+
+    // not placed: the plan stays as it is; the height and the inversions
+    // are the table's all the same
+    patch->setFixturePosition(byName.value("BEAM 1")->id(), 500, 500);
+    patch->setAimSetting({ byName.value("BEAM 1")->id() }, "height", 3000);
+    patch->setAimSetting({ byName.value("BEAM 1")->id() }, "panInverted", false);
+    patch->setAimSetting({ byName.value("BEAM 3")->id() }, "standing", false);
+    patch->importTableData(csv, { { "place", false } });
+    QCOMPARE(planOf(doc, byName.value("BEAM 1")), QPointF(500, 500));
+    aim = patch->aimSettings({ byName.value("BEAM 1")->id() });
+    QCOMPARE(aim.value("height").toInt(), 10000);
+    QCOMPARE(aim.value("panInverted").toBool(), true);
+    QCOMPARE(patch->aimSettings({ byName.value("BEAM 3")->id() }).value("standing").toBool(), true);
+}
+
+void Backend_Test::patchImportUpdate()
+{
+    // a new export of the same rig: what was imported from it (by its
+    // identifier) and what has its name and fixture type is updated; what
+    // it no longer has can go
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Upd", "Par 7", { { "7 Channel", 7 }, { "3 Channel", 3 } }));
+    QVERIFY(writeTableFixture("DTC Upd", "Spot 9", { { "9ch", 9 } }, true));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+    // patched by hand: a spot, and a dimmer called like a par of the table
+    QCOMPARE(patch->addFixtures("DTC Upd", "Spot 9", "9ch", "SPOT 1", 0, 200, 1), 1);
+    QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "PAR 3", 0, 300, 1, 0, 3), 1);
+    Fixture *spot = fixtureNamed(doc, "SPOT 1");
+    Fixture *dimmer = fixtureNamed(doc, "PAR 3");
+
+    const QByteArray first = fixtureTable({
+        tableRow("DTC Upd Par 7", "PAR 1", "1", "1", "7 Channel", 7, "-1m", "5m", "-3m", "id-a"),
+        tableRow("DTC Upd Par 7", "PAR 2", "1", "8", "7 Channel", 7, "0m", "5m", "-3m", "id-b"),
+        tableRow("DTC Upd Par 7", "PAR 3", "1", "15", "7 Channel", 7, "1m", "5m", "-3m", "id-c"),
+    });
+    QVariantMap preview = patch->tablePreviewData(first);
+    // (the dimmer called PAR 3 is not a par: a new one)
+    QCOMPARE(preview.value("newCount").toInt(), 3);
+    QCOMPARE(preview.value("updateCount").toInt(), 0);
+    QVERIFY(patch->importTableData(first).isEmpty() == false);
+    QCOMPARE(doc->fixtures().count(), 5);
+    const quint32 a = fixtureNamed(doc, "PAR 1")->id();
+    const quint32 b = fixtureNamed(doc, "PAR 2")->id();
+    Fixture *c = nullptr;
+    for (Fixture *fxi : doc->fixtures())
+        if (fxi->name() == "PAR 3" && fxi != dimmer)
+            c = fxi;
+    QVERIFY(c != nullptr);
+    QCOMPARE(dimmer->address(), quint32(299));
+    QCOMPARE(patch->importIdentifier(dimmer->id()), QString());
+
+    // the next export: PAR 1 renamed, moved to another universe, another
+    // mode and a number; PAR 2 gone; the spot without an identifier; a new par
+    QVariantMap par1 = tableRow("DTC Upd Par 7", "PAR 1 FRONT", "2", "50", "3 Channel", 3, "-2m", "5m", "-3m", "id-a");
+    par1.insert("Channel", "7");
+    const QByteArray second = fixtureTable({
+        par1,
+        tableRow("DTC Upd Par 7", "PAR 3", "1", "15", "7 Channel", 7, "1m", "5m", "-3m", "id-c"),
+        tableRow("DTC Upd Spot 9", "SPOT 1", "1", "210", "9ch", 9, "0m", "7m", "-3m", ""),
+        tableRow("DTC Upd Par 7", "PAR 4", "1", "22", "7 Channel", 7, "2m", "5m", "-3m", "id-d"),
+    });
+    preview = patch->tablePreviewData(second);
+    QCOMPARE(preview.value("updateCount").toInt(), 3);
+    QCOMPARE(preview.value("newCount").toInt(), 1);
+    QCOMPARE(preview.value("removeCount").toInt(), 1);
+    QCOMPARE(patch->importTableData(second), QString("Imported 4 fixture(s): 1 new, 3 updated"));
+    QCOMPARE(doc->fixtures().count(), 6);
+    Fixture *par = doc->fixture(a);
+    QCOMPARE(par->name(), QString("PAR 1 FRONT"));
+    QCOMPARE(par->universe(), quint32(1));
+    QCOMPARE(par->address(), quint32(49));
+    QCOMPARE(par->fixtureMode()->name(), QString("3 Channel"));
+    QCOMPARE(patch->fixtureNumber(a), 7);
+    QCOMPARE(c->address(), quint32(14));
+    QCOMPARE(doc->fixture(spot->id()), spot);
+    QCOMPARE(spot->address(), quint32(209));
+    QVERIFY(doc->fixture(b) != nullptr);
+    QVERIFY(fixtureNamed(doc, "PAR 4") != nullptr);
+    QCOMPARE(dimmer->address(), quint32(299));
+    // (numbers: each one once)
+    QSet<int> numbers;
+    for (Fixture *fxi : doc->fixtures())
+        numbers.insert(patch->fixtureNumber(fxi->id()));
+    QCOMPARE(numbers.count(), doc->fixtures().count());
+    QVERIFY(numbers.contains(0) == false);
+
+    // the one the table no longer has, removed when asked
+    QCOMPARE(patch->importTableData(second, { { "removeMissing", true } }),
+             QString("Imported 4 fixture(s): 0 new, 4 updated, 1 removed"));
+    QVERIFY(doc->fixture(b) == nullptr);
+    QCOMPARE(doc->fixtures().count(), 5);
+    QCOMPARE(patch->tablePreviewData(second).value("removeCount").toInt(), 0);
+    // one group of pars, with the ones there are
+    QList<int> pars = groupNamed(patch, "DTC Upd Par 7");
+    std::sort(pars.begin(), pars.end());
+    QList<int> wanted = { int(a), int(c->id()), int(fixtureNamed(doc, "PAR 4")->id()) };
+    std::sort(wanted.begin(), wanted.end());
+    QCOMPARE(pars, wanted);
+    int parGroups = 0;
+    for (const QVariant &g : patch->groups())
+        parGroups += g.toMap().value("name").toString() == "DTC Upd Par 7" ? 1 : 0;
+    QCOMPARE(parGroups, 1);
+}
+
+void Backend_Test::patchImportRemembered()
+{
+    // a fixture chosen by hand for a type of the table is taken again next
+    // time (not before importing), as is "don't import"; back to automatic
+    // forgets it. The view of the plan used last is the next one's
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Mem", "Wash 5", { { "5ch", 5 } }));
+    QVERIFY(writeTableFixture("DTC Mem", "Spot 2", { { "Std", 12 } }, true));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+
+    // spread front to back more than up and down: seen from above
+    const QByteArray csv = fixtureTable({
+        tableRow("Unknown Maker Thing", "THING 1", "1", "1", "Mode X", 5, "-1m", "3m", "-2m", "t1"),
+        tableRow("Unknown Maker Thing", "THING 2", "1", "6", "Mode X", 5, "1m", "3m", "-8m", "t2"),
+        tableRow("DTC Mem Spot 2", "SPOT", "1", "20", "Std", 12, "0m", "3,5m", "-5m", "s1"),
+    });
+    QVariantMap preview = patch->tablePreviewData(csv);
+    const QString key = previewType(preview, "Unknown Maker Thing").value("key").toString();
+    QCOMPARE(key, PatchTable::typeKey("Unknown Maker Thing", "Mode X", 5));
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("status").toString(), QString("generic"));
+    QCOMPARE(preview.value("view").toString(), QString("top"));
+
+    // chosen by hand: in the preview, not remembered until imported
+    const QVariantMap wash = { { "manufacturer", "DTC Mem" }, { "model", "Wash 5" }, { "mode", "5ch" } };
+    preview = patch->tablePreviewData(csv, { { "choices", QVariantMap({ { key, wash } }) } });
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("status").toString(), QString("manual"));
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("model").toString(), QString("Wash 5"));
+    QCOMPARE(previewType(patch->tablePreviewData(csv), "Unknown Maker Thing").value("status").toString(), QString("generic"));
+    QVERIFY(patch->importTableData(csv, { { "choices", QVariantMap({ { key, wash } }) }, { "view", "front" } }).isEmpty() == false);
+    QCOMPARE(fixtureNamed(doc, "THING 1")->fixtureDef()->model(), QString("Wash 5"));
+    preview = patch->tablePreviewData(csv);
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("status").toString(), QString("remembered"));
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("model").toString(), QString("Wash 5"));
+    // the view used last, though the rig suits the other one
+    QCOMPARE(preview.value("view").toString(), QString("front"));
+    QCOMPARE(preview.value("suggestedView").toString(), QString("top"));
+
+    // a generic dimmer by hand; don't import (the rows aren't, the fixtures stay)
+    preview = patch->tablePreviewData(csv, { { "choices", QVariantMap({ { key, QVariantMap({ { "generic", true } }) } }) } });
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("status").toString(), QString("manual"));
+    QVERIFY(previewType(preview, "Unknown Maker Thing").value("generic").toBool());
+    const QVariantMap skip = { { "choices", QVariantMap({ { key, QVariantMap({ { "skip", true } }) } }) },
+                               { "removeMissing", true } };
+    preview = patch->tablePreviewData(csv, skip);
+    QCOMPARE(previewType(preview, "Unknown Maker Thing").value("status").toString(), QString("skip"));
+    QCOMPARE(preview.value("notImported").toInt(), 2);
+    QCOMPARE(preview.value("removeCount").toInt(), 0);
+    QCOMPARE(patch->importTableData(csv, skip), QString("Imported 1 fixture(s): 0 new, 1 updated"));
+    QCOMPARE(doc->fixtures().count(), 3);
+    QCOMPARE(previewType(patch->tablePreviewData(csv), "Unknown Maker Thing").value("status").toString(), QString("skip"));
+
+    // back to automatic: forgotten once imported
+    const QVariantMap automatic = { { "choices", QVariantMap({ { key, QVariantMap({ { "auto", true } }) } }) } };
+    QCOMPARE(previewType(patch->tablePreviewData(csv, automatic), "Unknown Maker Thing").value("status").toString(),
+             QString("generic"));
+    QVERIFY(patch->importTableData(csv, automatic).isEmpty() == false);
+    QCOMPARE(previewType(patch->tablePreviewData(csv), "Unknown Maker Thing").value("status").toString(), QString("generic"));
+    // (a generic dimmer now, the same fixtures)
+    QCOMPARE(fixtureNamed(doc, "THING 1")->fixtureDef()->manufacturer(), QString("Generic"));
+    QCOMPARE(doc->fixtures().count(), 3);
+}
+
+void Backend_Test::patchImportShowFile()
+{
+    // the identifiers are saved in the program's part of the show: QLC+
+    // reads the fixtures as they are, and a show opened again updates them
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC File", "Par 4", { { "4ch", 4 } }));
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Rig.qxw");
+    const QByteArray csv = fixtureTable({
+        tableRow("DTC File Par 4", "PAR A", "1", "1", "4ch", 4, "-1m", "4m", "-2m", "uuid-a"),
+        tableRow("DTC File Par 4", "PAR B", "2", "5", "4ch", 4, "1m", "4m", "-2m", "uuid-b"),
+        tableRow("Nobody Smoke", "SMOKE", "1", "10", "2 Channel", 2, "0m", "0m", "-1m", "uuid-c"),
+    });
+    {
+        DtcCore core;
+        // nothing imported: nothing written
+        QCOMPARE(core.patch()->addFixtures("Generic", KGenericDimmerModel, "", "Mine", 0, 100, 1), 1);
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        core.patch()->saveXML(&writer);
+        QVERIFY(buffer.data().contains("ImportId") == false);
+
+        QVERIFY(core.patch()->importTableData(csv).isEmpty() == false);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    }
+    const QByteArray saved = fileBytes(path);
+    QCOMPARE(saved.count("ImportId="), 3);
+    const qsizetype section = saved.indexOf("<DMXTotalControl");
+    QVERIFY(section > 0);
+    QVERIFY(saved.indexOf("ImportId=") > section);
+    QVERIFY(saved.contains("ImportId=\"uuid-a\""));
+    QCOMPARE(workspaceSections(path).last(), QString("DMXTotalControl"));
+
+    // QLC+ reads the fixtures at their addresses
+    QStringList read;
+    const QByteArray engine = qlcPlusEngine(saved, &read);
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QLCFixtureDefCache::userDefinitionDirectory());
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    QCOMPARE(qlc.fixtures().count(), 4);
+    QSet<QString> places;
+    for (Fixture *fxi : qlc.fixtures())
+        places.insert(QString("%1 %2.%3 %4").arg(fxi->name()).arg(fxi->universe() + 1).arg(fxi->address() + 1).arg(fxi->channels()));
+    QCOMPARE(places, QSet<QString>({ "Mine 1.100 1", "PAR A 1.1 4", "PAR B 2.5 4", "SMOKE 1.10 2" }));
+
+    // opened again: the same fixtures are updated
+    DtcCore again;
+    QVERIFY(again.openShow(QUrl::fromLocalFile(path)));
+    Fixture *a = fixtureNamed(again.doc(), "PAR A");
+    QVERIFY(a != nullptr);
+    QCOMPARE(again.patch()->importIdentifier(a->id()), QString("uuid-a"));
+    QCOMPARE(again.patch()->importIdentifier(fixtureNamed(again.doc(), "SMOKE")->id()), QString("uuid-c"));
+    const QVariantMap preview = again.patch()->tablePreviewData(csv);
+    QCOMPARE(preview.value("updateCount").toInt(), 3);
+    QCOMPARE(preview.value("newCount").toInt(), 0);
+}
+
+void Backend_Test::patchImportLimits()
+{
+    // a fixture keeps its universe in 7 bits: universe 128 of a table is
+    // the last one it can go on (past it, the row is said and left out,
+    // never patched on another universe); a file too big for a table isn't
+    // read, one that isn't text isn't a table
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Lim", "Par 4", { { "4ch", 4 } }));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+
+    // (another kind of file, chosen with "All files")
+    QTemporaryDir dir;
+    const QString big = dir.filePath("Rig.mvr");
+    {
+        QFile file(big);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QVERIFY(file.resize(17 * 1024 * 1024));
+    }
+    QVariantMap preview = patch->tablePreview(QUrl::fromLocalFile(big));
+    QVERIFY(preview.value("ok").toBool() == false);
+    QCOMPARE(preview.value("error").toString(), QString("Rig.mvr is too big for a fixture table"));
+    QVERIFY(patch->importTable(QUrl::fromLocalFile(big)).isEmpty());
+    QCOMPARE(patch->lastError(), QString("Rig.mvr is too big for a fixture table"));
+    const QString error = patch->tablePreviewData(QByteArray("PK\x03\x04") + QByteArray(64, '\0')).value("error").toString();
+    QVERIFY2(error.startsWith("This isn't a fixture table (CSV)"), qPrintable(error));
+
+    const QByteArray csv = fixtureTable({
+        tableRow("DTC Lim Par 4", "PAR LOW", "1", "1", "4ch", 4, "-1m", "4m", "-2m", "l1"),
+        tableRow("DTC Lim Par 4", "PAR TOP", "128", "509", "4ch", 4, "0m", "4m", "-2m", "l2"),
+        tableRow("DTC Lim Par 4", "PAR HIGH", "130", "1", "4ch", 4, "1m", "4m", "-2m", "l3"),
+    });
+    const QString path = dir.filePath("Rig.csv");
+    {
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        QCOMPARE(file.write(csv), qint64(csv.size()));
+    }
+    const quint32 universes = doc->inputOutputMap()->universesCount();
+    preview = patch->tablePreview(QUrl::fromLocalFile(path));
+    QVERIFY2(preview.value("ok").toBool(), qPrintable(preview.value("error").toString()));
+    QCOMPARE(preview.value("fileName").toString(), QString("Rig.csv"));
+    const QString problems = preview.value("problems").toStringList().join("\n");
+    QVERIFY2(hasProblem(preview, { "PAR HIGH", "universe 130 is too high" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "PAR TOP" }) == false, qPrintable(problems));
+    QCOMPARE(preview.value("skippedRows").toInt(), 1);
+    QCOMPARE(preview.value("newCount").toInt(), 2);
+    QCOMPARE(preview.value("newUniverses").toInt(), int(128 - universes));
+
+    QCOMPARE(patch->importTable(QUrl::fromLocalFile(path)),
+             QString("Imported 2 fixture(s): 2 new, 0 updated · 1 row(s) of the table not imported"));
+    QCOMPARE(doc->inputOutputMap()->universesCount(), quint32(128));
+    QVERIFY(fixtureNamed(doc, "PAR HIGH") == nullptr);
+    Fixture *top = fixtureNamed(doc, "PAR TOP");
+    QVERIFY(top != nullptr);
+    QCOMPARE(top->universe(), quint32(127));
+    QCOMPARE(top->address(), quint32(508));
+    QCOMPARE(fixtureNamed(doc, "PAR LOW")->universe(), quint32(0));
+    QCOMPARE(fixtureNamed(doc, "PAR LOW")->address(), quint32(0));
+}
+
+void Backend_Test::patchImportAgain()
+{
+    // not placed on the plan: a moving head gets its height and its pan the
+    // other way (in Italian) all the same; a tilt that is neither yes nor no
+    // is said, in the message too. A new export (the identifiers made anew):
+    // a row that moves its fixture onto another one says that one (never
+    // its own fixture, which stays); the fixtures of rows not imported (no
+    // address, a type not imported) stay with the remove option, which
+    // lists the names of the ones it takes
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Again", "Par 7", { { "7 Channel", 7 } }));
+    QVERIFY(writeTableFixture("DTC Again", "Spot 9", { { "9ch", 9 } }, true));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+
+    QVariantMap spot = tableRow("DTC Again Spot 9", "SPOT 1", "1", "100", "9ch", 9, "0m", "7,5m", "-3m", "id-s");
+    spot.insert("Invert Pan", "Sì");
+    spot.insert("Invert Tilt", "Forse");
+    const QByteArray first = fixtureTable({
+        tableRow("DTC Again Par 7", "PAR 1", "1", "1", "7 Channel", 7, "-1m", "5m", "-3m", "id-a"),
+        tableRow("DTC Again Par 7", "PAR 2", "1", "20", "7 Channel", 7, "0m", "5m", "-3m", "id-b"),
+        tableRow("DTC Again Par 7", "PAR 9", "1", "40", "7 Channel", 7, "1m", "5m", "-3m", "id-c"),
+        spot,
+    });
+    const QVariantMap notPlaced = { { "place", false } };
+    QVariantMap preview = patch->tablePreviewData(first, notPlaced);
+    const QString tilt = "SPOT 1: Invert Tilt is “Forse”, neither yes nor no";
+    QCOMPARE(preview.value("problems").toStringList(), QStringList({ tilt }));
+    QCOMPARE(patch->importTableData(first, notPlaced), QString("Imported 4 fixture(s): 4 new, 0 updated · ") + tilt);
+    QCOMPARE(doc->fixtures().count(), 4);
+    const quint32 par1 = fixtureNamed(doc, "PAR 1")->id();
+    const quint32 par2 = fixtureNamed(doc, "PAR 2")->id();
+    const quint32 par9 = fixtureNamed(doc, "PAR 9")->id();
+    const quint32 spot1 = fixtureNamed(doc, "SPOT 1")->id();
+    QVariantMap aim = patch->aimSettings({ spot1 });
+    QCOMPARE(aim.value("height").toInt(), 7500);
+    QCOMPARE(aim.value("panInverted").toBool(), true);
+    QCOMPARE(aim.value("tiltInverted").toBool(), false);
+
+    // patched by hand, where PAR 1 goes next
+    QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "HAND", 0, 8, 1, 0, 1), 1);
+    const QByteArray second = fixtureTable({
+        tableRow("DTC Again Par 7", "PAR 1", "1", "3", "7 Channel", 7, "-1m", "5m", "-3m", "new-a"),
+        tableRow("DTC Again Par 7", "PAR 2", "", "", "7 Channel", 7, "0m", "5m", "-3m", "new-b"),
+        tableRow("DTC Again Spot 9", "SPOT 1", "1", "100", "9ch", 9, "0m", "7,5m", "-3m", "new-s"),
+    });
+    const QString spotKey = PatchTable::typeKey("DTC Again Spot 9", "9ch", 9);
+    const QVariantMap options = { { "choices", QVariantMap({ { spotKey, QVariantMap({ { "skip", true } }) } }) },
+                                  { "removeMissing", true } };
+    preview = patch->tablePreviewData(second, options);
+    const QString problems = preview.value("problems").toStringList().join("\n");
+    QVERIFY2(hasProblem(preview, { "PAR 1: addresses 3-9 of universe 1 are used by HAND" }), qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "used by PAR 1" }) == false, qPrintable(problems));
+    QVERIFY2(hasProblem(preview, { "PAR 2", "no universe or address" }), qPrintable(problems));
+    QCOMPARE(preview.value("notImported").toInt(), 1);
+    QCOMPARE(preview.value("removeCount").toInt(), 1);
+    QCOMPARE(preview.value("removeNames").toStringList(), QStringList({ "PAR 9" }));
+    QCOMPARE(patch->importTableData(second, options),
+             QString("Imported 0 fixture(s): 0 new, 0 updated, 1 removed · 2 row(s) of the table not imported"));
+    QVERIFY(doc->fixture(par9) == nullptr);
+    QVERIFY(doc->fixture(par1) != nullptr && doc->fixture(par2) != nullptr && doc->fixture(spot1) != nullptr);
+    QCOMPARE(doc->fixture(par1)->address(), quint32(0));
+    QCOMPARE(patch->importIdentifier(par1), QString("id-a"));
+    QCOMPARE(doc->fixtures().count(), 4);
+}
+
+/*********************************************************************
+ * Plan icons: the kind of each fixture (its glyph on the stage plan), the
+ * icon chosen by hand, and the types of the show the plan colours
+ *********************************************************************/
+
+namespace
+{
+
+/** The entry of fixture $id in $patch->fixtures() */
+QVariantMap planFixture(PatchManager *patch, quint32 id)
+{
+    for (const QVariant &v : patch->fixtures())
+    {
+        if (v.toMap().value("id").toUInt() == id)
+            return v.toMap();
+    }
+    return QVariantMap();
+}
+
+/** The types of $patch->fixtureTypes(), in their order, as "model:kind=ids"
+ *  (no model: generic dimmers); a line says when one isn't coloured by its
+ *  place, or its count isn't its fixtures */
+QStringList planTypes(PatchManager *patch)
+{
+    QStringList list;
+    int index = 0;
+    for (const QVariant &v : patch->fixtureTypes())
+    {
+        const QVariantMap type = v.toMap();
+        QStringList ids;
+        for (const QVariant &id : type.value("ids").toList())
+            ids.append(id.toString());
+        list.append(QString("%1:%2=%3").arg(type.value("model").toString(), type.value("kind").toString(), ids.join(',')));
+        if (type.value("colorIndex").toInt() != index++ || type.value("count").toInt() != ids.count())
+            list.append(QString("(colour %1, count %2)").arg(type.value("colorIndex").toInt()).arg(type.value("count").toInt()));
+    }
+    return list;
+}
+
+} // namespace
+
+void Backend_Test::planKindRules()
+{
+    // every QLC+ type, its kind
+    const QList<QPair<QString, QString>> types = {
+        { "Moving Head", "movinghead" }, { "Scanner", "scanner" }, { "Color Changer", "wash" },
+        { "LED Bar (Beams)", "ledbar" }, { "LED Bar (Pixels)", "ledbar" }, { "Strobe", "strobe" },
+        { "Dimmer", "dimmer" }, { "Laser", "laser" }, { "Smoke", "smoke" }, { "Hazer", "hazer" },
+        { "Fan", "fan" }, { "Flower", "effect" }, { "Effect", "effect" }, { "Other", "other" },
+    };
+    for (const auto &type : types)
+        QCOMPARE(PatchManager::fixtureKind("Acme", "Model 7", type.first), type.second);
+    const QStringList kinds = PatchManager::fixtureKinds();
+    QCOMPARE(kinds.count(), 19);
+    QCOMPARE(QSet<QString>(kinds.cbegin(), kinds.cend()).count(), 19);
+    for (const char *kind : { "co2", "flame", "spark", "confetti", "bubbles", "snow", "blinder", "scanner" })
+        QVERIFY2(kinds.contains(kind), kind);
+
+    // the words of a definition, where they say more than its type
+    struct Case
+    {
+        const char *model;
+        const char *type;
+        const char *kind;
+    };
+    const QList<Case> cases = {
+        // special effects: an effect, an "other", a smoke machine, a fan, a dimmer
+        { "CO2 Jet", "Effect", "co2" },
+        { "MEGACO2JET", "Effect", "co2" },
+        { "Cryo Blaster", "Smoke", "co2" },
+        { "Flame Tower", "Effect", "flame" },
+        { "Flamer 2", "Other", "flame" },
+        { "BigFlame 3", "Other", "flame" },
+        { "Pyro Fountain", "Dimmer", "flame" },
+        { "Sparkfall Mini", "Other", "spark" },
+        { "Confetti Cannon", "Effect", "confetti" },
+        { "Streamer Shot", "Other", "confetti" },
+        { "Bubble Machine", "Fan", "bubbles" },
+        { "Máquina de burbujas", "Other", "bubbles" },
+        { "Snow Blower", "Smoke", "snow" },
+        { "Cañón de nieve", "Effect", "snow" },
+        { "Hazer 500", "Smoke", "hazer" },
+        { "Fog 900", "Effect", "smoke" },
+        // (a hazer's words don't make it a smoke machine)
+        { "Low Fog", "Hazer", "hazer" },
+        // blinders: a dimmer, a colour changer, a strobe
+        { "Twin Blinder 1 WW", "Dimmer", "blinder" },
+        { "Blinder 4 RGB", "Color Changer", "blinder" },
+        { "Audience Blinder 8", "Strobe", "blinder" },
+        { "Strobe Panel", "Color Changer", "strobe" },
+        { "Láser verde", "Other", "laser" },
+        // what the type says best stays: a moving head called Beam, Wash...
+        { "Beam 5R", "Moving Head", "movinghead" },
+        { "Wash Pro 7", "Moving Head", "movinghead" },
+        { "Flame Beam", "Moving Head", "movinghead" },
+        { "Blinder Spot", "Moving Head", "movinghead" },
+        { "Snow Laser", "Laser", "laser" },
+        { "Flame PAR", "Color Changer", "wash" },
+        { "Strobe Bar", "LED Bar (Pixels)", "ledbar" },
+        { "PAR 64", "Dimmer", "dimmer" },
+        // (a word inside another one isn't that word)
+        { "Parade 3", "Other", "other" },
+        { "Fanatic", "Other", "other" },
+        // (nor a longer common word: an LED effect called Sparkle, Snowball)
+        { "SparkleTile", "Effect", "effect" },
+        { "Snowball", "Flower", "effect" },
+        { "Sparks 2", "Other", "spark" },
+        { "Deco2Jet", "Smoke", "co2" },
+        { "ZAPCO2JET", "Effect", "co2" },
+        { "Fogger Co2 FX", "Smoke", "co2" },
+        { "MegaCO2", "Effect", "co2" },
+    };
+    for (const Case &c : cases)
+    {
+        const QString kind = PatchManager::fixtureKind("Acme", c.model, c.type);
+        QVERIFY2(kind == c.kind, qPrintable(QString("Acme %1 (%2): %3, not %4").arg(c.model, c.type, kind, c.kind)));
+    }
+    // the maker's words too (a laser maker)
+    QCOMPARE(PatchManager::fixtureKind("Laserhaus", "DS-1000", "Other"), QString("laser"));
+
+    // a generic dimmer stands in for anything: what its own name says
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "CO2 1"), QString("co2"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "Flame L"), QString("flame"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "BLINDER1"), QString("blinder"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "Wash 3"), QString("wash"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "FRONT 3"), QString("dimmer"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "co2_1"), QString("co2"));
+    // (a "co2" at the end of another word isn't one: lamps called FOCO1 to
+    // FOCO30, a fire exit)
+    for (const char *name : { "FOCO2", "FOCO21", "foco 2", "BLANCO2", "Disco2", "Firefly 1", "Fire exit", "FireExit 2" })
+        QVERIFY2(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", name) == "dimmer", name);
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "Fire 2"), QString("flame"));
+    // another Generic fixture: its name by the rules of its type, then its model
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Moving Head Wash RGBW", "Moving Head", "Wash 1"), QString("movinghead"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "LED PAR White", "Dimmer", "Fuego 2"), QString("flame"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Blinder 2 Lamps", "Dimmer", "Front"), QString("blinder"));
+    // a fixture of the library is what it is, whatever its name
+    QCOMPARE(PatchManager::fixtureKind("Acme", "Par 7", "Color Changer", "CO2 1"), QString("wash"));
+
+    // the icon chosen by hand wins; one that isn't a kind doesn't
+    QCOMPARE(PatchManager::fixtureKind("Acme", "Beam 5R", "Moving Head", "", "co2"), QString("co2"));
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "CO2 1", "blinder"), QString("blinder"));
+    QCOMPARE(PatchManager::fixtureKind("Acme", "Beam 5R", "Moving Head", "", "rocket"), QString("movinghead"));
+
+    // words alone (the fixtures of a table)
+    QCOMPARE(PatchManager::kindFromWords("Acme CO2 Jet"), QString("co2"));
+    QCOMPARE(PatchManager::kindFromWords("Acme Flame Tower"), QString("flame"));
+    QCOMPARE(PatchManager::kindFromWords("Acme Twin Blinder 1 WW"), QString("blinder"));
+    QCOMPARE(PatchManager::kindFromWords("Acme Beam 5R"), QString());
+    QCOMPARE(PatchManager::kindFromWords(""), QString());
+}
+
+void Backend_Test::planKindGlyphs()
+{
+    // each kind its own glyph, which the icon font of the interface has,
+    // and its name (Theme.kindIcon and Theme.kindName)
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    QVERIFY(theme.isEmpty() == false);
+    // the glyphs of the theme by name: "", or the character itself
+    QHash<QString, uint> glyphs;
+    static const QRegularExpression property("property string (icon\\w+): \"([^\"]*)\"");
+    for (auto it = property.globalMatch(theme); it.hasNext();)
+    {
+        const QRegularExpressionMatch m = it.next();
+        const QString value = m.captured(2);
+        if (value.startsWith("\\u") && value.size() == 6)
+            glyphs.insert(m.captured(1), value.mid(2).toUInt(nullptr, 16));
+        else if (value.size() == 1)
+            glyphs.insert(m.captured(1), value.at(0).unicode());
+    }
+    auto body = [&theme](const QString &function) {
+        const qsizetype start = theme.indexOf(QString("function %1(").arg(function));
+        const qsizetype end = start < 0 ? -1 : theme.indexOf("\n    }", start);
+        return start < 0 || end < 0 ? QString() : theme.mid(start, end - start);
+    };
+    const QString icons = body("kindIcon");
+    const QString names = body("kindName");
+    QVERIFY(icons.isEmpty() == false && names.isEmpty() == false);
+
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QHash<uint, QString> used;
+    for (const QString &kind : PatchManager::fixtureKinds())
+    {
+        const QRegularExpressionMatch icon = QRegularExpression(QString("case \"%1\": return (icon\\w+)").arg(kind)).match(icons);
+        QVERIFY2(icon.hasMatch(), qPrintable(kind));
+        QVERIFY2(glyphs.contains(icon.captured(1)), qPrintable(icon.captured(1)));
+        const uint glyph = glyphs.value(icon.captured(1));
+        QVERIFY2(used.contains(glyph) == false, qPrintable(QString("%1 and %2 share a glyph").arg(kind, used.value(glyph))));
+        used.insert(glyph, kind);
+        QVERIFY2(font.supportsCharacter(glyph), qPrintable(QString("%1: U+%2").arg(kind).arg(glyph, 4, 16)));
+        QVERIFY2(names.contains(QString("case \"%1\": return qsTr(\"").arg(kind)), qPrintable(kind));
+    }
+}
+
+void Backend_Test::planFixtureTypes()
+{
+    // the types of the show, as the plan colours them and its legend lists
+    // them: by their lowest fixture ID, each its colour in that order; the
+    // generic dimmers by what they stand in for; told again when a fixture
+    // is added, removed or changed
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Front", 0, 1, 2, 0, 1), 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 10, 3), 3);
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "CO2 1", 0, 60, 1, 0, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 70, 2), 2);
+    auto id = [&](const char *name) { return fixtureNamed(m_doc, name)->id(); };
+    const quint32 front1 = id("Front 1"), front2 = id("Front 2"), co2 = id("CO2 1");
+    const quint32 spot1 = id("Spot 1"), spot2 = id("Spot 2"), spot3 = id("Spot 3");
+    const quint32 par1 = id("Par 1"), par2 = id("Par 2");
+    QVERIFY(front1 < front2 && front2 < spot1 && spot3 < co2 && co2 < par1);
+    auto ids = [](std::initializer_list<quint32> list) {
+        QStringList out;
+        for (quint32 i : list)
+            out.append(QString::number(i));
+        return out.join(',');
+    };
+    QCOMPARE(planTypes(m_patch), QStringList({ ":dimmer=" + ids({ front1, front2 }),
+                                               "Moving Head Spot:movinghead=" + ids({ spot1, spot2, spot3 }),
+                                               ":co2=" + ids({ co2 }),
+                                               "LED PAR RGB:wash=" + ids({ par1, par2 }) }));
+    // (the same show, the same list)
+    QCOMPARE(m_patch->fixtureTypes(), m_patch->fixtureTypes());
+    // each fixture knows its kind, its type and its colour
+    const QVariantMap jet = planFixture(m_patch, co2);
+    QCOMPARE(jet.value("kind").toString(), QString("co2"));
+    QCOMPARE(jet.value("colorIndex").toInt(), 2);
+    QCOMPARE(jet.value("typeKey").toString(), m_patch->fixtureTypes().at(2).toMap().value("key").toString());
+    QCOMPARE(planFixture(m_patch, spot2).value("colorIndex").toInt(), 1);
+    QCOMPARE(m_patch->fixtureTypes().at(1).toMap().value("manufacturer").toString(), QString("Generic"));
+    QCOMPARE(m_patch->fixtureTypes().at(0).toMap().value("manufacturer").toString(), QString());
+
+    // renamed: another kind; a dimmer called a blinder comes before the spots
+    m_patch->renameFixture(co2, "Flame 1");
+    m_patch->renameFixture(front2, "Blinder L");
+    QCOMPARE(planTypes(m_patch), QStringList({ ":dimmer=" + ids({ front1 }), ":blinder=" + ids({ front2 }),
+                                               "Moving Head Spot:movinghead=" + ids({ spot1, spot2, spot3 }),
+                                               ":flame=" + ids({ co2 }), "LED PAR RGB:wash=" + ids({ par1, par2 }) }));
+    // an icon chosen by hand: its glyph, not another type (nor colour); the
+    // other types keep theirs
+    const QStringList renamed = planTypes(m_patch);
+    QCOMPARE(planFixture(m_patch, spot2).value("colorIndex").toInt(), 2);
+    m_patch->setFixtureIcon({ spot2 }, "strobe");
+    QCOMPARE(planTypes(m_patch), renamed);
+    QCOMPARE(planFixture(m_patch, spot2).value("kind").toString(), QString("strobe"));
+    QCOMPARE(planFixture(m_patch, spot2).value("colorIndex").toInt(), 2);
+    QCOMPARE(planFixture(m_patch, spot3).value("kind").toString(), QString("movinghead"));
+    QCOMPARE(planFixture(m_patch, par2).value("colorIndex").toInt(), 4);
+    // (on the first fixture of the type too: the type is still what its definition is)
+    m_patch->setFixtureIcon({ spot1 }, "laser");
+    QCOMPARE(planTypes(m_patch), renamed);
+    QCOMPARE(planFixture(m_patch, spot1).value("kind").toString(), QString("laser"));
+    m_patch->setFixtureIcon({ spot1 }, "auto");
+    // removed: the colours of the others move up
+    m_patch->removeFixtures({ front1, spot2 });
+    QCOMPARE(planTypes(m_patch), QStringList({ ":blinder=" + ids({ front2 }),
+                                               "Moving Head Spot:movinghead=" + ids({ spot1, spot3 }),
+                                               ":flame=" + ids({ co2 }), "LED PAR RGB:wash=" + ids({ par1, par2 }) }));
+    QCOMPARE(planFixture(m_patch, par2).value("colorIndex").toInt(), 3);
+    // added: in the place of its ID
+    QCOMPARE(m_patch->addFixtures("Generic", "Strobe", "", "Strobe", 0, 200, 1), 1);
+    const quint32 strobe = id("Strobe");
+    QStringList order;
+    quint32 last = 0;
+    for (const QVariant &v : m_patch->fixtureTypes())
+    {
+        quint32 low = UINT_MAX;
+        for (const QVariant &f : v.toMap().value("ids").toList())
+            low = qMin(low, f.toUInt());
+        QVERIFY(order.isEmpty() || low > last);
+        last = low;
+        order.append(v.toMap().value("kind").toString());
+    }
+    QVERIFY2(order.contains("strobe"), qPrintable(order.join(',')));
+    QCOMPARE(planFixture(m_patch, strobe).value("kind").toString(), QString("strobe"));
+    QCOMPARE(order.count(), 5);
+
+    // the legend, open or folded by the user: remembered (empty until then:
+    // open with two types or more)
+    ScopedTestSettings settings;
+    AppSettings app;
+    QCOMPARE(app.planLegend(), QString());
+    QSignalSpy spy(&app, SIGNAL(planLegendChanged()));
+    app.setPlanLegend("closed");
+    QCOMPARE(AppSettings().planLegend(), QString("closed"));
+    app.setPlanLegend("closed");
+    app.setPlanLegend("sideways");
+    QCOMPARE(AppSettings().planLegend(), QString());
+    QCOMPARE(spy.count(), 2);
+}
+
+void Backend_Test::planIconByHand()
+{
+    // the icon chosen in the Look menu: on the selected fixtures, back to
+    // automatic, gone with its fixture; saved in the program's part of the
+    // show (only when chosen), which QLC+ doesn't read
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Icons.qxw");
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        Doc *doc = core.doc();
+        QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "JET", 0, 1, 2, 0, 1), 2);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 10, 1), 1);
+        const quint32 left = fixtureNamed(doc, "JET 1")->id();
+        const quint32 right = fixtureNamed(doc, "JET 2")->id();
+        const quint32 spot = fixtureNamed(doc, "Spot")->id();
+        QCOMPARE(planFixture(patch, left).value("kind").toString(), QString("dimmer"));
+        QCOMPARE(planFixture(patch, left).value("icon").toString(), QString());
+
+        // nothing chosen: nothing written
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::WriteOnly);
+            QXmlStreamWriter writer(&buffer);
+            patch->saveXML(&writer);
+            QVERIFY(buffer.data().contains("Icon=") == false);
+        }
+
+        // on the selection, at once
+        QSignalSpy spy(patch, SIGNAL(fixturesChanged()));
+        patch->setFixtureIcon({ left, right }, "co2");
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(patch->fixtureIcon(left), QString("co2"));
+        QCOMPARE(planFixture(patch, right).value("kind").toString(), QString("co2"));
+        QCOMPARE(planFixture(patch, right).value("icon").toString(), QString("co2"));
+        patch->setFixtureIcon({ spot }, "flame");
+        QCOMPARE(planFixture(patch, spot).value("kind").toString(), QString("flame"));
+        // not a kind: nothing changes
+        patch->setFixtureIcon({ spot }, "rocket");
+        QCOMPARE(patch->fixtureIcon(spot), QString("flame"));
+        // back to automatic ("" or "auto")
+        patch->setFixtureIcon({ right }, "");
+        QCOMPARE(patch->fixtureIcon(right), QString());
+        QCOMPARE(planFixture(patch, right).value("kind").toString(), QString("dimmer"));
+        patch->setFixtureIcon({ spot }, "auto");
+        QCOMPARE(planFixture(patch, spot).value("kind").toString(), QString("movinghead"));
+        patch->setFixtureIcon({ spot }, "strobe");
+        // (the same again: nothing to tell)
+        spy.clear();
+        patch->setFixtureIcon({ spot }, "strobe");
+        patch->setFixtureIcon({ right }, "auto");
+        QCOMPARE(spy.count(), 0);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+
+        // gone with its fixture: the next one patched gets its ID, not its icon
+        patch->removeFixture(spot);
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Head", 0, 100, 1), 1);
+        QCOMPARE(fixtureNamed(doc, "Head")->id(), spot);
+        QCOMPARE(patch->fixtureIcon(spot), QString());
+        QCOMPARE(planFixture(patch, spot).value("kind").toString(), QString("movinghead"));
+    }
+
+    // saved where chosen, in the program's part of the show
+    const QByteArray saved = fileBytes(path);
+    QCOMPARE(saved.count(" Icon="), 2);
+    QVERIFY(saved.contains(" Icon=\"co2\""));
+    QVERIFY(saved.contains(" Icon=\"strobe\""));
+    QVERIFY(saved.contains("ImportIcon") == false);
+    const qsizetype section = saved.indexOf("<DMXTotalControl");
+    QVERIFY(section > 0);
+    QVERIFY(saved.indexOf(" Icon=") > section);
+    QCOMPARE(workspaceSections(path).last(), QString("DMXTotalControl"));
+
+    // QLC+ reads the fixtures as they are
+    QStringList read;
+    const QByteArray engine = qlcPlusEngine(saved, &read);
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    QCOMPARE(qlc.fixtures().count(), 3);
+
+    // opened again: the icons are back; one this version doesn't know is automatic
+    DtcCore again;
+    again.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(again.openShow(QUrl::fromLocalFile(path)));
+    const quint32 left = fixtureNamed(again.doc(), "JET 1")->id();
+    const quint32 right = fixtureNamed(again.doc(), "JET 2")->id();
+    const quint32 spot = fixtureNamed(again.doc(), "Spot")->id();
+    QCOMPARE(again.patch()->fixtureIcon(left), QString("co2"));
+    QCOMPARE(again.patch()->fixtureIcon(right), QString());
+    QCOMPARE(again.patch()->fixtureIcon(spot), QString("strobe"));
+    QCOMPARE(planFixture(again.patch(), spot).value("kind").toString(), QString("strobe"));
+    const QByteArray plan = QString("<Plan><Fixture ID=\"%1\" Icon=\"rocket\"/><Fixture ID=\"%2\" Icon=\"bubbles\"/></Plan>")
+                                .arg(left).arg(right).toUtf8();
+    QXmlStreamReader reader(plan);
+    reader.readNextStartElement();
+    QVERIFY(again.patch()->loadXML(reader));
+    QCOMPARE(again.patch()->fixtureIcon(left), QString());
+    QCOMPARE(again.patch()->fixtureIcon(right), QString("bubbles"));
+}
+
+void Backend_Test::planIconImport()
+{
+    // a patch import: the generic dimmers that stand in for fixtures the
+    // library doesn't have get the kind the table's name says (the preview
+    // shows it on each type); a fixture of the library keeps its own. A new
+    // import keeps an icon chosen by hand since (saved with the show),
+    // unless the type's match changed
+    ScopedTestSettings settings;
+    TempUserFolder folder;
+    if (folder.active() == false)
+        QSKIP("the user folder can't be moved in this environment");
+    QVERIFY(writeTableFixture("DTC Ico", "Spot 3", { { "12ch", 12 } }, true));
+    DtcCore core;
+    PatchManager *patch = core.patch();
+    Doc *doc = core.doc();
+
+    const QByteArray csv = fixtureTable({
+        tableRow("Nobody CO2 Jet", "JET L", "1", "1", "2 Channel", 2, "-2m", "0m", "-3m", "c1"),
+        tableRow("Nobody CO2 Jet", "JET R", "1", "101", "2 Channel", 2, "2m", "0m", "-3m", "c2"),
+        tableRow("Nobody Flame Tower", "FX 1", "1", "201", "4 Channel", 4, "0m", "0m", "-3m", "f1"),
+        tableRow("DTC Ico Spot 3", "SPOT 1", "1", "301", "12ch", 12, "0m", "6m", "-5m", "s1"),
+        tableRow("Nobody Thing", "THING", "1", "401", "1 Channel", 1, "1m", "0m", "-3m", "t1"),
+    });
+    // what the preview shows of each type
+    const QVariantMap preview = patch->tablePreviewData(csv);
+    QCOMPARE(previewType(preview, "Nobody CO2 Jet").value("status").toString(), QString("generic"));
+    QCOMPARE(previewType(preview, "Nobody CO2 Jet").value("kind").toString(), QString("co2"));
+    QCOMPARE(previewType(preview, "Nobody CO2 Jet").value("icon").toString(), QString("co2"));
+    QCOMPARE(previewType(preview, "Nobody Flame Tower").value("kind").toString(), QString("flame"));
+    QCOMPARE(previewType(preview, "DTC Ico Spot 3").value("status").toString(), QString("exact"));
+    QCOMPARE(previewType(preview, "DTC Ico Spot 3").value("kind").toString(), QString("movinghead"));
+    QCOMPARE(previewType(preview, "DTC Ico Spot 3").value("icon").toString(), QString());
+    QCOMPARE(previewType(preview, "Nobody Thing").value("kind").toString(), QString("dimmer"));
+    QCOMPARE(previewType(preview, "Nobody Thing").value("icon").toString(), QString());
+    QCOMPARE(doc->fixtures().count(), 0);
+
+    QVERIFY(patch->importTableData(csv).isEmpty() == false);
+    auto idOf = [doc](const char *name) {
+        const Fixture *fxi = fixtureNamed(doc, name);
+        return fxi != nullptr ? fxi->id() : Fixture::invalidId();
+    };
+    const quint32 jetL = idOf("JET L"), jetR = idOf("JET R"), fx = idOf("FX 1"), spot = idOf("SPOT 1"), thing = idOf("THING");
+    QVERIFY(thing != Fixture::invalidId());
+    // generic dimmers, shown as what they are
+    QCOMPARE(doc->fixture(jetL)->fixtureDef()->manufacturer(), QString("Generic"));
+    QCOMPARE(patch->fixtureIcon(jetL), QString("co2"));
+    QCOMPARE(planFixture(patch, jetR).value("kind").toString(), QString("co2"));
+    QCOMPARE(patch->fixtureIcon(fx), QString("flame"));
+    QCOMPARE(patch->fixtureIcon(spot), QString());
+    QCOMPARE(planFixture(patch, spot).value("kind").toString(), QString("movinghead"));
+    QCOMPARE(patch->fixtureIcon(thing), QString());
+    QCOMPARE(planFixture(patch, thing).value("kind").toString(), QString("dimmer"));
+    // the legend has the jets and the flame apart, though both are generic dimmers
+    QCOMPARE(planTypes(patch), QStringList({ QString(":co2=%1,%2").arg(jetL).arg(jetR), QString(":flame=%1").arg(fx),
+                                             QString("Spot 3:movinghead=%1").arg(spot), QString(":dimmer=%1").arg(thing) }));
+    // a jet of two channels, a flame of four: one body with its glyph on
+    // the plan, not a row of cells (a head per channel) without one
+    QCOMPARE(doc->fixture(jetL)->heads(), 2);
+    QCOMPARE(planFixture(patch, jetL).value("cells").toBool(), false);
+    QCOMPARE(planFixture(patch, fx).value("cells").toBool(), false);
+    QCOMPARE(planFixture(patch, spot).value("cells").toBool(), false);
+
+    // chosen by hand since: a new import of the same table keeps it
+    patch->setFixtureIcon({ jetL }, "flame");
+    patch->setFixtureIcon({ jetR }, "auto");
+    patch->setFixtureIcon({ spot }, "strobe");
+    QCOMPARE(patch->importTableData(csv), QString("Imported 5 fixture(s): 0 new, 5 updated"));
+    QCOMPARE(patch->fixtureIcon(jetL), QString("flame"));
+    QCOMPARE(patch->fixtureIcon(jetR), QString());
+    QCOMPARE(planFixture(patch, jetR).value("kind").toString(), QString("dimmer"));
+    QCOMPARE(patch->fixtureIcon(spot), QString("strobe"));
+    QCOMPARE(patch->fixtureIcon(fx), QString("flame"));
+
+    // so does the show saved and opened again: it keeps what the import gave
+    {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        patch->saveXML(&writer);
+        buffer.close();
+        QVERIFY(buffer.data().contains("ImportIcon=\"co2\""));
+        QVERIFY(buffer.data().contains("ImportIcon=\"flame\""));
+        patch->clearPlan();
+        QCOMPARE(patch->fixtureIcon(jetL), QString());
+        QXmlStreamReader reader(buffer.data());
+        reader.readNextStartElement();
+        QVERIFY(patch->loadXML(reader));
+        QCOMPARE(patch->fixtureIcon(jetL), QString("flame"));
+    }
+    QVERIFY(patch->importTableData(csv).isEmpty() == false);
+    QCOMPARE(patch->fixtureIcon(jetL), QString("flame"));
+    QCOMPARE(patch->fixtureIcon(jetR), QString());
+
+    // the jets patched as spots of the library (chosen by hand): another
+    // match, the icons chosen for them go
+    const QString jetKey = previewType(preview, "Nobody CO2 Jet").value("key").toString();
+    const QVariantMap asSpots = { { "choices", QVariantMap({ { jetKey, QVariantMap({ { "manufacturer", "DTC Ico" },
+                                                                                    { "model", "Spot 3" },
+                                                                                    { "mode", "12ch" } }) } }) } };
+    QVERIFY(patch->importTableData(csv, asSpots).isEmpty() == false);
+    QCOMPARE(doc->fixture(jetL)->fixtureDef()->model(), QString("Spot 3"));
+    QCOMPARE(patch->fixtureIcon(jetL), QString());
+    QCOMPARE(planFixture(patch, jetL).value("kind").toString(), QString("movinghead"));
+    QCOMPARE(patch->fixtureIcon(spot), QString("strobe"));
+    QCOMPARE(patch->fixtureIcon(fx), QString("flame"));
+
+    // back to generic dimmers: the kind of the table's name again
+    patch->setFixtureIcon({ jetR }, "snow");
+    const QVariantMap automatic = { { "choices", QVariantMap({ { jetKey, QVariantMap({ { "auto", true } }) } }) } };
+    QVERIFY(patch->importTableData(csv, automatic).isEmpty() == false);
+    QCOMPARE(doc->fixture(jetL)->fixtureDef()->manufacturer(), QString("Generic"));
+    QCOMPARE(patch->fixtureIcon(jetL), QString("co2"));
+    QCOMPARE(patch->fixtureIcon(jetR), QString("co2"));
+
+    // a dimmer pack of four channels is still its four cells
+    QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "Front", 0, 450, 1, 0, 4), 1);
+    const quint32 front = idOf("Front");
+    QCOMPARE(planFixture(patch, front).value("kind").toString(), QString("dimmer"));
+    QCOMPARE(planFixture(patch, front).value("cells").toBool(), true);
+
+    // a type of the table called a dimmer: the name of each fixture says
+    // what it stands in for, no icon chosen for them
+    DtcCore other;
+    const QByteArray dimmers = fixtureTable({
+        tableRow("Acme Dimmer Pack", "CO2 1", "1", "1", "1 Channel", 1, "-2m", "0m", "-3m", "d1"),
+        tableRow("Acme Dimmer Pack", "FLAME 1", "1", "2", "1 Channel", 1, "2m", "0m", "-3m", "d2"),
+        tableRow("Acme Dimmer Pack", "SIDE 1", "1", "3", "1 Channel", 1, "4m", "0m", "-3m", "d3"),
+    });
+    const QVariantMap pack = previewType(other.patch()->tablePreviewData(dimmers), "Acme Dimmer Pack");
+    QCOMPARE(pack.value("status").toString(), QString("generic"));
+    QCOMPARE(pack.value("icon").toString(), QString());
+    QCOMPARE(pack.value("kind").toString(), QString("co2"));
+    QVERIFY(other.patch()->importTableData(dimmers).isEmpty() == false);
+    const quint32 co2 = fixtureNamed(other.doc(), "CO2 1")->id();
+    const quint32 flame = fixtureNamed(other.doc(), "FLAME 1")->id();
+    const quint32 side = fixtureNamed(other.doc(), "SIDE 1")->id();
+    QCOMPARE(other.patch()->fixtureIcon(co2), QString());
+    QCOMPARE(other.patch()->fixtureIcon(flame), QString());
+    QCOMPARE(planFixture(other.patch(), co2).value("kind").toString(), QString("co2"));
+    QCOMPARE(planFixture(other.patch(), flame).value("kind").toString(), QString("flame"));
+    QCOMPARE(planFixture(other.patch(), side).value("kind").toString(), QString("dimmer"));
+    // (a show imported before, with the dimmer icon on them: a new import takes it away)
+    other.patch()->setFixtureIcon({ co2 }, "dimmer");
+    {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        other.patch()->saveXML(&writer);
+        buffer.close();
+        QByteArray saved = buffer.data();
+        saved.replace(QString("ID=\"%1\"").arg(co2).toUtf8(), QString("ID=\"%1\" ImportIcon=\"dimmer\"").arg(co2).toUtf8());
+        QVERIFY(saved.contains("ImportIcon=\"dimmer\""));
+        other.patch()->clearPlan();
+        QXmlStreamReader reader(saved);
+        reader.readNextStartElement();
+        QVERIFY(other.patch()->loadXML(reader));
+    }
+    QCOMPARE(other.patch()->fixtureIcon(co2), QString("dimmer"));
+    QVERIFY(other.patch()->importTableData(dimmers).isEmpty() == false);
+    QCOMPARE(other.patch()->fixtureIcon(co2), QString());
+    QCOMPARE(planFixture(other.patch(), co2).value("kind").toString(), QString("co2"));
 }
 
 #undef QCOMPARE_LEVEL

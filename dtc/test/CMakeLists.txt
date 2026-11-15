@@ -22,6 +22,7 @@ target_link_libraries(dtc_zone_test PRIVATE
 add_executable(dtc_backend_test
     backend_test.cpp
     ../src/patchmanager.cpp ../src/patchmanager.h ../src/patchplan.cpp
+    ../src/patchimport.cpp ../src/patchtable.cpp ../src/patchtable.h ../src/patchkinds.cpp
     ../src/aim.cpp ../src/aim.h
     ../src/cpuload.cpp ../src/cpuload.h
     ../src/fixturelibrary.cpp ../src/fixturelibrary.h

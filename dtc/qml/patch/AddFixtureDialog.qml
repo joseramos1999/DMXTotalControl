@@ -23,7 +23,8 @@ import QtQuick.Layouts
 import DMXTotalControl
 import DMXTotalControl.Backend
 
-/** Browse the fixture library (manufacturer > model > mode) and patch */
+/** Browse the fixture library (manufacturer > model > mode) and patch; or,
+ *  with pickOnly, choose a fixture and a mode (picked()) */
 Popup {
     id: dialog
 
@@ -33,6 +34,12 @@ Popup {
     property var allManufacturers: []
     /** Why the last patch did nothing */
     property string error: ""
+    /** Only choose a fixture and its mode, for $pickFor (the patch import:
+     *  a fixture type of a table, with $pickChannels channels) */
+    property bool pickOnly: false
+    property string pickFor: ""
+    property int pickChannels: 0
+    signal picked(string manufacturer, string model, string mode)
 
     readonly property bool isDimmer: model === "Generic Dimmer"
     readonly property int channelsPerFixture: isDimmer ? dimmerChannels.value
@@ -76,7 +83,9 @@ Popup {
     function pickModel(name) {
         model = name
         modes = Core.patch.modes(manufacturer, name)
-        modeCombo.currentIndex = 0
+        // choosing for a table: its channel count first
+        const same = pickOnly && pickChannels > 0 ? modes.findIndex(m => m.channels === pickChannels) : -1
+        modeCombo.currentIndex = Math.max(0, same)
         nameField.text = name === "Generic Dimmer" ? qsTr("Dimmer") : name
     }
     /** Choose $name of $maker, ready to patch (also one just imported
@@ -90,6 +99,21 @@ Popup {
             manufList.positionViewAtIndex(allManufacturers.indexOf(maker), ListView.Contain)
             modelList.positionViewAtIndex(modelList.model.indexOf(name), ListView.Contain)
         })
+    }
+    /** The models of $maker, none chosen */
+    function showManufacturer(maker) {
+        allManufacturers = Core.patch.manufacturers()
+        search.text = ""
+        manufacturer = maker
+        model = ""
+        modes = []
+        Qt.callLater(() => manufList.positionViewAtIndex(allManufacturers.indexOf(maker), ListView.Contain))
+    }
+    /** The mode $name of the model chosen, when it has it */
+    function chooseMode(name) {
+        const i = modes.findIndex(m => m.name === name)
+        if (i >= 0)
+            modeCombo.currentIndex = i
     }
     /** Developer option --patch-view share: the GDTF-Share browser over it */
     function openShare() {
@@ -142,12 +166,13 @@ Popup {
         RowLayout {
             Layout.fillWidth: true
             Text {
-                text: qsTr("Add fixtures")
+                Layout.fillWidth: true
+                text: dialog.pickOnly ? qsTr("Choose the fixture for “%1”").arg(dialog.pickFor) : qsTr("Add fixtures")
                 color: Theme.text
                 font.pixelSize: Theme.fontLarge
                 font.weight: Font.Bold
+                elide: Text.ElideRight
             }
-            Item { Layout.fillWidth: true }
             TextField {
                 id: search
                 Layout.preferredWidth: 280
@@ -219,7 +244,7 @@ Popup {
             Panel {
                 Layout.preferredWidth: 280
                 Layout.fillHeight: true
-                title: qsTr("Patch")
+                title: dialog.pickOnly ? qsTr("Mode") : qsTr("Patch")
                 enabled: dialog.model.length > 0
                 opacity: enabled ? 1 : 0.5
 
@@ -229,10 +254,11 @@ Popup {
                     columnSpacing: 10
                     rowSpacing: 10
 
-                    Text { text: qsTr("Name"); color: Theme.textDim }
+                    Text { text: qsTr("Name"); color: Theme.textDim; visible: !dialog.pickOnly }
                     TextField {
                         id: nameField
                         Layout.fillWidth: true
+                        visible: !dialog.pickOnly
                         color: Theme.text
                         background: Rectangle { radius: Theme.radiusSmall; color: Theme.background; border.color: nameField.activeFocus ? Theme.accent : Theme.border }
                     }
@@ -245,38 +271,53 @@ Popup {
                         model: dialog.modes.map(m => m.name + " (" + m.channels + " ch)")
                     }
 
-                    Text { text: qsTr("Channels"); color: Theme.textDim; visible: dialog.isDimmer }
+                    Text { text: qsTr("Channels"); color: Theme.textDim; visible: dialog.isDimmer && !dialog.pickOnly }
                     SpinBox {
                         id: dimmerChannels
                         Layout.fillWidth: true
-                        visible: dialog.isDimmer
+                        visible: dialog.isDimmer && !dialog.pickOnly
                         from: 1; to: 512; value: 1
                         editable: true
                     }
 
-                    Text { text: qsTr("Quantity"); color: Theme.textDim }
-                    SpinBox { id: quantitySpin; Layout.fillWidth: true; from: 1; to: 256; value: 1; editable: true }
+                    Text { text: qsTr("Quantity"); color: Theme.textDim; visible: !dialog.pickOnly }
+                    SpinBox { id: quantitySpin; Layout.fillWidth: true; visible: !dialog.pickOnly; from: 1; to: 256; value: 1; editable: true }
 
-                    Text { text: qsTr("Universe"); color: Theme.textDim }
+                    Text { text: qsTr("Universe"); color: Theme.textDim; visible: !dialog.pickOnly }
                     SpinBox {
                         id: universeSpin
                         Layout.fillWidth: true
+                        visible: !dialog.pickOnly
                         from: 1; to: Math.max(1, Core.io.universes.length); value: 1
                         editable: true
                         onValueModified: dialog.refreshAddress()
                     }
 
-                    Text { text: qsTr("Address"); color: Theme.textDim }
-                    SpinBox { id: addressSpin; Layout.fillWidth: true; from: 1; to: 512; value: 1; editable: true }
+                    Text { text: qsTr("Address"); color: Theme.textDim; visible: !dialog.pickOnly }
+                    SpinBox { id: addressSpin; Layout.fillWidth: true; visible: !dialog.pickOnly; from: 1; to: 512; value: 1; editable: true }
 
-                    Text { text: qsTr("Gap"); color: Theme.textDim }
-                    SpinBox { id: gapSpin; Layout.fillWidth: true; from: 0; to: 511; value: 0; editable: true }
+                    Text { text: qsTr("Gap"); color: Theme.textDim; visible: !dialog.pickOnly }
+                    SpinBox { id: gapSpin; Layout.fillWidth: true; visible: !dialog.pickOnly; from: 0; to: 511; value: 0; editable: true }
+
+                    // choosing for a table: how many channels its rows have
+                    Text {
+                        Layout.columnSpan: 2
+                        Layout.fillWidth: true
+                        visible: dialog.pickOnly
+                        wrapMode: Text.WordWrap
+                        text: dialog.isDimmer ? qsTr("A generic dimmer with the channels of the table")
+                              : dialog.pickChannels > 0 ? qsTr("The table says %n channel(s)", "", dialog.pickChannels)
+                                                        : qsTr("The table doesn't say how many channels")
+                        color: dialog.model.length > 0 && !dialog.isDimmer && dialog.pickChannels > 0 &&
+                               dialog.channelsPerFixture !== dialog.pickChannels ? Theme.warning : Theme.textDim
+                        font.pixelSize: Theme.fontSmall
+                    }
 
                     // ask whether the new fixtures make a group
                     CheckBox {
                         id: groupCheck
                         Layout.columnSpan: 2
-                        visible: quantitySpin.value > 1
+                        visible: !dialog.pickOnly && quantitySpin.value > 1
                         checked: true
                         text: qsTr("Make a group with them")
                     }
@@ -297,7 +338,7 @@ Popup {
                     Text {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        visible: dialog.channelsPerFixture > 0
+                        visible: !dialog.pickOnly && dialog.channelsPerFixture > 0
                         text: dialog.rangeText()
                         color: Theme.textDim
                         font.pixelSize: Theme.fontSmall
@@ -331,8 +372,20 @@ Popup {
                 flat: true
                 onClicked: shareDialog.open()
             }
-            AppButton { text: qsTr("Close"); onClicked: dialog.close() }
+            AppButton { text: dialog.pickOnly ? qsTr("Cancel") : qsTr("Close"); onClicked: dialog.close() }
             AppButton {
+                visible: dialog.pickOnly
+                text: qsTr("Use this fixture")
+                iconGlyph: Theme.iconCheck
+                primary: true
+                enabled: dialog.model.length > 0 && (dialog.isDimmer || dialog.channelsPerFixture > 0)
+                onClicked: {
+                    dialog.picked(dialog.manufacturer, dialog.model, dialog.isDimmer ? "" : dialog.modes[modeCombo.currentIndex].name)
+                    dialog.close()
+                }
+            }
+            AppButton {
+                visible: !dialog.pickOnly
                 text: quantitySpin.value > 1 ? qsTr("Patch %1 fixtures").arg(quantitySpin.value) : qsTr("Patch fixture")
                 iconGlyph: Theme.iconPlus
                 primary: true

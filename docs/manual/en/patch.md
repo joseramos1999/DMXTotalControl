@@ -107,17 +107,27 @@ The tools (they work on the selection and in its order):
 - **“Select”**: click or box to select.
 - **“Move”**: drag the fixtures (the whole selection moves) or the view.
 - **“Grid”**: “Free”, 10 cm, 25 cm, 50 cm or 1 m: where the fixtures land when you move them.
-- **“Look”**: how the selected fixtures look: “Round”, “Square” or “Rectangle”.
+- **“Look”**: how the selected fixtures look: “Round”, “Square” or “Rectangle”, and their **“Icon”** (see [Icons, colours and legend](patch.md#icons-colours-and-legend)).
 - **“Arrange”**: places them in a “Line”, “Line, front to back”, “Circle”, “Grid, by rows”, “Grid, snake”, “Grid, by columns” or “Grid, snake by columns”, with the **Spacing (cm)** and the **Columns** next to it.
 - **“Align”**: “Left”, “Centre”, “Right”, “Back”, “Middle”, “Front”, “Distribute across” and “Distribute front to back”.
 - **15°** (right click: the other way) and **90°**: rotate the selection.
 - **“Height and facing”**: where the selected moving heads hang, for [Follow](patch.md#height-and-facing-follow).
 
-Moving heads have a small arrow on their edge: the way they face. The names of fixtures that are very close together are hidden so they do not overlap: zoom in to read them.
+Moving heads have a small arrow on their edge (a notch, when the plan shows them small): the way they face. The names of fixtures that are very close together are hidden so they do not overlap: zoom in to read them.
 
 The **wheel** zooms, the **right button** or the middle one drag the view and a double click with them centres it. The buttons in the corner also zoom.
 
 > **Tip:** place the fixtures in the order you want the effects to run: select them from left to right and use “Arrange › Line”.
+
+### Icons, colours and legend
+
+Each fixture shows on the plan the icon of what it is: moving head, scanner, wash or PAR, LED bar, strobe, blinder, dimmer or conventional, laser, smoke, hazer, CO2 jet, flame, cold spark, confetti, bubbles, snow, fan, effect or other. Its fixture type says it, unless the name of its model says more: an “Effect” called “CO2 Jet” is a CO2 jet and a dimmer called “Blinder” is a blinder, but a moving head called “Beam” or “Wash” is still a moving head. A generic dimmer, which can stand in for any fixture, takes the icon of its own name (“CO2 1”, “FLAME 3”, “BLINDER1”). LED bars and matrices show their cells; the other fixtures with several cells (a blinder with several lamps, a strobe with several segments) have the icon beside their cells.
+
+To choose it by hand, select the fixtures and use **“Look” › “Icon”**; **“Automatic”** goes back to its own. The icon chosen is saved with the show.
+
+Each fixture type of the show also has its colour, on the icon and on the edge, the same every time you open the show: two types with the same icon are told apart by their colour. An icon chosen by hand on a fixture of the library doesn't change its colour. Live, the fixtures that are on show their light and the ones that are off, their icon.
+
+The **legend**, at the top left of the plan, lists the fixture types with their icon, their colour and how many there are (the generic dimmers, by what they stand in for). A click on a type selects all its fixtures, also on the plan of Program; **Ctrl+click** or **Shift+click** adds them to the selection. A click on its title folds or unfolds it, and that is remembered. The stage is placed beside or below the legend, so that it doesn't cover any fixture.
 
 ### Height and facing (Follow)
 
@@ -168,6 +178,27 @@ One fixture is created for each line of pixels, plus a group for the colour effe
 - **“Patch of another show…”**: its fixtures. They go to the same addresses if those are free; if not, to the next ones.
 - **“Scenes of another show…”**: its scenes, assigned to the fixtures of this show that match (by address and model, by name or by model). They go into groups with the same name.
 - **“Patch and scenes of another show…”**: both.
+- **“Patch from a visualizer (CSV)…”**: the fixture table your visualizer exports; see [Importing a patch from a visualizer](patch.md#importing-a-patch-from-a-visualizer).
+
+## Importing a patch from a visualizer
+
+If you design the rig in a visualizer, export its fixture table (CSV) and import it: DMX Total Control patches the same fixtures, on the same universes and addresses, with their names, their numbers and their place on the plan.
+
+1. Press **“Import” › “Patch from a visualizer (CSV)…”** and choose the file.
+2. The **“Import a patch”** window says how many fixtures the table has, of how many types and in which universes. Nothing changes until you press **“Import”**.
+3. Under **“Fixture types”**, each type of the table (fixture, mode and channels) says what it becomes and how it was found in the library: **“Exact”** (the same model and mode), **“By channel count”** (the mode with those channels), **“Similar name”**, **“Remembered”** or **“Chosen by hand”**. A **“Similar name”** shows in orange for you to check: it is a model with a name like it, not the same one. If it isn't in the library, it is patched as a **“Generic dimmer”** with its channels, in orange: everything stays at its addresses all the same. Each type also shows the icon its fixtures will have on the plan; one patched as a generic dimmer takes the one its name in the table says (a “CO2 Jet” comes as a CO2 jet; a “Flame”, as a flame).
+4. **“Change”** chooses another fixture and mode (**“Choose from the library…”**), a generic dimmer or **“Don't import”**. What you choose by hand is remembered for the next time you import that type.
+5. Under **“Options”**:
+   - **“Place them on the stage plan”**, with the **View**: **“From above”** (the audience at the bottom of the plan) or **“From the front”** (as the audience sees the rig: the highest fixtures at the top). The front view is suggested when the rig hangs at different heights, and the last one you used is remembered. The plan grows to hold the rig (it never shrinks).
+   - **Groups**: one for each fixture type, one for each layer (when the table has more than one) and the ones of the “Groups” column of the table.
+6. Below the types are the problems, before importing: addresses another fixture or another row already uses (those rows are not imported), rows without a universe or address, universes above 128, addresses past 512, a second DMX break (not imported), fixture numbers another fixture already has or that are too high (they get another one), an inverted pan or tilt that is neither yes nor no, and the universes added to the show.
+7. Press **“Import N fixtures”**. A message says how many are new and how many were updated, and any problem left.
+
+**From each row** come the fixture and its mode, the universe and address, the name (the “Unit” column) and the fixture number: the one of the “Channel” column, else the one of the other fixture number column, else an automatic one. The height of each moving head, whether it stands (turned over in the table) or hangs, and its inverted pan or tilt go to its [height and facing](patch.md#height-and-facing-follow), whether you place them on the plan or not.
+
+**Importing the table again** (after changing the rig in the visualizer) updates the same fixtures: it knows them by the identifier of each row of the table, or by the same name and fixture, and changes their mode, address, name, number and place on the plan. The ones no longer in the table stay, unless you tick **“Remove the N fixtures imported before that are no longer in the table”** (their names are shown below it). An icon you choose by hand afterwards is kept, unless the fixture its type is patched as changes.
+
+> **Limits:** only the first DMX break of each fixture is imported, and of the rotations only whether a head is turned over is used (the facing is not imported). Seen from above, fixtures hung one over another end up together on the plan: to see them apart, use the front view.
 
 ## Deleting fixtures
 

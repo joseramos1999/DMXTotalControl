@@ -48,6 +48,7 @@
 #define KSettingTheme           QStringLiteral("ui/theme")
 #define KSettingUiScale         QStringLiteral("ui/scale")
 #define KSettingGuideShown      QStringLiteral("ui/guideShown")
+#define KSettingPlanLegend      QStringLiteral("ui/planLegend")
 
 #define MAX_RECENT_SHOWS 8
 
@@ -425,4 +426,22 @@ void AppSettings::setGuideShown(bool shown)
         return;
     m_settings.setValue(KSettingGuideShown, shown);
     emit guideShownChanged();
+}
+
+QString AppSettings::planLegend() const
+{
+    const QString state = m_settings.value(KSettingPlanLegend).toString();
+    return state == QLatin1String("open") || state == QLatin1String("closed") ? state : QString();
+}
+
+void AppSettings::setPlanLegend(const QString &state)
+{
+    const QString value = state == QLatin1String("open") || state == QLatin1String("closed") ? state : QString();
+    if (value == planLegend())
+        return;
+    if (value.isEmpty())
+        m_settings.remove(KSettingPlanLegend);
+    else
+        m_settings.setValue(KSettingPlanLegend, value);
+    emit planLegendChanged();
 }

@@ -107,6 +107,10 @@ ApplicationWindow {
     /** Developer option --patch-view: a view or a dialog of the Patch page */
     property string startPatchView: ""
     onStartPatchViewChanged: { patchPage.devOpen(startPatchView); currentPage = pagePatch }
+    /** Developer options --patch-import and --patch-import-pick: the preview of a patch import */
+    property bool startPatchImportPick: false
+    property url startPatchImport: ""
+    onStartPatchImportChanged: { currentPage = pagePatch; patchPage.devImport(startPatchImport, startPatchImportPick) }
     property string startEditShow: ""
     onStartEditShowChanged: {
         let parts = startEditShow.split(":")

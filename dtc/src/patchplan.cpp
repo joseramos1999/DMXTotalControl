@@ -403,7 +403,10 @@ void PatchManager::setFixtureShape(const QVariantList &ids, const QString &shape
 void PatchManager::clearPlan()
 {
     m_shapes.clear();
+    m_icons.clear();
+    m_importIcons.clear();
     m_aims.clear();
+    m_importIds.clear();
 }
 
 /*********************************************************************

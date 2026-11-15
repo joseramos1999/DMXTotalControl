@@ -107,17 +107,27 @@ Les outils (ils agissent sur la sélection, dans son ordre) :
 - **« Sélectionner »** : clic ou cadre pour sélectionner.
 - **« Déplacer »** : faites glisser les fixtures (toute la sélection bouge) ou la vue.
 - **« Grille »** : « Libre », 10 cm, 25 cm, 50 cm ou 1 m : là où tombent les fixtures quand vous les déplacez.
-- **« Aspect »** : l’apparence des fixtures sélectionnés : « Rond », « Carré » ou « Rectangle ».
+- **« Aspect »** : l’apparence des fixtures sélectionnés : « Rond », « Carré » ou « Rectangle », et leur **« Icône »** (voir [Icônes, couleurs et légende](patch.md#icônes-couleurs-et-légende)).
 - **« Placer »** : les place en « Ligne », « Ligne, d’avant en arrière », « Cercle », « Grille, par lignes », « Grille, en zigzag », « Grille, par colonnes » ou « Grille, en zigzag par colonnes », avec l’**Espacement (cm)** et les **Colonnes** à côté.
 - **« Aligner »** : « Gauche », « Centre », « Droite », « Arrière », « Milieu », « Avant », « Répartir en largeur » et « Répartir en profondeur ».
 - **15°** (clic droit : dans l’autre sens) et **90°** : font tourner la sélection.
 - **« Hauteur et orientation »** : où sont accrochées les lyres sélectionnées, pour [Follow](patch.md#hauteur-et-orientation-follow).
 
-Les lyres portent une petite flèche sur le bord : la direction vers laquelle elles regardent. Les noms des fixtures très rapprochés sont masqués pour ne pas se chevaucher : zoomez pour les lire.
+Les lyres portent une petite flèche sur le bord (une encoche, quand le plan les montre petites) : la direction vers laquelle elles regardent. Les noms des fixtures très rapprochés sont masqués pour ne pas se chevaucher : zoomez pour les lire.
 
 La **molette** zoome, le **bouton droit** ou celui du milieu déplacent la vue et un double-clic avec eux la recentre. Les boutons du coin zooment aussi.
 
 > **Conseil :** placez les fixtures dans l’ordre dans lequel vous voulez que les effets se déplacent : sélectionnez-les de gauche à droite et utilisez « Placer › Ligne ».
+
+### Icônes, couleurs et légende
+
+Chaque fixture porte sur le plan l’icône de ce qu’il est : lyre, scanner, wash ou PAR, barre LED, stroboscope, blinder, dimmer ou traditionnel, laser, fumée, hazer, jet de CO2, flamme, étincelles froides, confettis, bulles, neige, ventilateur, effet ou autre. C’est son type de fixture qui le dit, sauf si le nom de son modèle en dit plus : un « Effect » appelé « CO2 Jet » est un jet de CO2 et un dimmer appelé « Blinder » est un blinder, mais une lyre appelée « Beam » ou « Wash » reste une lyre. Un dimmer générique, qui peut tenir la place de n’importe quel fixture, prend l’icône de son propre nom (« CO2 1 », « FLAME 3 », « BLINDER1 »). Les barres LED et les matrices montrent leurs cellules ; les autres fixtures à plusieurs cellules (un blinder à plusieurs lampes, un stroboscope à plusieurs segments) ont l’icône à côté de leurs cellules.
+
+Pour la choisir à la main, sélectionnez les fixtures et utilisez **« Aspect » › « Icône »** ; **« Automatique »** revient à la sienne. L’icône choisie est enregistrée avec le show.
+
+Chaque type de fixture du show a aussi sa couleur, sur l’icône et sur le bord, la même chaque fois que vous ouvrez le show : deux types avec la même icône se distinguent par leur couleur. Une icône choisie à la main sur un fixture de la bibliothèque ne change pas sa couleur. En direct, les fixtures allumés montrent leur lumière et ceux qui sont éteints, leur icône.
+
+La **légende**, en haut à gauche du plan, liste les types de fixture avec leur icône, leur couleur et leur nombre (les dimmers génériques, d’après ce qu’ils remplacent). Un clic sur un type sélectionne tous ses fixtures, aussi sur le plan de Programmer ; **Ctrl+clic** ou **Maj+clic** les ajoute à la sélection. Un clic sur son titre la replie ou la déplie, et c’est mémorisé. La scène se place à côté ou en dessous de la légende, pour qu’elle ne cache aucun fixture.
 
 ### Hauteur et orientation (Follow)
 
@@ -168,6 +178,27 @@ Un fixture est créé par ligne de pixels, avec un groupe pour les effets de cou
 - **« Patch d’un autre show… »** : ses fixtures. Ils vont aux mêmes adresses si elles sont libres ; sinon, aux suivantes.
 - **« Scènes d’un autre show… »** : ses scènes, assignées aux fixtures de ce show qui correspondent (par adresse et modèle, par nom ou par modèle). Elles entrent dans des groupes du même nom.
 - **« Patch et scènes d’un autre show… »** : les deux.
+- **« Patch d’un logiciel de visualisation (CSV)… »** : la table de fixtures qu’exporte votre logiciel de visualisation ; voir [Importer un patch d’un logiciel de visualisation](patch.md#importer-un-patch-dun-logiciel-de-visualisation).
+
+## Importer un patch d’un logiciel de visualisation
+
+Si vous concevez l’installation dans un logiciel de visualisation, exportez sa table de fixtures (CSV) et importez-la : DMX Total Control patche les mêmes fixtures, dans les mêmes univers et aux mêmes adresses, avec leurs noms, leurs numéros et leur place sur le plan.
+
+1. Appuyez sur **« Importer » › « Patch d’un logiciel de visualisation (CSV)… »** et choisissez le fichier.
+2. La fenêtre **« Importer un patch »** indique combien de fixtures contient la table, de combien de types et dans quels univers. Rien ne change tant que vous n’appuyez pas sur **« Importer »**.
+3. Dans **« Types de fixture »**, chaque type de la table (fixture, mode et canaux) indique ce qu’il devient et comment il a été trouvé dans la bibliothèque : **« Exact »** (le même modèle et le même mode), **« Par nombre de canaux »** (le mode avec ces canaux), **« Nom proche »**, **« Mémorisé »** ou **« Choisi à la main »**. Un **« Nom proche »** s’affiche en orange pour que vous le vérifiiez : c’est un modèle au nom proche, pas le même. S’il n’est pas dans la bibliothèque, il est patché comme **« Dimmer générique »** avec ses canaux, en orange : tout reste à ses adresses malgré tout. Chaque type montre aussi l’icône qu’auront ses fixtures sur le plan ; s’il est patché comme dimmer générique, il prend celle que dit son nom dans la table (un « CO2 Jet » apparaît comme jet de CO2 ; un « Flame », comme flamme).
+4. **« Changer »** choisit un autre fixture et un autre mode (**« Choisir dans la bibliothèque… »**), un dimmer générique ou **« Ne pas importer »**. Ce que vous choisissez à la main est mémorisé pour la prochaine fois que vous importez ce type.
+5. Dans **« Options »** :
+   - **« Les placer sur le plan de scène »**, avec la **Vue** : **« Vue de dessus »** (le public en bas du plan) ou **« Vue de face »** (comme le public voit l’installation : les fixtures les plus hauts en haut). La vue de face est proposée quand l’installation est accrochée à des hauteurs différentes, et la dernière que vous avez utilisée est mémorisée. Le plan s’agrandit pour contenir l’installation (il ne rétrécit jamais).
+   - **Groupes** : un par type de fixture, un par calque (si la table en a plus d’un) et ceux de la colonne « Groups » de la table.
+6. Sous les types se trouvent les problèmes, avant d’importer : adresses déjà utilisées par un autre fixture ou une autre ligne (ces lignes ne sont pas importées), lignes sans univers ou sans adresse, univers au-delà de 128, adresses au-delà de 512, un second DMX break (non importé), numéros de fixture déjà pris par un autre fixture ou trop élevés (ils en reçoivent un autre), un pan ou tilt inversé qui n’est ni oui ni non, et les univers ajoutés au show.
+7. Appuyez sur **« Importer N fixtures »**. Un message indique combien sont nouveaux et combien ont été mis à jour, et s’il reste un problème.
+
+**De chaque ligne** sont importés le fixture et son mode, l’univers et l’adresse, le nom (la colonne « Unit ») et le numéro de fixture : celui de la colonne « Channel », sinon celui de l’autre colonne de numéro de fixture, sinon un numéro automatique. La hauteur de chaque lyre, si elle est posée (retournée dans la table) ou suspendue, et son pan ou tilt inversé vont à sa [hauteur et orientation](patch.md#hauteur-et-orientation-follow), que vous les placiez sur le plan ou non.
+
+**Importer à nouveau** la table (après avoir changé l’installation dans le logiciel de visualisation) met à jour les mêmes fixtures : ils sont reconnus par l’identifiant de chaque ligne de la table, ou par le même nom et le même fixture, et leur mode, leur adresse, leur nom, leur numéro et leur place sur le plan changent. Ceux qui ne sont plus dans la table restent, sauf si vous cochez **« Supprimer les N fixtures importés avant qui ne sont plus dans la table »** (leurs noms s’affichent en dessous). Une icône que vous choisissez à la main ensuite est conservée, sauf si le fixture avec lequel son type est patché change.
+
+> **Limites :** seul le premier DMX break de chaque fixture est importé, et des rotations on ne garde que le fait qu’une lyre soit retournée (l’orientation n’est pas importée). Vus de dessus, les fixtures accrochés l’un au-dessus de l’autre se retrouvent ensemble sur le plan : pour les voir séparés, utilisez la vue de face.
 
 ## Supprimer des fixtures
 

@@ -233,6 +233,93 @@ QtObject {
     readonly property string iconCut: "\uf0c4"
     readonly property string iconClock: "\uf017"
     readonly property string iconWarning: "\uf071"
+    // the kinds of fixture on the stage plan (with crosshairs, sun, bolt,
+    // lightbulb, wand, cloud, star and circle of the others)
+    readonly property string iconSatelliteDish: "\uf7c0"
+    readonly property string iconGripLines: "\uf7a4"
+    // (six dots: the lamps of a blinder)
+    readonly property string iconGripDots: "\uf58d"
+    readonly property string iconSmog: "\uf75f"
+    readonly property string iconWind: "\uf72e"
+    readonly property string iconFire: "\uf06d"
+    readonly property string iconBurst: "\ue4dc"
+    readonly property string iconSoap: "\ue06e"
+    readonly property string iconSnowflake: "\uf2dc"
+    readonly property string iconFan: "\uf863"
+    readonly property string iconAsterisk: "\uf069"
+
+    /** The glyph of a kind of fixture (Core.patch.fixtureKinds): each kind its own */
+    function kindIcon(kind) {
+        switch (kind) {
+        case "movinghead": return iconTarget
+        case "scanner": return iconSatelliteDish
+        case "wash": return iconSun
+        case "ledbar": return iconGripLines
+        case "strobe": return iconBolt
+        case "blinder": return iconGripDots
+        case "dimmer": return iconLight
+        case "laser": return iconWand
+        case "smoke": return iconCloud
+        case "hazer": return iconSmog
+        case "co2": return iconWind
+        case "flame": return iconFire
+        case "spark": return iconStar
+        case "confetti": return iconBurst
+        case "bubbles": return iconSoap
+        case "snow": return iconSnowflake
+        case "fan": return iconFan
+        case "effect": return iconAsterisk
+        case "other": return iconCircle
+        default: return iconCircle
+        }
+    }
+    /** The name of a kind of fixture */
+    function kindName(kind) {
+        switch (kind) {
+        case "movinghead": return qsTr("Moving head")
+        case "scanner": return qsTr("Scanner")
+        case "wash": return qsTr("Wash / PAR")
+        case "ledbar": return qsTr("LED bar")
+        case "strobe": return qsTr("Strobe")
+        case "blinder": return qsTr("Blinder")
+        case "dimmer": return qsTr("Dimmer / conventional")
+        case "laser": return qsTr("Laser")
+        case "smoke": return qsTr("Smoke")
+        case "hazer": return qsTr("Hazer")
+        case "co2": return qsTr("CO2 jet")
+        case "flame": return qsTr("Flame")
+        case "spark": return qsTr("Cold spark")
+        case "confetti": return qsTr("Confetti")
+        case "bubbles": return qsTr("Bubbles")
+        case "snow": return qsTr("Snow")
+        case "fan": return qsTr("Fan")
+        case "effect": return qsTr("Effect")
+        case "other": return qsTr("Other")
+        default: return qsTr("Other")
+        }
+    }
+
+    /** The colours of the fixture types of the show on the stage plan (their
+     *  glyph, the edge of their body, the legend), in the order of the types
+     *  (Core.patch.fixtureTypes): the first ones the most apart. Each one
+     *  reads on the body of a fixture (3:1) in every theme: a light theme
+     *  has darker ones; at night, dimmed, they are lifted to 3:1 */
+    readonly property var fixtureTypeColors: isDark
+        ? ["#f5a524", "#4dabf7", "#ff6b6b", "#51cf66", "#cc5de8", "#ffd43b",
+           "#22b8cf", "#ff922b", "#f06595", "#94d82d", "#9775fa", "#20c997"]
+        : ["#b35c00", "#1c7ed6", "#e03131", "#2b8a3e", "#9c36b5", "#8f7400",
+           "#0c8599", "#d9480f", "#c2255c", "#5c940d", "#6741d9", "#087f5b"]
+    /** The colour of fixture type $index (its colorIndex) on the plan: dimmed
+     *  at night, as the categories, but never below 3:1 on the body of a
+     *  fixture (the same hue, lighter) */
+    function fixtureTypeColor(index) {
+        if (index === undefined || index < 0)
+            return textDim
+        let c = category(fixtureTypeColors[index % fixtureTypeColors.length])
+        for (let i = 0; i < 40 && contrast(c, surfaceRaised) < 3; i++)
+            c = Qt.lighter(c, 1.06)
+        return c
+    }
     readonly property string iconArrowsH: ""
     readonly property string iconArrowsV: ""
 

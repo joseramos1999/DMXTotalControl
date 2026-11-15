@@ -18,6 +18,7 @@
 */
 
 import QtQuick
+import QtQuick.Controls
 import DMXTotalControl
 import DMXTotalControl.Backend
 
@@ -27,7 +28,11 @@ import DMXTotalControl.Backend
  * Click to select, Ctrl/Shift+click to add, drag on the empty stage for a
  * rectangle (or a lasso) selection, and drag fixtures to move them when
  * editable. Fixtures with several heads (bars, matrices) show their cells.
- * Live, each fixture shows its colour, dimmer, strobe and gobo.
+ * Each fixture shows the glyph of its kind (a moving head, a strobe, a CO2
+ * jet...) in the colour of its type (beside its cells, smaller), which the
+ * legend lists: a click there selects the fixtures of a type. The stage
+ * fits beside or below the legend. Live, each fixture shows its colour,
+ * dimmer, strobe and gobo.
  */
 Rectangle {
     id: plan
@@ -48,6 +53,10 @@ Rectangle {
     property real snap: 0
     /** The names under the fixtures */
     property bool showNames: true
+    /** The legend: the fixture types, their glyph and colour */
+    property bool showLegend: true
+    /** Core.patch.fixtureTypes: [{ key, manufacturer, model, kind, colorIndex, count, ids }] */
+    readonly property var types: Core.patch.fixtureTypes
 
     // a drag of fixtures in progress: the others of the selection follow
     property int draggingId: -1
@@ -70,13 +79,47 @@ Rectangle {
     signal pointPicked(real x, real y)
 
     readonly property size stage: Core.patch.stageSize
-    readonly property real fitScale: Math.min((width - 40) / Math.max(1, stage.width),
-                                              (height - 40) / Math.max(1, stage.height))
+    /** The bottom and the right of the legend (0: no legend): the stage goes
+     *  below it or beside it, not under it */
+    readonly property real legendRoom: legend.visible ? legend.y + legend.height + 8 : 0
+    readonly property real legendRight: legend.visible ? legend.x + legend.width + 8 : 0
+    // the scale (px per mm) the whole stage fits in: the whole plan, below
+    // the legend, beside it
+    readonly property real fitFree: Math.min((width - 40) / Math.max(1, stage.width),
+                                             (height - 40) / Math.max(1, stage.height))
+    readonly property real fitBelow: Math.min((width - 40) / Math.max(1, stage.width),
+                                              (height - legendRoom - 20) / Math.max(1, stage.height))
+    readonly property real fitBeside: Math.min((width - legendRight - 20) / Math.max(1, stage.width),
+                                               (height - 40) / Math.max(1, stage.height))
+    /** Around the legend, where it is the bigger, unless that leaves the stage
+     *  less than half its size (a long legend on a small plan: it goes over
+     *  the stage, and folds) */
+    readonly property bool aroundLegend: legend.visible && Math.max(fitBelow, fitBeside) >= fitFree / 2
+    readonly property bool besideLegend: aroundLegend && fitBeside > fitBelow
+    readonly property real fitScale: aroundLegend ? Math.max(1e-6, Math.min(fitFree, Math.max(fitBelow, fitBeside)))
+                                                  : fitFree
     readonly property real mmScale: fitScale * zoom
-    readonly property real stageX: (width - stage.width * mmScale) / 2 + pan.x
-    readonly property real stageY: (height - stage.height * mmScale) / 2 + pan.y
-    // a small plan: smaller fixtures (as big as 50 cm of the stage, from 40 % on)
-    readonly property real bodyScale: Math.max(0.4, Math.min(1, mmScale * 500 / 40))
+    readonly property real stageX: leftAt(mmScale) + pan.x
+    readonly property real stageY: topAt(mmScale) + pan.y
+    /** Where the left of the stage is at $scale (px per mm), the view not
+     *  moved: in the middle of the plan, or of the room beside the legend */
+    function leftAt(scale) {
+        const w = stage.width * scale
+        return besideLegend ? legendRight + (width - legendRight - 20 - w) / 2 : (width - w) / 2
+    }
+    /** Where the top of the stage is at $scale, the view not moved: in the
+     *  middle, or below the legend when there is room for it */
+    function topAt(scale) {
+        const h = stage.height * scale
+        if (besideLegend)
+            return (height - h) / 2
+        return Math.max((height - h) / 2, Math.min(legendRoom, height - 20 - h))
+    }
+    // a small plan: smaller fixtures (as big as 50 cm of the stage, from 45 %
+    // on: room for a glyph that reads)
+    readonly property real bodyScale: Math.max(0.45, Math.min(1, mmScale * 500 / 40))
+    /** The glyph of each fixture: never below a size that reads */
+    readonly property int glyphSize: Math.max(12, Math.round(20 * bodyScale))
 
     /** What each fixture shows, by id (live) */
     property var states: ({})
@@ -103,21 +146,8 @@ Rectangle {
         let mmX = (px - stageX) / mmScale, mmY = (py - stageY) / mmScale
         zoom = Math.max(0.5, Math.min(10, zoom * factor))
         let s = fitScale * zoom
-        pan = Qt.point(px - mmX * s - (width - stage.width * s) / 2,
-                       py - mmY * s - (height - stage.height * s) / 2)
-    }
-
-    function typeIcon(type) {
-        switch (type) {
-        case "Moving Head": return Theme.iconTarget
-        case "Scanner": return Theme.iconLocate
-        case "Color Changer": case "LED Bar (Pixels)": case "LED Bar (Beams)": return Theme.iconSun
-        case "Strobe": return Theme.iconBolt
-        case "Smoke": case "Hazer": return Theme.iconCloud
-        case "Laser": return Theme.iconWand
-        case "Dimmer": return Theme.iconLight
-        default: return Theme.iconCircle
-        }
+        pan = Qt.point(px - mmX * s - leftAt(s),
+                       py - mmY * s - topAt(s))
     }
 
     // a point inside a polygon (lasso)
@@ -311,8 +341,14 @@ Rectangle {
             readonly property bool selected: selectionIndex >= 0
             readonly property var liveState: plan.states[modelData.id]
             readonly property bool lit: plan.live && liveState !== undefined
+            // live and giving light: its colours; dark, it shows its kind
+            readonly property bool shining: lit && liveState.dimmer > 0.02
+            // the colour of its type (the glyph, the edge of its body)
+            readonly property color typeColor: Theme.fixtureTypeColor(modelData.colorIndex)
             readonly property int heads: modelData.heads || 1
-            readonly property bool bar: heads > 1
+            // its heads as a row of cells (a bar, a matrix; not a generic
+            // dimmer standing in for one CO2 jet with two channels)
+            readonly property bool bar: !!modelData.cells
 
             // a bar: its real length, at least a few pixels per head
             readonly property real barLength: Math.max(heads * 6, (modelData.width > 0 ? modelData.width : heads * 100) * plan.mmScale)
@@ -356,7 +392,8 @@ Rectangle {
                     radius: fxItem.shape === "round" ? width / 2 : 5
                     color: fxItem.lit ? fxItem.liveState.colors[0]
                                       : (fxItem.selected ? Theme.accentFill : Theme.surfaceRaised)
-                    border.color: fxItem.selected ? Qt.lighter(Theme.accent, 1.4) : Theme.borderStrong
+                    border.color: fxItem.selected ? Qt.lighter(Theme.accent, 1.4)
+                                                  : (fxItem.shining ? Theme.borderStrong : fxItem.typeColor)
                     border.width: fxItem.selected ? 3 : 2
                 }
                 // several heads: a row of cells, pixel 1 on the left
@@ -365,7 +402,7 @@ Rectangle {
                     anchors.fill: parent
                     radius: 3
                     color: Theme.surfaceRaised
-                    border.color: fxItem.selected ? Qt.lighter(Theme.accent, 1.4) : Theme.borderStrong
+                    border.color: fxItem.selected ? Qt.lighter(Theme.accent, 1.4) : fxItem.typeColor
                     border.width: fxItem.selected ? 2 : (body.height > 8 ? 1 : 0)
                     Row {
                         id: cells
@@ -405,12 +442,31 @@ Rectangle {
                 }
             }
 
+            // what it is (its kind), in the colour of its type
             IconLabel {
                 anchors.centerIn: parent
-                visible: !fxItem.bar && !fxItem.selected && !fxItem.lit
-                icon: plan.typeIcon(fxItem.modelData.type)
-                size: Math.max(8, Math.round(15 * plan.bodyScale))
-                color: Theme.textDim
+                visible: !fxItem.bar && !fxItem.selected && !fxItem.shining
+                icon: Theme.kindIcon(fxItem.modelData.kind)
+                size: plan.glyphSize
+                color: fxItem.typeColor
+            }
+            // a row of cells: its glyph beside them, smaller (an LED bar's
+            // cells say it, unless an icon was chosen for it)
+            Rectangle {
+                visible: fxItem.bar && !fxItem.selected && !fxItem.shining
+                         && (fxItem.modelData.kind !== "ledbar" || !!fxItem.modelData.icon)
+                anchors { right: parent.left; rightMargin: 2; verticalCenter: parent.verticalCenter }
+                width: badgeGlyph.size + 6
+                height: width
+                radius: width / 2
+                color: Theme.surfaceRaised
+                IconLabel {
+                    id: badgeGlyph
+                    anchors.centerIn: parent
+                    icon: Theme.kindIcon(fxItem.modelData.kind)
+                    size: Math.max(10, Math.round(plan.glyphSize * 0.7))
+                    color: fxItem.typeColor
+                }
             }
             // selection index: effects and fans follow this order
             Rectangle {
@@ -454,17 +510,30 @@ Rectangle {
             }
 
             // a moving head: the way it faces (where its pan is in the middle),
-            // on the edge of its body
+            // on the edge of its body. Small, a notch on the edge: the chevron
+            // would cover its glyph
             Item {
+                id: facing
                 visible: !!fxItem.modelData.aimable && !fxItem.bar
                 anchors.centerIn: parent
                 width: fxItem.bodyWidth
                 height: fxItem.bodyHeight
                 rotation: fxItem.modelData.rotation || 0
+                readonly property bool small: height < 30
                 IconLabel {
+                    visible: !facing.small
                     anchors { bottom: parent.bottom; bottomMargin: 1; horizontalCenter: parent.horizontalCenter }
                     icon: Theme.iconChevronDown
                     size: 10
+                    color: fxItem.selected ? Theme.accentText : Theme.textDim
+                }
+                Rectangle {
+                    visible: facing.small
+                    width: 6
+                    height: 6
+                    rotation: 45
+                    x: (facing.width - width) / 2
+                    y: facing.height - height / 2 - 1
                     color: fxItem.selected ? Theme.accentText : Theme.textDim
                 }
             }
@@ -611,6 +680,189 @@ Rectangle {
             implicitHeight: 26
             implicitWidth: 30
             onClicked: plan.resetView()
+        }
+    }
+
+    // the legend: each fixture type of the show, its glyph in its colour and
+    // how many; a click selects them (Ctrl/Shift+click adds them). Folded,
+    // its title alone (remembered; with one type it starts folded)
+    Rectangle {
+        id: legend
+        readonly property bool open: Core.settings.planLegend === "open"
+                                     || (Core.settings.planLegend === "" && plan.types.length > 1)
+        visible: plan.showLegend && plan.types.length > 0
+        z: 30
+        anchors { left: parent.left; top: parent.top; margins: 8 }
+        // as wide as its longest line (up to 300 px: longer names are cut)
+        readonly property real linesWidth: {
+            let widest = 0
+            for (const t of plan.types) {
+                const generic = t.model.length === 0
+                widest = Math.max(widest, nameMetrics.advanceWidth(generic ? Theme.kindName(t.kind) : t.model)
+                                          + makerMetrics.advanceWidth(generic ? qsTr("Generic dimmer") : t.manufacturer))
+            }
+            // (the glyph, the gaps and the count)
+            return widest + 84
+        }
+        width: Math.min(plan.width - 16, Math.max(legendTitle.implicitWidth + 16, open ? Math.min(300, linesWidth) : 0))
+        height: legendColumn.height + 8
+        radius: Theme.radiusSmall
+        color: Qt.alpha(Theme.surface, 0.94)
+        border.color: Theme.border
+
+        FontMetrics { id: nameMetrics; font.pixelSize: Theme.fontSmall; font.weight: Font.DemiBold }
+        FontMetrics { id: makerMetrics; font.pixelSize: 10 }
+
+        // (nothing under it is clicked, nor zoomed)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: (ev) => ev.accepted = true
+        }
+
+        Column {
+            id: legendColumn
+            x: 4
+            y: 4
+            width: parent.width - 8
+
+            Rectangle {
+                width: parent.width
+                height: 26
+                radius: Theme.radiusSmall
+                color: titleMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                Row {
+                    id: legendTitle
+                    anchors { left: parent.left; leftMargin: 4; verticalCenter: parent.verticalCenter }
+                    spacing: 6
+                    IconLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: legend.open ? Theme.iconChevronDown : Theme.iconChevronRight
+                        size: 10
+                        color: Theme.textDim
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Fixture types (%1)").arg(plan.types.length)
+                        color: Theme.textDim
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Font.Bold
+                    }
+                    // folded: the glyphs alone
+                    Repeater {
+                        model: legend.open ? [] : plan.types.slice(0, 8)
+                        IconLabel {
+                            required property var modelData
+                            anchors.verticalCenter: parent.verticalCenter
+                            icon: Theme.kindIcon(modelData.kind)
+                            size: 12
+                            color: Theme.fixtureTypeColor(modelData.colorIndex)
+                        }
+                    }
+                }
+                MouseArea {
+                    id: titleMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Core.settings.planLegend = legend.open ? "closed" : "open"
+                }
+            }
+
+            ListView {
+                id: legendList
+                visible: legend.open
+                width: parent.width
+                height: visible ? Math.min(contentHeight, Math.max(60, plan.height - 80)) : 0
+                clip: true
+                interactive: contentHeight > height
+                boundsBehavior: Flickable.StopAtBounds
+                model: plan.types
+                ScrollBar.vertical: ScrollBar { policy: legendList.interactive ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff }
+
+                delegate: Rectangle {
+                    id: typeRow
+                    required property var modelData
+                    readonly property bool generic: modelData.model.length === 0
+                    readonly property bool allSelected: modelData.ids.length > 0
+                                                        && modelData.ids.every(id => plan.selection.indexOf(id) >= 0)
+                    readonly property color tint: Theme.fixtureTypeColor(modelData.colorIndex)
+                    width: ListView.view.width - (legendList.interactive ? 8 : 0)
+                    height: 26
+                    radius: Theme.radiusSmall
+                    color: allSelected ? Qt.alpha(Theme.accent, 0.2) : (rowMouse.containsMouse ? Theme.surfaceHover : "transparent")
+
+                    Item {
+                        id: glyphBox
+                        anchors { left: parent.left; leftMargin: 2; verticalCenter: parent.verticalCenter }
+                        width: 22
+                        height: 22
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 20
+                            height: 20
+                            radius: 10
+                            color: Theme.surfaceRaised
+                            border.color: typeRow.tint
+                            border.width: 2
+                        }
+                        IconLabel {
+                            anchors.centerIn: parent
+                            icon: Theme.kindIcon(typeRow.modelData.kind)
+                            size: 11
+                            color: typeRow.tint
+                        }
+                    }
+                    // the model (a generic dimmer: what it stands in for), and the maker
+                    Text {
+                        id: modelText
+                        anchors { left: glyphBox.right; leftMargin: 6; verticalCenter: parent.verticalCenter }
+                        width: Math.min(implicitWidth, countText.x - x - 6)
+                        text: typeRow.generic ? Theme.kindName(typeRow.modelData.kind) : typeRow.modelData.model
+                        color: Theme.text
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        anchors { left: modelText.right; leftMargin: 5; right: countText.left; rightMargin: 6
+                                  verticalCenter: parent.verticalCenter }
+                        text: typeRow.generic ? qsTr("Generic dimmer") : typeRow.modelData.manufacturer
+                        color: Theme.textFaint
+                        font.pixelSize: 10
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        id: countText
+                        anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                        text: typeRow.modelData.count
+                        color: Theme.textDim
+                        font.family: Theme.monoFamily
+                        font.pixelSize: Theme.fontSmall
+                    }
+                    MouseArea {
+                        id: rowMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 600
+                        ToolTip.text: (typeRow.generic ? qsTr("Generic dimmer")
+                                                       : typeRow.modelData.manufacturer + " " + typeRow.modelData.model)
+                                      + " · " + Theme.kindName(typeRow.modelData.kind)
+                                      + "\n" + qsTr("Click: select them. Ctrl+click: add them to the selection")
+                        // Ctrl/Shift: the selection and them, sent whole (a
+                        // single fixture added alone would toggle)
+                        onClicked: (ev) => {
+                            const ids = Array.from(typeRow.modelData.ids)
+                            const add = (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
+                            const selection = Array.from(plan.selection || [])
+                            plan.selectRequested(add ? selection.concat(ids.filter(id => selection.indexOf(id) < 0)) : ids,
+                                                 false)
+                        }
+                    }
+                }
+            }
         }
     }
 }
