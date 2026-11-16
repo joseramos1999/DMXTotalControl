@@ -811,6 +811,26 @@ private slots:
     void planIconByHand();
     void planIconImport();
 
+    // plan sides
+    // the «−» and «+» on each side of the stage plan: a metre more or less
+    // on the left, the right, the back (the top of the plan) or the front;
+    // on the left and at the back everything on the plan moves with that
+    // side, so it stays where it is on the stage: each fixture with its
+    // heads and linked items, the items of QLC+'s 3D view (the fixtures
+    // without a place keep none), the point Follow aims at (the heads go on
+    // aiming there); one stageSizeChanged, and one fixturesChanged when
+    // they moved, also for a few metres at once (a held «+» making up the
+    // steps a busy program missed); a side shrinks only when the metre that
+    // goes is free of fixtures, its new edge too, never below 1 m nor past
+    // 200 m (refused: nothing changes, nothing told; a stage past 200 m
+    // from QLC+ shrinks back, and doesn't grow); the room the plan reads; saved in
+    // QLC+'s Monitor, which a fresh Doc reads as it is; the glyph of «−»
+    void planSidesGrow();
+    void planSidesItems();
+    void planSidesLimits();
+    void planSidesShowFile();
+    void planSidesFollow();
+
 private:
     Doc *m_doc = nullptr;
     PatchManager *m_patch = nullptr;
@@ -50652,6 +50672,490 @@ void Backend_Test::planIconImport()
     QVERIFY(other.patch()->importTableData(dimmers).isEmpty() == false);
     QCOMPARE(other.patch()->fixtureIcon(co2), QString());
     QCOMPARE(planFixture(other.patch(), co2).value("kind").toString(), QString("co2"));
+}
+
+/*********************************************************************
+ * Plan sides: a metre more or less on each side of the stage plan
+ *********************************************************************/
+
+namespace
+{
+
+/** Where fixture $id is on the plan (mm; its base item) */
+QPointF planPlace(Doc *doc, quint32 id)
+{
+    const QVector3D p = doc->monitorProperties()->fixturePosition(id, 0, 0);
+    return QPointF(p.x(), p.y());
+}
+
+} // namespace
+
+void Backend_Test::planSidesGrow()
+{
+    // a metre more or less on each side: on the left and at the back (the
+    // top of the plan) every positioned fixture moves with that side, so it
+    // stays where it is on the stage; on the right and at the front only
+    // the size changes. One stageSizeChanged each time, one fixturesChanged
+    // when they moved, the show modified
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 3), 3);
+    const quint32 a = fixtureNamed(m_doc, "Spot 1")->id();
+    const quint32 b = fixtureNamed(m_doc, "Spot 2")->id();
+    const quint32 c = fixtureNamed(m_doc, "Spot 3")->id();
+    m_patch->setStageSize(10000, 8000);
+    m_patch->setFixturePosition(a, 2000, 3000);
+    m_patch->setFixturePosition(b, 5000, 4000);
+    m_patch->setFixturePosition(c, 8000, 6000);
+    auto places = [this, a, b, c]() {
+        return QList<QPointF>({ planPlace(m_doc, a), planPlace(m_doc, b), planPlace(m_doc, c) });
+    };
+    const QList<QPointF> start = places();
+    QCOMPARE(start, QList<QPointF>({ QPointF(2000, 3000), QPointF(5000, 4000), QPointF(8000, 6000) }));
+    QSignalSpy sizeSpy(m_patch, SIGNAL(stageSizeChanged()));
+    QSignalSpy fixturesSpy(m_patch, SIGNAL(fixturesChanged()));
+    QSignalSpy shiftSpy(m_patch, SIGNAL(stageShifted(qreal,qreal)));
+    QSignalSpy roomSpy(m_patch, SIGNAL(stageRoomChanged()));
+
+    // the left: a metre wider, every fixture a metre further right
+    m_doc->resetModified();
+    QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(11000, 8000));
+    QCOMPARE(places(), QList<QPointF>({ QPointF(3000, 3000), QPointF(6000, 4000), QPointF(9000, 6000) }));
+    QCOMPARE(sizeSpy.count(), 1);
+    QCOMPARE(fixturesSpy.count(), 1);
+    QCOMPARE(shiftSpy.count(), 1);
+    QCOMPARE(shiftSpy.last().at(0).toDouble(), 1000.0);
+    QCOMPARE(shiftSpy.last().at(1).toDouble(), 0.0);
+    QVERIFY(roomSpy.count() >= 1);
+    QVERIFY(m_doc->isModified());
+    // (what the plan reads)
+    QCOMPARE(planFixture(m_patch, a).value("x").toDouble(), 3000.0);
+    QCOMPARE(m_patch->stageRoom().value("left").toDouble(), 3000.0);
+    // a metre less there: back where they were
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(10000, 8000));
+    QCOMPARE(places(), start);
+    QCOMPARE(sizeSpy.count(), 2);
+    QCOMPARE(fixturesSpy.count(), 2);
+    QCOMPARE(shiftSpy.last().at(0).toDouble(), -1000.0);
+
+    // the back: a metre deeper, every fixture a metre further down the plan
+    QVERIFY(m_patch->resizeStageSide("top", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(10000, 9000));
+    QCOMPARE(places(), QList<QPointF>({ QPointF(2000, 4000), QPointF(5000, 5000), QPointF(8000, 7000) }));
+    QCOMPARE(sizeSpy.count(), 3);
+    QCOMPARE(fixturesSpy.count(), 3);
+    QCOMPARE(shiftSpy.last().at(0).toDouble(), 0.0);
+    QCOMPARE(shiftSpy.last().at(1).toDouble(), 1000.0);
+    QVERIFY(m_patch->resizeStageSide("top", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(10000, 8000));
+    QCOMPARE(places(), start);
+    QCOMPARE(fixturesSpy.count(), 4);
+
+    // the right and the front: the size alone; nothing moves, nor is told
+    m_doc->resetModified();
+    QVERIFY(m_patch->resizeStageSide("right", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(11000, 8000));
+    QVERIFY(m_doc->isModified());
+    QVERIFY(m_patch->resizeStageSide("bottom", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(11000, 9000));
+    QCOMPARE(places(), start);
+    QVERIFY(m_patch->resizeStageSide("right", -1000));
+    QVERIFY(m_patch->resizeStageSide("bottom", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(10000, 8000));
+    QCOMPARE(places(), start);
+    QCOMPARE(sizeSpy.count(), 8);
+    QCOMPARE(fixturesSpy.count(), 4);
+    QCOMPARE(shiftSpy.count(), 4);
+
+    // held: a metre each time; the stage kept in metres for QLC+
+    for (int i = 0; i < 10; i++)
+        QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(20000, 8000));
+    QCOMPARE(planPlace(m_doc, a), QPointF(12000, 3000));
+    QCOMPARE(m_doc->monitorProperties()->gridSize().x(), 20.0f);
+    QCOMPARE(m_doc->monitorProperties()->gridSize().y(), 8.0f);
+    QCOMPARE(sizeSpy.count(), 18);
+    QCOMPARE(fixturesSpy.count(), 14);
+
+    // a side it doesn't know ("back" and "front" are the top and the
+    // bottom), nothing to add: nothing changes, nothing told
+    m_doc->resetModified();
+    for (const char *side : { "middle", "back", "front", "" })
+        QVERIFY2(m_patch->resizeStageSide(side, 1000) == false, side);
+    QVERIFY(m_patch->resizeStageSide("left", 0) == false);
+    QVERIFY(m_patch->resizeStageSide("left", qQNaN()) == false);
+    QVERIFY(m_patch->resizeStageSide("left", qInf()) == false);
+    QCOMPARE(m_patch->stageSize(), QSizeF(20000, 8000));
+    QCOMPARE(sizeSpy.count(), 18);
+    QCOMPARE(fixturesSpy.count(), 14);
+    QVERIFY(m_doc->isModified() == false);
+
+    // held while each step keeps the program busy (a big rig): the plan
+    // makes up the steps it missed, a few metres at once, told once
+    QVERIFY(m_patch->resizeStageSide("left", 3000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(23000, 8000));
+    QCOMPARE(planPlace(m_doc, a), QPointF(15000, 3000));
+    QCOMPARE(sizeSpy.count(), 19);
+    QCOMPARE(fixturesSpy.count(), 15);
+    QCOMPARE(shiftSpy.last().at(0).toDouble(), 3000.0);
+    QVERIFY(m_patch->resizeStageSide("left", -3000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(20000, 8000));
+    QCOMPARE(planPlace(m_doc, a), QPointF(12000, 3000));
+    QCOMPARE(sizeSpy.count(), 20);
+    QCOMPARE(fixturesSpy.count(), 16);
+
+    // the «−» of the plan: a glyph the icon font of the interface has
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    const QRegularExpressionMatch minus = QRegularExpression("property string iconMinus: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    QVERIFY(minus.hasMatch());
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QVERIFY(font.supportsCharacter(minus.captured(1).toUInt(nullptr, 16)));
+}
+
+void Backend_Test::planSidesItems()
+{
+    // everything on the plan moves with the left or the back: each fixture
+    // with its heads and linked items (their rotation and gel colour stay
+    // as they are) and the items of QLC+'s 3D view; a fixture without a
+    // place keeps none. The right and the front move nothing
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", "Bar", 0, 20, 1, 0, 4), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 30, 1), 1);
+    const quint32 spot = fixtureNamed(m_doc, "Spot")->id();
+    const quint32 bar = fixtureNamed(m_doc, "Bar")->id();
+    const quint32 par = fixtureNamed(m_doc, "Par")->id();
+    QCOMPARE(m_doc->fixture(bar)->heads(), 4);
+    m_patch->setStageSize(6000, 5000);
+    m_patch->setFixturePosition(spot, 1500, 2500);
+    m_patch->setFixturePosition(bar, 3000, 2000);
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    // (patched, it got a place: it has none)
+    monitor->removeFixture(par);
+    // two heads of the bar and a linked item of the spot, where QLC+'s 3D
+    // view keeps them, a turn and a gel
+    monitor->setFixturePosition(bar, 1, 0, QVector3D(2800, 2000, 400));
+    monitor->setFixturePosition(bar, 2, 0, QVector3D(3200, 2000, 400));
+    monitor->setFixtureGelColor(bar, 1, 0, QColor("#ff0000"));
+    monitor->setFixturePosition(spot, 0, 1, QVector3D(1500, 4000, 300));
+    monitor->setFixtureRotation(spot, 0, 0, QVector3D(0, 0, 90));
+    // a truss of QLC+'s 3D view
+    monitor->setItemResource(7, "meshes/truss.dae");
+    monitor->setItemPosition(7, QVector3D(500, 1000, 2000));
+    monitor->setItemRotation(7, QVector3D(0, 45, 0));
+    QVERIFY(monitor->containsFixture(par) == false);
+
+    QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QVERIFY(m_patch->resizeStageSide("top", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(7000, 6000));
+    QCOMPARE(monitor->fixturePosition(spot, 0, 0), QVector3D(2500, 3500, 0));
+    QCOMPARE(monitor->fixturePosition(bar, 0, 0), QVector3D(4000, 3000, 0));
+    QCOMPARE(monitor->fixturePosition(bar, 1, 0), QVector3D(3800, 3000, 400));
+    QCOMPARE(monitor->fixturePosition(bar, 2, 0), QVector3D(4200, 3000, 400));
+    QCOMPARE(monitor->fixturePosition(spot, 0, 1), QVector3D(2500, 5000, 300));
+    QCOMPARE(monitor->fixtureGelColor(bar, 1, 0), QColor("#ff0000"));
+    QCOMPARE(monitor->fixtureRotation(spot, 0, 0), QVector3D(0, 0, 90));
+    QCOMPARE(monitor->itemPosition(7), QVector3D(1500, 2000, 2000));
+    QCOMPARE(monitor->itemRotation(7), QVector3D(0, 45, 0));
+    QCOMPARE(monitor->itemResource(7), QString("meshes/truss.dae"));
+    QCOMPARE(monitor->genericItemsID(), QList<quint32>({ 7 }));
+    // (no item added: the heads, the linked item and the fixtures are the ones there were)
+    QCOMPARE(monitor->fixtureIDList(bar).count(), 3);
+    QCOMPARE(monitor->fixtureIDList(spot).count(), 2);
+    // the one without a place has none
+    QVERIFY(monitor->containsFixture(par) == false);
+    QCOMPARE(planFixture(m_patch, par).value("positioned").toBool(), false);
+    QCOMPARE(planFixture(m_patch, spot).value("positioned").toBool(), true);
+
+    // the right and the front: nothing moves
+    QVERIFY(m_patch->resizeStageSide("right", 1000));
+    QVERIFY(m_patch->resizeStageSide("bottom", 1000));
+    QCOMPARE(monitor->fixturePosition(bar, 1, 0), QVector3D(3800, 3000, 400));
+    QCOMPARE(monitor->fixturePosition(spot, 0, 1), QVector3D(2500, 5000, 300));
+    QCOMPARE(monitor->itemPosition(7), QVector3D(1500, 2000, 2000));
+    // a metre less on the left and at the back: where they were
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    QVERIFY(m_patch->resizeStageSide("top", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(7000, 6000));
+    QCOMPARE(monitor->fixturePosition(spot, 0, 0), QVector3D(1500, 2500, 0));
+    QCOMPARE(monitor->fixturePosition(bar, 1, 0), QVector3D(2800, 2000, 400));
+    QCOMPARE(monitor->fixturePosition(bar, 2, 0), QVector3D(3200, 2000, 400));
+    QCOMPARE(monitor->fixturePosition(spot, 0, 1), QVector3D(1500, 4000, 300));
+    QCOMPARE(monitor->itemPosition(7), QVector3D(500, 1000, 2000));
+    QVERIFY(monitor->containsFixture(par) == false);
+}
+
+void Backend_Test::planSidesLimits()
+{
+    // a side shrinks only when the metre that goes is free of positioned
+    // fixtures, its new edge too: a fixture is never left outside the plan
+    // nor on its edge. Never below 1 m nor past 200 m. Refused: false,
+    // nothing changes, nothing told. The room the plan reads for its «−»
+    m_patch->setStageSize(6000, 4000);
+    // no fixture: the whole stage is free
+    QVariantMap room = m_patch->stageRoom();
+    QCOMPARE(room.value("left").toDouble(), 6000.0);
+    QCOMPARE(room.value("right").toDouble(), 6000.0);
+    QCOMPARE(room.value("top").toDouble(), 4000.0);
+    QCOMPARE(room.value("bottom").toDouble(), 4000.0);
+    QCOMPARE(room.value("minimum").toDouble(), 1000.0);
+    QCOMPARE(room.value("maximum").toDouble(), 200000.0);
+    // nor do fixtures without a place
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 3), 3);
+    const quint32 p1 = fixtureNamed(m_doc, "Par 1")->id();
+    const quint32 p2 = fixtureNamed(m_doc, "Par 2")->id();
+    const quint32 p3 = fixtureNamed(m_doc, "Par 3")->id();
+    // (patched, they got a place: they have none)
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    for (quint32 id : { p1, p2, p3 })
+        monitor->removeFixture(id);
+    QCOMPARE(m_patch->stageRoom().value("left").toDouble(), 6000.0);
+    QCOMPARE(m_patch->stageRoom().value("bottom").toDouble(), 4000.0);
+    m_patch->setFixturePosition(p1, 1500, 1000);
+    m_patch->setFixturePosition(p2, 4000, 2500);
+    // told when a fixture moves, or the stage changes
+    QSignalSpy roomSpy(m_patch, SIGNAL(stageRoomChanged()));
+    m_patch->setFixturePosition(p2, 4800, 2500);
+    QCOMPARE(roomSpy.count(), 1);
+    room = m_patch->stageRoom();
+    QCOMPARE(room.value("left").toDouble(), 1500.0);
+    QCOMPARE(room.value("right").toDouble(), 1200.0);
+    QCOMPARE(room.value("top").toDouble(), 1000.0);
+    QCOMPARE(room.value("bottom").toDouble(), 1500.0);
+
+    QSignalSpy sizeSpy(m_patch, SIGNAL(stageSizeChanged()));
+    QSignalSpy fixturesSpy(m_patch, SIGNAL(fixturesChanged()));
+    m_doc->resetModified();
+    // refused, and nothing changed nor told
+    auto refused = [&](const char *side, qreal delta) {
+        const QSizeF size = m_patch->stageSize();
+        const QList<QPointF> places = { planPlace(m_doc, p1), planPlace(m_doc, p2) };
+        const qsizetype sizes = sizeSpy.count(), fixtures = fixturesSpy.count();
+        const bool modified = m_doc->isModified();
+        return m_patch->resizeStageSide(side, delta) == false && m_patch->stageSize() == size &&
+               QList<QPointF>({ planPlace(m_doc, p1), planPlace(m_doc, p2) }) == places &&
+               sizeSpy.count() == sizes && fixturesSpy.count() == fixtures && m_doc->isModified() == modified;
+    };
+    // the back: a fixture a metre from it would be on the new edge
+    QVERIFY(refused("top", -1000));
+    QVERIFY(m_doc->isModified() == false);
+    // the left: 1.5 m free
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(5000, 4000));
+    QCOMPARE(planPlace(m_doc, p1), QPointF(500, 1000));
+    QCOMPARE(planPlace(m_doc, p2), QPointF(3800, 2500));
+    // now a fixture half a metre from it: inside the metre that would go
+    QCOMPARE(m_patch->stageRoom().value("left").toDouble(), 500.0);
+    QVERIFY(refused("left", -1000));
+    // the right: 1.2 m free, then 20 cm
+    QVERIFY(m_patch->resizeStageSide("right", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(4000, 4000));
+    QCOMPARE(m_patch->stageRoom().value("right").toDouble(), 200.0);
+    QVERIFY(refused("right", -1000));
+    // the front: 1.5 m, then half a metre
+    QVERIFY(m_patch->resizeStageSide("bottom", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(4000, 3000));
+    QCOMPARE(m_patch->stageRoom().value("bottom").toDouble(), 500.0);
+    QVERIFY(refused("bottom", -1000));
+    QVERIFY(refused("top", -1000));
+    // (more at once: the room must be more than that)
+    QVERIFY(refused("left", -2000));
+    // growing is always possible, and makes the room
+    QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QCOMPARE(m_patch->stageRoom().value("left").toDouble(), 1500.0);
+    QCOMPARE(planPlace(m_doc, p1), QPointF(1500, 1000));
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+
+    // the spin boxes of the plan shrink on the right and at the front, and
+    // leave a fixture outside the stage as it is: the room on that side is
+    // below nothing, and that side doesn't shrink more (it grows)
+    m_patch->setStageSize(3000, 3000);
+    QCOMPARE(planPlace(m_doc, p2), QPointF(3800, 2500));
+    QCOMPARE(m_patch->stageRoom().value("right").toDouble(), -800.0);
+    QVERIFY(refused("right", -1000));
+    QVERIFY(m_patch->resizeStageSide("right", 1000));
+    QCOMPARE(m_patch->stageRoom().value("right").toDouble(), 200.0);
+
+    // 1 m at least: with no fixture placed, the whole stage is free but
+    // stops at a metre
+    monitor->removeFixture(p1);
+    monitor->removeFixture(p2);
+    QVERIFY(monitor->containsFixture(p3) == false);
+    m_patch->setStageSize(2000, 1000);
+    QCOMPARE(m_patch->stageRoom().value("top").toDouble(), 1000.0);
+    QVERIFY(refused("top", -1000));
+    QVERIFY(refused("bottom", -1000));
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(1000, 1000));
+    QVERIFY(refused("left", -1000));
+    QVERIFY(refused("right", -1000));
+    QVERIFY(refused("right", -500));
+    // 200 m at most
+    m_patch->setStageSize(199000, 1000);
+    QVERIFY(m_patch->resizeStageSide("right", 1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(200000, 1000));
+    QVERIFY(refused("right", 1000));
+    QVERIFY(refused("left", 1000));
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    m_patch->setStageSize(1000, 199500);
+    QVERIFY(refused("top", 1000));
+    QVERIFY(refused("bottom", 1000));
+    QVERIFY(m_patch->resizeStageSide("bottom", 500));
+    QCOMPARE(m_patch->stageSize(), QSizeF(1000, 200000));
+    QVERIFY(m_doc->fixture(p3) != nullptr && monitor->containsFixture(p3) == false);
+
+    // a stage past 200 m (from QLC+, or a file written by hand): it doesn't
+    // grow, and shrinks back towards 200 m a metre at a time
+    monitor->setGridSize(QVector3D(250, 8, 3));
+    QCOMPARE(m_patch->stageSize(), QSizeF(250000, 8000));
+    QCOMPARE(m_patch->stageRoom().value("left").toDouble(), 250000.0);
+    QVERIFY(refused("right", 1000));
+    QVERIFY(refused("left", 1000));
+    QVERIFY(m_patch->resizeStageSide("left", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(249000, 8000));
+    QVERIFY(m_patch->resizeStageSide("right", -1000));
+    QCOMPARE(m_patch->stageSize(), QSizeF(248000, 8000));
+    QVERIFY(refused("right", 1000));
+}
+
+void Backend_Test::planSidesShowFile()
+{
+    // a metre more on the left and at the back, saved: the size and the
+    // places are in QLC+'s Monitor element, which a fresh Doc (QLC+) reads
+    // as they are, and so does the show opened again
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Sides.qxw");
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        PatchManager *patch = core.patch();
+        Doc *doc = core.doc();
+        QCOMPARE(patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+        QCOMPARE(patch->addFixtures("Generic", KGenericDimmerModel, "", "Bar", 0, 20, 1, 0, 4), 1);
+        QCOMPARE(patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 30, 1), 1);
+        const quint32 spot = fixtureNamed(doc, "Spot")->id();
+        const quint32 bar = fixtureNamed(doc, "Bar")->id();
+        patch->setStageSize(8000, 6000);
+        patch->setFixturePosition(spot, 2000, 1500);
+        patch->setFixturePosition(bar, 4000, 3000);
+        doc->monitorProperties()->setFixturePosition(bar, 1, 0, QVector3D(3800, 3000, 400));
+        doc->monitorProperties()->setItemResource(3, "meshes/truss.dae");
+        doc->monitorProperties()->setItemPosition(3, QVector3D(1000, 500, 2500));
+        // (patched, it got a place: it has none)
+        doc->monitorProperties()->removeFixture(fixtureNamed(doc, "Par")->id());
+        QVERIFY(patch->resizeStageSide("left", 1000));
+        QVERIFY(patch->resizeStageSide("top", 1000));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    }
+    const QByteArray saved = fileBytes(path);
+    QVERIFY(saved.isEmpty() == false);
+
+    // QLC+ reads the Monitor as it is
+    QStringList read;
+    const QByteArray engine = qlcPlusEngine(saved, &read);
+    QVERIFY2(read.contains("Monitor"), qPrintable(read.join(' ')));
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    QCOMPARE(qlc.fixtures().count(), 3);
+    const quint32 qlcSpot = fixtureNamed(&qlc, "Spot")->id();
+    const quint32 qlcBar = fixtureNamed(&qlc, "Bar")->id();
+    MonitorProperties *monitor = qlc.monitorProperties();
+    QCOMPARE(monitor->gridSize().x(), 9.0f);
+    QCOMPARE(monitor->gridSize().y(), 7.0f);
+    QCOMPARE(monitor->fixturePosition(qlcSpot, 0, 0).x(), 3000.0f);
+    QCOMPARE(monitor->fixturePosition(qlcSpot, 0, 0).y(), 2500.0f);
+    QCOMPARE(monitor->fixturePosition(qlcBar, 0, 0).x(), 5000.0f);
+    QCOMPARE(monitor->fixturePosition(qlcBar, 0, 0).y(), 4000.0f);
+    QVERIFY(monitor->containsItem(qlcBar, 1, 0));
+    QCOMPARE(monitor->fixturePosition(qlcBar, 1, 0), QVector3D(4800, 4000, 400));
+    QCOMPARE(monitor->itemPosition(3), QVector3D(2000, 1500, 2500));
+    QCOMPARE(monitor->itemResource(3), QString("meshes/truss.dae"));
+    QVERIFY(monitor->containsFixture(fixtureNamed(&qlc, "Par")->id()) == false);
+
+    // opened again
+    DtcCore again;
+    again.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(again.openShow(QUrl::fromLocalFile(path)));
+    PatchManager *patch = again.patch();
+    QCOMPARE(patch->stageSize(), QSizeF(9000, 7000));
+    const quint32 spot = fixtureNamed(again.doc(), "Spot")->id();
+    const quint32 bar = fixtureNamed(again.doc(), "Bar")->id();
+    QCOMPARE(planFixture(patch, spot).value("x").toDouble(), 3000.0);
+    QCOMPARE(planFixture(patch, spot).value("y").toDouble(), 2500.0);
+    QCOMPARE(planFixture(patch, bar).value("x").toDouble(), 5000.0);
+    // (opened, the fixture without a place gets one, as every show does: not here)
+    again.doc()->monitorProperties()->removeFixture(fixtureNamed(again.doc(), "Par")->id());
+    const QVariantMap room = patch->stageRoom();
+    QCOMPARE(room.value("left").toDouble(), 3000.0);
+    QCOMPARE(room.value("right").toDouble(), 4000.0);
+    QCOMPARE(room.value("top").toDouble(), 2500.0);
+    QCOMPARE(room.value("bottom").toDouble(), 3000.0);
+    // and a metre less on the left again
+    QVERIFY(patch->resizeStageSide("left", -1000));
+    QCOMPARE(again.doc()->monitorProperties()->fixturePosition(bar, 1, 0), QVector3D(3800, 4000, 400));
+}
+
+void Backend_Test::planSidesFollow()
+{
+    // the point Follow aims at moves with the left or the back: the heads
+    // still aim at the same spot of the stage (their pan and tilt don't
+    // change), and aimed again at the point (XYGrid does, when its height
+    // changes) they stay there. The right and the front don't move it; a
+    // head moved in the plan still drops it
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 2), 2);
+    const quint32 spotA = fixtureNamed(m_doc, "Spot 1")->id();
+    const quint32 spotB = fixtureNamed(m_doc, "Spot 2")->id();
+    m_patch->setStageSize(10000, 8000);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    m_patch->setFixturePosition(spotA, 2000, 1000);
+    m_patch->setFixturePosition(spotB, 8000, 1000);
+    prog.selectFixtures({ int(spotA), int(spotB) });
+    QVERIFY(prog.aimAt(3000, 5000, 0).value("active").toBool());
+    const auto values = prog.valueMap();
+    QVERIFY(values.isEmpty() == false);
+    QSignalSpy aimSpy(&prog, SIGNAL(aimChanged()));
+
+    QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QVERIFY(prog.aim().value("active").toBool());
+    QCOMPARE(prog.aim().value("x").toDouble(), 4000.0);
+    QCOMPARE(prog.aim().value("y").toDouble(), 5000.0);
+    QCOMPARE(prog.aim().value("z").toDouble(), 0.0);
+    QCOMPARE(prog.aim().value("aimed").toList().count(), 2);
+    QCOMPARE(aimSpy.count(), 1);
+    QVERIFY(prog.valueMap() == values);
+    prog.aimAt(prog.aim().value("x").toDouble(), prog.aim().value("y").toDouble(), 0);
+    QVERIFY(prog.valueMap() == values);
+    // the back
+    aimSpy.clear();
+    QVERIFY(m_patch->resizeStageSide("top", 1000));
+    QCOMPARE(prog.aim().value("x").toDouble(), 4000.0);
+    QCOMPARE(prog.aim().value("y").toDouble(), 6000.0);
+    QCOMPARE(aimSpy.count(), 1);
+    prog.aimAt(prog.aim().value("x").toDouble(), prog.aim().value("y").toDouble(), 0);
+    QVERIFY(prog.valueMap() == values);
+    QVERIFY(m_patch->resizeStageSide("top", -1000));
+    QCOMPARE(prog.aim().value("y").toDouble(), 5000.0);
+    // the right and the front: the point stays, and so does the aim
+    aimSpy.clear();
+    QVERIFY(m_patch->resizeStageSide("right", 1000));
+    QVERIFY(m_patch->resizeStageSide("bottom", 1000));
+    QVERIFY(prog.aim().value("active").toBool());
+    QCOMPARE(prog.aim().value("x").toDouble(), 4000.0);
+    QCOMPARE(prog.aim().value("y").toDouble(), 5000.0);
+    QCOMPARE(aimSpy.count(), 0);
+    QVERIFY(prog.valueMap() == values);
+
+    // a head moved in the plan: no aim, as before; then nothing to move
+    m_patch->setFixturePosition(spotB, 7000, 1000);
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    aimSpy.clear();
+    QVERIFY(m_patch->resizeStageSide("left", 1000));
+    QVERIFY(prog.aim().value("active").toBool() == false);
+    QCOMPARE(aimSpy.count(), 0);
 }
 
 #undef QCOMPARE_LEVEL

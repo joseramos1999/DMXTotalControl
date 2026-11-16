@@ -71,7 +71,7 @@ I gruppi di fixture servono per selezionare con un clic in Patch e in Programma 
 1. Seleziona le fixture.
 2. Premi **«Crea gruppo»** e scrivi il suo nome (per esempio, `Wash frontale` o `Spot`).
 
-Il pannello **«Gruppi di fixture»** a sinistra li mostra con il loro numero di fixture. Un clic su un gruppo seleziona le sue fixture; **Ctrl+clic** o **Maiusc+clic** le aggiunge. Clic destro:
+Il pannello **«Gruppi di fixture»** a sinistra li mostra con il loro numero di fixture. Un clic su un gruppo seleziona le sue fixture (nella vista «Pianta 2D», lo isola: vedi [Isolare un gruppo nella pianta](patch.md#isolare-un-gruppo-nella-pianta)); **Ctrl+clic** o **Maiusc+clic** le aggiunge. Clic destro:
 
 - **«Rinomina»**.
 - **«Sposta su»** e **«Sposta giù»**: lo spostano nell'elenco.
@@ -97,8 +97,10 @@ La pianta mostra il palco visto dall'alto, con il **PUBBLICO** in basso. Serve p
 
 Nell'intestazione della pianta:
 
-- **«Larghezza (m)»** e **«Profondità (m)»**: la dimensione del palco.
+- **«Larghezza (m)»** e **«Profondità (m)»**: la dimensione del palco, fino a 200 m. Lo allargano o lo restringono a destra e davanti; una fixture rimasta fuori da un palco più piccolo resta dov’è.
 - **«Disponi automaticamente»**: distribuisce tutte le fixture.
+
+Fuori dal palco, al centro di ogni lato, ci sono un **«−»** e un **«+»**: tolgono o aggiungono 1 m su quel lato (a sinistra, a destra, sul fondo o davanti, dal lato del pubblico); tienili premuti per più metri. Le fixture restano dove sono sul palco: a sinistra e sul fondo si spostano con quel lato, come il punto a cui punta [Follow](programar.md#follow-puntare-a-un-punto), e la nuova striscia compare su quel lato. Finché il mouse è sopra, la vista della pianta non cambia e i pulsanti non si spostano, così puoi fare clic più volte di seguito; quando lo allontani, la pianta si adatta di nuovo (se avevi fatto zoom o spostato la vista, resta com'è). Il **«−»** di un lato funziona solo se nessuna fixture è a 1 m o meno da esso: spostala prima (passa il mouse sul pulsante per sapere perché).
 
 Gli strumenti (lavorano sulla selezione e nel suo ordine):
 
@@ -128,6 +130,18 @@ Per sceglierla a mano, seleziona le fixture e usa **«Aspetto» › «Icona»**;
 Ogni tipo di fixture dello show ha anche il suo colore, sull'icona e sul bordo, lo stesso ogni volta che apri lo show: due tipi con la stessa icona si distinguono per il colore. Un'icona scelta a mano su una fixture della libreria non ne cambia il colore. Dal vivo, le fixture accese mostrano la loro luce e quelle spente, la loro icona.
 
 La **legenda**, in alto a sinistra della pianta, elenca i tipi di fixture con la loro icona, il loro colore e quante sono (i dimmer generici, per ciò che sostituiscono). Un clic su un tipo seleziona tutte le sue fixture, anche sulla pianta di Programma; **Ctrl+clic** o **Maiusc+clic** le aggiunge alla selezione. Un clic sul suo titolo la chiude o la apre, e viene ricordato. Il palco si colloca accanto o sotto la legenda, perché non copra nessuna fixture.
+
+### Isolare un gruppo nella pianta
+
+Nella vista «Pianta 2D», un clic su un gruppo del pannello «Gruppi di fixture» lo **isola**: le altre fixture restano bloccate e sbiadite nella pianta, e niente le seleziona né le sposta: né un clic, né il rettangolo, né il lazo, né la legenda, né «Sposta» (un clic su una di esse non fa nulla, e il rettangolo può iniziare sopra di essa). Così è facile selezionare parte di un gruppo in una pianta piena di fixture e farne gruppi più piccoli. Della selezione restano solo le fixture del gruppo che erano già selezionate. Il gruppo isolato ha un bordo spesso e un occhio, e accanto alla legenda della pianta un'etichetta dice quale gruppo vedi e quante fixture ha.
+
+- **«Tutte»** seleziona tutte le fixture del gruppo, come **Ctrl+clic** sul gruppo. **Ctrl+clic** su un altro gruppo aggiunge solo le sue fixture che sono anche in quello isolato.
+- Nella legenda, un clic su un tipo seleziona solo le sue fixture del gruppo; i tipi che non ne hanno nessuna appaiono sbiaditi.
+- Un clic su un altro gruppo isola quello al suo posto; uno schema di selezione del suo menu isola prima quel gruppo. Un clic su una selezione seleziona sempre tutte le sue fixture: se alcune sono bloccate, prima isola il gruppo della selezione o, se contiene fixture di altri gruppi, termina l'isolamento.
+- Dopo **«Crea gruppo»**, il gruppo resta isolato: puoi continuare a dividerlo in altri gruppi.
+- Per terminare: un altro clic sul gruppo, la **×** dell'etichetta o **Esc**. Termina anche passando a «Elenco» o «Canali», aprendo un altro show o eliminando il gruppo. Non si salva con lo show.
+
+Nelle viste «Elenco» e «Canali», un clic su un gruppo continua a selezionare le sue fixture, come sempre.
 
 ### Altezza e orientamento (Follow)
 
@@ -189,7 +203,7 @@ Se progetti l’impianto in un programma di visualizzazione, esporta la sua tabe
 3. In **«Tipi di fixture»**, ogni tipo della tabella (fixture, modalità e canali) indica cosa diventa e come è stato trovato nella libreria: **«Esatto»** (lo stesso modello e la stessa modalità), **«Per numero di canali»** (la modalità con quei canali), **«Nome simile»**, **«Ricordato»** o **«Scelto a mano»**. Un **«Nome simile»** appare in arancione perché tu lo controlli: è un modello con un nome simile, non lo stesso. Se non è nella libreria, viene patchato come **«Dimmer generico»** con i suoi canali, in arancione: tutto resta comunque ai suoi indirizzi. Ogni tipo mostra anche l'icona che avranno le sue fixture sulla pianta; se viene patchato come dimmer generico, prende quella che dice il suo nome nella tabella (un «CO2 Jet» appare come getto di CO2; un «Flame», come fiamma).
 4. **«Cambia»** sceglie un’altra fixture e modalità (**«Scegli dalla libreria…»**), un dimmer generico o **«Non importare»**. Quello che scegli a mano viene ricordato per la prossima volta che importi quel tipo.
 5. In **«Opzioni»**:
-   - **«Posizionarle sulla pianta del palco»**, con la **Vista**: **«Dall’alto»** (il pubblico in fondo alla pianta) o **«Frontale»** (come il pubblico vede l’impianto: le fixture più alte in cima). La vista frontale viene proposta quando l’impianto è appeso ad altezze diverse, e l’ultima che hai usato viene ricordata. La pianta si allarga per contenere l’impianto (non si restringe mai).
+   - **«Posizionarle sulla pianta del palco»**, con la **Vista**: **«Dall’alto»** (il pubblico in fondo alla pianta) o **«Frontale»** (come il pubblico vede l’impianto: le fixture più alte in cima). La vista frontale viene proposta quando l’impianto è appeso ad altezze diverse, e l’ultima che hai usato viene ricordata. La pianta si allarga per contenere l’impianto (non si restringe mai). Ogni importazione che le posiziona centra di nuovo l’impianto sulla pianta, anche dopo aver cambiato i suoi lati con «−» e «+».
    - **Gruppi**: uno per ogni tipo di fixture, uno per ogni livello (se la tabella ne ha più di uno) e quelli della colonna «Groups» della tabella.
 6. Sotto i tipi ci sono i problemi, prima di importare: indirizzi già usati da un’altra fixture o da un’altra riga (quelle righe non vengono importate), righe senza universo o indirizzo, universi oltre il 128, indirizzi oltre il 512, un secondo DMX break (non importato), numeri di fixture che ha già un’altra fixture o troppo alti (ne ricevono un altro), un pan o tilt invertito che non è né sì né no, e gli universi aggiunti allo show.
 7. Premi **«Importa N fixture»**. Un messaggio indica quante sono nuove e quante sono state aggiornate, e se resta qualche problema.

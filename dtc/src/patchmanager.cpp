@@ -83,6 +83,9 @@ PatchManager::PatchManager(Doc *doc, QObject *parent)
     connect(m_doc, SIGNAL(cleared()), this, SLOT(notifyGroups()));
     connect(m_doc, SIGNAL(loaded()), this, SIGNAL(stageSizeChanged()));
     connect(m_doc, SIGNAL(cleared()), this, SIGNAL(stageSizeChanged()));
+    // the room between the sides of the stage and the fixtures
+    connect(this, &PatchManager::stageSizeChanged, this, &PatchManager::stageRoomChanged);
+    connect(this, &PatchManager::fixturesChanged, this, &PatchManager::stageRoomChanged);
 
     m_identifySource->setOutputEnabled(true);
     m_blinkTimer->setInterval(350);
@@ -871,14 +874,102 @@ void PatchManager::setStageSize(qreal width, qreal height)
 {
     MonitorProperties *monitor = m_doc->monitorProperties();
     QVector3D grid = monitor->gridSize();
-    grid.setX(qBound(1.0, width / 1000.0, 200.0));
-    grid.setY(qBound(1.0, height / 1000.0, 200.0));
+    grid.setX(qBound(stageMinimum(), width, stageMaximum()) / 1000.0);
+    grid.setY(qBound(stageMinimum(), height, stageMaximum()) / 1000.0);
     // (the same size again changes nothing)
     if (qFuzzyCompare(grid, monitor->gridSize()))
         return;
     monitor->setGridSize(grid);
     m_doc->setModified();
     emit stageSizeChanged();
+}
+
+QVariantMap PatchManager::stageRoom() const
+{
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    const QSizeF stage = stageSize();
+    // the positioned fixtures, where the plan shows them (their base item)
+    bool any = false;
+    qreal minX = 0, maxX = 0, minY = 0, maxY = 0;
+    for (Fixture *fxi : m_doc->fixtures())
+    {
+        if (monitor->containsFixture(fxi->id()) == false)
+            continue;
+        const QVector3D p = monitor->fixturePosition(fxi->id(), 0, 0);
+        minX = any ? qMin(minX, qreal(p.x())) : p.x();
+        maxX = any ? qMax(maxX, qreal(p.x())) : p.x();
+        minY = any ? qMin(minY, qreal(p.y())) : p.y();
+        maxY = any ? qMax(maxY, qreal(p.y())) : p.y();
+        any = true;
+    }
+    QVariantMap room = { { "minimum", stageMinimum() }, { "maximum", stageMaximum() } };
+    room.insert("left", any ? minX : stage.width());
+    room.insert("right", any ? stage.width() - maxX : stage.width());
+    room.insert("top", any ? minY : stage.height());
+    room.insert("bottom", any ? stage.height() - maxY : stage.height());
+    return room;
+}
+
+bool PatchManager::resizeStageSide(const QString &side, qreal deltaMm)
+{
+    const bool left = side == QLatin1String("left");
+    const bool top = side == QLatin1String("top");
+    const bool across = left || side == QLatin1String("right");
+    if ((across == false && top == false && side != QLatin1String("bottom")) ||
+        qIsFinite(deltaMm) == false || qFuzzyIsNull(deltaMm))
+        return false;
+
+    // (the stage is kept in metres, a float: half a millimetre of slack.
+    // Each way: a stage past the largest, from QLC+ or a file written by
+    // hand, still shrinks back towards it)
+    const QSizeF stage = stageSize();
+    const qreal size = (across ? stage.width() : stage.height()) + deltaMm;
+    if ((deltaMm > 0 && size > stageMaximum() + 0.5) || (deltaMm < 0 && size < stageMinimum() - 0.5))
+        return false;
+    // shrinking: no positioned fixture in the strip that goes, nor on its
+    // inner edge (the new side of the stage)
+    if (deltaMm < 0 && stageRoom().value(side).toDouble() <= -deltaMm)
+        return false;
+
+    // on the left or at the top, everything on the plan moves with the
+    // stage: each fixture with its heads and linked items, and the items of
+    // QLC+'s 3D view (its rotation, gel colour... stay as they are)
+    MonitorProperties *monitor = m_doc->monitorProperties();
+    const bool shifts = left || top;
+    const QVector3D shift(left ? float(deltaMm) : 0.0f, top ? float(deltaMm) : 0.0f, 0.0f);
+    if (shifts)
+    {
+        const QList<quint32> items = monitor->fixtureItemsID();
+        for (quint32 fid : items)
+        {
+            FixturePreviewItem item = monitor->fixtureProperties(fid);
+            item.m_baseItem.m_position += shift;
+            for (auto it = item.m_subItems.begin(); it != item.m_subItems.end(); ++it)
+                it->m_position += shift;
+            monitor->setFixtureProperties(fid, item);
+        }
+        const QList<quint32> generic = monitor->genericItemsID();
+        for (quint32 itemID : generic)
+            monitor->setItemPosition(itemID, monitor->itemPosition(itemID) + shift);
+    }
+
+    QVector3D grid = monitor->gridSize();
+    if (across)
+        grid.setX(float(size / 1000.0));
+    else
+        grid.setY(float(size / 1000.0));
+    monitor->setGridSize(grid);
+    m_doc->setModified();
+    emit stageSizeChanged();
+    if (shifts)
+    {
+        // the point Follow aims at moves too; the heads aim where they did
+        emit stageShifted(shift.x(), shift.y());
+        m_shiftingStage = true;
+        notifyFixtures();
+        m_shiftingStage = false;
+    }
+    return true;
 }
 
 void PatchManager::setFixturePosition(quint32 id, qreal x, qreal y)

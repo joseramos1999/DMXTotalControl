@@ -335,14 +335,31 @@ ApplicationWindow {
     Shortcut { sequence: "G"; enabled: window.currentPage !== window.pageShow; onActivated: Core.drive.beatGo() }
     Shortcut { sequence: "Ctrl+Right"; onActivated: Core.zones.nextAll() }
     Shortcut { sequence: "Ctrl+Left"; onActivated: Core.zones.previousAll() }
-    // while learning a mapping, Esc only cancels it; Record armed, it disarms it
+    /** The keyboard focus is in a popup (a menu, a dialog, a prompt), or on a
+     *  drop-down list open (the list doesn't take the keyboard: its combo box
+     *  keeps it, and closes it with Esc) */
+    function focusInPopup() {
+        for (let item = window.activeFocusItem; item; item = item.parent) {
+            if (item === Overlay.overlay || (item instanceof ComboBox && item.popup.visible))
+                return true
+        }
+        return false
+    }
+    // while learning a mapping, Esc only cancels it; Record armed, it disarms
+    // it; a group isolated on the plan of the Patch, it ends that, but not
+    // from a menu, a drop-down list or a dialog of the page: there Esc closes
+    // it (else the isolation went behind the popup still open, and a second
+    // Esc stopped all)
     Shortcut {
         sequence: "Esc"
         context: Qt.ApplicationShortcut
+        enabled: !(window.currentPage === window.pagePatch && patchPage.isolatedGroupId >= 0
+                   && !Core.mapping.learnMode && !playbacksPage.recordArmed && window.focusInPopup())
         onActivated: {
             if (Core.mapping.pendingTarget.target !== undefined) Core.mapping.cancelLearn()
             else if (Core.mapping.learnMode) Core.mapping.learnMode = false
             else if (playbacksPage.recordArmed) playbacksPage.recordArmed = false
+            else if (window.currentPage === window.pagePatch && patchPage.isolatedGroupId >= 0) patchPage.endIsolation()
             else Core.stopAll()
         }
     }

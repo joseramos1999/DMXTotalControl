@@ -23,7 +23,7 @@ Toutes les touches et combinaisons du programme, par page. Les touches que vous 
 | **Ctrl+S** | Enregistrer le show (la première fois, demande un nom) |
 | **Ctrl+Maj+S** | Enregistrer le show sous un autre nom (« Enregistrer sous… ») |
 | **Ctrl+B** | Blackout (allumer et éteindre) |
-| **Échap** | Tout arrêter. En mode Mapper, annule le contrôle en attente ou quitte le mode ; avec « Enregistrer » armé dans Playbacks, le désarme |
+| **Échap** | Tout arrêter. En mode Mapper, annule le contrôle en attente ou quitte le mode ; avec « Enregistrer » armé dans Playbacks, le désarme ; avec un groupe isolé sur le plan de Patch, termine l’isolement (avec un menu, une liste déroulante ou une fenêtre de Patch ouverts, comme « Ajouter des fixtures », « Modifier » ou « Limites », il les ferme seulement ; un avertissement comme « Enregistrer les modifications ? » ne se ferme pas avec Échap). Dans une fenêtre où vous tapez un nom ou un numéro (« Créer un groupe », « Renommer », « Renuméroter »…), la ferme sans rien appliquer : appuyez de nouveau sur Échap pour tout arrêter |
 | **Ctrl+→** | Scène suivante dans chaque groupe qui joue |
 | **Ctrl+←** | Scène précédente dans chaque groupe qui joue |
 | **G** | BeatGO (sauf sur la page Show) |

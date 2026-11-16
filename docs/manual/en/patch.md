@@ -71,7 +71,7 @@ Fixture groups let you select with one click in Patch and in Program (`GROUP 2` 
 1. Select the fixtures.
 2. Press **“Create group”** and type its name (for example, `Front wash` or `Spots`).
 
-The **“Fixture groups”** panel on the left shows them with their number of fixtures. A click on a group selects its fixtures; **Ctrl+click** or **Shift+click** adds them. Right click:
+The **“Fixture groups”** panel on the left shows them with their number of fixtures. A click on a group selects its fixtures (in the “2D plan” view, it isolates it: see [Isolating a group on the plan](patch.md#isolating-a-group-on-the-plan)); **Ctrl+click** or **Shift+click** adds them. Right click:
 
 - **“Rename”**.
 - **“Move up”** and **“Move down”**: move it in the list.
@@ -97,8 +97,10 @@ The plan shows the stage seen from above, with the **AUDIENCE** at the bottom. Y
 
 In the plan header:
 
-- **“Width (m)”** and **“Depth (m)”**: the size of the stage.
+- **“Width (m)”** and **“Depth (m)”**: the size of the stage, up to 200 m. They grow or shrink it on the right and at the front; a fixture left outside a smaller stage stays where it is.
 - **“Auto arrange”**: spreads out all the fixtures.
+
+Outside the stage, in the middle of each side, there is a **“−”** and a **“+”**: they remove or add 1 m on that side (on the left, on the right, at the back or at the front, on the audience side); hold them down for several metres. The fixtures stay where they are on the stage: on the left and at the back they move with that side, and so does the point [Follow](programar.md#follow-aiming-at-a-point) aims at, and the new strip appears on that side. While the mouse is over them, the view of the plan doesn't change and the buttons don't move, so you can click several times in a row; when you move it away, the plan fits again (if you had zoomed or moved the view, it stays as it is). The **“−”** of a side only works when no fixture is 1 m or less from it: move it first (hover over the button to see why).
 
 The tools (they work on the selection and in its order):
 
@@ -128,6 +130,18 @@ To choose it by hand, select the fixtures and use **“Look” › “Icon”**;
 Each fixture type of the show also has its colour, on the icon and on the edge, the same every time you open the show: two types with the same icon are told apart by their colour. An icon chosen by hand on a fixture of the library doesn't change its colour. Live, the fixtures that are on show their light and the ones that are off, their icon.
 
 The **legend**, at the top left of the plan, lists the fixture types with their icon, their colour and how many there are (the generic dimmers, by what they stand in for). A click on a type selects all its fixtures, also on the plan of Program; **Ctrl+click** or **Shift+click** adds them to the selection. A click on its title folds or unfolds it, and that is remembered. The stage is placed beside or below the legend, so that it doesn't cover any fixture.
+
+### Isolating a group on the plan
+
+In the “2D plan” view, a click on a group of the “Fixture groups” panel **isolates** it: the other fixtures are locked and faded on the plan, and nothing selects or moves them: not a click, the box, the lasso, the legend nor “Move” (a click on one does nothing, and a box can start on top of it). That makes it easy to select part of a group on a crowded plan and make smaller groups with it. Of the selection, only the fixtures of the group that were already selected stay. The isolated group has a thick border and an eye, and beside the legend of the plan a label tells which group you see and how many fixtures it has.
+
+- **“All”** selects all the fixtures of the group, as does **Ctrl+click** on the group. **Ctrl+click** on another group adds only those of its fixtures that are also in the isolated one.
+- In the legend, a click on a type selects only its fixtures in the group; the types that have none are faded.
+- A click on another group isolates that one instead; a selection pattern of its menu isolates that group first. A click on a selection always selects all its fixtures: if some are locked, it first isolates the selection's group or, if it holds fixtures of other groups, ends the isolation.
+- After **“Create group”**, the group stays isolated: you can go on splitting it into more groups.
+- To end it: another click on the group, the **×** of the label or **Esc**. It also ends when you switch to “List” or “Channels”, open another show or delete the group. It isn't saved with the show.
+
+In the “List” and “Channels” views, a click on a group still selects its fixtures, as always.
 
 ### Height and facing (Follow)
 
@@ -189,7 +203,7 @@ If you design the rig in a visualizer, export its fixture table (CSV) and import
 3. Under **“Fixture types”**, each type of the table (fixture, mode and channels) says what it becomes and how it was found in the library: **“Exact”** (the same model and mode), **“By channel count”** (the mode with those channels), **“Similar name”**, **“Remembered”** or **“Chosen by hand”**. A **“Similar name”** shows in orange for you to check: it is a model with a name like it, not the same one. If it isn't in the library, it is patched as a **“Generic dimmer”** with its channels, in orange: everything stays at its addresses all the same. Each type also shows the icon its fixtures will have on the plan; one patched as a generic dimmer takes the one its name in the table says (a “CO2 Jet” comes as a CO2 jet; a “Flame”, as a flame).
 4. **“Change”** chooses another fixture and mode (**“Choose from the library…”**), a generic dimmer or **“Don't import”**. What you choose by hand is remembered for the next time you import that type.
 5. Under **“Options”**:
-   - **“Place them on the stage plan”**, with the **View**: **“From above”** (the audience at the bottom of the plan) or **“From the front”** (as the audience sees the rig: the highest fixtures at the top). The front view is suggested when the rig hangs at different heights, and the last one you used is remembered. The plan grows to hold the rig (it never shrinks).
+   - **“Place them on the stage plan”**, with the **View**: **“From above”** (the audience at the bottom of the plan) or **“From the front”** (as the audience sees the rig: the highest fixtures at the top). The front view is suggested when the rig hangs at different heights, and the last one you used is remembered. The plan grows to hold the rig (it never shrinks). Each import that places them centres the rig on the plan again, also after you change its sides with “−” and “+”.
    - **Groups**: one for each fixture type, one for each layer (when the table has more than one) and the ones of the “Groups” column of the table.
 6. Below the types are the problems, before importing: addresses another fixture or another row already uses (those rows are not imported), rows without a universe or address, universes above 128, addresses past 512, a second DMX break (not imported), fixture numbers another fixture already has or that are too high (they get another one), an inverted pan or tilt that is neither yes nor no, and the universes added to the show.
 7. Press **“Import N fixtures”**. A message says how many are new and how many were updated, and any problem left.

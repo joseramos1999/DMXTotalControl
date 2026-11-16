@@ -23,7 +23,7 @@ Alle Tasten und Kombinationen des Programms, nach Seite. Die Tasten, die Sie sel
 | **Strg+S** | Die Show speichern (beim ersten Mal wird nach einem Namen gefragt) |
 | **Strg+Umschalt+S** | Die Show unter einem anderen Namen speichern („Speichern unter…“) |
 | **Strg+B** | Blackout (ein und aus) |
-| **Esc** | Alles stoppen. Im Lernmodus bricht es das ausstehende Bedienelement ab oder verlässt den Modus; bei aktiviertem „Aufnehmen“ unter Playbacks deaktiviert es die Aufnahme |
+| **Esc** | Alles stoppen. Im Lernmodus bricht es das ausstehende Bedienelement ab oder verlässt den Modus; bei aktiviertem „Aufnehmen“ unter Playbacks deaktiviert es die Aufnahme; bei einer im Plan des Patch isolierten Gruppe beendet es die Isolierung (bei einem offenen Menü, einer offenen Auswahlliste oder einem offenen Fenster des Patch, etwa „Fixtures hinzufügen“, „Bearbeiten“ oder „Grenzen“, schließt es nur dieses; ein Hinweis wie „Änderungen speichern?“ schließt sich nicht mit Esc). In einem Fenster zur Eingabe eines Namens oder einer Nummer („Gruppe erstellen“, „Umbenennen“, „Nummerieren“…) schließt es dieses, ohne etwas zu übernehmen: Drücken Sie erneut Esc, um alles zu stoppen |
 | **Strg+→** | Nächste Szene in jeder laufenden Gruppe |
 | **Strg+←** | Vorherige Szene in jeder laufenden Gruppe |
 | **G** | BeatGO (außer auf der Seite Show) |

@@ -7270,6 +7270,29 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <source>Automatic</source>
         <translation>Automático</translation>
     </message>
+    <message>
+        <source>No fixture of “%1” is in “%2”</source>
+        <translation>Nenhum fixture de “%1” está em “%2”</translation>
+    </message>
+    <message>
+        <source>Click again or Esc: unlock the other fixtures. Ctrl+click: select all of this group</source>
+        <translation>Clique de novo ou Esc: desbloqueia os outros fixtures. Ctrl+clique: seleciona todo o grupo</translation>
+    </message>
+    <message>
+        <source>Click: this group alone on the plan instead. Ctrl+click: add only those of its fixtures that are also in “%1”</source>
+        <translation>Clique: só este grupo na planta, no lugar do outro. Ctrl+clique: adiciona só os seus fixtures que também estão em “%1”</translation>
+    </message>
+    <message>
+        <source>Click: this group alone on the plan, the other fixtures locked. Ctrl+click: add its fixtures to the selection</source>
+        <translation>Clique: só este grupo na planta, os outros fixtures bloqueados. Ctrl+clique: adiciona os seus fixtures à seleção</translation>
+    </message>
+    <message numerus="yes">
+        <source>Only the group “%1” · %n fixture(s)</source>
+        <translation>
+            <numerusform>Só o grupo “%1” · %n fixture</numerusform>
+            <numerusform>Só o grupo “%1” · %n fixtures</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>PlaybackAssignDialog</name>
@@ -10172,6 +10195,50 @@ Adicione alguns na página Patch.</translation>
         <translation>PÚBLICO</translation>
     </message>
     <message>
+        <source>Add 1 m on the left</source>
+        <translation>Adicionar 1 m à esquerda</translation>
+    </message>
+    <message>
+        <source>Add 1 m on the right</source>
+        <translation>Adicionar 1 m à direita</translation>
+    </message>
+    <message>
+        <source>Add 1 m at the back of the stage</source>
+        <translation>Adicionar 1 m no fundo do palco</translation>
+    </message>
+    <message>
+        <source>Add 1 m at the front, on the audience side</source>
+        <translation>Adicionar 1 m na frente, do lado do público</translation>
+    </message>
+    <message>
+        <source>Remove 1 m on the left</source>
+        <translation>Remover 1 m à esquerda</translation>
+    </message>
+    <message>
+        <source>Remove 1 m on the right</source>
+        <translation>Remover 1 m à direita</translation>
+    </message>
+    <message>
+        <source>Remove 1 m at the back of the stage</source>
+        <translation>Remover 1 m do fundo do palco</translation>
+    </message>
+    <message>
+        <source>Remove 1 m at the front, on the audience side</source>
+        <translation>Remover 1 m da frente, do lado do público</translation>
+    </message>
+    <message>
+        <source>The stage can&apos;t be smaller than %1 m</source>
+        <translation>O palco não pode ter menos de %1 m</translation>
+    </message>
+    <message>
+        <source>There is a fixture within 1 m of this side: move it first</source>
+        <translation>Há um fixture a 1 m ou menos deste lado: mova-o primeiro</translation>
+    </message>
+    <message>
+        <source>The stage can&apos;t be larger than %1 m</source>
+        <translation>O palco não pode ter mais de %1 m</translation>
+    </message>
+    <message>
         <source>Fixture types (%1)</source>
         <translation>Tipos de fixture (%1)</translation>
     </message>
@@ -10182,6 +10249,22 @@ Adicione alguns na página Patch.</translation>
     <message>
         <source>Click: select them. Ctrl+click: add them to the selection</source>
         <translation>Clique: seleciona-os. Ctrl+clique: adiciona-os à seleção</translation>
+    </message>
+    <message>
+        <source>Click: select those that aren&apos;t locked. Ctrl+click: add them to the selection</source>
+        <translation>Clique: seleciona os que não estão bloqueados. Ctrl+clique: adiciona-os à seleção</translation>
+    </message>
+    <message>
+        <source>All of them are locked on the plan</source>
+        <translation>Todos estão bloqueados na planta</translation>
+    </message>
+    <message>
+        <source>The other fixtures are locked on the plan: faded, they can&apos;t be selected or moved. Press × to unlock them all</source>
+        <translation>Os outros fixtures estão bloqueados na planta: esmaecidos, não podem ser selecionados nem movidos. Pressione × para desbloquear todos</translation>
+    </message>
+    <message>
+        <source>Unlock all the fixtures</source>
+        <translation>Desbloquear todos os fixtures</translation>
     </message>
 </context>
 <context>

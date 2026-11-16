@@ -68,6 +68,9 @@ Popup {
             color: Theme.text
             background: Rectangle { radius: Theme.radiusSmall; color: Theme.background; border.color: field.activeFocus ? Theme.accent : Theme.border }
             onAccepted: prompt.accept()
+            // Esc cancels: before the Esc of the window (Stop all) takes it
+            Keys.onShortcutOverride: (event) => event.accepted = event.key === Qt.Key_Escape
+            Keys.onEscapePressed: prompt.close()
         }
         RowLayout {
             Layout.fillWidth: true

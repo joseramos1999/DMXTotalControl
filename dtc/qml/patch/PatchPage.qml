@@ -48,11 +48,121 @@ Item {
 
     function isSelected(id) { return selectedIds.indexOf(id) >= 0 }
 
+    /** The group isolated on the plan (-1: none): a click on a group in the
+     *  plan view shows it alone, the other fixtures locked (faded, nothing
+     *  selects them). Not saved: it ends on leaving the plan view, with the
+     *  show (its groups go) or when the group is deleted */
+    property int isolatedGroupId: -1
+    /** That group as Core.patch.groups has it now (its fixtures follow it), or null */
+    readonly property var isolatedGroup: {
+        if (isolatedGroupId < 0)
+            return null
+        return Core.patch.groups.find(g => g.id === isolatedGroupId) || null
+    }
+    onPlanViewChanged: if (!planView) endIsolation()
+    // the group isolated deleted, or the show with it (a group of the next
+    // show may have its id): the isolation ends
+    Connections {
+        target: Core.patch
+        function onGroupsChanged() {
+            if (page.isolatedGroupId >= 0 && !Core.patch.groups.some(g => g.id === page.isolatedGroupId))
+                page.endIsolation()
+        }
+    }
+
+    /** The fixtures locked while $group is isolated: those of $all that aren't
+     *  in it, as an object used as a set (id → true); none without a group */
+    function lockedOutside(group, all) {
+        let locked = {}
+        if (!group)
+            return locked
+        let inGroup = {}
+        for (const id of group.fixtures)
+            inGroup[id] = true
+        for (const f of all) {
+            if (inGroup[f.id] !== true)
+                locked[f.id] = true
+        }
+        return locked
+    }
+    readonly property var lockedIds: lockedOutside(isolatedGroup, fixtures)
+    function isLocked(id) { return lockedIds[id] === true }
+    // the selection only ever holds fixtures that aren't locked
+    onLockedIdsChanged: {
+        const kept = selectedIds.filter(id => !isLocked(id))
+        if (kept.length !== selectedIds.length)
+            selectedIds = kept
+    }
+
+    /** $groupId alone on the plan: the selection keeps its fixtures that were selected */
+    function isolate(groupId) { isolatedGroupId = groupId }
+    function endIsolation() { isolatedGroupId = -1 }
+
+    /** A click on a group. In the list views, or with Ctrl/Shift, it selects
+     *  its fixtures (Ctrl/Shift adds them; with a group isolated, only those
+     *  that are in it). In the plan view a click isolates the group, and on
+     *  the group isolated ends it */
+    function clickGroup(group, modifiers) {
+        const additive = (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
+        if (!planView || (additive && isolatedGroup === null)) {
+            select(group.fixtures, additive)
+        } else if (additive) {
+            // (added, never toggled: on the group isolated, all of it)
+            const add = group.fixtures.filter(id => !isLocked(id) && !isSelected(id))
+            if (add.length > 0)
+                selectedIds = selectedIds.concat(add)
+            else if (!group.fixtures.some(id => !isLocked(id)))
+                page.message(qsTr("No fixture of “%1” is in “%2”").arg(group.name).arg(isolatedGroup.name), false)
+        } else if (group.id === isolatedGroupId) {
+            endIsolation()
+        } else {
+            isolate(group.id)
+        }
+    }
+    /** A click on a selection of a group: its fixtures, all of them. In the
+     *  plan view, when some are locked, a plain click first isolates its group
+     *  if they are all in it, else ends the isolation (a selection saved from
+     *  fixtures of several groups); Ctrl/Shift adds those that aren't locked */
+    function clickSelection(selection, modifiers) {
+        const additive = (modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
+        if (planView && isolatedGroup !== null && selection.fixtures.some(id => isLocked(id))) {
+            if (additive) {
+                if (selection.fixtures.every(id => isLocked(id))) {
+                    page.message(qsTr("No fixture of “%1” is in “%2”").arg(selection.name).arg(isolatedGroup.name), false)
+                    return
+                }
+            } else {
+                const own = Core.patch.groups.find(g => g.id === selection.groupId)
+                if (own && selection.fixtures.every(id => own.fixtures.indexOf(id) >= 0))
+                    isolate(selection.groupId)
+                else
+                    endIsolation()
+            }
+        }
+        select(selection.fixtures, additive)
+    }
+    /** A selection pattern of the menu of a group, on its fixtures (with
+     *  another group isolated, that one first) */
+    function selectPattern(groupId, groupFixtures, pattern) {
+        if (planView && isolatedGroup !== null && groupId !== isolatedGroupId)
+            isolate(groupId)
+        select(Core.patch.patternSelection(groupFixtures, pattern), false)
+    }
+    /** «All»: every fixture, or those of the group isolated */
+    function selectAll() {
+        selectedIds = fixtures.filter(f => !isLocked(f.id)).map(f => f.id)
+    }
+
+    /** $ids selected (additive: added; a single one asked for toggles), never
+     *  a locked fixture */
     function select(ids, additive) {
+        const all = Array.from(ids)
+        // (asked for: several, of which one isn't locked, are added, not toggled)
+        const toggle = additive && all.length === 1
         let s = additive ? selectedIds.slice() : []
-        for (let id of ids) {
+        for (let id of all.filter(id => !isLocked(id))) {
             let i = s.indexOf(id)
-            if (additive && i >= 0 && ids.length === 1)
+            if (toggle && i >= 0)
                 s.splice(i, 1)          // ctrl+click toggles
             else if (i < 0)
                 s.push(id)
@@ -322,7 +432,7 @@ Item {
 
                 // short labels, as in Program: with "Stop identify" the bar
                 // didn't fit at 1440 px in Spanish
-                AppButton { text: qsTr("All"); flat: true; onClicked: page.selectedIds = page.fixtures.map(f => f.id) }
+                AppButton { text: qsTr("All"); flat: true; onClicked: page.selectAll() }
                 AppButton { text: qsTr("None"); flat: true; enabled: page.selectedIds.length > 0; onClicked: page.selectedIds = [] }
                 CheckBox {
                     text: qsTr("Group by fixture")
@@ -482,9 +592,13 @@ Item {
                                                                 groupItem.modelData.fixtures.every(id => page.isSelected(id))
                             readonly property bool dropHere: groupList.dragFrom >= 0 && groupList.dragTo === groupItem.index &&
                                                              groupList.dragTo !== groupList.dragFrom
-                            color: allSelected ? Qt.alpha(Theme.accent, 0.2) : (groupMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
-                            border.color: dropHere || allSelected ? Theme.accent : Theme.border
-                            border.width: dropHere ? 2 : 1
+                            // alone on the plan (the others locked): a thick edge and an eye
+                            readonly property bool isolated: page.planView && page.isolatedGroupId === groupItem.modelData.id
+                            color: allSelected ? Qt.alpha(Theme.accent, 0.2)
+                                 : isolated ? Qt.alpha(Theme.accent, 0.07)
+                                 : (groupMouse.containsMouse ? Theme.surfaceHover : Theme.surfaceRaised)
+                            border.color: dropHere || allSelected || isolated ? Theme.accent : Theme.border
+                            border.width: dropHere || isolated ? 2 : 1
                             opacity: groupList.dragFrom === groupItem.index ? 0.5 : 1
 
                             MouseArea {
@@ -492,6 +606,18 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                // in the plan view a click isolates the group: what it
+                                // does, said (its own tip: what it says changes with a
+                                // click, also before it shows)
+                                ToolTip {
+                                    visible: page.planView && groupMouse.containsMouse
+                                    delay: 800
+                                    text: groupRow.isolated
+                                          ? qsTr("Click again or Esc: unlock the other fixtures. Ctrl+click: select all of this group")
+                                          : page.isolatedGroup !== null
+                                          ? qsTr("Click: this group alone on the plan instead. Ctrl+click: add only those of its fixtures that are also in “%1”").arg(page.isolatedGroup.name)
+                                          : qsTr("Click: this group alone on the plan, the other fixtures locked. Ctrl+click: add its fixtures to the selection")
+                                }
                                 onClicked: (ev) => {
                                     if (ev.button === Qt.RightButton) {
                                         groupMenu.groupId = groupItem.modelData.id
@@ -500,7 +626,7 @@ Item {
                                         groupMenu.groupIndex = groupItem.index
                                         groupMenu.popup()
                                     } else {
-                                        page.select(groupItem.modelData.fixtures, (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                        page.clickGroup(groupItem.modelData, ev.modifiers)
                                     }
                                 }
                             }
@@ -559,8 +685,8 @@ Item {
                                 onClicked: page.foldedGroups = page.toggleFolded(page.foldedGroups, groupItem.modelData.id)
                             }
                             Column {
-                                anchors { left: groupGrip.right; leftMargin: foldButton.visible ? 30 : 8; right: parent.right; rightMargin: 34
-                                          verticalCenter: parent.verticalCenter }
+                                anchors { left: groupGrip.right; leftMargin: foldButton.visible ? 30 : 8; right: parent.right
+                                          rightMargin: groupRow.isolated ? 54 : 34; verticalCenter: parent.verticalCenter }
                                 Text { width: parent.width; text: groupItem.modelData.name; color: Theme.text; font.weight: Font.DemiBold; elide: Text.ElideRight }
                                 Text {
                                     text: qsTr("%n fixture(s)", "", groupItem.modelData.fixtures.length)
@@ -569,7 +695,15 @@ Item {
                                     font.pixelSize: Theme.fontSmall
                                 }
                             }
+                            IconLabel {
+                                visible: groupRow.isolated
+                                anchors { right: addButton.left; rightMargin: 4; verticalCenter: parent.verticalCenter }
+                                icon: Theme.iconEye
+                                size: 13
+                                color: Theme.accent
+                            }
                             AppButton {
+                                id: addButton
                                 anchors { right: parent.right; rightMargin: 4; verticalCenter: parent.verticalCenter }
                                 implicitWidth: 28
                                 implicitHeight: 26
@@ -607,7 +741,7 @@ Item {
                                             selectionMenu.selectionName = selectionRow.modelData.name
                                             selectionMenu.popup()
                                         } else {
-                                            page.select(selectionRow.modelData.fixtures, (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0)
+                                            page.clickSelection(selectionRow.modelData, ev.modifiers)
                                         }
                                     }
                                 }
@@ -873,16 +1007,18 @@ Item {
                 Layout.fillHeight: true
                 visible: page.planView
                 title: qsTr("Stage plan")
+                // the size of the stage: on the right and at the front (the
+                // «−» and «+» on each side of the plan grow or shrink one side)
                 headerItems: [
                     Text { text: qsTr("Width (m)"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; anchors.verticalCenter: parent.verticalCenter },
                     SpinBox {
-                        from: 1; to: 100; editable: true
+                        from: 1; to: Core.patch.stageRoom.maximum / 1000; editable: true
                         value: Math.round(Core.patch.stageSize.width / 1000)
                         onValueModified: Core.patch.setStageSize(value * 1000, Core.patch.stageSize.height)
                     },
                     Text { text: qsTr("Depth (m)"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; anchors.verticalCenter: parent.verticalCenter },
                     SpinBox {
-                        from: 1; to: 100; editable: true
+                        from: 1; to: Core.patch.stageRoom.maximum / 1000; editable: true
                         value: Math.round(Core.patch.stageSize.height / 1000)
                         onValueModified: Core.patch.setStageSize(Core.patch.stageSize.width, value * 1000)
                     },
@@ -1093,6 +1229,14 @@ Item {
                         fixtures: page.fixtures
                         selection: page.selectedIds
                         editable: true
+                        // a group isolated: the other fixtures locked
+                        lockedIds: page.lockedIds
+                        lockText: page.isolatedGroup === null ? ""
+                                  : qsTr("Only the group “%1” · %n fixture(s)", "", page.isolatedGroup.fixtures.length).arg(page.isolatedGroup.name)
+                        // (where that doesn't fit: the name and the count)
+                        lockName: page.isolatedGroup === null ? "" : page.isolatedGroup.name
+                        lockCount: page.isolatedGroup === null ? "" : qsTr("%n fixture(s)", "", page.isolatedGroup.fixtures.length)
+                        onUnlockRequested: page.endIsolation()
                         onSelectRequested: (ids, additive) => page.select(ids, additive)
                         snap: snapCombo.steps[snapCombo.currentIndex]
                         onMovedBy: (ids, dx, dy) => Core.patch.moveFixtures(ids, dx, dy, snap)
@@ -1133,13 +1277,13 @@ Item {
         }
         MenuSeparator {}
         // selection patterns, in the order of the group
-        MenuItem { text: qsTr("Select odd"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "odd") }
-        MenuItem { text: qsTr("Select even"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "even") }
-        MenuItem { text: qsTr("Select in reverse order"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "reverse") }
-        MenuItem { text: qsTr("Select the first half"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "firstHalf") }
-        MenuItem { text: qsTr("Select the second half"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "secondHalf") }
-        MenuItem { text: qsTr("Select from the ends to the middle"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "outsideIn") }
-        MenuItem { text: qsTr("Select from the middle to the ends"); onTriggered: page.selectedIds = Core.patch.patternSelection(groupMenu.fixtures, "insideOut") }
+        MenuItem { text: qsTr("Select odd"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "odd") }
+        MenuItem { text: qsTr("Select even"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "even") }
+        MenuItem { text: qsTr("Select in reverse order"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "reverse") }
+        MenuItem { text: qsTr("Select the first half"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "firstHalf") }
+        MenuItem { text: qsTr("Select the second half"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "secondHalf") }
+        MenuItem { text: qsTr("Select from the ends to the middle"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "outsideIn") }
+        MenuItem { text: qsTr("Select from the middle to the ends"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "insideOut") }
         MenuSeparator {}
         MenuItem { text: qsTr("Delete group"); onTriggered: Core.patch.deleteGroup(groupMenu.groupId) }
     }
@@ -1158,6 +1302,8 @@ Item {
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
+        // (the keyboard too: Esc closes it, also with a group isolated)
+        focus: true
         padding: 18
         background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: Theme.borderStrong }
         contentItem: ColumnLayout {
@@ -1183,18 +1329,22 @@ Item {
         }
     }
 
-    AddFixtureDialog { id: addDialog }
-    EditFixtureDialog { id: editDialog }
-    ReaddressDialog { id: readdressDialog }
-    FixtureOptionsDialog { id: optionsDialog }
-    AimSettingsDialog { id: aimDialog }
+    // (the dialogs take the keyboard: with a group isolated, Esc closes them
+    // and the isolation stays)
+    AddFixtureDialog { id: addDialog; focus: true }
+    EditFixtureDialog { id: editDialog; focus: true }
+    ReaddressDialog { id: readdressDialog; focus: true }
+    FixtureOptionsDialog { id: optionsDialog; focus: true }
+    AimSettingsDialog { id: aimDialog; focus: true }
     MatrixDialog {
         id: matrixDialog
+        focus: true
         onMessage: (text) => page.message(text, false)
     }
     TextPrompt { id: prompt }
     PatchImportDialog {
         id: tableImportDialog
+        focus: true
         onMessage: (text, isError) => page.message(text, isError)
     }
     AppFileDialog {

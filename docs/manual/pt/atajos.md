@@ -23,7 +23,7 @@ Todas as teclas e combinações do programa, por página. As teclas que você at
 | **Ctrl+S** | Salvar o show (na primeira vez, pede um nome) |
 | **Ctrl+Shift+S** | Salvar o show com outro nome (“Salvar como…”) |
 | **Ctrl+B** | Blackout (ligar e desligar) |
-| **Esc** | Parar tudo. No modo Mapear, cancela o controle pendente ou sai do modo; com “Gravar” armado em Playbacks, desarma-o |
+| **Esc** | Parar tudo. No modo Mapear, cancela o controle pendente ou sai do modo; com “Gravar” armado em Playbacks, desarma-o; com um grupo isolado no plano do Patch, termina o isolamento (com um menu, uma lista suspensa ou uma janela do Patch abertos, como “Adicionar fixtures”, “Editar” ou “Limites”, só os fecha; um aviso como “Salvar as alterações?” não se fecha com Esc). Em uma janela para digitar um nome ou um número (“Criar grupo”, “Renomear”, “Renumerar”…), fecha-a sem aplicar nada: pressione Esc de novo para parar tudo |
 | **Ctrl+→** | Próxima cena em cada grupo que está rodando |
 | **Ctrl+←** | Cena anterior em cada grupo que está rodando |
 | **G** | BeatGO (exceto na página Show) |

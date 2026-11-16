@@ -7270,6 +7270,29 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <source>Automatic</source>
         <translation>Automatisch</translation>
     </message>
+    <message>
+        <source>No fixture of “%1” is in “%2”</source>
+        <translation>Kein Fixture von „%1“ ist in „%2“</translation>
+    </message>
+    <message>
+        <source>Click again or Esc: unlock the other fixtures. Ctrl+click: select all of this group</source>
+        <translation>Erneuter Klick oder Esc: entsperrt die anderen Fixtures. Strg+Klick: wählt die ganze Gruppe aus</translation>
+    </message>
+    <message>
+        <source>Click: this group alone on the plan instead. Ctrl+click: add only those of its fixtures that are also in “%1”</source>
+        <translation>Klick: stattdessen nur diese Gruppe im Plan. Strg+Klick: fügt nur ihre Fixtures hinzu, die auch in „%1“ sind</translation>
+    </message>
+    <message>
+        <source>Click: this group alone on the plan, the other fixtures locked. Ctrl+click: add its fixtures to the selection</source>
+        <translation>Klick: nur diese Gruppe im Plan, die anderen Fixtures gesperrt. Strg+Klick: fügt ihre Fixtures der Auswahl hinzu</translation>
+    </message>
+    <message numerus="yes">
+        <source>Only the group “%1” · %n fixture(s)</source>
+        <translation>
+            <numerusform>Nur die Gruppe „%1“ · %n Fixture</numerusform>
+            <numerusform>Nur die Gruppe „%1“ · %n Fixtures</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>PlaybackAssignDialog</name>
@@ -10172,6 +10195,50 @@ Fügen Sie welche auf der Seite Patch hinzu.</translation>
         <translation>PUBLIKUM</translation>
     </message>
     <message>
+        <source>Add 1 m on the left</source>
+        <translation>1 m links hinzufügen</translation>
+    </message>
+    <message>
+        <source>Add 1 m on the right</source>
+        <translation>1 m rechts hinzufügen</translation>
+    </message>
+    <message>
+        <source>Add 1 m at the back of the stage</source>
+        <translation>1 m hinten auf der Bühne hinzufügen</translation>
+    </message>
+    <message>
+        <source>Add 1 m at the front, on the audience side</source>
+        <translation>1 m vorne, auf der Publikumsseite, hinzufügen</translation>
+    </message>
+    <message>
+        <source>Remove 1 m on the left</source>
+        <translation>1 m links entfernen</translation>
+    </message>
+    <message>
+        <source>Remove 1 m on the right</source>
+        <translation>1 m rechts entfernen</translation>
+    </message>
+    <message>
+        <source>Remove 1 m at the back of the stage</source>
+        <translation>1 m hinten auf der Bühne entfernen</translation>
+    </message>
+    <message>
+        <source>Remove 1 m at the front, on the audience side</source>
+        <translation>1 m vorne, auf der Publikumsseite, entfernen</translation>
+    </message>
+    <message>
+        <source>The stage can&apos;t be smaller than %1 m</source>
+        <translation>Die Bühne kann nicht kleiner als %1 m sein</translation>
+    </message>
+    <message>
+        <source>There is a fixture within 1 m of this side: move it first</source>
+        <translation>Ein Fixture steht 1 m oder weniger von dieser Seite entfernt: zuerst verschieben</translation>
+    </message>
+    <message>
+        <source>The stage can&apos;t be larger than %1 m</source>
+        <translation>Die Bühne kann nicht größer als %1 m sein</translation>
+    </message>
+    <message>
         <source>Fixture types (%1)</source>
         <translation>Fixture-Typen (%1)</translation>
     </message>
@@ -10182,6 +10249,22 @@ Fügen Sie welche auf der Seite Patch hinzu.</translation>
     <message>
         <source>Click: select them. Ctrl+click: add them to the selection</source>
         <translation>Klick: wählt sie aus. Strg+Klick: fügt sie der Auswahl hinzu</translation>
+    </message>
+    <message>
+        <source>Click: select those that aren&apos;t locked. Ctrl+click: add them to the selection</source>
+        <translation>Klick: wählt die nicht gesperrten aus. Strg+Klick: fügt sie der Auswahl hinzu</translation>
+    </message>
+    <message>
+        <source>All of them are locked on the plan</source>
+        <translation>Alle sind im Plan gesperrt</translation>
+    </message>
+    <message>
+        <source>The other fixtures are locked on the plan: faded, they can&apos;t be selected or moved. Press × to unlock them all</source>
+        <translation>Die anderen Fixtures sind im Plan gesperrt: blass, sie lassen sich weder auswählen noch verschieben. Drücken Sie ×, um alle zu entsperren</translation>
+    </message>
+    <message>
+        <source>Unlock all the fixtures</source>
+        <translation>Alle Fixtures entsperren</translation>
     </message>
 </context>
 <context>

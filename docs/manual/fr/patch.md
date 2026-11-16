@@ -71,7 +71,7 @@ Les groupes de fixtures servent à sélectionner d’un clic dans Patch et dans 
 1. Sélectionnez les fixtures.
 2. Appuyez sur **« Créer un groupe »** et tapez son nom (par exemple, `Wash face` ou `Spots`).
 
-Le panneau **« Groupes de fixtures »** de gauche les affiche avec leur nombre de fixtures. Un clic sur un groupe sélectionne ses fixtures ; **Ctrl+clic** ou **Maj+clic** les ajoute. Clic droit :
+Le panneau **« Groupes de fixtures »** de gauche les affiche avec leur nombre de fixtures. Un clic sur un groupe sélectionne ses fixtures (dans la vue « Plan 2D », il l’isole : voir [Isoler un groupe sur le plan](patch.md#isoler-un-groupe-sur-le-plan)) ; **Ctrl+clic** ou **Maj+clic** les ajoute. Clic droit :
 
 - **« Renommer »**.
 - **« Monter »** et **« Descendre »** : le déplacent dans la liste.
@@ -97,8 +97,10 @@ Le plan montre la scène vue de dessus, avec le **PUBLIC** en bas. Il sert à s�
 
 Dans l’en-tête du plan :
 
-- **« Largeur (m) »** et **« Profondeur (m) »** : la taille de la scène.
+- **« Largeur (m) »** et **« Profondeur (m) »** : la taille de la scène, jusqu’à 200 m. Ils l’agrandissent ou la rétrécissent à droite et à l’avant ; un fixture laissé hors d’une scène plus petite reste où il est.
 - **« Placement auto »** : répartit tous les fixtures.
+
+Hors de la scène, au milieu de chaque côté, il y a un **« − »** et un **« + »** : ils retirent ou ajoutent 1 m de ce côté (à gauche, à droite, au fond ou à l’avant, côté public) ; maintenez-les enfoncés pour plusieurs mètres. Les fixtures restent où ils sont sur la scène : à gauche et au fond, ils se déplacent avec ce côté, tout comme le point que vise [Follow](programar.md#follow-viser-un-point), et la nouvelle bande apparaît de ce côté. Tant que la souris est dessus, la vue du plan ne change pas et les boutons ne bougent pas, vous pouvez donc cliquer plusieurs fois de suite ; quand vous l’éloignez, le plan se réajuste (si vous aviez zoomé ou déplacé la vue, elle reste telle quelle). Le **« − »** d’un côté ne fonctionne que si aucun fixture n’est à 1 m ou moins de ce côté : déplacez-le d’abord (survolez le bouton pour savoir pourquoi).
 
 Les outils (ils agissent sur la sélection, dans son ordre) :
 
@@ -128,6 +130,18 @@ Pour la choisir à la main, sélectionnez les fixtures et utilisez **« Aspect�
 Chaque type de fixture du show a aussi sa couleur, sur l’icône et sur le bord, la même chaque fois que vous ouvrez le show : deux types avec la même icône se distinguent par leur couleur. Une icône choisie à la main sur un fixture de la bibliothèque ne change pas sa couleur. En direct, les fixtures allumés montrent leur lumière et ceux qui sont éteints, leur icône.
 
 La **légende**, en haut à gauche du plan, liste les types de fixture avec leur icône, leur couleur et leur nombre (les dimmers génériques, d’après ce qu’ils remplacent). Un clic sur un type sélectionne tous ses fixtures, aussi sur le plan de Programmer ; **Ctrl+clic** ou **Maj+clic** les ajoute à la sélection. Un clic sur son titre la replie ou la déplie, et c’est mémorisé. La scène se place à côté ou en dessous de la légende, pour qu’elle ne cache aucun fixture.
+
+### Isoler un groupe sur le plan
+
+Dans la vue « Plan 2D », un clic sur un groupe du panneau « Groupes de fixtures » l’**isole** : les autres fixtures sont verrouillés et estompés sur le plan, et rien ne les sélectionne ni ne les déplace : ni un clic, ni le cadre, ni le lasso, ni la légende, ni « Déplacer » (un clic sur l’un d’eux ne fait rien, et le cadre peut commencer dessus). Il est ainsi facile de sélectionner une partie d’un groupe sur un plan chargé et d’en faire des groupes plus petits. De la sélection ne restent que les fixtures du groupe qui étaient déjà sélectionnés. Le groupe isolé a une bordure épaisse et un œil, et à côté de la légende du plan une étiquette indique quel groupe vous voyez et combien de fixtures il a.
+
+- **« Tout »** sélectionne tous les fixtures du groupe, comme **Ctrl+clic** sur le groupe. **Ctrl+clic** sur un autre groupe n’ajoute que ceux de ses fixtures qui sont aussi dans le groupe isolé.
+- Dans la légende, un clic sur un type ne sélectionne que ses fixtures du groupe ; les types qui n’en ont aucun sont estompés.
+- Un clic sur un autre groupe isole celui-ci à la place ; un motif de sélection de son menu isole d’abord ce groupe. Un clic sur une sélection sélectionne toujours tous ses fixtures : si certains sont verrouillés, il isole d’abord le groupe de la sélection ou, si elle contient des fixtures d’autres groupes, met fin à l’isolement.
+- Après **« Créer un groupe »**, le groupe reste isolé : vous pouvez continuer à le diviser en d’autres groupes.
+- Pour terminer : un autre clic sur le groupe, la **×** de l’étiquette ou **Échap**. Cela se termine aussi en passant à « Liste » ou « Canaux », en ouvrant un autre show ou en supprimant le groupe. Ce n’est pas enregistré avec le show.
+
+Dans les vues « Liste » et « Canaux », un clic sur un groupe sélectionne toujours ses fixtures, comme avant.
 
 ### Hauteur et orientation (Follow)
 
@@ -189,7 +203,7 @@ Si vous concevez l’installation dans un logiciel de visualisation, exportez sa
 3. Dans **« Types de fixture »**, chaque type de la table (fixture, mode et canaux) indique ce qu’il devient et comment il a été trouvé dans la bibliothèque : **« Exact »** (le même modèle et le même mode), **« Par nombre de canaux »** (le mode avec ces canaux), **« Nom proche »**, **« Mémorisé »** ou **« Choisi à la main »**. Un **« Nom proche »** s’affiche en orange pour que vous le vérifiiez : c’est un modèle au nom proche, pas le même. S’il n’est pas dans la bibliothèque, il est patché comme **« Dimmer générique »** avec ses canaux, en orange : tout reste à ses adresses malgré tout. Chaque type montre aussi l’icône qu’auront ses fixtures sur le plan ; s’il est patché comme dimmer générique, il prend celle que dit son nom dans la table (un « CO2 Jet » apparaît comme jet de CO2 ; un « Flame », comme flamme).
 4. **« Changer »** choisit un autre fixture et un autre mode (**« Choisir dans la bibliothèque… »**), un dimmer générique ou **« Ne pas importer »**. Ce que vous choisissez à la main est mémorisé pour la prochaine fois que vous importez ce type.
 5. Dans **« Options »** :
-   - **« Les placer sur le plan de scène »**, avec la **Vue** : **« Vue de dessus »** (le public en bas du plan) ou **« Vue de face »** (comme le public voit l’installation : les fixtures les plus hauts en haut). La vue de face est proposée quand l’installation est accrochée à des hauteurs différentes, et la dernière que vous avez utilisée est mémorisée. Le plan s’agrandit pour contenir l’installation (il ne rétrécit jamais).
+   - **« Les placer sur le plan de scène »**, avec la **Vue** : **« Vue de dessus »** (le public en bas du plan) ou **« Vue de face »** (comme le public voit l’installation : les fixtures les plus hauts en haut). La vue de face est proposée quand l’installation est accrochée à des hauteurs différentes, et la dernière que vous avez utilisée est mémorisée. Le plan s’agrandit pour contenir l’installation (il ne rétrécit jamais). Chaque import qui les place recentre l’installation sur le plan, même après avoir modifié ses côtés avec « − » et « + ».
    - **Groupes** : un par type de fixture, un par calque (si la table en a plus d’un) et ceux de la colonne « Groups » de la table.
 6. Sous les types se trouvent les problèmes, avant d’importer : adresses déjà utilisées par un autre fixture ou une autre ligne (ces lignes ne sont pas importées), lignes sans univers ou sans adresse, univers au-delà de 128, adresses au-delà de 512, un second DMX break (non importé), numéros de fixture déjà pris par un autre fixture ou trop élevés (ils en reçoivent un autre), un pan ou tilt inversé qui n’est ni oui ni non, et les univers ajoutés au show.
 7. Appuyez sur **« Importer N fixtures »**. Un message indique combien sont nouveaux et combien ont été mis à jour, et s’il reste un problème.

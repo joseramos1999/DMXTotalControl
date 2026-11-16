@@ -71,7 +71,7 @@ Mit Fixture-Gruppen wählen Sie im Patch und unter Programmieren mit einem Klick
 1. Wählen Sie die Fixtures aus.
 2. Drücken Sie **„Gruppe erstellen“** und geben Sie ihren Namen ein (zum Beispiel `Front-Wash` oder `Spots`).
 
-Der Bereich **„Fixture-Gruppen“** links zeigt sie mit ihrer Fixture-Anzahl. Ein Klick auf eine Gruppe wählt ihre Fixtures aus; **Strg+Klick** oder **Umschalt+Klick** fügt sie hinzu. Rechtsklick:
+Der Bereich **„Fixture-Gruppen“** links zeigt sie mit ihrer Fixture-Anzahl. Ein Klick auf eine Gruppe wählt ihre Fixtures aus (in der Ansicht „2D-Plan“ isoliert er sie: siehe [Eine Gruppe im Plan isolieren](patch.md#eine-gruppe-im-plan-isolieren)); **Strg+Klick** oder **Umschalt+Klick** fügt sie hinzu. Rechtsklick:
 
 - **„Umbenennen“**.
 - **„Nach oben“** und **„Nach unten“**: verschieben sie in der Liste.
@@ -97,8 +97,10 @@ Der Plan zeigt die Bühne von oben, mit **PUBLIKUM** unten. Er dient zum Auswäh
 
 Im Kopf des Plans:
 
-- **„Breite (m)“** und **„Tiefe (m)“**: die Größe der Bühne.
+- **„Breite (m)“** und **„Tiefe (m)“**: die Größe der Bühne, bis 200 m. Sie vergrößern oder verkleinern die Bühne rechts und vorne; ein Fixture, das außerhalb einer kleineren Bühne liegt, bleibt, wo es ist.
 - **„Automatisch anordnen“**: verteilt alle Fixtures.
+
+Außerhalb der Bühne, in der Mitte jeder Seite, gibt es ein **„−“** und ein **„+“**: Sie entfernen 1 m auf dieser Seite oder fügen 1 m hinzu (links, rechts, hinten oder vorne, auf der Publikumsseite); gedrückt gehalten mehrere Meter. Die Fixtures bleiben, wo sie auf der Bühne sind: links und hinten bewegen sie sich mit dieser Seite, ebenso der Punkt, auf den [Follow](programar.md#follow-auf-einen-punkt-zielen) zielt, und der neue Streifen erscheint auf dieser Seite. Solange die Maus darüber ist, ändert sich die Ansicht des Plans nicht und die Buttons bleiben stehen, sodass Sie mehrmals hintereinander klicken können; wenn Sie sie wegbewegen, passt sich der Plan wieder an (hatten Sie gezoomt oder die Ansicht verschoben, bleibt sie so). Das **„−“** einer Seite funktioniert nur, wenn kein Fixture 1 m oder näher daran steht: Verschieben Sie es zuerst (fahren Sie mit der Maus über den Button, um zu sehen, warum).
 
 Die Werkzeuge (sie arbeiten mit der Auswahl und in ihrer Reihenfolge):
 
@@ -128,6 +130,18 @@ Um es von Hand zu wählen, wählen Sie die Fixtures aus und verwenden Sie **„A
 Jeder Fixture-Typ der Show hat außerdem seine Farbe, im Symbol und am Rand, bei jedem Öffnen der Show dieselbe: Zwei Typen mit demselben Symbol unterscheiden sich durch ihre Farbe. Ein von Hand gewähltes Symbol ändert die Farbe eines Fixtures aus der Bibliothek nicht. Live zeigen eingeschaltete Fixtures ihr Licht und ausgeschaltete ihr Symbol.
 
 Die **Legende** oben links im Plan listet die Fixture-Typen mit ihrem Symbol, ihrer Farbe und ihrer Anzahl auf (die generischen Dimmer nach dem, wofür sie stehen). Ein Klick auf einen Typ wählt alle seine Fixtures aus, auch im Plan von Programmieren; **Strg+Klick** oder **Umschalt+Klick** fügt sie der Auswahl hinzu. Ein Klick auf ihren Titel klappt sie zu oder auf, und das wird gemerkt. Die Bühne wird neben oder unter die Legende gelegt, damit diese kein Fixture verdeckt.
+
+### Eine Gruppe im Plan isolieren
+
+In der Ansicht „2D-Plan“ **isoliert** ein Klick auf eine Gruppe im Bereich „Fixture-Gruppen“ diese Gruppe: Die anderen Fixtures sind im Plan gesperrt und blass, und nichts wählt sie aus oder verschiebt sie, weder ein Klick noch das Rechteck, das Lasso, die Legende oder „Verschieben“ (ein Klick auf eines bewirkt nichts, und ein Rechteck kann darauf beginnen). So lässt sich in einem vollen Plan leicht ein Teil einer Gruppe auswählen und daraus kleinere Gruppen bilden. Von der Auswahl bleiben nur die Fixtures der Gruppe, die schon ausgewählt waren. Die isolierte Gruppe hat einen dicken Rand und ein Auge, und neben der Legende des Plans sagt ein Hinweis, welche Gruppe Sie sehen und wie viele Fixtures sie hat.
+
+- **„Alle“** wählt alle Fixtures der Gruppe aus, ebenso **Strg+Klick** auf die Gruppe. **Strg+Klick** auf eine andere Gruppe fügt nur ihre Fixtures hinzu, die auch in der isolierten sind.
+- In der Legende wählt ein Klick auf einen Typ nur seine Fixtures in der Gruppe aus; Typen, die dort keines haben, erscheinen blass.
+- Ein Klick auf eine andere Gruppe isoliert stattdessen diese; ein Auswahlmuster aus ihrem Menü isoliert zuerst diese Gruppe. Ein Klick auf eine Auswahl wählt immer alle ihre Fixtures aus: Sind einige gesperrt, isoliert er zuerst die Gruppe der Auswahl oder beendet, wenn sie Fixtures anderer Gruppen enthält, die Isolierung.
+- Nach **„Gruppe erstellen“** bleibt die Gruppe isoliert: Sie können sie weiter in mehr Gruppen aufteilen.
+- Zum Beenden: ein weiterer Klick auf die Gruppe, das **×** des Hinweises oder **Esc**. Es endet auch beim Wechsel zu „Liste“ oder „Kanäle“, beim Öffnen einer anderen Show oder beim Löschen der Gruppe. Es wird nicht mit der Show gespeichert.
+
+In den Ansichten „Liste“ und „Kanäle“ wählt ein Klick auf eine Gruppe weiterhin ihre Fixtures aus, wie bisher.
 
 ### Höhe und Ausrichtung (Follow)
 
@@ -189,7 +203,7 @@ Wenn Sie das Rig in einer Visualisierungssoftware planen, exportieren Sie deren 
 3. Unter **„Fixture-Typen“** zeigt jeder Typ der Tabelle (Fixture, Modus und Kanäle), was daraus wird und wie er in der Bibliothek gefunden wurde: **„Genau“** (dasselbe Modell und derselbe Modus), **„Nach Kanalzahl“** (der Modus mit diesen Kanälen), **„Ähnlicher Name“**, **„Gemerkt“** oder **„Von Hand gewählt“**. Ein **„Ähnlicher Name“** erscheint in Orange, damit Sie ihn prüfen: es ist ein Modell mit ähnlichem Namen, nicht dasselbe. Ist er nicht in der Bibliothek, wird er als **„Generischer Dimmer“** mit seinen Kanälen gepatcht, in Orange: alles bleibt trotzdem auf seinen Adressen. Jeder Typ zeigt auch das Symbol, das seine Fixtures auf dem Plan haben werden; wird er als generischer Dimmer gepatcht, bekommt er das, was sein Name in der Tabelle sagt (ein „CO2 Jet“ erscheint als CO2-Jet; ein „Flame“ als Flamme).
 4. **„Ändern“** wählt ein anderes Fixture und einen anderen Modus (**„Aus der Bibliothek wählen…“**), einen generischen Dimmer oder **„Nicht importieren“**. Was Sie von Hand wählen, wird für den nächsten Import dieses Typs gemerkt.
 5. Unter **„Optionen“**:
-   - **„Auf dem Bühnenplan platzieren“**, mit der **Ansicht**: **„Von oben“** (das Publikum unten im Plan) oder **„Von vorne“** (wie das Publikum das Rig sieht: die höchsten Fixtures oben). Die Ansicht von vorne wird vorgeschlagen, wenn das Rig in verschiedenen Höhen hängt, und die zuletzt benutzte wird gemerkt. Der Plan wächst, damit das Rig hineinpasst (er schrumpft nie).
+   - **„Auf dem Bühnenplan platzieren“**, mit der **Ansicht**: **„Von oben“** (das Publikum unten im Plan) oder **„Von vorne“** (wie das Publikum das Rig sieht: die höchsten Fixtures oben). Die Ansicht von vorne wird vorgeschlagen, wenn das Rig in verschiedenen Höhen hängt, und die zuletzt benutzte wird gemerkt. Der Plan wächst, damit das Rig hineinpasst (er schrumpft nie). Jeder Import, der sie platziert, zentriert das Rig wieder auf dem Plan, auch nachdem Sie seine Seiten mit „−“ und „+“ geändert haben.
    - **Gruppen**: eine für jeden Fixture-Typ, eine für jede Ebene (wenn die Tabelle mehr als eine hat) und die der Spalte „Groups“ der Tabelle.
 6. Unter den Typen stehen die Probleme, vor dem Import: Adressen, die schon ein anderes Fixture oder eine andere Zeile belegt (diese Zeilen werden nicht importiert), Zeilen ohne Universum oder Adresse, Universen über 128, Adressen über 512, ein zweiter DMX-Break (nicht importiert), Fixture-Nummern, die schon ein anderes Fixture hat oder die zu hoch sind (sie bekommen eine andere), ein invertierter Pan oder Tilt, der weder Ja noch Nein ist, und die Universen, die der Show hinzugefügt werden.
 7. Drücken Sie **„N Fixtures importieren“**. Eine Meldung zeigt, wie viele neu sind und wie viele aktualisiert wurden, und ob ein Problem bleibt.

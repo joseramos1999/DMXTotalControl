@@ -23,7 +23,7 @@ All the keys and combinations of the program, by page. The keys you assign yours
 | **Ctrl+S** | Save the show (the first time, it asks for a name) |
 | **Ctrl+Shift+S** | Save the show with another name (“Save as…”) |
 | **Ctrl+B** | Blackout (on and off) |
-| **Esc** | Stop all. In Learn mode, cancels the pending control or leaves the mode; with “Record” armed in Playbacks, disarms it |
+| **Esc** | Stop all. In Learn mode, cancels the pending control or leaves the mode; with “Record” armed in Playbacks, disarms it; with a group isolated on the plan of Patch, ends the isolation (with a menu, a drop-down list or a window of Patch open, such as “Add fixtures”, “Edit” or “Limits”, it only closes it; a warning such as “Save changes?” doesn't close with Esc). In a window where you type a name or a number (“Create group”, “Rename”, “Renumber”…), closes it without applying anything: press Esc again to stop all |
 | **Ctrl+→** | Next scene in each playing group |
 | **Ctrl+←** | Previous scene in each playing group |
 | **G** | BeatGO (except on the Show page) |

@@ -23,7 +23,7 @@ Tutti i tasti e le combinazioni del programma, per pagina. I tasti che assegni t
 | **Ctrl+S** | Salva lo show (la prima volta chiede il nome) |
 | **Ctrl+Maiusc+S** | Salva lo show con un altro nome («Salva come…») |
 | **Ctrl+B** | Blackout (accendere e spegnere) |
-| **Esc** | Ferma tutto. Nella modalità Apprendi, annulla il controllo in sospeso o esce dalla modalità; con «Registra» armato in Playback, lo disarma |
+| **Esc** | Ferma tutto. Nella modalità Apprendi, annulla il controllo in sospeso o esce dalla modalità; con «Registra» armato in Playback, lo disarma; con un gruppo isolato nella pianta di Patch, termina l'isolamento (con un menu, un elenco a discesa o una finestra di Patch aperti, come «Aggiungi fixture», «Modifica» o «Limiti», li chiude soltanto; un avviso come «Salvare le modifiche?» non si chiude con Esc). In una finestra in cui scrivi un nome o un numero («Crea gruppo», «Rinomina», «Rinumera»…), la chiude senza applicare nulla: premi di nuovo Esc per fermare tutto |
 | **Ctrl+→** | Scena successiva in ogni gruppo attivo |
 | **Ctrl+←** | Scena precedente in ogni gruppo attivo |
 | **G** | BeatGO (tranne nella pagina Show) |

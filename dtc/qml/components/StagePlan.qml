@@ -32,7 +32,12 @@ import DMXTotalControl.Backend
  * jet...) in the colour of its type (beside its cells, smaller), which the
  * legend lists: a click there selects the fixtures of a type. The stage
  * fits beside or below the legend. Live, each fixture shows its colour,
- * dimmer, strobe and gobo.
+ * dimmer, strobe and gobo. Editable (the Patch page), each side of the
+ * stage has a «−» and a «+» outside it: a metre less or more on that side,
+ * the fixtures staying where they are on the stage. Fixtures can be locked
+ * (lockedIds: the Patch page, a group isolated): faded, nothing selects or
+ * moves them, and a chip says so (lockText), with an × that asks to unlock
+ * them.
  */
 Rectangle {
     id: plan
@@ -71,30 +76,114 @@ Rectangle {
     /** The fixtures aiming at it: a line from each one */
     property var aimedIds: []
 
+    /** The fixtures that can't be picked: an object used as a set (id →
+     *  true). Faded; a click, the rubber band, the lasso, the legend and a
+     *  drag pass them by (a click on one does nothing). None by default */
+    property var lockedIds: ({})
+    readonly property bool anyLocked: {
+        for (const id in lockedIds)
+            return true
+        return false
+    }
+    /** What the chip over the plan says while fixtures are locked (empty: no
+     *  chip). Where it doesn't fit, the chip says lockName · lockCount when
+     *  they are given (the name shortened in the middle, the count whole) */
+    property string lockText: ""
+    property string lockName: ""
+    property string lockCount: ""
+    /** A locked fixture at x, y of the plan: a click there does nothing (the
+     *  pointer goes through it: a rubber band starts there, a drag moves the
+     *  view) */
+    function lockedAt(x, y) {
+        if (!anyLocked)
+            return false
+        for (let i = 0; i < fixtureItems.count; i++) {
+            const item = fixtureItems.itemAt(i)
+            if (item !== null && item.locked && item.contains(item.mapFromItem(plan, x, y)))
+                return true
+        }
+        return false
+    }
+    /** $ids without the locked fixtures, in their order */
+    function pickable(ids) {
+        const list = Array.from(ids || [])
+        return anyLocked ? list.filter(id => lockedIds[id] !== true) : list
+    }
+
     /** ids, additive */
     signal selectRequested(var ids, bool additive)
     /** move fixtures $ids by dx, dy (mm) */
     signal movedBy(var ids, real dx, real dy)
     /** Follow: the point picked on the stage (mm) */
     signal pointPicked(real x, real y)
+    /** The × of the chip: unlock every fixture */
+    signal unlockRequested()
 
     readonly property size stage: Core.patch.stageSize
-    /** The bottom and the right of the legend (0: no legend): the stage goes
-     *  below it or beside it, not under it */
-    readonly property real legendRoom: legend.visible ? legend.y + legend.height + 8 : 0
-    readonly property real legendRight: legend.visible ? legend.x + legend.width + 8 : 0
+    /** The «−» and «+» on each side of the stage: a metre less or more on
+     *  that side (the Patch page) */
+    property bool sideControls: editable
+    /** Core.patch.stageRoom: the room free of fixtures on each side (mm),
+     *  the smallest and the largest stage */
+    readonly property var room: sideControls ? Core.patch.stageRoom : ({})
+    /** The room the controls of a side take outside the stage (px), and the
+     *  margin of the stage in the plan */
+    readonly property real sideBand: sideControls ? 32 : 0
+    readonly property real edge: sideControls ? 36 : 20
+    /** The bottom and the right of the legend alone (0: no legend) */
+    readonly property real legendBottom: legend.visible ? legend.y + legend.height + 8 : 0
+    readonly property real legendEnd: legend.visible ? legend.x + legend.width + 8 : 0
+    /** The bottom and the right of the legend and the chip of the locked
+     *  fixtures (0: neither): the stage goes below them or beside them, not
+     *  under them (the chip under the legend stays left of where the stage
+     *  is beside the legend alone: it doesn't move it) */
+    readonly property real legendRoom: Math.max(legendBottom, lockChip.visible ? lockChip.y + lockChip.height + 8 : 0)
+    readonly property real legendRight: Math.max(legendEnd, lockChip.visible && !chipUnderLegend ? lockChip.x + lockChip.width + 8 : 0)
     // the scale (px per mm) the whole stage fits in: the whole plan, below
-    // the legend, beside it
-    readonly property real fitFree: Math.min((width - 40) / Math.max(1, stage.width),
-                                             (height - 40) / Math.max(1, stage.height))
-    readonly property real fitBelow: Math.min((width - 40) / Math.max(1, stage.width),
-                                              (height - legendRoom - 20) / Math.max(1, stage.height))
-    readonly property real fitBeside: Math.min((width - legendRight - 20) / Math.max(1, stage.width),
-                                               (height - 40) / Math.max(1, stage.height))
+    // the legend, beside it (with the controls of the sides between them)
+    function fitBelowAt(bottom) {
+        return Math.min((width - 2 * edge) / Math.max(1, stage.width),
+                        (height - bottom - sideBand - edge) / Math.max(1, stage.height))
+    }
+    function fitBesideAt(right) {
+        return Math.min((width - right - sideBand - edge) / Math.max(1, stage.width),
+                        (height - 2 * edge) / Math.max(1, stage.height))
+    }
+    readonly property real fitFree: Math.min((width - 2 * edge) / Math.max(1, stage.width),
+                                             (height - 2 * edge) / Math.max(1, stage.height))
+    readonly property real fitBelow: fitBelowAt(legendRoom)
+    readonly property real fitBeside: fitBesideAt(legendRight)
+    /** The chip goes under the legend when the stage goes beside the legend
+     *  (else beside it, at the top): the stage stays where it was (a long
+     *  legend leaves room for it) */
+    readonly property bool chipUnderLegend: legend.visible && fitBesideAt(legendEnd) > fitBelowAt(legendBottom)
+    /** Under the legend, the chip goes as far as the legend, or up to the
+     *  controls of the left side of the stage: where they are once the plan
+     *  fits, or where they are now when the stage is further left (zoomed in,
+     *  or a side grown while the view stays: it never covers a fixture) */
+    readonly property real chipRoomUnderLegend: Math.max(legend.width, Math.min(leftAt(fitScale), stageX) - sideBand - 8 - lockChip.x)
+    /** The lowest bottom (the rightmost right) of the legend and the chip
+     *  where a control of a side at x, w (y, h) would meet them, else 4 */
+    function cornerBottomAt(x, w) {
+        let bottom = 4
+        if (legend.visible && x < legendEnd && x + w > legend.x)
+            bottom = Math.max(bottom, legendBottom)
+        if (lockChip.visible && x < lockChip.x + lockChip.width + 8 && x + w > lockChip.x)
+            bottom = Math.max(bottom, lockChip.y + lockChip.height + 8)
+        return bottom
+    }
+    function cornerRightAt(y, h) {
+        let right = 4
+        if (legend.visible && y < legendBottom && y + h > legend.y)
+            right = Math.max(right, legendEnd)
+        if (lockChip.visible && y < lockChip.y + lockChip.height + 8 && y + h > lockChip.y)
+            right = Math.max(right, lockChip.x + lockChip.width + 8)
+        return right
+    }
     /** Around the legend, where it is the bigger, unless that leaves the stage
      *  less than half its size (a long legend on a small plan: it goes over
      *  the stage, and folds) */
-    readonly property bool aroundLegend: legend.visible && Math.max(fitBelow, fitBeside) >= fitFree / 2
+    readonly property bool aroundLegend: (legend.visible || lockChip.visible) && Math.max(fitBelow, fitBeside) >= fitFree / 2
     readonly property bool besideLegend: aroundLegend && fitBeside > fitBelow
     readonly property real fitScale: aroundLegend ? Math.max(1e-6, Math.min(fitFree, Math.max(fitBelow, fitBeside)))
                                                   : fitFree
@@ -105,7 +194,7 @@ Rectangle {
      *  moved: in the middle of the plan, or of the room beside the legend */
     function leftAt(scale) {
         const w = stage.width * scale
-        return besideLegend ? legendRight + (width - legendRight - 20 - w) / 2 : (width - w) / 2
+        return besideLegend ? legendRight + sideBand + (width - legendRight - sideBand - edge - w) / 2 : (width - w) / 2
     }
     /** Where the top of the stage is at $scale, the view not moved: in the
      *  middle, or below the legend when there is room for it */
@@ -113,7 +202,7 @@ Rectangle {
         const h = stage.height * scale
         if (besideLegend)
             return (height - h) / 2
-        return Math.max((height - h) / 2, Math.min(legendRoom, height - 20 - h))
+        return Math.max((height - h) / 2, Math.min(legendRoom + sideBand, height - edge - h))
     }
     // a small plan: smaller fixtures (as big as 50 cm of the stage, from 45 %
     // on: room for a glyph that reads)
@@ -142,9 +231,54 @@ Rectangle {
     }
 
     function resetView() { zoom = 1; pan = Qt.point(0, 0) }
+
+    // the controls of the sides: while one is under the pointer or pressed,
+    // a step on a side doesn't fit the plan again (the fixtures stay where
+    // they are on the screen, the control under the pointer); once they are
+    // left, it fits again if it fitted before
+    property int sidesHeld: 0
+    property bool fittedBeforeSides: true
+    property bool sidesResized: false
+    function holdSide(on) {
+        if (on) {
+            if (sidesHeld === 0) {
+                fittedBeforeSides = zoom === 1 && pan.x === 0 && pan.y === 0
+                sidesResized = false
+            }
+            sidesHeld++
+            return
+        }
+        sidesHeld = Math.max(0, sidesHeld - 1)
+        if (sidesHeld === 0 && sidesResized && fittedBeforeSides)
+            resetView()
+    }
+    /** $step metres more (or less, below 0) on a $side of the stage: the
+     *  scale stays and the rest of the stage stays where it is on the
+     *  screen, the strip appears (or goes) on that side */
+    function resizeSide(side, step) {
+        const s = mmScale, x0 = stageX, y0 = stageY
+        const fitted = zoom === 1 && pan.x === 0 && pan.y === 0
+        if (!Core.patch.resizeStageSide(side, step * 1000))
+            return false
+        // (no control held, a tap on a touch screen: the plan fits again)
+        if (sidesHeld === 0 && fitted)
+            return true
+        const d = step * 1000 * s
+        zoom = s / fitScale
+        pan = Qt.point((side === "left" ? x0 - d : x0) - leftAt(s),
+                       (side === "top" ? y0 - d : y0) - topAt(s))
+        sidesResized = true
+        return true
+    }
+
     function zoomAt(px, py, factor) {
+        // (zoomed by hand: the view stays so once the sides are left)
+        fittedBeforeSides = false
         let mmX = (px - stageX) / mmScale, mmY = (py - stageY) / mmScale
-        zoom = Math.max(0.5, Math.min(10, zoom * factor))
+        // from 50 % to 10 times, never the other way than asked: a side grown
+        // or shrunk while the view stayed may have left the zoom beyond them
+        const z = zoom * factor
+        zoom = factor > 1 ? Math.max(zoom, Math.min(10, z)) : Math.min(zoom, Math.max(0.5, z))
         let s = fitScale * zoom
         pan = Qt.point(px - mmX * s - leftAt(s),
                        py - mmY * s - topAt(s))
@@ -274,15 +408,20 @@ Rectangle {
         onReleased: (ev) => {
             if (panning) {
                 panning = false
-                // a click on the empty stage with the move tool: nothing selected
-                if (ev.button === Qt.LeftButton && Math.abs(ev.x - start.x) < 4 && Math.abs(ev.y - start.y) < 4)
+                // a click on the empty stage with the move tool: nothing
+                // selected (on a locked fixture: nothing happens)
+                if (ev.button === Qt.LeftButton && Math.abs(ev.x - start.x) < 4 && Math.abs(ev.y - start.y) < 4
+                        && !plan.lockedAt(ev.x, ev.y))
                     plan.selectRequested([], false)
                 return
             }
             let additive = (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
             if (banding) {
+                // (the locked fixtures aren't caught)
                 let ids = []
                 for (let f of plan.fixtures) {
+                    if (plan.lockedIds[f.id] === true)
+                        continue
                     let fx = plan.stageX + f.x * plan.mmScale
                     let fy = plan.stageY + f.y * plan.mmScale
                     let hit = plan.lasso ? plan.inside(fx, fy, path)
@@ -291,7 +430,7 @@ Rectangle {
                         ids.push(f.id)
                 }
                 plan.selectRequested(ids, additive)
-            } else if (!additive) {
+            } else if (!additive && !plan.lockedAt(ev.x, ev.y)) {
                 plan.selectRequested([], false)
             }
             banding = false
@@ -307,6 +446,224 @@ Rectangle {
         visible: bandArea.banding && !plan.lasso
         color: Qt.alpha(Theme.accent, 0.15)
         border.color: Theme.accent
+    }
+
+    // a «−» or a «+» of a side of the stage: a click, a metre; held, it goes
+    // on (a metre a tenth of a second). Its tooltip says what it does, or
+    // why it can't
+    component SideButton: Item {
+        id: sideButton
+        /** The plan (an inline component doesn't see its ids) */
+        property Item view
+        /** "left", "right", "top" (the back) or "bottom" (the front) */
+        property string side
+        /** 1: a metre more on that side, -1: a metre less */
+        property int step: 1
+        property bool can: true
+        /** The most metres it can take (or give) now */
+        property int most: 1
+        property string tip
+        readonly property bool pressed: button.pressed
+        width: 22
+        height: 22
+
+        AppButton {
+            id: button
+            anchors.fill: parent
+            flat: true
+            implicitHeight: 22
+            leftPadding: 0
+            rightPadding: 0
+            topPadding: 0
+            bottomPadding: 0
+            iconGlyph: sideButton.step > 0 ? Theme.iconPlus : Theme.iconMinus
+            iconSize: 10
+            enabled: sideButton.can
+            Accessible.name: sideButton.tip
+            // (held, the timer made the steps: also when the pointer slid off
+            // the button and back, which stops the timer and starts it again)
+            onPressed: holdSteps.stepped = false
+            onClicked: if (!holdSteps.stepped) sideButton.view.resizeSide(sideButton.side, sideButton.step)
+        }
+        // held: from 0.3 s on, a metre a tenth of a second. A step that keeps
+        // the program busy longer (the left or the back of a big rig, where
+        // every fixture moves) is made up with the next one: a few metres at
+        // once (up to a second of them)
+        Timer {
+            id: holdSteps
+            interval: 100
+            repeat: true
+            running: button.pressed
+            property double last: 0
+            /** A step made since the button was pressed */
+            property bool stepped: false
+            onRunningChanged: if (running) last = Date.now() + 200
+            onTriggered: {
+                const now = Date.now()
+                const due = Math.round((now - last) / 100)
+                const n = Math.min(due, 10, sideButton.most)
+                if (n < 1)
+                    return
+                last = n < due ? now : last + n * 100
+                stepped = true
+                sideButton.view.resizeSide(sideButton.side, sideButton.step * n)
+            }
+        }
+        // (on the item, not the button: disabled, it says why. Its own tip:
+        // what it says changes with a click, also before it shows)
+        HoverHandler { id: sideHover }
+        ToolTip {
+            visible: sideHover.hovered
+            delay: 500
+            text: sideButton.tip
+        }
+    }
+
+    // the «−» and «+» of a side, outside the stage in the middle of that
+    // side, beyond the fixtures near it when there is room (and under them:
+    // they never cover one). Under the pointer or pressed, it stays where it
+    // is: the side moves away from it or under it (into the strip it adds,
+    // never over a fixture), and the next click lands on it again
+    component SideControl: Rectangle {
+        id: control
+        /** The plan (an inline component doesn't see its ids) */
+        property Item view
+        property string side
+        /** Where it goes, outside that side of the stage */
+        property real edgeX
+        property real edgeY
+        readonly property bool held: hover.hovered || minus.pressed || plus.pressed
+        property real heldX
+        property real heldY
+        x: held ? heldX : edgeX
+        y: held ? heldY : edgeY
+        onEdgeXChanged: if (!held) heldX = edgeX
+        onEdgeYChanged: if (!held) heldY = edgeY
+        // (held from where it is now, never from where an earlier hold left
+        // it: a hold that ends without the plan fitting again moves it, and
+        // its edge may not change again)
+        onHeldChanged: {
+            heldX = edgeX
+            heldY = edgeY
+            view.holdSide(held)
+        }
+        Component.onCompleted: { heldX = edgeX; heldY = edgeY }
+        Component.onDestruction: if (held) view.holdSide(false)
+        HoverHandler { id: hover }
+
+        readonly property bool across: side === "left" || side === "right"
+        // the size of the stage that way, the room free of fixtures on that
+        // side, the smallest and largest stage (mm)
+        readonly property real size: across ? view.stage.width : view.stage.height
+        readonly property real free: view.room[side] ?? 0
+        readonly property real minimum: view.room.minimum ?? 1000
+        readonly property real maximum: view.room.maximum ?? 200000
+        readonly property bool canGrow: size + 1000 <= maximum + 0.5
+        readonly property bool tooSmall: size - 1000 < minimum - 0.5
+        // a fixture in the metre that would go, or on its inner edge
+        readonly property bool blocked: free <= 1000
+        // the most metres that side can take, and give: free of fixtures,
+        // and the metre past the last one too (none is left on the edge)
+        readonly property int growth: Math.floor((maximum - size + 0.5) / 1000)
+        readonly property int shrink: Math.min(Math.floor((size - minimum + 0.5) / 1000), Math.ceil(free / 1000) - 1)
+        /** How far from the stage it goes (px): beyond the fixture nearest
+         *  that side (its body, and its name below it at the front) */
+        readonly property real gap: {
+            const reach = 24 * view.bodyScale + (side === "bottom" && view.showNames ? 16 : 0)
+            return 6 + Math.max(0, reach - free * view.mmScale)
+        }
+        width: across ? 26 : 48
+        height: across ? 48 : 26
+        radius: Theme.radiusSmall
+        color: Qt.alpha(Theme.surface, 0.94)
+        border.color: Theme.border
+
+        function addTip() {
+            switch (side) {
+            case "left": return qsTr("Add 1 m on the left")
+            case "right": return qsTr("Add 1 m on the right")
+            case "top": return qsTr("Add 1 m at the back of the stage")
+            default: return qsTr("Add 1 m at the front, on the audience side")
+            }
+        }
+        function removeTip() {
+            switch (side) {
+            case "left": return qsTr("Remove 1 m on the left")
+            case "right": return qsTr("Remove 1 m on the right")
+            case "top": return qsTr("Remove 1 m at the back of the stage")
+            default: return qsTr("Remove 1 m at the front, on the audience side")
+            }
+        }
+
+        // (a click on it, or on a button that can't, doesn't reach the plan
+        // under it: the selection stays; the wheel still zooms)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+        }
+
+        // + above − on the left and the right; − before + at the back and the front
+        SideButton {
+            id: minus
+            x: 2
+            y: control.across ? 24 : 2
+            view: control.view
+            side: control.side
+            step: -1
+            can: !control.tooSmall && !control.blocked
+            most: control.shrink
+            tip: control.tooSmall ? qsTr("The stage can't be smaller than %1 m").arg(control.minimum / 1000)
+               : control.blocked ? qsTr("There is a fixture within 1 m of this side: move it first")
+               : control.removeTip()
+        }
+        SideButton {
+            id: plus
+            x: control.across ? 2 : 24
+            y: 2
+            view: control.view
+            side: control.side
+            step: 1
+            can: control.canGrow
+            most: control.growth
+            tip: control.canGrow ? control.addTip() : qsTr("The stage can't be larger than %1 m").arg(control.maximum / 1000)
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: plan.sideControls
+        sourceComponent: Item {
+            // (where the stage leaves no room, they stay inside the plan, and
+            // off the legend and the chip of the locked fixtures)
+            SideControl {
+                view: plan
+                side: "top"
+                readonly property real limit: plan.cornerBottomAt(edgeX, width)
+                edgeX: plan.stageX + floor.width / 2 - width / 2
+                edgeY: Math.max(Math.min(limit, plan.stageY - 6 - height), plan.stageY - gap - height)
+            }
+            SideControl {
+                view: plan
+                side: "bottom"
+                edgeX: plan.stageX + floor.width / 2 - width / 2
+                edgeY: Math.min(Math.max(plan.height - 4 - height, plan.stageY + floor.height + 6),
+                                plan.stageY + floor.height + gap)
+            }
+            SideControl {
+                view: plan
+                side: "left"
+                readonly property real limit: plan.cornerRightAt(edgeY, height)
+                edgeX: Math.max(Math.min(limit, plan.stageX - 6 - width), plan.stageX - gap - width)
+                edgeY: plan.stageY + floor.height / 2 - height / 2
+            }
+            SideControl {
+                view: plan
+                side: "right"
+                edgeX: Math.min(Math.max(plan.width - 4 - width, plan.stageX + floor.width + 6),
+                                plan.stageX + floor.width + gap)
+                edgeY: plan.stageY + floor.height / 2 - height / 2
+            }
+        }
     }
     Canvas {
         id: lassoCanvas
@@ -332,6 +689,7 @@ Rectangle {
     }
 
     Repeater {
+        id: fixtureItems
         model: plan.fixtures
 
         delegate: Item {
@@ -339,6 +697,10 @@ Rectangle {
             required property var modelData
             readonly property int selectionIndex: plan.selection.indexOf(modelData.id)
             readonly property bool selected: selectionIndex >= 0
+            // locked: faded (its name too) and below the others; the pointer
+            // goes through it to the stage
+            readonly property bool locked: plan.lockedIds[modelData.id] === true
+            opacity: locked ? 0.28 : 1
             readonly property var liveState: plan.states[modelData.id]
             readonly property bool lit: plan.live && liveState !== undefined
             // live and giving light: its colours; dark, it shows its kind
@@ -362,10 +724,10 @@ Rectangle {
             width: Math.abs(bodyWidth * Math.cos(angle)) + Math.abs(bodyHeight * Math.sin(angle))
             height: Math.abs(bodyWidth * Math.sin(angle)) + Math.abs(bodyHeight * Math.cos(angle))
             // the other fixtures of the selection follow the one dragged
-            readonly property bool following: plan.draggingId >= 0 && plan.draggingId !== modelData.id && selected
+            readonly property bool following: plan.draggingId >= 0 && plan.draggingId !== modelData.id && selected && !locked
             x: plan.stageX + modelData.x * plan.mmScale - width / 2 + (following ? plan.dragDX : 0)
             y: plan.stageY + modelData.y * plan.mmScale - height / 2 + (following ? plan.dragDY : 0)
-            z: dragArea.drag.active ? 10 : (selected ? 2 : 1)
+            z: dragArea.drag.active ? 10 : (selected ? 2 : (locked ? 0.5 : 1))
 
             // the light it gives, live
             Rectangle {
@@ -553,6 +915,7 @@ Rectangle {
             MouseArea {
                 id: dragArea
                 anchors.fill: parent
+                enabled: !fxItem.locked
                 readonly property bool moving: plan.editable && plan.tool === "move"
                 property real baseX: 0
                 property real baseY: 0
@@ -589,8 +952,9 @@ Rectangle {
                     fxItem.y = Qt.binding(() => plan.stageY + fxItem.modelData.y * plan.mmScale - fxItem.height / 2
                                                 + (fxItem.following ? plan.dragDY : 0))
                     if (moving && (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5)) {
-                        // the whole selection moves (this fixture alone if it isn't in it)
-                        let ids = fxItem.selected ? plan.selection : [fxItem.modelData.id]
+                        // the whole selection moves (this fixture alone if it
+                        // isn't in it), never a locked fixture
+                        let ids = fxItem.selected ? plan.pickable(plan.selection) : [fxItem.modelData.id]
                         plan.movedBy(ids, dx, dy)
                     }
                 }
@@ -683,9 +1047,94 @@ Rectangle {
         }
     }
 
+    // while fixtures are locked: what the plan shows (lockText), and an ×
+    // that unlocks them. Under the legend when the stage is beside it, beside
+    // the legend when the stage is below it: the stage stays where it was
+    Rectangle {
+        id: lockChip
+        visible: plan.lockText.length > 0
+        z: 30
+        x: legend.visible && !plan.chipUnderLegend ? plan.legendEnd : 8
+        y: plan.chipUnderLegend ? plan.legendBottom - 2 : 8
+        // as wide as its text, up to the room under the legend (left of the
+        // stage beside it, which doesn't move) or the plan beside it
+        readonly property real natural: 8 + chipGlyph.implicitWidth + Math.ceil(chipMetrics.advanceWidth(plan.lockText))
+                                        + unlockButton.implicitWidth + 2 * chipRow.spacing + 5
+        width: plan.chipUnderLegend ? Math.min(natural, plan.chipRoomUnderLegend)
+                                    : Math.max(Math.min(120, plan.width - x - 8), Math.min(natural, plan.width - x - 8))
+        height: 30
+        radius: Theme.radiusSmall
+        color: Qt.alpha(Theme.surface, 0.94)
+        border.color: Theme.accent
+        border.width: 1
+
+        FontMetrics { id: chipMetrics; font.pixelSize: Theme.fontSmall; font.weight: Font.DemiBold }
+
+        // (nothing under it is clicked, nor zoomed)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: (ev) => ev.accepted = true
+        }
+        HoverHandler { id: chipHover }
+        // (shortened, its whole text first)
+        ToolTip {
+            visible: chipHover.hovered
+            delay: 500
+            text: (chipText.truncated || chipText.text !== plan.lockText ? plan.lockText + "\n" : "")
+                  + qsTr("The other fixtures are locked on the plan: faded, they can't be selected or moved. Press × to unlock them all")
+        }
+
+        Row {
+            id: chipRow
+            anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 3; verticalCenter: parent.verticalCenter }
+            spacing: 6
+            IconLabel {
+                id: chipGlyph
+                anchors.verticalCenter: parent.verticalCenter
+                icon: Theme.iconEye
+                size: 12
+                color: Theme.accent
+            }
+            // (too long: the name and the count alone, the name shortened in
+            // the middle, the count whole; without them, the middle of it all)
+            Text {
+                id: chipText
+                readonly property real room: chipRow.width - chipGlyph.width - unlockButton.width - 2 * chipRow.spacing
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, room)
+                text: {
+                    if (plan.lockCount.length === 0 || chipMetrics.advanceWidth(plan.lockText) <= room)
+                        return plan.lockText
+                    const count = " · " + plan.lockCount
+                    return chipMetrics.elidedText(plan.lockName, Qt.ElideMiddle,
+                                                  Math.max(0, room - chipMetrics.advanceWidth(count) - 2)) + count
+                }
+                color: Theme.text
+                font.pixelSize: Theme.fontSmall
+                font.weight: Font.DemiBold
+                elide: Text.ElideMiddle
+            }
+            AppButton {
+                id: unlockButton
+                anchors.verticalCenter: parent.verticalCenter
+                implicitWidth: 24
+                implicitHeight: 24
+                leftPadding: 0
+                rightPadding: 0
+                flat: true
+                iconGlyph: Theme.iconClose
+                iconSize: 11
+                Accessible.name: qsTr("Unlock all the fixtures")
+                onClicked: plan.unlockRequested()
+            }
+        }
+    }
+
     // the legend: each fixture type of the show, its glyph in its colour and
-    // how many; a click selects them (Ctrl/Shift+click adds them). Folded,
-    // its title alone (remembered; with one type it starts folded)
+    // how many; a click selects them (Ctrl/Shift+click adds them; with
+    // fixtures locked, those that aren't). Folded, its title alone
+    // (remembered; with one type it starts folded)
     Rectangle {
         id: legend
         readonly property bool open: Core.settings.planLegend === "open"
@@ -773,7 +1222,8 @@ Rectangle {
                 id: legendList
                 visible: legend.open
                 width: parent.width
-                height: visible ? Math.min(contentHeight, Math.max(60, plan.height - 80)) : 0
+                // (and room under it for the chip of the locked fixtures)
+                height: visible ? Math.min(contentHeight, Math.max(60, plan.height - 80 - (plan.lockText.length > 0 ? 38 : 0))) : 0
                 clip: true
                 interactive: contentHeight > height
                 boundsBehavior: Flickable.StopAtBounds
@@ -784,13 +1234,18 @@ Rectangle {
                     id: typeRow
                     required property var modelData
                     readonly property bool generic: modelData.model.length === 0
-                    readonly property bool allSelected: modelData.ids.length > 0
-                                                        && modelData.ids.every(id => plan.selection.indexOf(id) >= 0)
+                    // with fixtures locked: those of its fixtures that aren't
+                    // (none: dimmed, a click does nothing)
+                    readonly property var pickIds: plan.pickable(modelData.ids)
+                    readonly property bool usable: pickIds.length > 0
+                    readonly property bool allSelected: usable && pickIds.every(id => plan.selection.indexOf(id) >= 0)
                     readonly property color tint: Theme.fixtureTypeColor(modelData.colorIndex)
                     width: ListView.view.width - (legendList.interactive ? 8 : 0)
                     height: 26
                     radius: Theme.radiusSmall
-                    color: allSelected ? Qt.alpha(Theme.accent, 0.2) : (rowMouse.containsMouse ? Theme.surfaceHover : "transparent")
+                    opacity: usable ? 1 : 0.4
+                    color: allSelected ? Qt.alpha(Theme.accent, 0.2)
+                                       : (rowMouse.containsMouse && usable ? Theme.surfaceHover : "transparent")
 
                     Item {
                         id: glyphBox
@@ -844,17 +1299,21 @@ Rectangle {
                         id: rowMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: typeRow.usable ? Qt.PointingHandCursor : Qt.ArrowCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 600
                         ToolTip.text: (typeRow.generic ? qsTr("Generic dimmer")
                                                        : typeRow.modelData.manufacturer + " " + typeRow.modelData.model)
                                       + " · " + Theme.kindName(typeRow.modelData.kind)
-                                      + "\n" + qsTr("Click: select them. Ctrl+click: add them to the selection")
+                                      + "\n" + (!plan.anyLocked ? qsTr("Click: select them. Ctrl+click: add them to the selection")
+                                                : typeRow.usable ? qsTr("Click: select those that aren't locked. Ctrl+click: add them to the selection")
+                                                : qsTr("All of them are locked on the plan"))
                         // Ctrl/Shift: the selection and them, sent whole (a
                         // single fixture added alone would toggle)
                         onClicked: (ev) => {
-                            const ids = Array.from(typeRow.modelData.ids)
+                            const ids = typeRow.pickIds
+                            if (ids.length === 0)
+                                return
                             const add = (ev.modifiers & (Qt.ControlModifier | Qt.ShiftModifier)) !== 0
                             const selection = Array.from(plan.selection || [])
                             plan.selectRequested(add ? selection.concat(ids.filter(id => selection.indexOf(id) < 0)) : ids,

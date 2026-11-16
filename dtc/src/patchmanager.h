@@ -59,6 +59,7 @@ class PatchManager : public QObject
     Q_PROPERTY(QVariantList identified READ identified NOTIFY identifiedChanged)
     Q_PROPERTY(QVariantList groups READ groups NOTIFY groupsChanged)
     Q_PROPERTY(QSizeF stageSize READ stageSize NOTIFY stageSizeChanged)
+    Q_PROPERTY(QVariantMap stageRoom READ stageRoom NOTIFY stageRoomChanged)
     Q_PROPERTY(QVariantList selections READ selections NOTIFY selectionsChanged)
     Q_PROPERTY(QVariantList fixtureTypes READ fixtureTypes NOTIFY fixturesChanged)
     Q_PROPERTY(QStringList fixtureKinds READ fixtureKindList CONSTANT)
@@ -213,7 +214,37 @@ public:
      *********************************************************************/
     /** Stage width/height in millimeters */
     QSizeF stageSize() const;
+    /** The size of the stage, each way between stageMinimum() and
+     *  stageMaximum(): it grows or shrinks on the right and at the front.
+     *  Nothing moves: a fixture past a new, smaller edge stays outside it */
     Q_INVOKABLE void setStageSize(qreal width, qreal height);
+    /** The smallest and the largest stage, each way (mm) */
+    static constexpr qreal stageMinimum() { return 1000.0; }
+    static constexpr qreal stageMaximum() { return 200000.0; }
+    /**
+     * Grow ($deltaMm > 0) or shrink the stage on one $side of the plan:
+     * "left", "right", "top" (the back of the stage) or "bottom" (the
+     * front, the audience side). On the left or at the top, everything on
+     * the plan moves with that side: each fixture with its heads, the items
+     * of QLC+'s 3D view and the point Follow aims at, so they stay where
+     * they are on the real stage. Nothing changes, and it returns false,
+     * when growing would make the stage larger than stageMaximum(), when
+     * shrinking would make it smaller than stageMinimum() (a stage already
+     * larger than stageMaximum(), from QLC+, still shrinks), or when
+     * shrinking would leave a positioned fixture on the new edge or past it
+     * (see stageRoom()). One stageSizeChanged, and one fixturesChanged when
+     * they moved (the left or the top)
+     */
+    Q_INVOKABLE bool resizeStageSide(const QString &side, qreal deltaMm);
+    /** The room free of fixtures between each side of the stage and the
+     *  nearest positioned fixture, in mm: { left, right, top, bottom } (the
+     *  whole width or depth when none is positioned; below 0 when one is
+     *  outside the stage); and { minimum, maximum }: the smallest and the
+     *  largest stage. A side shrinks by 1 m when its room is more than that */
+    QVariantMap stageRoom() const;
+    /** While resizeStageSide tells that the fixtures moved with a side of the
+     *  stage: the whole plan moved, nothing moved on the real stage */
+    bool shiftingStage() const { return m_shiftingStage; }
 
     Q_INVOKABLE void setFixturePosition(quint32 id, qreal x, qreal y);
     /** Place the fixtures without a position in rows, by universe/address */
@@ -378,6 +409,11 @@ signals:
     void fixturesChanged();
     void groupsChanged();
     void stageSizeChanged();
+    /** stageRoom() changed: the stage or the fixtures */
+    void stageRoomChanged();
+    /** Every item of the plan moved by $dx, $dy (mm) with a side of the
+     *  stage (resizeStageSide), before fixturesChanged */
+    void stageShifted(qreal dx, qreal dy);
     void identifiedChanged();
     void selectionsChanged();
 
@@ -490,6 +526,8 @@ private:
     bool m_loading = false;
     bool m_fixturesHeld = false;
     bool m_groupsHeld = false;
+    /** See shiftingStage() */
+    bool m_shiftingStage = false;
 };
 
 #endif

@@ -484,6 +484,9 @@ private:
     bool aimHolds() const;
     /** The position was set another way: no aim */
     void dropAim();
+    /** Everything on the plan moved by $dx, $dy (mm) with a side of the
+     *  stage: the point too, the same spot of the real stage */
+    void shiftAim(qreal dx, qreal dy);
     /** Pan and tilt of one fixture as they leave it (0..1 of their travel):
      *  through the inversions, limits and swap of the patch */
     void writeAim(quint32 fixtureId, qreal pan, qreal tilt);

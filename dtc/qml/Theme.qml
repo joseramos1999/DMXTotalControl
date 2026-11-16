@@ -175,6 +175,7 @@ QtObject {
     readonly property string iconPlay: ""
     readonly property string iconPlug: ""
     readonly property string iconPlus: "+"
+    readonly property string iconMinus: "\uf068"
     readonly property string iconPower: ""
     readonly property string iconRefresh: ""
     readonly property string iconSliders: ""

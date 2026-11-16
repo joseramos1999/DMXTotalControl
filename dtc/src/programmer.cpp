@@ -2862,9 +2862,24 @@ void Programmer::setPatch(PatchManager *patch)
     if (m_patch != nullptr)
         disconnect(m_patch, nullptr, this, nullptr);
     m_patch = patch;
-    // the heads moved, turned or inverted: they aim no more
-    if (m_patch != nullptr)
-        connect(m_patch, &PatchManager::fixturesChanged, this, &Programmer::dropAim);
+    if (m_patch == nullptr)
+        return;
+    // the heads moved, turned or inverted: they aim no more. (The whole plan
+    // moved with a side of the stage: they aim at the same spot, moved too)
+    connect(m_patch, &PatchManager::fixturesChanged, this, [this]() {
+        if (m_patch->shiftingStage() == false)
+            dropAim();
+    });
+    connect(m_patch, &PatchManager::stageShifted, this, &Programmer::shiftAim);
+}
+
+void Programmer::shiftAim(qreal dx, qreal dy)
+{
+    if (m_aim.isEmpty())
+        return;
+    m_aim.insert("x", m_aim.value("x").toDouble() + dx);
+    m_aim.insert("y", m_aim.value("y").toDouble() + dy);
+    emit aimChanged();
 }
 
 QVariantMap Programmer::aimAt(qreal x, qreal y, qreal z)
