@@ -58,7 +58,7 @@ En Programar el plano está siempre **en vivo**: cada fixture muestra su color, 
 
 ### Dimmer
 
-El fader **Dimmer** y los botones **100%**, **75%**, **50%**, **25%** y **0%** dan intensidad a la selección.
+El fader **Dimmer** y los botones **100%**, **75%**, **50%**, **25%** y **0%** dan intensidad a la selección. En un fixture con varios dimmers dan intensidad a su dimmer principal y a los que son luz (cada cabeza, lámpara, píxel o fondo), no al destello de un estrobo, a un efecto, al humo de una máquina con LEDs ni a un control de lámpara.
 
 ### Color
 
@@ -72,7 +72,7 @@ Haz clic en una de las 16 muestras, o mueve **Tono** y **Sat.** El color se mezc
 
 Cada canal es una tarjeta con su nombre, su valor en %, un deslizador y sus **presets** como botones (con su color o la imagen de su gobo si el perfil los trae). Haz clic en un preset para ponerlo. La tarjeta se marca en naranja cuando el canal está en el programador; su **×** lo libera.
 
-Los canales se agrupan **por función**, no por nombre: «Red», «R» o «Rojo» de fixtures distintos son el mismo control, y lo mismo con dimmer, pan/tilt, CMY, rueda de color, gobo, shutter, iris, zoom, foco, prisma… Cada cabeza de una barra conserva sus canales.
+Los canales se agrupan **por función**, no por nombre: «Red», «R» o «Rojo» de fixtures distintos son el mismo control, y lo mismo con dimmer, pan/tilt, CMY, rueda de color, gobo, shutter, iris, zoom, foco, prisma… Cada cabeza de una barra conserva sus canales. En un fixture con varios dimmers, el que va con el dimmer de los demás fixtures es su dimmer principal.
 
 ### Color: selector y favoritos
 
@@ -195,6 +195,8 @@ En **FX** hay tres zonas: los parámetros y los FX en marcha a la izquierda, los
 4. Ajusta los controles: el FX cambia en directo.
 
 Los fixtures sin dimmer (solo RGB, RGBW…) también tienen **Dimmer**, marcado «virtual»: el FX atenúa su color como lo haría un dimmer, con todas sus cabezas a la vez. Las macros de intensidad (persecución, pulso, estrobo…) también funcionan en ellos. El CMY, las ruedas de color y los canales con la opción **Dimmer** apagada en el Patch no cambian. Es solo para los FX: el fader **Dimmer** del panel Rápido y `@` siguen sin dimmer en estos fixtures.
+
+Si un fixture tiene varios dimmers propios (un estrobo con su destello y un aura de color, un wash con un dimmer de fondo, una máquina de humo con LEDs), **Dimmer** es su dimmer principal, no el del destello, el fondo o el humo: se reconoce por su nombre («Master dimmer», «Dimmer», «Aura dimmer»…), aunque no sea el primer canal. Los demás suelen salir en **Parámetro** con el nombre de su canal, cada uno con su propio FX. Las paletas de intensidad y los Colour FX que actúan sobre «Dimmer (valor)» también usan el principal.
 
 ### Los controles del FX
 

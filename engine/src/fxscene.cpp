@@ -19,6 +19,7 @@
 
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
+#include <QRegularExpression>
 #include <QRandomGenerator>
 #include <QMutexLocker>
 #include <QLocale>
@@ -36,6 +37,7 @@
 #include "fixturegroup.h"
 #include "qlcfixturehead.h"
 #include "qlcfixturemode.h"
+#include "qlccapability.h"
 #include "qlcchannel.h"
 #include "universe.h"
 #include "fxscene.h"
@@ -549,6 +551,10 @@ QString FXScene::attributeOf(const QLCChannel *ch)
         case QLCChannel::IntensitySaturation: case QLCChannel::IntensitySaturationFine:
             return QStringLiteral("saturation");
         case QLCChannel::IntensityLightness: case QLCChannel::IntensityLightnessFine:
+            // the «Intensity» of an HSI fixture is its dimmer (its group says so below)
+            if (name.contains(QLatin1String("intens")) || name.contains(QLatin1String("dimmer")) ||
+                name.contains(QLatin1String("bright")))
+                break;
             return QStringLiteral("lightness");
         case QLCChannel::SpeedPanSlowFast: case QLCChannel::SpeedPanFastSlow:
         case QLCChannel::SpeedTiltSlowFast: case QLCChannel::SpeedTiltFastSlow:
@@ -643,6 +649,72 @@ QString FXScene::paramOf(const QLCChannel *ch)
     return attributeOf(ch);
 }
 
+QString FXScene::fixtureParamOf(const Fixture *fixture, quint32 channel)
+{
+    if (fixture == NULL)
+        return QString();
+    const QLCChannel *ch = fixture->channel(channel);
+    const QString param = paramOf(ch);
+    if (param == QLatin1String("dimmer") && headOf(fixture, channel) < 0 &&
+        channelFor(fixture, param) != channel)
+    {
+        // "dimmer:" and its name, when the name finds it again: a name of its
+        // own, that no other channel (a cell, the master of another fixture
+        // with that name) can answer to
+        const QString key = QStringLiteral("dimmer:") + ch->name().trimmed().toLower();
+        if (key.length() > 7 && channelFor(fixture, key) == channel)
+            return key;
+    }
+    return param;
+}
+
+QList<quint32> FXScene::levelDimmerChannels(const Fixture *fixture)
+{
+    QList<quint32> channels;
+    if (fixture == NULL)
+        return channels;
+    const quint32 master = channelFor(fixture, QStringLiteral("dimmer"));
+    for (quint32 c = 0; c < fixture->channels(); c++)
+    {
+        const QLCChannel *ch = fixture->channel(c);
+        if (ch == NULL || ch->group() != QLCChannel::Intensity ||
+            ch->colour() != QLCChannel::NoColour || ch->controlByte() != QLCChannel::MSB ||
+            attributeOf(ch) != QLatin1String("dimmer"))
+            continue;
+        if (c != master && headOf(fixture, c) < 0)
+        {
+            // a plain level: a dimmer preset, one range 0-255, or ranges that
+            // are all levels (a GDTF dimmer: Closed, Dimmer, Open)
+            static const QRegularExpression level(QStringLiteral("^(closed?|off|dimmer|dimming|intensity|open|on|full)\\b"),
+                                                  QRegularExpression::CaseInsensitiveOption);
+            const QList<QLCCapability *> caps = ch->capabilities();
+            const bool levels = caps.count() > 1 &&
+                std::all_of(caps.cbegin(), caps.cend(), [](const QLCCapability *cap) {
+                    return level.match(cap->name().trimmed()).hasMatch(); });
+            const bool plain = ch->preset() == QLCChannel::IntensityDimmer ||
+                               ch->preset() == QLCChannel::IntensityMasterDimmer ||
+                               (caps.count() == 1 && caps.first()->min() == 0 && caps.first()->max() == 255) || levels;
+            if (plain == false || QLCFixtureMode::isNotLight(ch->name()))
+                continue;
+        }
+        channels.append(c);
+    }
+    // an HSL/HSV mode without a dimmer: its lightness is its level
+    if (channels.isEmpty())
+    {
+        for (quint32 c = 0; c < fixture->channels(); c++)
+        {
+            const QLCChannel *ch = fixture->channel(c);
+            if (ch != NULL && ch->controlByte() == QLCChannel::MSB && attributeOf(ch) == QLatin1String("lightness"))
+            {
+                channels.append(c);
+                break;
+            }
+        }
+    }
+    return channels;
+}
+
 int FXScene::headOf(const Fixture *fixture, quint32 channel)
 {
     if (fixture == NULL || fixture->fixtureMode() == NULL || fixture->heads() < 2)
@@ -663,6 +735,31 @@ quint32 FXScene::channelFor(const Fixture *fixture, const QString &param, quint3
     // the channel of the whole fixture first (the master dimmer of a bar), then
     // the first head; then, for shows saved before, a channel with that name
     quint32 found = QLCChannel::invalid();
+    // the dimmer of a fixture with several is its master (the engine chooses
+    // it: not the flash intensity of a strobe that also has a colour aura)
+    if (param == QLatin1String("dimmer"))
+    {
+        const quint32 master = fixture->masterIntensityChannel();
+        if (master != QLCChannel::invalid() && paramOf(fixture->channel(master)) == param)
+            found = master;
+    }
+    // "dimmer:<name>" (fixtureParamOf): a dimmer of the whole fixture, not its
+    // master, with that name; never a cell nor the master of another fixture
+    else if (param.startsWith(QLatin1String("dimmer:")))
+    {
+        const QString name = param.mid(7);
+        const quint32 master = channelFor(fixture, QStringLiteral("dimmer"));
+        for (quint32 c = 0; c < fixture->channels() && found == QLCChannel::invalid(); c++)
+        {
+            const QLCChannel *ch = fixture->channel(c);
+            if (c != master && ch != NULL && ch->controlByte() == QLCChannel::MSB &&
+                paramOf(ch) == QLatin1String("dimmer") && headOf(fixture, c) < 0 &&
+                ch->name().trimmed().toLower() == name)
+                found = c;
+        }
+        if (found == QLCChannel::invalid())
+            return found;
+    }
     for (int pass = 0; pass < 3 && found == QLCChannel::invalid(); pass++)
     {
         for (quint32 c = 0; c < fixture->channels(); c++)

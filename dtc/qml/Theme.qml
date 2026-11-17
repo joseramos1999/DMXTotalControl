@@ -432,7 +432,9 @@ QtObject {
         default:
             if (name && name.length > 0)
                 return name
-            return key.length > 0 ? key.charAt(0).toUpperCase() + key.slice(1) : key
+            // a dimmer of its own (FXScene::fixtureParamOf): "dimmer:beam flash intensity"
+            let label = key.indexOf("dimmer:") === 0 ? key.slice(7) : key
+            return label.length > 0 ? label.charAt(0).toUpperCase() + label.slice(1) : label
         }
     }
 

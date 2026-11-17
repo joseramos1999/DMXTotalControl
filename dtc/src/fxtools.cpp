@@ -587,7 +587,7 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
                 const QLCChannel *ch = fxi->channel(c);
                 if (ch == nullptr || curve->features().contains(ch->name().toLower()) == false)
                     continue;
-                QString param = FXScene::paramOf(ch);
+                QString param = FXScene::fixtureParamOf(fxi, c);
                 if (param.isEmpty())
                     continue;
                 if (params.contains(param) == false)

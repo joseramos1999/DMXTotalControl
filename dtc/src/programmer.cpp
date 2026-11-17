@@ -223,6 +223,21 @@ QStringList Programmer::keysOf(const Fixture *fxi) const
         }
         keys.append(key);
     }
+    // the "dimmer" of a fixture with several is its master dimmer (the one the
+    // FX and the dimmer palettes use), and its fine channel "dimmer fine": the
+    // other dimmers keep their "#2", "#3"
+    auto toFront = [&keys](const QString &base, quint32 channel) {
+        if (channel == QLCChannel::invalid() || channel >= quint32(keys.count()) ||
+            keys.at(int(channel)).startsWith(base + QLatin1Char('#')) == false)
+            return;
+        const int first = keys.indexOf(base);
+        if (first >= 0)
+            keys.swapItemsAt(first, int(channel));
+    };
+    quint32 fine = QLCChannel::invalid();
+    const quint32 master = FXScene::channelFor(fxi, QStringLiteral("dimmer"), &fine);
+    toFront(QStringLiteral("dimmer"), master);
+    toFront(QStringLiteral("dimmer fine"), fine);
     m_keyCache.insert(fxi->id(), qMakePair(static_cast<const void *>(fxi->fixtureMode()), keys));
     return keys;
 }
@@ -467,21 +482,15 @@ int Programmer::releaseChannels(const QList<quint32> &fixtures, const std::funct
     return count;
 }
 
-/** The dimmers of a fixture: its intensity channels without a colour (a
- *  master dimmer, the dimmer of each head) */
+/** The dimmers a dimmer level sets on a fixture (FXScene::levelDimmerChannels):
+ *  its master dimmer, the dimmer of each head, and the other dimmers of the
+ *  whole fixture that are a plain level of light (twin lamps, pixels, a
+ *  background layer); not the flash intensity of a strobe with an aura, an
+ *  effect, the fog of a fogger with LEDs, a lamp control, nor the hue or
+ *  saturation of an HSI fixture */
 static QList<quint32> dimmerChannels(const Fixture *fxi)
 {
-    QList<quint32> channels;
-    if (fxi == nullptr)
-        return channels;
-    for (quint32 c = 0; c < fxi->channels(); c++)
-    {
-        const QLCChannel *ch = fxi->channel(c);
-        if (ch != nullptr && ch->group() == QLCChannel::Intensity &&
-            ch->colour() == QLCChannel::NoColour && ch->controlByte() == QLCChannel::MSB)
-            channels.append(c);
-    }
-    return channels;
+    return FXScene::levelDimmerChannels(fxi);
 }
 
 int Programmer::setDimmer(int value)
@@ -1021,14 +1030,10 @@ void Programmer::setBeam(bool on)
         if (fxi == nullptr)
             continue;
 
-        bool hasDimmer = false;
-        for (quint32 c = 0; c < fxi->channels(); c++)
-        {
-            const QLCChannel *ch = fxi->channel(c);
-            if (ch != nullptr && ch->group() == QLCChannel::Intensity &&
-                ch->colour() == QLCChannel::NoColour && ch->controlByte() == QLCChannel::MSB)
-                hasDimmer = true;
-        }
+        // the dimmers a dimmer level sets (not the flash of a strobe with an
+        // aura, the fog of a fogger with LEDs or a lamp control)
+        const QList<quint32> dimmers = dimmerChannels(fxi);
+        const bool hasDimmer = dimmers.isEmpty() == false;
 
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
@@ -1041,7 +1046,10 @@ void Programmer::setBeam(bool on)
                 bool isWhiteMix = ch->colour() == QLCChannel::Red || ch->colour() == QLCChannel::Green ||
                                   ch->colour() == QLCChannel::Blue || ch->colour() == QLCChannel::White;
                 if (ch->colour() == QLCChannel::NoColour)
-                    setValue(fxid, c, on ? 255 : 0);
+                {
+                    if (dimmers.contains(c))
+                        setValue(fxid, c, on ? 255 : 0);
+                }
                 else if (hasDimmer == false && isWhiteMix)
                     // without a dimmer, light comes from the colour mix
                     setValue(fxid, c, on ? 255 : 0);
@@ -1897,7 +1905,7 @@ QString Programmer::paramOfKey(const QString &key) const
         {
             if (channelKey(fxid, c) != key)
                 continue;
-            QString param = FXScene::paramOf(fxi->channel(c));
+            QString param = FXScene::fixtureParamOf(fxi, c);
             // pan and tilt go together
             if (param == QLatin1String("pan") || param == QLatin1String("tilt"))
                 return QStringLiteral("pantilt");
@@ -1927,6 +1935,8 @@ QVariantList Programmer::fxParams() const
     bool pan = false, tilt = false;
     // DMX Total Control: a fixture without a dimmer that a dimmer FX dims
     bool virtualDimmer = false;
+    // the dimmers that are not the master of their fixture (an FX by name)
+    QStringList otherDimmers;
 
     for (quint32 fxid : m_selection)
     {
@@ -1937,12 +1947,19 @@ QVariantList Programmer::fxParams() const
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
             const QLCChannel *ch = fxi->channel(c);
-            QString param = FXScene::paramOf(ch);
+            // (a dimmer that is not the master is an FX of its own, by name)
+            QString param = FXScene::fixtureParamOf(fxi, c);
             if (param.isEmpty() || keys.contains(param))
                 continue;
             keys.append(param);
             pan = pan || param == QLatin1String("pan");
             tilt = tilt || param == QLatin1String("tilt");
+
+            // the name of the channel the FX moves (the master dimmer of a
+            // fixture with several, not the first one)
+            const quint32 moved = FXScene::channelFor(fxi, param);
+            if (moved != QLCChannel::invalid() && fxi->channel(moved) != nullptr)
+                ch = fxi->channel(moved);
 
             QVariantMap info;
             info.insert("key", param);
@@ -1950,9 +1967,25 @@ QVariantList Programmer::fxParams() const
             info.insert("group", QLCChannel::groupToString(ch->group()));
             info.insert("colour", ch->colour() == QLCChannel::NoColour ? QString() : QColor(QRgb(ch->colour())).name());
             info.insert("active", fxLayerFor(param, false) >= 0);
+            if (param != FXScene::paramOf(fxi->channel(c)))
+                otherDimmers.append(param);
             list.append(info);
         }
     }
+
+    // the dimmer before the other dimmers of the fixture (the flash intensity
+    // of a strobe comes first in its channels), so it is the one shown first
+    int dimmerAt = -1, firstOther = -1;
+    for (int i = 0; i < list.count(); i++)
+    {
+        const QString key = list.at(i).toMap().value("key").toString();
+        if (key == QLatin1String("dimmer"))
+            dimmerAt = i;
+        else if (firstOther < 0 && otherDimmers.contains(key))
+            firstOther = i;
+    }
+    if (dimmerAt > firstOther && firstOther >= 0)
+        list.move(dimmerAt, firstOther);
 
     // DMX Total Control: the dimmer of the ones without one, first after pan/tilt
     if (virtualDimmer && keys.contains(QStringLiteral("dimmer")) == false)

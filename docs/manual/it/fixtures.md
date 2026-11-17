@@ -54,6 +54,7 @@ In **Modalità**, **«Aggiungi»** crea una modalità con tutti i canali. Ogni s
 
 - **Nome** della modalità e il cestino per eliminarla (ne resta sempre una).
 - L'elenco è l'**ordine DMX** della modalità: spunta i canali che usa e spostali con **▲ ▼** fino alla loro posizione. Il numero a sinistra è il suo canale DMX all'interno della modalità.
+- Se la modalità ha più dimmer (canali di intensità con **Colore** «Nessuno»), metti per primo quello principale e chiamalo «Dimmer» o «Master dimmer»: è il **Dimmer** della fixture in Programma e nei suoi FX. Ognuno degli altri ha un FX proprio, con il suo nome. Se uno non è luce che deve seguire il dimmer ma il flash di uno strobo, un effetto, il fumo o un controllo della lampada, metti quella parola in inglese nel suo nome («Flash», «Strobe», «Effect», «Fog», «Lamp»): così il fader **Dimmer** del pannello Rapido, `@` e **«Beam on»** non lo toccano.
 
 ### Eliminare una tua fixture
 

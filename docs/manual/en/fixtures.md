@@ -54,6 +54,7 @@ In **Modes**, **“Add”** creates a mode with all the channels. Each tab is a 
 
 - The **Name** of the mode and the bin to delete it (there is always one left).
 - The list is the **DMX order** of the mode: tick the channels it uses and move them with **▲ ▼** to their position. The number on the left is its DMX channel within the mode.
+- If the mode has several dimmers (intensity channels with **Colour** “None”), put the main one first and call it “Dimmer” or “Master dimmer”: it is the fixture's **Dimmer** in Program and in its FX. Each of the others gets an FX of its own, with its name. If one is not light that should follow the dimmer but the flash of a strobe, an effect, fog or a lamp control, put that word in its name (“Flash”, “Strobe”, “Effect”, “Fog”, “Lamp”), so the **Dimmer** fader of the Quick panel, `@` and **“Beam on”** leave it alone.
 
 ### Deleting one of your fixtures
 

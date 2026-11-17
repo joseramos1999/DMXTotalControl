@@ -209,6 +209,18 @@ public:
     /** Return the auto-detected channel index of the Fixture master dimmer for this mode */
     quint32 masterIntensityChannel() const;
 
+    /** DMX Total Control: how much the name of a dimmer of the whole fixture
+     *  says it is its main dimmer: 3 a master dimmer, 2 a dimmer, 1 a name
+     *  that says nothing else, 0 the dimmer of something else (the flash of
+     *  a strobe, a background or effect layer, the fog of a fogger, a speed) */
+    static int masterDimmerScore(const QString &name);
+
+    /** DMX Total Control: whether the name of an intensity channel says it is
+     *  not light a dimmer level should give (the flash of a strobe, an effect,
+     *  the fog of a fogger, a lamp control, a speed, a curve or mode). A pixel
+     *  or a background layer is light (unlike for choosing the master) */
+    static bool isNotLight(const QString &name);
+
     /** Return the index of the primary channel $chIndex relates to.
      *  Return invalid if not present */
     quint32 primaryChannel(quint32 chIndex) const;

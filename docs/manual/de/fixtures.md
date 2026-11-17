@@ -54,6 +54,7 @@ Unter **Modi** erstellt **„Hinzufügen“** einen Modus mit allen Kanälen. Je
 
 - **Name** des Modus und der Papierkorb zum Löschen (einer bleibt immer).
 - Die Liste ist die **DMX-Reihenfolge** des Modus: Haken Sie die verwendeten Kanäle an und schieben Sie sie mit **▲ ▼** an ihre Position. Die Zahl links ist ihr DMX-Kanal innerhalb des Modus.
+- Hat der Modus mehrere Dimmer (Intensitätskanäle mit **Farbe** „Keine“), setzen Sie den Hauptdimmer an den Anfang und nennen Sie ihn „Dimmer“ oder „Master dimmer“: Er ist der **Dimmer** des Fixtures in Programmieren und in seinen FX. Jeder der anderen bekommt einen eigenen FX mit seinem Namen. Ist einer davon kein Licht, das dem Dimmer folgen soll, sondern der Blitz eines Stroboskops, ein Effekt, Nebel oder eine Lampensteuerung, schreiben Sie das englische Wort in seinen Namen („Flash“, „Strobe“, „Effect“, „Fog“, „Lamp“): Dann lassen ihn der Fader **Dimmer** im Bereich Schnell, `@` und **„Beam on“** in Ruhe.
 
 ### Ein eigenes Fixture löschen
 

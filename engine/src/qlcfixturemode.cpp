@@ -19,6 +19,7 @@
 */
 
 #include <QXmlStreamReader>
+#include <QRegularExpression>
 #include <iostream>
 #include <QString>
 #include <QDebug>
@@ -304,6 +305,36 @@ int QLCFixtureMode::headForChannel(quint32 chnum) const
     return -1;
 }
 
+/* DMX Total Control: how much the name of a dimmer of the whole fixture says
+ * it is its main dimmer: 3 a master dimmer, 2 a dimmer, 1 a name that says
+ * nothing else, 0 the dimmer of something else (the flash of a strobe, a
+ * background or effect layer, the fog of a fogger, a speed...) */
+int QLCFixtureMode::masterDimmerScore(const QString &name)
+{
+    static const QRegularExpression dimmer(QStringLiteral("dimmer|intens|\\bint\\b|brightness"),
+                                           QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression other(
+        QStringLiteral("flash|strobe|effect|\\bfx\\b|background|layer|pixel|program|macro|shape|flower|"
+                       "pattern|fog|haze|smoke|\\bfan\\b|speed|sound|sensitiv|curve|mode|temperat|preset|auto"),
+        QRegularExpression::CaseInsensitiveOption);
+
+    const bool isDimmer = dimmer.match(name).hasMatch();
+    if (isDimmer && name.contains(QLatin1String("master"), Qt::CaseInsensitive))
+        return 3;
+    if (other.match(name).hasMatch())
+        return 0;
+    return isDimmer ? 2 : 1;
+}
+
+bool QLCFixtureMode::isNotLight(const QString &name)
+{
+    static const QRegularExpression other(
+        QStringLiteral("flash|strobe|effect|\\bfx\\b|program|macro|shape|flower|pattern|fog|haze|smoke|\\bfan\\b|"
+                       "speed|sound|sensitiv|curve|mode|temperat|preset|auto|lamp|param"),
+        QRegularExpression::CaseInsensitiveOption);
+    return other.match(name).hasMatch();
+}
+
 void QLCFixtureMode::cacheHeads()
 {
     QLCChannel *lastChannel = NULL;
@@ -313,6 +344,9 @@ void QLCFixtureMode::cacheHeads()
         QLCFixtureHead& head(m_heads[i]);
         head.cacheChannels(this);
     }
+
+    /* DMX Total Control: the dimmers of the whole fixture, to choose its master */
+    QList<quint32> dimmers;
 
     for (quint32 i = 0; i < quint32(m_channels.size()); i++)
     {
@@ -325,7 +359,7 @@ void QLCFixtureMode::cacheHeads()
             channel->colour() == QLCChannel::NoColour &&
             headForChannel(i) == -1)
         {
-            m_masterIntensityChannel = i;
+            dimmers.append(i);
         }
 
         /** Map secondary channels */
@@ -339,6 +373,29 @@ void QLCFixtureMode::cacheHeads()
         }
 
         lastChannel = channel;
+    }
+
+    /* DMX Total Control: the master is the first dimmer, unless its name says
+     * it is not the main light (the flash intensity of a strobe with a colour
+     * aura, the background dimmer of a wash, the fog of a fogger with LEDs) or
+     * no dimmer at all, and a later one says it better */
+    if (dimmers.isEmpty() == false)
+    {
+        quint32 best = dimmers.first();
+        int bestScore = masterDimmerScore(m_channels.at(best)->name());
+        if (bestScore < 2)
+        {
+            for (quint32 c : std::as_const(dimmers))
+            {
+                const int score = masterDimmerScore(m_channels.at(c)->name());
+                if (score > bestScore)
+                {
+                    best = c;
+                    bestScore = score;
+                }
+            }
+        }
+        m_masterIntensityChannel = best;
     }
 }
 

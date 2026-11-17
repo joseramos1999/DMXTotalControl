@@ -58,7 +58,7 @@ Unter Programmieren ist der Plan immer **live**: Jedes Fixture zeigt seine Farbe
 
 ### Dimmer
 
-Der Fader **Dimmer** und die Tasten **100%**, **75%**, **50%**, **25%** und **0%** geben der Auswahl Intensität.
+Der Fader **Dimmer** und die Tasten **100%**, **75%**, **50%**, **25%** und **0%** geben der Auswahl Intensität. Bei einem Fixture mit mehreren Dimmern geben sie seinem Hauptdimmer und den Dimmern, die Licht sind (jeder Kopf, jede Lampe, jedes Pixel, der Hintergrund), Intensität, nicht dem Blitz eines Stroboskops, einem Effekt, dem Nebel einer Nebelmaschine mit LEDs oder einer Lampensteuerung.
 
 ### Farbe
 
@@ -72,7 +72,7 @@ Klicken Sie auf eines der 16 Farbfelder oder bewegen Sie **Farbton** und **Sätt
 
 Jeder Kanal ist eine Karte mit Name, Wert in %, einem Schieberegler und seinen **Presets** als Tasten (mit ihrer Farbe oder dem Bild ihres Gobos, wenn das Profil sie mitbringt). Klicken Sie auf ein Preset, um es zu setzen. Die Karte wird orange markiert, wenn der Kanal im Programmer ist; ihr **×** gibt ihn frei.
 
-Die Kanäle werden **nach Funktion** gruppiert, nicht nach Name: „Red“, „R“ oder „Rot“ verschiedener Fixtures sind derselbe Regler, ebenso Dimmer, Pan/Tilt, CMY, Farbrad, Gobo, Shutter, Iris, Zoom, Fokus, Prisma… Jeder Kopf einer Bar behält seine eigenen Kanäle.
+Die Kanäle werden **nach Funktion** gruppiert, nicht nach Name: „Red“, „R“ oder „Rot“ verschiedener Fixtures sind derselbe Regler, ebenso Dimmer, Pan/Tilt, CMY, Farbrad, Gobo, Shutter, Iris, Zoom, Fokus, Prisma… Jeder Kopf einer Bar behält seine eigenen Kanäle. Bei einem Fixture mit mehreren Dimmern ist sein Hauptdimmer der, der zum Dimmer der anderen Fixtures gehört.
 
 ### Farbe: Farbwähler und Favoriten
 
@@ -195,6 +195,8 @@ Unter **FX** gibt es drei Zonen: links die Parameter und die laufenden FX, in de
 4. Stellen Sie die Regler ein: Der FX ändert sich live.
 
 Fixtures ohne Dimmer (nur RGB, RGBW…) haben auch **Dimmer**, markiert mit „virtuell“: Der FX dimmt ihre Farbe, wie es ein Dimmer täte, alle Köpfe zusammen. Die Intensitäts-Makros (Lauflicht, Puls, Stroboskop…) funktionieren auch bei ihnen. CMY, Farbräder und die Kanäle, deren Option **Dimmer** im Patch aus ist, ändern sich nicht. Das gilt nur für FX: Der Fader **Dimmer** im Bereich Schnell und `@` finden bei diesen Fixtures weiterhin keinen Dimmer.
+
+Hat ein Fixture mehrere eigene Dimmer (ein Stroboskop mit Blitz und farbiger Aura, ein Wash mit Hintergrund-Dimmer, eine Nebelmaschine mit LEDs), ist **Dimmer** sein Hauptdimmer, nicht der des Blitzes, des Hintergrunds oder des Nebels: Er wird an seinem Namen erkannt („Master dimmer“, „Dimmer“, „Aura dimmer“…), auch wenn er nicht der erste Kanal ist. Die anderen erscheinen meist unter **Parameter** mit dem Namen ihres Kanals, jeweils mit einem eigenen FX. Intensitäts-Paletten und Colour FX, die auf „Dimmer (Wert)“ wirken, nutzen ebenfalls den Hauptdimmer.
 
 ### Die Regler des FX
 

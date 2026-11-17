@@ -545,7 +545,12 @@ QMap<quint32, uchar> PaletteManager::genericValues(const Palette &p, const Fixtu
             (mixed && typeOf(ch) == QLatin1String("colour")))
             continue;
         const QString key = m_programmer->attributeKey(fxi->id(), c);
-        const Value *v = byKey.value(key, byBase.value(baseKey(key), nullptr));
+        // a second dimmer that a dimmer level leaves alone (the flash intensity
+        // of a strobe with a colour aura, the fog of a fogger with LEDs) takes
+        // only a value of its own, not the palette's "dimmer"
+        const bool ownDimmer = key != QLatin1String("dimmer") && baseKey(key) == QLatin1String("dimmer") &&
+                               FXScene::levelDimmerChannels(fxi).contains(c) == false;
+        const Value *v = byKey.value(key, ownDimmer ? nullptr : byBase.value(baseKey(key), nullptr));
         if (v == nullptr)
             continue;
 
@@ -1321,6 +1326,18 @@ bool PaletteManager::loadXML(QXmlStreamReader &root)
                     v.value = uchar(qBound(0, value, 255));
                     if (channelOk && valueOk)
                         e.values.append(v);
+                }
+                // a palette recorded before on a fixture still patched the same
+                // takes today's keys ("dimmer" is now its master dimmer, not
+                // always its first one)
+                if (fixtureOk && m_programmer != nullptr && sameType(e, m_doc->fixture(e.fixture)))
+                {
+                    for (Value &v : e.values)
+                    {
+                        const QString key = m_programmer->attributeKey(e.fixture, v.channel);
+                        if (key.isEmpty() == false)
+                            v.key = key;
+                    }
                 }
                 if (fixtureOk && e.values.isEmpty() == false)
                     p.entries.append(e);

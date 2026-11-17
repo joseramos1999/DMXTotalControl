@@ -253,6 +253,20 @@ public:
      *  the channel of the whole fixture (a master dimmer) comes before the ones of a head.
      *  Shows saved with channel names as parameters still find their channel */
     static quint32 channelFor(const Fixture *fixture, const QString &param, quint32 *fine = nullptr);
+    /** The parameter an FX on channel $channel of $fixture modulates: its
+     *  paramOf(), but a dimmer of the whole fixture that is not its master
+     *  (the flash intensity of a strobe with a colour aura) is a parameter
+     *  of its own, its name in lower case, so an FX can still move it */
+    static QString fixtureParamOf(const Fixture *fixture, quint32 channel);
+    /** The dimmers a dimmer level (the programmer's «Dimmer», @ FULL, a
+     *  dimmer palette of another fixture type) sets on $fixture: its master
+     *  dimmer, the dimmer of each head, and the other dimmers of the whole
+     *  fixture that are a plain level of light (the two lamps of a twin spot,
+     *  pixels, a background layer). Not the flash intensity of a strobe with
+     *  an aura, an effect, the fog of a fogger with LEDs, a lamp control, nor
+     *  the hue or saturation of an HSI fixture. An HSL/HSV mode without a
+     *  dimmer: its lightness */
+    static QList<quint32> levelDimmerChannels(const Fixture *fixture);
     /** The head (0..) channel $channel of $fixture belongs to, on fixtures with
      *  several heads; -1 for the channels of the whole fixture */
     static int headOf(const Fixture *fixture, quint32 channel);

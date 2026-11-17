@@ -58,7 +58,7 @@ In Program the plan is always **live**: each fixture shows its colour, its dimme
 
 ### Dimmer
 
-The **Dimmer** fader and the **100%**, **75%**, **50%**, **25%** and **0%** buttons give intensity to the selection.
+The **Dimmer** fader and the **100%**, **75%**, **50%**, **25%** and **0%** buttons give intensity to the selection. On a fixture with several dimmers they set its main dimmer and the ones that are light (each head, lamp, pixel or background), not the flash of a strobe, an effect, the fog of a fogger with LEDs or a lamp control.
 
 ### Colour
 
@@ -72,7 +72,7 @@ Click one of the 16 swatches, or move **Hue** and **Sat**. The colour is mixed o
 
 Each channel is a card with its name, its value in %, a slider and its **presets** as buttons (with their colour or the image of their gobo if the profile includes them). Click a preset to set it. The card is marked in orange when the channel is in the programmer; its **×** releases it.
 
-Channels are grouped **by function**, not by name: “Red”, “R” or “Rojo” on different fixtures are the same control, and the same goes for dimmer, pan/tilt, CMY, colour wheel, gobo, shutter, iris, zoom, focus, prism… Each head of a bar keeps its own channels.
+Channels are grouped **by function**, not by name: “Red”, “R” or “Rojo” on different fixtures are the same control, and the same goes for dimmer, pan/tilt, CMY, colour wheel, gobo, shutter, iris, zoom, focus, prism… Each head of a bar keeps its own channels. On a fixture with several dimmers, the one that goes with the other fixtures' dimmer is its main dimmer.
 
 ### Colour: picker and favourites
 
@@ -195,6 +195,8 @@ In **FX** there are three areas: the parameters and the running FX on the left, 
 4. Adjust the controls: the FX changes live.
 
 Fixtures without a dimmer (RGB only, RGBW…) also have **Dimmer**, marked “virtual”: the FX dims their colour as a dimmer would, all their heads together. The intensity macros (chase, pulse, strobe…) work on them too. CMY, colour wheels and the channels whose **Dimmer** option is off in the Patch don't change. It is for FX only: the **Dimmer** fader of the Quick panel and `@` still find no dimmer on these fixtures.
+
+If a fixture has several dimmers of its own (a strobe with its flash and a colour aura, a wash with a background dimmer, a fogger with LEDs), **Dimmer** is its main dimmer, not the flash, background or fog dimmer: it is recognised by its name (“Master dimmer”, “Dimmer”, “Aura dimmer”…), even when it is not the first channel. The others usually appear in **Parameter** with the name of their channel, each with an FX of its own. Intensity palettes and Colour FX that work on “Dimmer (value)” use the main one too.
 
 ### The FX controls
 

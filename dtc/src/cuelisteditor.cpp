@@ -1247,18 +1247,22 @@ void CuelistEditor::parseKeys(const QVariantList &keys, QSet<Key> *channels, QSe
 {
     for (const QVariant &v : keys)
     {
-        const QStringList parts = v.toString().split(QLatin1Char(':'));
-        if (parts.count() != 2 || parts.at(1).isEmpty())
+        // "<fixture>:<channel or FX axis>": split at the first ':' only, an
+        // axis can have one ("dimmer:beam flash intensity")
+        const QString text = v.toString();
+        const int colon = text.indexOf(QLatin1Char(':'));
+        if (colon <= 0 || colon + 1 >= text.length())
             continue;
         bool ok = false;
-        const quint32 fixture = parts.at(0).toUInt(&ok);
+        const quint32 fixture = text.left(colon).toUInt(&ok);
         if (ok == false)
             continue;
-        const quint32 channel = parts.at(1).toUInt(&ok);
+        const QString rest = text.mid(colon + 1);
+        const quint32 channel = rest.toUInt(&ok);
         if (ok)
             channels->insert(Key(fixture, channel));
         else
-            slotKeys->insert(FxKey(parts.at(1), fixture));
+            slotKeys->insert(FxKey(rest, fixture));
     }
 }
 

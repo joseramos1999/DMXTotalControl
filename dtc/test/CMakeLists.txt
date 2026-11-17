@@ -69,6 +69,8 @@ target_include_directories(dtc_backend_test PRIVATE
 
 target_compile_definitions(dtc_backend_test PRIVATE
     DTC_GENERIC_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../fixtures/Generic"
+    # the library the program ships (masterDimmerChoice loads a few real definitions)
+    DTC_SYSTEM_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/../../resources/fixtures"
     DTC_RGB_SCRIPTS="${CMAKE_CURRENT_SOURCE_DIR}/../../resources/rgbscripts"
     DTC_AUDIO_PLUGINS="${CMAKE_BINARY_DIR}/engine/audio/plugins/sndfile"
     DTC_OSC_PLUGIN="${CMAKE_BINARY_DIR}/plugins/osc"

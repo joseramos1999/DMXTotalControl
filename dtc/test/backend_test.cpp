@@ -159,6 +159,7 @@ private slots:
     void feedbackLightsOff();
     void ledDefaultChannels();
     void fxSceneEngine();
+    void masterDimmerChoice();
     void programmerFx();
     void surfaceTouch();
     void appIcon();
@@ -1988,6 +1989,238 @@ void Backend_Test::ledDefaultChannels()
 
     core.stopAll();
     QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning() == false, 3000);
+}
+
+void Backend_Test::masterDimmerChoice()
+{
+    // a fixture with several dimmers of its own: its master is the main light,
+    // not the first one when the name of that one says it is something else
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const QDir library(QStringLiteral(DTC_SYSTEM_FIXTURES));
+    QVERIFY(cache->loadQXF(library.filePath("Martin/Martin-Atomic-3000-LED.qxf")));
+    QVERIFY(cache->loadQXF(library.filePath("Robe/Robe-Spiider.qxf")));
+    QVERIFY(cache->loadQXF(library.filePath("GLP/GLP-JDC1.qxf")));
+    auto master = [&](const QString &maker, const QString &model, const QString &mode) {
+        QLCFixtureDef *def = cache->fixtureDef(maker, model);
+        QLCFixtureMode *m = def != nullptr ? def->mode(mode) : nullptr;
+        if (m == nullptr)
+            return QStringLiteral("(no mode)");
+        const quint32 c = m->masterIntensityChannel();
+        return c == QLCChannel::invalid() ? QString() : m->channel(c)->name();
+    };
+    // the flash intensity of a strobe with a colour aura: the aura dimmer
+    QCOMPARE(master("Martin", "Atomic 3000 LED", "Extended"), QString("Aura dimmer"));
+    // only one: that one, whatever it is called
+    QCOMPARE(master("Martin", "Atomic 3000 LED", "3-Channel"), QString("Beam Flash Intensity"));
+    // a background dimmer before the master dimmer
+    QCOMPARE(master("Robe", "Spiider", "(5) Wash [RGBW]"), QString("Master dimmer"));
+    // a first one that is a plain dimmer stays (the beam of a hybrid strobe)
+    QCOMPARE(master("GLP", "JDC1", "Normal 23-channel"), QString("Beam Intensity"));
+    // and a fixture with a single dimmer is as it was
+    QLCFixtureDef *par = cache->fixtureDef("Generic", "LED PAR RGBW");
+    QVERIFY(par != nullptr && par->mode("5ch DRGBW") != nullptr);
+    QCOMPARE(par->mode("5ch DRGBW")->masterIntensityChannel(), quint32(0));
+
+    // the Atomic in Extended: Beam Flash Intensity is channel 0, Aura dimmer 9
+    // the fixture patched with that name
+    auto named = [&](const QString &name) -> Fixture * {
+        for (Fixture *f : m_doc->fixtures())
+            if (f->name().startsWith(name))
+                return f;
+        return nullptr;
+    };
+    QCOMPARE(m_patch->addFixtures("Martin", "Atomic 3000 LED", "Extended", "Atomic", 0, 1, 1, 0, 1), 1);
+    Fixture *atomic = named("Atomic");
+    QVERIFY(atomic != nullptr && atomic->channel(0)->name() == QLatin1String("Beam Flash Intensity"));
+    QCOMPARE(atomic->masterIntensityChannel(), quint32(9));
+    QCOMPARE(FXScene::channelFor(atomic, "dimmer"), quint32(9));
+
+    IOManager io(m_doc);
+    auto level = [&](int address) { return io.channelValues(0).at(address).toInt(); };
+    m_doc->inputOutputMap()->startUniverses();
+    m_doc->masterTimer()->start();
+
+    // Programar: the dimmer of the FX list is the aura dimmer, and so is its
+    // "dimmer" (the flash intensity is "dimmer#2")
+    {
+        ZoneManager zones(m_doc);
+        Programmer prog(m_doc, &zones);
+        prog.selectAll();
+        QString fxDimmer, fxFlash;
+        int dimmerAt = -1, flashAt = -1;
+        const QVariantList params = prog.fxParams();
+        for (int i = 0; i < params.count(); i++)
+        {
+            const QVariantMap info = params.at(i).toMap();
+            if (info.value("key").toString() == QLatin1String("dimmer"))
+            {
+                fxDimmer = info.value("name").toString();
+                dimmerAt = i;
+            }
+            else if (info.value("key").toString() == QLatin1String("dimmer:beam flash intensity"))
+            {
+                fxFlash = info.value("name").toString();
+                flashAt = i;
+            }
+        }
+        QCOMPARE(fxDimmer, QString("Aura dimmer"));
+        // the flash intensity is an FX of its own, by its name, after the dimmer
+        QCOMPARE(fxFlash, QString("Beam Flash Intensity"));
+        QVERIFY(dimmerAt >= 0 && dimmerAt < flashAt);
+        QCOMPARE(FXScene::fixtureParamOf(atomic, 0), QString("dimmer:beam flash intensity"));
+        QCOMPARE(FXScene::fixtureParamOf(atomic, 9), QString("dimmer"));
+        QCOMPARE(FXScene::channelFor(atomic, "dimmer:beam flash intensity"), quint32(0));
+        prog.setChannelValue("dimmer", 200);
+        QTRY_COMPARE_WITH_TIMEOUT(level(9), 200, 3000);
+        QCOMPARE(level(0), 0);
+        prog.setChannelValue("dimmer#2", 120);
+        QTRY_COMPARE_WITH_TIMEOUT(level(0), 120, 3000);
+        prog.releaseChannel("dimmer");
+        prog.releaseChannel("dimmer#2");
+        QTRY_COMPARE_WITH_TIMEOUT(level(9), 0, 3000);
+        QTRY_COMPARE_WITH_TIMEOUT(level(0), 0, 3000);
+
+        // the quick Dimmer, @ 50 and Beam on light the aura, never the flash
+        QCOMPARE(FXScene::levelDimmerChannels(atomic), QList<quint32>({ 9 }));
+        QCOMPARE(prog.setDimmer(128), 1);
+        QTRY_COMPARE_WITH_TIMEOUT(level(9), 128, 3000);
+        QCOMPARE(level(0), 0);
+        prog.beamOn();
+        QTRY_COMPARE_WITH_TIMEOUT(level(9), 255, 3000);
+        QCOMPARE(level(0), 0);
+        prog.releaseChannel("dimmer");
+        QTRY_COMPARE_WITH_TIMEOUT(level(9), 0, 3000);
+    }
+
+    // a dimmer FX on the Atomics moves the aura dimmer, never the flash
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ atomic->id() });
+    fx->setValue(atomic->id(), 9, 0);
+    FXScene::Layer dimmer;
+    dimmer.param = "dimmer";
+    dimmer.mode = 3;
+    dimmer.swing = 200;
+    dimmer.bpm = 120;
+    fx->setLayers({ dimmer });
+    m_doc->addFunction(fx);
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    int low = 255, high = 0, flash = 0;
+    QElapsedTimer clock;
+    clock.start();
+    while (clock.elapsed() < 1200)
+    {
+        QTest::qWait(15);
+        low = qMin(low, level(9));
+        high = qMax(high, level(9));
+        flash = qMax(flash, level(0));
+    }
+    QVERIFY2(low < 40 && high > 215, qPrintable(QString("%1-%2").arg(low).arg(high)));
+    QCOMPARE(flash, 0);
+    fx->stop(FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(level(9), 0, 3000);
+
+    // and an FX on the flash intensity moves that one, never the aura
+    fx->setValue(atomic->id(), 0, 0);
+    dimmer.param = "dimmer:beam flash intensity";
+    fx->setLayers({ dimmer });
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    low = 255;
+    high = 0;
+    int aura = 0;
+    clock.restart();
+    while (clock.elapsed() < 1200)
+    {
+        QTest::qWait(15);
+        low = qMin(low, level(0));
+        high = qMax(high, level(0));
+        aura = qMax(aura, level(9));
+    }
+    QVERIFY2(low < 40 && high > 215, qPrintable(QString("%1-%2").arg(low).arg(high)));
+    QCOMPARE(aura, 0);
+    fx->stop(FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(level(0), 0, 3000);
+
+    // the name of a second dimmer is its own: a strobe's «Dimmer 1» (beside its
+    // master) is not cell 1 of another strobe, whose cells are its "dimmer"
+    QVERIFY(cache->loadQXF(library.filePath("lightmaXX/lightmaXX-Vega-Strobe-600.qxf")));
+    QVERIFY(cache->loadQXF(library.filePath("American_DJ/American-DJ-FREQ-16-Strobe.qxf")));
+    QCOMPARE(m_patch->addFixtures("lightmaXX", "Vega Strobe 600", "Sectors 6 Channel", "Vega", 0, 100, 1, 0, 1), 1);
+    Fixture *vega = named("Vega");
+    QCOMPARE(m_patch->addFixtures("American DJ", "FREQ 16 Strobe", "18 Channels", "Freq", 0, 200, 1, 0, 1), 1);
+    Fixture *freq = named("Freq");
+    QVERIFY(vega != nullptr && freq != nullptr);
+    QCOMPARE(FXScene::channelFor(vega, "dimmer"), quint32(0));
+    QCOMPARE(FXScene::fixtureParamOf(vega, 1), QString("dimmer:dimmer 1"));
+    QVERIFY(FXScene::hasParam(vega, "dimmer:dimmer 1"));
+    QVERIFY(FXScene::hasParam(freq, "dimmer:dimmer 1") == false);
+    // its four sector dimmers are plain levels: a dimmer level still sets them
+    QCOMPARE(FXScene::levelDimmerChannels(vega), QList<quint32>({ 0, 1, 2, 3, 4 }));
+
+    // an HSI fixture: its «Intensity» is its dimmer, not the macro fade after it
+    QVERIFY(cache->loadQXF(library.filePath("Elation/Elation-Fuze-PAR-Z175.qxf")));
+    QCOMPARE(m_patch->addFixtures("Elation", "Fuze PAR Z175", "13Ch-sRGBWI", "Fuze", 0, 300, 1, 0, 1), 1);
+    Fixture *fuze = named("Fuze");
+    QVERIFY(fuze != nullptr && fuze->channel(5)->name() == QLatin1String("Intensity"));
+    QCOMPARE(FXScene::channelFor(fuze, "dimmer"), quint32(5));
+    QCOMPARE(FXScene::fixtureParamOf(fuze, 10), QString("dimmer:program macro fade"));
+    QCOMPARE(FXScene::levelDimmerChannels(fuze), QList<quint32>({ 5 }));
+
+    // a wash with a background layer: the master is the master dimmer, and a
+    // dimmer level still lights the background (light) and its flower (a head)
+    QCOMPARE(m_patch->addFixtures("Robe", "Spiider", "(5) Wash [RGBW]", "Spiider", 1, 1, 1, 0, 1), 1);
+    Fixture *spiider = named("Spiider");
+    QVERIFY(spiider != nullptr && spiider->channel(26)->name() == QLatin1String("Master dimmer"));
+    QCOMPARE(FXScene::channelFor(spiider, "dimmer"), quint32(26));
+    QCOMPARE(FXScene::levelDimmerChannels(spiider), QList<quint32>({ 13, 23, 26 }));
+
+    // a GDTF dimmer (Closed, Dimmer, Open) is a plain level: the cells of a
+    // blinder all light, not only the first one
+    {
+        QLCFixtureDef *def = new QLCFixtureDef();
+        def->setManufacturer("Test");
+        def->setModel("GDTF blinder");
+        def->setType(QLCFixtureDef::Dimmer);
+        QLCFixtureMode *mode = new QLCFixtureMode(def);
+        mode->setName("2 Chan");
+        quint32 index = 0;
+        for (const char *name : { "Dimmer", "Dimmer 2" })
+        {
+            QLCChannel *ch = new QLCChannel();
+            ch->setName(name);
+            ch->setGroup(QLCChannel::Intensity);
+            QVERIFY(ch->addCapability(new QLCCapability(0, 0, "Closed")));
+            QVERIFY(ch->addCapability(new QLCCapability(1, 254, "Dimmer")));
+            QVERIFY(ch->addCapability(new QLCCapability(255, 255, "Open")));
+            def->addChannel(ch);
+            QVERIFY(mode->insertChannel(ch, index++));
+        }
+        QVERIFY(def->addMode(mode));
+        QVERIFY(cache->addFixtureDef(def));
+        QCOMPARE(m_patch->addFixtures("Test", "GDTF blinder", "2 Chan", "Blinder", 1, 40, 1, 0, 1), 1);
+        QCOMPARE(FXScene::levelDimmerChannels(named("Blinder")), QList<quint32>({ 0, 1 }));
+    }
+
+    // a dimmer palette of another fixture type lights the aura, not the flash
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.doc()->fixtureDefCache()->loadQXF(library.filePath("Martin/Martin-Atomic-3000-LED.qxf")));
+        QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 1, 0, 1), 1);
+        QCOMPARE(core.patch()->addFixtures("Martin", "Atomic 3000 LED", "Extended", "Atomic", 0, 20, 1, 0, 1), 1);
+        quint32 par = 0, aura = 0;
+        for (Fixture *f : core.doc()->fixtures())
+            (f->name().startsWith("Par") ? par : aura) = f->id();
+        Programmer *prog = core.programmer();
+        prog->selectFixtures({ par });
+        prog->setDimmer(200);
+        const int level200 = core.palettes()->record("intensity", "Nivel");
+        QVERIFY(level200 > 0);
+        prog->clear();
+        prog->selectFixtures({ aura });
+        QCOMPARE(core.palettes()->apply(level200), 1);
+        QCOMPARE(int(prog->valueMap().value(qMakePair(aura, quint32(9)), 0)), 200);
+        QVERIFY(prog->valueMap().contains(qMakePair(aura, quint32(0))) == false);
+    }
 }
 
 void Backend_Test::fxSceneEngine()
