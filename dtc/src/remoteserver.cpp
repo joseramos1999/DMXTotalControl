@@ -442,6 +442,9 @@ void RemoteServer::stop()
     const QList<QWebSocket *> flashing = m_mixerFlashes.keys();
     for (QWebSocket *socket : flashing)
         releaseMixerFlashes(socket);
+    const QList<QWebSocket *> stopping = m_showStopHolds.values();
+    for (QWebSocket *socket : stopping)
+        releaseShowStop(socket);
     delete m_server;
     m_server = nullptr;
     delete m_ws;
@@ -628,6 +631,8 @@ void RemoteServer::slotSocketGone()
     releaseFlashes(socket);
     releasePresses(socket);
     releaseMixerFlashes(socket);
+    // (and the show stop: a hold cut short does nothing)
+    releaseShowStop(socket);
     socket->deleteLater();
     emit clientsChanged();
 }
@@ -756,6 +761,35 @@ void RemoteServer::mixerFlashUp(const QString &held)
         m_core->mixer()->set(id, held.mid(slash + 1), false);
 }
 
+bool RemoteServer::trackShowStop(QWebSocket *socket, const QVariantMap &message)
+{
+    if (message.value("cmd").toString() != "global" || message.value("action").toString() != "showStop")
+        return false;
+    SafetyManager *safety = m_core->safety();
+    if (safety == nullptr)
+        return true;
+    // (a second down of the same phone, an up of a phone that doesn't hold it: nothing)
+    if (message.value("down").toBool())
+    {
+        if (m_showStopHolds.contains(socket) == false)
+        {
+            m_showStopHolds.insert(socket);
+            safety->holdShowStop(true);
+        }
+    }
+    else if (m_showStopHolds.remove(socket))
+    {
+        safety->holdShowStop(false);
+    }
+    return true;
+}
+
+void RemoteServer::releaseShowStop(QWebSocket *socket)
+{
+    if (m_showStopHolds.remove(socket) && m_core->safety() != nullptr)
+        m_core->safety()->holdShowStop(false);
+}
+
 bool RemoteServer::trackFlash(QWebSocket *socket, QVariantMap &message)
 {
     if (message.value("cmd").toString() != "playback" || message.value("action").toString() != "flash")
@@ -797,6 +831,10 @@ void RemoteServer::slotShowCleared()
     // what isn't of a show (the grand master, the BPM): its scenes, groups
     // and dimmers aren't these
     ShowSurface *surface = m_core->surface();
+    // (the show stop held down: let go of, the show that held it went)
+    const QList<QWebSocket *> stopping = m_showStopHolds.values();
+    for (QWebSocket *socket : stopping)
+        releaseShowStop(socket);
     const auto presses = m_presses;
     m_presses.clear();
     for (const QHash<QString, PressHold> &held : presses)
@@ -904,7 +942,8 @@ void RemoteServer::slotTextMessage(const QString &text)
         watchLevels(socket, message.value("universes").toList());
         sendLevels();
     }
-    else if (trackPress(socket, message) == false && trackMixerFlash(socket, message) == false)
+    else if (trackPress(socket, message) == false && trackMixerFlash(socket, message) == false &&
+             trackShowStop(socket, message) == false)
     {
         if (trackFlash(socket, message) == false)
             return;
@@ -1089,6 +1128,12 @@ QString RemoteServer::itemLabel(const QVariantMap &item, const QString &sectionT
         if (action == "stopAll") return tr("Stop all");
         if (action == "tap") return tr("Tap");
         if (action == "beatgo") return QStringLiteral("BeatGO");
+        // (the one that only disarms says so)
+        if (action == "armEffects")
+            return item.value("mode").toString() == "off" ? tr("Disarm effects") : tr("Arm effects");
+        if (action == "showStop") return tr("Show stop");
+        if (action == "recoverStopped") return tr("Bring back");
+        if (action == "fadeToBlack") return tr("Fade to black");
         if (action == "map") return m_core->surface()->mapLabel(item.value("map").toMap());
         if (action == "palette") return m_core->palettes()->palette(item.value("paletteId").toInt()).value("name").toString();
         return QString();
@@ -1148,10 +1193,26 @@ QVariantMap RemoteServer::describeNode(const QVariantMap &node, int page) const
         const QVariantMap item = it.value().toMap();
         QVariantMap d;
         d.insert("label", itemLabel(item, type));
-        d.insert("color", item.value("color", "#3d8bfd"));
+        // (arming the special effects: red and a flame, as on the computer;
+        // the one that only disarms, the power sign. The show stop: yellow,
+        // with a hand)
+        const bool arm = type == "buttons" && item.value("action").toString() == "armEffects";
+        const bool stop = type == "buttons" && item.value("action").toString() == "showStop";
+        const bool plain = item.value("color").toString().isEmpty();
+        d.insert("color", arm && plain ? QVariant("#e5484d") : stop && plain ? QVariant("#f5a524") : item.value("color", "#3d8bfd"));
         if (type == "buttons")
         {
-            d.insert("icon", item.value("icon"));
+            const QChar armGlyph(item.value("mode").toString() == "off" ? 0xf011 : 0xf06d);
+            const bool noIcon = item.value("icon").toString().isEmpty();
+            // (Stop all undone: the undo arrow; the fade to black: a moon)
+            const QString action = item.value("action").toString();
+            const QChar recallGlyph(action == "recoverStopped" ? 0xf0e2 : action == "fadeToBlack" ? 0xf186 : 0);
+            d.insert("icon", noIcon && arm ? QVariant(QString(armGlyph))
+                           : noIcon && stop ? QVariant(QString(QChar(0xf256)))
+                           : noIcon && recallGlyph.unicode() != 0 ? QVariant(QString(recallGlyph)) : item.value("icon"));
+            // (held a second: the page shows the hold)
+            if (stop)
+                d.insert("hold", true);
             d.insert("flash", item.value("mode").toString() == "flash");
             // a scene: its rhythm bar follows its steps
             if (item.value("action").toString() == "scene")
@@ -1431,6 +1492,30 @@ QVariantMap RemoteServer::stateMessage() const
     // the settings of the mixers, only while a page shows them
     if (mixerShown)
         state.insert("mixers", mixersState());
+    // the protected special effects: armed (the banner of the phone), the
+    // seconds until they disarm by themselves, what fires now
+    if (SafetyManager *safety = m_core->safety())
+    {
+        QStringList firing;
+        for (const QVariant &v : safety->firing())
+            firing.append(v.toMap().value("name").toString());
+        // (the show stop: its banner, and the hold of its button)
+        state.insert("safety", QVariantMap({ { "hasProtected", safety->hasProtected() },
+                                             { "armed", safety->armed() },
+                                             { "disarmIn", safety->disarmIn() },
+                                             { "firing", firing },
+                                             { "showStop", safety->showStop() },
+                                             { "holding", safety->holding() },
+                                             { "holdMs", safety->holdMs() },
+                                             { "fadingToBlack", safety->fadingToBlack() } }));
+    }
+    // what Stop all stopped can be brought back: the toast of the phone, with
+    // the time left of its window (whole seconds: the state changes once a
+    // second, not at every tick) and the take it is of (the bar again)
+    if (LiveRecall *recall = m_core->recall())
+        state.insert("recall", QVariantMap({ { "available", recall->available() }, { "serial", recall->serial() },
+                                             { "left", (recall->msLeft() + 999) / 1000 },
+                                             { "windowMs", recall->windowMs() } }));
     return state;
 }
 
@@ -1556,6 +1641,24 @@ void RemoteServer::handleCommand(const QVariantMap &message)
         // (always GO or Stop: pressing the one that is on keeps it)
         else if (action == "pressGo" || action == "pressStop")
             m_core->setPressMode(action == "pressGo" ? "go" : "stop");
+        // the special effects: the state the phone asks for, not a toggle (two
+        // phones, or a message late, never arm what was disarmed by mistake);
+        // anything but on: true disarms
+        else if (action == "arm" && m_core->safety() != nullptr)
+        {
+            const QVariant on = message.value("on");
+            if (on.typeId() == QMetaType::Bool && on.toBool())
+                m_core->safety()->arm();
+            else
+                m_core->safety()->disarm(QStringLiteral("hand"));
+        }
+        // the show stop held down (down) or let go of (a phone's go through
+        // trackShowStop: let go of when it goes)
+        else if (action == "showStop" && m_core->safety() != nullptr)
+            m_core->safety()->holdShowStop(message.value("down").toBool());
+        // what Stop all stopped plays again (nothing once its window is over)
+        else if (action == "recall" && m_core->recall() != nullptr)
+            m_core->recall()->recall();
     }
     else if (cmd == "playback")
     {

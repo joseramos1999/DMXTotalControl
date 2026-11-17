@@ -75,6 +75,7 @@ add_library(${module_name} SHARED
     showrunner.cpp showrunner.h
     track.cpp track.h
     universe.cpp universe.h
+    outputlayer.cpp outputlayer.h
     video.cpp video.h
 )
 target_include_directories(${module_name} PUBLIC

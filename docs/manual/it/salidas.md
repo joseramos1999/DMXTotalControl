@@ -32,11 +32,12 @@ Il collegamento viene ricordato per la prossima volta che apri il programma.
 
 ## Livelli DMX
 
-**«Livelli DMX»** mostra i 512 canali di un universo così come escono dal programma, con tutto applicato (scene, programmatore, mixer, grand master, limiti…):
+**«Livelli DMX»** mostra i 512 canali di un universo così come escono dal programma, con tutto applicato (scene, programmatore, mixer, grand master, limiti, canali parcheggiati, arresto dello show…); un effetto speciale protetto disarmato si vede a 0 anche se la sua scena suona:
 
 - Scegli l'**Universo** nel menu a tendina.
 - Ogni casella ha il numero del canale e il suo valore (0–255). **«Mostra in %»** passa alla percentuale.
 - Le caselle con il bordo appartengono a una fixture. Passa il mouse su un canale per vedere di quale fixture è («Nome — canale N»).
+- In alto a destra della casella, un **lucchetto** indica un canale [parcheggiato](patch.md#parcheggiare-i-canali) («parcheggiato a 77», «· anche in blackout»), uno **scudo** un [effetto speciale protetto](directo.md#effetti-speciali-protetti) («effetto speciale protetto (disarmato: esce 0)», «(armato)» o, con il lucchetto, «parcheggiato spento») e una **mano rossa** ciò che mette l'[arresto dello show](directo.md#arresto-dello-show) («arresto dello show», o «arresto dello show: resta dov’è» sul pan e sul tilt). Un canale parcheggiato sotto l'arresto dice «parcheggiato a 77, sotto l’arresto dello show», e durante una dissolvenza al nero uno senza «anche in blackout» dice «parcheggiato a 77, scende con la dissolvenza al nero». I segni sono sul canale proprio della fixture, prima dello scambio di pan e tilt.
 
 > **Consiglio:** se una fixture non risponde, guarda qui se il suo canale si muove. Se si muove, il problema è nel cavo, nell'indirizzo dell'apparecchio o nell'interfaccia; se no, nel patch o in ciò che stai avviando.
 

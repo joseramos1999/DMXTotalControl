@@ -58,16 +58,18 @@ From left to right:
 - **File**: “New show (Ctrl+N)”, “Open (Ctrl+O)”, the **▾** arrow with the recent shows and the “Examples”, “Save (Ctrl+S)” and “Save as…” (Ctrl+Shift+S).
 - **Rhythm**: **“GO”** and **“Stop”** change what the scene buttons do (in Live, the SHOW, the mappings and the phone). With **GO** on, pressing a scene plays it and the next presses mark its rhythm, without ever stopping it; with **Stop** on, pressing a scene stops it. One of the two is always on, and the program starts in **GO** ([Live](directo.md#rhythm-of-a-scene-with-steps)). Each button of a playing scene with steps, cuelist or FX at “BPM of the show” (in Live, the SHOW, the playbacks and the phone) holds a **bar split in two** that lights one side and then the other on each step (on an FX, on each beat): this way you see the rhythm of each one. Next come **“BeatGO”** (next division of the scenes driven by BeatGO, also with the G key) and **“Pulse”**, which listens to the audio input of the computer (chosen in [Options](opciones.md#audio)): each peak that crosses the line of the meter moves the scenes driven by Pulse. Drag the line of the meter to change the threshold. The show tempo, used by the FX and by the scenes in BPM mode, is changed with a BPM fader or dial in the [SHOW](show.md) or with the [mappings](mapeos.md).
 - **The padlock**: locks screens so that nothing changes by mistake (see [Options](opciones.md#show-and-lock)).
+- **The shield**: [Show mode](directo.md#show-mode). When it is on (orange), closing the program or opening another show asks you to hold a button.
 - **The target**: Learn mode, to assign MIDI or OSC controls or keys (see [Mappings](mapeos.md#learn-mode)). Its green light blinks with each message that comes in.
 - **“N running”**: how many scenes and effects are playing.
 - **GM**: the grand master. Below 100 % it turns orange.
-- **“Blackout”** (Ctrl+B): sends everything to black while it is on.
-- **“Stop all”** (Esc): stops everything that is playing. The programmer is not cleared. The scenes a raised SHOW fader holds go on: only lowering that fader stops them.
+- **“Arm effects”**: only when the show has protected special effects (CO2, flames, sparks, confetti). It arms or disarms them; its **▾** arrow shows the last fires (see [Live](directo.md#protected-special-effects)).
+- **“Blackout”** (Ctrl+B): sends everything to black while it is on. It also disarms the special effects.
+- **“Stop all”** (Esc): stops everything that is playing. The programmer is not cleared. The scenes a raised SHOW fader holds go on: only lowering that fader stops them. It also disarms the special effects, and for 10 s you can [bring back what was playing](directo.md#bring-back-what-was-playing).
 - **“?”**: opens this manual (F12).
 
-In a narrow window or on a small screen, the bar becomes compact: the show name is cut short, “Save as…” becomes an icon, “N running” keeps only the number and, in the narrowest ones, “Blackout” and “Stop all” keep only their icon. Hover over an icon to see what it is. If everything looks too small or too big, change the **Size of the interface** in [Options](opciones.md#general).
+In a narrow window or on a small screen, the bar becomes compact: the show name is cut short, “Save as…” becomes an icon, “N running” keeps only the number and, in the narrowest ones, “Blackout” and “Stop all” keep only their icon (with special effects in the show, “Arm effects” too, below 1450 px wide). Hover over an icon to see what it is. If everything looks too small or too big, change the **Size of the interface** in [Options](opciones.md#general).
 
-When you close the program, or open or create another show, if there are unsaved changes it asks “Save changes?” with “Cancel”, “Don't save” and “Save”. When it closes, the program first stops every scene, the playbacks and the programmer, and lets the outputs send the stage at rest: many fixtures keep the last thing they received.
+When you close the program, or open or create another show, if there are unsaved changes it asks “Save changes?” with “Cancel”, “Don't save” and “Save”; with [Show mode](directo.md#show-mode) on, you first have to hold a button. When it closes, the program disarms the special effects, lets go of the parked channels, stops every scene, the playbacks and the programmer, and lets the outputs send the stage at rest: many fixtures keep the last thing they received.
 
 If the show you open uses files that are missing (its sounds, videos or images; for example, a show brought from another computer), you are warned with the list. The show plays without them. With **“Look in a folder…”** you choose the folder where they are: they are looked for by name, also in its subfolders, and the show starts using them (save it to keep it that way).
 
@@ -78,16 +80,16 @@ If the show you open uses files that are missing (its sounds, videos or images; 
 Start with **First steps** if this is your first time. The other pages explain each page of the program and can be read in any order.
 
 1. [First steps](primeros-pasos.md): a complete first session, from the patch to saving the show.
-2. [Live](directo.md): groups, exclusive or mix, crossfade, masters, releases, flash and mixer.
+2. [Live](directo.md): groups, exclusive or mix, crossfade, masters, releases, flash, mixer and safety during the show (Show mode, protected special effects, show stop, bring back what was playing and fade to black).
 3. [Show](show.md): the touch screen, its sections, buttons, faders, dials, colour wheel, XY grid, editing and locking.
 4. [Playbacks](playbacks.md): playback pages, GO, Pause/Back, Flash, levels, recording on a playback and APC controllers.
 5. [Program](programar.md): selection, groups, 2D plan, dimmer, colour, position, features, faders, palettes, FX, fan, blind, highlight and locate, command line, recording and updating.
 6. [Scenes](escenas.md): all the scene types, super scenes, cuelists with tracking, folders, import and export.
-7. [Patch](patch.md): adding fixtures, addresses, universes, numbers, fixture groups, 2D plan, limits, LED matrices and importing from another show.
+7. [Patch](patch.md): adding fixtures, addresses, universes, numbers, fixture groups, 2D plan, limits, LED matrices, importing from another show, protected special effects and parking channels.
 8. [Fixtures](fixtures.md): the library, the fixture creator, the Open Fixture Library, GDTF-Share, GDTF and your fixtures.
 9. [Outputs](salidas.md): universes, DMX USB interfaces, Art-Net and sACN, and the DMX levels monitor.
 10. [Mappings](mapeos.md): MIDI, OSC, DMX input and keyboard, Learn mode and the templates for Akai APC.
-11. [Options](opciones.md): language, theme, size, startup, lock, autosave, priorities, remote control, library, updates.
+11. [Options](opciones.md): language, theme, size, startup, lock, safety during the show, autosave, priorities, remote control, library, updates.
 12. [Remote control](remoto.md): the SHOW on your phone or tablet.
 13. [Keyboard shortcuts](atajos.md): all the keys and combinations.
 
@@ -104,3 +106,5 @@ Start with **First steps** if this is your first time. The other pages explain e
 - **Palette**: a stored value (a colour, a position…) that scenes follow by reference: if you change the palette, the scenes that use it change too.
 - **Priority**: from 0 to 10. If two scenes control the same channel, the one with the higher priority wins.
 - **SHOW**: the operating screen you build yourself.
+- **Protected special effect**: a CO2, flame, spark or confetti machine that only fires with the effects armed (see [Live](directo.md#protected-special-effects)).
+- **Park**: to keep channels at a fixed value at the output, above everything else (see [Patch](patch.md#parking-channels)).

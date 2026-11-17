@@ -2,9 +2,9 @@
 
 ![A página Opções](../img/opciones.png)
 
-**Opções** (F9) reúne os ajustes do programa. À esquerda ficam os ajustes gerais, a inicialização, o bloqueio, o salvamento automático, a reprodução e o áudio; à direita, o controle remoto, a biblioteca de fixtures, as atualizações, a ajuda e “Sobre”.
+**Opções** (F9) reúne os ajustes do programa. À esquerda ficam os ajustes gerais, a inicialização, o bloqueio, a segurança durante o show, o salvamento automático, a reprodução e o áudio; à direita, o controle remoto, a biblioteca de fixtures, as atualizações, a ajuda e “Sobre”.
 
-Os ajustes desta página são do computador, não do show: valem para todos os shows que você abrir.
+Os ajustes desta página são do computador, não do show: valem para todos os shows que você abrir. Só a parada de show (em [Segurança durante o show](opciones.md#parada-de-show)) é salva com o show.
 
 ## Geral
 
@@ -34,6 +34,40 @@ O bloqueio evita que algo mude por engano durante o show. A página Ao vivo e o 
 4. Pressione **“Bloquear”**.
 
 As páginas bloqueadas têm um cadeado na barra lateral. Ao abrir uma, a senha é pedida (se houver) e tudo é desbloqueado. Para desbloquear, pressione o cadeado da barra superior. **“Remover a senha”** fica na mesma janela, ao bloquear.
+
+## Segurança durante o show
+
+O que protege o show durante o ao vivo (veja [Segurança durante o show](directo.md#segurança-durante-o-show)):
+
+- **Manter o computador acordado** (ligado por padrão): enquanto o programa está aberto, o Windows não suspende o computador nem desliga a tela. Ao fechar o programa, ou ao desligar esta opção, o Windows volta a fazer isso como sempre. Nada muda na configuração do Windows.
+- **Modo show** (desligado por padrão): fechar o programa ou abrir outro show pede para manter um botão pressionado. Bloquear o SHOW o liga; desbloqueá-lo não o desliga. O escudo da barra superior também o liga e o desliga (veja [Modo show](directo.md#modo-show)).
+- **Parar tudo com fade**: de 0 a 5 s (0 por padrão: na hora, como sempre). As funções descem nesse tempo; Esc duas vezes, na hora. Durante 10 segundos, Ctrl+Z recupera o que parou (veja [Parar tudo com fade](directo.md#parar-tudo-com-fade)).
+- **Desarmar os efeitos sem uso após**: de 0 a 120 minutos sem disparos (10 por padrão; 0, “Nunca”). Nunca enquanto um dispara (veja [Efeitos especiais protegidos](directo.md#efeitos-especiais-protegidos)).
+- **Funcionando na bateria** e **A suspensão seletiva de USB está ligada** só aparecem quando acontece. A primeira diz quanta bateria resta; a segunda tem **“Como desligá-la”**, que abre a seção [Suspensão seletiva de USB](opciones.md#suspensão-seletiva-de-usb), mais abaixo.
+
+### Parada de show
+
+O que a [parada de show](directo.md#parada-de-show) ilumina e em que nível. Isto sim é salvo com o show, na seção do DMX Total Control (o QLC+ não lê isso).
+
+- **Fixtures**: **“Todas as luzes”** (padrão) ou **“Estes grupos…”**, que abre a lista dos grupos de fixtures do show para marcá-los (“Grupos que a parada de show ilumina”). Sem nenhum marcado, todas as luzes. Um grupo excluído sai sozinho da lista. Dos grupos escolhidos só as luzes se iluminam: a fumaça, os hazers, os strobos e os lasers deles, nunca.
+- **Nível**: de 0 a 100 % (100 por padrão).
+
+Iluminam-se os moving heads, os scanners, os PARs e washes, as barras de LED, os blinders e os dimmers. Um dimmer genérico (Generic › Generic Dimmer) só quando o nome diz que é uma luz (PAR, FRESNEL, DIMMER, BLINDER, REFLETOR, LUZ, SPOT, CONTRA, LATERAL, PC, PÚBLICO…) ou o ícone dele no plano é o de uma luz. Os que se chamam VIDEO, TRIGGER, DISPARADOR, RELÉ, MOTOR, KABUKI… ficam como estão, também dentro de um grupo escolhido; um PIRO… é um efeito especial protegido e se apaga. Para iluminar um deles, dê a ele um ícone de luz em Patch › “Aparência” › “Ícone”. Os dimmers da biblioteca se iluminam como sempre.
+
+<a id="usb-selective-suspend"></a>
+
+### Suspensão seletiva de USB
+
+O Windows pode suspender uma porta USB que parece ociosa para economizar energia, e com ela a interface DMX: a saída para no meio do show. É uma configuração do plano de energia do Windows. O programa só a lê ao iniciar (e avisa com uma barra azul e nesta página): nunca a muda. Para desligá-la:
+
+1. Abra o **Painel de Controle** › **Hardware e Sons** › **Opções de Energia**.
+2. Ao lado do plano que você usa, clique em **“Alterar configurações do plano”** e depois em **“Alterar configurações de energia avançadas”**.
+3. Abra **“Configurações de USB”** › **“Configuração de suspensão seletiva de USB”** e escolha **“Desabilitado”** em **“Na bateria”** e em **“Conectado”** (sem bateria, há só um valor).
+4. Clique em **“OK”**.
+
+Se a interface continuar parando, abra o **Gerenciador de Dispositivos** e, nas propriedades de cada **“Hub raiz USB”**, na aba **“Gerenciamento de Energia”**, desmarque **“Permitir que o computador desligue o dispositivo para economizar energia”**. Os nomes podem mudar um pouco conforme a versão do Windows.
+
+> **Não testado com equipamento real:** as mudanças de bateria e de energia, a porcentagem da bateria, o efeito real de manter o computador acordado e a leitura da suspensão seletiva de USB.
 
 ## Salvamento automático
 

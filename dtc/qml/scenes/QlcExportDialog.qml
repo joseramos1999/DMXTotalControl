@@ -38,6 +38,8 @@ Popup {
     property var lists: []
     /** The IDs of the cuelists checked */
     property var chosen: []
+    /** What the copy of the whole show says (Core.qlcCopyWarnings) */
+    property var warnings: []
 
     signal message(string text, bool isError)
 
@@ -50,6 +52,7 @@ Popup {
         controlsCheck.checked = true
         lists = Core.qlcExportInfo(format, controls)
         chosen = lists.map(l => l.id)
+        warnings = Core.qlcCopyWarnings()
         open()
     }
     function toggle(id) {
@@ -131,6 +134,29 @@ Popup {
             wrapMode: Text.WordWrap
             text: qsTr("QLC+ doesn't read cuelists. The copy is another show in which each cuelist checked is a list of QLC+ steps; each step holds the whole look of its cue. Under each cuelist, what QLC+ won't get. This show doesn't change.")
             color: Theme.textDim
+        }
+        // the protected special effects: QLC+ fires them from anything
+        Repeater {
+            model: dialog.warnings
+            delegate: RowLayout {
+                required property string modelData
+                required property int index
+                Layout.fillWidth: true
+                spacing: 8
+                IconLabel {
+                    Layout.alignment: Qt.AlignTop
+                    // (the parked fixtures, the last line: a lock)
+                    icon: Core.safety.parkedCount > 0 && parent.index === dialog.warnings.length - 1 ? Theme.iconLock : Theme.iconShield
+                    size: 13
+                    color: Theme.warning
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: modelData
+                    color: Theme.warning
+                    wrapMode: Text.WordWrap
+                }
+            }
         }
 
         RowLayout {

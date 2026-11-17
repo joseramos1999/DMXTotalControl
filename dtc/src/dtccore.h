@@ -48,10 +48,14 @@
 #include "cuelisteditor.h"
 #include "playbackmanager.h"
 #include "timecodereader.h"
+#include "powerguard.h"
+#include "safetymanager.h"
+#include "liverecall.h"
 
 class QXmlStreamReader;
 class QXmlStreamWriter;
 class QTimer;
+class Function;
 class Doc;
 
 #define KXMLDTCWorkspace QStringLiteral("Workspace")
@@ -111,6 +115,17 @@ class DtcCore : public QObject
     Q_PROPERTY(PlaybackManager *playbacks READ playbacks CONSTANT)
     /** The MIDI timecode that comes in (Timecode cuelists) */
     Q_PROPERTY(TimecodeReader *timecode READ timecode CONSTANT)
+    /** The computer during the show: kept awake, its battery, the USB ports */
+    Q_PROPERTY(PowerGuard *power READ power CONSTANT)
+    /** The protected special effects: armed or not, their fires */
+    Q_PROPERTY(SafetyManager *safety READ safety CONSTANT)
+    /** What Stop all stopped, brought back for some seconds (Ctrl+Z) */
+    Q_PROPERTY(LiveRecall *recall READ recall CONSTANT)
+    /** Stop all fades the functions out now (Options): a second Stop all
+     *  stops them at once */
+    Q_PROPERTY(bool stopFading READ stopFading NOTIFY stopFadingChanged)
+    /** The time of that fade, ms */
+    Q_PROPERTY(int stopFadeMs READ stopFadeMs NOTIFY stopFadingChanged)
     /** A session that crashed left the recovery copy of a show (its changes
      *  that weren't saved): it can be recovered. Of which show (its title)
      *  and when the copy was made */
@@ -152,6 +167,11 @@ public:
     CuelistEditor *cuelists() const;
     PlaybackManager *playbacks() const;
     TimecodeReader *timecode() const;
+    PowerGuard *power() const;
+    SafetyManager *safety() const;
+    LiveRecall *recall() const;
+    bool stopFading() const;
+    int stopFadeMs() const;
 
     QString appName() const;
     QString appVersion() const;
@@ -208,6 +228,9 @@ public:
      *  lost: what QLC+ won't get of it in $format ("sequence" or "chaser"),
      *  one line each; with $controls, of its keys and controller buttons too */
     Q_INVOKABLE QVariantList qlcExportInfo(const QString &format, bool controls = false) const;
+    /** DMX Total Control: what a copy for QLC+ of the whole show says, one
+     *  line each (its protected special effects: QLC+ has no gate) */
+    Q_INVOKABLE QStringList qlcCopyWarnings() const;
     /** Where a copy for QLC+ goes first: "<show title> (QLC+).qxw" in the
      *  folder of the show */
     Q_INVOKABLE QUrl qlcCopyUrl() const;
@@ -278,8 +301,14 @@ public:
      *  show uses the ones found. @return how many were found */
     Q_INVOKABLE int locateMissingFiles(const QUrl &folder);
 
-    /** Stop every running function (panic) */
+    /** Stop every running function (panic), but what faders of the SHOW
+     *  hold up. What played can be brought back for some seconds (recall).
+     *  With a fade in the options the functions fade out in it; a second
+     *  Stop all during it stops them at once */
     Q_INVOKABLE void stopAll();
+    /** «Release groups»: every group lets its scenes go (but what faders
+     *  of the SHOW hold up); they can be brought back for some seconds */
+    Q_INVOKABLE void releaseGroups();
     /** Before the program closes: everything stops and lets its channels
      *  go, and the outputs get to send the stage at rest */
     void releaseOutput();
@@ -312,6 +341,21 @@ public:
     Q_INVOKABLE QString manualPage(const QString &name) const;
     /** The same page as HTML for the help panel: its pictures $width wide */
     Q_INVOKABLE QString manualHtml(const QString &name, int width) const;
+    /** The part of that page before its place $anchor (a line
+     *  <a id="$anchor"></a>, the heading whose anchor is $anchor, or else a
+     *  heading whose words are those of $anchor: "control-remoto" is
+     *  «## Control remoto»), as manualHtml: the panel
+     *  scrolls down by its height. Empty when the page has no such place,
+     *  or it is at its top */
+    Q_INVOKABLE QString manualHtmlBefore(const QString &name, const QString &anchor, int width) const;
+    /** Where the place $anchor of the page $markdown starts (as
+     *  manualHtmlBefore finds it), -1: it has none */
+    static qsizetype manualAnchorAt(const QString &markdown, const QString &anchor);
+    /** The anchor the links of the manual write for its heading $heading,
+     *  as GitHub and the web site make it: small letters, the spaces as
+     *  hyphens, without punctuation («Options d’un bouton»:
+     *  "options-dun-bouton"). manualAnchorAt compares by this rule too */
+    static QString manualAnchor(const QString &heading);
     /** The language the manual is shown in ("en", "de"...): the one of the app
      *  where it is translated; empty: the original, in Spanish */
     Q_INVOKABLE QString manualLanguage() const;
@@ -327,6 +371,11 @@ public:
 
     /** Write a control property from C++, so its QML binding is kept (sliders: keys, double click) */
     Q_INVOKABLE void setControlValue(QObject *control, qreal value);
+
+    /** The functions Stop all stops: played on their own (a button, a
+     *  playback, a group, the editors), not inside another one. What it
+     *  takes to bring back (LiveRecall) is chosen by the same rule */
+    static bool playsOnItsOwn(const Function *f);
 
 signals:
     void fileNameChanged();
@@ -347,6 +396,7 @@ signals:
     void missingFilesChanged();
     /** An autosave couldn't write the show: nothing protects it */
     void autosaveFailed(const QString &error);
+    void stopFadingChanged();
 
 private slots:
     void slotStepsTick();
@@ -364,6 +414,12 @@ private slots:
 
 private:
     void initDoc();
+    /** What Stop all stops: the groups, then every function but what the
+     *  faders of the SHOW hold up (the FX of the programmer go on) */
+    void stopFunctions();
+    /** What the faders of the SHOW hold up and what plays inside it (its
+     *  steps, its tracks): Stop all doesn't stop nor fade it */
+    QSet<quint32> keptByFaders() const;
     /** An empty show; $restart: the output goes on (the stage at rest).
      *  Opening a show doesn't restart it: a frame of the empty universes
      *  would go out before the new show is loaded */
@@ -425,6 +481,12 @@ private:
     CuelistEditor *m_cuelists;
     PlaybackManager *m_playbacks;
     TimecodeReader *m_timecode;
+    PowerGuard *m_power;
+    SafetyManager *m_safety = nullptr;
+    LiveRecall *m_recall = nullptr;
+    /** Stop all with a fade: while it fades (single shot of its time) */
+    QTimer *m_stopFade = nullptr;
+    int m_stopFadeMs = 0;
     QTimer *m_autosaveTimer;
     /** The steps of the scenes with steps that play (the beats of the FX at
      *  the BPM of the show), looked at every frame or so */

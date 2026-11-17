@@ -86,19 +86,23 @@ La forma más rápida de llenar una tabla es **arrastrar escenas** desde la list
 | **Una paleta** | Pone la paleta en los fixtures con los que se grabó («Sus propias fixtures») o en un grupo de fixtures, como una edición en vivo del programador: va por encima de las escenas hasta que vuelves a pulsar. |
 | **GO de cuelist** / **Atrás de cuelist** / **Liberar una cuelist** | Sobre la cuelist que elijas en **Cuelist**. |
 | **Ir a una cue…** | Salta a la **Cue** que elijas de esa cuelist. |
+| **Armar efectos** | Arma o desarma los [efectos especiales protegidos](directo.md#efectos-especiales-protegidos). Encendido mientras están armados. Por defecto, rojo y con una llama. |
+| **Parada de show (mantener 1 s)** | Mantenlo pulsado un segundo para poner la [parada de show](directo.md#parada-de-show), y otra vez para quitarla; mientras lo mantienes, una tira se llena en su borde inferior. Encendido mientras está puesta. Por defecto, amarillo y con una mano. |
+| **Recuperar lo que sonaba** | Durante 10 s después de «Parar todo» o «Liberar grupos» (todos los grupos, no uno solo), vuelve a lanzar lo que pararon ([Recuperar lo que sonaba](directo.md#recuperar-lo-que-sonaba)). Encendido mientras se puede. Con una flecha de deshacer. |
+| **Fundido a negro** | Baja la luz en su **Tiempo** (de 0,1 a 60 s; 3 s por defecto) y luego pone el Blackout ([Fundido a negro](directo.md#fundido-a-negro)). Encendido, con una tira, mientras funde. Con una luna. |
 
 Un botón traído de otra página con Alt+clic muestra «Un control de otra página» y debajo lo que hace («Hace: …»).
 
-**Clic derecho** en un botón: para lo que lanza, también con **GO** en la barra superior (con GO, pulsar una escena que suena no la para). Su escena se para; los de siguiente, anterior y liberar liberan su grupo; los de una cuelist o un playback lo liberan; el de una paleta la quita. Una escena que sujeta un fader subido sigue: solo la para su fader. Los demás (blackout, parar todo, tap, BeatGO) no hacen nada. En una pantalla táctil, usa **Stop** de la barra superior.
+**Clic derecho** en un botón: para lo que lanza, también con **GO** en la barra superior (con GO, pulsar una escena que suena no la para). Su escena se para; los de siguiente, anterior y liberar liberan su grupo; los de una cuelist o un playback lo liberan; el de una paleta la quita. Una escena que sujeta un fader subido sigue: solo la para su fader. El de «Armar efectos» los desarma. Los demás (blackout, parar todo, tap, BeatGO, parada de show, recuperar y fundido a negro) no hacen nada. En una pantalla táctil, usa **Stop** de la barra superior.
 
 ### Opciones de un botón
 
 - **Etiqueta**: su texto. Vacía («Automática»), muestra el nombre de la escena, de la paleta o de la acción.
-- **Comportamiento** (escena, blackout y paleta): **«Alternar: encender / apagar»** o **«Flash: mientras se pulsa»**. Los botones flash llevan un rayo en la esquina. En una escena, en lugar de «Alternar» pone **«Pulsar: según GO / Stop»**: la lanza o la para según **GO** y **Stop** de la barra superior.
-- **Tecla**: una tecla del teclado que lo pulsa mientras estás en la página Show. La letra se ve en la esquina del botón.
+- **Comportamiento** (escena, blackout y paleta): **«Alternar: encender / apagar»** o **«Flash: mientras se pulsa»**. Los botones flash llevan un rayo en la esquina. En una escena, en lugar de «Alternar» pone **«Pulsar: según GO / Stop»**: la lanza o la para según **GO** y **Stop** de la barra superior. En «Armar efectos»: **«Alternar: armar / desarmar»**, **«Armar»** o **«Desarmar»** (este se llama «Desarmar efectos» y lleva el icono de apagar).
+- **Tecla**: una tecla del teclado que lo pulsa mientras estás en la página Show. La letra se ve en la esquina del botón. En un botón «Parada de show», mantén la tecla un segundo.
 - **Color**, **Icono** e **Imagen** de fondo (la imagen se ve atenuada mientras el botón está apagado).
 
-Un botón encendido se rellena con su color.
+Su color va en una franja arriba (la quinta parte del botón); encendido, se rellena entero con él. Los colores son vivos y bien distintos, también en el móvil.
 
 ### Mover y quitar
 
@@ -147,7 +151,7 @@ Para girarlos, arrastra alrededor del centro con el ratón o el dedo, o arriba y
 - **Rueda de color**: toca la rueda para dar tono y saturación (blanco en el centro) a los fixtures de la sección, o pulsa una de las muestras de abajo.
 - **Rejilla XY (pan y tilt)**: arrastra el punto para mover las cabezas. **«Centro»** las lleva al centro.
 
-Las dos actúan como una edición en vivo del programador: van por encima de las escenas hasta que pulsas **«Liberar»**, y entonces las escenas vuelven a dar el color o la posición.
+Las dos actúan como una edición en vivo del programador: van por encima de las escenas hasta que pulsas **«Liberar»**, y entonces las escenas vuelven a dar el color o la posición. Como el programador, dejan fuera los [efectos especiales protegidos](programar.md#efectos-especiales-protegidos) de un grupo mezclado; en un grupo solo de ellos, los valores quedan en el programador, pero no salen. Lo mismo hacen las paletas «Todo» en un grupo.
 
 ## Grupos y mezclador
 
@@ -183,14 +187,14 @@ En el modo edición, suelta una escena sobre una tira para ponerla en ese playba
 
 ## Llevar cualquier control al SHOW
 
-**Alt+clic** en casi cualquier control del programa lo copia a la página del SHOW que tengas abierta: una escena de Directo, el master de un grupo, un botón del mezclador, el gran master, el blackout, una paleta de Programar, los botones y el fader de un playback… El programa avisa «Añadido al SHOW, página «…»».
+**Alt+clic** en casi cualquier control del programa lo copia a la página del SHOW que tengas abierta: una escena de Directo, el master de un grupo, un botón del mezclador, el gran master, el blackout, «Armar efectos», una paleta de Programar, los botones y el fader de un playback… El programa avisa «Añadido al SHOW, página «…»».
 
 El control nuevo va a la primera celda libre de una tabla de botones o de faders de esa página. Si no hay ninguna, una sección vacía se convierte en una (con el título «Touch»), o se divide la última sección.
 
 ## Pantalla completa y bloqueo
 
 - **«Pantalla completa»** (F11) y **«Salir de pantalla completa»**.
-- **«Bloquear»**: oculta la barra lateral y deja solo el SHOW, sin edición ni navegación. Para salir, **mantén pulsado «Desbloquear»** (una barra se llena bajo el botón). Si hay contraseña de bloqueo, la pide.
+- **«Bloquear»**: oculta la barra lateral y deja solo el SHOW, sin edición ni navegación. Para salir, **mantén pulsado «Desbloquear»** (una barra se llena bajo el botón). Si hay contraseña de bloqueo, la pide. Bloquear pone también el [Modo show](directo.md#modo-show).
 
 ### Bloqueo y modo quiosco
 

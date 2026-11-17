@@ -16,6 +16,7 @@ Die Seite enthält von oben nach unten: den Kopf mit seinen Tasten, die [Befehls
 - **„Blind“**: siehe [Blind](programar.md#blind).
 - **„Alles zurücksetzen“**: gibt alle Live-Änderungen frei (Werte und FX). Die Szenen sind wieder zu sehen.
 - **„Auswahl zurücksetzen“**: gibt nur die Änderungen der ausgewählten Fixtures frei.
+- **„Parken“**: parkt die Programmer-Werte der ausgewählten Fixtures am Ausgang (siehe [Parken](programar.md#parken)).
 - **„Snapshot“** und **„Aufnehmen…“**: siehe [Aufnehmen](programar.md#aufnehmen).
 
 In einem schmalen Fenster zeigen einige Tasten nur ihr Symbol; fahren Sie mit der Maus darüber, um ihren Namen zu sehen.
@@ -52,7 +53,7 @@ Die Rastertaste im Kopf des Bereichs („2D-Plan“) ersetzt die Kacheln durch d
 - **Ziehen** Sie über die leere Bühne, um mit einem Rechteck auszuwählen. Ein Klick ins Leere hebt die Auswahl auf.
 - Das **Mausrad** zoomt; Ziehen mit der **rechten** oder mittleren Maustaste verschiebt die Ansicht, und ein Doppelklick mit diesen Tasten zentriert sie wieder.
 
-Unter Programmieren ist der Plan immer **live**: Jedes Fixture zeigt seine Farbe, seinen Dimmer, sein Stroboskop (es blinkt) und sein Gobo, und jeder Pixel der Bars und Matrizen ist zu sehen. Die Fixtures werden im [2D-Plan des Patch](patch.md#2d-plan) platziert.
+Unter Programmieren ist der Plan immer **live**: Jedes Fixture zeigt seine Farbe, seinen Dimmer, sein Stroboskop (es blinkt) und sein Gobo, und jeder Pixel der Bars und Matrizen ist zu sehen. Die Fixtures werden im [2D-Plan des Patch](patch.md#2d-plan) platziert. Geschützte Spezialeffekte tragen ihr Schild und geparkte Fixtures ihr Schloss, wie im Patch.
 
 ## Der Bereich Schnell
 
@@ -125,11 +126,20 @@ Bewegen Sie das Fadenkreuz, den Fächer oder „Zentrieren“, oder ändern Sie 
 
 Ist **„Blind“** aktiv, bearbeitet der Programmer, **ohne etwas an die Scheinwerfer auszugeben**: Die Bühne zeigt weiter, was läuft, und Sie bereiten den nächsten Look vor. Der Untertitel warnt: „Blind: die Scheinwerfer zeigen nicht, was Sie programmieren“. Sie können ganz normal aufnehmen. Schalten Sie es aus, wird der Inhalt des Programmers ausgegeben.
 
+## Geschützte Spezialeffekte
+
+Der Programmer sendet nie einen [geschützten Spezialeffekt](directo.md#geschützte-spezialeffekte) (ein CO2, eine Flamme…) hinaus, auch nicht bei scharf geschalteten Effekten:
+
+- Bei einer Auswahl, die geschützte Effekte mit anderen Fixtures mischt, gibt der Programmer ihnen nichts: kein `@ FULL`, keine Pegel, Farben, Fader, „Lokalisieren“, „Beam on“ oder „Beam off“, „Alles“-Paletten, FX oder Makros. Ihre Fader erscheinen nicht, also enthält eine aus dieser Auswahl aufgenommene Szene sie nie.
+- Bei einer Auswahl **nur aus geschützten Effekten** werden die Werte behalten, damit Sie eine CO2-Szene programmieren können, aber sie gehen nie hinaus, scharf geschaltet oder nicht. Der Untertitel sagt „N Spezialeffekt-Kanäle: werden aufgezeichnet, nicht gesendet“, und ihre Fader und Karten tragen ein rotes Schild „gesperrt“. Die Szene, die Sie aufnehmen, löst sie aus der SHOW, von einem Pad oder vom Smartphone aus, wenn die Effekte scharf geschaltet sind.
+- Laden Sie eine Szene, einen Schritt oder einen Cue mit einem CO2, bleiben seine Werte, und erneutes Speichern verliert sie nicht. Ihre FX auf geschützten Effekten bleiben in der Szene, laufen aber im Programmer nicht.
+- „Snapshot“ lässt sie aus, auch während sie auslösen; „Hervorheben“ schaltet sie nie ein. FX und FX-Makros laufen nie auf ihnen, und eine Meldung sagt es („1 geschützter Spezialeffekt bleibt außerhalb des FX“). Follow richtet keinen geschützten Flammenkopf aus, der zusammen mit anderen Fixtures ausgewählt ist.
+
 ## Hervorheben und Lokalisieren
 
 In der Leiste der Befehlszeile:
 
-- **„Hervorheben“**: die Auswahl voll in offenem Weiß, über allem, um zu sehen, welche Fixtures es sind. Wird nicht aufgenommen. Drücken Sie erneut, um es aufzuheben.
+- **„Hervorheben“**: die Auswahl voll in offenem Weiß, über allem, um zu sehen, welche Fixtures es sind. Wird nicht aufgenommen. Drücken Sie erneut, um es aufzuheben. Geschützte Spezialeffekte schaltet es nie ein.
 - **„Lokalisieren“**: setzt die Auswahl voll, in offenem Weiß, zentriert und mit offenem Strahl, **in den Programmer** (diese Werte werden aufgenommen).
 - **◀ ▶** (PREV / NEXT): geht die Auswahl **einzeln** durch: Nur ein Fixture bleibt ausgewählt, und Sie sehen, bei welchem Sie sind („2/8“). **„Alle“** kehrt zur ganzen Auswahl zurück (ALL).
 
@@ -347,7 +357,7 @@ Ein Cue speichert nur, was der Programmer gegenüber dem ändert, was die vorher
 Das Menü **„Snapshot“** enthält:
 
 - **„Änderungen in einer Szene speichern“**: übernimmt die Werte des Programmers in eine bestehende statische Szene.
-- **„Alles auf der Bühne in eine neue Szene…“**: Alles, was die Scheinwerfer jetzt zeigen (Szenen, Live-Änderungen und der Mischer, ohne Grand Master), wird zu einer neuen statischen Szene, auf jedem Fixture mit Licht. Ist „Hervorheben“ aktiv, müssen Sie es vorher ausschalten („Hervorheben aus“).
+- **„Alles auf der Bühne in eine neue Szene…“**: Alles, was die Scheinwerfer jetzt zeigen (Szenen, Live-Änderungen und der Mischer, ohne Grand Master), wird zu einer neuen statischen Szene, auf jedem Fixture mit Licht. Ist „Hervorheben“ aktiv, müssen Sie es vorher ausschalten („Hervorheben aus“). Geschützte Spezialeffekte lässt es aus, auch während sie auslösen.
 - **„Nur die Änderungen in eine neue Szene…“**.
 
 ### Szenen und Cues bearbeiten
@@ -362,3 +372,7 @@ Das Menü **„Snapshot“** enthält:
 - Das **×** einer Karte oder eines Faders: nur diesen Kanal.
 
 Was mit den Live-Änderungen geschieht, wenn eine Szene gestartet wird, und welche Priorität sie gegenüber den Szenen haben, legen Sie unter [Optionen](opciones.md#wiedergabe) fest.
+
+## Parken
+
+**„Parken“** im Kopf (nach „Auswahl zurücksetzen“) parkt die Werte, die der Programmer auf den ausgewählten Fixtures hat: Sie gehen mit ihren [Grenzen](patch.md#grenzen) (ohne Grand Master) über allem an den Ausgang, und der Programmer gibt sie frei. Die Werte der anderen Fixtures bleiben im Programmer, und die FX des Programmers werden nicht geparkt. Die Taste ist deaktiviert, wenn die Auswahl keine Werte hat. Ändern Sie danach die Grenzen, ändert sich das Geparkte nicht. Ein geschützter Spezialeffekt wird ausgeschaltet geparkt. Zum Entparken nutzen Sie das Fixture-Menü im Patch (Rechtsklick): siehe [Kanäle parken](patch.md#kanäle-parken).

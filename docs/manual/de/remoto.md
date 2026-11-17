@@ -58,9 +58,11 @@ Der Router kann dem Computer von einem Tag auf den anderen eine andere Adresse g
 
 Oben ist die Leiste der Fernsteuerung:
 
-- Der **Name der Show** und die **Tabs** der SHOW-Seiten. Das Smartphone merkt sich die zuletzt geöffnete Seite.
+- Der **Name der Show** und die **Tabs** der SHOW-Seiten. Das Smartphone merkt sich die zuletzt geöffnete Seite. Auf einem schmalen Smartphone wird der Name kürzer und verschwindet nur, wenn die Tabs keinen Platz hätten (in einer Show mit Spezialeffekten, deren Scharfschalt-Taste in der Leiste steht).
 - Ein **Punkt**, der anzeigt, ob eine Verbindung zum Computer besteht.
 - **BO**: Blackout.
+- **Scharf schalten** (mit einer Flamme): nur, wenn die Show geschützte Spezialeffekte hat; rot, „SCHARF“, bei scharf geschalteten Effekten. Auf einem hochkant gehaltenen Smartphone (480 px Breite oder weniger) zeigt sie nur die Flamme.
+- Die **Hand**: der [Show-Stopp](directo.md#show-stopp). Halten Sie sie eine Sekunde (ein Streifen füllt sich); rot, solange er an ist.
 - Die Taste für den **Vollbildmodus**.
 
 Darunter die Seite mit ihren Bereichen, wie auf dem Computer:
@@ -84,6 +86,15 @@ Hat ein Playback etwas zugewiesen, fügt die Fernsteuerung eine Seite **„Playb
 
 Die Fernsteuerung verwendet dasselbe [Design](opciones.md#allgemein) wie das Programm und erscheint in der Sprache des Smartphones, wenn diese Spanisch, Portugiesisch, Französisch, Italienisch oder Deutsch ist (sonst auf Englisch).
 
+## Sicherheit auf dem Smartphone
+
+- **Scharf schalten**: Ein Tippen verlangt das Gegenteil dessen, was das Smartphone zeigt; eine verspätete oder doppelte Meldung schaltet also nie scharf, was gerade entschärft wurde. Scharf geschaltet sagt ein roter Balken **„EFFEKTE SCHARF“**, was auslöst, und hat **„Entschärfen“** (siehe [Geschützte Spezialeffekte](directo.md#geschützte-spezialeffekte)).
+- **Show-Stopp**: die Hand in der Leiste oder eine SHOW-Taste „Show-Stopp“, eine Sekunde gehalten. Ist er an, ein roter Balken **„SHOW-STOPP“** mit **„Halten zum Aufheben“**. Ein Smartphone, das beim Halten die Verbindung verliert, lässt los, ohne etwas zu ändern, und zwei Smartphones gleichzeitig zählen wie ein einziges Halten (siehe [Show-Stopp](directo.md#show-stopp)).
+- **Zurückholen, was lief**: nach Alles stoppen ein blauer Balken mit **„Zurückholen“** und einem Streifen von 10 s (ein Tippen in seiner ersten halben Sekunde zählt nicht).
+- Diese Balken stehen unter der Leiste der Fernsteuerung, und die Seite wird kürzer. Die SHOW-Tasten „Effekte scharf schalten“, „Show-Stopp“, „Zurückholen“ und „Ausblenden auf Schwarz“ funktionieren vom Smartphone aus und leuchten auch dort.
+
+> **Nicht mit echten Geräten getestet:** Die Fernsteuerung wurde nicht auf einem echten Smartphone in einem WLAN mit Aussetzern ausprobiert, nur die Computerseite und die Webseite in einem Browser.
+
 ## Wenn die Verbindung abreißt
 
-Verliert das Smartphone die Verbindung, erscheint „Keine Verbindung mit DMX Total Control. Neuer Versuch…“, und es verbindet sich von selbst neu. Was der Finger gedrückt hielt (ein Flash, eine Taste), wird auf dem Computer losgelassen, damit nichts eingeschaltet bleibt.
+Verliert das Smartphone die Verbindung, erscheint „Keine Verbindung mit DMX Total Control. Neuer Versuch…“, und es verbindet sich von selbst neu. Was der Finger gedrückt hielt (ein Flash, eine Taste), wird auf dem Computer losgelassen, damit nichts eingeschaltet bleibt. Auch ein gerade gehaltener Show-Stopp wird losgelassen, ohne etwas zu ändern.

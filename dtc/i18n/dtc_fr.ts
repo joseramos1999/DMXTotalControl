@@ -249,6 +249,14 @@
         <source>Release</source>
         <translation>Libérer</translation>
     </message>
+    <message>
+        <source>not sent</source>
+        <translation>non émis</translation>
+    </message>
+    <message>
+        <source>A protected special effect: recorded in the scenes, never sent from the programmer. It fires from its scenes, armed</source>
+        <translation>Un effet spécial protégé&#xa0;: enregistré dans les scènes, jamais émis depuis le programmeur. Il se déclenche depuis ses scènes, effets armés</translation>
+    </message>
 </context>
 <context>
     <name>ColorField</name>
@@ -940,6 +948,34 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Live time of the selected playback</source>
         <translation>Temps en direct du playback sélectionné</translation>
+    </message>
+    <message>
+        <source>Arm the special effects</source>
+        <translation>Armer les effets spéciaux</translation>
+    </message>
+    <message>
+        <source>Show stop (hold 1 s)</source>
+        <translation>Arrêt du show (maintenir 1&#xa0;s)</translation>
+    </message>
+    <message>
+        <source>Bring back what was playing</source>
+        <translation>Ramener ce qui jouait</translation>
+    </message>
+    <message>
+        <source>Fade to black</source>
+        <translation>Fondu au noir</translation>
+    </message>
+    <message>
+        <source>%1 s</source>
+        <translation>%1&#xa0;s</translation>
+    </message>
+    <message>
+        <source>This show maps the Pause key (%1): Pause does that and not the show stop, which goes on with a SHOW button, a pad or the phone. Delete that mapping in Mappings to have the show stop on Pause</source>
+        <translation>Ce show mappe la touche Pause (%1)&#xa0;: Pause fait cela et non l’arrêt du show, qui reste possible avec un bouton du SHOW, un pad ou le téléphone. Supprimez ce mappage dans Mappages pour avoir l’arrêt du show sur Pause</translation>
+    </message>
+    <message>
+        <source>Key PAUSE (instead of the show stop)</source>
+        <translation>Touche PAUSE (à la place de l’arrêt du show)</translation>
     </message>
 </context>
 <context>
@@ -2280,6 +2316,42 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>%1 — channel %2</source>
         <translation>%1 — canal %2</translation>
     </message>
+    <message>
+        <source>parked at %1</source>
+        <translation>parqué à %1</translation>
+    </message>
+    <message>
+        <source>also in blackout</source>
+        <translation>aussi en blackout</translation>
+    </message>
+    <message>
+        <source>protected special effect, parked off</source>
+        <translation>effet spécial protégé, parqué éteint</translation>
+    </message>
+    <message>
+        <source>protected special effect (armed)</source>
+        <translation>effet spécial protégé (armé)</translation>
+    </message>
+    <message>
+        <source>protected special effect (disarmed: 0 goes out)</source>
+        <translation>effet spécial protégé (désarmé&#xa0;: 0 en sortie)</translation>
+    </message>
+    <message>
+        <source>show stop: it stays where it is</source>
+        <translation>arrêt du show&#xa0;: il reste où il est</translation>
+    </message>
+    <message>
+        <source>show stop</source>
+        <translation>arrêt du show</translation>
+    </message>
+    <message>
+        <source>parked at %1, under the show stop</source>
+        <translation>parqué à %1, sous l’arrêt du show</translation>
+    </message>
+    <message>
+        <source>parked at %1, going down with the fade to black</source>
+        <translation>parqué à %1, qui descend avec le fondu au noir</translation>
+    </message>
 </context>
 <context>
     <name>DtcCore</name>
@@ -2389,6 +2461,24 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <translation>
             <numerusform>%n pas non converti</numerusform>
             <numerusform>%n pas non convertis</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>It fires protected special effects: QLC+ doesn&apos;t arm them nor limit their time</source>
+        <translation>Déclenche des effets spéciaux protégés&#xa0;: QLC+ ne les arme pas et ne limite pas leur durée</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n protected special effect(s): QLC+ doesn&apos;t arm them nor limit their time</source>
+        <translation>
+            <numerusform>%n effet spécial protégé&#xa0;: QLC+ ne l’arme pas et ne limite pas sa durée</numerusform>
+            <numerusform>%n effets spéciaux protégés&#xa0;: QLC+ ne les arme pas et ne limite pas leur durée</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n parked fixture(s): QLC+ doesn&apos;t park channels</source>
+        <translation>
+            <numerusform>%n fixture parqué&#xa0;: QLC+ ne parque pas les canaux</numerusform>
+            <numerusform>%n fixtures parqués&#xa0;: QLC+ ne parque pas les canaux</numerusform>
         </translation>
     </message>
 </context>
@@ -2555,6 +2645,20 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
             <numerusform>Le cycle de l’effet dure plus de %n minutes&#xa0;: ses %n premières minutes ont été enregistrées</numerusform>
         </translation>
     </message>
+    <message numerus="yes">
+        <source>%n protected special effect(s) left out of the FX</source>
+        <translation>
+            <numerusform>%n effet spécial protégé reste en dehors du FX</numerusform>
+            <numerusform>%n effets spéciaux protégés restent en dehors du FX</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n protected special effect(s) left out of the steps</source>
+        <translation>
+            <numerusform>%n effet spécial protégé reste en dehors des pas</numerusform>
+            <numerusform>%n effets spéciaux protégés restent en dehors des pas</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>EffectExchange</name>
@@ -2593,6 +2697,61 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>%1 (channels)</source>
         <translation>%1 (canaux)</translation>
+    </message>
+</context>
+<context>
+    <name>EffectsPopup</name>
+    <message>
+        <source>Special effects</source>
+        <translation>Effets spéciaux</translation>
+    </message>
+    <message>
+        <source>Armed</source>
+        <translation>Armés</translation>
+    </message>
+    <message>
+        <source>they disarm by themselves in %1 without a fire</source>
+        <translation>ils se désarment seuls dans %1 sans déclenchement</translation>
+    </message>
+    <message>
+        <source>Disarmed: the protected special effects send 0</source>
+        <translation>Désarmés&#xa0;: les effets spéciaux protégés envoient 0</translation>
+    </message>
+    <message>
+        <source>Firing now</source>
+        <translation>Se déclenchent maintenant</translation>
+    </message>
+    <message>
+        <source>Waiting for a release</source>
+        <translation>Attendent d’être relâchés</translation>
+    </message>
+    <message>
+        <source>Let go of its scene, its button or its fader (to 0): then it can fire</source>
+        <translation>Relâchez sa scène, son bouton ou son fader (à 0)&#xa0;: il pourra alors se déclencher</translation>
+    </message>
+    <message>
+        <source>Last fires</source>
+        <translation>Derniers déclenchements</translation>
+    </message>
+    <message>
+        <source>No fire in this session</source>
+        <translation>Aucun déclenchement dans cette session</translation>
+    </message>
+    <message>
+        <source>Open the log</source>
+        <translation>Ouvrir le journal</translation>
+    </message>
+    <message>
+        <source>The folder of the logs: one file for each session, with every fire</source>
+        <translation>Le dossier des journaux&#xa0;: un fichier par session, avec chaque déclenchement</translation>
+    </message>
+    <message>
+        <source>Each effect: Patch</source>
+        <translation>Réglages de chaque effet&#xa0;: Patch</translation>
+    </message>
+    <message>
+        <source>Protection, maximum time, minimum wait and safety channel of each fixture: Patch › Special effect</source>
+        <translation>Protection, temps maximal, attente minimale et canal de sécurité de chaque fixture&#xa0;: Patch › Effet spécial</translation>
     </message>
 </context>
 <context>
@@ -2636,6 +2795,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Release</source>
         <translation>Libérer</translation>
+    </message>
+    <message>
+        <source>not sent</source>
+        <translation>non émis</translation>
+    </message>
+    <message>
+        <source>A protected special effect: recorded in the scenes, never sent from the programmer. It fires from its scenes, armed</source>
+        <translation>Un effet spécial protégé&#xa0;: enregistré dans les scènes, jamais émis depuis le programmeur. Il se déclenche depuis ses scènes, effets armés</translation>
     </message>
 </context>
 <context>
@@ -4082,6 +4249,21 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     </message>
 </context>
 <context>
+    <name>HoldDialog</name>
+    <message>
+        <source>Show mode is on: hold the button to confirm. Release it or press Esc to cancel.</source>
+        <translation>Le mode show est activé&#xa0;: maintenez le bouton enfoncé pour confirmer. Relâchez-le ou appuyez sur Échap pour annuler.</translation>
+    </message>
+    <message>
+        <source>Hold to continue</source>
+        <translation>Maintenir pour continuer</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+</context>
+<context>
     <name>IOManager</name>
     <message>
         <source>Universe %1</source>
@@ -4199,6 +4381,31 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>The mixer works on what goes out, on top of every scene and live edit. Make fixture groups in Patch to get a mixer for each. Ctrl+click keeps a flash on.</source>
         <translation>Le mixeur agit sur ce qui sort, par-dessus chaque scène et chaque modification en direct. Créez des groupes de fixtures dans Patch pour avoir un mixeur pour chacun. Ctrl+clic garde un flash allumé.</translation>
+    </message>
+</context>
+<context>
+    <name>LiveRecall</name>
+    <message numerus="yes">
+        <source>%n scene(s)</source>
+        <translation>
+            <numerusform>%n scène</numerusform>
+            <numerusform>%n scènes</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n cuelist(s)</source>
+        <translation>
+            <numerusform>%n cuelist</numerusform>
+            <numerusform>%n cuelists</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 and %2</source>
+        <translation>%1 et %2</translation>
+    </message>
+    <message>
+        <source>Brought back: %1</source>
+        <translation>Ramené&#xa0;: %1</translation>
     </message>
 </context>
 <context>
@@ -4549,6 +4756,154 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
             <numerusform>%n cue lists de QLC+&#xa0;: Scènes › Nouvelle › Cue lists de QLC+…</numerusform>
         </translation>
     </message>
+    <message>
+        <source>Close DMX Total Control?</source>
+        <translation>Fermer DMX Total Control&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Hold to close</source>
+        <translation>Maintenir pour fermer</translation>
+    </message>
+    <message>
+        <source>Start a new show?</source>
+        <translation>Commencer un nouveau show&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Hold to continue</source>
+        <translation>Maintenir pour continuer</translation>
+    </message>
+    <message>
+        <source>Open another show?</source>
+        <translation>Ouvrir un autre show&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Hold to open</source>
+        <translation>Maintenir pour ouvrir</translation>
+    </message>
+    <message>
+        <source>Running on battery: plug in the charger</source>
+        <translation>Sur batterie&#xa0;: branchez le chargeur</translation>
+    </message>
+    <message>
+        <source>Battery at %1 %</source>
+        <translation>Batterie à %1&#xa0;%</translation>
+    </message>
+    <message>
+        <source>Show mode</source>
+        <translation>Mode show</translation>
+    </message>
+    <message>
+        <source>Show mode: closing or opening another show asks to hold a button (click to turn it off)</source>
+        <translation>Mode show&#xa0;: fermer ou ouvrir un autre show demande de maintenir un bouton enfoncé (cliquez pour le désactiver)</translation>
+    </message>
+    <message>
+        <source>Show mode: closing or opening another show will ask to hold a button (click to turn it on)</source>
+        <translation>Mode show&#xa0;: fermer ou ouvrir un autre show demandera de maintenir un bouton enfoncé (cliquez pour l’activer)</translation>
+    </message>
+    <message>
+        <source>Windows may suspend the USB ports (USB selective suspend): the DMX interface may stop</source>
+        <translation>Windows peut suspendre les ports USB (suspension sélective USB)&#xa0;: l’interface DMX peut s’arrêter</translation>
+    </message>
+    <message>
+        <source>How to turn it off</source>
+        <translation>Comment la désactiver</translation>
+    </message>
+    <message>
+        <source>Special effects disarmed: %1</source>
+        <translation>Effets spéciaux désarmés&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>ARMED</source>
+        <translation>ARMÉS</translation>
+    </message>
+    <message>
+        <source>Arm</source>
+        <translation>Armer</translation>
+    </message>
+    <message>
+        <source>Arm effects</source>
+        <translation>Armer les effets</translation>
+    </message>
+    <message>
+        <source>Special effects armed: click to disarm. Stop all, Blackout and opening another show disarm them too</source>
+        <translation>Effets spéciaux armés&#xa0;: cliquez pour les désarmer. Tout arrêter, le Blackout et l’ouverture d’un autre show les désarment aussi</translation>
+    </message>
+    <message>
+        <source>they disarm by themselves in %1 without a fire</source>
+        <translation>ils se désarment seuls dans %1 sans déclenchement</translation>
+    </message>
+    <message>
+        <source>Arm the special effects: the protected ones (CO2, flames, sparks, confetti) only fire armed, from scenes, cuelists and chasers</source>
+        <translation>Armer les effets spéciaux&#xa0;: les effets protégés (CO2, flammes, étincelles, confettis) ne se déclenchent qu’armés, depuis les scènes, les cuelists et les chasers</translation>
+    </message>
+    <message>
+        <source>The last fires and what waits for a release</source>
+        <translation>Les derniers déclenchements et ce qui attend d’être relâché</translation>
+    </message>
+    <message>
+        <source>SPECIAL EFFECTS ARMED</source>
+        <translation>EFFETS ARMÉS</translation>
+    </message>
+    <message>
+        <source>Firing: %1</source>
+        <translation>Déclenchement&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Waiting for a release: %1</source>
+        <translation>Attendent d’être relâchés&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Disarm</source>
+        <translation>Désarmer</translation>
+    </message>
+    <message>
+        <source>SHOW STOP</source>
+        <translation>ARRÊT DU SHOW</translation>
+    </message>
+    <message>
+        <source>Hold to release</source>
+        <translation>Maintenir pour lever</translation>
+    </message>
+    <message>
+        <source>Show stop: keep holding…</source>
+        <translation>Arrêt du show&#xa0;: continuez à maintenir…</translation>
+    </message>
+    <message>
+        <source>Fading to black: Blackout comes at its end (Blackout now: at once)</source>
+        <translation>Fondu au noir&#xa0;: le Blackout arrive à la fin (Blackout maintenant&#xa0;: tout de suite)</translation>
+    </message>
+    <message>
+        <source>Fading out: Esc again stops at once</source>
+        <translation>Fondu en cours&#xa0;: Échap de nouveau arrête tout de suite</translation>
+    </message>
+    <message>
+        <source>Stopped: %1</source>
+        <translation>Arrêté&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Released: %1</source>
+        <translation>Libéré&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Bring back what was playing (Ctrl+Z)</source>
+        <translation>Ramener ce qui jouait (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Bring back</source>
+        <translation>Ramener</translation>
+    </message>
+    <message>
+        <source>Press Pause again to take it away</source>
+        <translation>Appuyez de nouveau sur Pause pour le lever</translation>
+    </message>
+    <message>
+        <source>Show stop: press Pause again to put it</source>
+        <translation>Arrêt du show&#xa0;: appuyez de nouveau sur Pause pour le mettre</translation>
+    </message>
+    <message>
+        <source>Bring back what was playing</source>
+        <translation>Ramener ce qui jouait</translation>
+    </message>
 </context>
 <context>
     <name>MappingEditor</name>
@@ -4879,6 +5234,14 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>Durée</translation>
+    </message>
+    <message>
+        <source>While this mapping is on Pause, Pause does it and not the show stop (pressed twice). With another key, Pause is the show stop&apos;s again</source>
+        <translation>Tant que ce mappage est sur Pause, Pause fait cela et non l’arrêt du show (appuyée deux fois). Avec une autre touche, Pause redevient celle de l’arrêt du show</translation>
     </message>
 </context>
 <context>
@@ -5995,6 +6358,114 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Free and open source software, under the Apache 2.0 license. Based on Q Light Controller Plus by Massimo Callegari, Heikki Junnila and the QLC+ contributors. Extra fixtures from the Open Fixture Library.</source>
         <translation>Logiciel libre et open source, sous licence Apache 2.0. Basé sur Q Light Controller Plus de Massimo Callegari, Heikki Junnila et les contributeurs de QLC+. Fixtures supplémentaires de l’Open Fixture Library.</translation>
     </message>
+    <message>
+        <source>Safety during the show</source>
+        <translation>Sécurité pendant le show</translation>
+    </message>
+    <message>
+        <source>Keep the computer awake</source>
+        <translation>Garder l’ordinateur éveillé</translation>
+    </message>
+    <message>
+        <source>Windows doesn&apos;t put the computer to sleep nor turn the screen off while the program is open</source>
+        <translation>Windows ne met pas l’ordinateur en veille et n’éteint pas l’écran tant que le programme est ouvert</translation>
+    </message>
+    <message>
+        <source>Show mode</source>
+        <translation>Mode show</translation>
+    </message>
+    <message>
+        <source>Closing the program or opening another show asks to hold a button. Locking the SHOW turns it on</source>
+        <translation>Fermer le programme ou ouvrir un autre show demande de maintenir un bouton enfoncé. Il s’active tout seul quand le SHOW est verrouillé</translation>
+    </message>
+    <message>
+        <source>Running on battery</source>
+        <translation>Sur batterie</translation>
+    </message>
+    <message>
+        <source>%1 % left: plug in the charger</source>
+        <translation>Il reste %1&#xa0;%&#xa0;: branchez le chargeur</translation>
+    </message>
+    <message>
+        <source>Plug in the charger</source>
+        <translation>Branchez le chargeur</translation>
+    </message>
+    <message>
+        <source>USB selective suspend is on</source>
+        <translation>La suspension sélective USB est activée</translation>
+    </message>
+    <message>
+        <source>Windows may suspend the USB ports that seem idle, and the DMX interface with them. It is a setting of the power plan of Windows</source>
+        <translation>Windows peut suspendre les ports USB qui semblent inactifs, et l’interface DMX avec eux. C’est un réglage du mode de gestion de l’alimentation de Windows</translation>
+    </message>
+    <message>
+        <source>How to turn it off</source>
+        <translation>Comment la désactiver</translation>
+    </message>
+    <message>
+        <source>Show stop</source>
+        <translation>Arrêt du show</translation>
+    </message>
+    <message>
+        <source>Saved with the show. Press the Pause key twice, or hold a SHOW button, a pad or the one of the phone a second, to put it; the same again takes it away. Strobes and lasers go dark and the heads stay where they are</source>
+        <translation>Enregistré avec le show. Appuyez deux fois sur la touche Pause, ou maintenez un bouton du SHOW, un pad ou celui du téléphone une seconde, pour le mettre&#xa0;; la même chose de nouveau le lève. Les stroboscopes et les lasers s’éteignent et les lyres restent où elles sont</translation>
+    </message>
+    <message>
+        <source>Fixtures</source>
+        <translation>Fixtures</translation>
+    </message>
+    <message>
+        <source>Moving heads, scanners, PARs and washes, LED bars, blinders and dimmers at open white; never smoke, hazers nor fans. A generic dimmer only when its name (PAR, FRESNEL, FOCO…) or its icon in the plan says it is a light: video triggers and relays stay as they are</source>
+        <translation>Lyres, scanners, PAR et washes, barres LED, blinders et dimmers en blanc ouvert&#xa0;; jamais la fumée, les hazers ni les ventilateurs. Un dimmer générique seulement si son nom (PAR, FRESNEL, FOCO…) ou son icône sur le plan dit que c’est une lumière&#xa0;: les déclencheurs vidéo et les relais restent tels quels</translation>
+    </message>
+    <message>
+        <source>Every light</source>
+        <translation>Toutes les lumières</translation>
+    </message>
+    <message>
+        <source>These groups…</source>
+        <translation>Ces groupes…</translation>
+    </message>
+    <message>
+        <source>Level</source>
+        <translation>Niveau</translation>
+    </message>
+    <message>
+        <source>Groups the show stop lights</source>
+        <translation>Groupes qu’éclaire l’arrêt du show</translation>
+    </message>
+    <message>
+        <source>The show has no fixture groups (Patch)</source>
+        <translation>Le show n’a pas de groupes de fixtures (Patch)</translation>
+    </message>
+    <message>
+        <source>Only their lights: their smoke, hazers, strobes and lasers never. None chosen: every light</source>
+        <translation>Seulement leurs lumières&#xa0;: jamais leur fumée, leurs hazers, stroboscopes et lasers. Aucun choisi&#xa0;: toutes les lumières</translation>
+    </message>
+    <message>
+        <source>Stop all with a fade</source>
+        <translation>Tout arrêter en fondu</translation>
+    </message>
+    <message>
+        <source>The functions fade out in this time (0: at once). Esc twice: at once. For 10 seconds Ctrl+Z brings back what it stopped</source>
+        <translation>Les fonctions baissent pendant cette durée (0&#xa0;: tout de suite). Échap deux fois&#xa0;: tout de suite. Pendant 10&#xa0;secondes, Ctrl+Z ramène ce qui a été arrêté</translation>
+    </message>
+    <message>
+        <source>Disarm the special effects unused after</source>
+        <translation>Désarmer les effets inutilisés après</translation>
+    </message>
+    <message>
+        <source>Minutes without a fire (0: never). Never while one fires</source>
+        <translation>Minutes sans déclenchement (0&#xa0;: jamais). Jamais pendant qu’un effet se déclenche</translation>
+    </message>
+    <message>
+        <source>Never</source>
+        <translation>Jamais</translation>
+    </message>
+    <message>
+        <source>%1 min</source>
+        <translation>%1&#xa0;min</translation>
+    </message>
 </context>
 <context>
     <name>OutputsPage</name>
@@ -6769,6 +7240,44 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
             <numerusform>%n problèmes</numerusform>
         </translation>
     </message>
+    <message>
+        <source>%1 is now a protected special effect</source>
+        <translation>%1 est maintenant un effet spécial protégé</translation>
+    </message>
+    <message>
+        <source>The safety channel of %1 was taken away: its channels changed (Patch › Special effect to choose it again)</source>
+        <translation>Le canal de sécurité de %1 a été retiré&#xa0;: ses canaux ont changé (pour le choisir de nouveau&#xa0;: Patch › Effet spécial)</translation>
+    </message>
+    <message>
+        <source>%1 is not a valid value</source>
+        <translation>%1 n’est pas une valeur valide</translation>
+    </message>
+    <message>
+        <source>%1 has no channel %2</source>
+        <translation>%1 n’a pas de canal %2</translation>
+    </message>
+    <message>
+        <source>%1 needs another channel to fire</source>
+        <translation>%1 a besoin d’un autre canal pour se déclencher</translation>
+    </message>
+    <message>
+        <source>From %1 to %2: the first value can&apos;t be above the second</source>
+        <translation>De %1 à %2&#xa0;: la première valeur ne peut pas dépasser la seconde</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) are now protected special effects</source>
+        <translation>
+            <numerusform>%n fixture est maintenant un effet spécial protégé</numerusform>
+            <numerusform>%n fixtures sont maintenant des effets spéciaux protégés</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) of this show are protected special effects now: %1. They only go out armed (Patch › Special effect to change it)</source>
+        <translation>
+            <numerusform>%n fixture de ce show est maintenant un effet spécial protégé&#xa0;: %1. Il ne sort que lorsque les effets sont armés (pour le changer&#xa0;: Patch › Effet spécial)</numerusform>
+            <numerusform>%n fixtures de ce show sont maintenant des effets spéciaux protégés&#xa0;: %1. Ils ne sortent que lorsque les effets sont armés (pour le changer&#xa0;: Patch › Effet spécial)</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>PatchPage</name>
@@ -7292,6 +7801,71 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
             <numerusform>Seulement le groupe «&#xa0;%1&#xa0;» · %n fixture</numerusform>
             <numerusform>Seulement le groupe «&#xa0;%1&#xa0;» · %n fixtures</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Protected special effect: it only fires with the effects armed</source>
+        <translation>Effet spécial protégé&#xa0;: il ne se déclenche qu’avec les effets armés</translation>
+    </message>
+    <message>
+        <source>Protected special effect: it only fires with the effects armed, each fire cut at its maximum time</source>
+        <translation>Effet spécial protégé&#xa0;: il ne se déclenche qu’avec les effets armés, chaque déclenchement coupé à son temps maximal</translation>
+    </message>
+    <message>
+        <source>Special effect…</source>
+        <translation>Effet spécial…</translation>
+    </message>
+    <message>
+        <source>Limits…</source>
+        <translation>Limites…</translation>
+    </message>
+    <message>
+        <source>Edit…</source>
+        <translation>Modifier…</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n protected special effect(s) not identified: they would fire</source>
+        <translation>
+            <numerusform>%n effet spécial protégé n’est pas identifié&#xa0;: il se déclencherait</numerusform>
+            <numerusform>%n effets spéciaux protégés ne sont pas identifiés&#xa0;: ils se déclencheraient</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Parked fixtures: their channels keep a fixed value at the output, above the scenes, the programmer, the grand master and Stop all. Right click a fixture to unpark it</source>
+        <translation>Fixtures parqués&#xa0;: leurs canaux gardent une valeur fixe en sortie, au-dessus des scènes, du programmeur, du grand master et de Tout arrêter. Clic droit sur un fixture pour le déparquer</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n parked</source>
+        <translation>
+            <numerusform>%n parqué</numerusform>
+            <numerusform>%n parqués</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Unpark all</source>
+        <translation>Tout déparquer</translation>
+    </message>
+    <message numerus="yes">
+        <source>Parked: %n channel(s) with a fixed value at the output</source>
+        <translation>
+            <numerusform>Parqué&#xa0;: %n canal avec une valeur fixe en sortie</numerusform>
+            <numerusform>Parqué&#xa0;: %n canaux avec une valeur fixe en sortie</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Park as it is now</source>
+        <translation>Parquer tel quel</translation>
+    </message>
+    <message>
+        <source>Park off</source>
+        <translation>Parquer éteint</translation>
+    </message>
+    <message>
+        <source>Also in blackout</source>
+        <translation>Aussi en blackout</translation>
+    </message>
+    <message>
+        <source>Unpark</source>
+        <translation>Déparquer</translation>
     </message>
 </context>
 <context>
@@ -7954,6 +8528,13 @@ Cuelists&#xa0;: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · 
         <source>Snapshot %1</source>
         <translation>Snapshot %1</translation>
     </message>
+    <message numerus="yes">
+        <source>%n protected special effect(s) left out of the FX</source>
+        <translation>
+            <numerusform>%n effet spécial protégé reste en dehors du FX</numerusform>
+            <numerusform>%n effets spéciaux protégés restent en dehors du FX</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>ProgrammerPage</name>
@@ -8195,6 +8776,21 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Select one or more fixtures to see their channels</source>
         <translation>Sélectionnez un ou plusieurs fixtures pour voir leurs canaux</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n special effect channel(s): recorded, not sent</source>
+        <translation>
+            <numerusform>%n canal d’effets spéciaux&#xa0;: enregistré, non émis</numerusform>
+            <numerusform>%n canaux d’effets spéciaux&#xa0;: enregistrés, non émis</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Park</source>
+        <translation>Parquer</translation>
+    </message>
+    <message>
+        <source>Park the values of the selected fixtures at the output, above the scenes, the grand master and Stop all; the programmer lets them go. Patch unparks them (right click)</source>
+        <translation>Parque les valeurs des fixtures sélectionnés en sortie, au-dessus des scènes, du grand master et de Tout arrêter&#xa0;; le programmeur les libère. On les déparque dans Patch (clic droit)</translation>
     </message>
 </context>
 <context>
@@ -8896,6 +9492,183 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Cue speed</source>
         <translation>Vitesse des cues</translation>
+    </message>
+    <message>
+        <source>Arm effects</source>
+        <translation>Armer les effets</translation>
+    </message>
+    <message>
+        <source>Disarm effects</source>
+        <translation>Désarmer les effets</translation>
+    </message>
+    <message>
+        <source>Show stop</source>
+        <translation>Arrêt du show</translation>
+    </message>
+    <message>
+        <source>Bring back</source>
+        <translation>Ramener</translation>
+    </message>
+    <message>
+        <source>Fade to black</source>
+        <translation>Fondu au noir</translation>
+    </message>
+</context>
+<context>
+    <name>SafetyManager</name>
+    <message>
+        <source>No fixture is a protected special effect: there is nothing to arm</source>
+        <translation>Aucun fixture n’est un effet spécial protégé&#xa0;: il n’y a rien à armer</translation>
+    </message>
+    <message>
+        <source>Blackout is on: turn it off to arm the special effects</source>
+        <translation>Le Blackout est activé&#xa0;: désactivez-le pour armer les effets spéciaux</translation>
+    </message>
+    <message>
+        <source>Special effects armed</source>
+        <translation>Effets spéciaux armés</translation>
+    </message>
+    <message>
+        <source>Special effects disarmed: %1</source>
+        <translation>Effets spéciaux désarmés&#xa0;: %1</translation>
+    </message>
+    <message>
+        <source>Stop all</source>
+        <translation>Tout arrêter</translation>
+    </message>
+    <message>
+        <source>Blackout</source>
+        <translation>Blackout</translation>
+    </message>
+    <message>
+        <source>another show</source>
+        <translation>un autre show</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n minute(s) without a fire</source>
+        <translation>
+            <numerusform>%n minute sans déclenchement</numerusform>
+            <numerusform>%n minutes sans déclenchement</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>show stop</source>
+        <translation>arrêt du show</translation>
+    </message>
+    <message>
+        <source>fade to black</source>
+        <translation>fondu au noir</translation>
+    </message>
+    <message>
+        <source>the program closed</source>
+        <translation>le programme a été fermé</translation>
+    </message>
+    <message>
+        <source>no fixture is protected any more</source>
+        <translation>plus aucun fixture n’est protégé</translation>
+    </message>
+    <message>
+        <source>by hand</source>
+        <translation>à la main</translation>
+    </message>
+    <message>
+        <source>released</source>
+        <translation>relâché</translation>
+    </message>
+    <message>
+        <source>cut at its maximum time</source>
+        <translation>coupé à son temps maximal</translation>
+    </message>
+    <message>
+        <source>it can&apos;t fire</source>
+        <translation>il ne peut pas se déclencher</translation>
+    </message>
+    <message>
+        <source>removed</source>
+        <translation>retiré</translation>
+    </message>
+    <message>
+        <source>disarmed</source>
+        <translation>désarmé</translation>
+    </message>
+    <message>
+        <source>The log of the special effects can&apos;t be written (%1)</source>
+        <translation>Impossible d’écrire le journal des effets spéciaux (%1)</translation>
+    </message>
+    <message>
+        <source>parked</source>
+        <translation>parqué</translation>
+    </message>
+    <message>
+        <source>A protected special effect can only be parked off</source>
+        <translation>Un effet spécial protégé ne peut être parqué qu’éteint</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) parked off</source>
+        <translation>
+            <numerusform>%n fixture parqué éteint</numerusform>
+            <numerusform>%n fixtures parqués éteints</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) parked as they are now</source>
+        <translation>
+            <numerusform>%n fixture parqué tel qu’il est maintenant</numerusform>
+            <numerusform>%n fixtures parqués tels qu’ils sont maintenant</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The programmer has no values on the selected fixtures to park</source>
+        <translation>Le programmeur n’a aucune valeur sur les fixtures sélectionnés à parquer</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) parked at the values of the programmer</source>
+        <translation>
+            <numerusform>%n fixture parqué aux valeurs du programmeur</numerusform>
+            <numerusform>%n fixtures parqués aux valeurs du programmeur</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) unparked</source>
+        <translation>
+            <numerusform>%n fixture déparqué</numerusform>
+            <numerusform>%n fixtures déparqués</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The parked channels of %1 were removed: its mode changed</source>
+        <translation>Les canaux parqués de %1 ont été retirés&#xa0;: son mode a changé</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n parked fixture(s): %1 (Patch)</source>
+        <translation>
+            <numerusform>%n fixture parqué&#xa0;: %1 (Patch)</numerusform>
+            <numerusform>%n fixtures parqués&#xa0;: %1 (Patch)</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The show stop is on: take it away to arm the special effects</source>
+        <translation>L’arrêt du show est en place&#xa0;: levez-le pour armer les effets spéciaux</translation>
+    </message>
+    <message>
+        <source>Show stop on</source>
+        <translation>Arrêt du show en place</translation>
+    </message>
+    <message>
+        <source>Show stop off</source>
+        <translation>Arrêt du show levé</translation>
+    </message>
+    <message>
+        <source>Bring back what was playing</source>
+        <translation>Ramener ce qui jouait</translation>
+    </message>
+    <message>
+        <source>The show stop is on: take it away to park as it is now</source>
+        <translation>L’arrêt du show est en place&#xa0;: levez-le pour parquer tel quel</translation>
+    </message>
+    <message>
+        <source>A fade to black runs: park as it is now once it is over</source>
+        <translation>Un fondu au noir est en cours&#xa0;: parquez tel quel une fois qu’il est fini</translation>
     </message>
 </context>
 <context>
@@ -9751,6 +10524,54 @@ Ajoutez-en sur la page Patch.</translation>
         <source>Cue speed (all cuelists)</source>
         <translation>Vitesse des cues (toutes les cuelists)</translation>
     </message>
+    <message>
+        <source>Arm effects</source>
+        <translation>Armer les effets</translation>
+    </message>
+    <message>
+        <source>Toggle: arm / disarm</source>
+        <translation>Bascule&#xa0;: armer / désarmer</translation>
+    </message>
+    <message>
+        <source>Arm</source>
+        <translation>Armer</translation>
+    </message>
+    <message>
+        <source>Disarm</source>
+        <translation>Désarmer</translation>
+    </message>
+    <message>
+        <source>Lit while the effects are armed. A right click disarms them. Stop all and Blackout disarm them too.</source>
+        <translation>Allumé tant que les effets sont armés. Un clic droit les désarme. Tout arrêter et le Blackout les désarment aussi.</translation>
+    </message>
+    <message>
+        <source>Show stop (hold 1 s)</source>
+        <translation>Arrêt du show (maintenir 1&#xa0;s)</translation>
+    </message>
+    <message>
+        <source>Hold it a second: open white on the lights (Options › Show stop), strobes and lasers dark, the heads still, the special effects disarmed, above Blackout. Hold it again to take it away. Lit while it is on.</source>
+        <translation>Maintenez-le une seconde&#xa0;: blanc ouvert sur les lumières (Options › Arrêt du show), stroboscopes et lasers éteints, les lyres immobiles, les effets spéciaux désarmés, au-dessus du Blackout. Maintenez-le de nouveau pour le lever. Allumé tant qu’il est en place.</translation>
+    </message>
+    <message>
+        <source>Bring back what was playing</source>
+        <translation>Ramener ce qui jouait</translation>
+    </message>
+    <message>
+        <source>Fade to black</source>
+        <translation>Fondu au noir</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>Durée</translation>
+    </message>
+    <message>
+        <source>For 10 seconds after Stop all or Release groups, what they stopped plays again, with a short fade (also Ctrl+Z). Lit while it can.</source>
+        <translation>Pendant 10&#xa0;secondes après Tout arrêter ou Libérer les groupes, ce qu’ils ont arrêté rejoue, avec un fondu court (aussi Ctrl+Z). Allumé tant que c’est possible.</translation>
+    </message>
+    <message>
+        <source>The light goes down in this time, then Blackout comes (Blackout off brings it back). Pressed again, or Blackout: at once. It disarms the special effects. Lit while it fades.</source>
+        <translation>La lumière baisse pendant cette durée, puis le Blackout arrive (le Blackout enlevé, elle revient). Appuyé de nouveau, ou le Blackout&#xa0;: tout de suite. Il désarme les effets spéciaux. Allumé pendant le fondu.</translation>
+    </message>
 </context>
 <context>
     <name>SectionView</name>
@@ -10189,6 +11010,96 @@ Ajoutez-en sur la page Patch.</translation>
     </message>
 </context>
 <context>
+    <name>SpecialEffectDialog</name>
+    <message numerus="yes">
+        <source>%n fixture(s)</source>
+        <translation>
+            <numerusform>%n fixture</numerusform>
+            <numerusform>%n fixtures</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>(they differ)</source>
+        <translation>(différents)</translation>
+    </message>
+    <message>
+        <source>Special effect</source>
+        <translation>Effet spécial</translation>
+    </message>
+    <message>
+        <source>It is across two universes: it never fires. Move it into a single universe</source>
+        <translation>Il est à cheval sur deux univers&#xa0;: il ne se déclenche jamais. Déplacez-le dans un seul univers</translation>
+    </message>
+    <message>
+        <source>Protected special effect</source>
+        <translation>Effet spécial protégé</translation>
+    </message>
+    <message>
+        <source>Maximum fire time</source>
+        <translation>Durée maximale de déclenchement</translation>
+    </message>
+    <message>
+        <source>Minimum wait between fires</source>
+        <translation>Attente minimale entre deux déclenchements</translation>
+    </message>
+    <message>
+        <source>Safety channel</source>
+        <translation>Canal de sécurité</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Aucun</translation>
+    </message>
+    <message>
+        <source>Channel %1</source>
+        <translation>Canal %1</translation>
+    </message>
+    <message>
+        <source>Their channels differ</source>
+        <translation>Leurs canaux sont différents</translation>
+    </message>
+    <message>
+        <source>Values from / to</source>
+        <translation>Valeurs de / à</translation>
+    </message>
+    <message>
+        <source>It only fires from scenes, cuelists and chasers with «Arm effects» on. Identify, Highlight, the programmer, the mixer and the FX never fire it. Limits only count while it fires. The safety channel goes out within its values only while it fires; else 0.</source>
+        <translation>Il ne se déclenche que depuis les scènes, les cuelists et les chasers avec «&#xa0;Armer les effets&#xa0;» allumé. Identifier, la surbrillance, le programmeur, le mixeur et les FX ne le déclenchent jamais. Les limites ne comptent que pendant le déclenchement. Le canal de sécurité sort dans ses valeurs seulement pendant le déclenchement&#xa0;; sinon, 0.</translation>
+    </message>
+    <message>
+        <source>As its kind (%1)</source>
+        <translation>Selon sa classe (%1)</translation>
+    </message>
+    <message>
+        <source>As their kind</source>
+        <translation>Selon leur classe</translation>
+    </message>
+    <message>
+        <source>Protected or not as its kind says (CO2, flames, sparks and confetti are), with the times of its kind and no safety channel</source>
+        <translation>Protégé ou non selon sa classe (CO2, flammes, étincelles et confettis le sont), avec les temps de sa classe et sans canal de sécurité</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+    <message>
+        <source>Take the protection away?</source>
+        <translation>Retirer la protection&#xa0;?</translation>
+    </message>
+    <message>
+        <source>Without it, %1 goes out as any other channel: without arming the effects, without a maximum time, and also from the programmer, Identify, the mixer and the FX.</source>
+        <translation>Sans elle, %1 sort comme n’importe quel autre canal&#xa0;: sans armer les effets, sans temps maximal, et aussi depuis le programmeur, Identifier, le mixeur et les FX.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Take it away</source>
+        <translation>La retirer</translation>
+    </message>
+</context>
+<context>
     <name>StagePlan</name>
     <message>
         <source>AUDIENCE</source>
@@ -10296,6 +11207,13 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Steps play their channels through this scene: it can&apos;t take FX. Record the programmer as a new scene.</source>
         <translation>Des pas jouent leurs canaux à travers cette scène&#xa0;: elle ne peut pas prendre de FX. Enregistrez le programmeur comme nouvelle scène.</translation>
+    </message>
+</context>
+<context>
+    <name>StatusBanner</name>
+    <message>
+        <source>Hide</source>
+        <translation>Masquer</translation>
     </message>
 </context>
 <context>
@@ -10595,6 +11513,30 @@ Ajoutez-en sur la page Patch.</translation>
     <message>
         <source>Choose a palette</source>
         <translation>Choisissez une palette</translation>
+    </message>
+    <message>
+        <source>Effects armed</source>
+        <translation>Effets armés</translation>
+    </message>
+    <message>
+        <source>Arm effects</source>
+        <translation>Armer les effets</translation>
+    </message>
+    <message>
+        <source>Disarm effects</source>
+        <translation>Désarmer les effets</translation>
+    </message>
+    <message>
+        <source>Show stop</source>
+        <translation>Arrêt du show</translation>
+    </message>
+    <message>
+        <source>Bring back</source>
+        <translation>Ramener</translation>
+    </message>
+    <message>
+        <source>Fade to black</source>
+        <translation>Fondu au noir</translation>
     </message>
 </context>
 <context>

@@ -123,7 +123,8 @@ Item {
                 text: qsTr("Release groups")
                 iconGlyph: Theme.iconStop
                 enabled: Core.zones.count > 0
-                onClicked: Core.zones.stopAll()
+                // (what they played can be brought back for some seconds)
+                onClicked: Core.releaseGroups()
                 MapTarget { target: ({ target: "groupRelease", zoneId: -1 }) }
             }
             // every group folded or unfolded at once (what it does next)

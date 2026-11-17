@@ -39,7 +39,7 @@ Ein Bedienelement des Programms kann mehrere Zuordnungen haben (zum Beispiel ein
 
 ### Was sich zuordnen lässt
 
-- **Obere Leiste**: GO, Stop, BeatGO, Grand Master, Blackout und Alles stoppen.
+- **Obere Leiste**: GO, Stop, BeatGO, Grand Master, Blackout, Alles stoppen und „Effekte scharf schalten“.
 - **Live**: jede Szene, ◀ ▶, Pause und Gruppen freigeben im Kopf, und in jeder Gruppe Freigeben, vorherige, nächste und Master.
 - **Mischer**: in jedem Kanalzug der Dimmer, der Farbton, die Sättigung, das Stroboskop und sein Tempo, sowie die Tasten Voll, Blackout, Flash, Flash exkl. und Voll exkl.
 - **Programmieren**: die Paletten.
@@ -81,6 +81,10 @@ Was die Zuordnung tut. Die **Tasten**:
 | GO des ausgewählten Playbacks / Zurück des ausgewählten Playbacks | Wie das große GO und „Zurück“ unter Playbacks. |
 | Playback-Seite N / nächste / vorherige | Wechselt die Playback-Seite. |
 | Alle Playbacks freigeben | Wie „Alle freigeben“. |
+| Spezialeffekte scharf schalten | Schaltet die [geschützten Spezialeffekte](directo.md#geschützte-spezialeffekte) scharf oder entschärft sie. |
+| Show-Stopp (1 s halten) | Eine Sekunde gehalten, löst den [Show-Stopp](directo.md#show-stopp) aus oder hebt ihn auf. |
+| Zurückholen, was lief | Bis 10 s nach Alles stoppen oder Gruppen freigeben (in „Alle Gruppen“, nicht in einer einzelnen) startet sie wieder, was diese gestoppt haben. |
+| Ausblenden auf Schwarz | Nimmt das Licht in ihrer **Zeit** herunter (Standard 3 s; die Liste zeigt „Ausblenden auf Schwarz — 3 s“) und schaltet dann den Blackout ein. |
 
 Die **Fader**:
 
@@ -122,6 +126,8 @@ Bei den **Tasten**:
 
 Die Playback-Tasten wirken beim Drücken, außer Flash, und haben diese Option nicht.
 
+Bei **„Spezialeffekte scharf schalten“** schaltet „Umschalten: jeder Druck an / aus“ scharf oder entschärft, „Nur an“ schaltet scharf, „Nur aus“ entschärft, und „Flash: solange gedrückt“ hält sie scharf, solange Sie drücken. **„Show-Stopp“**, **„Zurückholen, was lief“** und **„Ausblenden auf Schwarz“** haben diese Option nicht: Der Show-Stopp zählt, wie lange Sie halten und wann Sie loslassen (geht die Loslassen-Meldung verloren, wechselt er trotzdem nach der Sekunde, und das nächste Mal geht es wie immer); die anderen beiden wirken beim Drücken. Cue-Aktionen schalten die Effekte nie scharf, lösen keinen Show-Stopp aus, holen nichts zurück und blenden nicht auf Schwarz aus.
+
 Der Flash eines Playbacks nutzt den Anstieg und den Abfall dieses Playbacks (siehe [Eigenschaften eines Playbacks](playbacks.md#eigenschaften-eines-playbacks)). Mit „Oder eine Cuelist oder Szene, egal wo“ nutzt er die des ersten Playbacks, auf dem sie liegt; liegt sie auf keinem Playback, geht es sofort. Bei „Umschalten“ steigt er wieder, wenn Sie während des Abfalls drücken.
 
 Bei den **Fadern**:
@@ -147,6 +153,8 @@ Für die LEDs der MIDI-Tasten:
 
 **„Beim Überblenden“** (bei „Szene starten“ und „Szene N einer Gruppe“): Schalten Sie **„Eigene Farbe beim Überblenden“** ein, dann zeigt die Taste diese Farbe, solange die Szene mit ihrer Überblendung einsetzt und solange sie mit ihrer ausblendet. Bei einer Cuelist zeigt sie die Farbe, solange ihre Cue überblendet. Ohne diese Option zeigt die Einblendung die Farbe von „An“ und die Ausblendung die von „Aus“. Eine pausierte oder wartende Szene leuchtet wie „Pausiert“.
 
+Beim Lernen eines Pads einer Akai APC: **„Spezialeffekte scharf schalten“** leuchtet rot, solange sie scharf sind, sonst dunkel (rot mit 100 % auf der APC mini mk2); **„Show-Stopp“** rot, solange er an ist, und rot blinkend, während Sie halten; **„Zurückholen, was lief“** gelb, solange es geht (pulsierend auf der APC mini mk2 und der APC40 mkII); **„Ausblenden auf Schwarz“** leuchtet, solange es ausblendet. Tasten mit nur einer LED leuchten wie gewohnt (der Show-Stopp blinkt, während Sie halten). Nicht an den Controllern getestet.
+
 Die LEDs des Controllers gehen aus, wenn Sie das Programm schließen, eine Zuordnung löschen oder einem anderen Bedienelement zuweisen, eine andere Show öffnen oder das Gerät oder sein Feedback deaktivieren.
 
 ### Duplizieren und löschen
@@ -155,7 +163,7 @@ Die LEDs des Controllers gehen aus, wenn Sie das Programm schließen, eine Zuord
 
 ## Tastatur
 
-Tastaturzuordnungen funktionieren auf jeder Seite und haben Vorrang vor Tastenkürzeln des Programms, die dieselbe Taste verwenden. Sie lösen nicht aus, während Sie in ein Textfeld schreiben (unter Programmieren, solange die Befehlszeile die Tastatur hat), und auch nicht bei gedrückter Strg- oder Alt-Taste. Die SHOW-Tasten haben außerdem ihre eigene Tastaturtaste, die nur auf der Seite Show funktioniert (siehe [Show](show.md#optionen-einer-taste)).
+Tastaturzuordnungen funktionieren auf jeder Seite und haben Vorrang vor Tastenkürzeln des Programms, die dieselbe Taste verwenden. Sie lösen nicht aus, während Sie in ein Textfeld schreiben (unter Programmieren, solange die Befehlszeile die Tastatur hat), und auch nicht bei gedrückter Strg- oder Alt-Taste. Die SHOW-Tasten haben außerdem ihre eigene Tastaturtaste, die nur auf der Seite Show funktioniert (siehe [Show](show.md#optionen-einer-taste)). Die **Pause**-Taste ist die des [Show-Stopps](directo.md#show-stopp) (zweimal gedrückt) und lässt sich nicht anlernen. Hatte eine Show schon eine Zuordnung auf Pause, tut Pause weiter, was diese Zuordnung tut, und nicht den Show-Stopp, der weiter über eine SHOW-Taste, ein Pad oder das Smartphone geht: Beim Öffnen sagt es einmal eine Meldung („Diese Show hat eine Zuordnung auf der Pause-Taste: …“), ihre Zeile erscheint orange („Taste PAUSE (statt des Show-Stopps)“), und der Editor warnt unter der Taste. Löschen Sie sie oder geben Sie ihr eine andere Taste, um den Show-Stopp auf Pause zu haben. Eine Tastaturzuordnung auf „Show-Stopp“ mit einer anderen Taste wird 1 s gehalten, wie ein Pad (auf einem Laptop ohne Pause); verliert das Programm die Tastatur, während Sie sie halten (ein anderes Fenster, eine Meldung von Windows), wird sie losgelassen, und nichts ändert sich.
 
 ## Vorlagen für Akai APC
 

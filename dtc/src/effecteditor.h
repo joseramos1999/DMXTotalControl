@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QUrl>
+#include <QSet>
 #include <functional>
 
 class ZoneManager;
@@ -54,6 +55,11 @@ public:
     /** A function a fader of the SHOW holds up: trying it doesn't stop it
      *  (only that fader stops it) */
     void setHeldByFader(const std::function<bool(quint32)> &held);
+    /** DMX Total Control: the protected special effects (CO2, flames...). The
+     *  effects made from the selection (Move, Colour and Curve FX, mappings,
+     *  conversions to FX) leave them out, and so do the steps recorded from
+     *  an effect: an FX never fires one, and steps are scenes, which would */
+    void setIsProtected(const std::function<bool(quint32)> &isProtected);
 
     /*********************************************************************
      * Common
@@ -213,6 +219,13 @@ private:
     /** The priority of new scenes, from the settings */
     void applyDefaultPriority(Function *function) const;
     QList<quint32> selectedWithPanTilt() const;
+    /** DMX Total Control: $fixtures without the protected special effects;
+     *  $leftOut: how many of them they had */
+    QList<quint32> withoutProtected(const QList<quint32> &fixtures, int *leftOut) const;
+    /** The protected special effects of the show */
+    QSet<quint32> protectedFixtures() const;
+    /** "%n protected special effect(s) left out of the FX" (nothing for 0) */
+    void tellLeftOut(int count, bool error = false);
     /** Whether any of $fixtures has its dimmer open (or has no dimmer) */
     bool isLit(const QList<quint32> &fixtures) const;
     quint32 makeGroup(const QString &name, const QList<quint32> &fixtures);
@@ -229,6 +242,7 @@ private:
     ZoneManager *m_zones;
     AppSettings *m_settings;
     std::function<bool(quint32)> m_heldByFader;
+    std::function<bool(quint32)> m_isProtected;
 };
 
 #endif

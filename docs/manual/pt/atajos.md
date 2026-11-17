@@ -23,14 +23,26 @@ Todas as teclas e combinações do programa, por página. As teclas que você at
 | **Ctrl+S** | Salvar o show (na primeira vez, pede um nome) |
 | **Ctrl+Shift+S** | Salvar o show com outro nome (“Salvar como…”) |
 | **Ctrl+B** | Blackout (ligar e desligar) |
+| **Pause** duas vezes (em 2 s) | Ativa ou tira a [parada de show](directo.md#parada-de-show), em qualquer página, com qualquer modificador e mesmo enquanto você digita. Um só toque apenas avisa (“Parada de show: pressione Pause de novo para ativá-la”); mantê-la pressionada não faz mais nada. Não pode ser atribuída em Mapeamentos; um show que já a tinha mapeada a mantém |
 | **Esc** | Parar tudo. No modo Mapear, cancela o controle pendente ou sai do modo; com “Gravar” armado em Playbacks, desarma-o; com um grupo isolado no plano do Patch, termina o isolamento (com um menu, uma lista suspensa ou uma janela do Patch abertos, como “Adicionar fixtures”, “Editar” ou “Limites”, só os fecha; um aviso como “Salvar as alterações?” não se fecha com Esc). Em uma janela para digitar um nome ou um número (“Criar grupo”, “Renomear”, “Renumerar”…), fecha-a sem aplicar nada: pressione Esc de novo para parar tudo |
+| **Esc** duas vezes | Durante o fade de “Parar tudo com fade”, para tudo na hora |
+| **Ctrl+Z** | Em Ao vivo e no SHOW (não no modo de edição dele nem enquanto você digita), durante 10 s depois de “Parar tudo” ou “Liberar grupos”: [recuperar o que estava tocando](directo.md#recuperar-o-que-estava-tocando) |
 | **Ctrl+→** | Próxima cena em cada grupo que está rodando |
 | **Ctrl+←** | Cena anterior em cada grupo que está rodando |
 | **G** | BeatGO (exceto na página Show) |
 
 Se uma página está bloqueada, a tecla dela pede a senha (se houver) e desbloqueia. Com o SHOW bloqueado (modo quiosque) as teclas de página não funcionam, e com a Configuração bloqueada também não funcionam Ctrl+N, Ctrl+O nem Ctrl+Shift+S.
 
-T, G e as teclas que você atribuir em Mapeamentos não atuam enquanto você digita em um campo de texto, como a linha de comando de Programar.
+T, G e as teclas que você atribuir em Mapeamentos não atuam enquanto você digita em um campo de texto, como a linha de comando de Programar. A tecla Pause (a parada de show) funciona, sim, enquanto você digita.
+
+## Modo show
+
+Com o [Modo show](directo.md#modo-show) ligado, ao fechar o programa ou ao abrir ou começar outro show:
+
+| Tecla | O que faz |
+|---|---|
+| Manter **Espaço** ou **Enter** pressionado 1,5 s | Como manter o botão pressionado: confirma (a repetição da tecla não conta) |
+| **Esc** | Cancela; nessa janela nunca para o show |
 
 ## Playbacks
 
@@ -120,5 +132,6 @@ Depois de clicar em um fader ou um controle deslizante:
 | Roda do mouse | Plano 2D | Zoom |
 | Arrastar com o botão direito ou o do meio | Plano 2D | Move a vista (clique duplo: centraliza-a) |
 | Clique com o botão direito | Botão 15° do plano 2D | Gira para o outro lado |
-| Clique com o botão direito | Botão do SHOW (ao vivo) | Para o que ele dispara (a cena, o grupo, o playback ou a paleta dele), também com GO |
+| Clique com o botão direito | Botão do SHOW (ao vivo) | Para o que ele dispara (a cena, o grupo, o playback ou a paleta dele), também com GO; o de “Armar efeitos” os desarma |
 | Manter pressionado “Desbloquear” | Show bloqueado | Desbloqueia |
+| Manter pressionado 1 s | Botão “Parada de show” do SHOW, um pad ou uma tecla mapeados, a mão do celular, “Mantenha para tirar” | Ativa ou tira a parada de show |

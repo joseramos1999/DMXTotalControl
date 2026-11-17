@@ -32,11 +32,12 @@ La conexión se recuerda para la próxima vez que abras el programa.
 
 ## Niveles DMX
 
-**«Niveles DMX»** muestra los 512 canales de un universo tal como salen del programa, con todo aplicado (escenas, programador, mezclador, gran master, límites…):
+**«Niveles DMX»** muestra los 512 canales de un universo tal como salen del programa, con todo aplicado (escenas, programador, mezclador, gran master, límites, canales aparcados, parada de show…); un efecto especial protegido desarmado se ve a 0 aunque su escena suene:
 
 - Elige el **Universo** en el desplegable.
 - Cada casilla tiene el número de canal y su valor (0–255). **«Mostrar en %»** cambia a porcentaje.
 - Las casillas con borde pertenecen a un fixture. Pasa el ratón por un canal para ver de qué fixture es («Nombre — canal N»).
+- Arriba a la derecha de la casilla, un **candado** marca un canal [aparcado](patch.md#aparcar-canales) («aparcado a 77», «· también en blackout»), un **escudo** un [efecto especial protegido](directo.md#efectos-especiales-protegidos) («efecto especial protegido (desarmado: sale 0)», «(armado)» o, con candado, «aparcado apagado») y una **mano roja** lo que pone la [parada de show](directo.md#parada-de-show) («parada de show», o «parada de show: se queda donde está» en el pan y el tilt). Un canal aparcado bajo la parada dice «aparcado a 77, bajo la parada de show», y durante un fundido a negro uno sin «también en blackout» dice «aparcado a 77, bajando con el fundido a negro». Las marcas van en el canal propio del fixture, antes del intercambio de pan y tilt.
 
 > **Consejo:** si un fixture no responde, mira aquí si su canal se mueve. Si se mueve, el problema está en el cable, en la dirección del aparato o en la interfaz; si no, en el patch o en lo que estás lanzando.
 

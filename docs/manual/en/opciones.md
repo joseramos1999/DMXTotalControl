@@ -2,9 +2,9 @@
 
 ![The Options page](../img/opciones.png)
 
-**Options** (F9) brings together the program settings. On the left are the general settings, startup, lock, autosave, playback and audio; on the right, the remote control, the fixture library, updates, help and “About”.
+**Options** (F9) brings together the program settings. On the left are the general settings, startup, lock, safety during the show, autosave, playback and audio; on the right, the remote control, the fixture library, updates, help and “About”.
 
-The settings on this page belong to the computer, not to the show: they apply to every show you open.
+The settings on this page belong to the computer, not to the show: they apply to every show you open. Only the show stop (in [Safety during the show](opciones.md#show-stop)) is saved with the show.
 
 ## General
 
@@ -34,6 +34,40 @@ Locking stops anything from changing by mistake during the show. Live and the SH
 4. Press **“Lock”**.
 
 Locked pages have a padlock in the sidebar. When you open one, it asks for the password (if there is one) and everything is unlocked. To unlock, press the padlock in the top bar. **“Remove the password”** is in the same window, when you lock.
+
+## Safety during the show
+
+What protects the show while it is live (see [Safety during the show](directo.md#safety-during-the-show)):
+
+- **Keep the computer awake** (on by default): while the program is open, Windows doesn't put the computer to sleep nor turn the screen off. When you close the program, or turn this off, Windows does it again as always. Nothing in the Windows settings changes.
+- **Show mode** (off by default): closing the program or opening another show asks you to hold a button. Locking the SHOW turns it on; unlocking doesn't turn it off. The shield in the top bar turns it on and off as well (see [Show mode](directo.md#show-mode)).
+- **Stop all with a fade**: from 0 to 5 s (0 by default: at once, as always). The functions fade out over that time; Esc twice, at once. For 10 seconds, Ctrl+Z brings back what it stopped (see [Stop all with a fade](directo.md#stop-all-with-a-fade)).
+- **Disarm the special effects unused after**: from 0 to 120 minutes without a fire (10 by default; 0, “Never”). Never while one fires (see [Protected special effects](directo.md#protected-special-effects)).
+- **Running on battery** and **USB selective suspend is on** only show when it happens. The first says how much battery is left; the second has **“How to turn it off”**, which opens the section [USB selective suspend](opciones.md#usb-selective-suspend) below.
+
+### Show stop
+
+What the [show stop](directo.md#show-stop) lights, and at what level. This one is saved with the show, in its DMX Total Control section (QLC+ doesn't read it).
+
+- **Fixtures**: **“Every light”** (the default) or **“These groups…”**, which opens the list of the show's fixture groups to tick them (“Groups the show stop lights”). With none ticked, every light. A deleted group is dropped by itself. Of the chosen groups only the lights light up: their smoke, hazers, strobes and lasers never.
+- **Level**: from 0 to 100 % (100 by default).
+
+Moving heads, scanners, PARs and washes, LED bars, blinders and dimmers light up. A generic dimmer (Generic › Generic Dimmer) only when its name says it is a light (PAR, FRESNEL, DIMMER, BLINDER, LIGHT, LAMP, SPOT, FRONT, PROFILE, PC, HOUSE…) or its icon on the plan is that of a light. Those named VIDEO, TRIGGER, RELAY, MOTOR, SCREEN, PROJECTOR, KABUKI, CURTAIN… stay as they are, also inside a chosen group; a PYRO… is a protected special effect and goes dark. To light one of them, give it a light icon in Patch › “Look” › “Icon”. The dimmers of the library light up as always.
+
+<a id="usb-selective-suspend"></a>
+
+### USB selective suspend
+
+Windows may suspend a USB port that seems idle to save power, and the DMX interface with it: the output stops in the middle of the show. It is a setting of the Windows power plan. The program only reads it at startup (and says so with a blue bar and on this page): it never changes it. To turn it off:
+
+1. Open **Control Panel** › **Hardware and Sound** › **Power Options**.
+2. Next to the plan you use, click **“Change plan settings”** and then **“Change advanced power settings”**.
+3. Open **“USB settings”** › **“USB selective suspend setting”** and choose **“Disabled”** for **“On battery”** and for **“Plugged in”** (without a battery there is only one value).
+4. Click **“OK”**.
+
+If the interface still stops, open **Device Manager** and, in the properties of each **“USB Root Hub”**, on the **“Power Management”** tab, untick **“Allow the computer to turn off this device to save power”**. The names may change a little with the version of Windows.
+
+> **Not tested with real equipment:** battery and power changes, the battery percentage, the real effect of keeping the computer awake and the reading of USB selective suspend.
 
 ## Autosave
 

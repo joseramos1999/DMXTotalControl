@@ -56,7 +56,8 @@ public:
         ForceLTP    = (1 << 11),    /** Force LTP for flashing scenes */
         Modulated   = (1 << 12),    /** DMX Total Control: an FX adds an offset to the value */
         Manual      = (1 << 13),    /** DMX Total Control: a hand crossfade (the A/B fader) sets its elapsed time: no clock */
-        MixBelow    = (1 << 14)     /** DMX Total Control: the level of the fader mixes the value with what's below (an Override cuelist) */
+        MixBelow    = (1 << 14),    /** DMX Total Control: the level of the fader mixes the value with what's below (an Override cuelist) */
+        NoFire      = (1 << 15)     /** DMX Total Control: an FX layer fading out: it never fires a protected special effect */
     };
 
     /** DMX Total Control: how a fade moves from start to target over its time */

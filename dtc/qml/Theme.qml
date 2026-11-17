@@ -133,6 +133,38 @@ QtObject {
         return Qt.rgba(k.r * level, k.g * level, k.b * level, k.a)
     }
 
+    /** The colours of the controls of the SHOW screen (buttons, faders,
+     *  dials), as they show: bright and far apart. The shows keep the ones
+     *  of the first palette (these keys, also the defaults in C++ and on the
+     *  phone): each one shows as its bright one. So do the colours of the
+     *  groups, that the controls built from a group take, each its own
+     *  (apart in a row of them). The same in remote.js */
+    readonly property var showColours: ({
+        "#e5484d": "#ff2b2b",   // red
+        "#f76707": "#ff8a00",   // orange
+        "#f5a524": "#ffe500",   // yellow
+        "#30a46c": "#2ee05a",   // green
+        "#17a2b8": "#00d9ff",   // cyan
+        "#3d8bfd": "#2f6bff",   // blue
+        "#ae3ec9": "#b02cff",   // violet
+        "#d6336c": "#ff3d9e",   // pink
+        "#e7e9ef": "#ffffff",   // white
+        "#5d6475": "#6f7789",   // grey
+        // (the other colours of the groups)
+        "#f59f00": "#ffc400",   // amber
+        "#2fb344": "#2ee05a",   // green
+        "#d63939": "#ff2b2b",   // red
+        "#74b816": "#b5e61d"    // lime
+    })
+    /** The colours to choose for a control of the SHOW screen, in the order of the spectrum (the saved ones) */
+    readonly property var showSwatches: ["#e5484d", "#f76707", "#f5a524", "#30a46c", "#17a2b8",
+                                         "#3d8bfd", "#ae3ec9", "#d6336c", "#e7e9ef", "#5d6475"]
+    /** A colour chosen for a control of the SHOW screen as it shows: the bright one of its swatch, any other as it is */
+    function showColour(c) {
+        const bright = showColours[Qt.color(c).toString().toLowerCase()]
+        return bright !== undefined ? bright : c
+    }
+
     /** A colour between a and b (t from 0, a, to 1, b): the shades between two tokens */
     function mix(a, b, t) {
         const x = Qt.color(a), y = Qt.color(b)
@@ -248,6 +280,21 @@ QtObject {
     readonly property string iconSnowflake: "\uf2dc"
     readonly property string iconFan: "\uf863"
     readonly property string iconAsterisk: "\uf069"
+    // (the show mode of the top bar: a shield)
+    readonly property string iconShield: "\uf3ed"
+    // (the show stop: a hand)
+    readonly property string iconHand: "\uf256"
+    // (the fade to black: a moon)
+    readonly property string iconMoon: "\uf186"
+
+    /** The names of a list of Core.safety (firing, waiting), one after the other */
+    function effectNames(list) {
+        return list.map(f => f.name).join(", ")
+    }
+    /** $s seconds as m:ss, "" below 0 (Core.safety.disarmIn: never) */
+    function disarmClock(s) {
+        return s < 0 ? "" : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")
+    }
 
     /** The glyph of a kind of fixture (Core.patch.fixtureKinds): each kind its own */
     function kindIcon(kind) {

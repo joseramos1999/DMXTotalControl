@@ -2,9 +2,9 @@
 
 ![La page Options](../img/opciones.png)
 
-**Options** (F9) réunit les réglages du programme. À gauche se trouvent les réglages généraux, le démarrage, le verrouillage, la sauvegarde automatique, la lecture et l’audio ; à droite, la télécommande, la bibliothèque de fixtures, les mises à jour, l’aide et « À propos ».
+**Options** (F9) réunit les réglages du programme. À gauche se trouvent les réglages généraux, le démarrage, le verrouillage, la sécurité pendant le show, la sauvegarde automatique, la lecture et l’audio ; à droite, la télécommande, la bibliothèque de fixtures, les mises à jour, l’aide et « À propos ».
 
-Les réglages de cette page appartiennent à l’ordinateur, pas au show : ils valent pour tous les shows que vous ouvrez.
+Les réglages de cette page appartiennent à l’ordinateur, pas au show : ils valent pour tous les shows que vous ouvrez. Seul l’arrêt du show (dans [Sécurité pendant le show](opciones.md#arrêt-du-show)) est enregistré avec le show.
 
 ## Général
 
@@ -34,6 +34,40 @@ Le verrouillage évite que quelque chose change par erreur pendant le show. Dire
 4. Appuyez sur **« Verrouiller »**.
 
 Les pages verrouillées portent un cadenas dans la barre latérale. Quand vous en ouvrez une, le mot de passe est demandé (s’il y en a un) et tout est déverrouillé. Pour déverrouiller, appuyez sur le cadenas de la barre du haut. **« Supprimer le mot de passe »** se trouve dans la même fenêtre, au moment de verrouiller.
+
+## Sécurité pendant le show
+
+Ce qui protège le show pendant le direct (voir [Sécurité pendant le show](directo.md#sécurité-pendant-le-show)) :
+
+- **Garder l’ordinateur éveillé** (activé par défaut) : tant que le programme est ouvert, Windows ne met pas l’ordinateur en veille et n’éteint pas l’écran. Quand vous fermez le programme, ou désactivez ce réglage, Windows recommence comme d’habitude. Rien ne change dans les réglages de Windows.
+- **Mode show** (désactivé par défaut) : fermer le programme ou ouvrir un autre show demande de maintenir un bouton enfoncé. Verrouiller le SHOW l’active ; le déverrouiller ne le désactive pas. Le bouclier de la barre du haut l’active et le désactive aussi (voir [Mode show](directo.md#mode-show)).
+- **Tout arrêter en fondu** : de 0 à 5 s (0 par défaut : tout de suite, comme toujours). Les fonctions baissent pendant cette durée ; Échap deux fois, tout de suite. Pendant 10 secondes, Ctrl+Z ramène ce qui a été arrêté (voir [Tout arrêter en fondu](directo.md#tout-arrêter-en-fondu)).
+- **Désarmer les effets inutilisés après** : de 0 à 120 minutes sans déclenchement (10 par défaut ; 0, « Jamais »). Jamais pendant qu’un effet se déclenche (voir [Effets spéciaux protégés](directo.md#effets-spéciaux-protégés)).
+- **Sur batterie** et **La suspension sélective USB est activée** n’apparaissent que quand c’est le cas. Le premier dit combien de batterie il reste ; le second a **« Comment la désactiver »**, qui ouvre la section [Suspension sélective USB](opciones.md#suspension-sélective-usb), plus bas.
+
+### Arrêt du show
+
+Ce qu’éclaire l’[arrêt du show](directo.md#arrêt-du-show), et à quel niveau. Ceci est enregistré avec le show, dans sa section de DMX Total Control (QLC+ ne le lit pas).
+
+- **Fixtures** : **« Toutes les lumières »** (par défaut) ou **« Ces groupes… »**, qui ouvre la liste des groupes de fixtures du show pour les cocher (« Groupes qu’éclaire l’arrêt du show »). Sans aucun coché, toutes les lumières. Un groupe supprimé disparaît de lui-même. Des groupes choisis, seules les lumières s’allument : jamais leur fumée, leurs hazers, leurs stroboscopes ni leurs lasers.
+- **Niveau** : de 0 à 100 % (100 par défaut).
+
+S’allument les lyres, les scanners, les PAR et washes, les barres LED, les blinders et les dimmers. Un dimmer générique (Generic › Generic Dimmer) seulement quand son nom dit que c’est une lumière (PAR, FRESNEL, DIMMER, BLINDER, PROJECTEUR, DÉCOUPE, CONTRE, LUMIÈRE, SPOT, PC, SALLE…) ou que son icône sur le plan est celle d’une lumière. Ceux qui s’appellent VIDÉO, TRIGGER, DÉCLENCHEUR, RELAIS, MOTEUR, ÉCRAN, KABUKI, RIDEAU… restent tels quels, même dans un groupe choisi ; un PYRO… est un effet spécial protégé et s’éteint. Pour en éclairer un, donnez-lui une icône de lumière dans Patch › « Aspect » › « Icône ». Les dimmers de la bibliothèque s’allument comme toujours.
+
+<a id="usb-selective-suspend"></a>
+
+### Suspension sélective USB
+
+Windows peut suspendre un port USB qui lui semble inactif pour économiser l’énergie, et l’interface DMX avec lui : la sortie s’arrête en plein show. C’est un réglage du mode de gestion de l’alimentation de Windows. Le programme ne fait que le lire au démarrage (et le signale par une barre bleue et sur cette page) : il ne le change jamais. Pour la désactiver :
+
+1. Ouvrez le **Panneau de configuration** › **Matériel et audio** › **Options d’alimentation**.
+2. À côté du mode que vous utilisez, cliquez sur **« Modifier les paramètres du mode »**, puis sur **« Modifier les paramètres d’alimentation avancés »**.
+3. Ouvrez **« Paramètres USB »** › **« Paramètre de la suspension sélective USB »** et choisissez **« Désactivé »** pour **« Sur batterie »** et pour **« Sur secteur »** (sans batterie, il n’y a qu’une valeur).
+4. Cliquez sur **« OK »**.
+
+Si l’interface s’arrête encore, ouvrez le **Gestionnaire de périphériques** et, dans les propriétés de chaque **« Concentrateur USB racine »**, onglet **« Gestion de l’alimentation »**, décochez **« Autoriser l’ordinateur à éteindre ce périphérique pour économiser l’énergie »**. Les noms peuvent un peu changer selon la version de Windows.
+
+> **Non testé avec du matériel réel :** les changements de batterie et d’alimentation, le pourcentage de batterie, l’effet réel de garder l’ordinateur éveillé et la lecture de la suspension sélective USB.
 
 ## Sauvegarde automatique
 

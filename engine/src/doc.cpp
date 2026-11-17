@@ -515,6 +515,14 @@ bool Doc::deleteFixture(quint32 id)
         if (m_monitorProps != NULL)
             m_monitorProps->removeFixture(id);
 
+        // DMX Total Control: what plays lets go of its channels before anyone
+        // hears it is gone (the special effects free its addresses then: a
+        // fader that still wrote them would go out ungated)
+        QList<Universe *> universes = inputOutputMap()->claimUniverses();
+        for (Universe *universe : universes)
+            universe->refreshFaderFixtures(this);
+        inputOutputMap()->releaseUniverses(false);
+
         emit fixtureRemoved(id);
         setModified();
         delete fxi;

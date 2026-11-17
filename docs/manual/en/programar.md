@@ -16,6 +16,7 @@ From top to bottom, the page has: the header with its buttons, the [command line
 - **“Blind”**: see [Blind](programar.md#blind).
 - **“Reset all”**: releases all the live edits (values and FX). The scenes show again.
 - **“Reset selected”**: releases only those of the selected fixtures.
+- **“Park”**: parks the programmer's values of the selected fixtures at the output (see [Parking](programar.md#parking)).
 - **“Snapshot”** and **“Record…”**: see [Recording](programar.md#recording).
 
 In a narrow window some buttons show only their icon; hover over them to see their name.
@@ -52,7 +53,7 @@ The grid button in the panel header (“2D plan”) swaps the tiles for the stag
 - **Drag** on the empty stage to select with a box. A click on an empty spot clears the selection.
 - The **wheel** zooms; dragging with the **right button** or the middle one moves the view, and a double click with those buttons centres it again.
 
-In Program the plan is always **live**: each fixture shows its colour, its dimmer, its strobe (it blinks) and its gobo, and every pixel of bars and matrices. Fixtures are placed on the [2D plan of the Patch](patch.md#2d-plan).
+In Program the plan is always **live**: each fixture shows its colour, its dimmer, its strobe (it blinks) and its gobo, and every pixel of bars and matrices. Fixtures are placed on the [2D plan of the Patch](patch.md#2d-plan). Protected special effects carry their shield and parked fixtures their padlock, as in the Patch.
 
 ## The Quick panel
 
@@ -125,11 +126,20 @@ If you move the cross, the fan or “Centre”, or change the selection, the poi
 
 With **“Blind”** on, the programmer edits **without sending anything to the lights**: the stage keeps showing what is playing and you prepare the next look. The subtitle warns you: “Blind: the lights don't show what you program”. You can record as usual. When you turn it off, what is in the programmer goes out.
 
+## Protected special effects
+
+The programmer never sends a [protected special effect](directo.md#protected-special-effects) (a CO2, a flame…) out, not even with the effects armed:
+
+- On a selection that mixes protected effects with other fixtures, the programmer gives them nothing: no `@ FULL`, no levels, colours, faders, “Locate”, “Beam on” or “Beam off”, “All” palettes, FX or macros. Their faders don't show, so a scene recorded from that selection never has them.
+- On a selection **of protected effects only**, the values are kept so that you can program a CO2 scene, but they never go out, armed or not. The subtitle says “N special effect channels: recorded, not sent”, and their faders and cards have a red shield “not sent”. The scene you record fires them from the SHOW, a pad or the phone with the effects armed.
+- When you load a scene, a step or a cue with a CO2, its values stay, and saving it again doesn't lose them. Its FX on protected effects are kept in the scene, but don't play in the programmer.
+- “Snapshot” leaves them out, even while they fire; “Highlight” never lights them. FX and FX macros never play on them, and a message says so (“1 protected special effect left out of the FX”). Follow doesn't aim a protected flame head selected together with other fixtures.
+
 ## Highlight and locate
 
 In the command line bar:
 
-- **“Highlight”**: the selection at full in open white, over everything, to see which fixtures they are. It is not recorded. Press it again to remove it.
+- **“Highlight”**: the selection at full in open white, over everything, to see which fixtures they are. It is not recorded. Press it again to remove it. It never lights protected special effects.
 - **“Locate”**: sets the selection at full, in open white, centred and with the beam open, **in the programmer** (these values are recorded).
 - **◀ ▶** (PREV / NEXT): goes through the selection **one by one**: only one fixture stays selected and you see which one you are on (“2/8”). **“All”** goes back to the whole selection (ALL).
 
@@ -347,7 +357,7 @@ A cue stores only what the programmer changes compared with what the previous cu
 The **“Snapshot”** menu has:
 
 - **“Save the edits into a scene”**: puts the values of the programmer into a static scene that already exists.
-- **“Everything on stage into a new scene…”**: everything the lights show now (scenes, live edits and the mixer, without the grand master) becomes a new static scene, on every fixture that has light. If “Highlight” is on, you have to turn it off first (“Highlight off”).
+- **“Everything on stage into a new scene…”**: everything the lights show now (scenes, live edits and the mixer, without the grand master) becomes a new static scene, on every fixture that has light. If “Highlight” is on, you have to turn it off first (“Highlight off”). It leaves protected special effects out, even while they fire.
 - **“Only the edits into a new scene…”**.
 
 ### Editing scenes and cues
@@ -362,3 +372,7 @@ The **“Snapshot”** menu has:
 - The **×** of a card or of a fader: only that channel.
 
 What happens to the live edits when you play a scene, and their priority over the scenes, is decided in [Options](opciones.md#playback).
+
+## Parking
+
+**“Park”**, in the header (after “Reset selected”), parks the values the programmer holds on the selected fixtures: they go to the output with their [limits](patch.md#limits) (without the grand master), above everything, and the programmer lets them go. The values of the other fixtures stay in the programmer, and the programmer's FX are not parked. It is disabled when the selection has no values. If you change the limits later, what is parked doesn't change. A protected special effect is parked off. To unpark, use the fixture menu in the Patch (right click): see [Parking channels](patch.md#parking-channels).

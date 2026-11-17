@@ -162,9 +162,137 @@ Startet ein [Fader des SHOW](show.md#fader) sie, gibt sie nichts frei, egal in w
 ## Pause, freigeben und stoppen
 
 - **„Pause“** friert alles ein, was läuft. **„Fortsetzen“** setzt es fort.
-- **„Gruppen freigeben“** stoppt die Szenen aller Gruppen; das Quadrat jeder Spalte nur die dieser Gruppe.
-- **„Alles stoppen“** (Esc) in der oberen Leiste stoppt alles, was läuft, auch außerhalb der Gruppen. Den Programmer leert es nicht. Weder „Alles stoppen“ noch „Gruppen freigeben“ stoppt die Szenen, die ein hochgezogener [Fader des SHOW](show.md#fader) hält: nur ihn ganz herunterzuziehen.
-- **„Blackout“** (Strg+B) schaltet die Ausgabe auf Schwarz, ohne etwas zu stoppen. Die Köpfe bewegen sich nicht: Pan, Tilt, Zoom, Fokus und die anderen Kanäle, die kein Licht sind, bleiben, wo sie sind.
+- **„Gruppen freigeben“** stoppt die Szenen aller Gruppen; das Quadrat jeder Spalte nur die dieser Gruppe. 10 s lang startet [„Zurückholen, was lief“](directo.md#zurückholen-was-lief) wieder, was „Gruppen freigeben“ gestoppt hat (seine Taste oder ein Pad oder eine SHOW-Taste in „Alle Gruppen“); was in nur einer Gruppe (ihr Quadrat oder ein Pad oder eine SHOW-Taste dieser Gruppe) oder von einer Aktion einer Cue freigegeben wird, lässt sich nicht zurückholen.
+- **„Alles stoppen“** (Esc) in der oberen Leiste stoppt alles, was läuft, auch außerhalb der Gruppen. Den Programmer leert es nicht. Weder „Alles stoppen“ noch „Gruppen freigeben“ stoppt die Szenen, die ein hochgezogener [Fader des SHOW](show.md#fader) hält: nur ihn ganz herunterzuziehen. Es entschärft auch die [Spezialeffekte](directo.md#geschützte-spezialeffekte), und 10 s lang können Sie [zurückholen, was lief](directo.md#zurückholen-was-lief). Mit [„Alles stoppen mit Ausblenden“](directo.md#alles-stoppen-mit-ausblenden) blenden die Funktionen aus, bevor sie stoppen.
+- **„Blackout“** (Strg+B) schaltet die Ausgabe auf Schwarz, ohne etwas zu stoppen. Die Köpfe bewegen sich nicht: Pan, Tilt, Zoom, Fokus und die anderen Kanäle, die kein Licht sind, bleiben, wo sie sind. Er entschärft auch die Spezialeffekte. Um das Licht langsam herunterzunehmen und im Blackout zu enden, nutzen Sie ein [„Ausblenden auf Schwarz“](directo.md#ausblenden-auf-schwarz).
+
+## Sicherheit während der Show
+
+Damit ein Fehler oder ein Ausfall des Computers die Show nicht verdirbt: der [Show-Modus](directo.md#show-modus), die [geschützten Spezialeffekte](directo.md#geschützte-spezialeffekte), die [geparkten Kanäle](directo.md#geparkte-kanäle), der [Show-Stopp](directo.md#show-stopp), [Zurückholen, was lief](directo.md#zurückholen-was-lief), [Alles stoppen mit Ausblenden](directo.md#alles-stoppen-mit-ausblenden) und das [Ausblenden auf Schwarz](directo.md#ausblenden-auf-schwarz). Ihre Einstellungen stehen unter [Optionen › Sicherheit während der Show](opciones.md#sicherheit-während-der-show).
+
+> **Wichtig:** Der Computer darf nie die einzige Sicherheit einer CO2-, Flammen-, Kaltfunken- oder Konfettimaschine sein. Stellen Sie die Maschinen und die DMX-Nodes so ein, dass sie sich bei Verlust des DMX-Signals abschalten (und nicht den letzten Wert halten), sehen Sie einen Not-Aus oder einen Totmannschalter in Hardware vor, wo die Maschine einen braucht, und halten Sie sich an die Vorschriften des Ortes und die Anweisungen des Herstellers. Hängt das Programm oder geht der Computer aus, kann keine Software eine Auslösung abschalten: Das kann nur die Technik.
+
+### Show-Modus
+
+Das **Schild** in der oberen Leiste, gleich nach dem Schloss, schaltet den **Show-Modus** mit einem Klick ein oder aus. Eingeschaltet ist es orange, und die zweite Zeile des Titels beginnt mit „Show-Modus ·“. Das Sperren der SHOW (auch beim Start mit „…und gesperrt“) schaltet ihn von selbst ein; das Entsperren schaltet ihn nicht aus. Bei gesperrter SHOW ist das Schild zu sehen, lässt sich aber nicht anklicken. Es ist eine Einstellung des Computers, nicht der Show.
+
+Mit eingeschaltetem Show-Modus verlangen diese Aktionen, eine Taste 1,5 s gedrückt zu halten („Halten zum Schließen“, „Halten zum Öffnen“ oder „Halten zum Fortfahren“), auch ohne ungespeicherte Änderungen:
+
+- das Programm schließen (das × des Fensters, Alt+F4, die Taskleiste) und ein Update installieren;
+- **Neu** und **Öffnen** (auch Strg+N und Strg+O), die letzten Shows, die Beispiele und die Übungsshow der Anleitung;
+- eine Show aus dem Windows-Explorer öffnen.
+
+Zu frühes Loslassen, **„Abbrechen“** oder Esc brechen ab; Esc stoppt in diesem Fenster nie die Show. Leertaste oder Eingabetaste gedrückt zu halten geht auch (die Tastenwiederholung zählt nicht). Danach kommt bei ungespeicherten Änderungen wie immer „Änderungen speichern?“. Wenn Windows herunterfährt oder Sie sich bei eingeschaltetem Show-Modus abmelden, kann die Frage das Herunterfahren aufhalten: Schließen Sie das Programm vorher.
+
+Wechselt der Laptop im Show-Modus auf den Akku, erscheint auf allen Seiten (auch gesperrt und im Vollbild) ein roter Balken „Akkubetrieb: Schließen Sie das Ladegerät an“, bis das Ladegerät wieder dran ist; bei 20 % oder weniger kommt „Akku bei N %“ dazu. Der Akku wird alle 30 s und bei jeder Energiemeldung von Windows geprüft. Ohne Show-Modus sagt es eine Meldung einmal (und noch einmal, wenn er fast leer ist), und die [Optionen](opciones.md#sicherheit-während-der-show) zeigen es an.
+
+Hat der Windows-Energiesparplan das selektive USB-Energiesparen eingeschaltet, warnt beim Start ein blauer Balken, dass das DMX-Interface stoppen kann, mit **„So schalten Sie es aus“** (öffnet [Selektives USB-Energiesparen](opciones.md#selektives-usb-energiesparen)) und einem ×, das ihn bis zum nächsten Start ausblendet. Das Programm liest diese Windows-Einstellungen nur: Es ändert sie nie.
+
+### Geschützte Spezialeffekte
+
+Ein **geschützter Spezialeffekt** ist ein Fixture, das nicht versehentlich auslösen kann. CO2-, Flammen-, Kaltfunken- und Konfettimaschinen sind es von selbst, und jedes Fixture kann es von Hand werden (siehe [Patch › Geschützte Spezialeffekte](patch.md#geschützte-spezialeffekte)). Sie tragen ein Schild in der Liste und im Plan des Patch.
+
+- **Entschärft** (so startet das Programm immer) senden alle ihre Kanäle 0, egal was läuft.
+- **Scharf geschaltet** gehen sie nur aus **Szenen** (auch Flash), **Cuelists**, **Chasern**, **Sequenzen**, **Superszenen** und den Grundwerten von **FX-Szenen** hinaus. So lösen Sie sie mit einer SHOW-Taste im Flash-Modus (sie löst aus, solange Sie sie halten), einer Kachel unter Live, einem Pad der APC, einem Playback oder dem [Smartphone](remoto.md#sicherheit-auf-dem-smartphone) aus.
+- **Nie**, auch nicht scharf geschaltet, lösen sie aus: der Programmer, Identifizieren, Hervorheben, der Mischer (Full, Flash, Farbe, Strobe), die FX und ihre Makros, Move FX, Colour FX und Plan-Mappings, Curve FX, Skripte und auch kein DMX-Eingang, der zum Ausgang durchgereicht wird. Der Grand Master skaliert sie nicht.
+- Die [Grenzen](patch.md#grenzen) zählen nur während der Auslösung: In Ruhe geht immer 0 hinaus. Invertieren Sie die Kanäle einer Effektmaschine nicht: Ein invertierter Auslösekanal löst nur mit einem Wert aus, der invertiert einschaltet.
+- Ihre Pan- und Tilt-Kanäle (die eines Flammenkopfs) gehen nur scharf geschaltet und aus diesen Funktionen hinaus, ohne Höchstzeit; entschärft auf 0. Alle anderen außer dem Sicherheitskanal lösen aus, und für sie gilt die Höchstzeit (siehe [Patch › Geschützte Spezialeffekte](patch.md#geschützte-spezialeffekte)).
+
+#### Effekte scharf schalten
+
+Die Taste **„Effekte scharf schalten“** (mit einer Flamme) steht in der oberen Leiste neben „Blackout“, nur wenn die Show geschützte Effekte hat, auch bei gesperrter SHOW. Ein Klick schaltet sie scharf, ein weiterer entschärft sie. Scharf geschaltet wird die Taste rot und zeigt die Zeit, bis sie sich von selbst entschärfen („SCHARF · 9:59“), und ihr Rand pulsiert, während einer auslöst. In einem schmaleren Fenster zeigt sie „Scharf schalten“ oder nur die Flamme: Unter 1450 px Breite zeigen „Effekte scharf schalten“, „Blackout“ und „Alles stoppen“ nur ihr Symbol, und unter etwa 1200 px verschwindet die Zahl der laufenden Funktionen, und der Grand Master wird kürzer.
+
+Scharf geschaltet erscheint auf allen Seiten (auch gesperrt und im Vollbild) ein großer roter Balken **„EFFEKTE SCHARF“** mit dem, was auslöst („Löst aus: CO2 1“), oder dem, was auf das Loslassen wartet, und einer Taste **„Entschärfen“**.
+
+Der Pfeil **▾** daneben zeigt, ob sie scharf sind und wie lange es dauert, bis sie sich von selbst entschärfen, **„Lösen gerade aus“**, **„Warten auf das Loslassen“** (lassen Sie seine Szene, seine Taste oder seinen Fader los, auf 0, dann kann er auslösen), **„Letzte Auslösungen“** (Name · Uhrzeit · Sekunden · wie sie endete: losgelassen, bei der Höchstzeit abgeschaltet, entschärft…), **„Protokoll öffnen“** und **„Einstellungen jedes Effekts: Patch“** (diese beiden nicht bei gesperrter SHOW).
+
+Sie lassen sich nicht scharf schalten, wenn kein Fixture geschützt ist, bei eingeschaltetem Blackout („Blackout ist an: Schalten Sie ihn aus, um die Spezialeffekte scharf zu schalten“) und bei eingeschaltetem Show-Stopp. Scharf schalten können Sie sie auch mit einer [SHOW-Taste](show.md#aktionen-einer-taste), einer [Zuordnung](mapeos.md#steuert) oder dem [Smartphone](remoto.md#sicherheit-auf-dem-smartphone).
+
+#### Höchstzeit und Mindestwartezeit
+
+- Eine Auslösung dauert, solange ihre Szene, ihre Taste oder ihr Fader sie gibt, höchstens ihre **Höchstzeit** (Standard: CO2 3 s, Flammen 2 s, Funken 5 s, Konfetti 2 s). Dann wird sie abgeschaltet, auch wenn Sie weiter drücken, und kommt erst wieder, wenn Sie loslassen.
+- Zwischen zwei Auslösungen liegt eine **Mindestwartezeit** (Standard 1 s) ab dem Loslassen. Ein Druck während der Wartezeit löst nicht später aus: Lassen Sie los und drücken Sie erneut.
+- Scharf schalten, während eine Szene oder ein Fader dem Effekt schon einen Wert gibt, löst ihn nicht aus: Er wartet, bis Sie loslassen. Entschärfen, während einer auslöst, schaltet ihn ab, auch wenn Sie sofort wieder scharf schalten (er kommt erst nach dem Loslassen zurück); ein Steuerelement, das nur scharf schaltet, tut nichts, wenn sie schon scharf sind.
+- Der **Sicherheitskanal**, wenn die Maschine einen hat, sendet seine Werte nur, während der Effekt scharf ist und auslöst; sonst 0. Allein löst er die Maschine nie aus.
+- Sendet das Programm keine Frames mehr (weil es sehr beschäftigt ist), schaltet jedes Universum eine Auslösung trotzdem zu ihrer Zeit ab, höchstens 40 ms zu spät.
+
+#### Wann sie entschärft werden
+
+Sie entschärfen sich von selbst:
+
+- mit **Alles stoppen** (Esc, seine Taste, ein Pad, eine SHOW-Taste oder das Smartphone) und mit dem **Blackout** (Strg+B, seine Taste, eine SHOW-Taste, ein Pad oder das Smartphone; nicht dem „Blackout“ eines Kanalzugs des Mischers);
+- mit dem **Show-Stopp**, einem **Ausblenden auf Schwarz** (bei seinem Beginn) und **Zurückholen, was lief**;
+- wenn Sie **eine andere Show** öffnen oder beginnen, und wenn Sie das Programm **schließen**;
+- nach einigen **Minuten ohne Auslösung** (Standard 10: „Unbenutzte Spezialeffekte entschärfen nach“ in den [Optionen](opciones.md#sicherheit-während-der-show)), nie während einer auslöst;
+- wenn der letzte geschützte Effekt entfernt oder nicht mehr geschützt wird, und **von Hand**.
+
+Eine Meldung sagt es („Spezialeffekte entschärft: Alles stoppen“). Sie werden nie scharf gespeichert. Ein SHOW-Fader, der eine Szene mit einem CO2 hält, hält sie nach Esc weiter, aber das CO2 bleibt auf 0, bis Sie den Fader ganz herunterziehen.
+
+#### Das Protokoll der Auslösungen
+
+Jede Sitzung schreibt eine Datei in `%LOCALAPPDATA%\DMXTotalControl\DMX Total Control\effects-log` („Protokoll öffnen“ öffnet den Ordner): jede Auslösung mit ihrer Uhrzeit, der Nummer und dem Namen des Fixtures, wie lange sie dauerte und wie sie endete (losgelassen, bei der Höchstzeit abgeschaltet, entschärft, Show-Stopp, geparkt, entfernt), und wann die Effekte scharf geschaltet und entschärft wurden, und warum.
+
+> **Nicht mit echten Geräten getestet:** Nichts davon wurde mit CO2-, Flammen-, Funken- oder Konfettimaschinen getestet, mit ihren Sicherheitskanälen, mit Art-Net- oder sACN-Nodes oder damit, was sie bei Verlust des DMX-Signals tun. Probieren Sie es mit Ihren Geräten aus, ohne Publikum und mit ungeladener Maschine, bevor Sie es in einer Show einsetzen.
+
+### Geparkte Kanäle
+
+Ein **geparkter** Kanal geht immer mit einem festen Wert hinaus, über den Szenen, dem Programmer, dem Mischer, dem Grand Master und Alles stoppen: der Hazer die ganze Nacht auf 30 %, ein defekter Kopf aus und still. Esc und Blackout entparken ihn nie; beim Blackout gehen seine Intensitäten aus, außer mit „Auch im Blackout“. Geparkt wird im [Patch](patch.md#kanäle-parken) und unter [Programmieren](programar.md#parken). Öffnen Sie eine Show mit geparkten Kanälen, gelten sie sofort, und eine Meldung sagt, welche („2 geparkte Fixtures: HAZER, Spot 3 (Patch)“).
+
+### Show-Stopp
+
+Der **Show-Stopp** ist ein Sicherheitslicht, um die Show anzuhalten und den Leuten Licht zu geben: Über allem setzt er offenes Weiß auf die Lichter, schaltet Stroboskope und Laser dunkel, hält die Köpfe still und entschärft die Spezialeffekte.
+
+Um ihn **auszulösen oder aufzuheben**, drücken Sie **zweimal die Pause-Taste** (innerhalb von 2 s; nicht in einer Show, die sie zuordnet, siehe [Zuordnungen](mapeos.md#tastatur)), oder **halten Sie 1 s lang** eine SHOW-Taste „Show-Stopp (1 s halten)“, ein [zugeordnetes](mapeos.md#steuert) Pad oder eine zugeordnete Taste oder die Hand in der Leiste des [Smartphones](remoto.md#sicherheit-auf-dem-smartphone). Ein kürzerer Druck tut nichts, und ein einziger Druck auf die Pause-Taste warnt nur („Show-Stopp: Erneut Pause drücken, um ihn auszulösen“). Während Sie halten, füllt sich ein oranger Balken „Show-Stopp: weiter halten…“. Ist er an, erscheint auf allen Seiten (auch gesperrt und im Vollbild) ein großer roter Balken **„SHOW-STOPP“** mit **„Halten zum Aufheben“** (eine Sekunde halten). Verliert das Programm die Tastatur, während Sie eine zugeordnete Taste halten (ein anderes Fenster, eine Meldung von Windows), wird sie losgelassen, und nichts ändert sich.
+
+Solange er an ist:
+
+- werden die Spezialeffekte entschärft („…entschärft: Show-Stopp“) und lassen sich nicht scharf schalten („Der Show-Stopp ist an: Heben Sie ihn auf, um die Spezialeffekte scharf zu schalten“);
+- gehen die Lichter (Moving Heads, Scanner, PARs und Washes, LED-Leisten, Blinder und Dimmer) der gewählten Gruppen auf **offenes Weiß** im gewählten Pegel: der Dimmer auf den Pegel, Rot, Grün, Blau und Weiß voll (ohne Dimmer die Farben auf den Pegel), CMY, Amber und UV auf 0, der Shutter offen, das Farbrad auf Weiß oder offen und die eingebauten Programme auf „keine Funktion“;
+- gehen die Stroboskope aus (ihre Intensitäten auf 0, oder alle ihre Kanäle, wenn sie keine haben) und die Laser auf allen Kanälen auf 0 (ein DMX-Laser ist bei 0 aus: Prüfen Sie Ihren);
+- öffnen sich alle Shutter (kein Strobe; ein Strobe-Kanal „langsam bis schnell“ geht auf 0), und das Strobe des Mischers stoppt;
+- bleiben die Moving Heads, wo sie sind (Pan und Tilt, auch die feinen);
+- bleiben Nebel, Hazer, Ventilatoren, Seifenblasen, Schnee, andere Effekte, Gobos, Prismen und Zoom, wie sie sind, und die geschützten Effekte auf 0.
+
+Er gewinnt gegen den Programmer, den Grand Master, den Blackout (der Rest bleibt schwarz) und geparkte Kanäle: Ein aus geparktes Fixture leuchtet auch, und ein geparkter Hazer bleibt geparkt. Die [Grenzen](patch.md#grenzen) gelten weiter (ein invertierter Dimmer, ein Maximum). Welche Fixtures er beleuchtet und mit welchem Pegel, wählen Sie unter [Optionen › Show-Stopp](opciones.md#show-stopp).
+
+- **Alles stoppen** (Esc) während des Show-Stopps stoppt die Funktionen darunter, und der Show-Stopp bleibt.
+- Wenn Sie ihn **aufheben**, ist die Show so, wie ihre Funktionen jetzt spielen (sie liefen darunter weiter), und das Strobe des Mischers kommt zurück. Die Effekte bleiben entschärft: Schalten Sie sie von Hand scharf; ein gehaltenes CO2 muss vorher losgelassen werden.
+- **Neu**, **Öffnen** und das Schließen des Programms heben ihn auf. Er wird nie eingeschaltet gespeichert: Lösen Sie ihn nach einem unerwarteten Beenden oder einem Neustart erneut aus.
+- Das Effektprotokoll der Sitzung schreibt „Show-Stopp an“ und „Show-Stopp aufgehoben“.
+
+> **Nicht mit echten Geräten getestet:** das offene Weiß und die Shutter-Werte echter Fixtures, ob ein Laser bei 0 wirklich dunkel ist, die Pause-Taste echter Tastaturen, die LEDs der APC und das Smartphone über ein echtes WLAN.
+
+### Zurückholen, was lief
+
+Nach **Alles stoppen** (Esc, seine Taste, ein Pad, eine SHOW-Taste oder das Smartphone) oder **„Gruppen freigeben“** (alle Gruppen, nicht nur eine) sagt ein blauer Balken unter der oberen Leiste, was gestoppt wurde („Gestoppt: 4 Szenen und 1 Cuelist · Zurückholen, was lief (Strg+Z)“; „Freigegeben: …“ nach „Gruppen freigeben“), mit der Taste **„Zurückholen“**, einem Streifen, der sich in 10 Sekunden leert, und einem ×, das ihn bis zum nächsten Alles stoppen ausblendet. Er erscheint auch bei gesperrter SHOW. **Strg+Z** tut dasselbe unter Live und in der SHOW (nicht, während Sie sie bearbeiten oder schreiben), und der Balken sagt „(Strg+Z)“ nur, wo es funktioniert. „Zurückholen“ übergeht ein Tippen in seiner ersten halben Sekunde (ein zweites Paniktippen auf Alles stoppen).
+
+Zurück kommen, mit einer Blende von 0,5 s:
+
+- die Szene, die jede Gruppe spielte;
+- die Szenen, die aus SHOW-Tasten, aus Szenen oder aus Playbacks gestartet wurden;
+- die Cuelists, auf dem Cue, auf dem sie waren, mit dem Pegel ihres Playbacks; eine pausierte Cuelist kommt pausiert zurück.
+
+FX und Schritte beginnen ihren Zyklus neu, Funktionen in Beats nutzen ihre eigene Blende, und „Timecode“-Cuelists folgen ihrem Timecode. Nicht zurück kommen: gehaltene Flashs (unter Live, in der SHOW, auf Pads oder in Playbacks), die Szenen, die ein SHOW-Fader hält (sie wurden nie gestoppt), der Programmer, der Mischer, der Grand Master, das Scharfschalten der Effekte, geparkte Kanäle und der Show-Stopp.
+
+Es geht einmal, und eine Meldung sagt, was zurückkam („Zurückgeholt: 4 Szenen und 1 Cuelist“). Ein weiteres Alles stoppen innerhalb der 10 s kommt zum ersten dazu (nicht das zweite Esc während des Ausblendens von „Alles stoppen mit Ausblenden“); „Gruppen freigeben“ hält nur die Gruppen fest, und ein Alles stoppen danach kommt dazu. Inzwischen gelöschte Funktionen werden übersprungen, und eine neue oder geöffnete Show löscht es.
+
+Zurückholen **schaltet die Spezialeffekte nie scharf**: Waren sie scharf (nach „Gruppen freigeben“, das nicht entschärft, oder wenn Sie sie nach Alles stoppen wieder scharf geschaltet haben), entschärft es sie zuerst („Spezialeffekte entschärft: Zurückholen, was lief“). Was mit einem CO2 zurückkommt, wartet, bis Sie loslassen, und bleibt auf 0, auch nach erneutem Scharfschalten.
+
+### Alles stoppen mit Ausblenden
+
+Mit **„Alles stoppen mit Ausblenden“** in den [Optionen](opciones.md#sicherheit-während-der-show) (0 bis 5 s; 0, sofort, wie bisher) blendet Alles stoppen die Funktionen in dieser Zeit aus. Szenen, die SHOW-Fader halten, und geparkte Kanäle bleiben; geschützte Effekte gehen sofort aus (sie werden entschärft). Während des Ausblendens hat die Taste „Alles stoppen“ einen Streifen und sagt „Blendet aus: erneut Esc stoppt sofort“: **Erneut Esc** stoppt alles sofort, auch was Sie während des Ausblendens gestartet haben. Danach können Sie zurückholen, was das erste Esc gestoppt hat; was Sie während des Ausblendens gestartet haben, kommt nicht zurück.
+
+### Ausblenden auf Schwarz
+
+Ein **„Ausblenden auf Schwarz“** (eine [SHOW-Taste](show.md#aktionen-einer-taste) oder eine [Zuordnung](mapeos.md#steuert), mit ihrer Zeit: Standard 3 s) nimmt die Intensitäten am Ausgang in dieser Zeit herunter und schaltet dann den Blackout ein, zum Beispiel am Ende eines Sets. Darunter ist das Licht wieder voll: Schalten Sie den Blackout aus, kommt es zurück.
+
+- Es wirkt über dem Grand Master und auf geparkte Kanäle ohne „Auch im Blackout“.
+- Es berührt keine geparkten Kanäle mit „Auch im Blackout“, kein Pan, kein Tilt und keine anderen Kanäle, die kein Licht sind, und keine geschützten Effekte.
+- Bei seinem Beginn entschärft es die Spezialeffekte.
+- Ein weiterer Druck oder der Blackout beenden es sofort. Bei schon eingeschaltetem Blackout tut es nichts.
+- Während es ausblendet, hat die Taste „Blackout“ einen Streifen und sagt „Ausblenden auf Schwarz: am Ende kommt der Blackout (Blackout jetzt: sofort)“.
+
+> **Nicht mit echten Geräten getestet:** der Show-Modus (Akku, wach gehaltener Computer, USB-Energiesparen), Zurückholen, Alles stoppen mit Ausblenden und Ausblenden auf Schwarz wurden nicht mit echten Laptops, DMX-Interfaces, APC-LEDs oder Effektmaschinen getestet.
 
 ## Mischer
 
@@ -173,7 +301,7 @@ Der Mischer wirkt auf die Ausgabe, über jeder Szene und über den Live-Änderun
 Jeder Kanalzug hat:
 
 - Einen **Dimmer-Fader** mit seinem Prozentwert.
-- **„Voll“**: die Gruppe voll. **„Blackout“**: die Gruppe auf Schwarz.
+- **„Voll“**: die Gruppe voll. **„Blackout“**: die Gruppe auf Schwarz, außer geschützten Spezialeffekten (keine Taste des Mischers schaltet sie aus oder entschärft sie).
 - **„Farbton“** und **„Sättigung“**: tönen die Farbe. **„Farbe zurücksetzen“** entfernt die Tönung.
 - **„Stroboskop“** und sein Tempo, von 0,5 bis 20 Hz.
 - **„Flash“**: voll, solange gedrückt. **„Flash exkl.“**: diese Gruppe voll und der Rest schwarz, solange gedrückt.

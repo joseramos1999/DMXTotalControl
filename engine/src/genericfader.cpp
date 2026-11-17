@@ -336,6 +336,10 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
         quint32 address = fc.addressInUniverse();
         int channelCount = fc.channelCount();
 
+        // DMX Total Control: whether this channel may fire a protected
+        // special effect (never an FX layer, nor one fading out)
+        universe->setWriteMayFire(mayFire() && (flags & (FadeChannel::Modulated | FadeChannel::NoFire)) == 0);
+
         if (address == QLCChannel::invalid())
         {
             qWarning() << "Invalid channel found";
@@ -573,6 +577,8 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
             fc.setCurrent(output);
             fc.setStart(output);
             fc.addFlag(FadeChannel::SetTarget);
+            // DMX Total Control: still an FX: it never fires a special effect
+            fc.addFlag(FadeChannel::NoFire);
         }
         else if ((fc.flags() & FadeChannel::Relative) == 0)
         {

@@ -24,6 +24,8 @@
 #include <QString>
 #include <QList>
 #include <QHash>
+#include <QSet>
+#include <QXmlStreamAttributes>
 
 class Doc;
 
@@ -78,10 +80,13 @@ namespace EffectExchange
      * its groups of scenes.
      * @param virtualConsole (may be nullptr) set to its <VirtualConsole> as
      *        it is, empty when it has none
+     * @param plan (may be nullptr) set to the attributes of each fixture in
+     *        its plan of DMX Total Control, by its ID in that show: the
+     *        icon chosen, the protection of a special effect...
      * @return the Doc, to delete, or nullptr on error
      */
     Doc *loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error,
-                  QByteArray *virtualConsole = nullptr);
+                  QByteArray *virtualConsole = nullptr, QHash<quint32, QXmlStreamAttributes> *plan = nullptr);
 
     /** The longest cycle renderToSteps records (ms), and its most steps */
     constexpr uint MaxRenderCycle = 300000;
@@ -91,10 +96,13 @@ namespace EffectExchange
      * Play function $id offline for one cycle and record what it outputs on
      * its fixtures, every $stepMs, into a new Steps scene. A cycle longer
      * than MaxRenderSteps steps gets longer steps; one longer than
-     * MaxRenderCycle is recorded up to there.
+     * MaxRenderCycle is recorded up to there. DMX Total Control: never the
+     * fixtures $excluded (the protected special effects: steps are scenes,
+     * which fire them once armed); $leftOut: how many of them it moved.
      * @return the ID of the new scene, Function::invalidId() on error
      */
-    quint32 renderToSteps(Doc *doc, quint32 id, uint stepMs, QString *error);
+    quint32 renderToSteps(Doc *doc, quint32 id, uint stepMs, QString *error,
+                          const QSet<quint32> &excluded = QSet<quint32>(), int *leftOut = nullptr);
 
     /** The length of one cycle of a function, in ms (0 for static scenes) */
     uint cycleDuration(Doc *doc, quint32 id);

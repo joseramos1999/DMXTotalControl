@@ -31,9 +31,14 @@
 #include <QElapsedTimer>
 #include <QMutex>
 #include <atomic>
+#include <memory>
 
 #include "inputpatch.h"
 #include "qlcchannel.h"
+
+// DMX Total Control: the output stage (outputlayer.h)
+struct OutputLayer;
+class OutputStage;
 
 class QXmlStreamReader;
 class QLCInputProfile;
@@ -483,10 +488,105 @@ private:
     QMutex m_mixerMutex;
     QElapsedTimer m_mixerClock;
 
+    /*********************************************************************
+     * Output stage (DMX Total Control): the protected special effects, the
+     * parked channels, the show stop and the fade to black, above every
+     * source (outputlayer.h, outputlayer.cpp)
+     *********************************************************************/
+public:
+    /** The output layer of this universe, from its next frame. Null: none */
+    void setOutputLayer(const QSharedPointer<const OutputLayer> &layer);
+    QSharedPointer<const OutputLayer> outputLayer() const;
+
+    /** The last normal frame sent, with the output stage, before the
+     *  pan/tilt swaps (what each channel really sends) */
+    QByteArray finalValues() const;
+    uchar finalValue(int address) const;
+
+    /** The serial of the layer the last frame sent was made with */
+    quint32 sentLayerSerial() const { return m_sentSerial.load(); }
+
+    /** A frame now, sent to every output even if unchanged: by the thread
+     *  of the universe when it runs, else here (offline: only what the
+     *  output stage changes, nothing fires) */
+    void requestFrame();
+
+    /** The frame of the watchdog, when no frame comes: the effects that fire
+     *  are cut at their time, no other byte changes (tests call it offline) */
+    void watchdogFrame(uint elapsedMs);
+
+    /** A patch edit (PatchManager::applyPatch): the frame under way ends
+     *  first, and none starts until unlockFrames(). The faders and the layer
+     *  then move between two frames: none has the layer of before with the
+     *  faders of after (a held CO2 written on its new address, which that
+     *  layer doesn't protect). Not from a frame of this universe */
+    void lockFrames();
+    void unlockFrames();
+
+    /** GenericFader only (thread of the universe): the channel it writes now
+     *  may fire a protected special effect */
+    void setWriteMayFire(bool mayFire) { m_writeMayFire = mayFire; }
+
+    /** Stop all with a fade: every fader of a function fades out in $ms
+     *  (one fading out already too, from where it is), but those of the
+     *  functions in $keep (what a fader of the SHOW holds up, and what it
+     *  plays). Called before the functions stop */
+    void fadeOutFunctionFaders(uint ms, const QSet<quint32> &keep);
+    /** A second Stop all during that fade: the faders of the functions that
+     *  fade out end now (their channels at rest from the next frame), but
+     *  those of $keep. @return how many */
+    int cutFadeOuts(const QSet<quint32> &keep);
+
+signals:
+    /** A protected special effect fired, stopped or was refused
+     *  (OutputLayer::EventKind and EventReason). From the thread of the
+     *  universe */
+    void effectEvent(quint32 universe, quint32 fixture, int kind, int reason, uint durationMs);
+
+private:
+    /** A write to a protected channel from a source that may not fire it */
+    bool writeDenied(int address) const
+    {
+        return m_frameRoles != nullptr && m_frameRoles[address] != 0 && m_writeMayFire == false;
+    }
+    /** The latest layer becomes the one of the frame */
+    void takeFrameLayer();
+    /** base (postGM, or the blackout values) + parks, ramp, show stop and
+     *  gate, then the swaps. $preSwap gets the frame before the swaps */
+    QByteArray composeFrame(bool blackout, const OutputLayer *layer, QByteArray *preSwap = nullptr) const;
+    /** $values with the swapped channels (pan/tilt) sending each other's
+     *  value; a channel protected by $layer never sends one that is not */
+    QByteArray swapped(const QByteArray &values, const OutputLayer *layer) const;
+    /** Steps the output stage and sends the frame (end of processFaders) */
+    void sendFrame(uint elapsedMs);
+    /** Composes with $layer and sends both frames (m_outputMutex held).
+     *  $written gets the normal frame when it changed (universeWritten) */
+    void sendComposedLocked(const OutputLayer *layer, bool forced, QByteArray *written);
+    void watchdog(bool live, uint elapsedMs);
+
+    QSharedPointer<const OutputLayer> m_outputLayer;    // under m_outputLayerMutex
+    mutable QMutex m_outputLayerMutex;                  // (a leaf)
+    QRecursiveMutex m_frameMutex;                       // a whole frame, from its layer to its send (lockFrames)
+    QSharedPointer<const OutputLayer> m_frameLayer;     // the one of this frame (its roles: m_frameRoles); processFaders only
+    const char *m_frameRoles = nullptr;                 // into m_frameLayer->roles; null: nothing protected
+    bool m_writeMayFire = false;
+    QMutex m_outputMutex;                               // the stage, the composition and the dump
+    std::unique_ptr<OutputStage> m_stage;
+    QByteArray m_lastSent[2];                           // normal, blackout (after the swaps)
+    QByteArray m_finalFrame;                            // the normal frame before the swaps
+    mutable QMutex m_finalMutex;                        // (a leaf)
+    std::atomic<bool> m_forceDump { false };
+    std::atomic<quint32> m_sentSerial { 0 };
+    QElapsedTimer m_gateTimer;                          // the clock of the gate, in the thread
+    qint64 m_gateNowMs = 0;                             // offline: the sum of the frames' ms
+    bool m_liveFrame = false;
+
 public:
 
 protected:
-    void processFaders(uint elapsedMs);
+    /** DMX Total Control: $live, a frame of the universe thread (the gate
+     *  counts real time); offline frames count $elapsedMs */
+    void processFaders(uint elapsedMs, bool live = false);
 
     /** DMX writer thread worker method */
     void run() override;

@@ -19,6 +19,7 @@ set(SRC_FILES
     src/singleinstance.cpp src/singleinstance.h
     src/aim.cpp src/aim.h
     src/cpuload.cpp src/cpuload.h
+    src/powerguard.cpp src/powerguard.h
     src/palettemanager.cpp src/palettemanager.h
     src/commandline.cpp src/commandline.h
     src/cuelisteditor.cpp src/cuelisteditor.h
@@ -35,7 +36,10 @@ set(SRC_FILES
     src/gdtfimporter.cpp src/gdtfimporter.h
     src/iomanager.cpp src/iomanager.h
     src/patchmanager.cpp src/patchmanager.h src/patchplan.cpp
-    src/patchimport.cpp src/patchtable.cpp src/patchtable.h src/patchkinds.cpp
+    src/patchimport.cpp src/patchtable.cpp src/patchtable.h src/patchkinds.cpp src/patcheffects.cpp
+    src/safetymanager.cpp src/safetymanager.h src/safetyparks.cpp src/safetyshowstop.cpp src/safetyfade.cpp
+    src/fixturelook.cpp src/fixturelook.h
+    src/liverecall.cpp src/liverecall.h
     src/programmer.cpp src/programmer.h
     src/zone.cpp src/zone.h
     src/zonemanager.cpp src/zonemanager.h
@@ -74,6 +78,10 @@ set(QML_FILES
     qml/components/TimeSpin.qml
     qml/components/LiveTimeBar.qml
     qml/components/VFader.qml
+    qml/components/HoldButton.qml
+    qml/components/HoldDialog.qml
+    qml/components/StatusBanner.qml
+    qml/components/EffectsPopup.qml
     qml/live/LivePage.qml
     qml/live/ZoneColumn.qml
     qml/live/SceneTile.qml
@@ -130,6 +138,7 @@ set(QML_FILES
     qml/patch/ReaddressDialog.qml
     qml/patch/FixtureOptionsDialog.qml
     qml/patch/AimSettingsDialog.qml
+    qml/patch/SpecialEffectDialog.qml
     qml/patch/MatrixDialog.qml
     qml/patch/PatchImportDialog.qml
     qml/patch/PatchGrid.qml
@@ -206,9 +215,10 @@ target_link_libraries(${module_name} PRIVATE
     Qt${QT_MAJOR_VERSION}::GuiPrivate
     qlcplusengine
 )
-# the GDTF-Share password, saved encrypted for the Windows user (DPAPI)
+# the GDTF-Share password, saved encrypted for the Windows user (DPAPI);
+# the power plan, read for its USB selective suspend (PowerGuard)
 if(WIN32)
-    target_link_libraries(${module_name} PRIVATE crypt32)
+    target_link_libraries(${module_name} PRIVATE crypt32 powrprof)
 endif()
 
 # The repository whose GitHub releases the updates come from

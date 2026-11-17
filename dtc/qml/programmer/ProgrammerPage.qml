@@ -131,11 +131,19 @@ Item {
                     font.weight: Font.Bold
                 }
                 Text {
+                    // (DMX Total Control: the values on protected special
+                    // effects are kept to be recorded, never sent; alone,
+                    // they are all it says)
+                    readonly property int held: Core.programmer.heldEffects
+                    readonly property string heldText: qsTr("%n special effect channel(s): recorded, not sent", "", held)
                     text: Core.programmer.blind
                           ? qsTr("Blind: the lights don't show what you program")
+                          : Core.programmer.hasValues && held === Core.programmer.valuesCount
+                          ? heldText + (Core.programmer.fxLayers.length > 0 ? " · " + qsTr("%n FX", "", Core.programmer.fxLayers.length) : "")
                           : Core.programmer.hasValues
                           ? qsTr("%n channel(s) in the programmer — they override the playbacks until you clear them", "", Core.programmer.valuesCount)
                             + (Core.programmer.fxLayers.length > 0 ? " · " + qsTr("%n FX", "", Core.programmer.fxLayers.length) : "")
+                            + (held > 0 ? " · " + heldText : "")
                           : Core.programmer.fxLayers.length > 0
                           ? qsTr("%n FX in the programmer — they play over the scenes until you clear them", "", Core.programmer.fxLayers.length)
                           : qsTr("Select fixtures, set their attributes, then record a scene")
@@ -201,6 +209,22 @@ Item {
                 ToolTip.visible: hovered
                 ToolTip.delay: 500
                 onClicked: Core.programmer.resetSelected()
+            }
+            // the values of the selection, fixed at the output above
+            // everything (Patch unparks them)
+            AppButton {
+                text: page.narrow ? "" : qsTr("Park")
+                iconGlyph: Theme.iconLock
+                enabled: {
+                    Core.programmer.valuesCount
+                    Core.programmer.selection
+                    return Core.safety.canParkProgrammer()
+                }
+                ToolTip.text: (page.narrow ? qsTr("Park") + ": " : "")
+                              + qsTr("Park the values of the selected fixtures at the output, above the scenes, the grand master and Stop all; the programmer lets them go. Patch unparks them (right click)")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+                onClicked: Core.safety.parkProgrammer()
             }
             AppButton {
                 text: page.narrow ? "" : qsTr("Snapshot")

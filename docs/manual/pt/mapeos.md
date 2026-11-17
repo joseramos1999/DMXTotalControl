@@ -39,7 +39,7 @@ Um controle do programa pode ter vários mapeamentos (por exemplo, um pad de um 
 
 ### O que pode ser mapeado
 
-- **Barra superior**: GO, Stop, BeatGO, grand master, Blackout e Parar tudo.
+- **Barra superior**: GO, Stop, BeatGO, grand master, Blackout, Parar tudo e “Armar efeitos”.
 - **Ao vivo**: cada cena, ◀ ▶, Pausar e Liberar grupos do cabeçalho, e em cada grupo o liberar, o anterior, o próximo e o master.
 - **Mixer**: em cada tira, o dimmer, o matiz, a saturação, o strobo e sua velocidade, e os botões Full, Blackout, Flash, Flash excl. e Full excl.
 - **Programar**: as paletas.
@@ -81,6 +81,10 @@ O que o mapeamento faz. Os **botões**:
 | GO do playback selecionado / Voltar do playback selecionado | Como o GO grande e “Voltar” de Playbacks. |
 | Página de playbacks N / próxima / anterior | Muda a página de playbacks. |
 | Liberar todos os playbacks | Como “Liberar tudo”. |
+| Armar os efeitos especiais | Arma ou desarma os [efeitos especiais protegidos](directo.md#efeitos-especiais-protegidos). |
+| Parada de show (manter 1 s) | Mantido por um segundo, ativa ou tira a [parada de show](directo.md#parada-de-show). |
+| Recuperar o que estava tocando | Durante 10 s depois de Parar tudo ou Liberar grupos (em “Todos os grupos”, não em um só), dispara de novo o que eles pararam. |
+| Fade para preto | Desce a luz no seu **Tempo** (3 s por padrão; na lista aparece “Fade para preto — 3 s”) e depois liga o Blackout. |
 
 Os **faders**:
 
@@ -122,6 +126,8 @@ Nos **botões**:
 
 Os botões de playback atuam ao pressionar, exceto o flash, e não têm esta opção.
 
+Em **“Armar os efeitos especiais”**, “Alternar: cada toque liga / desliga” arma ou desarma, “Só ligar” arma, “Só desligar” desarma e “Flash: enquanto pressionado” os deixa armados enquanto você o mantém. **“Parada de show”**, **“Recuperar o que estava tocando”** e **“Fade para preto”** não têm esta opção: a parada de show conta quanto tempo você mantém e quando solta (se a mensagem de soltar se perder, ela muda mesmo assim depois do segundo, e na vez seguinte funciona como sempre); os outros dois atuam ao pressionar. As ações das cues nunca armam os efeitos, nem ativam a parada de show, nem recuperam, nem fazem um fade para preto.
+
 O flash de um playback usa o ataque e a queda desse playback (veja [Propriedades de um playback](playbacks.md#propriedades-de-um-playback)). Com “Ou uma cuelist ou uma cena, onde estiver”, usa os do primeiro playback que a tem; se ela não está em nenhum playback, é na hora. Com “Alternar”, um toque durante a queda o faz subir de novo.
 
 Nos **faders**:
@@ -147,6 +153,8 @@ Para os LEDs dos botões MIDI:
 
 **“Em fade”** (em “Disparar uma cena” e “Cena N de um grupo”): ative **“Cor própria durante o fade”** e o botão mostra essa cor enquanto a cena entra com o fade dela e enquanto sai com o seu. Em uma cuelist, mostra enquanto a cue dela faz o fade. Sem ela, ao entrar o botão fica como “Ligado” e ao sair como “Desligado”. Uma cena em pausa ou esperando fica como “Em pausa”.
 
+Ao aprender um pad de uma Akai APC: **“Armar os efeitos especiais”** acende em vermelho enquanto estão armados e fica apagado senão (vermelho a 100 % na APC mini mk2); **“Parada de show”**, em vermelho enquanto está ativa e em vermelho piscando enquanto você a mantém; **“Recuperar o que estava tocando”**, em amarelo enquanto é possível (pulsando na APC mini mk2 e na APC40 mkII); **“Fade para preto”** acende durante o fade. Os botões de um só LED acendem como sempre (a parada de show pisca enquanto você a mantém). Não foi testado nos controladores.
+
 Os LEDs do controlador se apagam ao fechar o programa, ao apagar um mapeamento ou movê-lo para outro controle, ao abrir outro show ou ao desativar o dispositivo ou o feedback dele.
 
 ### Duplicar e excluir
@@ -155,7 +163,7 @@ Os LEDs do controlador se apagam ao fechar o programa, ao apagar um mapeamento o
 
 ## Teclado
 
-Os mapeamentos de teclado funcionam em qualquer página e têm preferência sobre os atalhos do programa que usem a mesma tecla. Eles não disparam enquanto você digita em um campo de texto (em Programar, enquanto a linha de comando tem o teclado) nem com Ctrl ou Alt pressionados. Os botões do SHOW têm também sua própria tecla, que funciona só na página Show (veja [Show](show.md#opções-de-um-botão)).
+Os mapeamentos de teclado funcionam em qualquer página e têm preferência sobre os atalhos do programa que usem a mesma tecla. Eles não disparam enquanto você digita em um campo de texto (em Programar, enquanto a linha de comando tem o teclado) nem com Ctrl ou Alt pressionados. Os botões do SHOW têm também sua própria tecla, que funciona só na página Show (veja [Show](show.md#opções-de-um-botão)). A tecla **Pause** é a da [parada de show](directo.md#parada-de-show) (pressionada duas vezes) e não pode ser aprendida. Se um show já tinha um mapeamento em Pause, Pause continua fazendo o desse mapeamento e não a parada de show, que continua com um botão do SHOW, um pad ou o celular: ao abri-lo um aviso diz isso uma vez (“Este show tem a tecla Pause mapeada: …”), a linha dele aparece em laranja (“Tecla PAUSE (em vez da parada de show)”) e o editor avisa embaixo da tecla. Exclua-o ou dê outra tecla a ele para ter a parada de show em Pause. Um mapeamento de teclado para “Parada de show” em outra tecla é mantido por 1 s, como um pad (em um notebook sem Pause); se o programa perde o teclado enquanto você a mantém (outra janela, um aviso do Windows), ela é solta e nada muda.
 
 ## Modelos para Akai APC
 

@@ -24,6 +24,8 @@
 #include <QVariant>
 #include <QMap>
 
+#include <functional>
+
 class Doc;
 
 /**
@@ -67,6 +69,16 @@ public:
     /** Every mixer back to neutral */
     Q_INVOKABLE void reset();
 
+    /** DMX Total Control: the protected special effects (CO2, flames...): no
+     *  mixer touches them (the output never lets one fire them) */
+    void setIsProtected(const std::function<bool(quint32)> &isProtected);
+    /** The fixtures protected changed: the mixers leave them out again */
+    void updateProtection();
+    /** DMX Total Control: the show stop: no mixer strobes (their settings
+     *  stay: released, they strobe again) */
+    void setStrobeSuppressed(bool suppressed);
+    bool strobeSuppressed() const { return m_strobeSuppressed; }
+
 signals:
     void mixersChanged();
 
@@ -101,6 +113,8 @@ private:
 private:
     Doc *m_doc;
     QMap<int, State> m_states;
+    std::function<bool(quint32)> m_isProtected;
+    bool m_strobeSuppressed = false;
 };
 
 #endif

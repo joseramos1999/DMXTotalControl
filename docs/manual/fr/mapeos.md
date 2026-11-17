@@ -39,7 +39,7 @@ Un contrôle du programme peut avoir plusieurs mappages (par exemple, un pad d�
 
 ### Ce qui peut être mappé
 
-- **Barre du haut** : GO, Stop, BeatGO, grand master, Blackout et Tout arrêter.
+- **Barre du haut** : GO, Stop, BeatGO, grand master, Blackout, Tout arrêter et « Armer les effets ».
 - **Direct** : chaque scène, ◀ ▶, Pause et Libérer les groupes de l’en-tête, et dans chaque groupe sa libération, précédent, suivant et master.
 - **Mixeur** : sur chaque bande, le dimmer, la teinte, la saturation, le stroboscope et sa vitesse, et les boutons Full, Blackout, Flash, Flash excl. et Full excl.
 - **Programmer** : les palettes.
@@ -81,6 +81,10 @@ Ce que fait le mappage. Les **boutons** :
 | GO du playback sélectionné / Retour du playback sélectionné | Comme le grand GO et « Retour » de Playbacks. |
 | Page de playbacks N / suivante / précédente | Change la page de playbacks. |
 | Libérer tous les playbacks | Comme « Tout libérer ». |
+| Armer les effets spéciaux | Arme ou désarme les [effets spéciaux protégés](directo.md#effets-spéciaux-protégés). |
+| Arrêt du show (maintenir 1 s) | Maintenu une seconde, met ou lève l’[arrêt du show](directo.md#arrêt-du-show). |
+| Ramener ce qui jouait | Pendant 10 s après Tout arrêter ou Libérer les groupes (dans « Tous les groupes », pas dans un seul), relance ce qu’ils ont arrêté. |
+| Fondu au noir | Baisse la lumière pendant sa **Durée** (3 s par défaut ; la liste affiche « Fondu au noir — 3 s »), puis active le Blackout. |
 
 Les **faders** :
 
@@ -122,6 +126,8 @@ Pour les **boutons** :
 
 Les boutons de playback agissent à l’appui, sauf le flash, et n’ont pas cette option.
 
+Sur **« Armer les effets spéciaux »**, « Bascule : chaque appui on / off » arme ou désarme, « Allumer seulement » arme, « Éteindre seulement » désarme et « Flash : tant qu’on appuie » les garde armés tant que vous maintenez. **« Arrêt du show »**, **« Ramener ce qui jouait »** et **« Fondu au noir »** n’ont pas cette option : l’arrêt du show compte combien de temps vous maintenez et quand vous relâchez (si le message de relâchement se perd, il change quand même au bout de la seconde, et la fois suivante fonctionne comme toujours) ; les deux autres agissent à l’appui. Les actions des cues n’arment jamais les effets, ne mettent pas l’arrêt du show, ne ramènent rien et ne font pas de fondu au noir.
+
 Le flash d’un playback utilise l’attaque et la retombée de ce playback (voir [Propriétés d’un playback](playbacks.md#propriétés-dun-playback)). Avec « Ou une cuelist ou une scène, où qu’elle soit », il utilise celles du premier playback qui la contient ; si elle n’est sur aucun playback, c’est immédiat. Avec « Bascule », un appui pendant la retombée le fait remonter.
 
 Pour les **faders** :
@@ -147,6 +153,8 @@ Pour les LED des boutons MIDI :
 
 **« En fondu »** (sur « Lancer une scène » et « Scène N d’un groupe ») : activez **« Couleur propre pendant le fondu »** et le bouton prend cette couleur pendant que la scène entre avec son fondu et pendant qu’elle sort avec le sien. Sur une cuelist, il la prend pendant le fondu de sa cue. Sinon, à l’entrée il s’allume comme « Activé » et à la sortie comme « Désactivé ». Une scène en pause ou en attente s’allume comme « En pause ».
 
+Quand vous apprenez un pad d’une Akai APC : **« Armer les effets spéciaux »** s’allume en rouge tant qu’ils sont armés et reste éteint sinon (rouge à 100 % sur l’APC mini mk2) ; **« Arrêt du show »**, en rouge tant qu’il est en place et en rouge clignotant pendant que vous le maintenez ; **« Ramener ce qui jouait »**, en jaune tant que c’est possible (pulsant sur l’APC mini mk2 et l’APC40 mkII) ; **« Fondu au noir »** s’allume pendant le fondu. Les boutons à une seule LED s’allument comme d’habitude (l’arrêt du show clignote pendant que vous le maintenez). Non testé sur les contrôleurs.
+
 Les LED du contrôleur s’éteignent quand vous fermez le programme, quand vous effacez un mappage ou le déplacez vers un autre contrôle, quand vous ouvrez un autre show ou quand vous désactivez l’appareil ou son feedback.
 
 ### Dupliquer et supprimer
@@ -155,7 +163,7 @@ Les LED du contrôleur s’éteignent quand vous fermez le programme, quand vous
 
 ## Clavier
 
-Les mappages de clavier fonctionnent sur n’importe quelle page et ont la priorité sur les raccourcis du programme qui utilisent la même touche. Ils ne se déclenchent pas pendant que vous tapez dans un champ de texte (dans Programmer, tant que la ligne de commande a le clavier) ni avec Ctrl ou Alt enfoncé. Les boutons du SHOW ont en plus leur propre touche, qui ne fonctionne que sur la page Show (voir [Show](show.md#options-dun-bouton)).
+Les mappages de clavier fonctionnent sur n’importe quelle page et ont la priorité sur les raccourcis du programme qui utilisent la même touche. Ils ne se déclenchent pas pendant que vous tapez dans un champ de texte (dans Programmer, tant que la ligne de commande a le clavier) ni avec Ctrl ou Alt enfoncé. Les boutons du SHOW ont en plus leur propre touche, qui ne fonctionne que sur la page Show (voir [Show](show.md#options-dun-bouton)). La touche **Pause** est celle de l’[arrêt du show](directo.md#arrêt-du-show) (appuyée deux fois) et ne peut pas être apprise. Si un show avait déjà un mappage sur Pause, Pause continue à faire ce que fait ce mappage et non l’arrêt du show, qui reste possible avec un bouton du SHOW, un pad ou le téléphone : à son ouverture un message le dit une fois (« Ce show mappe la touche Pause : … »), sa ligne s’affiche en orange (« Touche PAUSE (à la place de l’arrêt du show) ») et l’éditeur avertit sous la touche. Supprimez-le ou donnez-lui une autre touche pour avoir l’arrêt du show sur Pause. Un mappage de clavier vers « Arrêt du show » sur une autre touche se maintient 1 s, comme un pad (sur un portable sans Pause) ; si le programme perd le clavier pendant que vous la maintenez (une autre fenêtre, un message de Windows), elle est relâchée et rien ne change.
 
 ## Modèles pour Akai APC
 

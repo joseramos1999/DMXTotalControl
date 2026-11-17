@@ -25,11 +25,16 @@
     <nav id="pages"></nav>
     <div id="tools">
       <span id="status" class="dot" title=""></span>
+      <button id="arm" class="tool hidden"><span class="icon">&#xf06d;</span><span id="armLabel"></span></button>
+      <button id="showStop" class="tool icon">&#xf256;</button>
       <button id="blackout" class="tool">BO</button>
       <button id="fullscreen" class="tool icon">&#xf065;</button>
     </div>
   </header>
+  <div id="showStopBanner" class="hidden"><span class="icon">&#xf256;</span><span id="showStopText"></span><button id="showStopRelease"></button></div>
+  <div id="armedBanner" class="hidden"><span id="armedText"></span><button id="disarm"></button></div>
   <main id="surface"></main>
+  <div id="recall" class="hidden"><span class="icon">&#xf0e2;</span><span id="recallText"></span><button id="recallButton"></button><div id="recallBar"></div></div>
 
   <div id="pin" class="overlay hidden">
     <form id="pinForm" class="box">

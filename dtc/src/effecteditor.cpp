@@ -82,6 +82,42 @@ void EffectEditor::setHeldByFader(const std::function<bool(quint32)> &held)
     m_heldByFader = held;
 }
 
+void EffectEditor::setIsProtected(const std::function<bool(quint32)> &isProtected)
+{
+    m_isProtected = isProtected;
+}
+
+QList<quint32> EffectEditor::withoutProtected(const QList<quint32> &fixtures, int *leftOut) const
+{
+    QList<quint32> list;
+    int left = 0;
+    for (quint32 fid : fixtures)
+    {
+        if (m_isProtected && m_isProtected(fid))
+            left++;
+        else
+            list.append(fid);
+    }
+    if (leftOut != nullptr)
+        *leftOut = left;
+    return list;
+}
+
+QSet<quint32> EffectEditor::protectedFixtures() const
+{
+    QSet<quint32> ids;
+    for (Fixture *fxi : m_doc->fixtures())
+        if (m_isProtected && m_isProtected(fxi->id()))
+            ids.insert(fxi->id());
+    return ids;
+}
+
+void EffectEditor::tellLeftOut(int count, bool error)
+{
+    if (count > 0)
+        emit message(tr("%n protected special effect(s) left out of the FX", "", count), error);
+}
+
 void EffectEditor::touch(quint32 id)
 {
     m_doc->setModified();
@@ -832,10 +868,15 @@ QList<quint32> EffectEditor::selectedWithPanTilt() const
 
 int EffectEditor::createMoveFx(const QString &name, int zoneIndex)
 {
-    QList<quint32> fixtures = selectedWithPanTilt();
+    // (DMX Total Control: never a protected special effect, a flame head)
+    int leftOut = 0;
+    QList<quint32> fixtures = withoutProtected(selectedWithPanTilt(), &leftOut);
     if (fixtures.isEmpty())
     {
-        emit message(tr("Select moving heads or scanners in the programmer first"), true);
+        if (leftOut > 0)
+            tellLeftOut(leftOut, true);
+        else
+            emit message(tr("Select moving heads or scanners in the programmer first"), true);
         return -1;
     }
 
@@ -843,7 +884,9 @@ int EffectEditor::createMoveFx(const QString &name, int zoneIndex)
     for (quint32 fid : fixtures)
         efx->addFixture(fid, 0);
     efx->setDuration(4000);
-    return addNew(efx, name, zoneIndex);
+    const int id = addNew(efx, name, zoneIndex);
+    tellLeftOut(leftOut);
+    return id;
 }
 
 void EffectEditor::setMoveFx(quint32 id, const QString &key, const QVariant &value)
@@ -943,12 +986,18 @@ quint32 EffectEditor::makeGroup(const QString &name, const QList<quint32> &fixtu
 
 int EffectEditor::createColourFx(const QString &name, int zoneIndex)
 {
-    QList<quint32> fixtures = m_programmer->selectionIds();
+    // (DMX Total Control: never a protected special effect)
+    int leftOut = 0;
+    QList<quint32> fixtures = withoutProtected(m_programmer->selectionIds(), &leftOut);
     if (fixtures.isEmpty())
     {
-        emit message(tr("Select the fixtures of the effect in the programmer first"), true);
+        if (leftOut > 0)
+            tellLeftOut(leftOut, true);
+        else
+            emit message(tr("Select the fixtures of the effect in the programmer first"), true);
         return -1;
     }
+    tellLeftOut(leftOut);
 
     RGBMatrix *matrix = new RGBMatrix(m_doc);
     int id = addNew(matrix, name, zoneIndex);
@@ -1025,10 +1074,13 @@ void EffectEditor::setColourFx(quint32 id, const QString &key, const QVariant &v
     }
     else if (key == "layout")
     {
-        // the same fixtures, in one row or like the 2D plan
-        QList<quint32> fixtures = groupFixtures(matrix->fixtureGroup());
+        // the same fixtures, in one row or like the 2D plan (DMX Total
+        // Control: without a protected special effect, from an older show)
+        int leftOut = 0;
+        QList<quint32> fixtures = withoutProtected(groupFixtures(matrix->fixtureGroup()), &leftOut);
         if (fixtures.isEmpty())
             return;
+        tellLeftOut(leftOut);
         replaceGroup(id, value.toString() == "plan" ? makePlanGroup(matrix->name(), fixtures)
                                                     : makeGroup(tr("%1 (FX)").arg(matrix->name()), fixtures));
     }
@@ -1074,14 +1126,20 @@ bool EffectEditor::useSelection(quint32 id)
 {
     Function *f = m_doc->function(id);
 
+    // (DMX Total Control: never a protected special effect)
+    int leftOut = 0;
     if (EFX *efx = qobject_cast<EFX *>(f))
     {
-        QList<quint32> fixtures = selectedWithPanTilt();
+        QList<quint32> fixtures = withoutProtected(selectedWithPanTilt(), &leftOut);
         if (fixtures.isEmpty())
         {
-            emit message(tr("The selection has no fixtures with pan/tilt"), true);
+            if (leftOut > 0)
+                tellLeftOut(leftOut, true);
+            else
+                emit message(tr("The selection has no fixtures with pan/tilt"), true);
             return false;
         }
+        tellLeftOut(leftOut);
         // not while the timer goes through its heads: a running effect stops
         // and starts again with the new ones (each with its place in the
         // spread), for whoever played it, at their level. The heads it lets
@@ -1099,7 +1157,8 @@ bool EffectEditor::useSelection(quint32 id)
 
     if (RGBMatrix *matrix = qobject_cast<RGBMatrix *>(f))
     {
-        QList<quint32> fixtures = m_programmer->selectionIds();
+        QList<quint32> fixtures = withoutProtected(m_programmer->selectionIds(), &leftOut);
+        tellLeftOut(leftOut, fixtures.isEmpty());
         if (fixtures.isEmpty())
             return false;
 
@@ -1112,7 +1171,8 @@ bool EffectEditor::useSelection(quint32 id)
 
     if (CurveFX *curve = qobject_cast<CurveFX *>(f))
     {
-        QList<quint32> fixtures = m_programmer->selectionIds();
+        QList<quint32> fixtures = withoutProtected(m_programmer->selectionIds(), &leftOut);
+        tellLeftOut(leftOut, fixtures.isEmpty());
         if (fixtures.isEmpty())
             return false;
         curve->setFixtures(fixtures);
@@ -1316,7 +1376,8 @@ int EffectEditor::createMapping(const QString &name, int zoneIndex)
         return id;
 
     RGBMatrix *matrix = qobject_cast<RGBMatrix *>(m_doc->function(quint32(id)));
-    replaceGroup(quint32(id), makePlanGroup(matrix->name(), m_programmer->selectionIds()));
+    // (DMX Total Control: without the protected special effects, as its first group)
+    replaceGroup(quint32(id), makePlanGroup(matrix->name(), withoutProtected(m_programmer->selectionIds(), nullptr)));
     touch(quint32(id));
     return id;
 }
@@ -1332,12 +1393,18 @@ QStringList EffectEditor::curveWaveforms() const
 
 int EffectEditor::createCurveFx(const QString &name, int zoneIndex)
 {
-    QList<quint32> fixtures = m_programmer->selectionIds();
+    // (DMX Total Control: never a protected special effect)
+    int leftOut = 0;
+    QList<quint32> fixtures = withoutProtected(m_programmer->selectionIds(), &leftOut);
     if (fixtures.isEmpty())
     {
-        emit message(tr("Select the fixtures of the effect in the programmer first"), true);
+        if (leftOut > 0)
+            tellLeftOut(leftOut, true);
+        else
+            emit message(tr("Select the fixtures of the effect in the programmer first"), true);
         return -1;
     }
+    tellLeftOut(leftOut);
 
     // the dimmer by default, or the first intensity channel
     QString feature;
@@ -1578,12 +1645,21 @@ int EffectEditor::importEffect(const QUrl &url, int zoneIndex)
 int EffectEditor::convertToSteps(quint32 id, int stepMs)
 {
     QString error;
-    quint32 steps = EffectExchange::renderToSteps(m_doc, id, uint(qMax(20, stepMs)), &error);
+    // DMX Total Control: steps are scenes: a protected special effect would
+    // fire from them once armed. It is left out
+    int leftOut = 0;
+    quint32 steps = EffectExchange::renderToSteps(m_doc, id, uint(qMax(20, stepMs)), &error,
+                                                  protectedFixtures(), &leftOut);
     if (steps == Function::invalidId())
     {
-        emit message(error.isEmpty() ? tr("Unable to convert the effect") : error, true);
+        if (leftOut > 0)
+            emit message(tr("%n protected special effect(s) left out of the steps", "", leftOut), true);
+        else
+            emit message(error.isEmpty() ? tr("Unable to convert the effect") : error, true);
         return -1;
     }
+    if (leftOut > 0)
+        emit message(tr("%n protected special effect(s) left out of the steps", "", leftOut), false);
     if (EffectExchange::cycleDuration(m_doc, id) > EffectExchange::MaxRenderCycle)
         emit message(tr("The cycle of the effect is longer than %n minute(s): its first %n minute(s) were recorded", "",
                         int(EffectExchange::MaxRenderCycle / 60000)), false);
@@ -1888,9 +1964,16 @@ bool EffectEditor::convertToFx(quint32 id)
     Function *f = m_doc->function(id);
     if (f == nullptr)
         return false;
-    FXScene *fx = FxTools::convert(m_doc, f);
+    // DMX Total Control: the values of an FX scene fire a protected special
+    // effect once armed: they are left out
+    int leftOut = 0;
+    FXScene *fx = FxTools::convert(m_doc, f, protectedFixtures(), &leftOut);
     if (fx == nullptr)
+    {
+        tellLeftOut(leftOut, true);
         return false;
+    }
+    tellLeftOut(leftOut);
 
     // (the groups, playbacks and parents that played it let it go: the
     // effect tried here plays on, converted)

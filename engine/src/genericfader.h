@@ -20,8 +20,9 @@
 #ifndef GENERICFADER
 #define GENERICFADER
 
-// DMX Total Control: forEachChannel
+// DMX Total Control: forEachChannel, mayFire
 #include <functional>
+#include <atomic>
 #include <QObject>
 #include <QList>
 #include <QHash>
@@ -190,6 +191,13 @@ public:
     /** Remove the Crossfade flag from every fader handled by this class */
     void resetCrossfade();
 
+    /** DMX Total Control: the fader may fire a protected special effect (a
+     *  scene, a cuelist or the static values of an FX scene of the show).
+     *  False by default: every other source (the programmer, identify, FX,
+     *  matrices, scripts...) is kept off them by the universe */
+    void setMayFire(bool mayFire) { m_mayFire.store(mayFire, std::memory_order_relaxed); }
+    bool mayFire() const { return m_mayFire.load(std::memory_order_relaxed); }
+
 signals:
     /** Signal emitted when monitoring is enabled.
      *  Data is preGM and includes the whole universe */
@@ -211,6 +219,7 @@ private:
     Universe::BlendMode m_blendMode;
     bool m_monitoring;
     QHash<quint32, QSharedPointer<FadeChannel>> m_channelCache;
+    std::atomic<bool> m_mayFire { false };   // DMX Total Control
 
     FadeChannel &channelFaderLocked(const Doc *doc, Universe *universe, quint32 fixtureID, quint32 channel);
 

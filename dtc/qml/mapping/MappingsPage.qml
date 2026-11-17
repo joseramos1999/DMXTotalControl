@@ -57,6 +57,8 @@ Item {
     function readMappings() {
         fillRows(mappingRows, Core.mapping.mappings.map(m => ({
             mid: m.id, button: !!m.button, sourceText: m.sourceText || "", targetText: m.targetText || "",
+            // (a key mapping on Pause: it has the key, not the show stop)
+            pauseKey: !!m.pauseKey,
             // (on a scene "toggle" is a press in the mode of the top bar, GO or Stop)
             mode: m.mode === "toggle" && ["scene", "sceneIndex"].indexOf(m.target || "scene") >= 0 ? "press" : (m.mode || "") })))
     }
@@ -215,6 +217,7 @@ Item {
                         required property string sourceText
                         required property string targetText
                         required property string mode
+                        required property bool pauseKey
                         width: list.width
                         height: 46
                         radius: Theme.radiusSmall
@@ -232,7 +235,7 @@ Item {
                             Text {
                                 Layout.preferredWidth: parent.width * 0.42
                                 text: mappingRow.sourceText
-                                color: Theme.text
+                                color: mappingRow.pauseKey ? Theme.readable(Theme.warning, Theme.surfaceRaised) : Theme.text
                                 font.family: Theme.monoFamily
                                 font.pixelSize: Theme.fontSmall
                                 elide: Text.ElideRight

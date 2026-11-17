@@ -22,9 +22,13 @@ target_link_libraries(dtc_zone_test PRIVATE
 add_executable(dtc_backend_test
     backend_test.cpp
     ../src/patchmanager.cpp ../src/patchmanager.h ../src/patchplan.cpp
-    ../src/patchimport.cpp ../src/patchtable.cpp ../src/patchtable.h ../src/patchkinds.cpp
+    ../src/patchimport.cpp ../src/patchtable.cpp ../src/patchtable.h ../src/patchkinds.cpp ../src/patcheffects.cpp
+    ../src/safetymanager.cpp ../src/safetymanager.h ../src/safetyparks.cpp ../src/safetyshowstop.cpp ../src/safetyfade.cpp
+    ../src/fixturelook.cpp ../src/fixturelook.h
+    ../src/liverecall.cpp ../src/liverecall.h
     ../src/aim.cpp ../src/aim.h
     ../src/cpuload.cpp ../src/cpuload.h
+    ../src/powerguard.cpp ../src/powerguard.h
     ../src/fixturelibrary.cpp ../src/fixturelibrary.h
     ../src/gdtfshare.cpp ../src/gdtfshare.h
     ../src/gdtfimporter.cpp ../src/gdtfimporter.h
@@ -116,9 +120,9 @@ target_link_libraries(dtc_backend_test PRIVATE
     Qt${QT_MAJOR_VERSION}::Test
     qlcplusengine
 )
-# (GdtfShare: the saved password, DPAPI)
+# (GdtfShare: the saved password, DPAPI; PowerGuard: the power plan)
 if(WIN32)
-    target_link_libraries(dtc_backend_test PRIVATE crypt32)
+    target_link_libraries(dtc_backend_test PRIVATE crypt32 powrprof)
 endif()
 set_target_properties(dtc_backend_test PROPERTIES AUTORCC ON)
 

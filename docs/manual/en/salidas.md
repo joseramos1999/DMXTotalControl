@@ -32,11 +32,12 @@ The connection is remembered for the next time you open the program.
 
 ## DMX levels
 
-**“DMX levels”** shows the 512 channels of a universe just as they leave the program, with everything applied (scenes, programmer, mixer, grand master, limits…):
+**“DMX levels”** shows the 512 channels of a universe just as they leave the program, with everything applied (scenes, programmer, mixer, grand master, limits, parked channels, show stop…); a disarmed protected special effect shows 0 even while its scene plays:
 
 - Choose the **Universe** in the drop-down.
 - Each box has the channel number and its value (0–255). **“Show as %”** switches to percentages.
 - Boxes with a border belong to a fixture. Hover over a channel to see which fixture it belongs to (“Name — channel N”).
+- At the top right of the box, a **padlock** marks a [parked](patch.md#parking-channels) channel (“parked at 77”, “· also in blackout”), a **shield** a [protected special effect](directo.md#protected-special-effects) (“protected special effect (disarmed: 0 goes out)”, “(armed)” or, with a padlock, “parked off”) and a **red hand** what the [show stop](directo.md#show-stop) puts (“show stop”, or “show stop: it stays where it is” on pan and tilt). A channel parked under the show stop says “parked at 77, under the show stop”, and during a fade to black one without “also in blackout” says “parked at 77, going down with the fade to black”. The marks are on the fixture's own channel, before the pan/tilt swap.
 
 > **Tip:** if a fixture does not respond, check here whether its channel moves. If it moves, the problem is in the cable, in the address of the fixture or in the interface; if not, in the patch or in what you are playing.
 

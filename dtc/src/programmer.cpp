@@ -18,6 +18,7 @@
 */
 
 #include <QDebug>
+#include <QScopedValueRollback>
 #include <QSet>
 #include <QUrl>
 #include <QFileInfo>
@@ -31,6 +32,7 @@
 #include "palettemanager.h"
 #include "patchmanager.h"
 #include "channelmodifier.h"
+#include "fixturelook.h"
 #include "aim.h"
 
 #include "genericdmxsource.h"
@@ -276,11 +278,17 @@ QVariantList Programmer::channels() const
 {
     QVariantList list;
     QStringList keys;
+    // DMX Total Control: with other fixtures, the protected special effects
+    // are not set (setValue): their faders would show what they don't get
+    const bool mixed = selectionMixed();
 
     for (quint32 fxid : m_selection)
     {
         Fixture *fxi = m_doc->fixture(fxid);
         if (fxi == nullptr)
+            continue;
+        const bool held = isProtected(fxid);
+        if (held && mixed)
             continue;
 
         const QStringList fixtureKeys = keysOf(fxi);
@@ -332,6 +340,9 @@ QVariantList Programmer::channels() const
             info.insert("capabilities", caps);
             info.insert("tab", featureTab(ch));
             info.insert("fine", ch->controlByte() == QLCChannel::LSB);
+            // DMX Total Control: a protected special effect: recorded, never sent
+            if (held)
+                info.insert("held", true);
             list.append(info);
         }
     }
@@ -348,8 +359,55 @@ int Programmer::valuesCount() const
     return m_values.count();
 }
 
-void Programmer::setValue(quint32 fixtureId, quint32 channel, uchar value)
+int Programmer::heldEffects() const
 {
+    if (m_patch == nullptr)
+        return 0;
+    int count = 0;
+    for (auto it = m_values.cbegin(); it != m_values.cend(); ++it)
+        if (isProtected(it.key().first))
+            count++;
+    return count;
+}
+
+bool Programmer::isProtected(quint32 fixtureId) const
+{
+    return m_patch != nullptr && m_patch->isProtected(fixtureId);
+}
+
+bool Programmer::hasUnprotected(const QList<quint32> &fixtures) const
+{
+    for (quint32 fid : fixtures)
+        if (m_doc->fixture(fid) != nullptr && isProtected(fid) == false)
+            return true;
+    return false;
+}
+
+bool Programmer::selectionMixed() const
+{
+    if (m_mixedValid == false || m_mixedFor != m_selection)
+    {
+        m_mixedFor = m_selection;
+        m_mixed = hasUnprotected(m_selection);
+        m_mixedValid = true;
+    }
+    return m_mixed;
+}
+
+bool Programmer::setValue(quint32 fixtureId, quint32 channel, uchar value)
+{
+    // DMX Total Control: a protected special effect never goes out from the
+    // programmer (the output denies it). Its value is kept only to record a
+    // scene of it: given to it alone (a selection of only protected ones, a
+    // list of only them), or of a look loaded to edit. With other fixtures
+    // it is left out, so nothing records it by mistake (a «1 THRU 24 @ FULL»
+    // into a scene that fires once armed)
+    if (m_protectedRule != ProtectedRule::Keep && isProtected(fixtureId))
+    {
+        if (m_protectedRule == ProtectedRule::Skip || selectionMixed())
+            return false;
+    }
+
     // what each channel of the fixture is, should it change mode
     if (m_valueKeys.contains(fixtureId) == false)
     {
@@ -362,6 +420,7 @@ void Programmer::setValue(quint32 fixtureId, quint32 channel, uchar value)
     // a channel with an FX: the value is its base, the FX sends it
     if (m_blind == false && m_fxChannels.contains(qMakePair(fixtureId, channel)) == false)
         m_source->set(fixtureId, channel, value);
+    return true;
 }
 
 void Programmer::notifyValues()
@@ -383,11 +442,8 @@ void Programmer::setChannelValue(const QString &key, int value)
 
         for (quint32 c = 0; c < fxi->channels(); c++)
         {
-            if (channelKey(fxid, c) == key)
-            {
-                setValue(fxid, c, dmx);
+            if (channelKey(fxid, c) == key && setValue(fxid, c, dmx))
                 changed = true;
-            }
         }
     }
 
@@ -501,9 +557,11 @@ int Programmer::setDimmer(int value)
     for (quint32 fxid : m_selection)
     {
         const QList<quint32> dimmers = dimmerChannels(m_doc->fixture(fxid));
+        // (DMX Total Control: a protected special effect left out isn't counted)
+        bool set = false;
         for (quint32 c : dimmers)
-            setValue(fxid, c, dmx);
-        if (dimmers.isEmpty() == false)
+            set = setValue(fxid, c, dmx) || set;
+        if (set)
             fixtures++;
     }
 
@@ -521,6 +579,10 @@ void Programmer::setColor(const QColor &color)
 
 void Programmer::setColorFor(const QList<quint32> &fixtures, const QColor &color)
 {
+    // DMX Total Control: these fixtures (a group of the SHOW, the selection)
+    // say whether their protected special effects keep a value
+    const QScopedValueRollback<ProtectedRule> rule(m_protectedRule, hasUnprotected(fixtures) ? ProtectedRule::Skip
+                                                                                              : ProtectedRule::Keep);
     for (quint32 fxid : fixtures)
     {
         const QMap<quint32, uchar> values = colourMix(m_doc->fixture(fxid), color);
@@ -1008,19 +1070,8 @@ void Programmer::shiftSelection(int direction)
     emit channelsChanged();
 }
 
-static int capabilityValue(const QLCChannel *ch, const QStringList &words)
-{
-    // the first word has precedence over the others
-    for (const QString &word : words)
-    {
-        for (QLCCapability *cap : ch->capabilities())
-        {
-            if (cap->name().contains(word, Qt::CaseInsensitive))
-                return (cap->min() + cap->max()) / 2;
-        }
-    }
-    return -1;
-}
+// (the one copy: the programmer, the identify of the patch, the show stop)
+using FixtureLook::capabilityValue;
 
 void Programmer::setBeam(bool on)
 {
@@ -1134,17 +1185,22 @@ int Programmer::setChannelFan(const QString &key, int base, int spread, bool fro
     }
 
     int n = int(targets.count());
+    // (DMX Total Control: a protected special effect left out isn't counted)
+    int set = 0;
     for (int i = 0; i < n; i++)
     {
         qreal t = n > 1 ? qreal(i) / qreal(n - 1) : 0.0;
         qreal d = fromCentre ? qAbs(2.0 * t - 1.0) : t;
         int value = qBound(0, qRound(base + spread * d), 255);
+        bool kept = false;
         for (quint32 c : targets.at(i).second)
-            setValue(targets.at(i).first, c, uchar(value));
+            kept = setValue(targets.at(i).first, c, uchar(value)) || kept;
+        if (kept)
+            set++;
     }
     setLastParam(paramOfKey(key));
     notifyValues();
-    return n;
+    return set;
 }
 
 bool Programmer::blind() const
@@ -1201,6 +1257,9 @@ void Programmer::loadValues(const QList<SceneValue> &values, const QHash<QPair<q
 void Programmer::loadState(const QMap<QPair<quint32, quint32>, uchar> &values, const QList<quint32> &fixtures,
                            const QList<FXScene::Layer> &fx, const QHash<QPair<quint32, quint32>, int> &refs)
 {
+    // DMX Total Control: a look loaded to edit keeps its protected special
+    // effects (still never sent): saved again, the scene doesn't lose them
+    const QScopedValueRollback<ProtectedRule> rule(m_protectedRule, ProtectedRule::Keep);
     m_source->unsetAll();
     m_values.clear();
     m_valueKeys.clear();
@@ -1653,6 +1712,10 @@ void Programmer::writePosition(quint32 fixtureId, qreal x, qreal y, bool onlyMov
 
 void Programmer::setPositionFor(const QList<quint32> &fixtures, qreal x, qreal y)
 {
+    // DMX Total Control: these fixtures say whether their protected special
+    // effects keep a value (setColorFor)
+    const QScopedValueRollback<ProtectedRule> rule(m_protectedRule, hasUnprotected(fixtures) ? ProtectedRule::Skip
+                                                                                              : ProtectedRule::Keep);
     for (quint32 fxid : fixtures)
         writePosition(fxid, x, y);
     notifyValues();
@@ -1852,6 +1915,10 @@ int Programmer::snapshotAll(const QString &name, int zoneIndex, int priority)
     {
         if (fxi->universe() >= quint32(universes.count()))
             continue;
+        // DMX Total Control: a protected special effect is not part of a
+        // look (a CO2 that fires now would be a scene that fires it again)
+        if (isProtected(fxi->id()))
+            continue;
         Universe *universe = universes.at(int(fxi->universe()));
         QList<SceneValue> fixtureValues;
         bool lit = false;
@@ -2018,11 +2085,27 @@ QList<quint32> Programmer::selectionWith(const QString &param) const
     QList<quint32> list;
     for (quint32 fid : m_selection)
     {
-        // DMX Total Control: a dimmer FX also dims the colour of the fixtures without a dimmer
-        if (FXScene::hasParam(m_doc->fixture(fid), param))
+        // DMX Total Control: a dimmer FX also dims the colour of the fixtures
+        // without a dimmer. An FX never plays on a protected special effect
+        if (FXScene::hasParam(m_doc->fixture(fid), param) && isProtected(fid) == false)
             list.append(fid);
     }
     return list;
+}
+
+int Programmer::protectedWith(const QString &param) const
+{
+    int count = 0;
+    for (quint32 fid : m_selection)
+        if (isProtected(fid) && FXScene::hasParam(m_doc->fixture(fid), param))
+            count++;
+    return count;
+}
+
+void Programmer::tellLeftOut(int count)
+{
+    if (count > 0)
+        emit message(tr("%n protected special effect(s) left out of the FX", "", count));
 }
 
 int Programmer::fxLayerFor(const QString &param, bool exact) const
@@ -2174,8 +2257,16 @@ int Programmer::fxSets(const QString &param) const
 void Programmer::setFx(const QString &param, const QVariantMap &props)
 {
     const QList<quint32> with = selectionWith(param);
-    if (with.isEmpty() || param.isEmpty())
+    if (param.isEmpty())
         return;
+    // DMX Total Control: the protected special effects of the selection stay
+    // out of it (said when the FX starts or takes fixtures: not at each change)
+    const int leftOut = protectedWith(param);
+    if (with.isEmpty())
+    {
+        tellLeftOut(leftOut);
+        return;
+    }
 
     int index = fxLayerFor(param, false);
     if (index < 0)
@@ -2185,6 +2276,7 @@ void Programmer::setFx(const QString &param, const QVariantMap &props)
         layer.fixtures = with;
         m_fxLayers.append(layer);
         index = m_fxLayers.count() - 1;
+        tellLeftOut(leftOut);
     }
     else
     {
@@ -2195,6 +2287,8 @@ void Programmer::setFx(const QString &param, const QVariantMap &props)
         for (quint32 fid : with)
             if (m_fxLayers.at(index).fixtures.contains(fid) == false)
                 joined.append(fid);
+        if (joined.isEmpty() == false)
+            tellLeftOut(leftOut);
         for (quint32 fid : std::as_const(joined))
         {
             for (int i = 0; i < m_fxLayers.count(); i++)
@@ -2396,9 +2490,12 @@ void Programmer::selectFx(int index)
 QVariantList Programmer::fxPreview(const QString &param, qreal cyclePos) const
 {
     int index = fxLayerFor(param, false);
-    if (index < 0)
+    // (DMX Total Control: the FX scene doesn't have the ones of only
+    // protected special effects: they don't play)
+    const int played = index >= 0 ? m_fxPlayIndex.value(index, -1) : -1;
+    if (played < 0)
         return QVariantList();
-    return m_fx->previewLayer(index, cyclePos);
+    return m_fx->previewLayer(played, cyclePos);
 }
 
 int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases,
@@ -2416,15 +2513,22 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
     // its looks give, and the bases each fixture takes from its place
     QSet<QString> lookParams;
     QList<QPair<quint32, QMap<QString, int>>> lookBases;
+    // DMX Total Control: the protected special effects it leaves out
+    QSet<quint32> leftOut;
     for (int i = 0; i < layers.count(); i++)
     {
         FXScene::Layer layer = layers.at(i);
         // the selected fixtures that have the parameter (DMX Total Control:
-        // a dimmer FX also on the ones without a dimmer)
+        // a dimmer FX also on the ones without a dimmer; never on a
+        // protected special effect)
         QList<quint32> fixtures;
         for (quint32 fid : m_selection)
         {
-            if (FXScene::hasParam(m_doc->fixture(fid), layer.param))
+            if (FXScene::hasParam(m_doc->fixture(fid), layer.param) == false)
+                continue;
+            if (isProtected(fid))
+                leftOut.insert(fid);
+            else
                 fixtures.append(fid);
         }
         if (fixtures.isEmpty())
@@ -2454,6 +2558,7 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
             first = layer.param;
         applied++;
     }
+    tellLeftOut(int(leftOut.count()));
     if (applied == 0)
         return 0;
     // (the last dimmer layer: the next layers may have taken FX out before it)
@@ -2532,11 +2637,33 @@ QList<FxTools::FixtureLook> Programmer::fxFixtureLooks(const FXScene::Layer &lay
 
 void Programmer::syncFx()
 {
+    // DMX Total Control: what plays: the FX without their protected special
+    // effects (a look loaded may have one on a CO2: m_fxLayers keeps it, to
+    // be saved again; an FX left with only them doesn't play)
+    QList<FXScene::Layer> played;
+    m_fxPlayIndex.clear();
+    for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+    {
+        FXScene::Layer copy = layer;
+        for (quint32 fid : layer.fixtures)
+        {
+            if (isProtected(fid))
+            {
+                copy.fixtures.removeAll(fid);
+                copy.own.remove(fid);
+            }
+        }
+        // (no fixtures would be every fixture of the scene)
+        m_fxPlayIndex.append(copy.fixtures.isEmpty() ? -1 : int(played.count()));
+        if (copy.fixtures.isEmpty() == false)
+            played.append(copy);
+    }
+
     // the channels the FX move: the source leaves them to the FX. DMX Total
     // Control: a dimmer FX on a fixture without a dimmer, its emitters (their
     // values are the bases the FX dims)
     QSet<QPair<quint32, quint32>> channels;
-    for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+    for (const FXScene::Layer &layer : std::as_const(played))
     {
         for (quint32 fid : layer.fixtures)
         {
@@ -2564,7 +2691,7 @@ void Programmer::syncFx()
     }
     m_fxChannels = channels;
 
-    const bool play = m_fxLayers.isEmpty() == false && m_blind == false;
+    const bool play = played.isEmpty() == false && m_blind == false;
     // started but not running yet (the timer starts it at its next tick)
     // counts too: it would run on with the layers of before. Stopped first,
     // it doesn't write what follows
@@ -2581,13 +2708,13 @@ void Programmer::syncFx()
         if (it != m_values.constEnd())
             bases.insert(key, it.value());
     }
-    for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+    for (const FXScene::Layer &layer : std::as_const(played))
         for (quint32 fid : layer.fixtures)
             if (fixtures.contains(fid) == false)
                 fixtures.append(fid);
     m_fx->setFixtures(fixtures);
     m_fx->setValues(bases);
-    m_fx->setLayers(m_fxLayers);
+    m_fx->setLayers(played);
 
     if (play && (m_fx->isRunning() == false || m_fx->stopped()))
         m_fx->start(m_doc->masterTimer(), FunctionParent::master());
@@ -2655,56 +2782,8 @@ QColor Programmer::colorFor(const QList<quint32> &fixtures) const
 
 QMap<quint32, uchar> Programmer::openWhite(const Fixture *fxi) const
 {
-    QMap<quint32, uchar> values;
-    if (fxi == nullptr)
-        return values;
-
-    for (quint32 c = 0; c < fxi->channels(); c++)
-    {
-        const QLCChannel *ch = fxi->channel(c);
-        if (ch == nullptr)
-            continue;
-        const bool msb = ch->controlByte() == QLCChannel::MSB;
-        switch (ch->group())
-        {
-            case QLCChannel::Intensity:
-                switch (ch->colour())
-                {
-                    case QLCChannel::NoColour:
-                        values.insert(c, msb ? 255 : 0);
-                        break;
-                    // white: the emitters that make it at full, the others off
-                    case QLCChannel::Red: case QLCChannel::Green: case QLCChannel::Blue: case QLCChannel::White:
-                        values.insert(c, msb ? 255 : 0);
-                        break;
-                    default:
-                        // CMY open, amber, UV, lime... off
-                        values.insert(c, 0);
-                        break;
-                }
-                break;
-            case QLCChannel::Shutter:
-            {
-                if (FXScene::attributeOf(ch) == QLatin1String("iris"))
-                    break;
-                int value = capabilityValue(ch, QStringList() << "open" << "abierto");
-                if (value >= 0 && msb)
-                    values.insert(c, uchar(value));
-                break;
-            }
-            case QLCChannel::Colour:
-            {
-                // the open or white slot of a colour wheel
-                int value = capabilityValue(ch, QStringList() << "open" << "white" << "blanco" << "abierto");
-                if (value >= 0 && msb)
-                    values.insert(c, uchar(value));
-                break;
-            }
-            default:
-                break;
-        }
-    }
-    return values;
+    // (the open white of FixtureLook: Locate, Highlight)
+    return FixtureLook::openWhite(fxi);
 }
 
 void Programmer::locate()
@@ -2774,6 +2853,10 @@ void Programmer::updateHighlight()
         return;
     for (quint32 fxid : std::as_const(m_selection))
     {
+        // DMX Total Control: never a protected special effect (the output
+        // denies it anyway)
+        if (isProtected(fxid))
+            continue;
         const QMap<quint32, uchar> values = openWhite(m_doc->fixture(fxid));
         for (auto it = values.cbegin(); it != values.cend(); ++it)
             m_highlightSource->set(fxid, it.key(), it.value());
@@ -2789,6 +2872,18 @@ void Programmer::slotSelectionChanged()
         m_stepBase.clear();
     }
     updateHighlight();
+}
+
+void Programmer::slotProtectionChanged()
+{
+    m_mixedValid = false;
+    // (a show loading tells it often: nothing here then)
+    if (m_selection.isEmpty() && m_values.isEmpty() && m_fxLayers.isEmpty() && m_highlight == false)
+        return;
+    // the highlight and the FX leave it out (or take it again); the faders
+    // of the selection and what is held change (valuesChanged syncs the FX)
+    updateHighlight();
+    notifyValues();
 }
 
 void Programmer::setStep(int index)
@@ -2863,13 +2958,15 @@ int Programmer::nudgeDimmer(int delta)
     for (quint32 fxid : std::as_const(m_selection))
     {
         const QList<quint32> dimmers = dimmerChannels(m_doc->fixture(fxid));
+        // (DMX Total Control: a protected special effect left out isn't counted)
+        bool set = false;
         for (quint32 c : dimmers)
         {
             auto it = m_values.constFind(qMakePair(fxid, c));
             int now = it != m_values.constEnd() ? int(it.value()) : 0;
-            setValue(fxid, c, uchar(qBound(0, now + delta, 255)));
+            set = setValue(fxid, c, uchar(qBound(0, now + delta, 255))) || set;
         }
-        if (dimmers.isEmpty() == false)
+        if (set)
             fixtures++;
     }
     setLastParam("dimmer");
@@ -2904,6 +3001,10 @@ void Programmer::setPatch(PatchManager *patch)
             dropAim();
     });
     connect(m_patch, &PatchManager::stageShifted, this, &Programmer::shiftAim);
+    // DMX Total Control: the protected special effects (setValue, channels,
+    // the FX, the highlight)
+    connect(m_patch, &PatchManager::protectionChanged, this, &Programmer::slotProtectionChanged);
+    slotProtectionChanged();
 }
 
 void Programmer::shiftAim(qreal dx, qreal dy)
@@ -2925,6 +3026,10 @@ QVariantMap Programmer::aimAt(qreal x, qreal y, qreal z)
     QVariantList aimed, unreachable, guessed, skipped;
     for (quint32 fxid : positionedSelection())
     {
+        // DMX Total Control: a protected special effect (a flame head) with
+        // other fixtures gets no value (setValue): it aims at nothing
+        if (isProtected(fxid) && selectionMixed())
+            continue;
         bool guess = false;
         const AimMount mount = m_patch->aimMount(fxid, &guess);
         // a scanner moves a mirror: not this geometry
@@ -3019,8 +3124,10 @@ void Programmer::writeAim(quint32 fixtureId, qreal pan, qreal tilt)
         const int value = outPan ? panValue : tiltValue;
         const uchar wanted = uchar(outFine ? value & 0xff : value >> 8);
         const uchar given = beforeModifier(fxi->channelModifier(c), wanted);
-        m_aimWritten.insert(qMakePair(fixtureId, c), given);
-        setValue(fixtureId, c, given);
+        // (DMX Total Control: a protected special effect left out is not
+        // part of the aim: the aim would never hold)
+        if (setValue(fixtureId, c, given))
+            m_aimWritten.insert(qMakePair(fixtureId, c), given);
     }
 }
 
@@ -3055,12 +3162,16 @@ void Programmer::setPaletteRefs(const QHash<QPair<quint32, quint32>, int> &refs)
 
 void Programmer::applyPaletteValues(const QHash<quint32, QMap<quint32, uchar>> &values, int paletteId)
 {
+    // DMX Total Control: the fixtures it goes on (a palette «All» on a group,
+    // the selection) say whether their protected special effects keep a value
+    const QScopedValueRollback<ProtectedRule> rule(m_protectedRule, hasUnprotected(values.keys()) ? ProtectedRule::Skip
+                                                                                                 : ProtectedRule::Keep);
     for (auto f = values.cbegin(); f != values.cend(); ++f)
     {
         for (auto it = f.value().cbegin(); it != f.value().cend(); ++it)
         {
-            setValue(f.key(), it.key(), it.value());
-            m_paletteRefs.insert(qMakePair(f.key(), it.key()), paletteId);
+            if (setValue(f.key(), it.key(), it.value()))
+                m_paletteRefs.insert(qMakePair(f.key(), it.key()), paletteId);
         }
     }
     notifyValues();
@@ -3091,6 +3202,10 @@ void Programmer::setPaletteValue(quint32 fixtureId, quint32 channel, uchar value
 {
     const QPair<quint32, quint32> key(fixtureId, channel);
     int paletteId = m_paletteRefs.value(key, -1);
+    // (DMX Total Control: a value the programmer has: a protected special
+    // effect keeps it)
+    const QScopedValueRollback<ProtectedRule> rule(m_protectedRule, m_values.contains(key) ? ProtectedRule::Keep
+                                                                                           : m_protectedRule);
     setValue(fixtureId, channel, value);
     if (paletteId >= 0)
         m_paletteRefs.insert(key, paletteId);

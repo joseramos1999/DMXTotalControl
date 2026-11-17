@@ -44,7 +44,10 @@ const char *const kKinds[] = {
  * "wholes": a word of its own ("par", not "parade"); "anywhere": inside a
  * word too ("co2" in "MEGACO2JET", but not the end of "FOCO2" or "FOCO21":
  * a "co2" glued to letters on its left needs letters on its right). Some
- * starts leave out a longer common word ("Sparkle", "Snowball", "Firefly") */
+ * starts leave out a longer common word ("Sparkle", "Snowball", "Firefly");
+ * some short words are only words of their own ("PIRO 1", "FEU 2" are
+ * pyro, a flame; "Piroulette", "Piroetta" are not; nor "FEUX", "plein
+ * feu": the lights of a French stage) */
 struct KindWords
 {
     const char *kind;
@@ -54,7 +57,7 @@ struct KindWords
 };
 const KindWords kKindWords[] = {
     { "co2", "cryo", "", "(?<![a-z])co2|co2(?=[a-z])" },
-    { "flame", "flame|flamme|fiamm|fire(?!fly|ball| ?exit)|fuego|feuer|pyro", "llamas?|fogo|chamas?", "" },
+    { "flame", "flame|flamme|fiamm|fire(?!fly|ball| ?exit)|fuego|feuer|pyro|pirotec", "llamas?|fogo|chamas?|(?<!plein[ _-])feu|piros?", "" },
     { "spark", "spark(?!l)|chispa|etincel|scintill|funken|faisc", "", "" },
     { "confetti", "confet|konfet|streamer|serpentin|coriandol", "", "" },
     { "bubbles", "bubbl|burbuj|bolha|seifenblase", "bolle|bulles?", "" },
@@ -195,6 +198,11 @@ QString PatchManager::kindFromWords(const QString &text)
     return wordsKind(text);
 }
 
+QString PatchManager::nameWords(const QString &text)
+{
+    return wordsText(text);
+}
+
 QString PatchManager::fixtureKind(const QString &manufacturer, const QString &model, const QString &type,
                                   const QString &name, const QString &icon)
 {
@@ -296,22 +304,22 @@ void PatchManager::setFixtureIcon(const QVariantList &ids, const QString &kind)
     const bool automatic = kind.isEmpty() || kind == QLatin1String("auto");
     if (automatic == false && fixtureKinds().contains(kind) == false)
         return;
-    bool changed = false;
+    QList<quint32> changed;
     for (const QVariant &v : ids)
     {
         const quint32 id = v.toUInt();
         if (m_doc->fixture(id) == nullptr)
             continue;
-        if (automatic)
-            changed = m_icons.remove(id) > 0 || changed;
-        else if (m_icons.value(id) != kind)
-        {
+        if (automatic ? m_icons.remove(id) > 0 : m_icons.value(id) != kind)
+            changed.append(id);
+        if (automatic == false)
             m_icons.insert(id, kind);
-            changed = true;
-        }
     }
-    if (changed == false)
+    if (changed.isEmpty())
         return;
+    // the icon of a CO2 jet makes it a protected special effect (back to
+    // automatic, it stays protected)
+    recheckKinds(changed);
     m_doc->setModified();
     notifyFixtures();
 }

@@ -2,9 +2,9 @@
 
 ![La pagina Opzioni](../img/opciones.png)
 
-**Opzioni** (F9) raccoglie le impostazioni del programma. A sinistra ci sono le impostazioni generali, l'avvio, il blocco, il salvataggio automatico, la riproduzione e l'audio; a destra, il controllo remoto, la libreria di fixture, gli aggiornamenti, l'aiuto e «Informazioni».
+**Opzioni** (F9) raccoglie le impostazioni del programma. A sinistra ci sono le impostazioni generali, l'avvio, il blocco, la sicurezza durante lo show, il salvataggio automatico, la riproduzione e l'audio; a destra, il controllo remoto, la libreria di fixture, gli aggiornamenti, l'aiuto e «Informazioni».
 
-Le impostazioni di questa pagina sono del computer, non dello show: valgono per tutti gli show che apri.
+Le impostazioni di questa pagina sono del computer, non dello show: valgono per tutti gli show che apri. Solo l'arresto dello show (in [Sicurezza durante lo show](opciones.md#arresto-dello-show)) si salva con lo show.
 
 ## Generale
 
@@ -34,6 +34,40 @@ Il blocco evita che qualcosa cambi per errore durante lo show. Live e lo SHOW co
 4. Premi **«Blocca»**.
 
 Le pagine bloccate hanno un lucchetto nella barra laterale. Quando ne apri una, viene chiesta la password (se c'è) e si sblocca tutto. Per sbloccare, premi il lucchetto della barra superiore. **«Rimuovi la password»** si trova nella stessa finestra, al momento del blocco.
+
+## Sicurezza durante lo show
+
+Ciò che protegge lo show durante il live (vedi [Sicurezza durante lo show](directo.md#sicurezza-durante-lo-show)):
+
+- **Tenere sveglio il computer** (attivo per impostazione predefinita): mentre il programma è aperto, Windows non sospende il computer né spegne lo schermo. Quando chiudi il programma, o disattivi questa opzione, Windows torna a farlo come sempre. Non cambia niente nelle impostazioni di Windows.
+- **Modalità show** (disattivata per impostazione predefinita): chiudere il programma o aprire un altro show chiede di tenere premuto un tasto. Bloccare lo SHOW la attiva; sbloccarlo non la disattiva. Anche lo scudo della barra superiore la attiva e la disattiva (vedi [Modalità show](directo.md#modalità-show)).
+- **Ferma tutto con dissolvenza**: da 0 a 5 s (0 per impostazione predefinita: subito, come sempre). Le funzioni scendono in quel tempo; Esc due volte, subito. Per 10 secondi, Ctrl+Z recupera ciò che ha fermato (vedi [Ferma tutto con dissolvenza](directo.md#ferma-tutto-con-dissolvenza)).
+- **Disarma gli effetti non usati dopo**: da 0 a 120 minuti senza attivazioni (10 per impostazione predefinita; 0, «Mai»). Mai mentre uno si attiva (vedi [Effetti speciali protetti](directo.md#effetti-speciali-protetti)).
+- **A batteria** e **La sospensione selettiva USB è attiva** compaiono solo quando succede. La prima dice quanta batteria resta; la seconda ha **«Come disattivarla»**, che apre la sezione [Sospensione selettiva USB](opciones.md#sospensione-selettiva-usb), più sotto.
+
+### Arresto dello show
+
+Cosa illumina l'[arresto dello show](directo.md#arresto-dello-show) e a che livello. Questo sì si salva con lo show, nella sua sezione di DMX Total Control (QLC+ non lo legge).
+
+- **Fixture**: **«Tutte le luci»** (predefinito) o **«Questi gruppi…»**, che apre l'elenco dei gruppi di fixture dello show per spuntarli («Gruppi che l’arresto dello show illumina»). Senza nessuno spuntato, tutte le luci. Un gruppo eliminato si toglie da solo. Dei gruppi scelti si illuminano solo le luci: mai il loro fumo, i loro hazer, i loro strobo e i loro laser.
+- **Livello**: da 0 a 100 % (100 per impostazione predefinita).
+
+Si illuminano le teste mobili, gli scanner, i PAR e i wash, le barre LED, i blinder e i dimmer. Un dimmer generico (Generic › Generic Dimmer) solo quando il suo nome dice che è una luce (PAR, FRESNEL, DIMMER, BLINDER, PROIETTORE, SAGOMATORE, FARO, LUCE, CONTRA, SPOT, PC, SALA, PLATEA…) o la sua icona nella pianta è quella di una luce. Quelli che si chiamano VIDEO, TRIGGER, RELÈ, MOTORE, SCHERMO, KABUKI, SIPARIO… restano come sono, anche dentro un gruppo scelto; un PIRO… è un effetto speciale protetto e si spegne. Per illuminarne uno, dagli un'icona di luce in Patch › «Aspetto» › «Icona». I dimmer della libreria si illuminano come sempre.
+
+<a id="usb-selective-suspend"></a>
+
+### Sospensione selettiva USB
+
+Windows può sospendere una porta USB che gli sembra inattiva per risparmiare energia, e con essa l'interfaccia DMX: l'uscita si ferma in pieno show. È un'impostazione della combinazione per il risparmio di energia di Windows. Il programma la legge soltanto all'avvio (e lo avvisa con una barra blu e in questa pagina): non la cambia mai. Per disattivarla:
+
+1. Apri il **Pannello di controllo** › **Hardware e suoni** › **Opzioni risparmio energia**.
+2. Accanto alla combinazione che usi, fai clic su **«Modifica impostazioni combinazione»** e poi su **«Cambia impostazioni avanzate risparmio energia»**.
+3. Apri **«Impostazioni USB»** › **«Impostazione sospensione selettiva USB»** e scegli **«Disattivato»** per **«Alimentazione a batteria»** e per **«Alimentazione da rete»** (senza batteria c'è un solo valore).
+4. Fai clic su **«OK»**.
+
+Se l'interfaccia continua a fermarsi, apri **Gestione dispositivi** e, nelle proprietà di ogni **«Hub principale USB»**, nella scheda **«Risparmio energia»**, togli la spunta da **«Consenti al computer di spegnere il dispositivo per risparmiare energia»**. I nomi possono cambiare un po' secondo la versione di Windows.
+
+> **Non provato con apparecchi reali:** i cambi di batteria e di alimentazione, la percentuale della batteria, l'effetto reale di tenere sveglio il computer e la lettura della sospensione selettiva USB.
 
 ## Salvataggio automatico
 

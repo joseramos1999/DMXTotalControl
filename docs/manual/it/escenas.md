@@ -110,6 +110,8 @@ In alto si vede il colore reale di ogni testa durante la riproduzione (premi «P
 
 Un **mapping sulla pianta 2D** è un Colour FX che nasce già con la disposizione della pianta: l'effetto, il testo o l'immagine si posizionano sul palco così come sono le fixture.
 
+I Colour FX, i mapping sulla pianta 2D, i Curve FX, i Move FX, «Usa la selezione del programmatore», «Converti in FX» e «Converti in passi» lasciano fuori gli [effetti speciali protetti](programar.md#effetti-speciali-protetti), e un avviso lo dice («1 effetto speciale protetto resta fuori dall'FX»). Con solo effetti protetti selezionati, non si crea niente.
+
 ### Move FX e Curve FX
 
 Sono effetti del modulo precedente: i **Move FX** muovono pan/tilt con una forma e i **Curve FX** danno un'onda (sinusoide, triangolo, rampe, quadra, casuale, strobo…) ai canali. Li troverai in show vecchi o in show di QLC+; non si creano più da «Nuova».
@@ -436,7 +438,7 @@ Seleziona una cue e apri **«Dettagli della cue»** › **«Collegamento e azion
 - **«Rilascia un gruppo»** (o tutti) e **«Rilascia tutti i playback»**.
 - **«Imposta il BPM»**, da 20 a 300.
 
-Ogni riga si modifica lì; la **×** la toglie. Le azioni si eseguono in ordine quando la cue parte con GO, Segui, Attendi o «Vai alla cue», anche la prima cue quando si avvia la cuelist. Non si eseguono con BACK, quando una modifica riapplica la cue né quando una super scena avvia la cuelist a metà.
+Ogni riga si modifica lì; la **×** la toglie. Le azioni si eseguono in ordine quando la cue parte con GO, Segui, Attendi o «Vai alla cue», anche la prima cue quando si avvia la cuelist. Non si eseguono con BACK, quando una modifica riapplica la cue né quando una super scena avvia la cuelist a metà. Nessuna azione arma gli effetti speciali, attiva l'arresto dello show, recupera ciò che suonava o fa una dissolvenza al nero.
 
 - La cuelist stessa non compare: a questo serve il collegamento.
 - Un'azione su una scena o cuelist eliminata mostra «(eliminata)» e non fa nulla.
@@ -498,6 +500,8 @@ Sotto ogni cuelist, la finestra avvisa di ciò che non passa:
 - «Rilasciata dal GO di un'altra cuelist»: quelle liste vanno in un frame «Cuelist (una alla volta)», dove avviarne una ferma le altre.
 
 Una cuelist che ha già la sua lista di cue nella Console virtuale (uno show di QLC+ di cui hai convertito i passi in cuelist) non ne riceve un'altra: quella di prima la riavvia. Prova la copia in QLC+ prima di usarla dal vivo: QLC+ fa le dissolvenze a modo suo.
+
+In alto, la finestra avvisa anche di ciò che QLC+ non fa con questo show: «2 effetti speciali protetti: QLC+ non li arma né ne limita il tempo», con «Attiva effetti speciali protetti: …» sotto ogni cuelist che ne attiva uno, e «2 fixture parcheggiate: QLC+ non parcheggia i canali». La copia tiene i valori degli effetti protetti nelle scene e nei passi, ma QLC+ li attiva da qualsiasi parte, senza armare e senza tempo massimo (vedi [Effetti speciali protetti](patch.md#effetti-speciali-protetti)).
 
 ### Cue list di QLC+
 

@@ -109,10 +109,11 @@ bool InputOutputMap::setBlackout(bool blackout)
                 op->setBlackout(blackout);
         }
 
-        // DMX Total Control: with the swapped channels (pan/tilt)
-        const QByteArray values = universe->outputValues(false);
-        const QByteArray postGM(values.constData(), values.size());
-        universe->dumpOutput(postGM, true);
+        // DMX Total Control: the frame goes out from the thread of the
+        // universe, the only one that sends (from here it raced a frame of
+        // that thread, and could send a special effect its gate had cut);
+        // offline, here. With the swaps and the output stage
+        universe->requestFrame();
     }
 
     emit blackoutChanged(m_blackout);
@@ -166,6 +167,9 @@ bool InputOutputMap::addUniverse(quint32 id)
             {
                 uni = new Universe(universesCount(), m_grandMaster);
                 connect(uni, SIGNAL(universeWritten(quint32,QByteArray)), this, SIGNAL(universeWritten(quint32,QByteArray)));
+                // DMX Total Control: the protected special effects
+                connect(uni, SIGNAL(effectEvent(quint32,quint32,int,int,uint)),
+                        this, SIGNAL(effectEvent(quint32,quint32,int,int,uint)));
                 m_universeArray.append(uni);
             }
         }
@@ -173,6 +177,9 @@ bool InputOutputMap::addUniverse(quint32 id)
         // (DMX Total Control: the timer ticks it, slotMasterTimerTick)
         uni = new Universe(id, m_grandMaster);
         connect(uni, SIGNAL(universeWritten(quint32,QByteArray)), this, SIGNAL(universeWritten(quint32,QByteArray)));
+        // DMX Total Control: the protected special effects
+        connect(uni, SIGNAL(effectEvent(quint32,quint32,int,int,uint)),
+                this, SIGNAL(effectEvent(quint32,quint32,int,int,uint)));
         m_universeArray.append(uni);
     }
 

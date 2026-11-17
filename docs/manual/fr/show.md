@@ -86,19 +86,23 @@ Le moyen le plus rapide de remplir un tableau est de **faire glisser des scènes
 | **Une palette** | Applique la palette aux fixtures avec lesquels elle a été enregistrée (« Ses propres fixtures ») ou à un groupe de fixtures, comme une modification en direct du programmeur : elle passe par-dessus les scènes jusqu’à ce que vous appuyiez à nouveau. |
 | **GO de cuelist** / **Retour de cuelist** / **Libérer une cuelist** | Sur la cuelist que vous choisissez dans **Cuelist**. |
 | **Aller à une cue…** | Saute à la **Cue** que vous choisissez dans cette cuelist. |
+| **Armer les effets** | Arme ou désarme les [effets spéciaux protégés](directo.md#effets-spéciaux-protégés). Allumé tant qu’ils sont armés. Par défaut, rouge avec une flamme. |
+| **Arrêt du show (maintenir 1 s)** | Maintenez-le une seconde pour mettre l’[arrêt du show](directo.md#arrêt-du-show), et de nouveau pour le lever ; pendant que vous le maintenez, une bande se remplit le long de son bord inférieur. Allumé tant qu’il est en place. Par défaut, jaune avec une main. |
+| **Ramener ce qui jouait** | Pendant 10 s après « Tout arrêter » ou « Libérer les groupes » (tous les groupes, pas un seul), relance ce qu’ils ont arrêté ([Ramener ce qui jouait](directo.md#ramener-ce-qui-jouait)). Allumé tant que c’est possible. Avec une flèche d’annulation. |
+| **Fondu au noir** | Baisse la lumière pendant sa **Durée** (de 0,1 à 60 s ; 3 s par défaut), puis active le Blackout ([Fondu au noir](directo.md#fondu-au-noir)). Allumé, avec une bande, pendant le fondu. Avec une lune. |
 
 Un bouton apporté d’une autre page avec Alt+clic affiche « Un contrôle sur une autre page » et, en dessous, ce qu’il fait (« Fait : … »).
 
-**Clic droit** sur un bouton : il arrête ce qu’il lance, même avec **GO** dans la barre du haut (avec GO, appuyer sur une scène qui joue ne l’arrête pas). Sa scène s’arrête ; les boutons suivante, précédente et libérer libèrent leur groupe ; ceux d’une cuelist ou d’un playback le libèrent ; celui d’une palette l’éteint. Une scène qu’un fader monté retient continue : seul son fader l’arrête. Les autres (blackout, tout arrêter, tap, BeatGO) ne font rien. Sur un écran tactile, utilisez **Stop** dans la barre du haut.
+**Clic droit** sur un bouton : il arrête ce qu’il lance, même avec **GO** dans la barre du haut (avec GO, appuyer sur une scène qui joue ne l’arrête pas). Sa scène s’arrête ; les boutons suivante, précédente et libérer libèrent leur groupe ; ceux d’une cuelist ou d’un playback le libèrent ; celui d’une palette l’éteint. Une scène qu’un fader monté retient continue : seul son fader l’arrête. Celui d’« Armer les effets » les désarme. Les autres (blackout, tout arrêter, tap, BeatGO, arrêt du show, ramener et fondu au noir) ne font rien. Sur un écran tactile, utilisez **Stop** dans la barre du haut.
 
 ### Options d’un bouton
 
 - **Étiquette** : son texte. Vide (« Automatique »), elle affiche le nom de la scène, de la palette ou de l’action.
-- **Comportement** (scène, blackout et palette) : **« Bascule : on / off »** ou **« Flash : tant qu’on appuie »**. Les boutons flash portent un éclair dans le coin. Sur une scène, à la place de « Bascule » s’affiche **« Appuyer : selon GO / Stop »** : il la lance ou l’arrête selon **GO** et **Stop** de la barre du haut.
-- **Touche du clavier** : une touche du clavier qui l’actionne tant que vous êtes sur la page Show. La lettre s’affiche dans le coin du bouton.
+- **Comportement** (scène, blackout et palette) : **« Bascule : on / off »** ou **« Flash : tant qu’on appuie »**. Les boutons flash portent un éclair dans le coin. Sur une scène, à la place de « Bascule » s’affiche **« Appuyer : selon GO / Stop »** : il la lance ou l’arrête selon **GO** et **Stop** de la barre du haut. Sur « Armer les effets » : **« Bascule : armer / désarmer »**, **« Armer »** ou **« Désarmer »** (celui-ci s’appelle « Désarmer les effets » et porte l’icône d’arrêt).
+- **Touche du clavier** : une touche du clavier qui l’actionne tant que vous êtes sur la page Show. La lettre s’affiche dans le coin du bouton. Sur un bouton « Arrêt du show », maintenez la touche une seconde.
 - **Couleur**, **Icône** et **Image** de fond (l’image est atténuée tant que le bouton est éteint).
 
-Un bouton allumé se remplit de sa couleur.
+Sa couleur est une bande en haut (le cinquième du bouton) ; allumé, il se remplit entièrement de sa couleur. Les couleurs sont vives et faciles à distinguer, aussi sur le téléphone.
 
 ### Déplacer et retirer
 
@@ -147,7 +151,7 @@ Pour les tourner, faites glisser autour du centre avec la souris ou le doigt, ou
 - **Roue de couleur** : touchez la roue pour donner teinte et saturation (blanc au centre) aux fixtures de la section, ou appuyez sur l’un des échantillons du bas.
 - **Grille XY (pan et tilt)** : faites glisser le point pour bouger les lyres. **« Centre »** les ramène au centre.
 
-Les deux agissent comme une modification en direct du programmeur : elles passent par-dessus les scènes jusqu’à ce que vous appuyiez sur **« Libérer »**, et les scènes rendent alors la couleur ou la position.
+Les deux agissent comme une modification en direct du programmeur : elles passent par-dessus les scènes jusqu’à ce que vous appuyiez sur **« Libérer »**, et les scènes rendent alors la couleur ou la position. Comme le programmeur, elles laissent de côté les [effets spéciaux protégés](programar.md#effets-spéciaux-protégés) d’un groupe mélangé ; sur un groupe qui n’a qu’eux, les valeurs restent dans le programmeur, mais ne sortent pas. Les palettes « Tout » sur un groupe font de même.
 
 ## Groupes et mixeur
 
@@ -183,14 +187,14 @@ En mode édition, déposez une scène sur une bande pour la mettre sur ce playba
 
 ## Envoyer n’importe quel contrôle au SHOW
 
-**Alt+clic** sur presque n’importe quel contrôle du programme le copie sur la page du SHOW que vous avez ouverte : une scène de Direct, le master d’un groupe, un bouton du mixeur, le grand master, le blackout, une palette de Programmer, les boutons et le fader d’un playback… Le programme l’indique par « Ajouté au SHOW, page « … » ».
+**Alt+clic** sur presque n’importe quel contrôle du programme le copie sur la page du SHOW que vous avez ouverte : une scène de Direct, le master d’un groupe, un bouton du mixeur, le grand master, le blackout, « Armer les effets », une palette de Programmer, les boutons et le fader d’un playback… Le programme l’indique par « Ajouté au SHOW, page « … » ».
 
 Le nouveau contrôle va dans la première cellule libre d’un tableau de boutons ou de faders de cette page. S’il n’y en a aucune, une section vide en devient une (avec le titre « Tactile »), ou la dernière section est divisée.
 
 ## Plein écran et verrouillage
 
 - **« Plein écran »** (F11) et **« Quitter le plein écran »**.
-- **« Verrouiller »** : masque la barre latérale et ne laisse que le SHOW, sans modification ni navigation. Pour sortir, **maintenez « Déverrouiller » enfoncé** (une barre se remplit sous le bouton). S’il y a un mot de passe de verrouillage, il est demandé.
+- **« Verrouiller »** : masque la barre latérale et ne laisse que le SHOW, sans modification ni navigation. Pour sortir, **maintenez « Déverrouiller » enfoncé** (une barre se remplit sous le bouton). S’il y a un mot de passe de verrouillage, il est demandé. Verrouiller active aussi le [Mode show](directo.md#mode-show).
 
 ### Verrouillage et mode borne
 

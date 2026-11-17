@@ -33,6 +33,8 @@ Item {
     /** The manual and the first steps guide are wanted (Main has them) */
     signal manualWanted()
     signal guideWanted()
+    /** A page of the manual is wanted (its name: "opciones") */
+    signal helpWanted(string name)
 
     readonly property var themes: [
         { code: "dark", name: qsTr("Dark") },
@@ -69,6 +71,74 @@ Item {
             Layout.fillWidth: true
             Text { id: labelText; color: Theme.text; font.pixelSize: Theme.fontNormal }
             Text { id: hintText; color: Theme.textFaint; font.pixelSize: Theme.fontSmall; visible: text.length > 0; width: parent.width; wrapMode: Text.WordWrap }
+        }
+    }
+
+    // the groups the show stop lights (none: every light)
+    Popup {
+        id: stopGroups
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(380, parent.width - 80)
+        modal: true
+        padding: 16
+        background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: Theme.borderStrong }
+
+        contentItem: ColumnLayout {
+            spacing: 8
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Groups the show stop lights")
+                color: Theme.text
+                font.pixelSize: Theme.fontLarge
+                font.weight: Font.DemiBold
+                wrapMode: Text.WordWrap
+            }
+            Text {
+                Layout.fillWidth: true
+                visible: Core.patch.groups.length === 0
+                text: qsTr("The show has no fixture groups (Patch)")
+                color: Theme.textDim
+                wrapMode: Text.WordWrap
+            }
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(320, groupColumn.implicitHeight)
+                visible: Core.patch.groups.length > 0
+                clip: true
+                Column {
+                    id: groupColumn
+                    width: parent.width
+                    Repeater {
+                        model: Core.patch.groups
+                        CheckBox {
+                            required property var modelData
+                            text: modelData.name
+                            checked: Core.safety.showStopGroups.indexOf(modelData.id) >= 0
+                            onToggled: {
+                                let ids = Core.safety.showStopGroups.slice()
+                                if (checked && ids.indexOf(modelData.id) < 0)
+                                    ids.push(modelData.id)
+                                else if (!checked)
+                                    ids = ids.filter(id => id !== modelData.id)
+                                Core.safety.showStopGroups = ids
+                            }
+                        }
+                    }
+                }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Only their lights: their smoke, hazers, strobes and lasers never. None chosen: every light")
+                color: Theme.textFaint
+                font.pixelSize: Theme.fontSmall
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                AppButton { text: qsTr("Close"); primary: true; onClicked: stopGroups.close() }
+            }
         }
     }
 
@@ -184,6 +254,110 @@ Item {
                                 iconGlyph: Core.settings.lockedScreens.length > 0 ? Theme.iconUnlock : Theme.iconLock
                                 onClicked: Core.settings.lockedScreens.length > 0 ? optionsLock.openUnlock(() => Core.settings.lockedScreens = [])
                                                                                   : optionsLock.openLock()
+                            }
+                        }
+
+                        // the computer and the program during the show
+                        SectionTitle { text: qsTr("Safety during the show") }
+                        OptionRow {
+                            label: qsTr("Keep the computer awake")
+                            hint: qsTr("Windows doesn't put the computer to sleep nor turn the screen off while the program is open")
+                            AppSwitch { checked: Core.settings.keepAwake; onToggled: Core.settings.keepAwake = checked }
+                        }
+                        OptionRow {
+                            label: qsTr("Show mode")
+                            hint: qsTr("Closing the program or opening another show asks to hold a button. Locking the SHOW turns it on")
+                            AppSwitch { checked: Core.settings.showMode; onToggled: Core.settings.showMode = checked }
+                        }
+                        OptionRow {
+                            label: qsTr("Stop all with a fade")
+                            hint: qsTr("The functions fade out in this time (0: at once). Esc twice: at once. For 10 seconds Ctrl+Z brings back what it stopped")
+                            TimeSpin {
+                                implicitWidth: 150
+                                from: 0
+                                to: 50
+                                engineValue: Core.settings.stopAllFadeMs
+                                onEdited: (ms) => Core.settings.stopAllFadeMs = ms
+                            }
+                        }
+                        OptionRow {
+                            label: qsTr("Disarm the special effects unused after")
+                            hint: qsTr("Minutes without a fire (0: never). Never while one fires")
+                            SpinBox {
+                                from: 0; to: 120; editable: true
+                                value: Core.settings.autoDisarmMinutes
+                                textFromValue: (v) => v === 0 ? qsTr("Never") : qsTr("%1 min").arg(v)
+                                valueFromText: (t) => { const n = parseInt(t); return isNaN(n) ? 0 : n }
+                                onValueModified: Core.settings.autoDisarmMinutes = value
+                            }
+                        }
+                        // what the computer says (read only: nothing of Windows is changed)
+                        OptionRow {
+                            visible: Core.power.onBattery
+                            label: qsTr("Running on battery")
+                            hint: Core.power.batteryPercent >= 0 ? qsTr("%1 % left: plug in the charger").arg(Core.power.batteryPercent)
+                                                                 : qsTr("Plug in the charger")
+                            IconLabel { icon: Theme.iconWarning; size: 16; color: Theme.readable(Theme.danger, Theme.surface) }
+                        }
+                        OptionRow {
+                            visible: Core.power.usbSelectiveSuspend
+                            label: qsTr("USB selective suspend is on")
+                            hint: qsTr("Windows may suspend the USB ports that seem idle, and the DMX interface with them. It is a setting of the power plan of Windows")
+                            AppButton {
+                                text: qsTr("How to turn it off")
+                                onClicked: page.helpWanted("opciones#usb-selective-suspend")
+                            }
+                        }
+                        // the show stop: what it lights and how much (saved with the show)
+                        Column {
+                            Layout.fillWidth: true
+                            Layout.topMargin: 4
+                            spacing: 2
+                            Text {
+                                text: qsTr("Show stop")
+                                color: Theme.text
+                                font.pixelSize: Theme.fontNormal
+                                font.weight: Font.DemiBold
+                            }
+                            Text {
+                                width: parent.width
+                                text: qsTr("Saved with the show. Press the Pause key twice, or hold a SHOW button, a pad or the one of the phone a second, to put it; the same again takes it away. Strobes and lasers go dark and the heads stay where they are")
+                                color: Theme.textFaint
+                                font.pixelSize: Theme.fontSmall
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                        OptionRow {
+                            label: qsTr("Fixtures")
+                            hint: qsTr("Moving heads, scanners, PARs and washes, LED bars, blinders and dimmers at open white; never smoke, hazers nor fans. A generic dimmer only when its name (PAR, FRESNEL, FOCO…) or its icon in the plan says it is a light: video triggers and relays stay as they are")
+                            ComboBox {
+                                id: stopFixtures
+                                Layout.preferredWidth: 200
+                                readonly property var chosen: Core.safety.showStopGroups
+                                model: [qsTr("Every light"), qsTr("These groups…")]
+                                currentIndex: chosen.length > 0 ? 1 : 0
+                                displayText: chosen.length > 0
+                                             ? Core.patch.groups.filter(g => chosen.indexOf(g.id) >= 0).map(g => g.name).join(", ")
+                                             : qsTr("Every light")
+                                onActivated: (i) => {
+                                    if (i === 0)
+                                        Core.safety.showStopGroups = []
+                                    else
+                                        stopGroups.open()
+                                    currentIndex = Qt.binding(() => chosen.length > 0 ? 1 : 0)
+                                }
+                                ToolTip.text: displayText
+                                ToolTip.visible: hovered && chosen.length > 0
+                            }
+                        }
+                        OptionRow {
+                            label: qsTr("Level")
+                            SpinBox {
+                                from: 0; to: 100; stepSize: 10; editable: true
+                                value: Core.safety.showStopLevel
+                                textFromValue: (v) => v + " %"
+                                valueFromText: (t) => parseInt(t)
+                                onValueModified: Core.safety.showStopLevel = value
                             }
                         }
 

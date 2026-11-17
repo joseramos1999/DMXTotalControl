@@ -16,6 +16,7 @@ A página tem, de cima para baixo: o cabeçalho com seus botões, a [linha de co
 - **“Cego”**: veja [Cego](programar.md#cego).
 - **“Redefinir tudo”**: libera todas as edições ao vivo (valores e FX). As cenas voltam a aparecer.
 - **“Redefinir seleção”**: libera só as dos fixtures selecionados.
+- **“Estacionar”**: estaciona na saída os valores do programador dos fixtures selecionados (veja [Estacionar](programar.md#estacionar)).
 - **“Snapshot”** e **“Gravar…”**: veja [Gravar](programar.md#gravar).
 
 Em uma janela estreita alguns botões mostram só o ícone; ao passar o mouse aparece o nome deles.
@@ -52,7 +53,7 @@ O botão da grade no cabeçalho do painel (“Plano 2D”) troca os cartões pel
 - **Arraste** sobre o palco vazio para selecionar com um retângulo. Um clique no vazio tira a seleção.
 - A **roda** do mouse faz zoom; arrastar com o **botão direito** ou o do meio move a vista, e um clique duplo com esses botões a centraliza de novo.
 
-Em Programar o plano está sempre **ao vivo**: cada fixture mostra sua cor, seu dimmer, seu strobo (pisca) e seu gobo, e cada pixel das barras e matrizes. Os fixtures são posicionados no [plano 2D do Patch](patch.md#plano-2d).
+Em Programar o plano está sempre **ao vivo**: cada fixture mostra sua cor, seu dimmer, seu strobo (pisca) e seu gobo, e cada pixel das barras e matrizes. Os fixtures são posicionados no [plano 2D do Patch](patch.md#plano-2d). Os efeitos especiais protegidos têm o seu escudo e os fixtures estacionados o seu cadeado, como no Patch.
 
 ## O painel Rápido
 
@@ -125,11 +126,20 @@ Se você mover a cruz, o leque ou “Centralizar”, ou mudar a seleção, o pon
 
 Com **“Cego”** ativo, o programador edita **sem enviar nada para as luzes**: o palco continua mostrando o que está rodando e você prepara o próximo visual. O subtítulo avisa: “Cego: as luzes não mostram o que você programa”. Você pode gravar como sempre. Ao desativá-lo, o que está no programador sai.
 
+## Efeitos especiais protegidos
+
+O programador nunca envia um [efeito especial protegido](directo.md#efeitos-especiais-protegidos) (um CO2, uma chama…) para a saída, nem com os efeitos armados:
+
+- Em uma seleção que mistura efeitos protegidos com outros fixtures, o programador não dá nada a eles: nem `@ FULL`, nem níveis, cores, faders, “Localizar”, “Beam on” ou “Beam off”, paletas “Tudo”, FX nem macros. Os faders deles não aparecem, então uma cena gravada a partir dessa seleção nunca os contém.
+- Em uma seleção **só de efeitos protegidos**, os valores são guardados para que você possa programar uma cena de CO2, mas nunca saem, armados ou não. O subtítulo diz “N canais de efeitos especiais: são gravados, não saem”, e os faders e cartões deles têm um escudo vermelho “não sai”. A cena que você gravar os dispara a partir do SHOW, de um pad ou do celular com os efeitos armados.
+- Ao carregar uma cena, um passo ou uma cue com um CO2, os valores dele ficam, e salvá-la de novo não os perde. Os FX dela sobre efeitos protegidos ficam salvos na cena, mas não tocam no programador.
+- “Snapshot” os deixa de fora, mesmo disparando; “Destacar” nunca os acende. Os FX e as macros de FX nunca tocam neles, e um aviso diz isso (“1 efeito especial protegido fica fora do FX”). O Follow não aponta uma cabeça de chamas protegida que está selecionada com outros fixtures.
+
 ## Destacar e localizar
 
 Na barra da linha de comando:
 
-- **“Destacar”**: a seleção no máximo em branco aberto, por cima de tudo, para ver quais fixtures são. Não é gravado. Pressione de novo para desativar.
+- **“Destacar”**: a seleção no máximo em branco aberto, por cima de tudo, para ver quais fixtures são. Não é gravado. Pressione de novo para desativar. Nunca acende os efeitos especiais protegidos.
 - **“Localizar”**: coloca a seleção no máximo, em branco aberto, centralizada e com o feixe aberto, **no programador** (esses valores são gravados).
 - **◀ ▶** (PREV / NEXT): percorre a seleção **um por vez**: só um fixture fica selecionado e aparece em qual você está (“2/8”). **“Todos”** volta à seleção inteira (ALL).
 
@@ -347,7 +357,7 @@ Uma cue guarda só o que o programador muda em relação ao que as cues anterior
 O menu **“Snapshot”** tem:
 
 - **“Salvar as edições em uma cena”**: coloca os valores do programador em uma cena estática que já existe.
-- **“Tudo o que está no palco, em uma nova cena…”**: tudo o que as luzes mostram agora (cenas, edições ao vivo e o mixer, sem o grand master) vira uma nova cena estática, em cada fixture com luz. Se “Destacar” estiver ativo, é preciso desativá-lo antes (“Desativar destaque”).
+- **“Tudo o que está no palco, em uma nova cena…”**: tudo o que as luzes mostram agora (cenas, edições ao vivo e o mixer, sem o grand master) vira uma nova cena estática, em cada fixture com luz. Se “Destacar” estiver ativo, é preciso desativá-lo antes (“Desativar destaque”). Deixa de fora os efeitos especiais protegidos, mesmo que estejam disparando.
 - **“Só as edições, em uma nova cena…”**.
 
 ### Editar cenas e cues
@@ -362,3 +372,7 @@ O menu **“Snapshot”** tem:
 - O **×** de um cartão ou de um fader: só esse canal.
 
 O que acontece com a edição ao vivo ao disparar uma cena, e a prioridade dela frente às cenas, é decidido em [Opções](opciones.md#reprodução).
+
+## Estacionar
+
+**“Estacionar”**, no cabeçalho (depois de “Redefinir seleção”), estaciona os valores que o programador tem nos fixtures selecionados: eles passam para a saída com os seus [limites](patch.md#limites) (sem o grand master), acima de tudo, e o programador os solta. Os valores dos outros fixtures continuam no programador, e os FX do programador não são estacionados. Fica desativado se a seleção não tem valores. Se depois você mudar os limites, o que está estacionado não muda. Um efeito especial protegido é estacionado apagado. Para desestacionar, use o menu do fixture no Patch (botão direito): veja [Estacionar canais](patch.md#estacionar-canais).

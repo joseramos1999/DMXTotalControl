@@ -32,11 +32,12 @@ La connexion est mémorisée pour la prochaine fois que vous ouvrez le programme
 
 ## Niveaux DMX
 
-**« Niveaux DMX »** affiche les 512 canaux d’un univers tels qu’ils sortent du programme, avec tout appliqué (scènes, programmeur, mixeur, grand master, limites…) :
+**« Niveaux DMX »** affiche les 512 canaux d’un univers tels qu’ils sortent du programme, avec tout appliqué (scènes, programmeur, mixeur, grand master, limites, canaux parqués, arrêt du show…) ; un effet spécial protégé désarmé affiche 0 même si sa scène joue :
 
 - Choisissez l’**Univers** dans la liste déroulante.
 - Chaque case contient le numéro du canal et sa valeur (0–255). **« Afficher en % »** passe en pourcentage.
 - Les cases avec un bord appartiennent à un fixture. Survolez un canal pour voir à quel fixture il appartient (« Nom — canal N »).
+- En haut à droite de la case, un **cadenas** marque un canal [parqué](patch.md#parquer-des-canaux) (« parqué à 77 », « · aussi en blackout »), un **bouclier** un [effet spécial protégé](directo.md#effets-spéciaux-protégés) (« effet spécial protégé (désarmé : 0 en sortie) », « (armé) » ou, avec un cadenas, « parqué éteint ») et une **main rouge** ce que met l’[arrêt du show](directo.md#arrêt-du-show) (« arrêt du show », ou « arrêt du show : il reste où il est » sur le pan et le tilt). Un canal parqué sous l’arrêt du show indique « parqué à 77, sous l’arrêt du show », et pendant un fondu au noir, un canal sans « aussi en blackout » indique « parqué à 77, qui descend avec le fondu au noir ». Les marques sont sur le canal propre du fixture, avant l’échange du pan et du tilt.
 
 > **Conseil :** si un fixture ne répond pas, regardez ici si son canal bouge. S’il bouge, le problème vient du câble, de l’adresse de l’appareil ou de l’interface ; sinon, du patch ou de ce que vous lancez.
 

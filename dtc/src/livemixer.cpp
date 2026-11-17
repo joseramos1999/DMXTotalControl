@@ -208,6 +208,29 @@ void LiveMixer::slotFixturesChanged()
     emit mixersChanged();
 }
 
+void LiveMixer::setIsProtected(const std::function<bool(quint32)> &isProtected)
+{
+    m_isProtected = isProtected;
+    updateProtection();
+}
+
+void LiveMixer::updateProtection()
+{
+    // (a show loading: at its end. Neutral mixers have nothing to leave out)
+    if (m_doc->isClearingOrLoading() || isActive() == false)
+        return;
+    apply();
+}
+
+void LiveMixer::setStrobeSuppressed(bool suppressed)
+{
+    if (suppressed == m_strobeSuppressed)
+        return;
+    m_strobeSuppressed = suppressed;
+    // (nothing strobes while every mixer is neutral)
+    apply();
+}
+
 void LiveMixer::slotDocCleared()
 {
     m_states.clear();
@@ -262,6 +285,10 @@ void LiveMixer::apply()
     QMap<quint32, MixerLayer> layers;
     for (Fixture *fxi : m_doc->fixtures())
     {
+        // DMX Total Control: a protected special effect: no Full, Flash,
+        // dimmer, colour nor strobe (the output skips them too)
+        if (m_isProtected && m_isProtected(fxi->id()))
+            continue;
         // what the mixers of this fixture say, together
         QList<State> states;
         states.append(all);
@@ -274,7 +301,8 @@ void LiveMixer::apply()
             unit.full = unit.full || s.full || s.fullExclusive;
             unit.blackout = unit.blackout || s.blackout;
             unit.flash = unit.flash || s.flash || s.flashExclusive;
-            if (s.strobe)
+            // (the show stop: no strobe)
+            if (s.strobe && m_strobeSuppressed == false)
                 unit.strobeHz = qMax(unit.strobeHz, s.strobeHz);
         }
         // the colour of a group wins over the colour of all the fixtures

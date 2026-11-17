@@ -2421,6 +2421,9 @@ QSharedPointer<GenericFader> Cuelist::getFader(Universe *universe)
         fader->setBlendMode(blendMode());
         fader->setName(name());
         fader->setParentFunctionID(id());
+        // DMX Total Control: a cuelist of the show may fire a special effect
+        // (its FX player, not in the show, never does)
+        fader->setMayFire(id() != Function::invalidId());
         fader->setHandleSecondary(true);
         m_fadersMap[universe->id()] = fader;
     }

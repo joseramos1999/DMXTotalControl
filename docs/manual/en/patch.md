@@ -10,6 +10,7 @@ In the header you choose the view and you have the tools to add things:
 - **“Channels”**: the 512 channels of each universe, with the fixtures on top.
 - **“2D plan”**: the stage seen from above.
 - **“Import”**, **“LED matrix”** and **“Add fixtures”**.
+- With parked fixtures, **“N parked · Unpark all”**: how many there are and the button to unpark them all (see [Parking channels](patch.md#parking-channels)).
 
 ## Adding fixtures
 
@@ -35,7 +36,7 @@ For single dimmers, choose **Generic › Generic Dimmer**: instead of a mode, yo
 
 ## The list
 
-Columns: selection checkbox, **#** (number), **NAME**, **ADDRESS** (universe . address), **CH**, **FIXTURE** (manufacturer and model), **MODE**, **INVERT** (pan and tilt) and the identify button.
+Columns: selection checkbox, **#** (number), **NAME**, **ADDRESS** (universe . address), **CH**, **FIXTURE** (manufacturer and model), **MODE**, **INVERT** (pan and tilt) and the identify button. After the name, a **shield** marks a [protected special effect](patch.md#protected-special-effects) and a **padlock** a fixture with [parked](patch.md#parking-channels) channels.
 
 - **“Group by fixture”** groups them by model, with a checkbox to select all the fixtures of each model. A click on the header of a model folds it (hides its fixtures) or unfolds it.
 - A **double click** on a fixture edits it.
@@ -45,9 +46,11 @@ Columns: selection checkbox, **#** (number), **NAME**, **ADDRESS** (universe . a
 The tools of the bar work on the selection:
 
 - A **click** selects; **Ctrl+click** adds or removes; **Shift+click** selects all the fixtures from the last one you clicked to that one (in that direction, which is the order of the selection), and **Ctrl+Shift+click** adds them. **“All”** and **“None”**. The checkbox of a row adds or removes its fixture (like Ctrl+click); with Shift, it adds all of them from the last one you clicked.
-- **“Identify”**: the selected fixtures blink in white so you can find them on stage. **“Stop identifying”** stops it (it also stops when you leave the page). The button on each row identifies only that fixture. The list stays where it was.
+- **“Identify”**: the selected fixtures blink in white so you can find them on stage. **“Stop identifying”** stops it (it also stops when you leave the page). The button on each row identifies only that fixture. The list stays where it was. Protected special effects are never identified (blinking a CO2 would fire it): a message says how many were left out.
 - **Invert pan** and **invert tilt** (the arrow icons): for the fixtures that have them.
-- **“Limits”**, **“Edit”**, **“Re-address”**, **“Renumber”**, **“Create group”** and **“Delete”**: explained below.
+- **“Limits”**, the **flame** button (**“Special effect”**), **“Edit”**, **“Re-address”**, **“Renumber”**, **“Create group”** and **“Delete”**: explained below.
+
+A **right click** on a row of the list, or on a fixture of the 2D plan without moving the mouse, opens the fixture menu: **“Special effect…”**, **“Identify”**, **“Limits…”**, **“Edit…”**, **“Park as it is now”**, **“Park off”**, **“Also in blackout”**, **“Unpark”** and **“Unpark all”**. If the fixture wasn't selected, it selects it first.
 
 ## Addresses and universes
 
@@ -115,9 +118,9 @@ The tools (they work on the selection and in its order):
 - **15°** (right click: the other way) and **90°**: rotate the selection.
 - **“Height and facing”**: where the selected moving heads hang, for [Follow](patch.md#height-and-facing-follow).
 
-Moving heads have a small arrow on their edge (a notch, when the plan shows them small): the way they face. The names of fixtures that are very close together are hidden so they do not overlap: zoom in to read them.
+Moving heads have a small arrow on their edge (a notch, when the plan shows them small): the way they face. The names of fixtures that are very close together are hidden so they do not overlap: zoom in to read them. A **shield** at the top left marks a protected special effect (dim; red with the effects armed; with a pulsing ring while it fires) and a **padlock** at the top right, a parked fixture.
 
-The **wheel** zooms, the **right button** or the middle one drag the view and a double click with them centres it. The buttons in the corner also zoom.
+The **wheel** zooms, the **right button** or the middle one drag the view and a double click with them centres it. The buttons in the corner also zoom. A right click without moving the mouse opens the [fixture menu](patch.md#selecting).
 
 > **Tip:** place the fixtures in the order you want the effects to run: select them from left to right and use “Arrange › Line”.
 
@@ -172,6 +175,51 @@ With a single fixture, the **Channels** list lets you decide for each channel:
 
 Limits act on the output: scenes, effects and live edits keep their values, but the output respects the limits. With several fixtures you see the values of the first one that has each control, and what you change is applied to all the ones that have it.
 
+## Protected special effects
+
+A **protected special effect** only fires with the effects armed, from scenes, cuelists and chasers, and each fire lasts at most its maximum time. How they are armed and what fires them is in [Live](directo.md#protected-special-effects).
+
+**Which ones are.** **CO2**, **flame**, **cold spark** and **confetti** machines are protected by themselves; **bubble** and **snow** machines are not (protect them by hand if you want). The kind comes from the fixture type, the words of its definition, the name of a generic dimmer (“CO2 1”, “FLAME 3”, “FIRE 2”, “PYRO 1”) or the icon chosen on the plan. The automatic rules only ever protect, they never take the protection away: changing the name or the icon never unprotects a fixture; a fixture that becomes one of those kinds is protected, and a message says so (“CO2 4 is now a protected special effect”); a CO2 you unprotected by hand stays unprotected even if you call it “CO2 9”.
+
+> **Limits:** “C02” written with a zero is not recognised, and “FOCO2” is not a CO2. A machine that isn't recognised isn't protected: check the shield in the list and protect it by hand.
+
+**“Special effect”** (the flame button, next to “Limits”, or “Special effect…” in the fixture menu) opens its settings for the selection:
+
+- **“Protected special effect”**: turning it off asks first (“Take the protection away?”). Without it, the fixture goes out as any other channel: without arming, without a maximum time, and also from the programmer, Identify, the mixer and the FX.
+- **“Maximum fire time”**: from 0.1 to 30 s (by default: CO2 3 s, flames 2 s, sparks 5 s, confetti 2 s, the others 3 s).
+- **“Minimum wait between fires”**: from 0 to 60 s (1 s by default), from the release.
+- **“Safety channel”**: **“None”** or the channel of the fixture that the machine needs to fire, with its **“Values from / to”** (from 0 to 255; “from” can't be above “to”). That channel only goes out within those values while the effect is armed and firing (“from”, if the scene gives it no value); otherwise 0. It can only be chosen when the selected fixtures have the same channels, and a one-channel fixture can't have one (“… needs another channel to fire”). If the fixture changes mode or definition and another channel is left in its place, the safety channel is taken away, and a message says so (“The safety channel of … was taken away”).
+- **“As its kind (…)”**: goes back to the protection and the times of its kind, without a safety channel.
+
+**Which channels fire.** All of them but pan, tilt and the safety one, whatever their type (intensity, effect, height…): the maximum time applies to them. Pan and tilt only go out with the effects armed and from scenes, with no time limit, and at 0 when disarmed: a scene that only aims the machine doesn't fire it. A machine with nothing but pan and tilt fires on all its channels but the safety one. A fixture across two universes (from a QLC+ show) never fires: the window warns about it; move it into a single universe.
+
+In the list, a **shield** after the name; on the plan, a shield at the top left: dim normally, red with the effects armed and with a pulsing ring while it fires. **Identify** never lights them. [DMX levels](salidas.md#dmx-levels) and the live plan show what really goes out: a disarmed CO2 shows 0 even while its scene plays.
+
+The protection is saved with the show, in its DMX Total Control section, and [importing the patch of another show](patch.md#importing-from-another-show) brings it. When you open an older show or a QLC+ show, a message says once which fixtures are now protected effects by their kind (“2 fixtures of this show are protected special effects now: …”); also a smoke machine whose model says “CO2” or a generic dimmer called “Fuego…” or “Fire…”. To change it, use “Special effect”. QLC+ doesn't read this protection: opened in QLC+, the show fires these fixtures from anywhere, without arming and without a maximum time. Earlier versions of DMX Total Control don't read it either: they fire these fixtures without arming and, when they save the show, they drop the protection set by hand, the times and the safety channel. Use this version on every computer of the show.
+
+## Parking channels
+
+A **parked** channel always goes out at a fixed value, above the scenes, the cuelists, the FX, the programmer, the mixer (Full, Flash…), the grand master and Stop all: the hazer at 30 % all night, a broken head off and still, the house lights. Esc and Blackout never unpark it.
+
+In the [fixture menu](patch.md#selecting) (right click in the list or on the plan):
+
+- **“Park as it is now”**: all its channels at what goes out now, so the grand master, the mixer and the limits of that moment are baked in. Not possible during the show stop or a fade to black (their light would stay parked for good).
+- **“Park off”**: the intensity channels (dimmers and colours) at 0 and the others as they are now; a fixture without intensity channels (a smoke machine or a hazer from the library), all at 0. During the show stop or a fade to black, the other channels are parked at what the show sends underneath.
+- **“Also in blackout”**: with Blackout, its parked intensities keep their value. Without it, they go dark with Blackout; pan, tilt, gobo and the other channels that aren't light always stay parked.
+- **“Unpark”** and **“Unpark all”**.
+
+In [Program](programar.md#parking), **“Park”** parks the values the programmer holds on the selected fixtures.
+
+With parked fixtures, the header of the Patch shows **“N parked · Unpark all”** (in a narrow window, the padlock, the number and the button with only its icon). In the list, a **padlock** after the name (“Parked: N channels with a fixed value at the output”); on the 2D plan, of the Patch and of Program, a padlock at the top right. In [DMX levels](salidas.md#dmx-levels), a padlock on each parked channel.
+
+- A protected special effect can only be parked **off**: “Park as it is now” or “Park” in Program park it at 0 and say so (“A protected special effect can only be parked off”). Parked, it never fires, even armed; a fire cut by parking shows in the log as “parked”. A fixture parked lit that becomes protected is parked off; if it is unprotected later, it stays parked at 0 until you unpark it. Unparked, it only fires after its scene is released and pressed again.
+- Parked channels follow the fixture when you re-address it. Changing the mode of a fixture removes its parked channels (“The parked channels of Spot 3 were removed: its mode changed”), except for a protected effect, which stays parked off. Deleting a fixture removes its own. A parked pan of a fixture with pan and tilt swapped goes out on the tilt channel, like the pan.
+- The [show stop](directo.md#show-stop) wins over parked channels: a fixture parked off lights up too, and a parked hazer stays parked. A [fade to black](directo.md#fade-to-black) takes down the parked channels without “Also in blackout”.
+
+Parked channels are saved with the show, in its DMX Total Control section (importing the patch of another show doesn't bring them). When a show with parked channels opens they apply at once, and a message says which (“2 parked fixtures: HAZER, Spot 3 (Patch)”). Opening another show or a new one removes them. When the program closes they are let go (the stage goes to rest), but they stay in the show. QLC+ doesn't park channels: there they play as their scenes say, and the copy for QLC+ warns about it (“2 parked fixtures: QLC+ doesn't park channels”). Earlier versions of DMX Total Control don't apply them and, when they save the show, they drop them, and the show stop settings too.
+
+> **Not tested with real equipment:** parking has not been tested with real interfaces, nodes or hazers.
+
 ## LED matrices and strips
 
 **“LED matrix”** patches a matrix or a pixel strip in one go:
@@ -189,7 +237,7 @@ One fixture is created for each line of pixels, plus a group for the colour effe
 
 **“Import”** brings part of another show (from DMX Total Control or from QLC+) into this one:
 
-- **“Patch of another show…”**: its fixtures. They go to the same addresses if those are free; if not, to the next ones.
+- **“Patch of another show…”**: its fixtures. They go to the same addresses if those are free; if not, to the next ones. They bring their special-effect protection, their times, their safety channel and their plan icon (what the other show says never unprotects a CO2), but not their parked channels.
 - **“Scenes of another show…”**: its scenes, assigned to the fixtures of this show that match (by address and model, by name or by model). They go into groups with the same name.
 - **“Patch and scenes of another show…”**: both.
 - **“Patch from a visualizer (CSV)…”**: the fixture table your visualizer exports; see [Importing a patch from a visualizer](patch.md#importing-a-patch-from-a-visualizer).

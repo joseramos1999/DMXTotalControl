@@ -58,9 +58,11 @@ Se apri il remoto con il codice QR o con un indirizzo numerico, il telefono cont
 
 In alto c'è la barra del controllo remoto:
 
-- Il **nome dello show** e le **schede** delle pagine dello SHOW. Il telefono ricorda l'ultima pagina che hai aperto.
+- Il **nome dello show** e le **schede** delle pagine dello SHOW. Il telefono ricorda l'ultima pagina che hai aperto. Su un telefono stretto il nome si accorcia, e si nasconde solo se le schede non avrebbero spazio (in uno show con effetti speciali, il cui tasto per armare è nella barra).
 - Un **punto** che indica se c'è connessione con il computer.
 - **BO**: blackout.
+- **Arma** (con una fiamma): solo se lo show ha effetti speciali protetti; in rosso, «ARMATI», con gli effetti armati. Su un telefono in verticale (480 px di larghezza o meno) mostra solo la fiamma.
+- La **mano**: l'[arresto dello show](directo.md#arresto-dello-show). Tienila premuta un secondo (si riempie una striscia); in rosso finché è attivo.
 - Il tasto **schermo intero**.
 
 Sotto, la pagina con le sue sezioni, come sul computer:
@@ -84,6 +86,15 @@ Se un playback ha qualcosa assegnato, il controllo remoto aggiunge una pagina **
 
 Il controllo remoto usa lo stesso [tema](opciones.md#generale) del programma ed è nella lingua del telefono se è spagnolo, portoghese, francese, italiano o tedesco (altrimenti, in inglese).
 
+## Sicurezza sul telefono
+
+- **Arma**: un tocco chiede il contrario di ciò che mostra il telefono, quindi un messaggio che arriva tardi o due volte non arma mai ciò che è appena stato disarmato. Armati, una barra rossa **«EFFETTI ARMATI»** dice cosa si attiva e ha **«Disarma»** (vedi [Effetti speciali protetti](directo.md#effetti-speciali-protetti)).
+- **Arresto dello show**: la mano della barra, o un tasto «Arresto dello show» dello SHOW, tenuti premuti un secondo. Attivo, una barra rossa **«ARRESTO DELLO SHOW»** con **«Tieni premuto per togliere»**. Un telefono che si disconnette mentre lo tiene premuto lo rilascia senza cambiare nulla, e due telefoni insieme contano come una sola pressione (vedi [Arresto dello show](directo.md#arresto-dello-show)).
+- **Recupera ciò che suonava**: dopo Ferma tutto, una barra blu con **«Recupera»** e una striscia di 10 s (un tocco nel suo primo mezzo secondo non conta).
+- Queste barre stanno sotto la barra del controllo remoto, e la pagina si accorcia. I tasti dello SHOW «Arma effetti», «Arresto dello show», «Recupera» e «Dissolvenza al nero» funzionano dal telefono e si accendono anche lì.
+
+> **Non provato con apparecchi reali:** il controllo remoto non è stato provato su un telefono reale con un Wi-Fi che cade; solo il lato del computer e la pagina in un browser.
+
 ## Se la connessione cade
 
-Se il telefono perde la connessione, compare «Nessuna connessione con DMX Total Control. Nuovo tentativo…» e si ricollega da solo. Ciò che il dito teneva premuto (un flash, un tasto) viene rilasciato sul computer, perché niente resti acceso.
+Se il telefono perde la connessione, compare «Nessuna connessione con DMX Total Control. Nuovo tentativo…» e si ricollega da solo. Ciò che il dito teneva premuto (un flash, un tasto) viene rilasciato sul computer, perché niente resti acceso. Anche un arresto dello show che si stava tenendo premuto viene rilasciato, senza cambiare nulla.

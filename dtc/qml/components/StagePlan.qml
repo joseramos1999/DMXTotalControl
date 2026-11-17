@@ -62,6 +62,8 @@ Rectangle {
     property bool showLegend: true
     /** Core.patch.fixtureTypes: [{ key, manufacturer, model, kind, colorIndex, count, ids }] */
     readonly property var types: Core.patch.fixtureTypes
+    /** The fixtures with parked channels (a lock on them) */
+    readonly property var parked: Core.safety.parkedFixtures
 
     // a drag of fixtures in progress: the others of the selection follow
     property int draggingId: -1
@@ -118,6 +120,19 @@ Rectangle {
     signal pointPicked(real x, real y)
     /** The × of the chip: unlock every fixture */
     signal unlockRequested()
+    /** A right click on fixture $id (not locked) at $x, $y of the plan,
+     *  without moving the view: its menu */
+    signal contextRequested(int id, real x, real y)
+
+    /** The fixture (not locked) at $x, $y of the plan, the one on top; -1: none */
+    function fixtureAt(x, y) {
+        for (let i = fixtureItems.count - 1; i >= 0; i--) {
+            const item = fixtureItems.itemAt(i)
+            if (item !== null && !item.locked && item.contains(item.mapFromItem(plan, x, y)))
+                return item.modelData.id
+        }
+        return -1
+    }
 
     readonly property size stage: Core.patch.stageSize
     /** The «−» and «+» on each side of the stage: a metre less or more on
@@ -408,10 +423,19 @@ Rectangle {
         onReleased: (ev) => {
             if (panning) {
                 panning = false
+                const still = Math.abs(ev.x - start.x) < 4 && Math.abs(ev.y - start.y) < 4
+                // a right click on a fixture (the view didn't move): its menu
+                if (ev.button === Qt.RightButton && still) {
+                    const id = plan.fixtureAt(ev.x, ev.y)
+                    if (id >= 0) {
+                        plan.pan = startPan
+                        plan.contextRequested(id, ev.x, ev.y)
+                    }
+                    return
+                }
                 // a click on the empty stage with the move tool: nothing
                 // selected (on a locked fixture: nothing happens)
-                if (ev.button === Qt.LeftButton && Math.abs(ev.x - start.x) < 4 && Math.abs(ev.y - start.y) < 4
-                        && !plan.lockedAt(ev.x, ev.y))
+                if (ev.button === Qt.LeftButton && still && !plan.lockedAt(ev.x, ev.y))
                     plan.selectRequested([], false)
                 return
             }
@@ -845,6 +869,64 @@ Rectangle {
                     color: fxItem.lit || fxItem.bar ? Theme.textOnShade : Theme.accentText
                     font.pixelSize: fxItem.bar || plan.bodyScale < 0.8 ? Theme.fontSmall : Theme.fontLarge
                     font.weight: Font.Bold
+                }
+            }
+            // a protected special effect: a shield at its top left, red while
+            // the effects are armed, glowing while it fires
+            Rectangle {
+                id: shieldBadge
+                visible: !!fxItem.modelData.protected
+                readonly property bool armed: Core.safety.armed
+                // (read only on a protected one: the others never fire)
+                readonly property bool firing: {
+                    if (!fxItem.modelData.protected)
+                        return false
+                    const list = Core.safety.firing
+                    for (let i = 0; i < list.length; i++)
+                        if (list[i].id === fxItem.modelData.id)
+                            return true
+                    return false
+                }
+                anchors { left: parent.left; top: parent.top; margins: -6 }
+                width: 18; height: 18; radius: 9
+                color: armed ? Theme.danger : Theme.plan
+                border.color: firing ? Theme.warning : (armed ? Theme.danger : Theme.borderStrong)
+                border.width: firing ? 2 : 1
+                IconLabel {
+                    anchors.centerIn: parent
+                    icon: Theme.iconShield
+                    size: 10
+                    color: shieldBadge.armed ? Theme.textOn(Theme.danger) : Theme.textDim
+                }
+                // (a glow that pulses while it fires)
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: parent.width + 8; height: width; radius: width / 2
+                    color: "transparent"
+                    border.color: Theme.warning
+                    border.width: 2
+                    visible: shieldBadge.firing
+                    SequentialAnimation on opacity {
+                        running: shieldBadge.firing
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 1; to: 0.2; duration: 300 }
+                        NumberAnimation { from: 0.2; to: 1; duration: 300 }
+                    }
+                }
+            }
+            // parked: a lock at its top right
+            Rectangle {
+                visible: plan.parked[fxItem.modelData.id] !== undefined
+                anchors { right: parent.right; top: parent.top; margins: -6 }
+                width: 18; height: 18; radius: 9
+                color: Theme.plan
+                border.color: Theme.warning
+                border.width: 1
+                IconLabel {
+                    anchors.centerIn: parent
+                    icon: Theme.iconLock
+                    size: 9
+                    color: Theme.warning
                 }
             }
             // gobo

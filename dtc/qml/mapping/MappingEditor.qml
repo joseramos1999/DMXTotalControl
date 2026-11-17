@@ -97,6 +97,9 @@ Flickable {
                                              && mapping.target !== "playbackLiveTime"
     readonly property bool onFunction: functionPlayback && mapping.functionId !== undefined && mapping.functionId >= 0
     readonly property bool momentaryPlayback: button && (mapping.target || "").startsWith("playback") && mapping.target !== "playbackFlash"
+    // (the show stop is held a second, whatever the mode; bringing back what
+    // Stop all stopped and the fade to black act on the press)
+    readonly property bool held: ["showStop", "recoverStopped", "fadeToBlack"].indexOf(mapping.target) >= 0
     /** The cue a "go to a cue" mapping plays now (the cuelist of its playback, or its own) */
     readonly property string cueNow: {
         if (targetInfo.needs !== "playbackCue")
@@ -255,6 +258,16 @@ Flickable {
                 text: editor.mapping.key || ""
                 onEditingFinished: if (text !== (editor.mapping.key || "")) editor.set("key", editor.source === "key" ? text.toLowerCase() : text)
             }
+            // Pause is the show stop's key (pressed twice): a mapping on it
+            // (a show of before) takes it while it is there
+            Text {
+                Layout.fillWidth: true
+                visible: editor.source === "key" && (editor.mapping.key || "").toLowerCase() === "pause"
+                text: qsTr("While this mapping is on Pause, Pause does it and not the show stop (pressed twice). With another key, Pause is the show stop's again")
+                color: Theme.readable(Theme.warning, Theme.surface)
+                font.pixelSize: Theme.fontSmall
+                wrapMode: Text.WordWrap
+            }
             RowLayout {
                 visible: editor.source === "dmx"
                 Text { text: qsTr("Channel"); color: Theme.textDim }
@@ -405,6 +418,18 @@ Flickable {
                 font.pixelSize: Theme.fontSmall
                 wrapMode: Text.WordWrap
             }
+            // the fade to black: its time
+            RowLayout {
+                visible: editor.targetInfo.needs === "time"
+                Text { text: qsTr("Time"); color: Theme.textDim }
+                TimeSpin {
+                    implicitWidth: 150
+                    from: 1
+                    to: 600
+                    engineValue: editor.mapping.time !== undefined ? editor.mapping.time : Core.safety.defaultFadeToBlackMs
+                    onEdited: (ms) => editor.set("time", ms)
+                }
+            }
             // playback page N
             ComboBox {
                 Layout.fillWidth: true
@@ -417,10 +442,10 @@ Flickable {
 
             // ---------------------------------------------------------------- mode
             // (the buttons of the playbacks act on the press, but Flash)
-            Section { visible: !editor.momentaryPlayback; text: qsTr("Behaviour") }
+            Section { visible: !editor.momentaryPlayback && !editor.held; text: qsTr("Behaviour") }
             ComboBox {
                 Layout.fillWidth: true
-                visible: !editor.momentaryPlayback
+                visible: !editor.momentaryPlayback && !editor.held
                 readonly property var modes: editor.button ? ["toggle", "flash", "on", "off"] : ["absolute", "incremental", "relative", "relative2c"]
                 // (a scene: "toggle" is a press in the mode of the top bar)
                 readonly property bool scene: ["scene", "sceneIndex"].indexOf(editor.mapping.target || "scene") >= 0

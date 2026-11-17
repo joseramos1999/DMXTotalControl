@@ -23,14 +23,26 @@ Tutti i tasti e le combinazioni del programma, per pagina. I tasti che assegni t
 | **Ctrl+S** | Salva lo show (la prima volta chiede il nome) |
 | **Ctrl+Maiusc+S** | Salva lo show con un altro nome («Salva come…») |
 | **Ctrl+B** | Blackout (accendere e spegnere) |
+| **Pausa** due volte (in 2 s) | Attiva o toglie l'[arresto dello show](directo.md#arresto-dello-show), in qualsiasi pagina, con qualsiasi modificatore e anche mentre scrivi. Una sola pressione avvisa soltanto («Arresto dello show: premi di nuovo Pausa per attivarlo»); tenerlo premuto non fa altro. Non si può assegnare in Mappature; uno show che lo mappava già lo mantiene |
 | **Esc** | Ferma tutto. Nella modalità Apprendi, annulla il controllo in sospeso o esce dalla modalità; con «Registra» armato in Playback, lo disarma; con un gruppo isolato nella pianta di Patch, termina l'isolamento (con un menu, un elenco a discesa o una finestra di Patch aperti, come «Aggiungi fixture», «Modifica» o «Limiti», li chiude soltanto; un avviso come «Salvare le modifiche?» non si chiude con Esc). In una finestra in cui scrivi un nome o un numero («Crea gruppo», «Rinomina», «Rinumera»…), la chiude senza applicare nulla: premi di nuovo Esc per fermare tutto |
+| **Esc** due volte | Durante la dissolvenza di «Ferma tutto con dissolvenza», ferma tutto subito |
+| **Ctrl+Z** | In Live e nello SHOW (non in modalità modifica né mentre scrivi), per 10 s dopo «Ferma tutto» o «Rilascia gruppi»: [recupera ciò che suonava](directo.md#recupera-ciò-che-suonava) |
 | **Ctrl+→** | Scena successiva in ogni gruppo attivo |
 | **Ctrl+←** | Scena precedente in ogni gruppo attivo |
 | **G** | BeatGO (tranne nella pagina Show) |
 
 Se una pagina è bloccata, il suo tasto chiede la password (se c'è) e sblocca. Con lo SHOW bloccato (modalità chiosco) i tasti delle pagine non funzionano, e con il Setup bloccato nemmeno Ctrl+N, Ctrl+O e Ctrl+Maiusc+S.
 
-T, G e i tasti che assegni in Mappature non agiscono mentre scrivi in un campo di testo, come la riga di comando di Programma.
+T, G e i tasti che assegni in Mappature non agiscono mentre scrivi in un campo di testo, come la riga di comando di Programma. Il tasto Pausa (l'arresto dello show) invece funziona anche mentre scrivi.
+
+## Modalità show
+
+Con la [Modalità show](directo.md#modalità-show) attiva, quando chiudi il programma o apri o inizi un altro show:
+
+| Tasto | Cosa fa |
+|---|---|
+| Tenere premuto **Spazio** o **Invio** 1,5 s | Come tenere premuto il tasto: conferma (la ripetizione del tasto non conta) |
+| **Esc** | Annulla; in quella finestra non ferma mai lo show |
 
 ## Playback
 
@@ -120,5 +132,6 @@ Dopo aver fatto clic su un fader o un cursore:
 | Rotella | Pianta 2D | Zoom |
 | Trascinare con il tasto destro o centrale | Pianta 2D | Sposta la vista (doppio clic: la centra) |
 | Clic destro | Tasto 15° della pianta 2D | Ruota nell'altro senso |
-| Clic destro | Tasto dello SHOW (dal vivo) | Ferma ciò che avvia (la sua scena, il suo gruppo, il suo playback o la sua palette), anche con GO |
+| Clic destro | Tasto dello SHOW (dal vivo) | Ferma ciò che avvia (la sua scena, il suo gruppo, il suo playback o la sua palette), anche con GO; quello di «Arma effetti» li disarma |
 | Tenere premuto «Sblocca» | Show bloccato | Sblocca |
+| Tenere premuto 1 s | Tasto «Arresto dello show» dello SHOW, un pad o un tasto mappati, la mano del telefono, «Tieni premuto per togliere» | Attiva o toglie l'arresto dello show |

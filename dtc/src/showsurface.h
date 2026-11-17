@@ -76,7 +76,12 @@ class Doc;
  *
  * A button item: action "scene" (functionId, mode "toggle"/"flash"; played in
  * its group when it has one), "next", "previous", "release" (zoneId, -1 = all
- * groups), "blackout", "stopAll", "tap", "beatgo", "map" (map: any target of
+ * groups), "blackout", "stopAll", "tap", "beatgo", "recoverStopped" (what
+ * Stop all stopped plays again, in its 10 s), "fadeToBlack" (time: ms, 3000
+ * by default; pressed again, Blackout at once), "armEffects" (mode
+ * "toggle"/"on"/"off": arms or disarms the special effects; lit while
+ * armed), "showStop" (held a second, it puts or takes away the show stop;
+ * its release lets go of the hold), "map" (map: any target of
  * the mappings, ControlMapper; the GO, Back, go to a cue and Release of a
  * cuelist are playback targets with its functionId, and cue for the go to);
  * label, color, key, icon (a glyph), image (a file).
@@ -234,6 +239,9 @@ public:
     Q_INVOKABLE bool holds(quint32 fid) const;
     /** The scenes faders hold up, in their groups or on their own */
     QSet<quint32> heldScenes() const;
+    /** The scenes flash buttons hold pressed now (on the computer or a
+     *  phone): Stop all doesn't keep them to bring them back */
+    QSet<quint32> flashScenes() const;
 
     /** Something the controls show changed with no signal of its own (the
      *  speed of a scene in no group, from a mapping): they read it again */
@@ -390,6 +398,8 @@ private:
      *  scenes): the level of each scene that plays, and its overrides */
     QHash<quint32, QList<int>> m_overrides;
     QHash<quint32, qreal> m_levels;
+    /** The scenes flash buttons hold pressed: how many buttons each */
+    QHash<quint32, int> m_flashPressed;
     /** The level of the fader on a scene of no group as its intensity */
     void applySceneLevel(Function *f);
     /** "sceneRun" faders on scenes of no group (a group keeps the speed of

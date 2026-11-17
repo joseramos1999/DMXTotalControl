@@ -39,7 +39,7 @@ Un controllo del programma può avere più mappature (per esempio, un pad di un 
 
 ### Cosa si può mappare
 
-- **Barra superiore**: GO, Stop, BeatGO, grand master, Blackout e Ferma tutto.
+- **Barra superiore**: GO, Stop, BeatGO, grand master, Blackout, Ferma tutto e «Arma effetti».
 - **Live**: ogni scena, ◀ ▶, Pausa e Rilascia gruppi dell'intestazione, e in ogni gruppo il suo rilascio, precedente, successiva e master.
 - **Mixer**: in ogni striscia, il dimmer, la tonalità, la saturazione, lo strobo e la sua velocità, e i tasti Full, Blackout, Flash, Flash escl. e Full escl.
 - **Programma**: le palette.
@@ -81,6 +81,10 @@ Ciò che fa la mappatura. I **tasti**:
 | GO del playback selezionato / Indietro del playback selezionato | Come il GO grande e «Indietro» di Playback. |
 | Pagina di playback N / successiva / precedente | Cambia la pagina di playback. |
 | Rilascia tutti i playback | Come «Rilascia tutto». |
+| Armare gli effetti speciali | Arma o disarma gli [effetti speciali protetti](directo.md#effetti-speciali-protetti). |
+| Arresto dello show (tenere premuto 1 s) | Tenuto premuto un secondo, attiva o toglie l'[arresto dello show](directo.md#arresto-dello-show). |
+| Recupera ciò che suonava | Per 10 s dopo Ferma tutto o Rilascia gruppi (in «Tutti i gruppi», non in uno solo), riavvia ciò che hanno fermato. |
+| Dissolvenza al nero | Abbassa la luce nel suo **Tempo** (3 s per impostazione predefinita; nell'elenco si vede «Dissolvenza al nero — 3 s») e poi attiva il Blackout. |
 
 I **fader**:
 
@@ -122,6 +126,8 @@ Nei **tasti**:
 
 I tasti di playback agiscono alla pressione, tranne il flash, e non hanno questa opzione.
 
+In **«Armare gli effetti speciali»**, «Commuta: ogni pressione on / off» arma o disarma, «Solo accensione» arma, «Solo spegnimento» disarma e «Flash: finché è premuto» li tiene armati finché lo tieni premuto. **«Arresto dello show»**, **«Recupera ciò che suonava»** e **«Dissolvenza al nero»** non hanno questa opzione: l'arresto dello show conta quanto tieni premuto e quando rilasci (se il messaggio di rilascio si perde, cambia comunque dopo il secondo, e la volta successiva funziona come sempre); gli altri due agiscono alla pressione. Le azioni delle cue non armano mai gli effetti, né attivano l'arresto dello show, né recuperano, né fanno una dissolvenza al nero.
+
 Il flash di un playback usa l'attacco e la discesa di quel playback (vedi [Proprietà di un playback](playbacks.md#proprietà-di-un-playback)). Con «O una cuelist o una scena, ovunque si trovi» usa quelli del primo playback che la contiene; se non è su nessun playback, è immediato. Con «Commuta», una pressione durante la discesa lo fa risalire.
 
 Nei **fader**:
@@ -147,6 +153,8 @@ Per i LED dei tasti MIDI:
 
 **«In dissolvenza»** (in «Avvia una scena» e «Scena N di un gruppo»): attiva **«Colore proprio durante la dissolvenza»** e il tasto mostra quel colore mentre la scena entra con la sua dissolvenza e mentre esce con la sua. In una cuelist, lo mostra mentre la sua cue fa la dissolvenza. Altrimenti, in entrata il tasto si accende come «Acceso» e in uscita come «Spento». Una scena in pausa o in attesa si accende come «In pausa».
 
+Quando apprendi un pad di una Akai APC: **«Armare gli effetti speciali»** si accende in rosso finché sono armati e resta spento altrimenti (rosso al 100 % sull'APC mini mk2); **«Arresto dello show»**, in rosso finché è attivo e in rosso lampeggiante mentre lo tieni premuto; **«Recupera ciò che suonava»**, in giallo finché si può (pulsante sull'APC mini mk2 e sull'APC40 mkII); **«Dissolvenza al nero»** si accende durante la dissolvenza. I tasti con un solo LED si accendono come sempre (l'arresto dello show lampeggia mentre lo tieni premuto). Non provato sui controller.
+
 I LED del controller si spengono quando chiudi il programma, quando elimini una mappatura o la sposti su un altro controllo, quando apri un altro show o quando disattivi il dispositivo o il suo feedback.
 
 ### Duplicare ed eliminare
@@ -155,7 +163,7 @@ I LED del controller si spengono quando chiudi il programma, quando elimini una 
 
 ## Tastiera
 
-Le mappature da tastiera funzionano in qualsiasi pagina e hanno la precedenza sulle scorciatoie del programma che usano lo stesso tasto. Non scattano mentre scrivi in un campo di testo (in Programma, mentre la riga di comando ha la tastiera) né con Ctrl o Alt premuti. I tasti dello SHOW hanno inoltre il loro tasto della tastiera, che funziona solo nella pagina Show (vedi [Show](show.md#opzioni-di-un-tasto)).
+Le mappature da tastiera funzionano in qualsiasi pagina e hanno la precedenza sulle scorciatoie del programma che usano lo stesso tasto. Non scattano mentre scrivi in un campo di testo (in Programma, mentre la riga di comando ha la tastiera) né con Ctrl o Alt premuti. I tasti dello SHOW hanno inoltre il loro tasto della tastiera, che funziona solo nella pagina Show (vedi [Show](show.md#opzioni-di-un-tasto)). Il tasto **Pausa** è quello dell'[arresto dello show](directo.md#arresto-dello-show) (premuto due volte) e non si può apprendere. Se uno show aveva già una mappatura su Pausa, Pausa continua a fare quello che fa quella mappatura e non l'arresto dello show, che resta su un tasto dello SHOW, un pad o il telefono: quando lo apri un avviso lo dice una volta («Questo show mappa il tasto Pausa: …»), la sua riga compare in arancione («Tasto PAUSA (al posto dell’arresto dello show)») e l'editor avvisa sotto il tasto. Eliminala o assegnale un altro tasto per avere l'arresto dello show su Pausa. Una mappatura da tastiera su «Arresto dello show» con un altro tasto si tiene premuta 1 s, come un pad (su un portatile senza Pausa); se il programma perde la tastiera mentre lo tieni premuto (un'altra finestra, un avviso di Windows), il tasto viene rilasciato e non cambia nulla.
 
 ## Modelli per Akai APC
 

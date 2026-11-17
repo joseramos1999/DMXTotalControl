@@ -1680,6 +1680,10 @@ QSharedPointer<GenericFader> FXScene::getFader(Universe *universe)
         fader->setBlendMode(blendMode());
         fader->setName(name());
         fader->setParentFunctionID(id());
+        // DMX Total Control: the static values of an FX scene of the show may
+        // fire a special effect, never its layers (Modulated); the FX of the
+        // programmer, not in the show, never does
+        fader->setMayFire(id() != Function::invalidId());
         fader->setHandleSecondary(true);
         m_fadersMap[universe->id()] = fader;
     }

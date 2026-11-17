@@ -58,9 +58,11 @@ Si vous ouvrez la télécommande avec le code QR ou une adresse numérique, le t
 
 En haut se trouve la barre de la télécommande :
 
-- Le **nom du show** et les **onglets** des pages du SHOW. Le téléphone se souvient de la dernière page ouverte.
+- Le **nom du show** et les **onglets** des pages du SHOW. Le téléphone se souvient de la dernière page ouverte. Sur un téléphone étroit, le nom se raccourcit, et il ne se masque que si les onglets n’auraient pas de place (dans un show avec des effets spéciaux, dont le bouton d’armement est dans la barre).
 - Un **point** qui indique si la connexion avec l’ordinateur est établie.
 - **BO** : blackout.
+- **Armer** (avec une flamme) : seulement si le show a des effets spéciaux protégés ; en rouge, « ARMÉS », avec les effets armés. Sur un téléphone tenu à la verticale (480 px de large ou moins), il n’affiche que la flamme.
+- La **main** : l’[arrêt du show](directo.md#arrêt-du-show). Maintenez-la une seconde (une bande se remplit) ; en rouge tant qu’il est en place.
 - Le bouton de **plein écran**.
 
 En dessous, la page avec ses sections, comme sur l’ordinateur :
@@ -84,6 +86,15 @@ Si un playback a quelque chose d’assigné, la télécommande ajoute une page *
 
 La télécommande utilise le même [thème](opciones.md#général) que le programme et s’affiche dans la langue du téléphone si c’est l’espagnol, le portugais, le français, l’italien ou l’allemand (sinon, en anglais).
 
+## Sécurité sur le téléphone
+
+- **Armer** : un appui demande le contraire de ce qu’affiche le téléphone, donc un message qui arrive en retard ou deux fois n’arme jamais ce qui vient d’être désarmé. Armés, une barre rouge **« EFFETS ARMÉS »** dit ce qui se déclenche et a **« Désarmer »** (voir [Effets spéciaux protégés](directo.md#effets-spéciaux-protégés)).
+- **Arrêt du show** : la main de la barre, ou un bouton « Arrêt du show » du SHOW, maintenus une seconde. En place, une barre rouge **« ARRÊT DU SHOW »** avec **« Maintenir pour lever »**. Un téléphone qui se déconnecte pendant qu’il le maintient le relâche sans rien changer, et deux téléphones à la fois comptent comme un seul maintien (voir [Arrêt du show](directo.md#arrêt-du-show)).
+- **Ramener ce qui jouait** : après Tout arrêter, une barre bleue avec **« Ramener »** et une bande de 10 s (un appui dans sa première demi-seconde ne compte pas).
+- Ces barres se placent sous la barre de la télécommande, et la page se raccourcit. Les boutons du SHOW « Armer les effets », « Arrêt du show », « Ramener » et « Fondu au noir » fonctionnent depuis le téléphone et s’y allument aussi.
+
+> **Non testé avec du matériel réel :** la télécommande n’a pas été essayée sur un vrai téléphone avec un Wi-Fi qui coupe ; seulement le côté ordinateur et la page dans un navigateur.
+
 ## Si la connexion est coupée
 
-Si le téléphone perd la connexion, « Pas de connexion avec DMX Total Control. Nouvel essai… » apparaît et il se reconnecte tout seul. Ce que le doigt maintenait (un flash, un bouton) est relâché sur l’ordinateur, pour que rien ne reste allumé.
+Si le téléphone perd la connexion, « Pas de connexion avec DMX Total Control. Nouvel essai… » apparaît et il se reconnecte tout seul. Ce que le doigt maintenait (un flash, un bouton) est relâché sur l’ordinateur, pour que rien ne reste allumé. Un arrêt du show qu’on était en train de maintenir est aussi relâché, sans rien changer.

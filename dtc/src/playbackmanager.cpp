@@ -823,7 +823,7 @@ void PlaybackManager::ensureConnected(Function *f)
     connect(f, SIGNAL(stopped(quint32)), this, SLOT(slotFunctionStopped(quint32)), Qt::UniqueConnection);
 }
 
-void PlaybackManager::startFunction(Function *f, int cueIndex)
+void PlaybackManager::startFunction(Function *f, int cueIndex, int fadeIn)
 {
     ensureConnected(f);
     if (Cuelist *cl = qobject_cast<Cuelist *>(f))
@@ -838,8 +838,25 @@ void PlaybackManager::startFunction(Function *f, int cueIndex)
     // the level first, so its first frame isn't at full
     applyLevel(f);
     m_held.insert(f->id());
-    f->start(m_doc->masterTimer(), playbackParent(), 0, Function::defaultSpeed(), Function::defaultSpeed());
+    f->start(m_doc->masterTimer(), playbackParent(), 0, fadeIn >= 0 ? uint(fadeIn) : Function::defaultSpeed(),
+             Function::defaultSpeed());
     ensurePolling();
+}
+
+bool PlaybackManager::recall(quint32 functionId, int cueIndex, uint fadeMs)
+{
+    Function *f = function(functionId);
+    if (f == nullptr || isPlaying(f))
+        return false;
+    // (a cue that was deleted since: where it starts)
+    Cuelist *cl = qobject_cast<Cuelist *>(f);
+    if (cl != nullptr && (cueIndex < 0 || cueIndex >= cl->cueCount()))
+        cueIndex = -1;
+    // the level it has (Stop all keeps them; one moved since is the one of
+    // its fader now), and nothing released: what played with it comes back too
+    startFunction(f, cl != nullptr ? cueIndex : -1, f->tempoType() == Function::Beats ? -1 : int(fadeMs));
+    bump();
+    return true;
 }
 
 qreal PlaybackManager::effectiveLevel(quint32 functionId) const

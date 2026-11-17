@@ -117,6 +117,7 @@ DtcCore::DtcCore(QObject *parent)
     , m_doc(nullptr)
     , m_settings(new AppSettings(this))
     , m_library(nullptr)
+    , m_power(nullptr)
     , m_hasRecovery(false)
     , m_clearing(false)
 {
@@ -157,8 +158,37 @@ DtcCore::DtcCore(QObject *parent)
     m_drive = new DriveControl(m_doc, this);
     m_mixer = new LiveMixer(m_doc, this);
     m_surface->setMixer(m_mixer);
+    // the protected special effects (CO2, flames...): the gate of the output
+    // of each universe, armed by hand, never saved armed
+    m_safety = new SafetyManager(m_doc, m_patch, m_settings, this);
+    // (Program › Park: the values of the programmer, parked at the output)
+    m_safety->setProgrammer(m_programmer);
+    // (the show stop: no strobe of the mixer while it lasts)
+    m_safety->setMixer(m_mixer);
+    // (the output never lets anything but a scene, a cuelist or a chaser fire
+    // them: the mixer and the effects made from the selection leave them out,
+    // so the screens tell the truth and nothing records them by mistake)
+    auto isProtected = [this](quint32 id) { return m_patch->isProtected(id); };
+    m_mixer->setIsProtected(isProtected);
+    connect(m_patch, &PatchManager::protectionChanged, m_mixer, &LiveMixer::updateProtection);
+    m_effects->setIsProtected(isProtected);
     m_mapping = new ControlMapper(this, this);
     m_surface->setCore(this);
+    // what Stop all stopped, brought back for some seconds (before the
+    // remote control: it tells the phones)
+    m_recall = new LiveRecall(this, this);
+    m_stopFade = new QTimer(this);
+    m_stopFade->setSingleShot(true);
+    connect(m_stopFade, &QTimer::timeout, this, &DtcCore::stopFadingChanged);
+    // (brought back during the fade of Stop all: the next Stop all is a new
+    // one, with its fade, not the one that stops at once)
+    connect(m_recall, &LiveRecall::recalled, this, [this]() {
+        if (m_stopFade->isActive())
+        {
+            m_stopFade->stop();
+            emit stopFadingChanged();
+        }
+    });
     m_remote = new RemoteServer(this, this);
     // updates from the releases on GitHub (main() starts the check)
     m_updates = new UpdateChecker(this);
@@ -174,6 +204,10 @@ DtcCore::DtcCore(QObject *parent)
 
     // Pulse listens to the audio input chosen in the options at once
     connect(m_settings, &AppSettings::audioInputChanged, m_drive, &DriveControl::restartInput);
+
+    // the computer during the show: Windows keeps it awake and its screen on
+    // (Options), and the battery and the USB ports are looked at (only read)
+    m_power = new PowerGuard(m_settings, this);
 
     // A session that didn't end cleanly may have left the recovery copy of
     // the show it had open (its changes that weren't saved): it is offered.
@@ -227,6 +261,13 @@ DtcCore::~DtcCore()
     // the remote control first: it reads everything
     delete m_remote;
     m_remote = nullptr;
+    // (what Stop all stopped: nothing to bring back)
+    delete m_recall;
+    m_recall = nullptr;
+
+    // (disarmed by releaseOutput: the universes keep the layers disarmed)
+    delete m_safety;
+    m_safety = nullptr;
 
     // the controllers don't stay lit: their LEDs go off while the MIDI
     // outputs are still open
@@ -425,6 +466,16 @@ PlaybackManager *DtcCore::playbacks() const
 TimecodeReader *DtcCore::timecode() const
 {
     return m_timecode;
+}
+
+PowerGuard *DtcCore::power() const
+{
+    return m_power;
+}
+
+SafetyManager *DtcCore::safety() const
+{
+    return m_safety;
 }
 
 void DtcCore::slotLiveEditChanged()
@@ -838,6 +889,17 @@ void DtcCore::setFunctionFolder(const QVariantList &ids, const QString &folder)
 
 void DtcCore::releaseOutput()
 {
+    // the special effects first: disarmed, and out on every interface
+    // before anything else stops (nothing fires while the program closes)
+    if (m_safety != nullptr)
+        m_safety->disarmAndFlush(QStringLiteral("exit"));
+    // (a fade of Stop all goes on below: what fades out ends)
+    if (m_stopFade != nullptr && m_stopFade->isActive())
+    {
+        m_stopFade->stop();
+        emit stopFadingChanged();
+    }
+
     const bool live = m_doc->masterTimer()->runningFunctions() > 0 || m_programmer->hasValues() ||
                       m_patch->identified().isEmpty() == false;
 
@@ -875,10 +937,128 @@ void DtcCore::releaseOutput()
     runFor(120, nullptr);
 }
 
+bool DtcCore::playsOnItsOwn(const Function *f)
+{
+    // (not the steps of a chaser, the tracks of a super scene: they stop
+    // with it; one also started by a button or a playback stops too)
+    return f->startedAsChild() == false || f->isStartedBy(FunctionParent::master()) ||
+           f->isStartedBy(PlaybackManager::playbackParent());
+}
+
+QSet<quint32> DtcCore::keptByFaders() const
+{
+    // what the faders hold up, and what plays inside it, inside that...
+    QSet<quint32> keep = m_surface->heldScenes();
+    bool grew = keep.isEmpty() == false;
+    while (grew)
+    {
+        QList<quint32> inside;
+        for (Function *f : m_doc->functions())
+        {
+            if (f->stopped() || keep.contains(f->id()))
+                continue;
+            for (const quint32 parent : std::as_const(keep))
+            {
+                if (f->isStartedBy(FunctionParent(FunctionParent::Function, parent)))
+                {
+                    inside.append(f->id());
+                    break;
+                }
+            }
+        }
+        for (const quint32 id : std::as_const(inside))
+            keep.insert(id);
+        grew = inside.isEmpty() == false;
+    }
+    return keep;
+}
+
 void DtcCore::stopAll()
 {
+    // a second Stop all while the first one fades: at once (Esc twice).
+    // What fades ends now, and what started meanwhile stops (not kept to
+    // bring back: what the first one stopped still can be)
+    if (m_stopFade->isActive())
+    {
+        const QSet<quint32> keep = keptByFaders();
+        for (Universe *universe : m_doc->inputOutputMap()->claimUniverses())
+            universe->cutFadeOuts(keep);
+        m_doc->inputOutputMap()->releaseUniverses(false);
+        m_stopFade->stop();
+        emit stopFadingChanged();
+        if (m_safety != nullptr)
+            m_safety->disarm(QStringLiteral("stopAll"));
+        m_playbacks->resetLive();
+        stopFunctions();
+        return;
+    }
+
+    // what plays can be brought back for some seconds (Ctrl+Z, the toast)
+    m_recall->take(QStringLiteral("stopAll"), false);
+
+    // the panic button disarms the special effects (at once, also with a fade)
+    if (m_safety != nullptr)
+        m_safety->disarm(QStringLiteral("stopAll"));
+
     // the flashes held on playbacks are let go (their levels stay)
     m_playbacks->resetLive();
+
+    // with a fade (Options): the faders of the functions fade out from where
+    // they are before anything stops (their stop, at the next tick, would cut
+    // those without a fade out), and the functions stop with that fade. Not
+    // what the faders of the SHOW hold up
+    const int fade = m_settings->stopAllFadeMs();
+    if (fade > 0)
+    {
+        const QSet<quint32> keep = keptByFaders();
+        bool fading = false;
+        for (Universe *universe : m_doc->inputOutputMap()->claimUniverses())
+        {
+            universe->fadeOutFunctionFaders(uint(fade), keep);
+            fading = fading || universe->hasFunctionFaders();
+        }
+        m_doc->inputOutputMap()->releaseUniverses(false);
+        // (a function in beats would read the time as beats: its own fade out)
+        for (Function *f : m_doc->functions())
+        {
+            if (f->stopped() == false && keep.contains(f->id()) == false && playsOnItsOwn(f) &&
+                f->tempoType() != Function::Beats)
+                f->setOverrideFadeOutSpeed(uint(fade));
+        }
+        if (fading)
+        {
+            m_stopFadeMs = fade;
+            m_stopFade->start(fade);
+            emit stopFadingChanged();
+        }
+    }
+    stopFunctions();
+}
+
+void DtcCore::releaseGroups()
+{
+    // what they play can be brought back for some seconds
+    m_recall->take(QStringLiteral("releaseGroups"), true);
+    m_zones->stopAll();
+}
+
+bool DtcCore::stopFading() const
+{
+    return m_stopFade != nullptr && m_stopFade->isActive();
+}
+
+int DtcCore::stopFadeMs() const
+{
+    return m_stopFadeMs;
+}
+
+LiveRecall *DtcCore::recall() const
+{
+    return m_recall;
+}
+
+void DtcCore::stopFunctions()
+{
     m_zones->stopAll();
 
     // the scenes faders of the SHOW hold up go on: only their fader stops
@@ -890,9 +1070,7 @@ void DtcCore::stopAll()
     {
         for (Function *f : m_doc->functions())
         {
-            const bool own = f->startedAsChild() == false || f->isStartedBy(FunctionParent::master()) ||
-                             f->isStartedBy(PlaybackManager::playbackParent());
-            if (f->stopped() == false && own && held.contains(f->id()) == false)
+            if (f->stopped() == false && playsOnItsOwn(f) && held.contains(f->id()) == false)
                 f->stop(FunctionParent::master());
         }
         return;
@@ -909,6 +1087,17 @@ void DtcCore::stopAll()
 
 void DtcCore::clearShow(bool restart)
 {
+    // the special effects disarmed and out on every interface while the
+    // frames still go (the timer stops below, the universes may go)
+    if (m_safety != nullptr)
+        m_safety->disarmAndFlush(QStringLiteral("show"));
+    // (a fade of Stop all: the universes start again empty)
+    if (m_stopFade->isActive())
+    {
+        m_stopFade->stop();
+        emit stopFadingChanged();
+    }
+
     m_zones->clear();
     m_playbacks->clear();
     m_cuelists->clear();
@@ -1038,6 +1227,12 @@ bool DtcCore::loadShow(const QString &path, const QString &show)
     const QString damage = damaged ? tr("line %1: %2").arg(reader->lineNumber()).arg(reader->errorString())
                                    : QString();
     QLCFile::releaseXMLReader(reader);
+    // the protected special effects of the show decided (what it says
+    // nothing of, by its kind) and in its universes before their first frame
+    m_patch->settleProtection();
+    // its parked channels too (checked against its fixtures, said once open)
+    m_safety->afterLoad();
+    m_safety->push();
     m_doc->inputOutputMap()->startUniverses();
     m_doc->masterTimer()->start();
     // the controllers were patched again: their LEDs get ready again
@@ -1106,7 +1301,8 @@ QString DtcCore::importFromShow(const QUrl &url, bool patch, bool scenes)
     QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
     QList<EffectExchange::ShowZone> zones;
     QString error;
-    Doc *other = EffectExchange::loadShow(m_doc, path, &zones, &error);
+    QHash<quint32, QXmlStreamAttributes> plan;
+    Doc *other = EffectExchange::loadShow(m_doc, path, &zones, &error, nullptr, &plan);
     if (other == nullptr)
     {
         setLastError(error);
@@ -1118,7 +1314,13 @@ QString DtcCore::importFromShow(const QUrl &url, bool patch, bool scenes)
     // (not on fixtures of this show at the same address)
     QHash<quint32, quint32> copies;
     if (patch)
+    {
         done.append(tr("%n fixture(s)", "", m_patch->importFixtures(other, &copies)));
+        // their icons and the protected special effects go with them (a CO2
+        // protected by hand there is one here too), before any of their
+        // scenes can play
+        m_patch->importPlanSettings(copies, plan);
+    }
 
     if (scenes)
     {
@@ -1251,6 +1453,9 @@ void DtcCore::loadSection(QXmlStreamReader &reader)
         else if (reader.name() == KXMLDTCSelections || reader.name() == KXMLDTCPlan ||
                  reader.name() == KXMLDTCNumbers || reader.name() == KXMLDTCGroupOrder)
             m_patch->loadXML(reader);
+        // the parked channels
+        else if (reader.name() == KXMLDTCSafety)
+            m_safety->loadXML(reader);
         else if (reader.name() == KXMLDTCFolders)
         {
             while (reader.readNextStartElement())
@@ -1340,6 +1545,7 @@ bool DtcCore::writeWorkspace(const QString &path, const QlcCopy *copy)
     m_mapping->saveXML(&doc);
     m_patch->saveXML(&doc);
     m_palettes->saveXML(&doc);
+    m_safety->saveXML(&doc);
     // the scenes keep their folder (the function path); this list keeps the empty ones
     const QStringList folders = sceneFolders();
     if (folders.isEmpty() == false)
@@ -1469,7 +1675,16 @@ QVariantList DtcCore::qlcExportInfo(const QString &format, bool controls) const
     QVariantList list;
     for (const Cuelist *cl : cuelistsByName(m_doc))
     {
-        QStringList lost = QlcExchange::toSteps(m_doc, cl, sequence).lost;
+        const QlcExchange::CueSteps steps = QlcExchange::toSteps(m_doc, cl, sequence);
+        QStringList lost = steps.lost;
+        // DMX Total Control: QLC+ has no gate: its steps fire the protected
+        // special effects with nothing armed and for as long as they say
+        bool fires = false;
+        for (const QlcExchange::Step &step : steps.steps)
+            for (const SceneValue &scv : step.values)
+                fires = fires || (scv.value > 0 && m_patch->isProtected(scv.fxi));
+        if (fires)
+            lost.append(tr("It fires protected special effects: QLC+ doesn't arm them nor limit their time"));
         if (controls)
         {
             QlcExchange::VcCueList widget;
@@ -1483,6 +1698,23 @@ QVariantList DtcCore::qlcExportInfo(const QString &format, bool controls) const
         list.append(info);
     }
     return list;
+}
+
+QStringList DtcCore::qlcCopyWarnings() const
+{
+    QStringList lines;
+    // DMX Total Control: the copy keeps their values (in the scenes and the
+    // steps), and QLC+ fires them from anything (its Simple Desk, Identify)
+    int effects = 0;
+    for (const Fixture *fxi : m_doc->fixtures())
+        if (m_patch->isProtected(fxi->id()))
+            effects++;
+    if (effects > 0)
+        lines.append(tr("%n protected special effect(s): QLC+ doesn't arm them nor limit their time", "", effects));
+    // (in its section, which QLC+ doesn't read: there they play as their scenes say)
+    if (m_safety->parkedCount() > 0)
+        lines.append(tr("%n parked fixture(s): QLC+ doesn't park channels", "", m_safety->parkedCount()));
+    return lines;
 }
 
 QUrl DtcCore::qlcCopyUrl() const
@@ -2431,11 +2663,64 @@ QVariantList DtcCore::examples() const
     return list;
 }
 
-QString DtcCore::manualHtml(const QString &name, int width) const
+/** A place of the manual a link or a button can open: a line of its own
+ *  <a id="name"></a> (the same in every language) */
+static const QRegularExpression &manualAnchorLine()
 {
-    const QString markdown = manualPage(name);
-    if (markdown.isEmpty())
-        return QString();
+    static const QRegularExpression line(QStringLiteral("^[ \\t]*<a (?:id|name)=\"([^\"]+)\"[ \\t]*>[ \\t]*</a>[ \\t]*$"),
+                                         QRegularExpression::MultilineOption);
+    return line;
+}
+
+QString DtcCore::manualAnchor(const QString &heading)
+{
+    // as GitHub and the web site write them: small letters, the spaces as
+    // hyphens, without punctuation (an apostrophe joins its words: «Options
+    // d’un bouton» is "options-dun-bouton", «L'elenco» is "lelenco")
+    QString anchor;
+    for (const QChar c : heading.trimmed().toLower())
+    {
+        if (c.isLetterOrNumber() || c.isMark() || c == QLatin1Char('-') || c == QLatin1Char('_'))
+            anchor += c;
+        else if (c == QLatin1Char(' '))
+            anchor += QLatin1Char('-');
+    }
+    return anchor;
+}
+
+/** $text by the rule of manualAnchor, as a link and a heading are compared
+ *  when no anchor is the same: without accents, a run of hyphens as one
+ *  («Suspensión selectiva de USB», "suspension-selectiva-de-usb" and
+ *  "Suspensión-selectiva--de-USB" are the same) */
+static QString manualSlug(const QString &text)
+{
+    const QString plain = DtcCore::manualAnchor(text).normalized(QString::NormalizationForm_D);
+    QString slug;
+    bool gap = false;
+    for (const QChar c : plain)
+    {
+        if (c.category() == QChar::Mark_NonSpacing)
+            continue;
+        if (c.isLetterOrNumber())
+        {
+            if (gap && slug.isEmpty() == false)
+                slug += QLatin1Char('-');
+            slug += c;
+            gap = false;
+        }
+        else
+        {
+            gap = true;
+        }
+    }
+    return slug;
+}
+
+/** Markdown of the manual as HTML for the help panel */
+static QString manualToHtml(QString markdown, int width)
+{
+    // (the places links open are not shown)
+    markdown.remove(manualAnchorLine());
     QTextDocument doc;
     doc.setMarkdown(markdown, QTextDocument::MarkdownDialectGitHub);
     QString html = doc.toHtml();
@@ -2448,4 +2733,53 @@ QString DtcCore::manualHtml(const QString &name, int width) const
     static const QRegularExpression linkColour(QStringLiteral(" ?color:#0000ff;"), QRegularExpression::CaseInsensitiveOption);
     html.remove(linkColour);
     return html;
+}
+
+QString DtcCore::manualHtml(const QString &name, int width) const
+{
+    const QString markdown = manualPage(name);
+    if (markdown.isEmpty())
+        return QString();
+    return manualToHtml(markdown, width);
+}
+
+QString DtcCore::manualHtmlBefore(const QString &name, const QString &anchor, int width) const
+{
+    const QString markdown = manualPage(name);
+    const qsizetype at = manualAnchorAt(markdown, anchor);
+    if (at <= 0)
+        return QString();
+    return manualToHtml(markdown.left(at), width);
+}
+
+qsizetype DtcCore::manualAnchorAt(const QString &markdown, const QString &anchor)
+{
+    const QString wanted = manualSlug(anchor);
+    if (markdown.isEmpty() || wanted.isEmpty())
+        return -1;
+
+    // a place of its own with that name, else the heading whose anchor it
+    // is, else a heading with those words (accents aside: «Auswahlen» is
+    // not «Auswählen», though it is the first with those words)
+    QRegularExpressionMatchIterator places = manualAnchorLine().globalMatch(markdown);
+    while (places.hasNext())
+    {
+        const QRegularExpressionMatch place = places.next();
+        if (manualSlug(place.captured(1)) == wanted)
+            return place.capturedStart();
+    }
+    static const QRegularExpression heading(QStringLiteral("^#{1,6}[ \\t]+(.+?)[ \\t#]*$"),
+                                            QRegularExpression::MultilineOption);
+    const QString exact = manualAnchor(anchor);
+    qsizetype words = -1;
+    QRegularExpressionMatchIterator headings = heading.globalMatch(markdown);
+    while (headings.hasNext())
+    {
+        const QRegularExpressionMatch match = headings.next();
+        if (manualAnchor(match.captured(1)) == exact)
+            return match.capturedStart();
+        if (words < 0 && manualSlug(match.captured(1)) == wanted)
+            words = match.capturedStart();
+    }
+    return words;
 }

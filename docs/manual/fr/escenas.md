@@ -110,6 +110,8 @@ En haut, vous voyez la couleur réelle de chaque tête pendant que l’effet jou
 
 Un **mapping sur le plan 2D** est un Colour FX qui naît déjà avec la disposition du plan : l’effet, le texte ou l’image se placent sur le plateau comme le sont les fixtures.
 
+Les Colour FX, les mappings sur le plan 2D, les Curve FX, les Move FX, « Utiliser la sélection du programmeur », « Convertir en FX » et « Convertir en pas » laissent de côté les [effets spéciaux protégés](programar.md#effets-spéciaux-protégés), et un message le dit (« 1 effet spécial protégé reste en dehors du FX »). Avec seulement des effets protégés sélectionnés, rien n’est créé.
+
 ### Move FX et Curve FX
 
 Ce sont des effets de l’ancien module : les **Move FX** bougent pan/tilt selon une forme et les **Curve FX** donnent une onde (sinus, triangle, rampes, carré, aléatoire, stroboscope…) à des canaux. Vous les trouverez dans d’anciens shows ou dans des shows QLC+ ; ils ne se créent plus depuis « Nouvelle ».
@@ -436,7 +438,7 @@ Sélectionnez une cue et ouvrez **« Détails de la cue »** › **« Lien et
 - **« Libérer un groupe »** (ou tous) et **« Libérer tous les playbacks »**.
 - **« Régler le BPM »**, de 20 à 300.
 
-Chaque ligne se modifie sur place ; la **×** la retire. Les actions se font dans l’ordre quand la cue démarre par GO, Suivre, Attendre ou « Aller à la cue », y compris la première cue au lancement de la cuelist. Elles ne se font pas avec BACK, quand une modification réapplique la cue, ni quand une super scène démarre la cuelist en cours de route.
+Chaque ligne se modifie sur place ; la **×** la retire. Les actions se font dans l’ordre quand la cue démarre par GO, Suivre, Attendre ou « Aller à la cue », y compris la première cue au lancement de la cuelist. Elles ne se font pas avec BACK, quand une modification réapplique la cue, ni quand une super scène démarre la cuelist en cours de route. Aucune action n’arme les effets spéciaux, ne met l’arrêt du show, ne ramène ce qui jouait ni ne fait de fondu au noir.
 
 - La cuelist elle-même n’apparaît pas : c’est le rôle du lien.
 - Une action sur une scène ou une cuelist supprimée affiche « (supprimée) » et ne fait rien.
@@ -498,6 +500,8 @@ Sous chaque cuelist, la fenêtre indique ce qui ne passe pas :
 - « Libérée par un autre GO » : ces listes vont dans un cadre « Cuelists (une à la fois) », où en lancer une arrête les autres.
 
 Une cuelist qui a déjà sa liste de cues dans la Console virtuelle (un show de QLC+ dont vous avez converti les pas en cuelist) n’en reçoit pas d’autre : l’ancienne la relance. Essayez la copie dans QLC+ avant de l’utiliser en direct : QLC+ fait ses fondus à sa façon.
+
+En haut, la fenêtre avertit aussi de ce que QLC+ ne fait pas avec ce show : « 2 effets spéciaux protégés : QLC+ ne les arme pas et ne limite pas leur durée », avec « Déclenche des effets spéciaux protégés : … » sous chaque cuelist qui en déclenche un, et « 2 fixtures parqués : QLC+ ne parque pas les canaux ». La copie garde les valeurs des effets protégés dans les scènes et les pas, mais QLC+ les déclenche depuis n’importe où, sans armer et sans durée maximale (voir [Effets spéciaux protégés](patch.md#effets-spéciaux-protégés)).
 
 ### Cue lists de QLC+
 

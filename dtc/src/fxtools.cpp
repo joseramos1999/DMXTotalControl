@@ -451,8 +451,23 @@ static void copyCommon(const Function *from, FXScene *to)
     to->setVisible(from->isVisible());
 }
 
-FXScene *FxTools::convert(Doc *doc, const Function *function)
+FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32> &excluded, int *leftOut)
 {
+    // DMX Total Control: the fixtures $excluded stay out (counted in $leftOut)
+    QSet<quint32> left;
+    auto finish = [&](FXScene *fx, const QList<quint32> &fixtures) -> FXScene * {
+        if (leftOut != nullptr)
+            *leftOut = int(left.count());
+        if (fixtures.isEmpty() && left.isEmpty() == false)
+        {
+            delete fx;
+            return nullptr;
+        }
+        return fx;
+    };
+    if (leftOut != nullptr)
+        *leftOut = 0;
+
     if (const EFX *efx = qobject_cast<const EFX *>(function))
     {
         FXScene *fx = new FXScene(doc);
@@ -460,8 +475,12 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
 
         QList<quint32> fixtures;
         for (EFXFixture *ef : efx->fixtures())
-            if (fixtures.contains(ef->head().fxi) == false)
+        {
+            if (excluded.contains(ef->head().fxi))
+                left.insert(ef->head().fxi);
+            else if (fixtures.contains(ef->head().fxi) == false)
                 fixtures.append(ef->head().fxi);
+        }
         fx->setFixtures(fixtures);
 
         FXScene::Layer layer = defaultLayer("pantilt");
@@ -496,7 +515,7 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
         for (EFXFixture *ef : efx->fixtures())
         {
             const quint32 fid = ef->head().fxi;
-            if (offsetDone.contains(fid))
+            if (offsetDone.contains(fid) || fixtures.contains(fid) == false)
                 continue;
             offsetDone.append(fid);
             if (ef->startOffset() % 360 != 0)
@@ -548,14 +567,21 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
             }
         }
         fx->setLayers(layers);
-        return fx;
+        return finish(fx, fixtures);
     }
 
     if (const CurveFX *curve = qobject_cast<const CurveFX *>(function))
     {
         FXScene *fx = new FXScene(doc);
         copyCommon(curve, fx);
-        const QList<quint32> fixtures = curve->fixtures();
+        QList<quint32> fixtures;
+        for (quint32 fid : curve->fixtures())
+        {
+            if (excluded.contains(fid))
+                left.insert(fid);
+            else
+                fixtures.append(fid);
+        }
         fx->setFixtures(fixtures);
 
         const int low = curve->low(), high = curve->high();
@@ -617,7 +643,7 @@ FXScene *FxTools::convert(Doc *doc, const Function *function)
             layers.append(layer);
         }
         fx->setLayers(layers);
-        return fx;
+        return finish(fx, fixtures);
     }
 
     return nullptr;

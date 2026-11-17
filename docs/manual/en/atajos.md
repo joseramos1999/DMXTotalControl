@@ -23,14 +23,26 @@ All the keys and combinations of the program, by page. The keys you assign yours
 | **Ctrl+S** | Save the show (the first time, it asks for a name) |
 | **Ctrl+Shift+S** | Save the show with another name (“Save as…”) |
 | **Ctrl+B** | Blackout (on and off) |
+| **Pause** twice (within 2 s) | Puts the [show stop](directo.md#show-stop) on or takes it away, on any page, with any modifier and even while you type. A single press only warns (“Show stop: press Pause again to put it”); holding it does nothing more. It can't be assigned in Mappings; a show that already mapped it keeps it |
 | **Esc** | Stop all. In Learn mode, cancels the pending control or leaves the mode; with “Record” armed in Playbacks, disarms it; with a group isolated on the plan of Patch, ends the isolation (with a menu, a drop-down list or a window of Patch open, such as “Add fixtures”, “Edit” or “Limits”, it only closes it; a warning such as “Save changes?” doesn't close with Esc). In a window where you type a name or a number (“Create group”, “Rename”, “Renumber”…), closes it without applying anything: press Esc again to stop all |
+| **Esc** twice | During the fade of “Stop all with a fade”, stops everything at once |
+| **Ctrl+Z** | In Live and in the SHOW (not in its edit mode nor while you type), for 10 s after “Stop all” or “Release groups”: [bring back what was playing](directo.md#bring-back-what-was-playing) |
 | **Ctrl+→** | Next scene in each playing group |
 | **Ctrl+←** | Previous scene in each playing group |
 | **G** | BeatGO (except on the Show page) |
 
 If a page is locked, its key asks for the password (if there is one) and unlocks it. With the SHOW locked (kiosk mode) the page keys do not work, and with Setup locked neither do Ctrl+N, Ctrl+O and Ctrl+Shift+S.
 
-T, G and the keys you assign in Mappings do not act while you are typing in a text field, such as the command line of Program.
+T, G and the keys you assign in Mappings do not act while you are typing in a text field, such as the command line of Program. The Pause key (the show stop) does work while you type.
+
+## Show mode
+
+With [Show mode](directo.md#show-mode) on, when you close the program or open or start another show:
+
+| Key | What it does |
+|---|---|
+| Hold **Space** or **Enter** for 1.5 s | Like holding the button: confirms (the key's auto-repeat doesn't count) |
+| **Esc** | Cancels; in that window it never stops the show |
 
 ## Playbacks
 
@@ -120,5 +132,6 @@ After you click a fader or a slider:
 | Wheel | 2D plan | Zoom |
 | Drag with the right or middle button | 2D plan | Moves the view (double click: centres it) |
 | Right click | 15° button of the 2D plan | Rotates the other way |
-| Right click | SHOW button (live) | Stops what it plays (its scene, its group, its playback or its palette), also with GO |
+| Right click | SHOW button (live) | Stops what it plays (its scene, its group, its playback or its palette), also with GO; an “Arm effects” button disarms them |
 | Hold down “Unlock” | Locked Show | Unlocks |
+| Hold down for 1 s | “Show stop” button of the SHOW, a mapped pad or key, the hand of the phone, “Hold to release” | Puts the show stop on or takes it away |

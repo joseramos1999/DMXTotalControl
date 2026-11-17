@@ -58,9 +58,11 @@ If you open the remote with the QR code or a numeric address, the phone checks i
 
 At the top is the remote bar:
 
-- The **show name** and the **tabs** of the SHOW pages. The phone remembers the last page you opened.
+- The **show name** and the **tabs** of the SHOW pages. The phone remembers the last page you opened. On a narrow phone the name gets shorter, and it only hides when the tabs would have no room (in a show with special effects, whose arm button is in the bar).
 - A **dot** that shows whether there is a connection with the computer.
 - **BO**: blackout.
+- **Arm** (with a flame): only when the show has protected special effects; red, “ARMED”, with the effects armed. On a phone held upright (480 px wide or less) it shows only the flame.
+- The **hand**: the [show stop](directo.md#show-stop). Hold it for a second (a strip fills); red while it is on.
 - The **full screen** button.
 
 Below it, the page with its sections, as on the computer:
@@ -84,6 +86,15 @@ If any playback has something assigned, the remote adds a **“Playbacks”** pa
 
 The remote uses the same [theme](opciones.md#general) as the program and comes up in the language of the phone if it is Spanish, Portuguese, French, Italian or German (otherwise, in English).
 
+## Safety on the phone
+
+- **Arm**: a tap asks for the opposite of what the phone shows, so a message that comes late or twice never arms what was just disarmed. Armed, a red bar **“EFFECTS ARMED”** says what fires and has **“Disarm”** (see [Protected special effects](directo.md#protected-special-effects)).
+- **Show stop**: the hand in the bar, or a SHOW button “Show stop”, held for a second. Once it is on, a red bar **“SHOW STOP”** with **“Hold to release”**. A phone that disconnects while holding it lets go without changing anything, and two phones at once count as a single hold (see [Show stop](directo.md#show-stop)).
+- **Bring back what was playing**: after Stop all, a blue bar with **“Bring back”** and a 10 s strip (a tap in its first half second doesn't count).
+- These bars go under the bar of the remote, and the page gets shorter. The SHOW buttons “Arm effects”, “Show stop”, “Bring back” and “Fade to black” work from the phone and light up there too.
+
+> **Not tested with real equipment:** the remote has not been tried on a real phone over a Wi-Fi with drops; only the computer side and the page in a browser.
+
 ## If the connection drops
 
-If the phone loses the connection, “No connection with DMX Total Control. Trying again…” appears and it reconnects by itself. Whatever your finger was holding down (a flash, a button) is released on the computer, so that nothing stays on.
+If the phone loses the connection, “No connection with DMX Total Control. Trying again…” appears and it reconnects by itself. Whatever your finger was holding down (a flash, a button) is released on the computer, so that nothing stays on. A show stop that was being held is let go too, without changing anything.

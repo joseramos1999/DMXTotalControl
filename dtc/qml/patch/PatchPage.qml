@@ -43,10 +43,25 @@ Item {
         them): when it doesn't fit (a small screen, a longer language), icons alone */
     property real toolbarFullWidth: 0
     readonly property bool toolbarCompact: compact || toolbarFullWidth > toolbarRow.width
+    /** The header with the chip of the parks in full needs this much
+        (measured while it shows it): when it doesn't fit (a small screen, a
+        longer language), the chip shows the lock, the count and an icon */
+    property real headerFullWidth: 0
+    readonly property bool parkChipCompact: compact || headerFullWidth > headerRow.width
 
     readonly property var fixtures: Core.patch.fixtures
 
     function isSelected(id) { return selectedIds.indexOf(id) >= 0 }
+
+    /** The fixtures with parked channels: { id: how many } */
+    readonly property var parked: Core.safety.parkedFixtures
+    /** Some fixture of the selection is parked */
+    readonly property bool selectionParked: selectedIds.some(id => parked[id] !== undefined)
+    /** Every parked fixture of the selection stays parked in blackout too */
+    readonly property bool selectionParkedInBlackout: {
+        Core.safety.parkedFixtures
+        return Core.safety.parkInBlackout(selectedIds)
+    }
 
     /** The group isolated on the plan (-1: none): a click on a group in the
      *  plan view shows it alone, the other fixtures locked (faded, nothing
@@ -232,7 +247,7 @@ Item {
         options.columns = columnsSpin.value
         Core.patch.arrange(selectedIds, shape, options)
     }
-    /** Developer option --patch-view: list, grid, plan, live, limits, matrix,
+    /** Developer option --patch-view: list, grid, plan, live, limits, effect, matrix,
      *  add (Add fixtures), share (its GDTF-Share browser), import (the Import
      *  menu), look (the plan with its Look menu open on the fixtures of the
      *  last type, on its Icon entry: --keys "key:Right" opens it) */
@@ -255,6 +270,12 @@ Item {
             addDialog.open()
             if (what === "share")
                 addDialog.openShare()
+            return
+        }
+        // the special effect dialog on the first protected fixture
+        if (what === "effect") {
+            selectedIds = fixtures.filter(f => f.protected).slice(0, 1).map(f => f.id)
+            effectDialog.openFor(selectedIds)
             return
         }
         if (what === "limits" || what === "matrix") {
@@ -334,8 +355,10 @@ Item {
 
         // header
         RowLayout {
+            id: headerRow
             Layout.fillWidth: true
             spacing: 10
+            onImplicitWidthChanged: if (!page.parkChipCompact) page.headerFullWidth = implicitWidth
 
             // the subtitle shortens: the buttons always fit
             Column {
@@ -356,6 +379,41 @@ Item {
                     text: qsTr("%n fixture(s) patched", "", Core.patch.fixturesCount)
                     color: Theme.textDim
                     font.pixelSize: Theme.fontSmall
+                }
+            }
+
+            // parked channels: how many fixtures have them, and unpark them all
+            Rectangle {
+                visible: Core.safety.parkedCount > 0
+                Layout.preferredWidth: parkRow.implicitWidth + 18
+                Layout.preferredHeight: 32
+                radius: 16
+                color: Qt.alpha(Theme.warning, 0.14)
+                border.color: Qt.alpha(Theme.warning, 0.6)
+                HoverHandler { id: parkChipHover }
+                ToolTip.text: qsTr("Parked fixtures: their channels keep a fixed value at the output, above the scenes, the programmer, the grand master and Stop all. Right click a fixture to unpark it")
+                ToolTip.visible: parkChipHover.hovered && !unparkAllButton.hovered
+                ToolTip.delay: 500
+                RowLayout {
+                    id: parkRow
+                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
+                    spacing: 6
+                    IconLabel { icon: Theme.iconLock; size: 12; color: Theme.readable(Theme.warning) }
+                    Text {
+                        text: page.parkChipCompact ? Core.safety.parkedCount : qsTr("%n parked", "", Core.safety.parkedCount)
+                        color: Theme.text
+                        font.pixelSize: Theme.fontSmall
+                    }
+                    AppButton {
+                        id: unparkAllButton
+                        text: page.parkChipCompact ? "" : qsTr("Unpark all")
+                        iconGlyph: page.parkChipCompact ? Theme.iconUnlock : ""
+                        flat: true
+                        implicitHeight: 26
+                        ToolTip.text: qsTr("Unpark all")
+                        ToolTip.visible: page.parkChipCompact && hovered
+                        onClicked: Core.safety.unparkAll()
+                    }
                 }
             }
 
@@ -458,7 +516,7 @@ Item {
                     ToolTip.text: qsTr("Light up the selected fixtures in white, blinking, to find them on stage")
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
-                    onClicked: Core.patch.identify(page.identifying ? [] : page.selectedIds)
+                    onClicked: page.identifySelection()
                 }
                 AppButton {
                     iconGlyph: Theme.iconArrowsH
@@ -484,6 +542,16 @@ Item {
                     ToolTip.visible: hovered
                     ToolTip.delay: 500
                     onClicked: optionsDialog.openFor(page.selectedIds)
+                }
+                // CO2, flames, sparks, confetti: protected, their times, a safety
+                // channel (an icon: with its text the bar didn't fit at 1440 px)
+                AppButton {
+                    iconGlyph: Theme.iconFire
+                    enabled: page.selectedIds.length > 0
+                    ToolTip.text: qsTr("Protected special effect: it only fires with the effects armed, each fire cut at its maximum time")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    onClicked: effectDialog.openFor(page.selectedIds)
                 }
                 Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 24; color: Theme.border }
                 AppButton {
@@ -885,8 +953,15 @@ Item {
                                         id: rowMouse
                                         anchors.fill: parent
                                         hoverEnabled: true
-                                        onClicked: (ev) => page.clickFixture(fx.id, ev.modifiers)
-                                        onDoubleClicked: editDialog.edit(fx)
+                                        // the right button: the menu of the fixture
+                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                        onClicked: (ev) => {
+                                            if (ev.button === Qt.RightButton)
+                                                page.openFixtureMenu(fx.id, rowMouse, ev.x, ev.y)
+                                            else
+                                                page.clickFixture(fx.id, ev.modifiers)
+                                        }
+                                        onDoubleClicked: (ev) => { if (ev.button === Qt.LeftButton) editDialog.edit(fx) }
                                     }
 
                                     RowLayout {
@@ -910,7 +985,40 @@ Item {
                                             font.family: Theme.monoFamily
                                             font.weight: Font.Bold
                                         }
-                                        Text { Layout.preferredWidth: page.compact ? 140 : 220; text: parent.parent.fx.name; color: Theme.text; elide: Text.ElideRight }
+                                        // its name; a protected special effect, a shield after it
+                                        RowLayout {
+                                            Layout.preferredWidth: page.compact ? 140 : 220
+                                            Layout.maximumWidth: page.compact ? 140 : 220
+                                            spacing: 6
+                                            Text {
+                                                Layout.fillWidth: true
+                                                Layout.maximumWidth: implicitWidth
+                                                text: parent.parent.parent.fx.name
+                                                color: Theme.text
+                                                elide: Text.ElideRight
+                                            }
+                                            IconLabel {
+                                                visible: !!parent.parent.parent.fx.protected
+                                                icon: Theme.iconShield
+                                                size: 12
+                                                color: Core.safety.armed ? Theme.danger : Theme.textDim
+                                                HoverHandler { id: shieldHover }
+                                                ToolTip.text: qsTr("Protected special effect: it only fires with the effects armed")
+                                                ToolTip.visible: shieldHover.hovered
+                                            }
+                                            // parked: a lock
+                                            IconLabel {
+                                                readonly property int count: page.parked[parent.parent.parent.fx.id] || 0
+                                                visible: count > 0
+                                                icon: Theme.iconLock
+                                                size: 12
+                                                color: Theme.readable(Theme.warning)
+                                                HoverHandler { id: lockHover }
+                                                ToolTip.text: qsTr("Parked: %n channel(s) with a fixed value at the output", "", count)
+                                                ToolTip.visible: lockHover.hovered
+                                            }
+                                            Item { Layout.fillWidth: true }
+                                        }
                                         Text {
                                             Layout.preferredWidth: 90
                                             text: (parent.parent.fx.universe + 1) + " . " + parent.parent.fx.address
@@ -956,7 +1064,7 @@ Item {
                                             accentColor: Theme.warning
                                             highlighted: Core.patch.identified.indexOf(parent.parent.fx.id) >= 0
                                             ToolTip.text: qsTr("Identify: blink this fixture in white"); ToolTip.visible: hovered
-                                            onClicked: Core.patch.toggleIdentify(parent.parent.fx.id)
+                                            onClicked: page.tellNotIdentified(Core.patch.toggleIdentify(parent.parent.fx.id))
                                         }
                                     }
                                 }
@@ -1240,6 +1348,8 @@ Item {
                         onSelectRequested: (ids, additive) => page.select(ids, additive)
                         snap: snapCombo.steps[snapCombo.currentIndex]
                         onMovedBy: (ids, dx, dy) => Core.patch.moveFixtures(ids, dx, dy, snap)
+                        // a right click on a fixture: its menu
+                        onContextRequested: (id, x, y) => page.openFixtureMenu(id, stagePlan, x, y)
                     }
                 }
             }
@@ -1286,6 +1396,76 @@ Item {
         MenuItem { text: qsTr("Select from the middle to the ends"); onTriggered: page.selectPattern(groupMenu.groupId, groupMenu.fixtures, "insideOut") }
         MenuSeparator {}
         MenuItem { text: qsTr("Delete group"); onTriggered: Core.patch.deleteGroup(groupMenu.groupId) }
+    }
+
+    /** Identify the selection, or stop. A protected special effect (CO2,
+     *  flames...) is never identified: said */
+    function identifySelection() {
+        tellNotIdentified(Core.patch.identify(page.identifying ? [] : page.selectedIds))
+    }
+    function tellNotIdentified(count) {
+        if (count > 0)
+            page.message(qsTr("%n protected special effect(s) not identified: they would fire", "", count), false)
+    }
+
+    /** The menu of a fixture (a right click on it, in the list or the plan,
+     *  at $x, $y of $item): on the selection, which takes it first when it
+     *  isn't in it */
+    function openFixtureMenu(id, item, x, y) {
+        if (isLocked(id))
+            return
+        if (!isSelected(id)) {
+            select([id], false)
+            anchorId = id
+        }
+        fixtureMenu.popup(item, x, y)
+    }
+    AppMenu {
+        id: fixtureMenu
+        MenuItem {
+            text: qsTr("Special effect…")
+            onTriggered: effectDialog.openFor(page.selectedIds)
+        }
+        MenuItem {
+            text: page.identifying ? qsTr("Stop identifying") : qsTr("Identify")
+            onTriggered: page.identifySelection()
+        }
+        MenuItem {
+            text: qsTr("Limits…")
+            onTriggered: optionsDialog.openFor(page.selectedIds)
+        }
+        MenuItem {
+            text: qsTr("Edit…")
+            enabled: page.selectedIds.length === 1
+            onTriggered: editDialog.edit(page.selectedFixtures()[0])
+        }
+        MenuSeparator {}
+        // parked channels: a fixed value at the output, above everything
+        // (Stop all and Blackout never unpark them)
+        MenuItem {
+            text: qsTr("Park as it is now")
+            onTriggered: Core.safety.parkCurrent(page.selectedIds)
+        }
+        MenuItem {
+            text: qsTr("Park off")
+            onTriggered: Core.safety.parkOff(page.selectedIds)
+        }
+        CheckMenuItem {
+            text: qsTr("Also in blackout")
+            enabled: page.selectionParked
+            selected: page.selectionParkedInBlackout
+            onTriggered: Core.safety.setParkInBlackout(page.selectedIds, !page.selectionParkedInBlackout)
+        }
+        MenuItem {
+            text: qsTr("Unpark")
+            enabled: page.selectionParked
+            onTriggered: Core.safety.unpark(page.selectedIds)
+        }
+        MenuItem {
+            text: qsTr("Unpark all")
+            enabled: Core.safety.parkedCount > 0
+            onTriggered: Core.safety.unparkAll()
+        }
     }
 
     AppMenu {
@@ -1336,6 +1516,7 @@ Item {
     ReaddressDialog { id: readdressDialog; focus: true }
     FixtureOptionsDialog { id: optionsDialog; focus: true }
     AimSettingsDialog { id: aimDialog; focus: true }
+    SpecialEffectDialog { id: effectDialog; focus: true }
     MatrixDialog {
         id: matrixDialog
         focus: true

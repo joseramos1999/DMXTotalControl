@@ -22,7 +22,9 @@ import QtQuick.Controls
 import DMXTotalControl
 import DMXTotalControl.Backend
 
-/** One merged programmer channel: { key, name, group, colour, value, active, capabilities } */
+/** One merged programmer channel: { key, name, group, colour, value, active,
+ *  capabilities, held } (held: of a protected special effect, recorded but
+ *  never sent) */
 Rectangle {
     id: root
 
@@ -51,12 +53,40 @@ Rectangle {
         }
         Text {
             width: parent.width
+            visible: !root.channel.held
             text: root.channel.group || ""
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
             font.pixelSize: 9
             font.capitalization: Font.AllUppercase
             color: root.channel.colour ? root.channel.colour : Theme.textFaint
+        }
+        // DMX Total Control: a protected special effect: what it is given is
+        // recorded in the scenes, it never goes out from here
+        Row {
+            anchors.horizontalCenter: parent.horizontalCenter
+            visible: !!root.channel.held
+            spacing: 3
+            IconLabel {
+                anchors.verticalCenter: parent.verticalCenter
+                icon: Theme.iconShield
+                size: 9
+                color: Theme.danger
+            }
+            Text {
+                // (shortened in a narrow fader: the tooltip says it all)
+                width: Math.min(implicitWidth, root.width - 12 - 12)
+                text: qsTr("not sent")
+                elide: Text.ElideRight
+                font.pixelSize: 9
+                font.capitalization: Font.AllUppercase
+                font.weight: Font.DemiBold
+                color: Theme.danger
+            }
+            HoverHandler { id: heldHover }
+            ToolTip.text: qsTr("A protected special effect: recorded in the scenes, never sent from the programmer. It fires from its scenes, armed")
+            ToolTip.visible: heldHover.hovered
+            ToolTip.delay: 300
         }
 
         VFader {

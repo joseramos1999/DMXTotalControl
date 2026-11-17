@@ -37,6 +37,7 @@
 #include "qlcmodifierscache.h"
 #include "channelmodifier.h"
 #include "qlccapability.h"
+#include "fixturelook.h"
 #include "qlcchannel.h"
 #include "fixturegroup.h"
 #include "universe.h"
@@ -73,6 +74,9 @@ PatchManager::PatchManager(Doc *doc, QObject *parent)
     connect(m_doc, SIGNAL(fixtureChanged(quint32)), this, SLOT(slotFixtureChanged(quint32)));
     connect(m_doc, SIGNAL(loaded()), this, SLOT(notifyFixtures()));
     connect(m_doc, SIGNAL(cleared()), this, SLOT(notifyFixtures()));
+    // the protected special effects of a show loaded (by DtcCore: once its
+    // plan is read, settleProtection)
+    connect(m_doc, SIGNAL(loaded()), this, SLOT(slotDocLoaded()));
 
     // the groups too, but once when a show is cleared or loaded (each group
     // made the lists of groups and their buttons again, for every group)
@@ -90,6 +94,12 @@ PatchManager::PatchManager(Doc *doc, QObject *parent)
     m_identifySource->setOutputEnabled(true);
     m_blinkTimer->setInterval(350);
     connect(m_blinkTimer, &QTimer::timeout, this, &PatchManager::slotBlink);
+    // DMX Total Control: a fixture identified that becomes a protected special
+    // effect stops blinking (identify leaves it out)
+    connect(this, &PatchManager::protectionChanged, this, [this]() {
+        if (m_identified.isEmpty() == false)
+            identify(identified());
+    });
     connect(m_doc, SIGNAL(cleared()), this, SLOT(slotDocCleared()));
     connect(m_doc, SIGNAL(fixtureRemoved(quint32)), this, SLOT(slotFixtureRemoved()));
     connect(m_doc, SIGNAL(fixtureRemoved(quint32)), this, SLOT(slotFixtureGone(quint32)));
@@ -141,6 +151,8 @@ void PatchManager::beginLoading()
 void PatchManager::endLoading()
 {
     m_loading = false;
+    // what the show said nothing of takes what its kind says
+    settleProtection();
     const bool fixtures = m_fixturesHeld;
     const bool groups = m_groupsHeld;
     m_fixturesHeld = false;
@@ -161,14 +173,24 @@ void PatchManager::slotFixtureChanged(quint32 id)
         m_identifySource->unsetAll();
         writeIdentify();
     }
+    // another mode or definition may put another channel where its safety
+    // channel was; another name or definition may make it a special effect
+    dropLostSafety(id);
+    recheckKinds({ id });
     slotFixturesDirty();
 }
 
 void PatchManager::applyPatch(Doc *doc, Fixture *fxi, QLCFixtureDef *def, QLCFixtureMode *mode,
                               quint32 universe, quint32 address)
 {
-    // the timer ticks with the universes claimed: none while they are here
-    doc->inputOutputMap()->claimUniverses();
+    // the timer ticks with the universes claimed: none while they are here.
+    // A frame may be under way still (or start now, ticked just before): it
+    // ends first, and none starts until the faders and the layers have both
+    // moved (one with the layer of before and the faders of after would send
+    // a held CO2 on its new address, which that layer doesn't protect)
+    const QList<Universe *> universes = doc->inputOutputMap()->claimUniverses();
+    for (Universe *u : universes)
+        u->lockFrames();
     {
         // Doc hears of it only at the end: each setter tells it, with a
         // range in between that may overlap another fixture
@@ -178,6 +200,15 @@ void PatchManager::applyPatch(Doc *doc, Fixture *fxi, QLCFixtureDef *def, QLCFix
         fxi->setUniverse(universe);
         fxi->setAddress(address);
     }
+    // what plays follows it now, and the protected special effects are at
+    // their new addresses: both before any frame (a scene that holds a CO2
+    // never writes its old address, free now, nor leaves the new one unwritten
+    // for a frame, which would let it go as a release)
+    for (Universe *u : universes)
+        u->refreshFaderFixtures(doc);
+    runPatchHook(doc);
+    for (Universe *u : universes)
+        u->unlockFrames();
     doc->inputOutputMap()->releaseUniverses(false);
 
     // now Doc (the map of the addresses) and the rest hear of it, once
@@ -259,6 +290,11 @@ QVariantList PatchManager::fixtures() const
         info.insert("icon", m_icons.value(fxi->id()));
         info.insert("typeKey", type >= 0 ? types.at(type).key : QString());
         info.insert("colorIndex", type);
+        // a protected special effect (the shield of the list and the plan),
+        // and whether its kind is protected by itself («As its kind»)
+        info.insert("protected", isProtected(fxi->id()));
+        info.insert("kindProtected", protectedByDefault(kind));
+        info.insert("crossUniverse", crossesUniverses(fxi));
         // a moving head: the way it faces and how high it hangs (Follow)
         bool aimable = false;
         for (quint32 c = 0; c < fxi->channels() && aimable == false; c++)
@@ -1317,16 +1353,24 @@ bool PatchManager::isIdentified(quint32 id) const
     return m_identified.contains(id);
 }
 
-void PatchManager::identify(const QVariantList &ids)
+int PatchManager::identify(const QVariantList &ids)
 {
     QList<quint32> list;
+    // DMX Total Control: the protected special effects left out (their
+    // intensity is what fires them)
+    QList<quint32> leftOut;
     for (const QVariant &v : ids)
     {
-        if (m_doc->fixture(v.toUInt()) != nullptr && list.contains(v.toUInt()) == false)
-            list.append(v.toUInt());
+        const quint32 id = v.toUInt();
+        if (m_doc->fixture(id) == nullptr || list.contains(id) || leftOut.contains(id))
+            continue;
+        if (isProtected(id))
+            leftOut.append(id);
+        else
+            list.append(id);
     }
     if (list == m_identified)
-        return;
+        return int(leftOut.count());
 
     m_identified = list;
     m_identifySource->unsetAll();
@@ -1338,16 +1382,17 @@ void PatchManager::identify(const QVariantList &ids)
     else
         m_blinkTimer->start();
     emit identifiedChanged();
+    return int(leftOut.count());
 }
 
-void PatchManager::toggleIdentify(quint32 id)
+int PatchManager::toggleIdentify(quint32 id)
 {
     QVariantList ids = identified();
     if (m_identified.contains(id))
         ids.removeAll(id);
     else
         ids.append(id);
-    identify(ids);
+    return identify(ids);
 }
 
 void PatchManager::stopIdentify()
@@ -1365,6 +1410,10 @@ void PatchManager::slotDocCleared()
     m_aims.clear();
     m_importIds.clear();
     m_groupOrder.clear();
+    // (told always: clearPlan() may have forgotten them already)
+    m_effects.clear();
+    m_effectKinds.clear();
+    emit protectionChanged();
 }
 
 void PatchManager::slotFixtureRemoved()
@@ -1398,18 +1447,8 @@ void PatchManager::slotBlink()
     writeIdentify();
 }
 
-static int capabilityValue(const QLCChannel *ch, const QStringList &words)
-{
-    for (const QString &word : words)
-    {
-        for (QLCCapability *cap : ch->capabilities())
-        {
-            if (cap->name().contains(word, Qt::CaseInsensitive))
-                return (cap->min() + cap->max()) / 2;
-        }
-    }
-    return -1;
-}
+// (the one copy: the programmer, the identify, the show stop)
+using FixtureLook::capabilityValue;
 
 void PatchManager::writeIdentify()
 {
@@ -1421,6 +1460,14 @@ void PatchManager::writeIdentify()
         Fixture *fxi = m_doc->fixture(fid);
         if (fxi == nullptr)
             continue;
+        // DMX Total Control: never a protected special effect (identify
+        // leaves them out; this is a second guard)
+        if (isProtected(fid))
+        {
+            for (quint32 c = 0; c < fxi->channels(); c++)
+                m_identifySource->unset(fid, c);
+            continue;
+        }
 
         bool hasDimmer = false;
         for (quint32 c = 0; c < fxi->channels(); c++)
@@ -1536,6 +1583,11 @@ QList<quint32> PatchManager::fixturesByNumber() const
 
 void PatchManager::slotFixtureAdded(quint32 id)
 {
+    // a protected special effect by its kind (a show loading: once its
+    // plan is read)
+    if (deferProtection() == false && decideProtection(id))
+        emit protectionChanged();
+
     // a new fixture takes the number after the last one
     if (m_numbers.contains(id))
         return;
@@ -1554,6 +1606,9 @@ void PatchManager::slotFixtureGone(quint32 id)
     m_importIcons.remove(id);
     m_aims.remove(id);
     m_importIds.remove(id);
+    m_effectKinds.remove(id);
+    if (m_effects.take(id).protect)
+        emit protectionChanged();
 }
 
 /*********************************************************************
@@ -1754,8 +1809,11 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
         while (root.readNextStartElement())
         {
             const QXmlStreamAttributes attrs = root.attributes();
-            quint32 id = attrs.value("ID").toUInt();
-            if (root.name() == QLatin1String("Fixture") && m_doc->fixture(id) != nullptr)
+            // (an entry without an ID, or with one that isn't a number, is
+            // left out: never fixture 0, the first one)
+            bool idOk = false;
+            const quint32 id = attrs.value("ID").toUInt(&idOk);
+            if (root.name() == QLatin1String("Fixture") && idOk && m_doc->fixture(id) != nullptr)
             {
                 QString shape = attrs.value("Shape").toString();
                 if (shape == "square" || shape == "rectangle")
@@ -1782,9 +1840,13 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
                 setup.tiltInverted = attrs.value("TiltInverted") == QLatin1String("1");
                 if (setup.isDefault() == false)
                     m_aims.insert(id, setup);
+                // a protected special effect (after its icon: its kind)
+                readEffectAttributes(id, attrs);
             }
             root.skipCurrentElement();
         }
+        // the others, by their kind (the icons are known now)
+        settleProtection();
         notifyFixtures();
         return true;
     }
@@ -1840,8 +1902,15 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
 
 bool PatchManager::saveXML(QXmlStreamWriter *doc) const
 {
+    // the protected special effects (and the effects unprotected by hand)
+    QSet<quint32> effects;
+    for (Fixture *fxi : m_doc->fixtures())
+    {
+        if (hasEffectAttributes(fxi->id()))
+            effects.insert(fxi->id());
+    }
     if (m_shapes.isEmpty() == false || m_aims.isEmpty() == false || m_importIds.isEmpty() == false ||
-        m_icons.isEmpty() == false || m_importIcons.isEmpty() == false)
+        m_icons.isEmpty() == false || m_importIcons.isEmpty() == false || effects.isEmpty() == false)
     {
         doc->writeStartElement(KXMLDTCPlan);
         // by fixture: the same show is the same file (a hash has no order)
@@ -1849,6 +1918,7 @@ bool PatchManager::saveXML(QXmlStreamWriter *doc) const
         for (const QHash<quint32, QString> *more : { &m_icons, &m_importIcons, &m_importIds })
             each.unite(QSet<quint32>(more->keyBegin(), more->keyEnd()));
         each.unite(QSet<quint32>(m_aims.keyBegin(), m_aims.keyEnd()));
+        each.unite(effects);
         QList<quint32> ids(each.cbegin(), each.cend());
         std::sort(ids.begin(), ids.end());
         for (quint32 id : std::as_const(ids))
@@ -1881,6 +1951,8 @@ bool PatchManager::saveXML(QXmlStreamWriter *doc) const
                 doc->writeAttribute("PanInverted", "1");
             if (setup.tiltInverted)
                 doc->writeAttribute("TiltInverted", "1");
+            // a protected special effect: protected or not, its times, its safety channel
+            writeEffectAttributes(doc, id);
             doc->writeEndElement();
         }
         doc->writeEndElement();

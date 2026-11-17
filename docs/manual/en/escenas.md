@@ -110,6 +110,8 @@ At the top you see the real colour of each head while it plays (press “Try” 
 
 A **mapping on the 2D plan** is a Colour FX that already comes with the plan layout: the effect, the text or the image are laid over the stage just as the fixtures are placed.
 
+Colour FX, mappings on the 2D plan, Curve FX, Move FX, “Use the programmer selection”, “Convert to FX” and “Convert to steps” leave out the [protected special effects](programar.md#protected-special-effects), and a message says so (“1 protected special effect left out of the FX”). With only protected effects selected, nothing is made.
+
 ### Move FX and Curve FX
 
 They are effects from the previous module: **Move FX** move pan/tilt with a shape and **Curve FX** give a wave (sine, triangle, ramps, square, random, strobe…) to channels. You will find them in old shows or in QLC+ shows; they are no longer created from “New”.
@@ -436,7 +438,7 @@ Select a cue and open **“Cue details”** › **“Link and actions”**, or r
 - **“Release a group”** (or all of them) and **“Release all playbacks”**.
 - **“Set the BPM”**, from 20 to 300.
 
-Each row is changed in place; **×** removes it. The actions run in order when the cue starts with GO, Follow, Wait or “Go to cue”, also the first cue when the cuelist starts. They don’t run with BACK, when an edit applies the cue again, nor when a super scene starts the cuelist halfway.
+Each row is changed in place; **×** removes it. The actions run in order when the cue starts with GO, Follow, Wait or “Go to cue”, also the first cue when the cuelist starts. They don’t run with BACK, when an edit applies the cue again, nor when a super scene starts the cuelist halfway. No action arms the special effects, puts the show stop, brings back what was playing or fades to black.
 
 - The cuelist itself is not in the list: the link does that.
 - An action on a deleted scene or cuelist shows “(deleted)” and does nothing.
@@ -498,6 +500,8 @@ Under each cuelist, the window tells you what does not go:
 - “Released by another GO”: those lists go into a “Cuelists (one at a time)” frame, where starting one stops the others.
 
 A cuelist that already has its cue list in the Virtual Console (a QLC+ show whose steps you converted to a cuelist) gets no other one: the old one plays it again. Try the copy in QLC+ before you use it live: QLC+ does its fades its own way.
+
+At the top, the window also warns about what QLC+ doesn't do with this show: “2 protected special effects: QLC+ doesn't arm them nor limit their time”, with “It fires protected special effects: …” under each cuelist that fires one, and “2 parked fixtures: QLC+ doesn't park channels”. The copy keeps the values of the protected effects in the scenes and the steps, but QLC+ fires them from anywhere, without arming and without a maximum time (see [Protected special effects](patch.md#protected-special-effects)).
 
 ### QLC+ cue lists
 

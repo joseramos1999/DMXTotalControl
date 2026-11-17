@@ -2,9 +2,9 @@
 
 ![Die Seite Optionen](../img/opciones.png)
 
-**Optionen** (F9) bündelt die Einstellungen des Programms. Links stehen die allgemeinen Einstellungen, der Start, die Sperre, das automatische Speichern, die Wiedergabe und das Audio; rechts die Fernsteuerung, die Fixture-Bibliothek, die Updates, die Hilfe und „Über“.
+**Optionen** (F9) bündelt die Einstellungen des Programms. Links stehen die allgemeinen Einstellungen, der Start, die Sperre, die Sicherheit während der Show, das automatische Speichern, die Wiedergabe und das Audio; rechts die Fernsteuerung, die Fixture-Bibliothek, die Updates, die Hilfe und „Über“.
 
-Die Einstellungen dieser Seite gehören zum Computer, nicht zur Show: Sie gelten für alle Shows, die Sie öffnen.
+Die Einstellungen dieser Seite gehören zum Computer, nicht zur Show: Sie gelten für alle Shows, die Sie öffnen. Nur der Show-Stopp (unter [Sicherheit während der Show](opciones.md#show-stopp)) wird mit der Show gespeichert.
 
 ## Allgemein
 
@@ -34,6 +34,40 @@ Die Sperre verhindert, dass sich während der Show etwas versehentlich ändert. 
 4. Drücken Sie **„Sperren“**.
 
 Gesperrte Seiten tragen in der Seitenleiste ein Schloss. Öffnen Sie eine, wird das Passwort abgefragt (falls es eines gibt), und alles wird entsperrt. Zum Entsperren drücken Sie das Schloss in der oberen Leiste. **„Passwort entfernen“** finden Sie im selben Fenster, beim Sperren.
+
+## Sicherheit während der Show
+
+Was die Show im Live-Betrieb schützt (siehe [Sicherheit während der Show](directo.md#sicherheit-während-der-show)):
+
+- **Computer wach halten** (standardmäßig an): Solange das Programm geöffnet ist, versetzt Windows den Computer nicht in den Energiesparmodus und schaltet den Bildschirm nicht aus. Schließen Sie das Programm oder schalten Sie dies aus, tut Windows es wieder wie immer. An den Windows-Einstellungen ändert sich nichts.
+- **Show-Modus** (standardmäßig aus): Zum Schließen des Programms oder Öffnen einer anderen Show muss eine Taste gedrückt gehalten werden. Das Sperren der SHOW schaltet ihn ein; das Entsperren schaltet ihn nicht aus. Das Schild in der oberen Leiste schaltet ihn ebenso ein und aus (siehe [Show-Modus](directo.md#show-modus)).
+- **Alles stoppen mit Ausblenden**: 0 bis 5 s (Standard 0: sofort, wie bisher). Die Funktionen blenden in dieser Zeit aus; zweimal Esc: sofort. Bis 10 Sekunden danach holt Strg+Z zurück, was gestoppt wurde (siehe [Alles stoppen mit Ausblenden](directo.md#alles-stoppen-mit-ausblenden)).
+- **Unbenutzte Spezialeffekte entschärfen nach**: 0 bis 120 Minuten ohne Auslösung (Standard 10; 0, „Nie“). Nie, solange einer auslöst (siehe [Geschützte Spezialeffekte](directo.md#geschützte-spezialeffekte)).
+- **Akkubetrieb** und **Selektives USB-Energiesparen ist an** erscheinen nur, wenn es so ist. Das erste sagt, wie viel Akku noch bleibt; das zweite hat **„So schalten Sie es aus“**, das den Abschnitt [Selektives USB-Energiesparen](opciones.md#selektives-usb-energiesparen) weiter unten öffnet.
+
+### Show-Stopp
+
+Was der [Show-Stopp](directo.md#show-stopp) beleuchtet und mit welchem Pegel. Dies wird mit der Show gespeichert, in ihrem Abschnitt von DMX Total Control (QLC+ liest es nicht).
+
+- **Fixtures**: **„Alle Lichter“** (Standard) oder **„Diese Gruppen…“**, das die Liste der Fixture-Gruppen der Show zum Ankreuzen öffnet („Gruppen, die der Show-Stopp beleuchtet“). Ist keine angekreuzt, alle Lichter. Eine gelöschte Gruppe fällt von selbst heraus. Von den gewählten Gruppen leuchten nur die Lichter: nie ihr Nebel, ihre Hazer, ihre Stroboskope oder ihre Laser.
+- **Pegel**: 0 bis 100 % (Standard 100).
+
+Es leuchten Moving Heads, Scanner, PARs und Washes, LED-Leisten, Blinder und Dimmer. Ein generischer Dimmer (Generic › Generic Dimmer) nur, wenn sein Name sagt, dass er ein Licht ist (PAR, FRESNEL, DIMMER, BLINDER, SCHEINWERFER, LICHT, SPOT, PROFIL, FRONT, PC, SAAL…), oder wenn sein Symbol im Plan das eines Lichts ist. Die mit Namen wie VIDEO, TRIGGER, AUSLÖSER, RELAIS, MOTOR, LEINWAND, BEAMER, VORHANG, KABUKI… bleiben, wie sie sind, auch in einer gewählten Gruppe; ein PYRO… ist ein geschützter Spezialeffekt und geht aus. Um einen davon zu beleuchten, geben Sie ihm im Patch unter „Aussehen“ › „Symbol“ ein Licht-Symbol. Die Dimmer der Bibliothek leuchten wie immer.
+
+<a id="usb-selective-suspend"></a>
+
+### Selektives USB-Energiesparen
+
+Windows kann einen USB-Anschluss, der untätig scheint, zum Energiesparen anhalten und mit ihm das DMX-Interface: Die Ausgabe stoppt mitten in der Show. Es ist eine Einstellung des Windows-Energiesparplans. Das Programm liest sie nur beim Start (und meldet es mit einem blauen Balken und auf dieser Seite): Es ändert sie nie. So schalten Sie es aus:
+
+1. Öffnen Sie **Systemsteuerung** › **Hardware und Sound** › **Energieoptionen**.
+2. Klicken Sie neben dem Energiesparplan, den Sie verwenden, auf **„Energiesparplaneinstellungen ändern“** und dann auf **„Erweiterte Energieeinstellungen ändern“**.
+3. Öffnen Sie **„USB-Einstellungen“** › **„Einstellung für selektives USB-Energiesparen“** und wählen Sie **„Deaktiviert“** für **„Auf Akku“** und für **„Netzbetrieb“** (ohne Akku gibt es nur einen Wert).
+4. Klicken Sie auf **„OK“**.
+
+Stoppt das Interface weiterhin, öffnen Sie den **Geräte-Manager** und entfernen Sie in den Eigenschaften jedes **„USB-Root-Hub“** auf der Registerkarte **„Energieverwaltung“** den Haken bei **„Computer kann das Gerät ausschalten, um Energie zu sparen“**. Die Namen können sich je nach Windows-Version etwas unterscheiden.
+
+> **Nicht mit echten Geräten getestet:** Akku- und Netzwechsel, der Akkustand, die echte Wirkung des Wachhaltens und das Lesen des selektiven USB-Energiesparens.
 
 ## Automatisches Speichern
 

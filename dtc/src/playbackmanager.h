@@ -280,6 +280,16 @@ public:
 
     /** Stop all (panic): flashes are let go, the levels stay */
     void resetLive();
+    /** A flash press started it (it plays only while held) */
+    bool startedByFlash(quint32 functionId) const { return m_startedByFlash.contains(functionId); }
+    /** The level of a function on the playbacks (its fader; 1.0 when none) */
+    qreal functionLevel(quint32 functionId) const { return m_levels.value(functionId, 1.0); }
+    /** Stop all undone (LiveRecall): $functionId, stopped, plays again from
+     *  the playbacks at the level it has (never the full of a GO with its
+     *  fader down), faded in in $fadeMs (a function in beats: its own fade);
+     *  a cuelist from the cue $cueIndex (-1: where it starts). Nothing else
+     *  is released. @return false when it plays already or isn't there */
+    bool recall(quint32 functionId, int cueIndex, uint fadeMs);
     /** A new show: one empty page */
     void clear();
 
@@ -398,8 +408,9 @@ private:
     static void cueIndexes(Cuelist *cuelist, int *current, int *next);
 
     /** Starts a function with the playbacks as parent, at its level; a
-     *  cuelist from $cueIndex (-1: from where it starts) */
-    void startFunction(Function *f, int cueIndex = -1);
+     *  cuelist from $cueIndex (-1: from where it starts); a $fadeIn of 0 or
+     *  more instead of its own fade in (its first cue) */
+    void startFunction(Function *f, int cueIndex = -1, int fadeIn = -1);
     void ensureConnected(Function *f);
     /** The level it plays at: where its flash attack or decay is, else full
      *  while flashing, else its fader */

@@ -169,6 +169,29 @@ ColumnLayout {
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
+                // DMX Total Control: a protected special effect: what it is
+                // given is recorded in the scenes, it never goes out from here
+                Row {
+                    visible: !!card.channel.held
+                    spacing: 3
+                    IconLabel {
+                        anchors.verticalCenter: parent.verticalCenter
+                        icon: Theme.iconShield
+                        size: 10
+                        color: Theme.danger
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("not sent")
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Font.DemiBold
+                        color: Theme.danger
+                    }
+                    HoverHandler { id: heldHover }
+                    ToolTip.text: qsTr("A protected special effect: recorded in the scenes, never sent from the programmer. It fires from its scenes, armed")
+                    ToolTip.visible: heldHover.hovered
+                    ToolTip.delay: 300
+                }
                 Text {
                     text: Math.round(card.value * 100 / 255) + "%"
                     color: card.channel.active ? Theme.warning : Theme.textDim

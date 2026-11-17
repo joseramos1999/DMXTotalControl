@@ -86,19 +86,23 @@ Am schnellsten füllen Sie eine Tabelle, indem Sie **Szenen** aus der Liste unte
 | **Eine Palette** | Setzt die Palette auf die Fixtures, mit denen sie aufgenommen wurde („Eigene Fixtures“), oder auf eine Fixture-Gruppe, als Live-Änderung im Programmer: Sie liegt über den Szenen, bis Sie erneut drücken. |
 | **Cuelist-GO** / **Cuelist zurück** / **Cuelist freigeben** | Auf die Cuelist, die Sie unter **Cuelist** wählen. |
 | **Zu einem Cue…** | Springt zu dem **Cue**, den Sie in dieser Cuelist wählen. |
+| **Effekte scharf schalten** | Schaltet die [geschützten Spezialeffekte](directo.md#geschützte-spezialeffekte) scharf oder entschärft sie. Leuchtet, solange sie scharf sind. Standardmäßig rot mit einer Flamme. |
+| **Show-Stopp (1 s halten)** | Eine Sekunde halten, um den [Show-Stopp](directo.md#show-stopp) auszulösen, und erneut, um ihn aufzuheben; während Sie sie halten, füllt sich ein Streifen an ihrem unteren Rand. Leuchtet, solange er an ist. Standardmäßig gelb mit einer Hand. |
+| **Zurückholen, was lief** | Bis 10 s nach „Alles stoppen“ oder „Gruppen freigeben“ (alle Gruppen, nicht nur eine) startet sie wieder, was diese gestoppt haben ([Zurückholen, was lief](directo.md#zurückholen-was-lief)). Leuchtet, solange es geht. Mit einem Rückgängig-Pfeil. |
+| **Ausblenden auf Schwarz** | Nimmt das Licht in ihrer **Zeit** herunter (0,1 bis 60 s; Standard 3 s) und schaltet dann den Blackout ein ([Ausblenden auf Schwarz](directo.md#ausblenden-auf-schwarz)). Leuchtet mit einem Streifen, solange es ausblendet. Mit einem Mond. |
 
 Eine mit Alt+Klick von einer anderen Seite geholte Taste zeigt „Ein Element auf einer anderen Seite“ und darunter, was sie tut („Macht: …“).
 
-**Rechtsklick** auf eine Taste: Sie stoppt, was sie abspielt, auch mit **GO** in der oberen Leiste (mit GO stoppt ein Druck auf eine laufende Szene sie nicht). Ihre Szene stoppt; Tasten für nächste, vorherige und Freigeben geben ihre Gruppe frei; die einer Cuelist oder eines Playbacks geben es frei; die einer Palette schaltet sie aus. Eine Szene, die ein hochgezogener Fader hält, läuft weiter: Nur ihr Fader stoppt sie. Die anderen (Blackout, Alles stoppen, Tap, BeatGO) tun nichts. Auf einem Touchscreen nutzen Sie **Stop** in der oberen Leiste.
+**Rechtsklick** auf eine Taste: Sie stoppt, was sie abspielt, auch mit **GO** in der oberen Leiste (mit GO stoppt ein Druck auf eine laufende Szene sie nicht). Ihre Szene stoppt; Tasten für nächste, vorherige und Freigeben geben ihre Gruppe frei; die einer Cuelist oder eines Playbacks geben es frei; die einer Palette schaltet sie aus. Eine Szene, die ein hochgezogener Fader hält, läuft weiter: Nur ihr Fader stoppt sie. Die von „Effekte scharf schalten“ entschärft sie. Die anderen (Blackout, Alles stoppen, Tap, BeatGO, Show-Stopp, Zurückholen und Ausblenden auf Schwarz) tun nichts. Auf einem Touchscreen nutzen Sie **Stop** in der oberen Leiste.
 
 ### Optionen einer Taste
 
 - **Beschriftung**: ihr Text. Ist sie leer („Automatisch“), zeigt die Taste den Namen der Szene, der Palette oder der Aktion.
-- **Verhalten** (Szene, Blackout und Palette): **„Umschalten: an / aus“** oder **„Flash: solange gedrückt“**. Flash-Tasten tragen einen Blitz in der Ecke. Bei einer Szene steht statt „Umschalten“ **„Drücken: je nach GO / Stop“**: Die Taste startet oder stoppt sie je nach **GO** und **Stop** in der oberen Leiste.
-- **Tastaturtaste**: eine Taste der Tastatur, die sie drückt, solange Sie auf der Seite Show sind. Der Buchstabe steht in der Ecke der Taste.
+- **Verhalten** (Szene, Blackout und Palette): **„Umschalten: an / aus“** oder **„Flash: solange gedrückt“**. Flash-Tasten tragen einen Blitz in der Ecke. Bei einer Szene steht statt „Umschalten“ **„Drücken: je nach GO / Stop“**: Die Taste startet oder stoppt sie je nach **GO** und **Stop** in der oberen Leiste. Bei „Effekte scharf schalten“: **„Umschalten: scharf schalten / entschärfen“**, **„Scharf schalten“** oder **„Entschärfen“** (diese heißt „Effekte entschärfen“ und trägt das Ausschalt-Symbol).
+- **Tastaturtaste**: eine Taste der Tastatur, die sie drückt, solange Sie auf der Seite Show sind. Der Buchstabe steht in der Ecke der Taste. Bei einer Taste „Show-Stopp“ halten Sie die Tastaturtaste eine Sekunde.
 - **Farbe**, **Symbol** und **Bild** als Hintergrund (das Bild erscheint abgedunkelt, solange die Taste aus ist).
 
-Eine eingeschaltete Taste füllt sich mit ihrer Farbe.
+Ihre Farbe ist ein Streifen oben (ein Fünftel der Taste); eingeschaltet füllt sich die ganze Taste damit. Die Farben sind kräftig und gut zu unterscheiden, auch auf dem Smartphone.
 
 ### Verschieben und entfernen
 
@@ -147,7 +151,7 @@ Zum Drehen ziehen Sie mit der Maus oder dem Finger um die Mitte herum, oder nahe
 - **Farbrad**: Berühren Sie das Rad, um den Fixtures des Bereichs Farbton und Sättigung zu geben (Weiß in der Mitte), oder drücken Sie eines der Farbfelder darunter.
 - **XY-Feld (Pan und Tilt)**: Ziehen Sie den Punkt, um die Köpfe zu bewegen. **„Mitte“** bringt sie in die Mitte.
 
-Beide wirken wie eine Live-Änderung im Programmer: Sie liegen über den Szenen, bis Sie **„Freigeben“** drücken; dann geben die Szenen wieder Farbe bzw. Position vor.
+Beide wirken wie eine Live-Änderung im Programmer: Sie liegen über den Szenen, bis Sie **„Freigeben“** drücken; dann geben die Szenen wieder Farbe bzw. Position vor. Wie der Programmer lassen sie die [geschützten Spezialeffekte](programar.md#geschützte-spezialeffekte) einer gemischten Gruppe aus; bei einer Gruppe nur aus ihnen bleiben die Werte im Programmer, gehen aber nicht hinaus. „Alles“-Paletten auf einer Gruppe tun dasselbe.
 
 ## Gruppen und Mischer
 
@@ -183,14 +187,14 @@ Legen Sie im Bearbeitungsmodus eine Szene auf einem Streifen ab, um sie auf dies
 
 ## Jedes Bedienelement in die SHOW holen
 
-**Alt+Klick** auf fast jedes Bedienelement des Programms kopiert es auf die SHOW-Seite, die Sie geöffnet haben: eine Szene unter Live, den Master einer Gruppe, eine Taste des Mischers, den Grand Master, den Blackout, eine Palette unter Programmieren, die Tasten und den Fader eines Playbacks… Das Programm meldet „Zur SHOW hinzugefügt, Seite ‚…‘“.
+**Alt+Klick** auf fast jedes Bedienelement des Programms kopiert es auf die SHOW-Seite, die Sie geöffnet haben: eine Szene unter Live, den Master einer Gruppe, eine Taste des Mischers, den Grand Master, den Blackout, „Effekte scharf schalten“, eine Palette unter Programmieren, die Tasten und den Fader eines Playbacks… Das Programm meldet „Zur SHOW hinzugefügt, Seite ‚…‘“.
 
 Das neue Bedienelement kommt in die erste freie Zelle einer Tasten- oder Fader-Tabelle dieser Seite. Gibt es keine, wird ein leerer Bereich zu einer solchen Tabelle (mit dem Titel „Touch“), oder der letzte Bereich wird geteilt.
 
 ## Vollbild und Sperre
 
 - **„Vollbild“** (F11) und **„Vollbild beenden“**.
-- **„Sperren“**: blendet die Seitenleiste aus und lässt nur die SHOW übrig, ohne Bearbeitung und Navigation. Zum Verlassen **halten Sie „Entsperren“ gedrückt** (unter der Taste füllt sich ein Balken). Gibt es ein Sperrpasswort, wird es abgefragt.
+- **„Sperren“**: blendet die Seitenleiste aus und lässt nur die SHOW übrig, ohne Bearbeitung und Navigation. Zum Verlassen **halten Sie „Entsperren“ gedrückt** (unter der Taste füllt sich ein Balken). Gibt es ein Sperrpasswort, wird es abgefragt. Das Sperren schaltet auch den [Show-Modus](directo.md#show-modus) ein.
 
 ### Sperre und Kiosk-Modus
 

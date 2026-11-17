@@ -27,8 +27,6 @@
   --knob: #e7e9ef;
   --knob-edge: transparent;
   --scrim: #000000aa;
-  /* what the buttons of a colour mix with */
-  --shade: #000000;
   /* a colour that means a kind of thing (a group, a scene type): dimmed at night */
   --category: 100%;
   --on-kind: #000000;
@@ -56,7 +54,6 @@
   --knob: #ffffff;
   --knob-edge: #7d8598;
   --scrim: #00000066;
-  --shade: #ffffff;
   --on-kind: #000000;
 }
 :root[data-theme="contrast"] {
@@ -80,7 +77,6 @@
   --knob: #ffffff;
   --knob-edge: #000000;
   --scrim: #000000bb;
-  --shade: #000000;
   --on-kind: #000000;
 }
 :root[data-theme="night"] {
@@ -104,7 +100,6 @@
   --knob: #8a2c22;
   --knob-edge: #b8392c;
   --scrim: #000000aa;
-  --shade: #000000;
   --category: 45%;
   --on-kind: #e0a59c;
 }
@@ -156,6 +151,85 @@ button:active { background: var(--hover); }
 #tools { display: flex; align-items: center; gap: 6px; }
 .tool { min-width: 40px; }
 #blackout.on { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+/* the protected special effects: arm them; armed, a red bar under the top bar */
+#arm { font-weight: 700; white-space: nowrap; }
+#arm .icon { margin-right: 6px; }
+/* a narrow phone: the flame alone, so the pages keep their room (armed: red,
+   and the bar below says it) */
+@media (max-width: 480px) {
+  #armLabel { display: none; }
+  #arm .icon { margin-right: 0; }
+}
+#arm.on { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+#armedBanner {
+  position: absolute;
+  top: 48px; left: 0; right: 0;
+  height: 44px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  background: var(--danger);
+  color: var(--on-danger);
+  font-weight: 800;
+  font-size: 17px;
+}
+#armedText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#disarm { flex: none; background: var(--surface); color: var(--text); border-color: var(--surface); font-weight: 700; }
+body.armed #surface { top: 92px; }
+/* the show stop: held a second (a strip fills along the bottom while a
+   finger holds it), on: red, and a red bar under the top bar */
+#showStop, #showStopRelease { position: relative; overflow: hidden; }
+#showStop.on { background: var(--danger); border-color: var(--danger); color: var(--on-danger); }
+#showStop.holding::after, #showStopRelease.holding::after, .btn.hold.pressed::after {
+  content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 0;
+  background: currentColor; animation: holdFill var(--hold, 1s) linear forwards;
+}
+@keyframes holdFill { from { width: 0; } to { width: 100%; } }
+#showStopBanner {
+  position: absolute;
+  top: 48px; left: 0; right: 0;
+  height: 44px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  background: var(--danger);
+  color: var(--on-danger);
+  font-weight: 800;
+  font-size: 17px;
+}
+#showStopText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#showStopRelease { flex: none; background: var(--surface); color: var(--text); border-color: var(--surface); font-weight: 700; }
+body.stopped #surface { top: 92px; }
+/* a narrow phone: the show stop button too in the bar, so the name of the
+   show gets shorter (it says which show the phone drives: it stays); its
+   bar keeps its words */
+@media (max-width: 480px) {
+  #title { max-width: 18vw; }
+  #title.squeezed { display: none; }
+  #showStopBanner { font-size: 15px; gap: 8px; }
+  #showStopBanner > .icon { display: none; }
+  #showStopRelease { font-size: 13px; padding: 0 8px; }
+}
+/* what Stop all stopped can be brought back: a bar under the top bar (and
+   the red one), its button, and a strip that runs down with the time left.
+   The page below gets shorter: the bar never covers its buttons */
+#recall {
+  position: absolute;
+  top: 48px; left: 0; right: 0;
+  height: 40px;
+  box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  background: var(--raised);
+  color: var(--text);
+  border-bottom: 1px solid var(--accent);
+  overflow: hidden;
+}
+body.armed #recall, body.stopped #recall { top: 92px; }
+body.recall #surface { top: 88px; }
+body.recall.armed #surface, body.recall.stopped #surface { top: 132px; }
+#recall > .icon { flex: none; color: var(--accent); }
+#recallText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#recallButton { flex: none; background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+#recallBar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--accent); }
 .dot { width: 10px; height: 10px; border-radius: 5px; background: var(--danger); display: inline-block; }
 .dot.ok { background: var(--success); }
 
@@ -187,24 +261,46 @@ button:active { background: var(--hover); }
 /* tables of buttons, faders and dials */
 .grid { display: grid; gap: 3px; width: 100%; height: 100%; }
 .cell { min-width: 0; min-height: 0; position: relative; }
+/* a button: the body of the theme with its colour on the top fifth; on, all of it (as on the computer) */
 .btn {
   width: 100%; height: 100%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-radius: 6px; border: 1px solid var(--kind);
-  background: color-mix(in srgb, var(--kind) 18%, var(--shade));
+  border-radius: 6px; border: 1px solid color-mix(in srgb, var(--kind) 35%, var(--strong));
+  background: color-mix(in srgb, var(--kind) 7%, var(--raised));
   background-size: cover; background-position: center;
   font-weight: 600; text-align: center; overflow: hidden;
-  padding: 4px; line-height: 1.15;
+  line-height: 1.15;
   font-size: clamp(10px, 2.4vmin, 20px);
   position: relative;
 }
-.btn.active { background-color: var(--kind); color: var(--on-kind); border-color: var(--kind); }
+.btn::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 20%;
+  background: var(--kind); pointer-events: none;
+}
+.btn .body {
+  position: absolute; left: 4px; right: 4px; top: 20%; bottom: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  /* (a short one: what doesn't fit is cut at the bottom, the icon shows) */
+  justify-content: safe center;
+  overflow: hidden;
+  /* (a narrow one: a long word breaks, not cut at both sides) */
+  overflow-wrap: anywhere;
+  /* (its height sizes the icon) */
+  container-type: size;
+}
+/* (its colour as dark as its text needs to read, from remote.js: the night) */
+.btn.active { background-color: var(--lit, var(--kind)); color: var(--on-kind); border-color: var(--lit, var(--kind)); }
+/* a light theme: an edge under the strip (the white, the yellow), a dark one round it when on */
+:root[data-theme="light"] .btn:not(.active)::before { box-shadow: inset 0 -1px color-mix(in srgb, var(--kind) 65%, var(--text)); }
+:root[data-theme="light"] .btn.active { border: 2px solid color-mix(in srgb, var(--kind) 40%, var(--text)); }
 .btn.pressed { filter: brightness(1.4); }
-.btn .glyph { font-family: "Icons"; font-size: 1.8em; color: var(--kind); }
+/* the icon: smaller in a short button; off, towards the text where its
+   colour doesn't read on the body (remote.js: the yellow on a light theme) */
+.btn .glyph { font-family: "Icons"; font-size: 1.8em; font-size: min(1.8em, 40cqh); color: var(--glyph, var(--kind)); }
 .btn.active .glyph { color: var(--on-kind); }
 .btn.image { text-shadow: 0 0 3px #000, 0 0 3px #000; color: white; }
-.btn.image:not(.active) { opacity: 0.6; }
-.btn .flash { position: absolute; top: 3px; left: 5px; font-family: "Icons"; font-size: 10px; }
+/* off: the picture dimmed under the body, not its strip (as on the computer) */
+.btn.image:not(.active) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--raised) 55%, transparent); }
+.btn .flash { position: absolute; top: calc(20% + 2px); left: 5px; font-family: "Icons"; font-size: 10px; }
 
 .fader {
   width: 100%; height: 100%;

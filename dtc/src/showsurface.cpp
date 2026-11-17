@@ -333,6 +333,14 @@ bool ShowSurface::holds(quint32 fid) const
     return m_levels.contains(fid) || m_runSpeeds.contains(fid);
 }
 
+QSet<quint32> ShowSurface::flashScenes() const
+{
+    QSet<quint32> pressed;
+    for (auto it = m_flashPressed.cbegin(); it != m_flashPressed.cend(); ++it)
+        pressed.insert(it.key());
+    return pressed;
+}
+
 QSet<quint32> ShowSurface::heldScenes() const
 {
     // in their groups, and on their own (a fader plays them; one that went
@@ -755,6 +763,7 @@ void ShowSurface::clear()
     m_pages.clear();
     m_overrides.clear();
     m_levels.clear();
+    m_flashPressed.clear();
     // (the scenes still there at the speed they had)
     for (const quint32 fid : m_runSpeeds.keys())
         restoreRunSpeed(fid);
@@ -795,6 +804,26 @@ static QVariantMap paletteTarget(const QVariantMap &item)
                          { "mode", item.value("mode").toString() == "flash" ? "flash" : "toggle" } });
 }
 
+/** The target of the mappings a button of Stop all undone or of the fade
+ *  to black is (its time: 3 s by default) */
+static QVariantMap recallTarget(const QVariantMap &item)
+{
+    const QString action = item.value("action").toString();
+    if (action == "fadeToBlack")
+        return QVariantMap({ { "target", action },
+                             { "time", item.value("time", SafetyManager::fadeToBlackDefaultMs()).toInt() } });
+    return QVariantMap({ { "target", action } });
+}
+
+/** The mapping target of a button that arms the special effects: toggle,
+ *  on (arm) or off (disarm) */
+static QVariantMap armTarget(const QVariantMap &item)
+{
+    const QString mode = item.value("mode").toString();
+    return QVariantMap({ { "target", "armEffects" },
+                         { "mode", mode == "on" || mode == "off" ? mode : QStringLiteral("toggle") } });
+}
+
 void ShowSurface::press(const QVariantMap &item)
 {
     QString action = item.value("action").toString();
@@ -826,6 +855,31 @@ void ShowSurface::press(const QVariantMap &item)
         slotChanged();
         return;
     }
+    // the arming of the special effects (toggle, on or off), as its mapping
+    if (action == "armEffects")
+    {
+        if (m_core != nullptr)
+            m_core->mapping()->pressTarget(armTarget(item), true);
+        slotChanged();
+        return;
+    }
+    // the show stop: held a second (the release lets go of it), as its mapping
+    if (action == "showStop")
+    {
+        if (m_core != nullptr)
+            m_core->mapping()->pressTarget(QVariantMap({ { "target", "showStop" } }), true);
+        slotChanged();
+        return;
+    }
+    // what Stop all stopped plays again; the fade to black (pressed again
+    // during it: Blackout at once), as their mappings
+    if (action == "recoverStopped" || action == "fadeToBlack")
+    {
+        if (m_core != nullptr)
+            m_core->mapping()->pressTarget(recallTarget(item), true);
+        slotChanged();
+        return;
+    }
     // a palette on its fixtures or a group, as a live edit (toggle or flash)
     if (action == "palette")
     {
@@ -854,6 +908,9 @@ void ShowSurface::press(const QVariantMap &item)
         // (in a group or not: the selected scene)
         m_zones->selectScene(fid);
         bool flash = item.value("mode").toString() == "flash";
+        // (held: Stop all doesn't keep it to bring it back)
+        if (flash)
+            m_flashPressed[fid]++;
 
         // a scene of a group plays in it: exclusivity, release and priority apply
         if (Zone *owner = zoneFor(fid))
@@ -910,7 +967,10 @@ void ShowSurface::press(const QVariantMap &item)
     }
     else if (action == "release")
     {
-        if (allZones)
+        // (every group: what they played can be brought back)
+        if (allZones && m_core != nullptr)
+            m_core->releaseGroups();
+        else if (allZones)
             m_zones->stopAll();
         else if (zone != nullptr)
             zone->stopAll();
@@ -944,10 +1004,21 @@ void ShowSurface::release(const QVariantMap &item)
         slotChanged();
         return;
     }
+    // (let go before its second: nothing)
+    if (action == "showStop")
+    {
+        if (m_core != nullptr)
+            m_core->mapping()->pressTarget(QVariantMap({ { "target", "showStop" } }), false);
+        slotChanged();
+        return;
+    }
     if (action != "scene" || item.value("mode").toString() != "flash")
         return;
 
     quint32 fid = item.value("functionId").toUInt();
+    auto pressed = m_flashPressed.find(fid);
+    if (pressed != m_flashPressed.end() && --pressed.value() <= 0)
+        m_flashPressed.erase(pressed);
     if (Zone *owner = zoneFor(fid))
     {
         owner->stop(fid);
@@ -979,8 +1050,11 @@ void ShowSurface::stop(const QVariantMap &item)
     }
     else if (action == "next" || action == "previous" || action == "release")
     {
-        // its group released, or all of them
-        if (item.value("zoneId").toInt() < 0)
+        // its group released, or all of them (what they played can be
+        // brought back)
+        if (item.value("zoneId").toInt() < 0 && m_core != nullptr)
+            m_core->releaseGroups();
+        else if (item.value("zoneId").toInt() < 0)
             m_zones->stopAll();
         else if (Zone *zone = m_zones->zoneById(item.value("zoneId").toUInt()))
             zone->stopAll();
@@ -988,6 +1062,11 @@ void ShowSurface::stop(const QVariantMap &item)
     else if (m_core != nullptr && action == "palette")
     {
         m_core->mapping()->stopTarget(paletteTarget(item));
+    }
+    else if (m_core != nullptr && action == "armEffects")
+    {
+        // (disarmed: the safe way)
+        m_core->mapping()->stopTarget(armTarget(item));
     }
     else if (m_core != nullptr && action == "map")
     {
@@ -1014,6 +1093,16 @@ bool ShowSurface::isActive(const QVariantMap &item) const
     }
     if (action == "palette")
         return m_core != nullptr && m_core->mapping()->targetState(paletteTarget(item)) == 1;
+    // (lit while armed, whatever its mode)
+    if (action == "armEffects")
+        return m_core != nullptr && m_core->safety() != nullptr && m_core->safety()->armed();
+    // (lit while the show stop is on; a right click never takes it away)
+    if (action == "showStop")
+        return m_core != nullptr && m_core->safety() != nullptr && m_core->safety()->showStop();
+    // (lit while what Stop all stopped can be brought back; while the fade
+    // to black runs)
+    if (action == "recoverStopped" || action == "fadeToBlack")
+        return m_core != nullptr && m_core->mapping()->targetState(recallTarget(item)) == 1;
     if (action != "scene")
         return false;
 
@@ -2502,6 +2591,13 @@ void ShowSurface::setCore(DtcCore *core)
     // (and the names of what the buttons drive: a renamed function)
     if (m_core != nullptr)
         connect(m_core, &DtcCore::functionsChanged, this, &ShowSurface::slotChanged);
+    // the buttons that arm the special effects follow the arming, those of
+    // the show stop the show stop
+    if (m_core != nullptr && m_core->safety() != nullptr)
+    {
+        connect(m_core->safety(), &SafetyManager::armedChanged, this, &ShowSurface::slotChanged);
+        connect(m_core->safety(), &SafetyManager::showStopChanged, this, &ShowSurface::slotChanged);
+    }
     // the FX of the programmer go at the speed of the movement too
     if (m_core != nullptr && m_core->programmer() != nullptr)
         connect(m_core->programmer(), &Programmer::fxChanged, this, &ShowSurface::slotMotionChanged);
@@ -2716,6 +2812,20 @@ QVariantMap ShowSurface::addFromTarget(const QVariantMap &origin, int page)
             item.insert("action", actions.value(kind));
             item.insert("functionId", target.value("functionId", -1));
             item.insert("zoneId", target.value("zoneId", -1));
+        }
+        else if (kind == "armEffects")
+        {
+            // (the button of the top bar: it toggles; red)
+            item.insert("action", "armEffects");
+            item.insert("mode", "toggle");
+            item.insert("color", "#e5484d");
+        }
+        else if (kind == "recoverStopped" || kind == "fadeToBlack")
+        {
+            // (the fade to black with its time)
+            item.insert("action", kind);
+            if (kind == "fadeToBlack")
+                item.insert("time", target.value("time", SafetyManager::fadeToBlackDefaultMs()).toInt());
         }
         else if (kind == "palette")
         {

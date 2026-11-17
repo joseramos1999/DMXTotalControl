@@ -28,6 +28,7 @@
 #include <QPair>
 #include <QStringList>
 #include <QVariant>
+#include <functional>
 
 #include "aim.h"
 
@@ -39,6 +40,7 @@ class Fixture;
 class QTimer;
 class QXmlStreamReader;
 class QXmlStreamWriter;
+class QXmlStreamAttributes;
 class Doc;
 
 #define KGenericDimmerModel QStringLiteral("Generic Dimmer")
@@ -63,6 +65,8 @@ class PatchManager : public QObject
     Q_PROPERTY(QVariantList selections READ selections NOTIFY selectionsChanged)
     Q_PROPERTY(QVariantList fixtureTypes READ fixtureTypes NOTIFY fixturesChanged)
     Q_PROPERTY(QStringList fixtureKinds READ fixtureKindList CONSTANT)
+    /** Some fixture of the show is a protected special effect */
+    Q_PROPERTY(bool hasProtected READ hasProtected NOTIFY protectionChanged)
 
 public:
     PatchManager(Doc *doc, QObject *parent = nullptr);
@@ -70,7 +74,7 @@ public:
 
     /** [{ id, name, manufacturer, model, mode, type, universe, address,
      *     channels, x, y, positioned, heads, cells, kind, icon, typeKey,
-     *     colorIndex }]
+     *     colorIndex, protected, crossUniverse }]
      *  Addresses are 1-based, as displayed to the user.
      *  x/y is the position in the 2D stage plan, in millimeters.
      *  cells: the plan draws it as a row of cells, one per head (a bar, a
@@ -78,7 +82,9 @@ public:
      *  effect, a CO2 jet with two channels); kind: what its glyph on the
      *  plan shows (fixtureKind(), with the icon chosen by hand); icon: the
      *  one chosen by hand ("" when automatic); typeKey and colorIndex: its
-     *  type in fixtureTypes() */
+     *  type in fixtureTypes(); protected: a protected special effect
+     *  (isProtected); crossUniverse: its channels go on in the next universe
+     *  (a show from QLC+) */
     QVariantList fixtures() const;
     int fixturesCount() const;
 
@@ -155,6 +161,13 @@ public:
      *  @param copies set to the ID of the copy of each fixture, by its ID in $from
      *  @return the number of fixtures added */
     int importFixtures(Doc *from, QHash<quint32, quint32> *copies = nullptr);
+    /** What the plan of that show says of the fixtures copied ($copies, as
+     *  importFixtures gives them; $plan, as EffectExchange::loadShow reads
+     *  it): the icon chosen for each one, and a protected special effect
+     *  with its times and safety channel. Protection only ever comes with
+     *  them: a copy whose kind is a protected one stays protected, whatever
+     *  that show said */
+    void importPlanSettings(const QHash<quint32, quint32> &copies, const QHash<quint32, QXmlStreamAttributes> &plan);
 
     /*********************************************************************
      * Patch import: the fixture table (CSV) a visualizer exports
@@ -259,9 +272,12 @@ public:
 
     /** Fixtures lit and blinking to find them on stage */
     QVariantList identified() const;
-    /** Identify $ids (an empty list stops) */
-    Q_INVOKABLE void identify(const QVariantList &ids);
-    Q_INVOKABLE void toggleIdentify(quint32 id);
+    /** Identify $ids (an empty list stops). DMX Total Control: never a
+     *  protected special effect (a CO2 that blinks fires). @return how many
+     *  of them were left out */
+    Q_INVOKABLE int identify(const QVariantList &ids);
+    /** @return how many protected special effects were left out (identify) */
+    Q_INVOKABLE int toggleIdentify(quint32 id);
     Q_INVOKABLE bool isIdentified(quint32 id) const;
     Q_INVOKABLE void stopIdentify();
 
@@ -344,8 +360,14 @@ public:
      *  for case or accents. The special effects first ("Strobe Flame" is a
      *  flame), then blinder, strobe... */
     static QString kindFromWords(const QString &text);
+    /** $text as the kind words are looked for in it: the words of a name
+     *  written together apart ("FrontVideo" is "front video"), in lower
+     *  case, without accents */
+    static QString nameWords(const QString &text);
     /** The kind of a QLC+ fixture type ("Moving Head": movinghead) */
     static QString kindOfType(const QString &type);
+    /** fixtureKind() of a patched fixture (its icon chosen by hand too) */
+    QString kindOf(const Fixture *fxi) const;
     /** The fixture types of the show, as the plan colours them and its
      *  legend lists them, in the order of their lowest fixture ID: [{ key,
      *  manufacturer, model (both empty: a generic dimmer), kind,
@@ -363,6 +385,73 @@ public:
     /** What each fixture shows now: [{ id, dimmer (0-1), colors: ["#rrggbb"
      *  per head, dimmer included], strobe, gobo, goboImage }] */
     Q_INVOKABLE QVariantList liveStates() const;
+
+    /*********************************************************************
+     * Protected special effects (patcheffects.cpp): CO2, flames, sparks and
+     * confetti only go out while the effects are armed (SafetyManager), and
+     * each fire has a maximum time. Each fixture keeps what was decided for
+     * it, saved with the show; the automatic rules only ever protect
+     *********************************************************************/
+    /** The kinds protected when nothing was decided: co2, flame, spark,
+     *  confetti (not bubbles nor snow: harmless) */
+    static bool protectedByDefault(const QString &kind);
+    /** The maximum time of a fire by default (ms): co2 3000, flame 2000,
+     *  spark 5000, confetti 2000, any other 3000 */
+    static int defaultFireMs(const QString &kind);
+    /** The minimum time between two fires by default (ms) */
+    static int defaultWaitMs() { return 1000; }
+    /** The ranges of the times (ms) */
+    static constexpr int minFireMs() { return 100; }
+    static constexpr int maxFireMs() { return 30000; }
+    static constexpr int maxWaitMs() { return 60000; }
+
+    bool hasProtected() const;
+    Q_INVOKABLE bool isProtected(quint32 id) const;
+    /** What fixtures $ids have: { count, protected, kind, byKind (as their
+     *  kind says: protection, times, no safety channel), defaultFireMs (of
+     *  the kind), maxFireMs, minWaitMs, safetyChannel (-1: none),
+     *  safetyFrom, safetyTo, sameMode, channels: [{ index, name }] (of the
+     *  first one, when they all have the same channels), crossUniverse (one
+     *  of them never fires: across two universes), mixed: [the keys that
+     *  differ between them] } */
+    Q_INVOKABLE QVariantMap effectSettings(const QVariantList &ids) const;
+    /** One of them on fixtures $ids: "protected", "maxFireMs" (100-30000),
+     *  "minWaitMs" (0-60000), "safetyChannel" (-1, or a channel each of them
+     *  has), "safetyFrom", "safetyTo" (0-255, from not above to). A value
+     *  out of its range goes to the nearest one; a safety channel or a
+     *  window that can't be is refused (false, lastError() says why) */
+    Q_INVOKABLE bool setEffectSetting(const QVariantList &ids, const QString &key, const QVariant &value);
+    /** Back to what their kind says (protected or not, its times, no safety
+     *  channel) */
+    Q_INVOKABLE void resetEffectSettings(const QVariantList &ids);
+
+    /** What the output does with a fixture: protected or not (as
+     *  isProtected() says), its times and its safety channel (with its
+     *  window), the defaults resolved */
+    struct EffectRule
+    {
+        bool protect = false;
+        quint32 maxFireMs = 3000;
+        quint32 minWaitMs = 1000;
+        int safety = -1;            // a channel of the fixture, -1: none
+        uchar from = 1;
+        uchar to = 255;
+    };
+    EffectRule effectRule(quint32 id) const;
+    /** The fixtures nothing was decided for take what their kind says (a
+     *  show loaded: the end of its plan, the end of the loading) */
+    void settleProtection();
+    /** Between beginLoading() and endLoading() */
+    bool loading() const { return m_loading; }
+
+    /** Re-addressing fixtures (applyPatch): $hook runs once their new
+     *  addresses are set, before the universes are let go (no frame in
+     *  between): the output protects the new ones at once
+     *  (SafetyManager). One per Doc; null removes it */
+    static void setPatchHook(Doc *doc, const std::function<void()> &hook);
+    /** Its channels go on in the next universe (a show from QLC+): it
+     *  never fires */
+    static bool crossesUniverses(const Fixture *fxi);
 
     /*********************************************************************
      * Follow: where the moving heads hang and how they move, so they can
@@ -416,6 +505,11 @@ signals:
     void stageShifted(qreal dx, qreal dy);
     void identifiedChanged();
     void selectionsChanged();
+    /** A fixture became a protected special effect, or stopped being one,
+     *  or its times or safety channel changed */
+    void protectionChanged();
+    /** Something to tell the user (a fixture protected by itself) */
+    void protectionMessage(const QString &text);
 
 private slots:
     void slotBlink();
@@ -434,6 +528,9 @@ private slots:
     void slotGroupsChanged();
     /** Tell the groups now (or at endLoading) */
     void notifyGroups();
+    /** A show loaded without DtcCore around (the tests): the fixtures take
+     *  what their kind says */
+    void slotDocLoaded();
 
 private:
     bool isRangeFree(int universe, int address, int channels, quint32 ignoreId) const;
@@ -462,8 +559,45 @@ private:
     };
     /** The types of the show, by their lowest fixture ID (each list sorted) */
     QList<TypeEntry> typeEntries() const;
-    /** fixtureKind() of a patched fixture */
-    QString kindOf(const Fixture *fxi) const;
+    /** Protection: what was decided for a fixture (patcheffects.cpp) */
+    struct EffectSetup
+    {
+        bool protect = false;
+        int maxFireMs = -1;         // -1: the default of its kind
+        int minWaitMs = -1;         // -1: defaultWaitMs()
+        int safetyChannel = -1;
+        QString safetyName;         // the name of that channel when it was chosen
+        int safetyFrom = 1;
+        int safetyTo = 255;
+    };
+    /** The safety channel of $setup is still the one chosen on $fxi: the
+     *  same name at its place (another mode, an updated definition may put
+     *  another channel there: the fire itself), and another one to fire */
+    static bool safetyStillThere(const Fixture *fxi, const EffectSetup &setup);
+    /** A fixture whose safety channel isn't there any more: none, said */
+    void dropLostSafety(quint32 id);
+    /** The hook of $doc (setPatchHook), if it has one */
+    static void runPatchHook(Doc *doc);
+    /** While a show loads (or Doc does): protection waits for settleProtection() */
+    bool deferProtection() const;
+    /** $id takes what its kind says, if nothing was decided for it. True
+     *  when that protected it */
+    bool decideProtection(quint32 id);
+    /** The kind of $ids is looked at again: one that became a protected kind
+     *  is protected, told with a message when $tell (nothing is ever
+     *  unprotected by it) */
+    void recheckKinds(const QList<quint32> &ids, bool tell = true);
+    /** The attributes of protection of fixture $id in the plan of the show */
+    void writeEffectAttributes(QXmlStreamWriter *doc, quint32 id) const;
+    void readEffectAttributes(quint32 id, const QXmlStreamAttributes &attrs);
+    /** What $attrs (of the plan of a show) say of $fxi, of kind $kind, in
+     *  $setup: false when they say nothing of it. $lostSafety: a safety
+     *  channel it names is another channel of $fxi now (dropped) */
+    bool effectSetupFrom(const Fixture *fxi, const QString &kind, const QXmlStreamAttributes &attrs,
+                         EffectSetup *setup, bool *lostSafety = nullptr) const;
+    /** Something to write in the plan for $id */
+    bool hasEffectAttributes(quint32 id) const;
+
     /** What a table import does (patchimport.cpp) */
     struct TablePlan;
     void planTable(const QByteArray &data, const QVariantMap &options, TablePlan *plan) const;
@@ -522,6 +656,13 @@ private:
     QHash<quint32, QString> m_importIds;
     /** The fixture numbers */
     QHash<quint32, int> m_numbers;
+    /** Protection decided for each fixture (saved in the plan), and the
+     *  kind each one had when last looked at */
+    QHash<quint32, EffectSetup> m_effects;
+    QHash<quint32, QString> m_effectKinds;
+    /** The fixtures of a show opening whose safety channel isn't there any
+     *  more (said once it is open) */
+    QStringList m_lostSafety;
     /** Between beginLoading and endLoading, and what to tell then */
     bool m_loading = false;
     bool m_fixturesHeld = false;

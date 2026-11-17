@@ -43,6 +43,12 @@ Item {
         return map
     }
 
+    // parked channels and protected special effects, as the output has them
+    readonly property var marks: {
+        Core.safety.revision
+        return Core.safety.channelMarks(universe)
+    }
+
     Timer {
         interval: 100
         repeat: true
@@ -100,6 +106,21 @@ Item {
                         required property int index
                         readonly property int value: monitor.values.length > index ? monitor.values[index] : 0
                         readonly property string owner: monitor.owners[index] || ""
+                        readonly property var mark: monitor.marks[index]
+                        // (the show stop puts its own value above a park; a
+                        // fade to black takes a parked intensity down)
+                        readonly property bool stopMark: !!mark && (mark.kind === "showStop" || (mark.kind === "park" && mark.showStop))
+                        readonly property string markText: !mark ? ""
+                            : mark.kind === "showStop"
+                            ? " · " + (mark.hold ? qsTr("show stop: it stays where it is") : qsTr("show stop"))
+                            : mark.kind === "park"
+                            ? " · " + (mark.showStop ? qsTr("parked at %1, under the show stop").arg(mark.value)
+                                       : mark.ramp ? qsTr("parked at %1, going down with the fade to black").arg(mark.value)
+                                       : qsTr("parked at %1").arg(mark.value))
+                              + (mark.inBlackout ? " · " + qsTr("also in blackout") : "")
+                            : " · " + (mark.parked ? qsTr("protected special effect, parked off")
+                                       : mark.armed ? qsTr("protected special effect (armed)")
+                                       : qsTr("protected special effect (disarmed: 0 goes out)"))
                         // the colour it shows, for its text
                         readonly property color shown: Theme.fill(Theme.mix(Theme.background, Theme.accent, 0.08 + 0.8 * value / 255))
 
@@ -115,6 +136,18 @@ Item {
                             font.pixelSize: 8
                             color: Theme.readableOn(Theme.textFaint, cellRect.shown)
                         }
+                        // a lock: parked; a shield: a protected special effect;
+                        // a hand: what the show stop puts now (parked or not)
+                        IconLabel {
+                            visible: !!cellRect.mark
+                            anchors { top: parent.top; right: parent.right; margins: 2 }
+                            icon: cellRect.stopMark ? Theme.iconHand
+                                : cellRect.mark && (cellRect.mark.kind === "park" || cellRect.mark.parked) ? Theme.iconLock : Theme.iconShield
+                            size: 8
+                            color: Theme.readable(cellRect.stopMark ? Theme.danger
+                                                  : !cellRect.mark || cellRect.mark.kind === "park" || cellRect.mark.parked ? Theme.warning
+                                                  : cellRect.mark.armed ? Theme.danger : Theme.textDim, cellRect.shown)
+                        }
                         Text {
                             anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter; bottomMargin: 2 }
                             text: monitor.percent ? Math.round(cellRect.value * 100 / 255) : cellRect.value
@@ -125,7 +158,7 @@ Item {
 
                         MouseArea { id: cellMouse; anchors.fill: parent; hoverEnabled: true }
                         ToolTip.visible: cellMouse.containsMouse && owner.length > 0
-                        ToolTip.text: qsTr("%1 — channel %2").arg(owner).arg(index + 1)
+                        ToolTip.text: qsTr("%1 — channel %2").arg(owner).arg(index + 1) + markText
                     }
                 }
             }

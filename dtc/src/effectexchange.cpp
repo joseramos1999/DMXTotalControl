@@ -676,10 +676,12 @@ QHash<quint32, quint32> EffectExchange::importFunctions(Doc *doc, Doc *tmp, cons
 }
 
 Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> *zones, QString *error,
-                              QByteArray *virtualConsole)
+                              QByteArray *virtualConsole, QHash<quint32, QXmlStreamAttributes> *plan)
 {
     if (virtualConsole != nullptr)
         virtualConsole->clear();
+    if (plan != nullptr)
+        plan->clear();
     QFile file(path);
     if (file.open(QIODevice::ReadOnly) == false)
     {
@@ -755,6 +757,23 @@ Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> 
             // the groups of scenes
             while (reader.readNextStartElement())
             {
+                if (reader.name() == QLatin1String("Plan") && plan != nullptr)
+                {
+                    // the fixtures as the plan has them (their icon, a
+                    // protected special effect): they go with their copies
+                    while (reader.readNextStartElement())
+                    {
+                        if (reader.name() == QLatin1String("Fixture"))
+                        {
+                            bool ok = false;
+                            const quint32 id = reader.attributes().value("ID").toUInt(&ok);
+                            if (ok)
+                                plan->insert(id, reader.attributes());
+                        }
+                        reader.skipCurrentElement();
+                    }
+                    continue;
+                }
                 if (reader.name() != QLatin1String("Zones"))
                 {
                     reader.skipCurrentElement();
@@ -874,8 +893,11 @@ uint EffectExchange::cycleDuration(Doc *doc, quint32 id)
     return cycleOf(doc, id, visiting);
 }
 
-quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString *error)
+quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString *error,
+                                      const QSet<quint32> &excluded, int *leftOut)
 {
+    if (leftOut != nullptr)
+        *leftOut = 0;
     // the whole cycle (up to MaxRenderCycle), in 256 steps at most: longer
     // cycles get longer steps
     const uint tick = MasterTimer::tick();
@@ -965,10 +987,22 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
     // the channels the effect gives a value: somewhere in the cycle, other
     // than the one at rest
     QSet<QPair<quint32, quint32>> active;
+    // DMX Total Control: the fixtures $excluded it moves are left out
+    QSet<quint32> left;
     for (const QList<SceneValue> &sample : std::as_const(samples))
+    {
         for (const SceneValue &scv : sample)
-            if (scv.value != rest.value(qMakePair(scv.fxi, scv.channel), 0))
+        {
+            if (scv.value == rest.value(qMakePair(scv.fxi, scv.channel), 0))
+                continue;
+            if (excluded.contains(scv.fxi))
+                left.insert(scv.fxi);
+            else
                 active.insert(qMakePair(scv.fxi, scv.channel));
+        }
+    }
+    if (leftOut != nullptr)
+        *leftOut = int(left.count());
     if (active.isEmpty())
     {
         if (error)

@@ -39,7 +39,7 @@ A control of the program can have several mappings (for example, a pad of a cont
 
 ### What can be mapped
 
-- **Top bar**: GO, Stop, BeatGO, grand master, Blackout and Stop all.
+- **Top bar**: GO, Stop, BeatGO, grand master, Blackout, Stop all and “Arm effects”.
 - **Live**: each scene, ◀ ▶, Pause and Release groups in the header, and on each group its release, previous, next and master.
 - **Mixer**: on each strip, the dimmer, the hue, the saturation, the strobe and its speed, and the Full, Blackout, Flash, Flash excl. and Full excl. buttons.
 - **Program**: the palettes.
@@ -81,6 +81,10 @@ What the mapping does. The **buttons**:
 | GO of the selected playback / Back of the selected playback | Like the big GO and “Back” of Playbacks. |
 | Playback page N / next / previous | Changes the playback page. |
 | Release all playbacks | Like “Release all”. |
+| Arm the special effects | Arms or disarms the [protected special effects](directo.md#protected-special-effects). |
+| Show stop (hold 1 s) | Held for a second, puts the [show stop](directo.md#show-stop) on or takes it away. |
+| Bring back what was playing | For 10 s after Stop all or Release groups (in “All groups”, not in a single one), starts again what they stopped. |
+| Fade to black | Takes the light down over its **Time** (3 s by default; the list shows “Fade to black — 3 s”) and then puts Blackout on. |
 
 The **faders**:
 
@@ -122,6 +126,8 @@ On **buttons**:
 
 Playback buttons act when pressed, except flash, and do not have this option.
 
+On **“Arm the special effects”**, “Toggle: each press on / off” arms or disarms, “Only on” arms, “Only off” disarms and “Flash: while pressed” keeps them armed while you hold it. **“Show stop”**, **“Bring back what was playing”** and **“Fade to black”** don't have this option: the show stop counts how long you hold and when you let go (if the release message is lost, it still changes after the second, and the next time works as always); the other two act when pressed. Cue actions never arm the effects, put the show stop, bring back or fade to black.
+
 The flash of a playback uses the attack and decay of that playback (see [Playback properties](playbacks.md#playback-properties)). With “Or a cuelist or a scene, wherever it is”, it uses those of the first playback that holds it; if it is on no playback, it is instant. With “Toggle”, a press during the decay brings it up again.
 
 On **faders**:
@@ -147,6 +153,8 @@ For the LEDs of MIDI buttons:
 
 **“Fading”** (on “Play a scene” and “Scene N of a group”): switch on **“Own colour while fading”** and the button shows that colour while the scene fades in and while it fades out. On a cuelist, it shows while its cue fades. Without it, the fade in shows as “On” and the fade out as “Off”. A scene that is paused or waiting shows as “Paused”.
 
+When you learn a pad of an Akai APC: **“Arm the special effects”** lights red while they are armed and dark otherwise (red at 100 % on the APC mini mk2); **“Show stop”**, red while it is on and red blinking while you hold it; **“Bring back what was playing”**, yellow while it can (pulsing on the APC mini mk2 and the APC40 mkII); **“Fade to black”** lights while it fades. Buttons with a single LED light as usual (the show stop blinks while you hold it). Not tried on the controllers.
+
 The controller LEDs turn off when you close the program, delete a mapping or move it to another control, open another show or turn off the device or its feedback.
 
 ### Duplicating and deleting
@@ -155,7 +163,7 @@ The controller LEDs turn off when you close the program, delete a mapping or mov
 
 ## Keyboard
 
-Keyboard mappings work on any page and take priority over the program shortcuts that use the same key. They do not fire while you are typing in a text field (in Program, while the command line has the keyboard) or with Ctrl or Alt held down. SHOW buttons also have their own key, which works only on the Show page (see [Show](show.md#button-options)).
+Keyboard mappings work on any page and take priority over the program shortcuts that use the same key. They do not fire while you are typing in a text field (in Program, while the command line has the keyboard) or with Ctrl or Alt held down. SHOW buttons also have their own key, which works only on the Show page (see [Show](show.md#button-options)). The **Pause** key is the one of the [show stop](directo.md#show-stop) (pressed twice) and can't be learnt. If a show already had a mapping on Pause, Pause goes on doing what that mapping does and not the show stop, which goes on with a SHOW button, a pad or the phone: when it opens a message says so once (“This show maps the Pause key: …”), its row shows in orange (“Key PAUSE (instead of the show stop)”) and the editor warns under the key. Delete it or give it another key to have the show stop on Pause. A keyboard mapping to “Show stop” on another key is held for 1 s, like a pad (on a laptop without Pause); if the program loses the keyboard while you hold it (another window, a Windows message), it is let go and nothing changes.
 
 ## Templates for Akai APC
 

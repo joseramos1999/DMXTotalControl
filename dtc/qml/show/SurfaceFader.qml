@@ -122,7 +122,7 @@ Rectangle {
             Layout.alignment: Qt.AlignHCenter
             implicitWidth: Math.min(44, cell.width - 8)
             enabled: !cell.editing
-            fillColor: cell.item.color ? Theme.category(cell.item.color) : Theme.accent
+            fillColor: cell.item.color ? Theme.category(Theme.showColour(cell.item.color)) : Theme.accent
             from: 0
             to: 255
             // (the BPM: where 90 BPM is on its travel; a speed: x1)

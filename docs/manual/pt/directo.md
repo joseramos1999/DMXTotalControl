@@ -162,9 +162,137 @@ Quando um [fader do SHOW](show.md#faders) a dispara, ela não libera nada, seja 
 ## Pausar, liberar e parar
 
 - **“Pausar”** congela tudo o que está rodando. **“Retomar”** o retoma.
-- **“Liberar grupos”** para as cenas de todos os grupos; o quadrado de cada coluna, só as desse grupo.
-- **“Parar tudo”** (Esc), na barra superior, para tudo o que está rodando, também fora dos grupos. Não esvazia o programador. Nem “Parar tudo” nem “Liberar grupos” param as cenas que um [fader do SHOW](show.md#faders) levantado segura: só descê-lo até o fim.
-- **“Blackout”** (Ctrl+B) leva a saída ao preto sem parar nada. As cabeças não se movem: o pan, o tilt, o zoom, o foco e os outros canais que não são luz ficam onde estão.
+- **“Liberar grupos”** para as cenas de todos os grupos; o quadrado de cada coluna, só as desse grupo. Durante 10 s, [“Recuperar o que estava tocando”](directo.md#recuperar-o-que-estava-tocando) dispara de novo o que “Liberar grupos” parou (o botão, ou um pad ou um botão do SHOW em “Todos os grupos”); não dá para recuperar o que é liberado em um só grupo (o quadrado dele, ou um pad ou um botão do SHOW desse grupo) nem por uma ação de uma cue.
+- **“Parar tudo”** (Esc), na barra superior, para tudo o que está rodando, também fora dos grupos. Não esvazia o programador. Nem “Parar tudo” nem “Liberar grupos” param as cenas que um [fader do SHOW](show.md#faders) levantado segura: só descê-lo até o fim. Também desarma os [efeitos especiais](directo.md#efeitos-especiais-protegidos), e durante 10 s é possível [recuperar o que estava tocando](directo.md#recuperar-o-que-estava-tocando). Com [“Parar tudo com fade”](directo.md#parar-tudo-com-fade), as funções descem antes de parar.
+- **“Blackout”** (Ctrl+B) leva a saída ao preto sem parar nada. As cabeças não se movem: o pan, o tilt, o zoom, o foco e os outros canais que não são luz ficam onde estão. Também desarma os efeitos especiais. Para baixar a luz aos poucos e terminar em Blackout, use um [“Fade para preto”](directo.md#fade-para-preto).
+
+## Segurança durante o show
+
+Para que um erro ou uma falha do computador não estrague o show: o [Modo show](directo.md#modo-show), os [efeitos especiais protegidos](directo.md#efeitos-especiais-protegidos), os [canais estacionados](directo.md#canais-estacionados), a [parada de show](directo.md#parada-de-show), [recuperar o que estava tocando](directo.md#recuperar-o-que-estava-tocando), [parar tudo com fade](directo.md#parar-tudo-com-fade) e o [fade para preto](directo.md#fade-para-preto). Os ajustes deles estão em [Opções › Segurança durante o show](opciones.md#segurança-durante-o-show).
+
+> **Importante:** o computador nunca deve ser a única segurança de uma máquina de CO2, de chamas, de faíscas frias ou de confete. Configure as máquinas e os nós DMX para que se desliguem se perderem o sinal DMX (não para que mantenham o último valor), instale uma parada de emergência ou um botão de homem morto por hardware onde a máquina precisar e siga as normas do local e as instruções do fabricante. Se o programa travar ou o computador desligar, nenhum software consegue cortar um disparo: só o equipamento.
+
+### Modo show
+
+O **escudo** da barra superior, logo depois do cadeado, liga ou desliga o **Modo show** com um clique. Ligado, fica laranja, e a segunda linha do título começa com “Modo show ·”. Bloquear o SHOW (também ao iniciar com “…e bloqueado”) o liga sozinho; desbloqueá-lo não o desliga. Com o SHOW bloqueado, o escudo aparece, mas não pode ser clicado. É um ajuste do computador, não do show.
+
+Com o Modo show ligado, estas ações pedem para manter um botão pressionado por 1,5 s (“Mantenha para fechar”, “Mantenha para abrir” ou “Mantenha para continuar”), mesmo sem alterações não salvas:
+
+- fechar o programa (o × da janela, Alt+F4, a barra de tarefas) e instalar uma atualização;
+- **Novo** e **Abrir** (também Ctrl+N e Ctrl+O), os shows recentes, os exemplos e o show de prática do guia;
+- abrir um show pelo Explorador de Arquivos do Windows.
+
+Soltar antes da hora, **“Cancelar”** ou Esc cancelam; Esc nessa janela nunca para o show. Também vale manter Espaço ou Enter pressionados (a repetição da tecla não conta). Depois, se houver alterações não salvas, vem “Salvar as alterações?” como sempre. Ao desligar o Windows ou sair da sessão com o Modo show ligado, a pergunta pode segurar o desligamento: feche o programa antes.
+
+No Modo show, se o notebook passa para a bateria, uma barra vermelha “Funcionando na bateria: conecte o carregador” aparece em todas as páginas (também bloqueado e em tela cheia) até o carregador voltar; com 20 % ou menos, acrescenta “Bateria em N %”. A bateria é verificada a cada 30 s e a cada aviso de energia do Windows. Sem o Modo show, um aviso diz isso uma vez (e outra quando ficar pouca), e [Opções](opciones.md#segurança-durante-o-show) mostra.
+
+Se o plano de energia do Windows tem a suspensão seletiva de USB ligada, ao iniciar uma barra azul avisa que a interface DMX pode parar, com **“Como desligá-la”** (abre [Suspensão seletiva de USB](opciones.md#suspensão-seletiva-de-usb)) e um × que a oculta até a próxima inicialização. O programa só lê esses ajustes do Windows: nunca os muda.
+
+### Efeitos especiais protegidos
+
+Um **efeito especial protegido** é um fixture que não pode disparar por engano. As máquinas de CO2, de chamas, de faíscas frias e de confete são protegidas sozinhas, e qualquer fixture pode ser protegido manualmente (veja [Patch › Efeitos especiais protegidos](patch.md#efeitos-especiais-protegidos)). Eles têm um escudo na lista e no plano do Patch.
+
+- **Desarmados** (o programa sempre inicia assim), todos os seus canais saem em 0, toque o que tocar.
+- **Armados**, só saem a partir de **cenas** (também flash), **cuelists**, **chasers**, **sequências**, **super cenas** e dos valores base das **cenas FX**. Assim você os dispara com um botão do SHOW em flash (dispara enquanto você o mantém), um cartão de Ao vivo, um pad da APC, um playback ou o [celular](remoto.md#segurança-no-celular).
+- **Nunca** os disparam, nem armados: o programador, Identificar, Destacar, o mixer (Full, Flash, cor, strobo), os FX e suas macros, os Move FX, os Colour FX e os mapeamentos do plano, os Curve FX, os scripts nem uma entrada DMX que passa para a saída. O grand master não os escala.
+- Os [limites](patch.md#limites) só contam enquanto disparam: em repouso sai sempre 0. Não inverta os canais de uma máquina de efeitos: um canal de disparo invertido só dispara com um valor que, invertido, acenda.
+- Os canais de pan e tilt deles (os de uma cabeça de chamas) só saem armados e a partir dessas funções, sem tempo máximo; desarmados, em 0. Todos os outros, menos o de segurança, disparam e a eles se aplica o tempo máximo (veja [Patch › Efeitos especiais protegidos](patch.md#efeitos-especiais-protegidos)).
+
+#### Armar efeitos
+
+O botão **“Armar efeitos”** (com uma chama) fica na barra superior, ao lado de “Blackout”, só quando o show tem efeitos protegidos, também com o SHOW bloqueado. Um clique os arma e outro os desarma. Armados, o botão fica vermelho com o tempo que falta para que se desarmem sozinhos (“ARMADOS · 9:59”), e a borda pulsa enquanto um dispara. Em uma janela mais estreita aparece “Armar” ou só a chama: abaixo de 1450 px de largura, “Armar efeitos”, “Blackout” e “Parar tudo” ficam só com o ícone, e abaixo de uns 1200 px o número do que está rodando some e o grand master fica mais curto.
+
+Armados, uma barra vermelha grande **“EFEITOS ARMADOS”** aparece em todas as páginas (também bloqueado e em tela cheia) com o que dispara (“Disparando: CO2 1”) ou o que espera ser solto, e um botão **“Desarmar”**.
+
+A seta **▾** ao lado mostra se estão armados e quanto falta para que se desarmem sozinhos, **“Disparando agora”**, **“Esperam ser soltos”** (solte a cena, o botão ou o fader dele, a 0, e ele poderá disparar), **“Últimos disparos”** (nome · hora · segundos · como terminou: solto, cortado no seu tempo máximo, desarmado…), **“Abrir o registro”** e **“Ajustes de cada efeito: Patch”** (estes dois, não com o SHOW bloqueado).
+
+Não se armam se nenhum fixture estiver protegido, com o Blackout ligado (“O Blackout está ligado: desligue-o para armar os efeitos especiais”) nem com a parada de show ativa. Também se armam com um [botão do SHOW](show.md#ações-de-um-botão), um [mapeamento](mapeos.md#controla) ou o [celular](remoto.md#segurança-no-celular).
+
+#### Tempo máximo e espera mínima
+
+- Um disparo dura enquanto a cena, o botão ou o fader dele o dão, no máximo o seu **tempo máximo** (por padrão: CO2 3 s, chamas 2 s, faíscas 5 s, confete 2 s). Ao chegar, é cortado, mesmo que você continue pressionando, e não volta até você soltar.
+- Entre um disparo e o seguinte há uma **espera mínima** (1 s por padrão) desde que se solta. Um toque durante a espera não dispara depois: solte e pressione de novo.
+- Armar enquanto uma cena ou um fader já dão valor ao efeito não o dispara: ele espera você soltar. Desarmar enquanto um dispara o corta, mesmo que você arme de novo na hora (ele não volta até você soltar); um controle que só arma não faz nada se eles já estão armados.
+- O **canal de segurança**, se a máquina tiver um, só sai dentro dos seus valores enquanto o efeito está armado e disparando; senão, 0. Sozinho ele nunca dispara a máquina.
+- Se o programa deixa de enviar quadros (está muito ocupado), cada universo corta mesmo assim um disparo no seu tempo, no máximo 40 ms atrasado.
+
+#### Quando são desarmados
+
+Eles se desarmam sozinhos:
+
+- com **Parar tudo** (Esc, o botão, um pad, um botão do SHOW ou o celular) e com o **Blackout** (Ctrl+B, o botão, um botão do SHOW, um pad ou o celular; não o “Blackout” de uma tira do mixer);
+- com a **parada de show**, um **fade para preto** (ao começar) e **recuperar o que estava tocando**;
+- ao abrir ou começar **outro show**, e ao **fechar** o programa;
+- depois de alguns **minutos sem disparos** (10 por padrão: “Desarmar os efeitos sem uso após”, em [Opções](opciones.md#segurança-durante-o-show)), nunca enquanto um dispara;
+- ao remover ou desproteger o último efeito protegido, e **manualmente**.
+
+Um aviso diz isso (“Efeitos especiais desarmados: Parar tudo”). Nunca são salvos armados. Um fader do SHOW que segura uma cena com um CO2 continua segurando-a depois do Esc, mas o CO2 fica em 0 até você descer o fader até o fim.
+
+#### O registro de disparos
+
+Cada sessão grava um arquivo em `%LOCALAPPDATA%\DMXTotalControl\DMX Total Control\effects-log` (“Abrir o registro” abre a pasta): cada disparo com a hora, o número e o nome do fixture, quanto durou e como terminou (solto, cortado no seu tempo máximo, desarmado, parada de show, estacionado, retirado), e quando os efeitos foram armados e desarmados, e por quê.
+
+> **Não testado com equipamento real:** nada disso foi testado com máquinas de CO2, de chamas, de faíscas ou de confete, com os canais de segurança delas, com nós Art-Net ou sACN nem com o que fazem ao perder o sinal DMX. Teste com o seu equipamento, sem público e com a máquina sem carga, antes de usar em um show.
+
+### Canais estacionados
+
+Um canal **estacionado** sai sempre com um valor fixo, acima das cenas, do programador, do mixer, do grand master e de Parar tudo: o hazer a 30 % a noite toda, uma cabeça quebrada apagada e parada. Esc e Blackout nunca o desestacionam; com o Blackout, as intensidades dele se apagam, a não ser com “Também em blackout”. Estaciona-se no [Patch](patch.md#estacionar-canais) e em [Programar](programar.md#estacionar). Ao abrir um show com canais estacionados, eles se aplicam na hora, e um aviso diz quais (“2 fixtures estacionados: HAZER, Spot 3 (Patch)”).
+
+### Parada de show
+
+A **parada de show** é uma luz de segurança para parar o show e dar luz às pessoas: por cima de tudo, põe branco aberto nas luzes, apaga os strobos e os lasers, deixa as cabeças paradas e desarma os efeitos especiais.
+
+Para **ativá-la ou tirá-la**, pressione **a tecla Pause duas vezes** (em menos de 2 s; não em um show que a tem mapeada, veja [Mapeamentos](mapeos.md#teclado)), ou **mantenha pressionado por 1 s** um botão do SHOW “Parada de show (manter 1 s)”, um pad ou uma tecla [mapeados](mapeos.md#controla), ou a mão da barra do [celular](remoto.md#segurança-no-celular). Um toque mais curto não faz nada, e um só toque na tecla Pause apenas avisa (“Parada de show: pressione Pause de novo para ativá-la”). Enquanto você mantém, uma barra laranja “Parada de show: continue mantendo…” se enche. Ativa, uma barra vermelha grande **“PARADA DE SHOW”** aparece em todas as páginas (também bloqueado e em tela cheia) com **“Mantenha para tirar”** (mantenha um segundo). Se o programa perde o teclado enquanto você mantém uma tecla mapeada (outra janela, um aviso do Windows), ela é solta e nada muda.
+
+Enquanto está ativa:
+
+- os efeitos especiais são desarmados (“…desarmados: parada de show”) e não podem ser armados (“A parada de show está ativa: tire-a para armar os efeitos especiais”);
+- as luzes (moving heads, scanners, PARs e washes, barras de LED, blinders e dimmers) dos grupos escolhidos vão para **branco aberto** no nível escolhido: o dimmer no nível, o vermelho, o verde, o azul e o branco no máximo (sem dimmer, as cores no nível), CMY, âmbar e UV em 0, o shutter aberto, a roda de cores em branco ou aberta e os programas internos em “sem função”;
+- os strobos se apagam (as intensidades em 0, ou todos os canais se não as tiverem) e os lasers vão a 0 em todos os canais (um laser DMX se apaga em 0: confira com o seu);
+- todos os shutters se abrem (sem strobo; um canal de strobo “de lento a rápido” vai a 0) e o strobo do mixer para;
+- os moving heads ficam onde estão (pan e tilt, também os finos);
+- a fumaça, os hazers, os ventiladores, as bolhas, a neve, outros efeitos, os gobos, os prismas e o zoom ficam como estão, e os efeitos protegidos em 0.
+
+Ela ganha do programador, do grand master, do Blackout (o resto fica no preto) e dos canais estacionados: um fixture estacionado apagado também se ilumina, e um hazer estacionado continua estacionado. Os [limites](patch.md#limites) continuam valendo (um dimmer invertido, um máximo). Quais fixtures ela ilumina e em que nível se escolhe em [Opções › Parada de show](opciones.md#parada-de-show).
+
+- **Parar tudo** (Esc) durante a parada para as funções de baixo, e a parada continua.
+- Ao **tirá-la**, o show fica como as funções dele tocam agora (continuaram tocando por baixo) e o strobo do mixer volta. Os efeitos continuam desarmados: arme-os manualmente; um CO2 segurado precisa ser solto antes.
+- **Novo**, **Abrir** e fechar o programa a tiram. Nunca é salva ativa: depois de um fechamento inesperado ou de reiniciar, ative-a de novo.
+- O registro dos efeitos da sessão anota “Parada de show ativada” e “Parada de show retirada”.
+
+> **Não testado com equipamento real:** o branco aberto e os valores de shutter dos fixtures reais, que um laser fique apagado em 0, a tecla Pause dos teclados reais, os LEDs da APC e o celular em um wifi real.
+
+### Recuperar o que estava tocando
+
+Depois de **Parar tudo** (Esc, o botão, um pad, um botão do SHOW ou o celular) ou de **“Liberar grupos”** (todos os grupos, não um só), uma barra azul sob a barra superior diz o que parou (“Parado: 4 cenas e 1 cuelist · Recuperar o que estava tocando (Ctrl+Z)”; “Liberado: …” depois de “Liberar grupos”), com o botão **“Recuperar”**, uma faixa que se esvazia em 10 segundos e um × que a oculta até o próximo Parar tudo. Aparece também com o SHOW bloqueado. **Ctrl+Z** faz o mesmo em Ao vivo e no SHOW (não enquanto você o edita nem enquanto digita), e a barra só diz “(Ctrl+Z)” onde funciona. “Recuperar” ignora um toque no seu primeiro meio segundo (um segundo toque de pânico em Parar tudo).
+
+Voltam, com um fade de 0,5 s:
+
+- a cena que cada grupo tocava;
+- as cenas disparadas a partir de botões do SHOW, de Cenas ou de playbacks;
+- as cuelists, na cue em que estavam, com o nível do playback delas; uma cuelist em pausa volta em pausa.
+
+Os FX e os passos começam o ciclo de novo, as funções em beats usam o próprio fade e as cuelists “Timecode” seguem o timecode delas. Não voltam: os flashes que estavam sendo mantidos (em Ao vivo, no SHOW, nos pads ou nos playbacks), as cenas que um fader do SHOW segura (nunca pararam), o programador, o mixer, o grand master, o armamento dos efeitos, os canais estacionados nem a parada de show.
+
+Funciona uma vez, e um aviso diz o que voltou (“Recuperado: 4 cenas e 1 cuelist”). Outro Parar tudo dentro dos 10 s se soma ao primeiro (não o segundo Esc durante o fade de “Parar tudo com fade”); “Liberar grupos” guarda só os grupos, e um Parar tudo depois se soma. As funções excluídas nesse meio-tempo são puladas, e um show novo ou aberto o apaga.
+
+Recuperar **nunca arma** os efeitos especiais: se estavam armados (depois de “Liberar grupos”, que não desarma, ou ao armá-los de novo depois de Parar tudo), primeiro os desarma (“Efeitos especiais desarmados: Recuperar o que estava tocando”). O que volta com um CO2 espera você soltar e fica em 0, também depois de armar de novo.
+
+### Parar tudo com fade
+
+Com **“Parar tudo com fade”** em [Opções](opciones.md#segurança-durante-o-show) (de 0 a 5 s; 0, na hora, como sempre), Parar tudo desce as funções nesse tempo. As cenas que os faders do SHOW seguram e os canais estacionados ficam; os efeitos protegidos se apagam na hora (são desarmados). Durante o fade, o botão “Parar tudo” tem uma faixa e diz “Fazendo o fade: Esc de novo para na hora”: **Esc de novo** para tudo na hora, também o que você disparou durante o fade. Depois é possível recuperar o que o primeiro Esc parou; o que você disparou durante o fade não volta.
+
+### Fade para preto
+
+Um **“Fade para preto”** (um [botão do SHOW](show.md#ações-de-um-botão) ou um [mapeamento](mapeos.md#controla), com o seu tempo: 3 s por padrão) desce as intensidades na saída nesse tempo e depois liga o Blackout, por exemplo no fim de um set. Por baixo, a luz volta ao máximo: ao desligar o Blackout, ela volta.
+
+- Atua acima do grand master e nos canais estacionados sem “Também em blackout”.
+- Não toca nos estacionados com “Também em blackout”, no pan, no tilt nem em outros canais que não são luz, nem nos efeitos protegidos.
+- Ao começar, desarma os efeitos especiais.
+- Outro toque, ou o Blackout, o terminam na hora. Com o Blackout já ligado, não faz nada.
+- Durante o fade, o botão “Blackout” tem uma faixa e diz “Fade para preto: no fim vem o Blackout (Blackout agora: na hora)”.
+
+> **Não testado com equipamento real:** o Modo show (a bateria, o computador acordado, a suspensão de USB), Recuperar, Parar tudo com fade e o Fade para preto não foram testados com notebooks, interfaces DMX, LEDs da APC nem máquinas de efeitos reais.
 
 ## Mixer
 
@@ -173,7 +301,7 @@ O mixer atua sobre o que sai, por cima de cada cena e da edição ao vivo. Press
 Cada tira tem:
 
 - Um **fader de dimmer** com sua porcentagem.
-- **“Full”**: o grupo no máximo. **“Blackout”**: o grupo no preto.
+- **“Full”**: o grupo no máximo. **“Blackout”**: o grupo no preto, menos os efeitos especiais protegidos (nenhum botão do mixer os apaga nem os desarma).
 - **“Matiz”** e **“Saturação”**: tingem a cor. **“Redefinir cor”** tira o tingimento.
 - **“Strobo”** e sua velocidade, de 0,5 a 20 Hz.
 - **“Flash”**: no máximo enquanto pressionado. **“Flash excl.”**: esse grupo no máximo e o resto no preto enquanto pressionado.

@@ -162,9 +162,137 @@ When a [SHOW fader](show.md#faders) plays it, it releases nothing, whatever its 
 ## Pause, release and stop
 
 - **“Pause”** freezes everything that is playing. **“Resume”** continues it.
-- **“Release groups”** stops the scenes of all the groups; the square of each column, only those of that group.
-- **“Stop all”** (Esc), in the top bar, stops everything that is playing, also outside the groups. It does not clear the programmer. Neither “Stop all” nor “Release groups” stops the scenes a raised [SHOW fader](show.md#faders) holds: only lowering it all the way.
-- **“Blackout”** (Ctrl+B) sends the output to black without stopping anything. The heads don't move: pan, tilt, zoom, focus and the other channels that aren't light stay where they are.
+- **“Release groups”** stops the scenes of all the groups; the square of each column, only those of that group. For 10 s, [“Bring back what was playing”](directo.md#bring-back-what-was-playing) starts again what “Release groups” stopped (its button, or a pad or a SHOW button in “All groups”); what is released in a single group (its square, or a pad or a SHOW button of that group) or by an action of a cue can't be brought back.
+- **“Stop all”** (Esc), in the top bar, stops everything that is playing, also outside the groups. It does not clear the programmer. Neither “Stop all” nor “Release groups” stops the scenes a raised [SHOW fader](show.md#faders) holds: only lowering it all the way. It also disarms the [special effects](directo.md#protected-special-effects), and for 10 s you can [bring back what was playing](directo.md#bring-back-what-was-playing). With [“Stop all with a fade”](directo.md#stop-all-with-a-fade), the functions fade out before they stop.
+- **“Blackout”** (Ctrl+B) sends the output to black without stopping anything. The heads don't move: pan, tilt, zoom, focus and the other channels that aren't light stay where they are. It also disarms the special effects. To take the light down slowly and end in Blackout, use a [“Fade to black”](directo.md#fade-to-black).
+
+## Safety during the show
+
+So that a mistake or a failure of the computer doesn't spoil the show: [Show mode](directo.md#show-mode), [protected special effects](directo.md#protected-special-effects), [parked channels](directo.md#parked-channels), the [show stop](directo.md#show-stop), [bring back what was playing](directo.md#bring-back-what-was-playing), [stop all with a fade](directo.md#stop-all-with-a-fade) and [fade to black](directo.md#fade-to-black). Their settings are in [Options › Safety during the show](opciones.md#safety-during-the-show).
+
+> **Important:** the computer must never be the only safety of a CO2, flame, cold spark or confetti machine. Set the machines and the DMX nodes to switch off when they lose the DMX signal (not to hold the last value), fit a hardware emergency stop or dead-man switch where the machine needs one, and follow the rules of the venue and the instructions of the manufacturer. If the program hangs or the computer goes off, no software can cut a fire: only the equipment can.
+
+### Show mode
+
+The **shield** in the top bar, right after the padlock, turns **Show mode** on or off in one click. When it is on it is orange, and the second line of the title starts with “Show mode ·”. Locking the SHOW (also at startup with “…and locked”) turns it on by itself; unlocking doesn't turn it off. With the SHOW locked, the shield shows but can't be clicked. It is a setting of the computer, not of the show.
+
+With Show mode on, these actions ask you to hold a button for 1.5 s (“Hold to close”, “Hold to open” or “Hold to continue”), even with no unsaved changes:
+
+- closing the program (the × of the window, Alt+F4, the taskbar) and installing an update;
+- **New** and **Open** (also Ctrl+N and Ctrl+O), the recent shows, the examples and the practice show of the guide;
+- opening a show from Windows Explorer.
+
+Letting go too early, **“Cancel”** or Esc cancel; Esc in that window never stops the show. Holding Space or Enter works too (the key's auto-repeat doesn't count). Then, if there are unsaved changes, “Save changes?” comes as always. When Windows shuts down or you sign out with Show mode on, the question may hold up the shutdown: close the program first.
+
+In Show mode, if the laptop goes onto its battery, a red bar “Running on battery: plug in the charger” shows on every page (also locked and in full screen) until the charger is back; at 20 % or less it adds “Battery at N %”. The battery is checked every 30 s and on each power message of Windows. Without Show mode, a message says it once (and again when it gets low), and [Options](opciones.md#safety-during-the-show) shows it.
+
+If the Windows power plan has USB selective suspend on, at startup a blue bar warns that the DMX interface may stop, with **“How to turn it off”** (it opens [USB selective suspend](opciones.md#usb-selective-suspend)) and a × that hides it until the next start. The program only reads these Windows settings: it never changes them.
+
+### Protected special effects
+
+A **protected special effect** is a fixture that can't fire by mistake. CO2, flame, cold spark and confetti machines are protected by themselves, and any fixture can be protected by hand (see [Patch › Protected special effects](patch.md#protected-special-effects)). They carry a shield in the list and on the plan of the Patch.
+
+- **Disarmed** (the program always starts so), all their channels send 0, whatever plays.
+- **Armed**, they only go out from **scenes** (flash ones too), **cuelists**, **chasers**, **sequences**, **super scenes** and the base values of **FX scenes**. So you fire them with a SHOW button in flash (it fires while you hold it), a Live tile, an APC pad, a playback or the [phone](remoto.md#safety-on-the-phone).
+- **Never**, not even armed, do these fire them: the programmer, Identify, Highlight, the mixer (Full, Flash, colour, strobe), the FX and their macros, Move FX, Colour FX and plan mappings, Curve FX, scripts or a DMX input passed through to the output. The grand master doesn't scale them.
+- The [limits](patch.md#limits) only count while they fire: at rest 0 always goes out. Don't invert the channels of an effect machine: an inverted fire channel only fires with a value that, inverted, turns it on.
+- Their pan and tilt channels (those of a flame head) only go out armed and from those functions, with no maximum time; disarmed, at 0. All the others but the safety one fire, and the maximum time applies to them (see [Patch › Protected special effects](patch.md#protected-special-effects)).
+
+#### Arm effects
+
+The **“Arm effects”** button (with a flame) is in the top bar, next to “Blackout”, only when the show has protected effects, also with the SHOW locked. A click arms them and another disarms them. Armed, the button turns red with the time left before they disarm by themselves (“ARMED · 9:59”), and its border pulses while one fires. In a narrower window it says “Arm” or shows only the flame: below 1450 px wide, “Arm effects”, “Blackout” and “Stop all” keep only their icon, and below about 1200 px the running count hides and the grand master gets shorter.
+
+Armed, a big red bar **“SPECIAL EFFECTS ARMED”** shows on every page (also locked and in full screen) with what fires (“Firing: CO2 1”) or what waits for a release, and a **“Disarm”** button.
+
+The **▾** arrow next to it shows whether they are armed and how long until they disarm by themselves, **“Firing now”**, **“Waiting for a release”** (let go of its scene, its button or its fader, to 0, and it can fire), **“Last fires”** (name · time · seconds · how it ended: released, cut at its maximum time, disarmed…), **“Open the log”** and **“Each effect: Patch”** (these two, not with the SHOW locked).
+
+They don't arm if no fixture is protected, with Blackout on (“Blackout is on: turn it off to arm the special effects”) or with the show stop on. You can also arm them with a [SHOW button](show.md#button-actions), a [mapping](mapeos.md#drives) or the [phone](remoto.md#safety-on-the-phone).
+
+#### Maximum time and minimum wait
+
+- A fire lasts while its scene, its button or its fader gives it, at most its **maximum time** (by default: CO2 3 s, flames 2 s, sparks 5 s, confetti 2 s). Then it is cut, even if you keep pressing, and it doesn't come back until you let go.
+- Between one fire and the next there is a **minimum wait** (1 s by default) from the release. A press during the wait doesn't fire later: let go and press again.
+- Arming while a scene or a fader already gives the effect a value doesn't fire it: it waits for you to let go. Disarming while one fires cuts it, even if you arm again at once (it doesn't come back until you let go); a control that only arms does nothing when they are already armed.
+- The **safety channel**, if the machine has one, only goes out within its values while the effect is armed and firing; otherwise 0. On its own it never fires the machine.
+- If the program stops sending frames (it is very busy), each universe still cuts a fire at its time, at most 40 ms late.
+
+#### When they disarm
+
+They disarm by themselves:
+
+- with **Stop all** (Esc, its button, a pad, a SHOW button or the phone) and with **Blackout** (Ctrl+B, its button, a SHOW button, a pad or the phone; not the “Blackout” of a mixer strip);
+- with the **show stop**, a **fade to black** (when it starts) and **bring back what was playing**;
+- when you open or start **another show**, and when you **close** the program;
+- after some **minutes without a fire** (10 by default: “Disarm the special effects unused after”, in [Options](opciones.md#safety-during-the-show)), never while one fires;
+- when the last protected effect is removed or unprotected, and **by hand**.
+
+A message says it (“Special effects disarmed: Stop all”). They are never saved armed. A SHOW fader that holds a scene with a CO2 keeps holding it after Esc, but the CO2 stays at 0 until you take the fader all the way down.
+
+#### The fire log
+
+Each session writes a file in `%LOCALAPPDATA%\DMXTotalControl\DMX Total Control\effects-log` (“Open the log” opens the folder): each fire with its time, the number and the name of the fixture, how long it lasted and how it ended (released, cut at its maximum time, disarmed, show stop, parked, removed), and when the effects were armed and disarmed, and why.
+
+> **Not tested with real equipment:** none of this has been tested with CO2, flame, spark or confetti machines, with their safety channels, with Art-Net or sACN nodes, or with what they do when they lose the DMX signal. Try it with your equipment, with no audience and the machine not loaded, before you use it in a show.
+
+### Parked channels
+
+A **parked** channel always goes out at a fixed value, above the scenes, the programmer, the mixer, the grand master and Stop all: the hazer at 30 % all night, a broken head off and still. Esc and Blackout never unpark it; with Blackout its intensities go dark, unless it has “Also in blackout”. You park in the [Patch](patch.md#parking-channels) and in [Program](programar.md#parking). When a show with parked channels opens they apply at once, and a message says which (“2 parked fixtures: HAZER, Spot 3 (Patch)”).
+
+### Show stop
+
+The **show stop** is a safety light to stop the show and give people light: above everything, it puts open white on the lights, darkens strobes and lasers, keeps the heads still and disarms the special effects.
+
+To **put it or take it away**, press the **Pause key twice** (within 2 s; not in a show that maps it, see [Mappings](mapeos.md#keyboard)), or **hold for 1 s** a SHOW button “Show stop (hold 1 s)”, a [mapped](mapeos.md#drives) pad or key, or the hand in the bar of the [phone](remoto.md#safety-on-the-phone). A shorter press does nothing, and a single press of the Pause key only warns (“Show stop: press Pause again to put it”). While you hold, an orange bar “Show stop: keep holding…” fills. Once it is on, a big red bar **“SHOW STOP”** shows on every page (also locked and in full screen) with **“Hold to release”** (hold it a second). If the program loses the keyboard while you hold a mapped key (another window, a Windows message), the hold is let go and nothing changes.
+
+While it is on:
+
+- the special effects are disarmed (“…disarmed: show stop”) and can't be armed (“The show stop is on: take it away to arm the special effects”);
+- the lights (moving heads, scanners, PARs and washes, LED bars, blinders and dimmers) of the chosen groups go to **open white** at the chosen level: the dimmer at the level, red, green, blue and white at full (without a dimmer, the colours at the level), CMY, amber and UV at 0, the shutter open, the colour wheel at white or open and the built-in programs at “no function”;
+- strobes go dark (their intensities at 0, or all their channels if they have none) and lasers go to 0 on all their channels (a DMX laser is off at 0: check yours);
+- every shutter opens (no strobe; a “slow to fast” strobe channel goes to 0) and the mixer strobe stops;
+- moving heads stay where they are (pan and tilt, the fine ones too);
+- smoke, hazers, fans, bubbles, snow, other effects, gobos, prisms and zoom stay as they are, and protected effects at 0.
+
+It wins over the programmer, the grand master, Blackout (the rest stays black) and parked channels: a fixture parked off lights up too, and a parked hazer stays parked. The [limits](patch.md#limits) still count (an inverted dimmer, a maximum). Which fixtures it lights and at what level is chosen in [Options › Show stop](opciones.md#show-stop).
+
+- **Stop all** (Esc) during the show stop stops the functions underneath, and the show stop stays.
+- When you **take it away**, the show is as its functions play now (they kept playing underneath) and the mixer strobe comes back. The effects stay disarmed: arm them by hand; a held CO2 has to be let go first.
+- **New**, **Open** and closing the program take it away. It is never saved on: after an unexpected close or a restart, put it again.
+- The effects log of the session writes “Show stop on” and “Show stop off”.
+
+> **Not tested with real equipment:** the open white and shutter values of real fixtures, a laser really dark at 0, the Pause key of real keyboards, the APC LEDs and the phone over a real Wi-Fi.
+
+### Bring back what was playing
+
+After **Stop all** (Esc, its button, a pad, a SHOW button or the phone) or **“Release groups”** (all the groups, not a single one), a blue bar under the top bar says what was stopped (“Stopped: 4 scenes and 1 cuelist · Bring back what was playing (Ctrl+Z)”; “Released: …” after “Release groups”), with the **“Bring back”** button, a strip that runs down in 10 seconds and a × that hides it until the next Stop all. It shows with the SHOW locked too. **Ctrl+Z** does the same in Live and in the SHOW (not while you edit it or type), and the bar only says “(Ctrl+Z)” where it works. “Bring back” ignores a tap in its first half second (a second panic tap on Stop all).
+
+These come back, with a 0.5 s fade:
+
+- the scene each group played;
+- the scenes started from SHOW buttons, from Scenes or from playbacks;
+- the cuelists, on the cue they were on, at the level of their playback; a paused cuelist comes back paused.
+
+FX and steps start their cycle again, functions in beats use their own fade and “Timecode” cuelists follow their timecode. These don't come back: flashes that were held (in Live, the SHOW, pads or playbacks), the scenes a SHOW fader holds (they never stopped), the programmer, the mixer, the grand master, the arming of the effects, parked channels and the show stop.
+
+It works once, and a message says what came back (“Brought back: 4 scenes and 1 cuelist”). Another Stop all within the 10 s joins the first (not the second Esc during the fade of “Stop all with a fade”); “Release groups” keeps only the groups, and a Stop all after it joins in. Functions deleted in the meantime are skipped, and a new or opened show clears it.
+
+Bringing back **never arms** the special effects: if they were armed (after “Release groups”, which doesn't disarm, or when you armed them again after Stop all), it disarms them first (“Special effects disarmed: Bring back what was playing”). What comes back with a CO2 waits for you to let go and stays at 0, also after you arm again.
+
+### Stop all with a fade
+
+With **“Stop all with a fade”** in [Options](opciones.md#safety-during-the-show) (from 0 to 5 s; 0, at once, as always), Stop all fades the functions out over that time. The scenes SHOW faders hold and parked channels stay; protected effects go dark at once (they are disarmed). While it fades, the “Stop all” button has a strip and says “Fading out: Esc again stops at once”: **Esc again** stops everything at once, also what you started during the fade. Afterwards you can bring back what the first Esc stopped; what you started during the fade doesn't come back.
+
+### Fade to black
+
+A **“Fade to black”** (a [SHOW button](show.md#button-actions) or a [mapping](mapeos.md#drives), with its time: 3 s by default) takes the intensities down at the output over that time and then puts Blackout on, for example at the end of a set. Underneath, the light is at full again: when you turn Blackout off, it comes back.
+
+- It acts above the grand master and on parked channels without “Also in blackout”.
+- It doesn't touch parked channels with “Also in blackout”, pan, tilt or other channels that aren't light, nor protected effects.
+- When it starts, it disarms the special effects.
+- Another press, or Blackout, end it at once. With Blackout already on, it does nothing.
+- While it fades, the “Blackout” button has a strip and says “Fading to black: Blackout comes at its end (Blackout now: at once)”.
+
+> **Not tested with real equipment:** Show mode (the battery, keeping the computer awake, USB suspend), bringing back, Stop all with a fade and Fade to black have not been tested with real laptops, DMX interfaces, APC LEDs or effect machines.
 
 ## Mixer
 
@@ -173,7 +301,7 @@ The mixer acts on the output, on top of every scene and of the live edits. Press
 Each strip has:
 
 - A **dimmer fader** with its percentage.
-- **“Full”**: the group at full. **“Blackout”**: the group to black.
+- **“Full”**: the group at full. **“Blackout”**: the group to black, but for protected special effects (no button of the mixer turns them off or disarms them).
 - **“Hue”** and **“Saturation”**: tint the colour. **“Reset colour”** removes the tint.
 - **“Strobe”** and its speed, from 0.5 to 20 Hz.
 - **“Flash”**: at full while pressed. **“Flash excl.”**: that group at full and the rest to black while pressed.

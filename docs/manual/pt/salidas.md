@@ -32,11 +32,12 @@ A conexão é lembrada para a próxima vez que você abrir o programa.
 
 ## Níveis DMX
 
-**“Níveis DMX”** mostra os 512 canais de um universo tal como saem do programa, com tudo aplicado (cenas, programador, mixer, grand master, limites…):
+**“Níveis DMX”** mostra os 512 canais de um universo tal como saem do programa, com tudo aplicado (cenas, programador, mixer, grand master, limites, canais estacionados, parada de show…); um efeito especial protegido desarmado aparece em 0 mesmo com a cena dele tocando:
 
 - Escolha o **Universo** na lista suspensa.
 - Cada casa tem o número do canal e o valor dele (0–255). **“Mostrar em %”** muda para porcentagem.
 - As casas com borda pertencem a um fixture. Passe o mouse sobre um canal para ver de qual fixture ele é (“Nome — canal N”).
+- No canto superior direito da casa, um **cadeado** marca um canal [estacionado](patch.md#estacionar-canais) (“estacionado em 77”, “· também em blackout”), um **escudo** um [efeito especial protegido](directo.md#efeitos-especiais-protegidos) (“efeito especial protegido (desarmado: sai 0)”, “(armado)” ou, com cadeado, “estacionado apagado”) e uma **mão vermelha** o que a [parada de show](directo.md#parada-de-show) põe (“parada de show”, ou “parada de show: fica onde está” no pan e no tilt). Um canal estacionado sob a parada diz “estacionado em 77, sob a parada de show”, e durante um fade para preto um sem “também em blackout” diz “estacionado em 77, descendo com o fade para preto”. As marcas ficam no canal do próprio fixture, antes da troca de pan e tilt.
 
 > **Dica:** se um fixture não responde, veja aqui se o canal dele se move. Se ele se move, o problema está no cabo, no endereço do aparelho ou na interface; se não, no patch ou no que você está disparando.
 

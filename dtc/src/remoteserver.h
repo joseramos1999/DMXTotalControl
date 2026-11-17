@@ -283,6 +283,13 @@ private:
     void releaseMixerFlashes(QWebSocket *socket);
     /** The flash of a mixer goes off when no phone holds it any more */
     void mixerFlashUp(const QString &held);
+    /** The show stop held down by a phone (global showStop, down): one hold
+     *  of it per phone, let go of with its up or when the phone goes (an up
+     *  of a phone that doesn't hold it does nothing). @return false for the
+     *  other messages */
+    bool trackShowStop(QWebSocket *socket, const QVariantMap &message);
+    /** The show stop a phone holds, let go of */
+    void releaseShowStop(QWebSocket *socket);
     /** The settings of the mixers for the state: ID -> settings */
     QVariantMap mixersState() const;
 
@@ -337,6 +344,8 @@ private:
     /** The flashes of the mixer each phone holds down: "<mixer>/<key>" ->
      *  how many times */
     QHash<QWebSocket *, QHash<QString, int>> m_mixerFlashes;
+    /** The phones that hold the show stop down */
+    QSet<QWebSocket *> m_showStopHolds;
     /** The universes each phone shows, and their levels as it was last sent
      *  them (only the phones that show some) */
     QHash<QWebSocket *, QSet<int>> m_watch;

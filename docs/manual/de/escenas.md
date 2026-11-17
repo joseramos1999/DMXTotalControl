@@ -110,6 +110,8 @@ Oben sehen Sie die tatsächliche Farbe jedes Kopfes, während der Effekt läuft 
 
 Ein **Mapping auf dem 2D-Plan** ist ein Colour FX, der schon mit der Anordnung auf dem Plan entsteht: Effekt, Text oder Bild liegen so auf der Bühne, wie die Fixtures stehen.
 
+Colour FX, Mappings auf dem 2D-Plan, Curve FX, Move FX, „Auswahl des Programmers verwenden“, „In FX umwandeln“ und „In Schritte umwandeln“ lassen die [geschützten Spezialeffekte](programar.md#geschützte-spezialeffekte) aus, und eine Meldung sagt es („1 geschützter Spezialeffekt bleibt außerhalb des FX“). Sind nur geschützte Effekte ausgewählt, entsteht nichts.
+
 ### Move FX und Curve FX
 
 Das sind Effekte aus dem früheren Modul: **Move FX** bewegen Pan/Tilt in einer Form, und **Curve FX** geben Kanälen eine Welle (Sinus, Dreieck, Rampen, Rechteck, Zufall, Stroboskop…). Sie finden sie in alten Shows oder in Shows von QLC+; über „Neu“ werden sie nicht mehr erstellt.
@@ -436,7 +438,7 @@ Wählen Sie einen Cue und öffnen Sie **„Cue-Details“** › **„Verknüpfun
 - **„Gruppe freigeben“** (oder alle) und **„Alle Playbacks freigeben“**.
 - **„BPM setzen“**, von 20 bis 300.
 
-Jede Zeile wird direkt dort geändert; **×** entfernt sie. Die Aktionen laufen der Reihe nach, wenn der Cue mit GO, Folgen, Warten oder „Zu Cue gehen“ startet, auch beim ersten Cue, wenn die Cuelist startet. Sie laufen nicht mit BACK, nicht wenn eine Bearbeitung den Cue erneut anwendet und nicht, wenn eine Superszene die Cuelist mittendrin startet.
+Jede Zeile wird direkt dort geändert; **×** entfernt sie. Die Aktionen laufen der Reihe nach, wenn der Cue mit GO, Folgen, Warten oder „Zu Cue gehen“ startet, auch beim ersten Cue, wenn die Cuelist startet. Sie laufen nicht mit BACK, nicht wenn eine Bearbeitung den Cue erneut anwendet und nicht, wenn eine Superszene die Cuelist mittendrin startet. Keine Aktion schaltet die Spezialeffekte scharf, löst den Show-Stopp aus, holt zurück, was lief, oder blendet auf Schwarz aus.
 
 - Die Cuelist selbst steht nicht in der Liste: Dafür ist die Verknüpfung da.
 - Eine Aktion auf eine gelöschte Szene oder Cuelist zeigt „(gelöscht)“ und tut nichts.
@@ -498,6 +500,8 @@ Unter jeder Cuelist zeigt das Fenster, was nicht mitkommt:
 - „Freigabe durch anderes GO“: Diese Listen kommen in einen Rahmen „Cuelists (jeweils eine)“, in dem das Starten einer Liste die anderen stoppt.
 
 Eine Cuelist, die schon ihre Cue-Liste in der Virtuellen Konsole hat (eine QLC+-Show, deren Schritte Sie in eine Cuelist umgewandelt haben), bekommt keine weitere: Die alte startet sie wieder. Testen Sie die Kopie in QLC+, bevor Sie sie live einsetzen: QLC+ blendet auf seine eigene Art über.
+
+Oben warnt das Fenster auch davor, was QLC+ mit dieser Show nicht tut: „2 geschützte Spezialeffekte: QLC+ schaltet sie nicht scharf und begrenzt ihre Zeit nicht“, mit „Löst geschützte Spezialeffekte aus: …“ unter jeder Cuelist, die einen auslöst, und „2 geparkte Fixtures: QLC+ parkt keine Kanäle“. Die Kopie behält die Werte der geschützten Effekte in den Szenen und Schritten, aber QLC+ löst sie von überall aus, ohne Scharfschalten und ohne Höchstzeit (siehe [Geschützte Spezialeffekte](patch.md#geschützte-spezialeffekte)).
 
 ### Cue-Listen von QLC+
 

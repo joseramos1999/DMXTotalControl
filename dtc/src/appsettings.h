@@ -68,6 +68,18 @@ class AppSettings : public QObject
     /** The audio input of Pulse and of the audio matrices, by its name.
      *  Empty: the default one of the system */
     Q_PROPERTY(QString audioInput READ audioInput WRITE setAudioInput NOTIFY audioInputChanged)
+    /** Windows keeps the computer awake and its screen on while the program
+     *  runs (on by default) */
+    Q_PROPERTY(bool keepAwake READ keepAwake WRITE setKeepAwake NOTIFY liveSafetyChanged)
+    /** Show mode: closing the program or opening another show asks to hold
+     *  a button. Locking the SHOW turns it on */
+    Q_PROPERTY(bool showMode READ showMode WRITE setShowMode NOTIFY liveSafetyChanged)
+    /** The special effects disarm by themselves after this many minutes
+     *  without a fire (0-120; 0: never; 10 by default) */
+    Q_PROPERTY(int autoDisarmMinutes READ autoDisarmMinutes WRITE setAutoDisarmMinutes NOTIFY liveSafetyChanged)
+    /** Stop all fades the functions out in this many ms (0-5000; 0: at once,
+     *  as always). A second Stop all during the fade stops at once */
+    Q_PROPERTY(int stopAllFadeMs READ stopAllFadeMs WRITE setStopAllFadeMs NOTIFY liveSafetyChanged)
 
 public:
     explicit AppSettings(QObject *parent = nullptr);
@@ -122,6 +134,15 @@ public:
     QString audioInput() const;
     void setAudioInput(const QString &name);
 
+    bool keepAwake() const;
+    void setKeepAwake(bool enable);
+    bool showMode() const;
+    void setShowMode(bool enable);
+    int autoDisarmMinutes() const;
+    void setAutoDisarmMinutes(int minutes);
+    int stopAllFadeMs() const;
+    void setStopAllFadeMs(int ms);
+
     QString theme() const;
     void setTheme(const QString &theme);
     /** A theme for this run only, not saved (the developer screenshots) */
@@ -160,6 +181,7 @@ signals:
     void lockChanged();
     void clearAfterRecordChanged();
     void audioInputChanged();
+    void liveSafetyChanged();
     void themeChanged();
     void uiScaleChanged();
     void guideShownChanged();

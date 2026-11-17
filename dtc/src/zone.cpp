@@ -382,7 +382,12 @@ void Zone::select(quint32 fid)
         manager->selectScene(fid);
 }
 
-void Zone::startScene(quint32 fid, bool release)
+void Zone::recall(quint32 fid, uint fadeMs)
+{
+    startScene(fid, false, int(fadeMs));
+}
+
+void Zone::startScene(quint32 fid, bool release, int fadeMs)
 {
     Function *f = m_doc->function(fid);
     if (f == nullptr || m_functions.contains(fid) == false)
@@ -416,6 +421,9 @@ void Zone::startScene(quint32 fid, bool release)
         in = uint(qreal(in == Function::defaultSpeed() ? f->fadeInSpeed() : in) / opt.fadeSpeed);
         out = uint(qreal(out == Function::defaultSpeed() ? f->fadeOutSpeed() : out) / opt.fadeSpeed);
     }
+    // (a time of its own: a function in beats would read it as beats)
+    if (fadeMs >= 0 && f->tempoType() != Function::Beats)
+        in = uint(fadeMs);
 
     f->setSpeedFactor(speed(fid));
     if (f->startMode() == Function::StartPaused)
@@ -550,13 +558,20 @@ QList<quint32> Zone::activeFunctions() const
 void Zone::press(quint32 fid)
 {
     if (isFlash(fid))
+    {
+        // (pressed: Stop all doesn't keep it to bring it back)
+        m_flashPressed.insert(fid);
         start(fid);
+    }
     else
+    {
         trigger(fid);
+    }
 }
 
 void Zone::unpress(quint32 fid)
 {
+    m_flashPressed.remove(fid);
     if (isFlash(fid))
         stop(fid);
 }
@@ -818,6 +833,7 @@ void Zone::slotFunctionReplaced(quint32 fid)
 
 void Zone::slotFunctionRemoved(quint32 fid)
 {
+    m_flashPressed.remove(fid);
     if (m_functions.removeAll(fid) > 0)
     {
         m_active.remove(fid);

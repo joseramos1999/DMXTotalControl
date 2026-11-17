@@ -10,6 +10,7 @@ Nell'intestazione scegli la vista e trovi gli strumenti per aggiungere:
 - **«Canali»**: i 512 canali di ogni universo, con le fixture sopra.
 - **«Pianta 2D»**: il palco visto dall'alto.
 - **«Importa»**, **«Matrice LED»** e **«Aggiungi fixture»**.
+- Con fixture parcheggiate, **«N parcheggiate · Togli tutto dal parcheggio»**: quante sono e il tasto per toglierle tutte dal parcheggio (vedi [Parcheggiare i canali](patch.md#parcheggiare-i-canali)).
 
 ## Aggiungere fixture
 
@@ -35,7 +36,7 @@ Per dimmer singoli, scegli **Generic › Generic Dimmer**: al posto della modali
 
 ## L'elenco
 
-Colonne: casella di selezione, **#** (numero), **NOME**, **INDIRIZZO** (universo . indirizzo), **CAN**, **FIXTURE** (produttore e modello), **MODALITÀ**, **INVERTI** (pan e tilt) e il tasto per identificare.
+Colonne: casella di selezione, **#** (numero), **NOME**, **INDIRIZZO** (universo . indirizzo), **CAN**, **FIXTURE** (produttore e modello), **MODALITÀ**, **INVERTI** (pan e tilt) e il tasto per identificare. Dopo il nome, uno **scudo** indica un [effetto speciale protetto](patch.md#effetti-speciali-protetti) e un **lucchetto** una fixture con canali [parcheggiati](patch.md#parcheggiare-i-canali).
 
 - **«Raggruppa per fixture»** le raggruppa per modello, con una casella per selezionare tutte quelle di ogni modello. Un clic sull'intestazione di un modello lo comprime (nasconde le sue fixture) o lo espande.
 - **Doppio clic** su una fixture la modifica.
@@ -45,9 +46,11 @@ Colonne: casella di selezione, **#** (numero), **NOME**, **INDIRIZZO** (universo
 Gli strumenti della barra lavorano sulla selezione:
 
 - Il **clic** seleziona; **Ctrl+clic** aggiunge o toglie; **Maiusc+clic** seleziona tutte le fixture dall'ultima che hai cliccato fino a quella (in quel senso, che è l'ordine della selezione), e **Ctrl+Maiusc+clic** le aggiunge. **«Tutte»** e **«Nessuno»**. La casella di una riga aggiunge o toglie la sua fixture (come Ctrl+clic); con Maiusc, aggiunge tutte quelle dall'ultima che hai cliccato.
-- **«Identifica»**: le fixture selezionate lampeggiano in bianco per trovarle sul palco. **«Smetti di identificare»** lo ferma (si ferma anche quando esci dalla pagina). Il tasto di ogni riga identifica solo quella fixture. L'elenco resta dov'era.
+- **«Identifica»**: le fixture selezionate lampeggiano in bianco per trovarle sul palco. **«Smetti di identificare»** lo ferma (si ferma anche quando esci dalla pagina). Il tasto di ogni riga identifica solo quella fixture. L'elenco resta dov'era. Gli effetti speciali protetti non si identificano mai (far lampeggiare un CO2 lo attiverebbe): un avviso dice quanti sono rimasti fuori.
 - **Inverti pan** e **inverti tilt** (le icone con le frecce): per le fixture che li hanno.
-- **«Limiti»**, **«Modifica»**, **«Reindirizza»**, **«Rinumera»**, **«Crea gruppo»** ed **«Elimina»**: sono spiegati più avanti.
+- **«Limiti»**, il tasto della **fiamma** (**«Effetto speciale»**), **«Modifica»**, **«Reindirizza»**, **«Rinumera»**, **«Crea gruppo»** ed **«Elimina»**: sono spiegati più avanti.
+
+Un **clic destro** su una riga dell'elenco, o su una fixture della pianta 2D senza muovere il mouse, apre il menu della fixture: **«Effetto speciale…»**, **«Identifica»**, **«Limiti…»**, **«Modifica…»**, **«Parcheggia com'è ora»**, **«Parcheggia spento»**, **«Anche in blackout»**, **«Togli dal parcheggio»** e **«Togli tutto dal parcheggio»**. Se la fixture non era selezionata, prima la seleziona.
 
 ## Indirizzi e universi
 
@@ -115,9 +118,9 @@ Gli strumenti (lavorano sulla selezione e nel suo ordine):
 - **15°** (clic destro: nell'altro senso) e **90°**: ruotano la selezione.
 - **«Altezza e orientamento»**: dove sono appese le teste mobili selezionate, per [Follow](patch.md#altezza-e-orientamento-follow).
 
-Le teste mobili hanno una piccola freccia sul bordo (una tacca, quando la pianta le mostra piccole): la direzione verso cui guardano. I nomi delle fixture molto vicine si nascondono per non sovrapporsi: aumenta lo zoom per leggerli.
+Le teste mobili hanno una piccola freccia sul bordo (una tacca, quando la pianta le mostra piccole): la direzione verso cui guardano. I nomi delle fixture molto vicine si nascondono per non sovrapporsi: aumenta lo zoom per leggerli. Uno **scudo** in alto a sinistra indica un effetto speciale protetto (tenue; rosso con gli effetti armati; con un anello che pulsa mentre si attiva) e un **lucchetto** in alto a destra una fixture parcheggiata.
 
-La **rotella** fa lo zoom, il **tasto destro** o quello centrale trascinano la vista e un doppio clic con essi la centra. Anche i tasti nell'angolo fanno lo zoom.
+La **rotella** fa lo zoom, il **tasto destro** o quello centrale trascinano la vista e un doppio clic con essi la centra. Anche i tasti nell'angolo fanno lo zoom. Un clic destro senza muovere il mouse apre il [menu della fixture](patch.md#selezionare).
 
 > **Consiglio:** posiziona le fixture nell'ordine in cui vuoi che scorrano gli effetti: selezionale da sinistra a destra e usa «Disponi › Linea».
 
@@ -172,6 +175,51 @@ Con una sola fixture, l'elenco **Canali** permette di decidere per ogni canale:
 
 I limiti agiscono sull'uscita: scene, effetti e modifiche dal vivo conservano i loro valori, ma ciò che esce li rispetta. Con più fixture si vedono i valori della prima che ha ciascun controllo, e ciò che cambi si applica a tutte quelle che lo hanno.
 
+## Effetti speciali protetti
+
+Un **effetto speciale protetto** si attiva solo con gli effetti armati, da scene, cuelist e chaser, e ogni attivazione dura al massimo il suo tempo massimo. Come si armano e cosa li attiva è spiegato in [Live](directo.md#effetti-speciali-protetti).
+
+**Quali lo sono.** Le macchine di **CO2**, **fiamme**, **scintille fredde** e **coriandoli** si proteggono da sole; quelle di **bolle** e **neve**, no (proteggile a mano se vuoi). La classe viene dal tipo di fixture, dalle parole della sua definizione, dal nome di un dimmer generico («CO2 1», «FLAME 3», «FIAMMA 2», «PIRO 1») o dall'icona scelta nella pianta. Le regole automatiche proteggono soltanto, non tolgono mai la protezione: cambiare il nome o l'icona non toglie mai la protezione a una fixture; una fixture che diventa di una di queste classi viene protetta, e un avviso lo dice («CO2 4 ora è un effetto speciale protetto»); un CO2 a cui hai tolto la protezione a mano resta senza anche se lo chiami «CO2 9».
+
+> **Limiti:** «C02» scritto con uno zero non si riconosce, e «FOCO2» non è un CO2. Una macchina non riconosciuta non è protetta: controlla lo scudo nell'elenco e proteggila a mano.
+
+**«Effetto speciale»** (il tasto della fiamma, accanto a «Limiti», o «Effetto speciale…» nel menu della fixture) apre le sue impostazioni per la selezione:
+
+- **«Effetto speciale protetto»**: toglierlo chiede prima («Togliere la protezione?»). Senza di essa, la fixture esce come qualsiasi altro canale: senza armare, senza tempo massimo e anche dal programmatore, da Identifica, dal mixer e dagli FX.
+- **«Tempo massimo di attivazione»**: da 0,1 a 30 s (per impostazione predefinita: CO2 3 s, fiamme 2 s, scintille 5 s, coriandoli 2 s, gli altri 3 s).
+- **«Attesa minima tra due attivazioni»**: da 0 a 60 s (1 s per impostazione predefinita), dal rilascio.
+- **«Canale di sicurezza»**: **«Nessuno»** o il canale della fixture di cui la macchina ha bisogno per attivarsi, con i suoi **«Valori da / a»** (da 0 a 255; «da» non può superare «a»). Quel canale esce in quei valori solo mentre l'effetto è armato e si attiva («da», se la scena non gli dà un valore); altrimenti 0. Si sceglie solo quando le fixture selezionate hanno gli stessi canali, e una fixture di un solo canale non può averne uno («… ha bisogno di un altro canale per attivarsi»). Se la fixture cambia modo o definizione e al suo posto resta un altro canale, il canale di sicurezza viene tolto, e un avviso lo dice («Il canale di sicurezza di … è stato tolto»).
+- **«Secondo la sua classe (…)»**: torna alla protezione e ai tempi della sua classe, senza canale di sicurezza.
+
+**Quali canali si attivano.** Tutti tranne il pan, il tilt e quello di sicurezza, qualunque sia il loro tipo (intensità, effetto, altezza…): a loro si applica il tempo massimo. Il pan e il tilt escono solo con gli effetti armati e dalle scene, senza limite di tempo, e a 0 disarmati: una scena che si limita a puntare la macchina non la attiva. Una macchina che ha solo pan e tilt si attiva su tutti i suoi canali tranne quello di sicurezza. Una fixture a cavallo di due universi (di uno show di QLC+) non si attiva mai: la finestra lo avvisa; spostala in un solo universo.
+
+Nell'elenco, uno **scudo** dopo il nome; nella pianta, uno scudo in alto a sinistra: tenue normalmente, rosso con gli effetti armati e con un anello che pulsa mentre si attiva. **Identifica** non li accende mai. [Livelli DMX](salidas.md#livelli-dmx) e la pianta dal vivo mostrano ciò che esce davvero: un CO2 disarmato si vede a 0 anche se la sua scena suona.
+
+La protezione si salva con lo show, nella sua sezione di DMX Total Control, e [importare il patch di un altro show](patch.md#importare-da-un-altro-show) la porta con sé. Quando apri uno show più vecchio o di QLC+, un avviso dice una volta quali fixture ora sono effetti protetti per la loro classe («2 fixture di questo show ora sono effetti speciali protetti: …»); anche una macchina del fumo il cui modello dice «CO2» o un dimmer generico chiamato «Fuego…» o «Fire…». Per cambiarlo, usa «Effetto speciale». QLC+ non legge questa protezione: aperto in QLC+, lo show attiva queste fixture da qualsiasi parte, senza armare e senza tempo massimo. Nemmeno le versioni precedenti di DMX Total Control la leggono: attivano queste fixture senza armare e, quando salvano lo show, tolgono la protezione messa a mano, i tempi e il canale di sicurezza. Usa questa versione su tutti i computer dello show.
+
+## Parcheggiare i canali
+
+Un canale **parcheggiato** esce sempre con un valore fisso, sopra le scene, le cuelist, gli FX, il programmatore, il mixer (Full, Flash…), il grand master e Ferma tutto: l'hazer al 30 % per tutta la notte, una testa guasta spenta e ferma, la luce di sala. Esc e Blackout non lo tolgono mai dal parcheggio.
+
+Nel [menu della fixture](patch.md#selezionare) (clic destro nell'elenco o nella pianta):
+
+- **«Parcheggia com'è ora»**: tutti i suoi canali a ciò che esce ora, quindi il grand master, il mixer e i limiti di quel momento restano dentro. Non si può durante l'arresto dello show né durante una dissolvenza al nero (la loro luce resterebbe parcheggiata per sempre).
+- **«Parcheggia spento»**: i canali di intensità (dimmer e colori) a 0 e gli altri come sono ora; una fixture senza canali di intensità (una macchina del fumo o un hazer della libreria), tutto a 0. Durante l'arresto dello show o una dissolvenza al nero, gli altri canali si parcheggiano a ciò che lo show invia sotto.
+- **«Anche in blackout»**: con il Blackout, le sue intensità parcheggiate mantengono il loro valore. Senza, si spengono con il Blackout; il pan, il tilt, il gobo e gli altri canali che non sono luce restano sempre parcheggiati.
+- **«Togli dal parcheggio»** e **«Togli tutto dal parcheggio»**.
+
+In [Programma](programar.md#parcheggiare), **«Parcheggia»** parcheggia i valori che il programmatore ha sulle fixture selezionate.
+
+Con fixture parcheggiate, l'intestazione del Patch mostra **«N parcheggiate · Togli tutto dal parcheggio»** (in una finestra stretta, il lucchetto, il numero e il tasto con la sola icona). Nell'elenco, un **lucchetto** dopo il nome («Parcheggiata: N canali con un valore fisso in uscita»); nella pianta 2D, del Patch e di Programma, un lucchetto in alto a destra. In [Livelli DMX](salidas.md#livelli-dmx), un lucchetto su ogni canale parcheggiato.
+
+- Un effetto speciale protetto si può parcheggiare solo **spento**: «Parcheggia com'è ora» o «Parcheggia» di Programma lo parcheggiano a 0 e lo dicono («Un effetto speciale protetto si può parcheggiare solo spento»). Parcheggiato, non si attiva mai, nemmeno armato; un'attivazione interrotta parcheggiandolo compare nel registro come «parcheggiato». Una fixture parcheggiata accesa che diventa protetta viene parcheggiata spenta; se poi non è più protetta, resta parcheggiata a 0 finché non la togli dal parcheggio. Tolta dal parcheggio, si attiva solo dopo aver rilasciato la sua scena e averla premuta di nuovo.
+- I canali parcheggiati seguono la fixture se la reindirizzi. Cambiare la modalità di una fixture toglie i suoi canali parcheggiati («I canali parcheggiati di Spot 3 sono stati rimossi: è cambiata la modalità»), tranne in un effetto protetto, che resta parcheggiato spento. Eliminare una fixture toglie i suoi. Un pan parcheggiato di una fixture con pan e tilt scambiati esce dal canale del tilt, come il pan.
+- L'[arresto dello show](directo.md#arresto-dello-show) vince sui canali parcheggiati: una fixture parcheggiata spenta si illumina anch'essa, e un hazer parcheggiato resta parcheggiato. Una [dissolvenza al nero](directo.md#dissolvenza-al-nero) abbassa i parcheggiati senza «Anche in blackout».
+
+I canali parcheggiati si salvano con lo show, nella sua sezione di DMX Total Control (importare il patch di un altro show non li porta). Quando si apre uno show con canali parcheggiati, si applicano subito, e un avviso dice quali («2 fixture parcheggiate: HAZER, Spot 3 (Patch)»). Aprire un altro show o uno nuovo li toglie. Alla chiusura del programma vengono rilasciati (il palco va a riposo), ma restano nello show. QLC+ non parcheggia i canali: lì suonano come dicono le loro scene, e la copia per QLC+ lo avvisa («2 fixture parcheggiate: QLC+ non parcheggia i canali»). Le versioni precedenti di DMX Total Control non li applicano e, quando salvano lo show, li tolgono, come le impostazioni dell'arresto dello show.
+
+> **Non provato con apparecchi reali:** il parcheggio non è stato provato con interfacce, nodi né hazer reali.
+
 ## Matrici e strisce LED
 
 **«Matrice LED»** patcha in un colpo solo una matrice o una striscia di pixel:
@@ -189,7 +237,7 @@ Si crea una fixture per ogni riga di pixel, un gruppo per gli effetti colore e l
 
 **«Importa»** porta in questo show una parte di un altro (di DMX Total Control o di QLC+):
 
-- **«Patch di un altro show…»**: le sue fixture. Vanno agli stessi indirizzi se sono liberi; altrimenti, ai successivi.
+- **«Patch di un altro show…»**: le sue fixture. Vanno agli stessi indirizzi se sono liberi; altrimenti, ai successivi. Portano la loro protezione da effetto speciale, i loro tempi, il loro canale di sicurezza e la loro icona della pianta (ciò che dice l'altro show non toglie mai la protezione a un CO2), ma non i loro canali parcheggiati.
 - **«Scene di un altro show…»**: le sue scene, assegnate alle fixture di questo show che coincidono (per indirizzo e modello, per nome o per modello). Entrano in gruppi con lo stesso nome.
 - **«Patch e scene di un altro show…»**: entrambe le cose.
 - **«Patch da un programma di visualizzazione (CSV)…»**: la tabella di fixture che esporta il tuo programma di visualizzazione; vedi [Importare un patch da un programma di visualizzazione](patch.md#importare-un-patch-da-un-programma-di-visualizzazione).

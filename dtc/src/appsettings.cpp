@@ -49,6 +49,10 @@
 #define KSettingUiScale         QStringLiteral("ui/scale")
 #define KSettingGuideShown      QStringLiteral("ui/guideShown")
 #define KSettingPlanLegend      QStringLiteral("ui/planLegend")
+#define KSettingKeepAwake       QStringLiteral("power/keepAwake")
+#define KSettingShowMode        QStringLiteral("live/showMode")
+#define KSettingAutoDisarm      QStringLiteral("safety/autoDisarmMinutes")
+#define KSettingStopAllFade     QStringLiteral("live/stopAllFadeMs")
 
 #define MAX_RECENT_SHOWS 8
 
@@ -354,6 +358,70 @@ void AppSettings::setAudioInput(const QString &name)
     else
         m_settings.setValue(KSettingAudioInput, name);
     emit audioInputChanged();
+}
+
+/*********************************************************************
+ * Safety during the show
+ *********************************************************************/
+
+bool AppSettings::keepAwake() const
+{
+    return m_settings.value(KSettingKeepAwake, true).toBool();
+}
+
+void AppSettings::setKeepAwake(bool enable)
+{
+    if (enable == keepAwake())
+        return;
+    m_settings.setValue(KSettingKeepAwake, enable);
+    emit liveSafetyChanged();
+}
+
+bool AppSettings::showMode() const
+{
+    return m_settings.value(KSettingShowMode, false).toBool();
+}
+
+void AppSettings::setShowMode(bool enable)
+{
+    if (enable == showMode())
+        return;
+    m_settings.setValue(KSettingShowMode, enable);
+    emit liveSafetyChanged();
+}
+
+int AppSettings::autoDisarmMinutes() const
+{
+    // (a value out of range, from an edited registry: the nearest one)
+    bool ok = false;
+    const int minutes = m_settings.value(KSettingAutoDisarm, 10).toInt(&ok);
+    return ok ? qBound(0, minutes, 120) : 10;
+}
+
+void AppSettings::setAutoDisarmMinutes(int minutes)
+{
+    minutes = qBound(0, minutes, 120);
+    if (minutes == autoDisarmMinutes())
+        return;
+    m_settings.setValue(KSettingAutoDisarm, minutes);
+    emit liveSafetyChanged();
+}
+
+int AppSettings::stopAllFadeMs() const
+{
+    // (a value out of range, from an edited registry: the nearest one)
+    bool ok = false;
+    const int ms = m_settings.value(KSettingStopAllFade, 0).toInt(&ok);
+    return ok ? qBound(0, ms, 5000) : 0;
+}
+
+void AppSettings::setStopAllFadeMs(int ms)
+{
+    ms = qBound(0, ms, 5000);
+    if (ms == stopAllFadeMs())
+        return;
+    m_settings.setValue(KSettingStopAllFade, ms);
+    emit liveSafetyChanged();
 }
 
 /*********************************************************************

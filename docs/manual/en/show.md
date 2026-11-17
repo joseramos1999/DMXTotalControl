@@ -86,19 +86,23 @@ The fastest way to fill a table is to **drag scenes** from the list under the pr
 | **A palette** | Applies the palette to the fixtures it was recorded with (“Its own fixtures”) or to a fixture group, as a live edit of the programmer: it stays over the scenes until you press again. |
 | **Cuelist GO** / **Cuelist back** / **Release a cuelist** | On the cuelist you choose in **Cuelist**. |
 | **Go to a cue…** | Jumps to the **Cue** you choose in that cuelist. |
+| **Arm effects** | Arms or disarms the [protected special effects](directo.md#protected-special-effects). Lit while they are armed. By default, red with a flame. |
+| **Show stop (hold 1 s)** | Hold it for a second to put the [show stop](directo.md#show-stop) on, and again to take it away; while you hold it, a strip fills along its bottom edge. Lit while it is on. By default, yellow with a hand. |
+| **Bring back what was playing** | For 10 s after “Stop all” or “Release groups” (all the groups, not a single one), starts again what they stopped ([Bring back what was playing](directo.md#bring-back-what-was-playing)). Lit while it can. With an undo arrow. |
+| **Fade to black** | Takes the light down over its **Time** (from 0.1 to 60 s; 3 s by default) and then puts Blackout on ([Fade to black](directo.md#fade-to-black)). Lit, with a strip, while it fades. With a moon. |
 
 A button brought from another page with Alt+click shows “A control on another page” and, below that, what it does (“Does: …”).
 
-**Right click** on a button: it stops what it plays, also with **GO** in the top bar (with GO, pressing a scene that plays doesn't stop it). Its scene stops; next, previous and release buttons release their group; those of a cuelist or a playback release it; a palette button turns it off. A scene a raised fader holds goes on: only its fader stops it. The others (blackout, stop all, tap, BeatGO) do nothing. On a touch screen, use **Stop** in the top bar.
+**Right click** on a button: it stops what it plays, also with **GO** in the top bar (with GO, pressing a scene that plays doesn't stop it). Its scene stops; next, previous and release buttons release their group; those of a cuelist or a playback release it; a palette button turns it off. A scene a raised fader holds goes on: only its fader stops it. An “Arm effects” button disarms them. The others (blackout, stop all, tap, BeatGO, show stop, bring back and fade to black) do nothing. On a touch screen, use **Stop** in the top bar.
 
 ### Button options
 
 - **Label**: its text. Empty (“Automatic”), it shows the name of the scene, the palette or the action.
-- **Behaviour** (scene, blackout and palette): **“Toggle: on / off”** or **“Flash: while pressed”**. Flash buttons have a lightning bolt in the corner. On a scene, instead of “Toggle” it says **“Press: follows GO / Stop”**: it plays it or stops it as **GO** and **Stop** of the top bar say.
-- **Keyboard key**: a key on the keyboard that presses it while you are on the Show page. The letter shows in the corner of the button.
+- **Behaviour** (scene, blackout and palette): **“Toggle: on / off”** or **“Flash: while pressed”**. Flash buttons have a lightning bolt in the corner. On a scene, instead of “Toggle” it says **“Press: follows GO / Stop”**: it plays it or stops it as **GO** and **Stop** of the top bar say. On “Arm effects”: **“Toggle: arm / disarm”**, **“Arm”** or **“Disarm”** (this one is called “Disarm effects” and has the power icon).
+- **Keyboard key**: a key on the keyboard that presses it while you are on the Show page. The letter shows in the corner of the button. On a “Show stop” button, hold the key for a second.
 - **Colour**, **Icon** and background **Image** (the image is dimmed while the button is off).
 
-A button that is on is filled with its colour.
+Its colour is a strip along the top (a fifth of the button); when it is on, the whole button fills with it. The colours are bright and easy to tell apart, on the phone too.
 
 ### Moving and removing
 
@@ -147,7 +151,7 @@ To turn them, drag around the centre with the mouse or your finger, or up and do
 - **Colour wheel**: touch the wheel to give hue and saturation (white in the centre) to the fixtures of the section, or press one of the swatches below it.
 - **XY grid (pan and tilt)**: drag the dot to move the heads. **“Centre”** takes them to the centre.
 
-Both act as a live edit of the programmer: they stay over the scenes until you press **“Release”**, and then the scenes give the colour or the position again.
+Both act as a live edit of the programmer: they stay over the scenes until you press **“Release”**, and then the scenes give the colour or the position again. As the programmer does, they leave out the [protected special effects](programar.md#protected-special-effects) of a mixed group; on a group of only them, the values stay in the programmer but don't go out. “All” palettes on a group do the same.
 
 ## Groups and mixer
 
@@ -183,14 +187,14 @@ In edit mode, drop a scene on a strip to put it on that playback.
 
 ## Bringing any control to the SHOW
 
-**Alt+click** on almost any control of the program copies it to the SHOW page you have open: a Live scene, the master of a group, a mixer button, the grand master, the blackout, a palette from Program, the buttons and the fader of a playback… The program tells you “Added to the SHOW, page “…””.
+**Alt+click** on almost any control of the program copies it to the SHOW page you have open: a Live scene, the master of a group, a mixer button, the grand master, the blackout, “Arm effects”, a palette from Program, the buttons and the fader of a playback… The program tells you “Added to the SHOW, page “…””.
 
 The new control goes to the first free cell of a buttons or faders table on that page. If there is none, an empty section becomes one (with the title “Touch”), or the last section is split.
 
 ## Full screen and lock
 
 - **“Full screen”** (F11) and **“Exit full screen”**.
-- **“Lock”**: hides the sidebar and leaves only the SHOW, with no editing or navigation. To leave, **hold down “Unlock”** (a bar fills up under the button). If there is a lock password, it asks for it.
+- **“Lock”**: hides the sidebar and leaves only the SHOW, with no editing or navigation. To leave, **hold down “Unlock”** (a bar fills up under the button). If there is a lock password, it asks for it. Locking also turns [Show mode](directo.md#show-mode) on.
 
 ### Lock and kiosk mode
 

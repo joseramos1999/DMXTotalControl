@@ -16,6 +16,7 @@ La page contient, de haut en bas : l’en-tête avec ses boutons, la [ligne de 
 - **« Aveugle »** : voir [Aveugle](programar.md#aveugle).
 - **« Tout réinitialiser »** : libère toutes les modifications en direct (valeurs et FX). Les scènes se voient à nouveau.
 - **« Réinitialiser sél. »** : ne libère que celles des fixtures sélectionnés.
+- **« Parquer »** : parque en sortie les valeurs du programmeur des fixtures sélectionnés (voir [Parquer](programar.md#parquer)).
 - **« Snapshot »** et **« Enregistrer… »** : voir [Enregistrer](programar.md#enregistrer).
 
 Dans une fenêtre étroite, certains boutons n’affichent que leur icône ; leur nom apparaît au survol de la souris.
@@ -52,7 +53,7 @@ Le bouton de grille dans l’en-tête du panneau (« Plan 2D ») remplace les 
 - **Faites glisser** sur une zone vide du plateau pour sélectionner avec un cadre. Un clic dans le vide annule la sélection.
 - La **molette** zoome ; faire glisser avec le **bouton droit** ou celui du milieu déplace la vue, et un double-clic avec ces boutons la recentre.
 
-Dans Programmer, le plan est toujours **en direct** : chaque fixture affiche sa couleur, son dimmer, son stroboscope (il clignote) et son gobo, ainsi que chaque pixel des barres et des matrices. Les fixtures se placent sur le [plan 2D du Patch](patch.md#plan-2d).
+Dans Programmer, le plan est toujours **en direct** : chaque fixture affiche sa couleur, son dimmer, son stroboscope (il clignote) et son gobo, ainsi que chaque pixel des barres et des matrices. Les fixtures se placent sur le [plan 2D du Patch](patch.md#plan-2d). Les effets spéciaux protégés portent leur bouclier et les fixtures parqués leur cadenas, comme dans le Patch.
 
 ## Le panneau Rapide
 
@@ -125,11 +126,20 @@ Si vous bougez la croix ou l’éventail, si vous appuyez sur « Centrer », o
 
 Avec **« Aveugle »** actif, le programmeur modifie **sans rien envoyer aux projecteurs** : le plateau continue de montrer ce qui joue et vous préparez le look suivant. Le sous-titre prévient : « Aveugle : les projecteurs ne montrent pas ce que vous programmez ». Vous pouvez enregistrer comme d’habitude. Quand vous le désactivez, ce qui est dans le programmeur sort.
 
+## Effets spéciaux protégés
+
+Le programmeur n’envoie jamais un [effet spécial protégé](directo.md#effets-spéciaux-protégés) (un CO2, une flamme…) en sortie, même avec les effets armés :
+
+- Sur une sélection qui mélange des effets protégés et d’autres fixtures, le programmeur ne leur donne rien : ni `@ FULL`, ni niveaux, couleurs, faders, « Localiser », « Beam on » ou « Beam off », palettes « Tout », FX ou macros. Leurs faders ne s’affichent pas, donc une scène enregistrée depuis cette sélection ne les contient jamais.
+- Sur une sélection **d’effets protégés seulement**, les valeurs sont gardées pour que vous puissiez programmer une scène de CO2, mais elles ne sortent jamais, armées ou non. Le sous-titre dit « N canaux d’effets spéciaux : enregistrés, non émis », et leurs faders et cartes portent un bouclier rouge « non émis ». La scène que vous enregistrez les déclenche depuis le SHOW, un pad ou le téléphone avec les effets armés.
+- Quand vous chargez une scène, un pas ou une cue avec un CO2, ses valeurs restent, et l’enregistrer de nouveau ne les perd pas. Ses FX sur des effets protégés sont gardés dans la scène, mais ne jouent pas dans le programmeur.
+- « Snapshot » les laisse de côté, même pendant qu’ils se déclenchent ; « Surbrillance » ne les allume jamais. Les FX et les macros FX ne jouent jamais sur eux, et un message le dit (« 1 effet spécial protégé reste en dehors du FX »). Follow ne vise pas une lyre à flammes protégée sélectionnée avec d’autres fixtures.
+
 ## Surbrillance et localisation
 
 Dans la barre de la ligne de commande :
 
-- **« Surbrillance »** : la sélection à fond en blanc ouvert, par-dessus tout, pour voir de quels fixtures il s’agit. Ce n’est pas enregistré. Appuyez à nouveau pour l’enlever.
+- **« Surbrillance »** : la sélection à fond en blanc ouvert, par-dessus tout, pour voir de quels fixtures il s’agit. Ce n’est pas enregistré. Appuyez à nouveau pour l’enlever. Elle n’allume jamais les effets spéciaux protégés.
 - **« Localiser »** : met la sélection à fond, en blanc ouvert, centrée et faisceau ouvert, **dans le programmeur** (ces valeurs-là sont enregistrées).
 - **◀ ▶** (PREV / NEXT) : parcourt la sélection **un par un** : un seul fixture reste sélectionné et vous voyez où vous en êtes (« 2/8 »). **« Tous »** revient à toute la sélection (ALL).
 
@@ -347,7 +357,7 @@ Une cue ne garde que ce que le programmeur change par rapport à ce que les cues
 Le menu **« Snapshot »** contient :
 
 - **« Enregistrer les modifications dans une scène »** : met les valeurs du programmeur dans une scène statique existante.
-- **« Tout ce qui sort, dans une nouvelle scène… »** : tout ce que montrent les projecteurs maintenant (scènes, modifications en direct et le mixeur, sans le grand master) devient une nouvelle scène statique, sur chaque fixture allumé. Si « Surbrillance » est active, il faut d’abord la désactiver (« Désactiver la surbrillance »).
+- **« Tout ce qui sort, dans une nouvelle scène… »** : tout ce que montrent les projecteurs maintenant (scènes, modifications en direct et le mixeur, sans le grand master) devient une nouvelle scène statique, sur chaque fixture allumé. Si « Surbrillance » est active, il faut d’abord la désactiver (« Désactiver la surbrillance »). Les effets spéciaux protégés restent en dehors, même s’ils se déclenchent.
 - **« Seulement les modifications, dans une nouvelle scène… »**.
 
 ### Modifier des scènes et des cues
@@ -362,3 +372,7 @@ Le menu **« Snapshot »** contient :
 - La **×** d’une carte ou d’un fader : seulement ce canal.
 
 Ce qui arrive aux modifications en direct quand une scène est lancée, et leur priorité face aux scènes, se décide dans [Options](opciones.md#lecture).
+
+## Parquer
+
+**« Parquer »**, dans l’en-tête (après « Réinitialiser sél. »), parque les valeurs que le programmeur a sur les fixtures sélectionnés : elles passent en sortie avec leurs [limites](patch.md#limites) (sans le grand master), au-dessus de tout, et le programmeur les libère. Les valeurs des autres fixtures restent dans le programmeur, et les FX du programmeur ne sont pas parqués. Il est désactivé si la sélection n’a pas de valeurs. Si vous changez les limites ensuite, ce qui est parqué ne change pas. Un effet spécial protégé est parqué éteint. Pour déparquer, utilisez le menu du fixture dans le Patch (clic droit) : voir [Parquer des canaux](patch.md#parquer-des-canaux).

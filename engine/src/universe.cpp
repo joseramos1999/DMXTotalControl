@@ -34,6 +34,7 @@
 #include "mastertimer.h"
 #include "inputpatch.h"
 #include "qlcmacros.h"
+#include "outputlayer.h"
 #include "universe.h"
 #include "function.h"
 #include "qlcfile.h"
@@ -76,6 +77,10 @@ Universe::Universe(quint32 id, GrandMaster *gm, QObject *parent)
     , m_writtenChannels(new QByteArray(UNIVERSE_SIZE, char(0)))
     , m_passthroughValues()
 {
+    // DMX Total Control: the output stage (outputlayer.cpp)
+    m_stage.reset(new OutputStage());
+    m_lastSent[0] = QByteArray(UNIVERSE_SIZE, char(0));
+    m_lastSent[1] = QByteArray(UNIVERSE_SIZE, char(0));
     m_modifiers.fill(NULL, UNIVERSE_SIZE);
     m_outputSource.fill(-1, UNIVERSE_SIZE);
     m_outputSourceCount = 0;
@@ -401,8 +406,17 @@ void Universe::tick()
         m_semaphore.release(1);
 }
 
-void Universe::processFaders(uint elapsedMs)
+void Universe::processFaders(uint elapsedMs, bool live)
 {
+    // DMX Total Control: the whole frame with one layer and the faders as
+    // they were when it took it: a patch edit (lockFrames) waits for it to
+    // be sent, and moves both before the next one
+    QMutexLocker frameLocker(&m_frameMutex);
+    // DMX Total Control: the output layer of this frame (the write filter
+    // keeps the protected channels for the faders that may fire them)
+    takeFrameLayer();
+    m_liveFrame = live;
+
     flushInput();
     zeroIntensityChannels();
 
@@ -437,6 +451,8 @@ void Universe::processFaders(uint elapsedMs)
     // faders are sorted by priority: let the higher ones replace HTP values
     m_htpPriority.fill(-1);
     m_writtenChannels->fill(0);
+    // DMX Total Control: each channel of a fader says whether it may fire
+    m_writeMayFire = false;
     foreach (const QSharedPointer<GenericFader> &fader, activeFaders)
     {
         m_currentFaderPriority = fader->priority();
@@ -444,8 +460,18 @@ void Universe::processFaders(uint elapsedMs)
     }
     // writes coming from outside the faders keep the plain HTP behaviour
     m_currentFaderPriority = INT_MIN;
+    m_writeMayFire = false;
 
     restUnwrittenChannels();
+
+    // DMX Total Control: what the faders allowed to fire wrote in this frame
+    // on the protected channels (before the mixer, the grand master and the
+    // passthrough: none of them ever fires one)
+    if (m_frameRoles != nullptr)
+    {
+        QMutexLocker outputLocker(&m_outputMutex);
+        m_stage->captureSources(m_frameRoles, m_preGMValues->constData(), m_writtenChannels->constData());
+    }
 
     // DMX Total Control: the live mixer, on top of everything
     QSharedPointer<const MixerLayer> mixer;
@@ -456,21 +482,20 @@ void Universe::processFaders(uint elapsedMs)
     if (mixer.isNull() == false)
         applyMixerLayer(*mixer);
 
-    bool dataChanged = hasChanged();
-    // DMX Total Control: swapped channels (pan/tilt) send each other's value
-    QByteArray postGM = outputValues(false);
-    dumpOutput(postGM, dataChanged);
-
-    if (dataChanged)
-        emit universeWritten(id(), QByteArray(postGM.constData(), postGM.size()));
+    // DMX Total Control: the output stage (parks, show stop, the effect
+    // gate), the swaps, and the frames to the outputs (outputlayer.cpp)
+    sendFrame(elapsedMs);
 }
 
 void Universe::run()
 {
     m_running = true;
-    int timeout = int(MasterTimer::tick()) * 2;
+    // DMX Total Control: never more than 40 ms without a look at the
+    // special effects that fire (the watchdog below)
+    int timeout = qMin(int(MasterTimer::tick()) * 2, 40);
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
+    m_gateTimer.start();
 
     qDebug() << "Universe thread started" << id();
 
@@ -479,6 +504,11 @@ void Universe::run()
         if (m_semaphore.tryAcquire(1, timeout) == false)
         {
             //qWarning() << "Semaphore not acquired on universe" << id();
+            // DMX Total Control: no frame (the timer stopped, a frame
+            // skipped): an effect that fires is still cut at its time. The
+            // outputs keep sending their last frame
+            if (m_running && m_stage->anyFiring())
+                watchdog(true, 0);
             continue;
         }
         // DMX Total Control: woken to stop (the destructor): no frame
@@ -494,7 +524,7 @@ void Universe::run()
         if (elapsedMs == 0)
             elapsedMs = 1;
 
-        processFaders(elapsedMs);
+        processFaders(elapsedMs, true);
     }
 
     qDebug() << "Universe thread stopped" << id();
@@ -536,6 +566,14 @@ void Universe::reset()
 
     m_modifiers.fill(NULL, UNIVERSE_SIZE);
     m_passthrough = false; // not releasing m_passthroughValues, see comment in setPassthrough
+
+    // DMX Total Control: the effects start again (Fresh: a source that
+    // holds one doesn't fire it), and the next frame goes out whole
+    {
+        QMutexLocker outputLocker(&m_outputMutex);
+        m_stage->reset();
+    }
+    m_forceDump = true;
 }
 
 void Universe::reset(int address, int range)
@@ -906,40 +944,10 @@ void Universe::dumpOutput(const QByteArray &data, bool dataChanged)
 
 QByteArray Universe::outputValues(bool blackout) const
 {
-    // DMX Total Control: what the outputs get
-    if (blackout == false && m_outputSourceCount == 0)
-        return QByteArray::fromRawData(m_postGMValues->constData(), m_usedChannels);
-
-    QByteArray values;
-    if (blackout)
-    {
-        // without light, the other channels stay: through their modifiers
-        // (limits, invert) as when the light is on
-        values = QByteArray(m_blackoutValues->constData(), m_blackoutValues->size());
-        for (int ch = 0; ch < m_usedChannels && ch < values.size(); ch++)
-        {
-            ChannelModifier *modifier = m_modifiers.at(ch);
-            if (modifier != NULL && (m_channelsMask->at(ch) & HTP) == 0)
-                values[ch] = char(modifier->getValue(uchar(m_blackoutValues->at(ch))));
-        }
-    }
-    else
-    {
-        values = QByteArray(m_postGMValues->constData(), m_usedChannels);
-    }
-
-    // swapped channels (pan/tilt) send each other's value
-    if (m_outputSourceCount > 0)
-    {
-        const QByteArray own(values);
-        for (int ch = 0; ch < m_usedChannels && ch < values.size(); ch++)
-        {
-            const int source = m_outputSource.at(ch);
-            if (source >= 0 && source < m_usedChannels && source < own.size())
-                values[ch] = own.at(source);
-        }
-    }
-    return values;
+    // DMX Total Control: what the outputs get, with the output stage
+    // (outputlayer.cpp) and the swapped channels (pan/tilt)
+    const QSharedPointer<const OutputLayer> layer = outputLayer();
+    return composeFrame(blackout, layer.data());
 }
 
 void Universe::flushInput()
@@ -1220,6 +1228,11 @@ bool Universe::write(int address, uchar value, bool forceLTP)
 {
     Q_ASSERT(address < UNIVERSE_SIZE);
 
+    // DMX Total Control: a protected special effect only from a fader that
+    // may fire it (nothing changes: not even the HTP priority)
+    if (writeDenied(address))
+        return false;
+
     //qDebug() << "[Universe]" << id() << ": write channel" << address << ", value:" << value;
 
     if (address >= m_usedChannels)
@@ -1254,6 +1267,11 @@ bool Universe::writeMultiple(int address, quint32 value, int channelCount)
 {
     for (int i = 0; i < channelCount; i++)
     {
+        // DMX Total Control: a protected special effect only from a fader
+        // that may fire it
+        if (writeDenied(address + i))
+            continue;
+
         //qDebug() << "[Universe]" << id() << ": write channel" << (address + i) << ", value:" << QString::number(((uchar *)&value)[channelCount - 1 - i]);
 
         // preserve non HTP channels for blackout
@@ -1282,6 +1300,11 @@ bool Universe::writeRelative(int address, quint32 value, int channelCount)
     // rest value): never to its own value of the previous tick
     if (channelCount == 1)
     {
+        // DMX Total Control: a protected special effect only from a fader
+        // that may fire it
+        if (writeDenied(address))
+            return false;
+
         short newVal = valueBelow(address);
         newVal += short(value) - RELATIVE_ZERO_8BIT;
         (*m_preGMValues)[address] = char(CLAMP(newVal, 0, UCHAR_MAX));
@@ -1299,6 +1322,9 @@ bool Universe::writeRelative(int address, quint32 value, int channelCount)
 
         for (int i = 0; i < channelCount; i++)
         {
+            // DMX Total Control: (as above)
+            if (writeDenied(address + i))
+                continue;
             (*m_preGMValues)[address + i] = ((uchar *)&currentValue)[channelCount - 1 - i];
             (*m_blackoutValues)[address + i] = ((uchar *)&currentValue)[channelCount - 1 - i];
             (*m_writtenChannels)[address + i] = 1;
@@ -1311,6 +1337,12 @@ bool Universe::writeRelative(int address, quint32 value, int channelCount)
 
 bool Universe::writeBlended(int address, quint32 value, int channelCount, Universe::BlendMode blend)
 {
+    // DMX Total Control: a protected special effect only from a fader that
+    // may fire it (a pair whose first byte is protected is skipped whole;
+    // writeMultiple filters the others)
+    if (writeDenied(address))
+        return false;
+
     if (address + channelCount >= m_usedChannels)
         m_usedChannels = address + channelCount;
 
@@ -1672,6 +1704,9 @@ void Universe::applyMixerLayer(const MixerLayer &layer)
     auto put = [this](int address, int value)
     {
         if (address < 0 || address >= UNIVERSE_SIZE)
+            return;
+        // DMX Total Control: never on a protected special effect
+        if (m_frameRoles != nullptr && m_frameRoles[address] != 0)
             return;
         (*m_preGMValues)[address] = char(qBound(0, value, 255));
         if (address >= m_usedChannels)

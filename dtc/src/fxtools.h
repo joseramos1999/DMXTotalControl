@@ -23,6 +23,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QMap>
+#include <QSet>
 
 #include "fxscene.h"
 
@@ -106,8 +107,12 @@ namespace FxTools
     /** $samples points {x, y} (-1..1) of a figure, to draw it */
     QVariantList figurePath(int figure, int samples);
 
-    /** Old effects as FX: a Move FX or a Curve FX. Nullptr for anything else */
-    FXScene *convert(Doc *doc, const Function *function);
+    /** Old effects as FX: a Move FX or a Curve FX. Nullptr for anything else.
+     *  DMX Total Control: without the fixtures $excluded (the protected
+     *  special effects: as values of an FX scene they could fire); $leftOut:
+     *  how many of them it had. Nullptr too when it had only those */
+    FXScene *convert(Doc *doc, const Function *function, const QSet<quint32> &excluded = QSet<quint32>(),
+                     int *leftOut = nullptr);
 }
 
 /**

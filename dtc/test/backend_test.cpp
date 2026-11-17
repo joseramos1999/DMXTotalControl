@@ -106,6 +106,7 @@
 #include "sequence.h"
 #include "rgbmatrix.h"
 #include "appsettings.h"
+#include "powerguard.h"
 #include "cpuload.h"
 #include "audio.h"
 #include "collection.h"
@@ -113,6 +114,12 @@
 #include "zone.h"
 #include "mastertimer.h"
 #include "inputoutputmap.h"
+#include "outputlayer.h"
+#include "safetymanager.h"
+#include "fixturelook.h"
+#include "genericdmxsource.h"
+#include "script.h"
+#include "chaser.h"
 
 #include "qlcfixturedefcache.h"
 #include "qlcfixturemode.h"
@@ -166,6 +173,13 @@ private slots:
     void updateChecker();
     void lookSettings();
     void manualPages();
+    // a place of a page of the manual: a line <a id="..."></a> (first), the
+    // heading whose anchor it is (one rule, DtcCore::manualAnchor: an
+    // apostrophe joins its words), or a heading by its words without
+    // accents; what comes before it; none, the top of the page, a page that
+    // isn't there: nothing; every link to a place in the six languages, as
+    // the panel follows it, finds it
+    void manualAnchors();
     void exampleShows();
     void remoteControl();
     void demoTouchShow();
@@ -832,6 +846,379 @@ private slots:
     void planSidesShowFile();
     void planSidesFollow();
 
+    // show mode and the computer during the show
+    // the options: the computer kept awake (on) and the show mode (off) by
+    // default, saved in the settings of the application (not in the show),
+    // each change told once; the shield of the top bar in the icon font
+    void liveSafetySettings();
+    // the battery and the USB ports, with a reader in place of the system:
+    // on the battery, low at 20 % or less (only on it), back on the charger,
+    // each change told once; looked at every 30 s and on a power message;
+    // USB selective suspend from the power plan read once at the start (on
+    // the battery only where there is one)
+    void powerGuardWarnings();
+    // Windows told to keep the computer awake and its screen on at the
+    // start (the option on), told again when the option changes, set free
+    // at the end; never asked with the option off; the program only reads
+    // the power settings of the system
+    void powerGuardKeepAwake();
+
+    // the output stage of a universe (Parte 1): what goes out above every
+    // source. The layers are built by hand here; the timing rules are
+    // checked with offline frames (exactly 20 ms each)
+    // without a layer (or with an empty one) nothing changes: the bytes, the
+    // swaps, the blackout frame, when a frame counts as changed and when
+    // Niveles DMX is told
+    void outputStageAbsentUnchanged();
+    // a protected special effect, disarmed: a scene holds it at full and it
+    // sends 0 (the normal and the blackout frames, Niveles DMX); refused once;
+    // the PAR next to it as today
+    void effectGateDisarmed();
+    // armed: scenes (also flashed, over the others or not), the static
+    // values of an FX scene of the show, cuelists, chasers, sequences and
+    // super scenes fire it
+    void effectGateAllowedSources();
+    // armed, never: the programmer (any priority, its FX), a DMX source
+    // above everything, an FX scene out of the show, FX layers (an FX scene,
+    // a cue), RGB matrices, curves, scripts, the passthrough of an input, the
+    // mixer (full, flash); the PAR next to it takes every one of them
+    void effectGateDeniedSources();
+    // an FX layer whose function stops fades out marked NoFire: it never
+    // fires the effect while it fades; the PAR fades out as before
+    void effectGateFxFadeOutNoFire();
+    // held, it fires exactly its maximum time (3 s: 150 frames, 2.01 s: 100,
+    // never 101), then 0 while still held; the events (also relayed by the
+    // map): started, then ended by the time limit
+    void effectGateTimeLimit();
+    // released: ended (1000 ms); pressed during its minimum wait: refused,
+    // and still 0 held past the wait (never a late fire); released and
+    // pressed after it: it fires. A release on the frame of the cut is a
+    // release; after a cut the wait runs from the release
+    void effectGateReleaseAndWait();
+    // armed while a source holds it: it waits for a release (0 for 100
+    // frames); a new arming while it fires cuts it, also a disarm and arm
+    // between two frames
+    void effectGateArmLatch();
+    // the safety channel: 0 disarmed, armed and idle, or alone; in its
+    // window only while it fires («from» when nothing sets it); 0 after the
+    // cut; a window upside down never opens
+    void effectGateSafetyChannel();
+    // the other channels of a protected fixture (pan, tilt): 0 disarmed;
+    // armed they pass from the functions, also after a cut; never from the
+    // programmer or a move FX
+    void effectGateAuxChannels();
+    // an LTP fire channel with a rest value and limits: 0 at rest (not its
+    // rest value, not limits(0), not an inverted 255); firing, through its
+    // limits and never scaled by the grand master (any mode)
+    void effectGateRestLimitsGm();
+    // an LTP fire channel forgets its value when its scene stops: 0, not its
+    // last nor its rest value
+    void effectGateLtpForgets();
+    // an LTP effect that fires: 0 in the blackout frames (the output and
+    // outputValues), every one of them; back when the blackout goes
+    void effectGateBlackoutOffline();
+    // what an interface that copies only changed frames gets: the cut
+    // reaches it (changed) though the scene holds the same value; armed again
+    // and pressed it fires on the wire; a disarm while held: 0 on the wire
+    void effectGateWireAfterCut();
+    // no frames (the timer stopped): the watchdog cuts at the same frame as
+    // real frames would, only lowers protected bytes, never touches any other
+    // byte; a disarm reaches the output too
+    void effectGateWatchdog();
+    // a new layer with the same fixture while it fires: it goes on, its
+    // time too; a channel newly protected under a source that holds it: 0
+    // at once (refused, held)
+    void effectGateLayerSwap();
+    // a unit moved to other addresses (a fixture redirected) starts again:
+    // a source that holds it there never fires it, a fire it had ends
+    void effectGateMovedUnit();
+    // a fixture newly protected under a scene that holds it, while another
+    // fires and the watchdog takes the new layer first: 0, and it waits for
+    // a release on the next real frames (never fires at once); what it got
+    // in an earlier time protected counts for nothing
+    void effectGateWatchdogNewUnit();
+    // a fixture across two universes never fires, in either part
+    void effectGateCrossUniverse();
+    // a 16 bit dimmer: either byte above 0 fires it, both bytes go out and
+    // are cut; disarmed, from a DMX source or an FX: 0 on both
+    void effectGate16Bit();
+    // the order of the stage: parks above the grand master, the mixer and
+    // the sources (blackout: an intensity dark unless parked also in
+    // blackout, LTP parks hold); the fade to black on the intensities (not
+    // effects, not parks also in blackout); the show stop above parks and
+    // blackout, holding what was sent; the gate above all; the swaps after
+    void outputStageLayerOrder();
+    // 8 universes with 20 effects, 32 parks and 400 show stop values each:
+    // well under 2 ms a frame
+    void effectGateCost();
+    // the universes running: a blackout goes out from their threads (never
+    // from the GUI thread), on and off
+    void outputStageBlackoutLive();
+    // the universes running and the timer stopped while an effect fires:
+    // the watchdog of the universe thread cuts it at its time
+    void effectGateWatchdogLive();
+    // a layer whose roles don't mark the channels of its units (or that
+    // names channels past the universe) is fixed when it is given: every
+    // channel of a unit protected; a sound layer is used as it is
+    void outputLayerChecked();
+
+    // the protected special effects (Parte 1): what the patch decides, the
+    // layers SafetyManager gives the universes, arming, disarming, the log
+    // protected by their kind: CO2 3 s, flame 2 s, sparks 5 s, confetti 2 s,
+    // a wait of 1 s; not bubbles, snow, a PAR nor «FOCO2» («C02», with a
+    // zero, is not found: a documented limit)
+    void effectDefaultsByKind();
+    // a rename only ever protects: a CO2 called «PAR 1» stays protected, a
+    // PAR called «FLAME 9» becomes one (told); a CO2 unprotected by hand
+    // called «CO2 9» stays unprotected, and called a flame after a PAR is
+    // protected again
+    void effectRenameRules();
+    // the icon of a CO2 jet protects; automatic again it stays protected;
+    // another icon on a CO2 never unprotects it
+    void effectIconByHand();
+    // the times to their ranges, a safety channel the fixtures have, a
+    // window from not above to (else refused, with the reason); several
+    // fixtures: what differs; back to what the kind says
+    void effectSettingsRanges();
+    // protected, unprotected by hand, the times and the safety channel go
+    // with the show (its section of DMX Total Control); a show that says
+    // nothing (an older one, one from QLC+) gets what the kinds say; a
+    // damaged value fails closed; the universes of a show that opens have
+    // its layers before their first frame
+    void effectShowFileRoundTrip();
+    // arming: refused with nothing protected and in Blackout (said); a new
+    // token each time; Blackout disarms; the last protected fixture gone
+    // disarms; the reasons in words
+    void safetyArm();
+    // the layers: the intensities fire, the other channels pass while
+    // armed, the safety channel; a fixture across two universes never
+    // fires, in either part
+    void safetyLayerBuild();
+    // what fires: every channel but pan, tilt and the safety one (a valve
+    // that is no intensity has the time limit and the latch); a jet that
+    // only aims never fires
+    void safetyFireSplit();
+    // a fixture moved is protected at its new address before the universes
+    // run again (the hook of applyPatch), and not at the old one
+    void safetyReaddress();
+    // a scene holds a CO2 while it is redirected (several at once), moved
+    // or deleted, with frames in between: it never fires, and its old
+    // address never goes out
+    void safetyPatchEditHeld();
+    // a CO2 a scene holds is moved while a frame of the universe thread is
+    // under way (its layer taken, the scene not written yet): that frame
+    // ends first, with the old layer and the old address; its new address
+    // never goes out, disarmed or armed
+    void safetyPatchEditInFrame();
+    // through the manager: a scene on a CO2 sends 0 disarmed; armed while
+    // held, it waits for a release; armed and pressed, it fires its 3 s;
+    // the programmer never fires it
+    void safetyGateThroughManager();
+    // the program: Stop all, Blackout (the core's, a SHOW button's), some
+    // time without a fire (never while one fires), a new show and another
+    // show opened disarm, and the CO2 goes to 0; a program starts disarmed
+    void safetyDisarmTriggers();
+    // another show opened while a CO2 fires: the interface got 0 from the
+    // universes of the show that went, and they sent it in time
+    void safetyFlushBeforeClear();
+    // the log of the session: armed, the fires (let go, cut by their time,
+    // disarmed) with their number, name, time and reason, disarmed; the
+    // last 10 fires newest first; a log that can't be written is said once
+    void safetyFireLog();
+    // a fire ended by deleting its fixture: logged with its number and name
+    void safetyFireLogRemoved();
+    // saved while armed: nothing armed in the file, it opens disarmed; the
+    // end of the program disarms (in the log)
+    void safetyNotSavedArmed();
+    // the plan shows what goes out: a CO2 disarmed is dark though its scene
+    // plays, armed it is lit (never scaled by the grand master); a PAR as before
+    void planLiveStatesFinal();
+    // the mapping target «Arm the special effects»: toggle, on, off and a
+    // flash that arms while held; lit while armed; a right click disarms;
+    // refused with nothing protected and in Blackout (said); learnt on an
+    // APC its pad lights red (dark disarmed), a button with one LED as it
+    // is; an action of a cue never arms
+    void safetyMappingTarget();
+    // the SHOW action «Arm effects»: toggle, on, off; lit while armed (from
+    // anywhere: the buttons follow); a right click disarms; Alt+click on
+    // the button of the top bar makes one; without a core nothing arms
+    void safetySurfaceAction();
+    // the phone: arm asks for a state (on: true arms, anything else
+    // disarms: a late or wrong message errs on the safe side); its state
+    // says whether some fixture is protected, armed, when they disarm by
+    // themselves and what fires; a SHOW button arms from it too (one that
+    // only disarms says so, with the power sign)
+    void safetyRemoteArm();
+    // the program closes: disarmed and sent, and from then on nothing arms
+    // them again (another show doesn't stop arming); a manager gone while
+    // armed leaves 0 on the wire at once
+    void safetyClosing();
+    // a chaser on a CO2 disarmed (a refusal and a release at each step)
+    // tells what waits, never what fires; a fire tells what fires; a cut
+    // both
+    void safetyEventSignals();
+    // the patch of another show: a fixture protected there by hand (its
+    // times) or by the icon of a CO2 jet (the icon comes too) is protected
+    // here; what that show says never unprotects a CO2 here; their scene
+    // plays disarmed and none of them goes out
+    void effectImportKeepsProtection();
+    // an older show with a lamp called «Fuego chimenea» and a fog machine
+    // whose model says CO2: protected (fail closed) and said once when it
+    // opens, with their names; saved, nothing more to say
+    void effectOlderShowTold();
+    // the words of pyrotechnics: a generic dimmer «PIRO 1», «Pirotecnia»,
+    // «Pirotécnico 3», «FEU 2» is a flame, protected (0 disarmed) and
+    // protected when an older show opens; «PAR Piroulette», «Piroetta»
+    // are not (whole words)
+    void effectPyroWords();
+    // a safety channel chosen in one mode: another mode with something
+    // else at that place drops it (said), so the gate never drives it
+    void effectSafetyChannelMode();
+
+    // the sources leave the protected special effects out, so the screens
+    // tell the truth and nothing records them by mistake (Parte 1, S2d).
+    // A selection with other fixtures: @ FULL, a colour, a fader, a nudge,
+    // Locate, a palette «All» and the colour wheel of the SHOW on a group
+    // give the CO2 nothing, and its faders are not shown
+    void effectProgrammerMixed();
+    // a selection of only protected ones keeps its values (held: shown,
+    // never sent, armed or not) and records them; a scene of them fires
+    // them armed; unprotected, the value goes out
+    void effectProgrammerProtectedOnly();
+    // a scene (static or with FX) loaded keeps its CO2 and saves it again;
+    // its FX play without the CO2 (an FX of only it doesn't play)
+    void effectProgrammerLoadScene();
+    // Identify leaves them out (said by its count), a fixture identified
+    // that becomes protected stops; the highlight never lights one
+    void effectIdentifyHighlight();
+    // the live mixer (Full, a dimmer) leaves them out, and takes them again
+    // when their protection changes; armed, the CO2 stays at 0
+    void effectMixerSkips();
+    // effects made from the selection (Colour FX, a mapping, Curve FX, Move
+    // FX, the selection given to one, a conversion to FX) and the FX of the
+    // programmer (and its macros) leave them out, said; only them: nothing
+    void effectFxCreation();
+    // a snapshot while a CO2 fires (armed) has no CO2; the steps of an FX
+    // that moves a CO2 have none either (said)
+    void effectSnapshotAndConvert();
+    // a copy for QLC+ keeps the CO2 in its fixtures, scenes and steps; the
+    // dialog says QLC+ doesn't arm them nor limit their time, and which
+    // cuelists fire them
+    void effectQlcCopy();
+
+    // parked channels (Parte 1, S3): a fixed value at the output. A park
+    // goes out above a scene, the programmer, the mixer's Full, the grand
+    // master and Stop all; Blackout darkens it unless it is also in
+    // blackout; Esc and Blackout never unpark
+    void parkAboveEverything();
+    // in the blackout frame a parked pan (LTP) holds its value
+    void parkLtpInBlackout();
+    // «Park» in Program: the values of the selection, through their limits
+    // (as they went out), then let go by the programmer; the grand master
+    // never scales them, later limits don't change them
+    void parkFromProgrammer();
+    // as it is now: what goes out (the mixer too); off: the intensities 0,
+    // the rest as now (all of a hazer 0); parked again it keeps «also in
+    // blackout»; unpark all
+    void parkAsNowAndOff();
+    // a protected special effect only parked off: one that fires is cut and
+    // never fires while parked (the programmer's values of one alone too);
+    // unparked it fires after a release; a PAR parked lit and then protected
+    // is parked off
+    void parkProtectedOff();
+    // a parked pan of a swapped head goes out on the tilt; the parks follow
+    // a new address; another mode drops them (said), a protected one stays
+    // parked off; deleted, they go
+    void parkSwapReaddressMode();
+    // the parks go with the show (its section of DMX Total Control: QLC+
+    // reads its fixtures as always), before the output starts, said once
+    // open; a show without them has none; damaged ones are left out
+    void parkShowFile();
+    // what Niveles DMX marks: a lock with its value, a shield (parked off or
+    // not, armed or not); the parked fixtures and their count; a park under
+    // the show stop or in a fade to black, what the show stop puts
+    void parkMarks();
+    // «Park as it is now» refused during the show stop and a fade to black
+    // (their light would stay for good); «Park off» parks what the show
+    // sends under them
+    void parkUnderShowStop();
+    // the shared looks of a fixture: the open white of the programmer (as
+    // it was), the light of the show stop, open shutters, pan and tilt
+    void fixtureLookShowStop();
+    // a shutter whose open range only its preset says («LED ON»): opened
+    // by the show stop; of two marked open, the one not named off
+    void fixtureLookShutterPreset();
+    // the show stop above the programmer, the grand master and Blackout: a
+    // PAR at full white, a head held where it was while its EFX goes on, its
+    // shutter open, strobes and lasers dark, a hazer and a CO2 as they were
+    // (0), disarmed and not armed again, no strobe of the mixer; released,
+    // what plays now, that frame
+    void showStopOverride();
+    // what it lights by default: the lights (a generic PAR, blinder,
+    // fresnel, a head); never a hazer, smoke, a fan, bubbles, a CO2; a
+    // laser dark; a PAR parked off lit all the same (it wins over parks); a
+    // generic dimmer only named or drawn as a light (never VIDEO 1; PIRO 1
+    // is a protected flame: 0)
+    void showStopDefaults();
+    // the groups chosen at a level (60 %: 153): their lights only, their
+    // hazer never; the level and the groups while it is on; a group gone:
+    // every light; no strobe of the mixer while it lasts
+    void showStopGroupsAndLevel();
+    // held a second: a short press, a hold, again, a release lost, two
+    // controls together count once; nothing once the program closes. The
+    // Pause key: pressed twice within its time, one press alone nothing
+    void showStopHoldLogic();
+    // Esc stops the functions underneath and keeps it; Blackout under it;
+    // another show: off
+    void showStopEscKeeps();
+    // its mapping target (held 2, on 1), the Pause key (pressed twice, its
+    // release with its press as Windows sends it; any modifier, not learnt,
+    // never a mapping), the LEDs of a learnt pad, a key mapped (let go of
+    // when the window loses the keyboard), a SHOW button (a right click
+    // never), never from a cue
+    void showStopMappingAndKey();
+    // a show with a key mapping on Pause (learnt before): Pause goes on
+    // doing that there, said once, marked in the list; never learnt; one
+    // without: nothing said, Pause is the show stop's
+    void showStopPauseMappingTold();
+    // the phone: its state, its button of the SHOW, a hold per phone, let go
+    // of when the phone goes
+    void showStopRemote();
+    // its level and groups with the show (in the DTC section), never on;
+    // damaged values: every light at 100 %, the groups that are there
+    void showStopShowFile();
+    // Stop all undone: what played (a scene of a group, of a SHOW button, a
+    // cuelist on its cue at the level of its playback) comes back, once, in
+    // the window; not a flash nor what a SHOW fader holds; the effects never
+    // armed again (a CO2 brought back waits for a release)
+    void recoverAfterStopAll();
+    // the flashes held (Live, a pad, a playback) are never taken; a paused
+    // cuelist comes back paused; nothing played: nothing taken
+    void recoverFlashesNotTaken();
+    // «Release groups» takes only the groups; Stop all after it joins it;
+    // every way to release every group can bring them back
+    void recoverReleaseGroupsMerge();
+    // brought back while armed (Release groups, or armed again after Stop
+    // all): disarmed first, a CO2 cut before stays at 0 and waits for a release
+    void recoverWhileArmed();
+    // a function deleted since: nothing; a new show: nothing to bring back
+    void recoverClearedWithShow();
+    // the faders of the functions fade out (one fading already too), but
+    // those kept; cut: at rest the next frame; a source that is no function
+    // never (offline)
+    void stopFadeEngine();
+    // Stop all with a fade (Options): a PAR fades, a scene a SHOW fader holds
+    // and a park stay, a CO2 at once; again: at once, what started meanwhile
+    // too; the fade ends by itself; a new show ends it
+    void stopAllWithFade();
+    // the fade to black: the effects disarmed, the intensities down (not a
+    // park in blackout, a pan), then Blackout with the light full under it;
+    // again or Blackout: at once; times 0.1-60 s; the grand master too
+    void fadeToBlackRamp();
+    // their mapping targets, SHOW buttons, phone, learnt LEDs, Alt+click,
+    // never from a cue; their icons in the font
+    void recoverTargets();
+
 private:
     Doc *m_doc = nullptr;
     PatchManager *m_patch = nullptr;
@@ -1026,6 +1413,20 @@ private:
     QHash<quint32, qint64> m_stops;
 };
 
+/** The computer of the tests, for every PowerGuard (the one of each
+ *  DtcCore): plugged in, no battery, no USB selective suspend, and Windows
+ *  never asked to keep it awake (the answer is a yes) */
+static void neutralPower()
+{
+    PowerGuard::setReaderForTest([]() {
+        PowerGuard::Reading reading;
+        reading.usbSuspendAc = 0;
+        reading.usbSuspendDc = 0;
+        return reading;
+    });
+    PowerGuard::setExecutionStateHookForTest([](unsigned) { return PowerGuard::EsContinuous; });
+}
+
 void Backend_Test::initTestCase()
 {
     m_oldProfile = qgetenv("USERPROFILE");
@@ -1048,10 +1449,15 @@ void Backend_Test::initTestCase()
     // nothing (the tests of the name use the loopback)
     MdnsResponder::setNetworkEnabled(false);
     QVERIFY(MdnsResponder::networkEnabled() == false);
+
+    // nor the battery, the power plan or the sleep of the machine
+    neutralPower();
 }
 
 void Backend_Test::cleanupTestCase()
 {
+    PowerGuard::setReaderForTest({});
+    PowerGuard::setExecutionStateHookForTest({});
     MdnsResponder::setNetworkEnabled(true);
     AudioPluginCache::setDevicesEnabled(true);
     if (m_oldProfile.isNull())
@@ -5491,6 +5897,94 @@ void Backend_Test::importFromShow()
     bad.write("hello");
     bad.close();
     QVERIFY(core.importFromShow(QUrl::fromLocalFile(bad.fileName()), true, true).isEmpty());
+}
+
+void Backend_Test::manualAnchors()
+{
+    const QLocale before;
+    auto restore = qScopeGuard([before]() { QLocale::setDefault(before); });
+    QLocale::setDefault(QLocale("es_ES"));
+    DtcCore core;
+
+    // a heading by its words: what comes before it, not it
+    const QString remote = core.manualHtmlBefore("opciones", "control-remoto", 420);
+    QVERIFY(remote.contains("<html"));
+    QVERIFY(remote.contains("Shows recientes"));
+    QVERIFY(remote.contains("Control remoto") == false);
+    QVERIFY(remote.contains("Biblioteca de fixtures") == false);
+    // accents and capitals don't count
+    QVERIFY(core.manualHtmlBefore("opciones", "reproduccion", 420).isEmpty() == false);
+    QCOMPARE(core.manualHtmlBefore("opciones", "Reproducción", 420), core.manualHtmlBefore("opciones", "reproduccion", 420));
+    // none, its top (the title), a page that isn't there: nothing
+    QVERIFY(core.manualHtmlBefore("opciones", "nada-de-esto", 420).isEmpty());
+    QVERIFY(core.manualHtmlBefore("opciones", "opciones", 420).isEmpty());
+    QVERIFY(core.manualHtmlBefore("nada", "control-remoto", 420).isEmpty());
+    QVERIFY(core.manualHtmlBefore("opciones", "", 420).isEmpty());
+
+    // a place of its own (the same in every language) comes before a
+    // heading with those words; the panel never shows it
+    const QString page = "# Opciones\n\nUno.\n\n## Usb selective suspend\n\nDos.\n\n<a id=\"usb-selective-suspend\"></a>\n"
+                         "## Suspensión selectiva de USB\n\nTres.\n";
+    QCOMPARE(DtcCore::manualAnchorAt(page, "usb-selective-suspend"), qsizetype(page.indexOf("<a id")));
+    QCOMPARE(DtcCore::manualAnchorAt(page, "suspension-selectiva-de-usb"), qsizetype(page.indexOf("## Susp")));
+    QCOMPARE(DtcCore::manualAnchorAt(page, "uno"), qsizetype(-1));
+    QCOMPARE(DtcCore::manualAnchorAt(page, "opciones"), qsizetype(0));
+    QCOMPARE(DtcCore::manualAnchorAt(QString(), "opciones"), qsizetype(-1));
+    // (no page of the manual has a place the panel would show)
+    for (const QString &file : QDir(":/manual").entryList({ "*.md" }))
+        QVERIFY2(core.manualHtml(file.chopped(3), 420).contains("<a id=") == false, qPrintable(file));
+
+    // one rule for the headings and the links, that of GitHub and the web
+    // site: an apostrophe joins its words (French, Italian), it is no gap
+    QCOMPARE(DtcCore::manualAnchor("Options d’un bouton"), QString("options-dun-bouton"));
+    QCOMPARE(DtcCore::manualAnchor("L'intestazione dell'editor"), QString("lintestazione-delleditor"));
+    QCOMPARE(DtcCore::manualAnchor("Opciones › Seguridad en el directo"), QString("opciones--seguridad-en-el-directo"));
+    QCOMPARE(DtcCore::manualAnchor(" Recupera ciò che suonava "), QString("recupera-ciò-che-suonava"));
+    const QString french = "# SHOW\n\nUn.\n\n## Actions d’un bouton\n\nDeux.\n\n## Options d’un bouton\n\nTrois.\n";
+    QCOMPARE(DtcCore::manualAnchorAt(french, "options-dun-bouton"), qsizetype(french.indexOf("## Options")));
+    QCOMPARE(DtcCore::manualAnchorAt(french, "actions-dun-bouton"), qsizetype(french.indexOf("## Actions")));
+    const QString italian = "# Scene\n\nUno.\n\n## L'intestazione dell'editor\n\nDue.\n";
+    QCOMPARE(DtcCore::manualAnchorAt(italian, "lintestazione-delleditor"), qsizetype(italian.indexOf("## L'")));
+    // (capitals and a doubled hyphen still don't count; a gap where the
+    // heading has none does)
+    QCOMPARE(DtcCore::manualAnchorAt(italian, "Lintestazione--dell-editor"), qsizetype(-1));
+    QCOMPARE(DtcCore::manualAnchorAt(italian, "LINTESTAZIONE--DELLEDITOR"), qsizetype(italian.indexOf("## L'")));
+    // the heading whose anchor it is comes first: the accents tell two
+    // headings apart («Auswählen», «Auswahlen» in German)
+    const QString german = "# Patch\n\nEins.\n\n## Auswählen\n\nZwei.\n\n### Auswahlen\n\nDrei.\n";
+    QCOMPARE(DtcCore::manualAnchorAt(german, "auswahlen"), qsizetype(german.indexOf("### Auswahlen")));
+    QCOMPARE(DtcCore::manualAnchorAt(german, "auswählen"), qsizetype(german.indexOf("## Auswählen")));
+    QCOMPARE(DtcCore::manualAnchorAt(german, "Auswählen"), qsizetype(german.indexOf("## Auswählen")));
+
+    // every link to a place of a page, in each of the six languages, as the
+    // panel follows it (the href of its HTML, HelpPanel.follow): the panel
+    // finds that place below the top of the page
+    static const QRegularExpression href("<a href=\"([^\"]*)\"");
+    static const QRegularExpression followed("^([a-z0-9-]+)\\.md(#.*)?$");
+    QStringList wrong;
+    int links = 0;
+    for (const QString &language : QStringList({ "es", "en", "pt", "fr", "it", "de" }))
+    {
+        core.setUiLanguage(language);
+        QCOMPARE(core.manualLanguage(), language == "es" ? QString() : language);
+        for (const QString &file : QDir(":/manual").entryList({ "*.md" }))
+        {
+            auto it = href.globalMatch(core.manualHtml(file.chopped(3), 420));
+            while (it.hasNext())
+            {
+                QString link = it.next().captured(1);
+                link.replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
+                const QRegularExpressionMatch match = followed.match(link);
+                if (match.hasMatch() == false || match.captured(2).isEmpty())
+                    continue;
+                links++;
+                if (DtcCore::manualAnchorAt(core.manualPage(match.captured(1)), match.captured(2).mid(1)) <= 0)
+                    wrong.append(QString("%1 %2: %3").arg(language, file, link));
+            }
+        }
+    }
+    QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
+    QVERIFY(links > 400);
 }
 
 void Backend_Test::demoSetupShow()
@@ -34981,7 +35475,17 @@ void Backend_Test::interfaceTranslated()
     }
     const QList<QPair<QString, QString>> classes({ { "gdtfshare.cpp", "GdtfShare" },
                                                    { "fixturelibrary.cpp", "FixtureLibrary" },
-                                                   { "gdtfimporter.cpp", "QObject" } });
+                                                   { "gdtfimporter.cpp", "QObject" },
+                                                   { "safetymanager.cpp", "SafetyManager" },
+                                                   { "safetyparks.cpp", "SafetyManager" },
+                                                   { "safetyshowstop.cpp", "SafetyManager" },
+                                                   { "liverecall.cpp", "LiveRecall" },
+                                                   { "patcheffects.cpp", "PatchManager" },
+                                                   { "controlmapper.cpp", "ControlMapper" },
+                                                   { "remoteserver.cpp", "RemoteServer" },
+                                                   { "programmer.cpp", "Programmer" },
+                                                   { "effecteditor.cpp", "EffectEditor" },
+                                                   { "dtccore.cpp", "DtcCore" } });
     for (const auto &source : classes)
     {
         const QString code = readUtf8(QString("%1/%2").arg(DTC_SOURCES, source.first));
@@ -35082,21 +35586,6 @@ static QString manualLineKind(const QString &line)
     return pages.isEmpty() ? kind : QString("%1, links to %2").arg(kind, pages.join(" "));
 }
 
-/** The anchor of a heading of the manual, as its links write it: in lower
- *  case, without punctuation, the spaces as hyphens */
-static QString manualAnchor(const QString &heading)
-{
-    QString anchor;
-    for (const QChar c : heading.trimmed().toLower())
-    {
-        if (c.isLetterOrNumber() || c == '-' || c == '_')
-            anchor.append(c);
-        else if (c == ' ')
-            anchor.append('-');
-    }
-    return anchor;
-}
-
 void Backend_Test::manualInStep()
 {
     // each translation of the manual keeps the lines of the original, one
@@ -35130,11 +35619,14 @@ void Backend_Test::manualInStep()
     }
     QVERIFY2(wrong.isEmpty(), qPrintable(wrong.join('\n')));
 
-    // every link goes to a page of its language, and to a heading of it; the
-    // help panel follows only links to pages (never "#section" alone)
+    // every link goes to a page of its language, and to a heading of it, by
+    // the rule of the help panel (DtcCore::manualAnchor, that of GitHub and
+    // the web site); the panel follows only links to pages (never
+    // "#section" alone)
     static const QRegularExpression link("\\]\\(([^)\\s]*)\\)");
     static const QRegularExpression target("^([a-z0-9-]+\\.md)(?:#(.+))?$");
     static const QRegularExpression heading("^#+ (.+)$");
+    static const QRegularExpression place("^<a (?:id|name)=\"([^\"]+)\"></a>$");
     int sections = 0;
     for (const QString &language : QStringList({ QString() }) + languages)
     {
@@ -35160,11 +35652,22 @@ void Backend_Test::manualInStep()
                 {
                     const QRegularExpressionMatch title = heading.match(line);
                     if (title.hasMatch())
-                        anchors.append(manualAnchor(title.captured(1)));
+                        anchors.append(DtcCore::manualAnchor(title.captured(1)));
                 }
                 sections++;
                 if (anchors.contains(match.captured(2)) == false)
                     wrong.append(QString("%1%2: %3 has no such section").arg(folder, page, to));
+                // (and the help panel scrolls to that heading, the first one
+                // with those words, also with an apostrophe («d’un», «l'FX»),
+                // or to a place of that name)
+                const QString text = manualLines(folder + match.captured(1)).join('\n');
+                const qsizetype at = DtcCore::manualAnchorAt(text, match.captured(2));
+                const QString line = at < 0 ? QString() : text.mid(at).section('\n', 0, 0).trimmed();
+                const QRegularExpressionMatch found = heading.match(line);
+                const QRegularExpressionMatch named = place.match(line);
+                if ((found.hasMatch() == false || DtcCore::manualAnchor(found.captured(1)) != match.captured(2)) &&
+                    (named.hasMatch() == false || named.captured(1) != match.captured(2)))
+                    wrong.append(QString("%1%2: the help panel doesn't find %3").arg(folder, page, to));
             }
         }
     }
@@ -50796,6 +51299,14 @@ void Backend_Test::planIconImport()
     QCOMPARE(planFixture(patch, spot).value("kind").toString(), QString("movinghead"));
     QCOMPARE(patch->fixtureIcon(thing), QString());
     QCOMPARE(planFixture(patch, thing).value("kind").toString(), QString("dimmer"));
+    // the jets and the flame are protected special effects: the icons the
+    // table gave them say it, though their names don't
+    QVERIFY(patch->isProtected(jetL));
+    QVERIFY(patch->isProtected(jetR));
+    QVERIFY(patch->isProtected(fx));
+    QCOMPARE(patch->effectRule(fx).maxFireMs, 2000u);
+    QVERIFY(patch->isProtected(spot) == false);
+    QVERIFY(patch->isProtected(thing) == false);
     // the legend has the jets and the flame apart, though both are generic dimmers
     QCOMPARE(planTypes(patch), QStringList({ QString(":co2=%1,%2").arg(jetL).arg(jetR), QString(":flame=%1").arg(fx),
                                              QString("Spot 3:movinghead=%1").arg(spot), QString(":dimmer=%1").arg(thing) }));
@@ -51389,6 +51900,8316 @@ void Backend_Test::planSidesFollow()
     QVERIFY(m_patch->resizeStageSide("left", 1000));
     QVERIFY(prog.aim().value("active").toBool() == false);
     QCOMPARE(aimSpy.count(), 0);
+}
+
+void Backend_Test::liveSafetySettings()
+{
+    // the computer kept awake (on) and the show mode (off) by default, kept
+    // by the settings of the application and told once per change
+    ScopedTestSettings scoped;
+    {
+        AppSettings settings;
+        QVERIFY(settings.keepAwake());
+        QVERIFY(settings.showMode() == false);
+        QSignalSpy spy(&settings, SIGNAL(liveSafetyChanged()));
+        settings.setKeepAwake(false);
+        QCOMPARE(spy.count(), 1);
+        settings.setShowMode(true);
+        QCOMPARE(spy.count(), 2);
+        // the same again: nothing told
+        settings.setKeepAwake(false);
+        settings.setShowMode(true);
+        QCOMPARE(spy.count(), 2);
+    }
+    {
+        // the next start
+        AppSettings settings;
+        QVERIFY(settings.keepAwake() == false);
+        QVERIFY(settings.showMode());
+        QCOMPARE(QSettings().value("power/keepAwake").toBool(), false);
+        QCOMPARE(QSettings().value("live/showMode").toBool(), true);
+        settings.setKeepAwake(true);
+        settings.setShowMode(false);
+    }
+    {
+        AppSettings settings;
+        QVERIFY(settings.keepAwake());
+        QVERIFY(settings.showMode() == false);
+    }
+
+    // not in the show: a new show, or one opened, keeps it as it is, and
+    // the show file says nothing of it
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Mode.qxw");
+    {
+        DtcCore core;
+        core.settings()->setShowMode(true);
+        core.newShow();
+        QVERIFY(core.settings()->showMode());
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        core.settings()->setShowMode(false);
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(core.settings()->showMode() == false);
+        core.settings()->setShowMode(true);
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(core.settings()->showMode());
+    }
+    const QString file = readUtf8(path);
+    QVERIFY(file.isEmpty() == false);
+    QVERIFY(file.contains("showMode", Qt::CaseInsensitive) == false);
+    QVERIFY(file.contains("keepAwake", Qt::CaseInsensitive) == false);
+
+    // the shield of the top bar (Theme.iconShield) is in the icon font
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    const QRegularExpressionMatch shield = QRegularExpression("property string iconShield: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    QVERIFY(shield.hasMatch());
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QVERIFY(font.supportsCharacter(shield.captured(1).toUInt(nullptr, 16)));
+}
+
+void Backend_Test::powerGuardWarnings()
+{
+    // what the system says, from a reader in its place
+    PowerGuard::Reading reading;
+    reading.usbSuspendAc = 0;
+    reading.usbSuspendDc = 0;
+    PowerGuard::setReaderForTest([&reading]() { return reading; });
+    auto restore = qScopeGuard([]() { neutralPower(); });
+    AppSettings settings;
+
+    PowerGuard guard(&settings);
+    QSignalSpy changed(&guard, SIGNAL(changed()));
+    // plugged in, no battery (a desktop): nothing to say
+    QVERIFY(guard.hasBattery() == false);
+    QVERIFY(guard.onBattery() == false);
+    QVERIFY(guard.batteryLow() == false);
+    QCOMPARE(guard.batteryPercent(), -1);
+    QVERIFY(guard.usbSelectiveSuspend() == false);
+    guard.refresh();
+    QCOMPARE(changed.count(), 0);
+
+    // a laptop on its charger
+    reading.hasBattery = true;
+    reading.batteryPercent = 80;
+    guard.refresh();
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(guard.hasBattery());
+    QVERIFY(guard.onBattery() == false);
+    QVERIFY(guard.batteryLow() == false);
+    QCOMPARE(guard.batteryPercent(), 80);
+
+    // the charger pulled out: on the battery, at 50 % not low
+    reading.onBattery = true;
+    reading.batteryPercent = 50;
+    guard.refresh();
+    QCOMPARE(changed.count(), 2);
+    QVERIFY(guard.onBattery());
+    QVERIFY(guard.batteryLow() == false);
+    QCOMPARE(guard.batteryPercent(), 50);
+    // the same again: nothing told
+    guard.refresh();
+    QCOMPARE(changed.count(), 2);
+    // 21 %: not yet; 20 %: low
+    reading.batteryPercent = PowerGuard::LowBatteryPercent + 1;
+    guard.refresh();
+    QVERIFY(guard.batteryLow() == false);
+    reading.batteryPercent = PowerGuard::LowBatteryPercent;
+    guard.refresh();
+    QCOMPARE(changed.count(), 4);
+    QVERIFY(guard.onBattery());
+    QVERIFY(guard.batteryLow());
+    QCOMPARE(guard.batteryPercent(), 20);
+    // a percent the system doesn't know: on the battery, not low
+    reading.batteryPercent = -1;
+    guard.refresh();
+    QVERIFY(guard.onBattery());
+    QVERIFY(guard.batteryLow() == false);
+    // charging at 15 %: not on the battery, so not low
+    reading.onBattery = false;
+    reading.batteryPercent = 15;
+    guard.refresh();
+    QVERIFY(guard.onBattery() == false);
+    QVERIFY(guard.batteryLow() == false);
+    // back on the charger after a low battery: both gone
+    reading.onBattery = true;
+    reading.batteryPercent = 10;
+    guard.refresh();
+    QVERIFY(guard.batteryLow());
+    reading.onBattery = false;
+    reading.batteryPercent = 11;
+    guard.refresh();
+    QVERIFY(guard.onBattery() == false);
+    QVERIFY(guard.batteryLow() == false);
+
+    // looked at every 30 s, and soon after a power message of Windows (the
+    // charger plugged in or out); other messages are not its business
+    QCOMPARE(guard.pollInterval(), PowerGuard::PollMs);
+    QCOMPARE(PowerGuard::PollMs, 30000);
+    reading.onBattery = true;
+    reading.batteryPercent = 40;
+    QVERIFY(guard.powerMessage(0x0219 /* WM_DEVICECHANGE */, PowerGuard::PbtPowerStatusChange) == false);
+    QVERIFY(guard.powerMessage(PowerGuard::WmPowerBroadcast, 0x0004 /* PBT_APMSUSPEND */) == false);
+    QVERIFY(guard.powerMessage(PowerGuard::WmPowerBroadcast, PowerGuard::PbtPowerStatusChange));
+    QVERIFY(guard.onBattery() == false);
+    QTRY_VERIFY(guard.onBattery());
+    QCOMPARE(guard.batteryPercent(), 40);
+
+    // the power plan: read once, at the start (a change waits for the next one)
+    reading.usbSuspendAc = 1;
+    guard.refresh();
+    QVERIFY(guard.usbSelectiveSuspend() == false);
+    {
+        PowerGuard later(&settings);
+        QVERIFY(later.usbSelectiveSuspend());
+    }
+    // on the battery only: where there is one (a laptop), not on a desktop
+    reading.usbSuspendAc = 0;
+    reading.usbSuspendDc = 1;
+    reading.hasBattery = false;
+    reading.onBattery = false;
+    {
+        PowerGuard desktop(&settings);
+        QVERIFY(desktop.usbSelectiveSuspend() == false);
+    }
+    reading.hasBattery = true;
+    {
+        PowerGuard laptop(&settings);
+        QVERIFY(laptop.usbSelectiveSuspend());
+    }
+    // off, or unknown (a system without it): nothing to say
+    reading.usbSuspendDc = 0;
+    {
+        PowerGuard off(&settings);
+        QVERIFY(off.usbSelectiveSuspend() == false);
+    }
+    reading.usbSuspendAc = -1;
+    reading.usbSuspendDc = -1;
+    {
+        PowerGuard unknown(&settings);
+        QVERIFY(unknown.usbSelectiveSuspend() == false);
+    }
+
+    // the system itself, read only (whatever this computer says)
+    const PowerGuard::Reading system = PowerGuard::systemReading();
+    QVERIFY(system.batteryPercent >= -1 && system.batteryPercent <= 100);
+    QVERIFY(system.usbSuspendAc >= -1 && system.usbSuspendAc <= 1);
+    QVERIFY(system.usbSuspendDc >= -1 && system.usbSuspendDc <= 1);
+}
+
+void Backend_Test::powerGuardKeepAwake()
+{
+    // what SetThreadExecutionState would be given, and its answer
+    ScopedTestSettings scoped;
+    QList<unsigned> calls;
+    unsigned answer = PowerGuard::EsContinuous;
+    PowerGuard::setExecutionStateHookForTest([&calls, &answer](unsigned flags) {
+        calls.append(flags);
+        return answer;
+    });
+    auto restore = qScopeGuard([]() { neutralPower(); });
+    const unsigned awake = PowerGuard::EsContinuous | PowerGuard::EsSystemRequired | PowerGuard::EsDisplayRequired;
+    const unsigned letGo = PowerGuard::EsContinuous;
+    QCOMPARE(awake, 0x80000003u);
+
+    AppSettings settings;
+    QVERIFY(settings.keepAwake());
+    {
+        // at the start, with the option on (the default)
+        PowerGuard guard(&settings);
+        QCOMPARE(calls, QList<unsigned>({ awake }));
+        QVERIFY(guard.keepAwakeActive());
+        QSignalSpy changed(&guard, SIGNAL(changed()));
+        // the option off: free at once
+        settings.setKeepAwake(false);
+        QCOMPARE(calls, QList<unsigned>({ awake, letGo }));
+        QVERIFY(guard.keepAwakeActive() == false);
+        QCOMPARE(changed.count(), 1);
+        // the show mode is not its business
+        settings.setShowMode(true);
+        QCOMPARE(calls.count(), 2);
+        // on again
+        settings.setKeepAwake(true);
+        QCOMPARE(calls, QList<unsigned>({ awake, letGo, awake }));
+        QVERIFY(guard.keepAwakeActive());
+        QCOMPARE(changed.count(), 2);
+        // Windows says no (0): asked, but not kept awake
+        answer = 0;
+        settings.setKeepAwake(false);
+        settings.setKeepAwake(true);
+        QCOMPARE(calls, QList<unsigned>({ awake, letGo, awake, letGo, awake }));
+        QVERIFY(guard.keepAwakeActive() == false);
+        answer = PowerGuard::EsContinuous;
+        calls.clear();
+    }
+    // the end: free again, as before the program
+    QCOMPARE(calls, QList<unsigned>({ letGo }));
+
+    // the option off from the start: Windows is never asked
+    calls.clear();
+    settings.setKeepAwake(false);
+    {
+        PowerGuard guard(&settings);
+        QVERIFY(guard.keepAwakeActive() == false);
+    }
+    QVERIFY(calls.isEmpty());
+
+    // the program does it from its start to its end (Core.power)
+    settings.setKeepAwake(true);
+    {
+        DtcCore core;
+        QVERIFY(core.power() != nullptr);
+        QVERIFY(core.power()->keepAwakeActive());
+        QCOMPARE(calls, QList<unsigned>({ awake }));
+    }
+    QCOMPARE(calls, QList<unsigned>({ awake, letGo }));
+
+    // and it only reads the power settings of the system: no function of
+    // Windows that writes one, or applies a plan, is ever called
+    const QString code = readUtf8(QString("%1/powerguard.cpp").arg(DTC_SOURCES));
+    QVERIFY(code.contains("PowerReadACValueIndex"));
+    for (const char *write : { "PowerWrite", "PowerSetActiveScheme", "PowerApply", "PowerReplaceDefault", "PowerImport",
+                               "PowerDelete", "PowerCreate", "PowerDuplicate", "PowerRestore", "SetSuspendState",
+                               "SetSystemPowerState", "WritePwrScheme", "SetActivePwrScheme", "powercfg" })
+        QVERIFY2(code.contains(write, Qt::CaseInsensitive) == false, write);
+}
+
+/*****************************************************************************
+ * The output stage (Parte 1): the protected special effects, with layers
+ * built by hand (OutputLayer); the program builds them from the patch
+ *****************************************************************************/
+
+namespace
+{
+
+/** A plugin that keeps what reaches the wire as the Open DMX interface does:
+ *  it copies a frame only when the universe says it changed (the bytes past
+ *  a shorter frame stay as they were) and sends that copy again and again.
+ *  It counts the writes, and the ones made from the GUI thread */
+class WirePlugin final : public QLCIOPlugin
+{
+public:
+    void init() override {}
+    QString name() const override { return QStringLiteral("Wire"); }
+    int capabilities() const override { return QLCIOPlugin::Output; }
+    QString pluginInfo() const override { return QString(); }
+    QStringList outputs() override { return { QStringLiteral("Wire") }; }
+    bool openOutput(quint32 output, quint32 universe) override
+    {
+        Q_UNUSED(universe)
+        return output == 0;
+    }
+    void closeOutput(quint32 output, quint32 universe) override
+    {
+        Q_UNUSED(output)
+        Q_UNUSED(universe)
+    }
+    void writeUniverse(quint32 universe, quint32 output, const QByteArray &data, bool dataChanged) override
+    {
+        Q_UNUSED(universe)
+        Q_UNUSED(output)
+        QMutexLocker locker(&mutex);
+        frames++;
+        if (QThread::currentThread() == QCoreApplication::instance()->thread())
+            guiWrites++;
+        lastData = QByteArray(data.constData(), data.size());
+        lastChanged = dataChanged;
+        changes.append(dataChanged);
+        if (dataChanged)
+        {
+            const int size = qMin(int(data.size()), int(wire.size()));
+            wire.replace(0, size, data.left(size));
+        }
+    }
+    int wireAt(int address) const
+    {
+        QMutexLocker locker(&mutex);
+        return address < wire.size() ? uchar(wire.at(address)) : -1;
+    }
+    int lastAt(int address) const
+    {
+        QMutexLocker locker(&mutex);
+        return address < lastData.size() ? uchar(lastData.at(address)) : -1;
+    }
+    int writes() const
+    {
+        QMutexLocker locker(&mutex);
+        return frames;
+    }
+    int writesFromGui() const
+    {
+        QMutexLocker locker(&mutex);
+        return guiWrites;
+    }
+
+    mutable QMutex mutex;
+    QByteArray wire = QByteArray(UNIVERSE_SIZE, char(0));
+    QByteArray lastData;
+    QList<bool> changes;
+    bool lastChanged = false;
+    int frames = 0;
+    int guiWrites = 0;
+};
+
+/** A source of the tests on one channel of a fixture, written by hand: a
+ *  fader that may fire (as the one of a scene of the show) unless told not
+ *  to. press() holds a value from the next frame on, release() lets it go */
+class SfxPress
+{
+public:
+    SfxPress(Doc *doc, quint32 fixture, quint32 channel = 0, bool mayFire = true)
+        : m_doc(doc)
+        , m_fixture(fixture)
+        , m_channel(channel)
+    {
+        Fixture *fxi = doc->fixture(fixture);
+        Universe *universe = doc->inputOutputMap()->universes().at(int(fxi->universe()));
+        m_fader = universe->requestFader();
+        m_fader->setMayFire(mayFire);
+    }
+    ~SfxPress()
+    {
+        m_fader->removeAll();
+        m_fader->requestDelete();
+    }
+    void press(uchar value = 255)
+    {
+        FadeChannel fc(m_doc, m_fixture, m_channel);
+        fc.setStart(value);
+        fc.setCurrent(value);
+        fc.setTarget(value);
+        m_fader->replace(fc);
+    }
+    void release()
+    {
+        m_fader->removeAll();
+    }
+
+private:
+    Doc *m_doc;
+    quint32 m_fixture;
+    quint32 m_channel;
+    QSharedPointer<GenericFader> m_fader;
+};
+
+} // namespace
+
+/** The fixture at $address (0-511) of $universe */
+static quint32 fixtureAtAddress(Doc *doc, int address, quint32 universe = 0)
+{
+    for (Fixture *fxi : doc->fixtures())
+        if (fxi->universe() == universe && int(fxi->address()) == address)
+            return fxi->id();
+    return Fixture::invalidId();
+}
+
+/** A generic dimmer of $channels channels named $name at the DMX channel
+ *  $dmx (1-512) of the first universe (a «CO2 1» is one) */
+static quint32 patchSfx(PatchManager *patch, Doc *doc, const QString &name, int dmx, int channels = 1)
+{
+    if (patch->addFixtures("Generic", KGenericDimmerModel, "", name, 0, dmx, 1, 0, channels) != 1)
+        return Fixture::invalidId();
+    return fixtureAtAddress(doc, dmx - 1);
+}
+
+static Universe *sfxUniverse(Doc *doc, int index = 0)
+{
+    return doc->inputOutputMap()->universes().at(index);
+}
+
+/** What the last frame of $universe sent on $address: the output stage
+ *  included, before the swaps (renderedValue reads preGM: before the gate) */
+static int finalOut(Doc *doc, int address, int universe = 0)
+{
+    return sfxUniverse(doc, universe)->finalValue(address);
+}
+
+/** What the outputs would get on $address now (the blackout frame, or not) */
+static int outputAt(Universe *universe, int address, bool blackout = false)
+{
+    const QByteArray values = universe->outputValues(blackout);
+    return address < values.size() ? uchar(values.at(address)) : -1;
+}
+
+static OutputLayer::Unit sfxUnit(quint32 fixture, const QVector<quint16> &fire, quint32 maxFireMs = 3000,
+                                 quint32 minWaitMs = 1000)
+{
+    OutputLayer::Unit unit;
+    unit.fixture = fixture;
+    unit.fire = fire;
+    unit.maxFireMs = maxFireMs;
+    unit.minWaitMs = minWaitMs;
+    return unit;
+}
+
+/** A layer as the program gives it to a universe (a new serial each time) */
+static QSharedPointer<const OutputLayer> sfxLayer(quint32 armToken, const QList<OutputLayer::Unit> &units,
+                                                  const QList<OutputLayer::Park> &parks = QList<OutputLayer::Park>(),
+                                                  const QList<OutputLayer::Forced> &forced = QList<OutputLayer::Forced>(),
+                                                  bool showStop = false, quint32 rampId = 0, quint32 rampMs = 0)
+{
+    static quint32 serial = 0;
+    OutputLayer *layer = new OutputLayer();
+    layer->serial = ++serial;
+    layer->armToken = armToken;
+    for (const OutputLayer::Unit &unit : units)
+        layer->addUnit(unit);
+    for (const OutputLayer::Park &park : parks)
+        layer->addPark(park.address, park.value, park.inBlackout);
+    for (const OutputLayer::Forced &value : forced)
+        layer->addForced(value.address, value.value, value.hold);
+    layer->showStop = showStop;
+    layer->rampId = rampId;
+    layer->rampMs = rampMs;
+    return QSharedPointer<const OutputLayer>(layer);
+}
+
+/** Offline frames until $address of the first universe sends 0: how many
+ *  sent more than 0 (-1: never 0 in $max frames) */
+static int fireFrames(Doc *doc, int address, int max = 2000)
+{
+    for (int frames = 0; frames < max; frames++)
+    {
+        renderFrames(doc);
+        if (finalOut(doc, address) == 0)
+            return frames;
+    }
+    return -1;
+}
+
+/** The events of the effects a spy got, in words ("started", "refused
+ *  disarmed", "ended time 3000", "unlatched"), and the spy emptied */
+static QStringList sfxEvents(QSignalSpy &spy, bool withFixture = false)
+{
+    static const char *const reasons[] = { "released", "time", "disarmed", "showstop", "notallowed",
+                                           "waiting", "removed", "held", "parked" };
+    QStringList list;
+    for (const QList<QVariant> &args : std::as_const(spy))
+    {
+        const int kind = args.at(2).toInt();
+        const int reason = qBound(0, args.at(3).toInt(), 8);
+        QString text;
+        switch (kind)
+        {
+            case OutputLayer::FireStarted: text = "started"; break;
+            case OutputLayer::FireEnded: text = QString("ended %1 %2").arg(reasons[reason]).arg(args.at(4).toUInt()); break;
+            case OutputLayer::FireRefused: text = QString("refused %1").arg(reasons[reason]); break;
+            case OutputLayer::Unlatched: text = "unlatched"; break;
+            default: text = QString("kind %1").arg(kind); break;
+        }
+        if (withFixture)
+            text.prepend(QString("%1: ").arg(args.at(1).toUInt()));
+        list << text;
+    }
+    spy.clear();
+    return list;
+}
+
+/** A definition of the tests: $channels as (name, group, fine) in one mode */
+static void addSfxDef(Doc *doc, const QString &model, const QList<std::tuple<QString, QLCChannel::Group, bool>> &channels,
+                      uchar defaultValue = 0)
+{
+    QLCFixtureDef *def = new QLCFixtureDef();
+    def->setManufacturer("Test");
+    def->setModel(model);
+    def->setType(QLCFixtureDef::Other);
+    QLCFixtureMode *mode = new QLCFixtureMode(def);
+    mode->setName(QString("%1ch").arg(channels.count()));
+    quint32 index = 0;
+    for (const auto &c : channels)
+    {
+        QLCChannel *ch = new QLCChannel();
+        ch->setName(std::get<0>(c));
+        ch->setGroup(std::get<1>(c));
+        if (std::get<2>(c))
+            ch->setControlByte(QLCChannel::LSB);
+        if (index == 0)
+            ch->setDefaultValue(defaultValue);
+        def->addChannel(ch);
+        mode->insertChannel(ch, index++);
+    }
+    def->addMode(mode);
+    doc->fixtureDefCache()->addFixtureDef(def);
+}
+
+#define SFX_EVENT_SPY(spy, object) QSignalSpy spy(object, SIGNAL(effectEvent(quint32,quint32,int,int,uint)))
+
+void Backend_Test::outputStageAbsentUnchanged()
+{
+    // nothing protected, parked or stopped: the frames of before
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);
+    QVERIFY(co2 != Fixture::invalidId() && par != Fixture::invalidId() && spot != Fixture::invalidId());
+    m_patch->setLimits({ spot }, { { "swapPanTilt", true } });
+    Universe *universe = sfxUniverse(m_doc);
+    QVERIFY(universe->outputLayer().isNull());
+    // (a child of the Doc: it outlives the universes and their patches)
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    QSignalSpy written(universe, SIGNAL(universeWritten(quint32,QByteArray)));
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 128);
+    scene->setValue(spot, 0, 200);
+    scene->setValue(spot, 1, 50);
+    QVERIFY(m_doc->addFunction(scene));
+    GenericDMXSource source(m_doc);
+    source.set(par, 0, 77);
+    source.setOutputEnabled(true);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+
+    // what goes out is postGM, with the pan and the tilt of the spot swapped
+    auto expected = [&]() {
+        QByteArray values(universe->postGMValues()->constData(), universe->usedChannels());
+        std::swap(values[100], values[101]);
+        return values;
+    };
+    renderFrames(m_doc);
+    QCOMPARE(wire->changes, QList<bool>({ true }));
+    QCOMPARE(universe->outputValues(false), expected());
+    QCOMPARE(wire->lastData, expected());
+    QCOMPARE(outputAt(universe, 60), 255);
+    QCOMPARE(outputAt(universe, 100), 50);
+    QCOMPARE(outputAt(universe, 101), 200);
+    // the final values are before the swaps: what each channel sends
+    QCOMPARE(universe->finalValues(), QByteArray(universe->postGMValues()->constData(), universe->usedChannels()));
+    QCOMPARE(finalOut(m_doc, 100), 200);
+    QCOMPARE(universe->sentLayerSerial(), 0u);
+    // the blackout frame: no light, the heads where they are (swapped)
+    QCOMPARE(outputAt(universe, 60, true), 0);
+    QCOMPARE(outputAt(universe, 61, true), 0);
+    QCOMPARE(outputAt(universe, 100, true), 50);
+    QCOMPARE(outputAt(universe, 101, true), 200);
+
+    // the same bytes: not changed, and Niveles DMX is not told
+    renderFrames(m_doc, 5);
+    QCOMPARE(wire->changes, QList<bool>({ true, false, false, false, false, false }));
+    QCOMPARE(written.count(), 1);
+    QCOMPARE(written.first().at(1).toByteArray(), expected());
+    // one byte changes: changed once, told once
+    source.set(par, 0, 255);
+    renderFrames(m_doc, 3);
+    QCOMPARE(wire->changes.mid(6), QList<bool>({ true, false, false }));
+    QCOMPARE(written.count(), 2);
+    QCOMPARE(wire->wireAt(61), 255);
+
+    // an empty layer changes nothing either
+    QSharedPointer<const OutputLayer> empty(new OutputLayer());
+    QVERIFY(empty->isEmpty());
+    universe->setOutputLayer(empty);
+    QCOMPARE(universe->outputLayer().data(), empty.data());
+    renderFrames(m_doc, 3);
+    QCOMPARE(wire->changes.mid(9), QList<bool>({ false, false, false }));
+    QCOMPARE(universe->outputValues(false), expected());
+    QCOMPARE(written.count(), 2);
+
+    // a blackout: the blackout frame at once (changed), then unchanged; and back
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(true));
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(wire->lastAt(61), 0);
+    QCOMPARE(wire->lastAt(100), 50);
+    renderFrames(m_doc, 2);
+    QVERIFY(wire->lastChanged == false);
+    QCOMPARE(wire->wireAt(61), 0);
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(false));
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(wire->wireAt(61), 255);
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::effectGateDisarmed()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(0, { sfxUnit(co2, { 60 }) }));
+    renderFrames(m_doc);
+    QCOMPARE(int(universe->outputLayer()->role(60)), int(OutputLayer::Fire));
+    QCOMPARE(int(universe->outputLayer()->role(61)), int(OutputLayer::Free));
+    SFX_EVENT_SPY(events, universe);
+    SFX_EVENT_SPY(relayed, m_doc->inputOutputMap());
+    QSignalSpy written(universe, SIGNAL(universeWritten(quint32,QByteArray)));
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the scene holds it (before the gate), nothing of it goes out
+    QCOMPARE(int(universe->preGMValue(60)), 255);
+    QCOMPARE(int(universe->postGMValue(60)), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(outputAt(universe, 60), 0);
+    QCOMPARE(outputAt(universe, 60, true), 0);
+    // the PAR next to it as always
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    QCOMPARE(outputAt(universe, 61), 255);
+    // Niveles DMX is told what went out
+    QVERIFY(written.count() >= 1);
+    const QByteArray told = written.last().at(1).toByteArray();
+    QCOMPARE(int(uchar(told.at(60))), 0);
+    QCOMPARE(int(uchar(told.at(61))), 255);
+    QCOMPARE(universe->sentLayerSerial(), universe->outputLayer()->serial);
+
+    // refused once (not every frame), told by the map of the Doc too
+    QCOMPARE(relayed.count(), 1);
+    QCOMPARE(relayed.first().at(0).toUInt(), 0u);
+    QCOMPARE(relayed.first().at(1).toUInt(), co2);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused disarmed" }));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched" }));
+}
+
+void Backend_Test::effectGateAllowedSources()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    MasterTimer *timer = m_doc->masterTimer();
+    // armed; no wait between two fires and a long maximum
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+
+    auto fires = [&](const QString &what, const std::function<void()> &start,
+                     const std::function<void()> &stop) -> QString
+    {
+        start();
+        if (framesUntil(m_doc, [&]() { return finalOut(m_doc, 60) == 255; }, 50) < 0)
+            return what + ": it never fired";
+        if (sfxEvents(events) != QStringList({ "started" }))
+            return what + ": no start";
+        stop();
+        if (framesUntil(m_doc, [&]() { return finalOut(m_doc, 60) == 0; }, 100) < 0)
+            return what + ": it never stopped";
+        const QStringList ended = sfxEvents(events);
+        if (ended.count() != 1 || ended.first().startsWith("ended released") == false)
+            return what + ": " + ended.join(", ");
+        renderFrames(m_doc, 2);
+        return QString();
+    };
+    QString error;
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    error = fires("a scene", [&]() { scene->start(timer, FunctionParent::master()); },
+                  [&]() { scene->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    // flashed (a SHOW button in flash mode), over the other scenes or not
+    for (bool over : { false, true })
+    {
+        error = fires(over ? "a flash over the others" : "a flash", [&]() { scene->flash(timer, over, false); },
+                      [&]() { scene->unFlash(timer); });
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+    }
+
+    // the static values of an FX scene of the show
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ co2 });
+    fx->setValue(co2, 0, 255);
+    fx->setFadeInSpeed(0);
+    fx->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    error = fires("an FX scene", [&]() { fx->start(timer, FunctionParent::master()); },
+                  [&]() { fx->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a cue of a cuelist
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeInSpeed(0);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Cuelist::Key(co2, 0), 255 } })), 0);
+    error = fires("a cuelist", [&]() { cl->start(timer, FunctionParent::master()); },
+                  [&]() { cl->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a step of a chaser
+    Scene *stepScene = new Scene(m_doc);
+    stepScene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(stepScene));
+    Chaser *chaser = new Chaser(m_doc);
+    chaser->setDurationMode(Chaser::PerStep);
+    ChaserStep chaserStep(stepScene->id(), 0, 60000, 0);
+    chaserStep.duration = 60000;
+    chaser->addStep(chaserStep);
+    QVERIFY(m_doc->addFunction(chaser));
+    error = fires("a chaser", [&]() { chaser->start(timer, FunctionParent::master()); },
+                  [&]() { chaser->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a step of a sequence
+    Scene *bound = new Scene(m_doc);
+    bound->setValue(co2, 0, 0);
+    QVERIFY(m_doc->addFunction(bound));
+    Sequence *sequence = new Sequence(m_doc);
+    sequence->setBoundSceneID(bound->id());
+    sequence->setDurationMode(Chaser::PerStep);
+    ChaserStep sequenceStep(bound->id(), 0, 60000, 0);
+    sequenceStep.duration = 60000;
+    sequenceStep.values.append(SceneValue(co2, 0, 255));
+    sequence->addStep(sequenceStep);
+    QVERIFY(m_doc->addFunction(sequence));
+    error = fires("a sequence", [&]() { sequence->start(timer, FunctionParent::master()); },
+                  [&]() { sequence->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a track of a super scene
+    Scene *trackScene = new Scene(m_doc);
+    trackScene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(trackScene));
+    Show *show = new Show(m_doc);
+    QVERIFY(m_doc->addFunction(show));
+    Track *track = new Track(Function::invalidId(), show);
+    show->addTrack(track);
+    ShowFunction *block = track->createShowFunction(trackScene->id());
+    block->setStartTime(0);
+    block->setDuration(60000);
+    error = fires("a super scene", [&]() { show->start(timer, FunctionParent::master()); },
+                  [&]() { show->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+}
+
+void Backend_Test::effectGateDeniedSources()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Universe *universe = sfxUniverse(m_doc);
+    MasterTimer *timer = m_doc->masterTimer();
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+
+    // 100 frames of each: the CO2 at 0 in every one, the PAR lit
+    auto denied = [&](const QString &what, const std::function<void()> &start,
+                      const std::function<void()> &stop) -> QString
+    {
+        start();
+        int lit = 0;
+        for (int frame = 0; frame < 100; frame++)
+        {
+            renderFrames(m_doc);
+            if (finalOut(m_doc, 60) != 0 || outputAt(universe, 60) != 0)
+                return QString("%1: the CO2 sent %2 in frame %3").arg(what).arg(finalOut(m_doc, 60)).arg(frame);
+            lit = qMax(lit, finalOut(m_doc, 61));
+        }
+        stop();
+        renderFrames(m_doc, 5);
+        if (lit == 0)
+            return what + ": the PAR never got it";
+        return QString();
+    };
+    QString error;
+
+    // a DMX source (the programmer, Identify and Resaltar are ones) at the
+    // top priority, and above everything (Override)
+    for (int priority : { Function::maxPriority(), -1 })
+    {
+        std::unique_ptr<GenericDMXSource> source;
+        error = denied(QString("a DMX source at %1").arg(priority), [&]() {
+            source.reset(new GenericDMXSource(m_doc));
+            source->setPriority(priority);
+            source->set(co2, 0, 255);
+            source->set(par, 0, 255);
+            source->setOutputEnabled(true);
+        }, [&]() { source.reset(); });
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+    }
+
+    // the programmer: its values and its FX (an FX scene out of the show)
+    {
+        ZoneManager zones(m_doc);
+        Programmer prog(m_doc, &zones);
+        error = denied("the programmer", [&]() {
+            prog.selectFixtures({ co2, par });
+            prog.setDimmer(255);
+        }, [&]() { prog.clear(); });
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        error = denied("an FX of the programmer", [&]() {
+            prog.selectFixtures({ co2, par });
+            prog.setDimmer(128);
+            prog.setFx("dimmer", QVariantMap());
+        }, [&]() { prog.clear(); });
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+    }
+
+    // an FX scene that is not in the show, static values and all
+    FXScene *loose = new FXScene(m_doc);
+    loose->setFixtures({ co2, par });
+    loose->setValue(co2, 0, 255);
+    loose->setValue(par, 0, 255);
+    loose->setFadeInSpeed(0);
+    loose->setFadeOutSpeed(0);
+    error = denied("an FX scene out of the show", [&]() { loose->start(timer, FunctionParent::master()); },
+                   [&]() { loose->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+    QVERIFY(framesUntil(m_doc, [&]() { return loose->isRunning() == false; }, 50) >= 0);
+    delete loose;
+
+    // an FX layer of an FX scene of the show
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 100;
+    wave.bpm = 120;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ co2, par });
+    fx->setValue(co2, 0, 128);
+    fx->setValue(par, 0, 128);
+    fx->setLayers({ wave });
+    fx->setFadeInSpeed(0);
+    fx->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    error = denied("an FX layer", [&]() { fx->start(timer, FunctionParent::master()); },
+                   [&]() { fx->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // an FX layer of a cue
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeInSpeed(0);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue cue = testCue(1000, { { Cuelist::Key(par, 0), 128 } });
+    FXScene::Layer cueWave = wave;
+    cueWave.fixtures = { co2, par };
+    cue.fx = { cueWave };
+    QCOMPARE(cl->addCue(cue), 0);
+    error = denied("an FX layer of a cue", [&]() { cl->start(timer, FunctionParent::master()); },
+                   [&]() { cl->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // an RGB matrix on a group with both
+    const int group = m_patch->createGroup("Both", { co2, par });
+    QVERIFY(group >= 0);
+    RGBMatrix *matrix = new RGBMatrix(m_doc);
+    matrix->setFixtureGroup(quint32(group));
+    matrix->setControlMode(RGBMatrix::ControlModeDimmer);
+    matrix->setColor(0, Qt::white);
+    matrix->setDuration(100);
+    QVERIFY(m_doc->addFunction(matrix));
+    error = denied("an RGB matrix", [&]() { matrix->start(timer, FunctionParent::master()); },
+                   [&]() { matrix->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a curve
+    CurveFX *curve = new CurveFX(m_doc);
+    curve->setFixtures({ co2, par });
+    curve->setFeatures({ "dimmer #1" });     // (the channel of a generic dimmer)
+    curve->setLow(200);
+    curve->setHigh(200);
+    curve->setDuration(1000);
+    QVERIFY(m_doc->addFunction(curve));
+    error = denied("a curve", [&]() { curve->start(timer, FunctionParent::master()); },
+                   [&]() { curve->stop(FunctionParent::master()); });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // a script (it runs in a thread of its own: frames until it has written)
+    Script *script = new Script(m_doc);
+    script->setData(QString("Engine.setFixture(%1, 0, 255);\nEngine.setFixture(%2, 0, 255);\nEngine.waitTime(60000);\n")
+                        .arg(co2).arg(par));
+    QVERIFY(m_doc->addFunction(script));
+    script->start(timer, FunctionParent::master());
+    QElapsedTimer clock;
+    clock.start();
+    int scripted = 0;
+    for (int frame = 0; scripted == 0 || frame < 100; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+        scripted = qMax(scripted, finalOut(m_doc, 61));
+        if (scripted == 0)
+        {
+            QVERIFY2(clock.elapsed() < 10000, "the script never wrote the PAR");
+            QTest::qWait(10);
+        }
+    }
+    script->stop(FunctionParent::master());
+    renderFrames(m_doc, 5);
+
+    // the passthrough of an input (merged after the grand master)
+    auto input = [&](quint32 channel, uchar value) {
+        QMetaObject::invokeMethod(universe, "slotInputValueChanged", Qt::DirectConnection, Q_ARG(quint32, 0u),
+                                  Q_ARG(quint32, channel), Q_ARG(uchar, value), Q_ARG(QString, QString()));
+    };
+    error = denied("the passthrough", [&]() {
+        universe->setPassthrough(true);
+        input(60, 255);
+        input(61, 255);
+    }, [&]() {
+        input(60, 0);
+        input(61, 0);
+        universe->setPassthrough(false);
+    });
+    QVERIFY2(error.isEmpty(), qPrintable(error));
+
+    // the mixer: full and flash
+    for (bool flash : { false, true })
+    {
+        error = denied(flash ? "the mixer's flash" : "the mixer's full", [&]() {
+            MixerUnit unit;
+            unit.dimmers = { 60, 61 };
+            unit.full = flash == false;
+            unit.flash = flash;
+            universe->setMixerLayer(QSharedPointer<const MixerLayer>(new MixerLayer({ unit })));
+        }, [&]() { universe->setMixerLayer(QSharedPointer<const MixerLayer>()); });
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+    }
+
+    // none of them ever asked for a fire
+    QCOMPARE(sfxEvents(events), QStringList());
+}
+
+void Backend_Test::effectGateFxFadeOutNoFire()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 20;
+    wave.bpm = 60;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ co2, par });
+    fx->setValue(co2, 0, 200);
+    fx->setValue(par, 0, 200);
+    fx->setLayers({ wave });
+    fx->setFadeInSpeed(0);
+    fx->setFadeOutSpeed(1000);
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    for (int frame = 0; frame < 30; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+    }
+    QVERIFY(finalOut(m_doc, 61) > 100);
+
+    // stopped: its channels fade out from their last FX value (which the
+    // CO2's FadeChannel holds too), as plain fades marked NoFire
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    int marked = 0;
+    for (const QSharedPointer<GenericFader> &fader : universe->faders())
+    {
+        if (fader.isNull() || fader->parentFunctionID() != fx->id())
+            continue;
+        QVERIFY(fader->mayFire());
+        QVERIFY(fader->isFadingOut());
+        for (const FadeChannel &fc : fader->channels())
+        {
+            QVERIFY(fc.flags() & FadeChannel::NoFire);
+            QVERIFY((fc.flags() & FadeChannel::Modulated) == 0);
+            marked++;
+        }
+    }
+    QCOMPARE(marked, 2);
+
+    // the whole fade (1 s): the CO2 at 0, the PAR going down to 0
+    int lit = 0;
+    int last = 255;
+    bool down = true;
+    for (int frame = 0; frame < 60; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+        const int value = finalOut(m_doc, 61);
+        lit += value > 0 ? 1 : 0;
+        down = down && value <= last;
+        last = value;
+    }
+    QVERIFY2(lit >= 40, qPrintable(QString::number(lit)));
+    QVERIFY(down);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(sfxEvents(events), QStringList());
+}
+
+void Backend_Test::effectGateTimeLimit()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    SFX_EVENT_SPY(relayed, m_doc->inputOutputMap());
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    // 3 s: 150 frames of 20 ms at full, then 0 though the scene holds it
+    QCOMPARE(fireFrames(m_doc, 60), 150);
+    for (int frame = 0; frame < 50; frame++)
+    {
+        QCOMPARE(int(universe->preGMValue(60)), 255);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+        renderFrames(m_doc);
+    }
+    QCOMPARE(relayed.count(), 2);
+    QCOMPARE(events.count(), 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 3000" }));
+
+    // 2.01 s: 100 frames, never 101 (the next frame would end past it)
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched" }));
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 2010) }));
+    renderFrames(m_doc, 60);   // its minimum wait, from the release
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    QCOMPARE(fireFrames(m_doc, 60), 100);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 2000" }));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGateReleaseAndWait()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 1000) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    SfxPress press(m_doc, co2);
+
+    // 50 frames, released: it fired 1000 ms
+    press.press();
+    renderFrames(m_doc, 50);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    press.release();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended released 1000" }));
+
+    // pressed 200 ms later: in its wait, refused; held past the wait it is
+    // never a late fire
+    renderFrames(m_doc, 9);
+    press.press();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused waiting" }));
+    for (int frame = 0; frame < 60; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+    }
+    QCOMPARE(sfxEvents(events), QStringList());
+    // released, and pressed after the wait: it fires
+    press.release();
+    renderFrames(m_doc);
+    press.press();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "started" }));
+
+    // held to its last frame and released on the frame of the cut: a release
+    renderFrames(m_doc, 149);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    press.release();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "ended released 3000" }));
+
+    // cut at its time and held on: the wait runs from the release
+    renderFrames(m_doc, 60);
+    press.press();
+    QCOMPARE(fireFrames(m_doc, 60), 150);
+    renderFrames(m_doc, 100);
+    press.release();
+    renderFrames(m_doc);
+    press.press();
+    renderFrames(m_doc, 20);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    press.release();
+    renderFrames(m_doc);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 3000", "unlatched", "refused waiting",
+                                              "unlatched" }));
+    renderFrames(m_doc, 30);
+    press.press();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(sfxEvents(events), QStringList({ "started" }));
+    press.release();
+    renderFrames(m_doc);
+}
+
+void Backend_Test::effectGateArmLatch()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    const OutputLayer::Unit unit = sfxUnit(co2, { 60 }, 30000, 0);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused disarmed" }));
+
+    // armed while the scene holds it: nothing, until it is released
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    for (int frame = 0; frame < 100; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+    }
+    QCOMPARE(sfxEvents(events), QStringList());
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "started" }));
+
+    // armed again (a new token) while it fires: cut, and it waits for a release
+    universe->setOutputLayer(sfxLayer(2, { unit }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QStringList ended = sfxEvents(events);
+    QVERIFY2(ended.count() == 1 && ended.first().startsWith("ended disarmed"), qPrintable(ended.join(", ")));
+    renderFrames(m_doc, 10);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+
+    // disarmed and armed again between two frames: one token in, cut too
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    universe->setOutputLayer(sfxLayer(3, { unit }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    ended = sfxEvents(events);
+    QVERIFY2(ended.count() == 3 && ended.at(2).startsWith("ended disarmed"), qPrintable(ended.join(", ")));
+
+    // disarmed while held: 0 at once
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGateSafetyChannel()
+{
+    // «CO2 1» fires on its first channel (61) with its second one (62)
+    // between 128 and 200
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61, 2);
+    Universe *universe = sfxUniverse(m_doc);
+    OutputLayer::Unit unit = sfxUnit(co2, { 60 }, 1000, 0);
+    unit.safety = 61;
+    unit.safetyFrom = 128;
+    unit.safetyTo = 200;
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    QCOMPARE(int(universe->outputLayer()->role(61)), int(OutputLayer::Safety));
+    SFX_EVENT_SPY(events, universe);
+    SfxPress fire(m_doc, co2, 0);
+    SfxPress safety(m_doc, co2, 1);
+
+    // disarmed: both 0
+    fire.press();
+    safety.press(250);
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    fire.release();
+    safety.release();
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused disarmed", "unlatched" }));
+
+    // armed and idle: 0; the safety channel alone never fires it
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    safety.press(250);
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(sfxEvents(events), QStringList());
+
+    // firing: in its window, its «from» when nothing sets it
+    safety.release();
+    fire.press();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 61), 128);
+    safety.press(250);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 200);
+    safety.press(150);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 150);
+    safety.press(10);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 128);
+    // cut at its time (1 s): both 0
+    QVERIFY(framesUntil(m_doc, [&]() { return finalOut(m_doc, 60) == 0; }, 60) > 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 1000" }));
+    fire.release();
+    safety.release();
+    renderFrames(m_doc, 2);
+
+    // a window upside down never opens
+    unit.safetyFrom = 200;
+    unit.safetyTo = 100;
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc, 2);
+    fire.press();
+    safety.press(150);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    fire.release();
+    safety.release();
+    renderFrames(m_doc);
+}
+
+void Backend_Test::effectGateAuxChannels()
+{
+    // a flame head: its flame fires, its pan and tilt are the other channels.
+    // A second one, not protected, beside it
+    addSfxDef(m_doc, "Flame head", { { "Flame", QLCChannel::Intensity, false }, { "Pan", QLCChannel::Pan, false },
+                                     { "Tilt", QLCChannel::Tilt, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "Flame head", "3ch", "FLAME 1", 0, 61, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Flame head", "3ch", "FLAME 2", 0, 71, 1), 1);
+    const quint32 head = fixtureAtAddress(m_doc, 60);
+    const quint32 other = fixtureAtAddress(m_doc, 70);
+    QVERIFY(head != Fixture::invalidId() && other != Fixture::invalidId());
+    Universe *universe = sfxUniverse(m_doc);
+    OutputLayer::Unit unit = sfxUnit(head, { 60 }, 1000, 0);
+    unit.aux = { 61, 62 };
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    MasterTimer *timer = m_doc->masterTimer();
+
+    Scene *all = new Scene(m_doc);
+    all->setValue(head, 0, 255);
+    all->setValue(head, 1, 100);
+    all->setValue(head, 2, 50);
+    QVERIFY(m_doc->addFunction(all));
+    Scene *move = new Scene(m_doc);
+    move->setValue(head, 1, 100);
+    move->setValue(head, 2, 50);
+    QVERIFY(m_doc->addFunction(move));
+
+    // disarmed: all 0
+    all->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(finalOut(m_doc, 62), 0);
+    all->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // armed: the pan and the tilt pass from a function, without a fire
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    sfxEvents(events);
+    move->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 100);
+    QCOMPARE(finalOut(m_doc, 62), 50);
+    QCOMPARE(sfxEvents(events), QStringList());
+    move->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    // nothing writes them: 0, not where they were
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(finalOut(m_doc, 62), 0);
+
+    // firing, and after its cut, they go on passing
+    all->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 61), 100);
+    QVERIFY(framesUntil(m_doc, [&]() { return finalOut(m_doc, 60) == 0; }, 60) > 0);
+    QCOMPARE(finalOut(m_doc, 61), 100);
+    QCOMPARE(finalOut(m_doc, 62), 50);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 1000" }));
+    all->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched" }));
+
+    // never from the programmer (a DMX source)
+    {
+        GenericDMXSource source(m_doc);
+        source.set(head, 1, 200);
+        source.set(head, 2, 30);
+        source.set(other, 1, 200);
+        source.setOutputEnabled(true);
+        renderFrames(m_doc, 3);
+        QCOMPARE(finalOut(m_doc, 61), 0);
+        QCOMPARE(finalOut(m_doc, 62), 0);
+        QCOMPARE(finalOut(m_doc, 71), 200);
+    }
+    renderFrames(m_doc, 2);
+
+    // nor from a move FX: the other head moves
+    EFX *efx = new EFX(m_doc);
+    for (quint32 id : { head, other })
+    {
+        EFXFixture *ef = new EFXFixture(efx);
+        ef->setHead(GroupHead(id, 0));
+        efx->addFixture(ef);
+    }
+    efx->setWidth(100);
+    efx->setHeight(100);
+    efx->setDuration(1000);
+    QVERIFY(m_doc->addFunction(efx));
+    efx->start(timer, FunctionParent::master());
+    int low = 255, high = 0;
+    for (int frame = 0; frame < 60; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 61), 0);
+        QCOMPARE(finalOut(m_doc, 62), 0);
+        low = qMin(low, finalOut(m_doc, 71));
+        high = qMax(high, finalOut(m_doc, 71));
+    }
+    QVERIFY2(high - low > 50, qPrintable(QString("%1-%2").arg(low).arg(high)));
+    efx->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList());
+}
+
+void Backend_Test::effectGateRestLimitsGm()
+{
+    // a spark machine whose channel rests at 100, forced LTP
+    addSfxDef(m_doc, "Spark machine", { { "Spark", QLCChannel::Intensity, false } }, 100);
+    QCOMPARE(m_patch->addFixtures("Test", "Spark machine", "1ch", "SPARK 1", 0, 61, 1), 1);
+    const quint32 spark = fixtureAtAddress(m_doc, 60);
+    QVERIFY(m_doc->updateFixtureChannelCapabilities(spark, QList<int>(), QList<int>({ 0 })));
+    Universe *universe = sfxUniverse(m_doc);
+    QCOMPARE(int(universe->channelCapabilities(60) & Universe::HTP), 0);
+    // a «minimum» of the limits: 0 -> 50
+    ChannelModifier minimum;
+    minimum.setModifierMap({ qMakePair(uchar(0), uchar(50)), qMakePair(uchar(255), uchar(255)) });
+    universe->setChannelModifier(60, &minimum);
+    const OutputLayer::Unit unit = sfxUnit(spark, { 60 }, 30000, 0);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc, 2);
+
+    // at rest QLC+ would send its rest value through the limits; here 0,
+    // disarmed and armed
+    QVERIFY(universe->postGMValue(60) >= 100);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+
+    // firing: through the limits (a maximum of 50 %)
+    ChannelModifier half;
+    half.setModifierMap({ qMakePair(uchar(0), uchar(0)), qMakePair(uchar(255), uchar(128)) });
+    universe->setChannelModifier(60, &half);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spark, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), int(half.getValue(255)));
+
+    // the grand master never scales it, in any of its modes
+    InputOutputMap *io = m_doc->inputOutputMap();
+    for (GrandMaster::ChannelMode channels : { GrandMaster::Intensity, GrandMaster::AllChannels })
+    {
+        for (GrandMaster::ValueMode values : { GrandMaster::Reduce, GrandMaster::Limit })
+        {
+            io->setGrandMasterChannelMode(channels);
+            io->setGrandMasterValueMode(values);
+            io->setGrandMasterValue(0);
+            renderFrames(m_doc);
+            QCOMPARE(finalOut(m_doc, 60), int(half.getValue(255)));
+        }
+    }
+    io->setGrandMasterValue(255);
+    io->setGrandMasterChannelMode(GrandMaster::Intensity);
+    io->setGrandMasterValueMode(GrandMaster::Reduce);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // inverted: 0 at rest (not 255 - 100); firing with what inverts to light
+    ChannelModifier inverted;
+    inverted.setModifierMap({ qMakePair(uchar(0), uchar(255)), qMakePair(uchar(255), uchar(0)) });
+    universe->setChannelModifier(60, &inverted);
+    renderFrames(m_doc, 2);
+    QVERIFY(universe->postGMValue(60) > 100);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    scene->setValue(spark, 0, 55);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), int(inverted.getValue(55)));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    universe->setChannelModifier(60, nullptr);
+}
+
+void Backend_Test::effectGateLtpForgets()
+{
+    addSfxDef(m_doc, "Spark machine", { { "Spark", QLCChannel::Intensity, false } }, 100);
+    QCOMPARE(m_patch->addFixtures("Test", "Spark machine", "1ch", "SPARK 1", 0, 61, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Spark machine", "1ch", "SPARK 2", 0, 62, 1), 1);
+    const quint32 spark = fixtureAtAddress(m_doc, 60);
+    const quint32 free = fixtureAtAddress(m_doc, 61);
+    QVERIFY(m_doc->updateFixtureChannelCapabilities(spark, QList<int>(), QList<int>({ 0 })));
+    QVERIFY(m_doc->updateFixtureChannelCapabilities(free, QList<int>(), QList<int>({ 0 })));
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(spark, { 60 }, 30000, 0) }));
+    renderFrames(m_doc);
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spark, 0, 255);
+    scene->setValue(free, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    // the free one goes back to its rest value; the protected one sends 0
+    QCOMPARE(finalOut(m_doc, 61), 100);
+    QCOMPARE(int(universe->preGMValue(60)), 100);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+}
+
+void Backend_Test::effectGateBlackoutOffline()
+{
+    addSfxDef(m_doc, "Spark machine", { { "Spark", QLCChannel::Intensity, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "Spark machine", "1ch", "SPARK 1", 0, 61, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Spark machine", "1ch", "SPARK 2", 0, 62, 1), 1);
+    const quint32 spark = fixtureAtAddress(m_doc, 60);
+    const quint32 free = fixtureAtAddress(m_doc, 61);
+    QVERIFY(m_doc->updateFixtureChannelCapabilities(spark, QList<int>(), QList<int>({ 0 })));
+    QVERIFY(m_doc->updateFixtureChannelCapabilities(free, QList<int>(), QList<int>({ 0 })));
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(spark, { 60 }, 30000, 0) }));
+    renderFrames(m_doc);
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spark, 0, 255);
+    scene->setValue(free, 0, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(wire->wireAt(60), 255);
+
+    // the blackout frame (no universe thread: sent here): an LTP channel
+    // stays in blackout, never an effect
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(true));
+    QCOMPARE(wire->lastAt(60), 0);
+    QCOMPARE(wire->lastAt(61), 200);
+    QCOMPARE(outputAt(universe, 60, true), 0);
+    for (int frame = 0; frame < 10; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(wire->lastAt(60), 0);
+        QCOMPARE(wire->wireAt(60), 0);
+        QCOMPARE(wire->wireAt(61), 200);
+    }
+    // (it goes on firing underneath: its time runs)
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(false));
+    QCOMPARE(wire->lastAt(60), 255);
+    renderFrames(m_doc);
+    QCOMPARE(wire->wireAt(60), 255);
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::effectGateWireAfterCut()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    const OutputLayer::Unit unit = sfxUnit(co2, { 60 }, 3000, 1000);
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(wire->wireAt(60), 255);
+
+    // the scene holds 255 all along (postGM doesn't move): the cut is a
+    // changed frame, and the interface sends 0 from then on
+    QCOMPARE(fireFrames(m_doc, 60), 149);
+    QCOMPARE(int(universe->postGMValue(60)), 255);
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(wire->wireAt(60), 0);
+    renderFrames(m_doc, 10);
+    QVERIFY(wire->lastChanged == false);
+    QCOMPARE(wire->wireAt(60), 0);
+
+    // released, armed again and pressed: on the wire
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 60);
+    universe->setOutputLayer(sfxLayer(2, { unit }));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(wire->wireAt(60), 255);
+    // disarmed while held: 0 on the wire
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(wire->wireAt(60), 0);
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::effectGateWatchdog()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    const OutputLayer::Unit unit = sfxUnit(co2, { 60 }, 3000, 0);
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 200);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+
+    // no more frames: the frames of the watchdog, 20 ms apart. Cut 150
+    // frames after the start, as with real frames; no byte ever goes up,
+    // and only the effect changes
+    QByteArray previous = universe->finalValues();
+    int cutAt = -1;
+    for (int frame = 1; frame <= 160; frame++)
+    {
+        universe->watchdogFrame(20);
+        const QByteArray now = universe->finalValues();
+        QCOMPARE(now.size(), previous.size());
+        for (int a = 0; a < now.size(); a++)
+        {
+            QVERIFY2(uchar(now.at(a)) <= uchar(previous.at(a)), qPrintable(QString("%1 went up").arg(a)));
+            if (a != 60)
+                QCOMPARE(now.at(a), previous.at(a));
+        }
+        if (cutAt < 0 && finalOut(m_doc, 60) == 0)
+            cutAt = frame;
+        previous = now;
+    }
+    QCOMPARE(cutAt, 150);
+    // (the cut went out as a changed frame: the last one sent)
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(wire->wireAt(60), 0);
+    QCOMPARE(wire->wireAt(61), 200);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 3000" }));
+
+    // a disarm reaches the output in a frame of the watchdog too
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(wire->wireAt(60), 255);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    universe->watchdogFrame(20);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(wire->wireAt(60), 0);
+    QCOMPARE(wire->wireAt(61), 200);
+    QCOMPARE(universe->sentLayerSerial(), universe->outputLayer()->serial);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "started", "ended disarmed 20" }));
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::effectGateLayerSwap()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 other = patchSfx(m_patch, m_doc, "CO2 2", 63);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(other, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 70);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+
+    // a new layer (the patch changed somewhere else): it goes on firing, and
+    // its time goes on too (150 frames in all)
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    QCOMPARE(fireFrames(m_doc, 60), 80);
+    QCOMPARE(sfxEvents(events), QStringList({ "started", "ended time 3000" }));
+
+    // not protected, the second one is a dimmer like any other; protected
+    // under the scene that holds it: 0 at once, it waits for a release
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0), sfxUnit(other, { 62 }, 3000, 0) }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 62), 0);
+    QCOMPARE(sfxEvents(events, true), QStringList({ QString("%1: refused held").arg(other) }));
+
+    // released and pressed: both fire; the first one is not protected any
+    // more while it fires: its fire ends (removed) and it is a dimmer again
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    sfxEvents(events);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(other, { 62 }, 3000, 0) }));
+    renderFrames(m_doc);
+    QCOMPARE(sfxEvents(events, true), QStringList({ QString("%1: ended removed 40").arg(co2) }));
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGateMovedUnit()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 2", 63);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    // a scene on 62 only: the unit at 60 sees nothing
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    QVERIFY(sfxEvents(events).isEmpty());
+
+    // its unit moved onto 62, which the scene holds (a frame of the old
+    // layer saw nothing there, as a release): it waits for a release
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 62 }, 3000, 0) }));
+    for (int frame = 0; frame < 20; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 62), 0);
+    }
+    QCOMPARE(sfxEvents(events), QStringList({ "refused held" }));
+
+    // released and pressed: it fires there. Moved back while it fires, onto
+    // 60 that another scene holds: its fire ends (removed) and it waits
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "started" }));
+    Scene *other = new Scene(m_doc);
+    other->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(other));
+    other->start(m_doc->masterTimer(), FunctionParent::master());
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    renderFrames(m_doc);
+    const QStringList told = sfxEvents(events);
+    QCOMPARE(told.count(), 2);
+    QVERIFY2(told.at(0).startsWith("ended removed"), qPrintable(told.at(0)));
+    QCOMPARE(told.at(1), QString("refused held"));
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    // the same addresses again: it keeps its state (it still waits)
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(sfxEvents(events).isEmpty());
+    scene->stop(FunctionParent::master());
+    other->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // with a wait between two fires (1 s): cut at its time while held, then
+    // moved still held, its wait runs from its release all the same
+    const quint32 jet = patchSfx(m_patch, m_doc, "CO2 3", 71);
+    const quint32 spare = patchSfx(m_patch, m_doc, "PAR 4", 73);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(jet, { 70 }, 200, 1000) }));
+    renderFrames(m_doc);
+    Scene *held = new Scene(m_doc);
+    held->setValue(jet, 0, 255);
+    held->setValue(spare, 0, 255);
+    QVERIFY(m_doc->addFunction(held));
+    sfxEvents(events);
+    held->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 20);
+    QCOMPARE(finalOut(m_doc, 70), 0);
+    QStringList cut = sfxEvents(events);
+    QCOMPARE(cut.count(), 2);
+    QCOMPARE(cut.at(0), QString("started"));
+    QVERIFY2(cut.at(1).startsWith("ended time"), qPrintable(cut.at(1)));
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(jet, { 72 }, 200, 1000) }));
+    renderFrames(m_doc, 60);
+    QCOMPARE(finalOut(m_doc, 72), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused held" }));
+    held->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched" }));
+    // pressed again at once: it waits (before, it fired: the wait was lost)
+    held->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 72), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused waiting" }));
+    // let go for more than its wait: it fires
+    held->stop(FunctionParent::master());
+    renderFrames(m_doc, 55);
+    held->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 72), 255);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "started" }));
+
+    // moved while it fires, onto what the scene holds: the fire ends
+    // (removed) and, held there for more than its wait, it still waits
+    // from its release
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(jet, { 70 }, 200, 1000) }));
+    renderFrames(m_doc, 60);
+    QCOMPARE(finalOut(m_doc, 70), 0);
+    cut = sfxEvents(events);
+    QCOMPARE(cut.count(), 2);
+    QVERIFY2(cut.at(0).startsWith("ended removed"), qPrintable(cut.at(0)));
+    QCOMPARE(cut.at(1), QString("refused held"));
+    held->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    held->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 70), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "refused waiting" }));
+    held->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGateWatchdogNewUnit()
+{
+    // a CO2 fires; a PAR that a scene holds becomes a protected effect just
+    // when no frame comes (the watchdog takes the new layer first)
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 7", 63);
+    Universe *universe = sfxUniverse(m_doc);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0) }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    QCOMPARE(sfxEvents(events, true), QStringList({ QString("%1: started").arg(co2) }));
+
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 3000, 0), sfxUnit(par, { 62 }, 3000, 0) }));
+    universe->watchdogFrame(20);
+    // 0 at once; the CO2 goes on firing
+    QCOMPARE(finalOut(m_doc, 62), 0);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    // the next real frames: the scene holds it, so it waits for a release
+    // (refused, held) and never fires
+    for (int frame = 0; frame < 20; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 62), 0);
+    }
+    QCOMPARE(sfxEvents(events, true), QStringList({ QString("%1: refused held").arg(par) }));
+
+    // not protected any more, then again with the watchdog first: what it
+    // got in its first time protected counts for nothing
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0) }));
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0), sfxUnit(par, { 62 }, 3000, 0) }));
+    universe->watchdogFrame(20);
+    QCOMPARE(finalOut(m_doc, 62), 0);
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 62), 0);
+    QVERIFY(sfxEvents(events, true).contains(QString("%1: refused held").arg(par)));
+
+    // let go and pressed again: it fires as any protected effect
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 62), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGateCrossUniverse()
+{
+    // a fixture from the last channel of universe 1 into universe 2 (a QLC+
+    // show can have one): never fires, in either part
+    QVERIFY(m_doc->inputOutputMap()->universesCount() >= 2);
+    Fixture *cross = new Fixture(m_doc);
+    cross->setName("CO2 X");
+    cross->setUniverse(0);
+    cross->setAddress(511);
+    cross->setChannels(2);
+    cross->setCrossUniverse(true);
+    QVERIFY(m_doc->addFixture(cross, Fixture::invalidId(), true));
+    const quint32 id = cross->id();
+    OutputLayer::Unit first = sfxUnit(id, { 511 }, 30000, 0);
+    first.canFire = false;
+    OutputLayer::Unit second = sfxUnit(id, { 0 }, 30000, 0);
+    second.canFire = false;
+    sfxUniverse(m_doc, 0)->setOutputLayer(sfxLayer(1, { first }));
+    sfxUniverse(m_doc, 1)->setOutputLayer(sfxLayer(1, { second }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, m_doc->inputOutputMap());
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(id, 0, 255);
+    scene->setValue(id, 1, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    // the scene writes both parts, nothing goes out
+    QCOMPARE(int(sfxUniverse(m_doc, 0)->preGMValue(511)), 255);
+    QCOMPARE(int(sfxUniverse(m_doc, 1)->preGMValue(0)), 255);
+    QCOMPARE(finalOut(m_doc, 511, 0), 0);
+    QCOMPARE(finalOut(m_doc, 0, 1), 0);
+    QCOMPARE(sfxEvents(events), QStringList({ "refused notallowed", "refused notallowed" }));
+    for (int frame = 0; frame < 50; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 511, 0), 0);
+        QCOMPARE(finalOut(m_doc, 0, 1), 0);
+    }
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::effectGate16Bit()
+{
+    // a flame with a 16 bit intensity (its fine channel after it)
+    addSfxDef(m_doc, "Flame 16", { { "Flame", QLCChannel::Intensity, false },
+                                   { "Flame fine", QLCChannel::Intensity, true } });
+    QCOMPARE(m_patch->addFixtures("Test", "Flame 16", "2ch", "FLAME 1", 0, 61, 1), 1);
+    const quint32 flame = fixtureAtAddress(m_doc, 60);
+    Universe *universe = sfxUniverse(m_doc);
+    const OutputLayer::Unit unit = sfxUnit(flame, { 60, 61 }, 3000, 0);
+    universe->setOutputLayer(sfxLayer(0, { unit }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+    MasterTimer *timer = m_doc->masterTimer();
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(flame, 0, 255);
+    scene->setValue(flame, 1, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 3);
+    // (a pair: one FadeChannel of both bytes)
+    int pairs = 0;
+    for (const QSharedPointer<GenericFader> &fader : universe->faders())
+        if (fader.isNull() == false && fader->parentFunctionID() == scene->id())
+            for (const FadeChannel &fc : fader->channels())
+                pairs += fc.channelCount() == 2 ? 1 : 0;
+    QCOMPARE(pairs, 1);
+    // disarmed: both bytes 0
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // armed: the fine byte alone fires it
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    sfxEvents(events);
+    scene->setValue(flame, 0, 0);
+    scene->setValue(flame, 1, 1);
+    scene->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 1);
+    QCOMPARE(sfxEvents(events), QStringList({ "started" }));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    // both bytes go out, and are cut together
+    scene->setValue(flame, 0, 0x80);
+    scene->setValue(flame, 1, 0x40);
+    scene->start(timer, FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0x80);
+    QCOMPARE(finalOut(m_doc, 61), 0x40);
+    QVERIFY(framesUntil(m_doc, [&]() { return finalOut(m_doc, 60) == 0; }, 200) > 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QStringList cut = sfxEvents(events);
+    QVERIFY2(cut.count() == 3 && cut.last() == "ended time 3000", qPrintable(cut.join(", ")));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched" }));
+
+    // a DMX source on both bytes: never
+    {
+        GenericDMXSource source(m_doc);
+        source.set(flame, 0, 255);
+        source.set(flame, 1, 255);
+        source.setOutputEnabled(true);
+        for (int frame = 0; frame < 20; frame++)
+        {
+            renderFrames(m_doc);
+            QCOMPARE(finalOut(m_doc, 60), 0);
+            QCOMPARE(finalOut(m_doc, 61), 0);
+        }
+    }
+    // an FX on it (16 bit): never
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 100;
+    wave.bpm = 120;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ flame });
+    fx->setValue(flame, 0, 128);
+    fx->setLayers({ wave });
+    fx->setFadeInSpeed(0);
+    fx->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(timer, FunctionParent::master());
+    for (int frame = 0; frame < 50; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 60), 0);
+        QCOMPARE(finalOut(m_doc, 61), 0);
+    }
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(sfxEvents(events), QStringList());
+}
+
+void Backend_Test::outputStageLayerOrder()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    const quint32 par2 = patchSfx(m_patch, m_doc, "PAR 2", 63);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);   // pan 100, tilt 101, dimmer 103
+    m_patch->setLimits({ spot }, { { "swapPanTilt", true } });
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    InputOutputMap *io = m_doc->inputOutputMap();
+    const OutputLayer::Unit unit = sfxUnit(co2, { 60 }, 30000, 0);
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    SFX_EVENT_SPY(events, universe);
+
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    scene->setValue(par2, 0, 255);
+    scene->setValue(spot, 0, 200);
+    scene->setValue(spot, 1, 50);
+    scene->setValue(spot, 3, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+
+    // 1. parks: the byte that goes out, above the sources, the mixer and
+    // the grand master (an intensity also in blackout, a pan)
+    const QList<OutputLayer::Park> parks = { { 61, 77, false }, { 62, 66, true }, { 100, 40, false } };
+    universe->setOutputLayer(sfxLayer(1, { unit }, parks));
+    io->setGrandMasterValue(0);
+    MixerUnit full;
+    full.dimmers = { 61, 62, 103 };
+    full.full = true;
+    universe->setMixerLayer(QSharedPointer<const MixerLayer>(new MixerLayer({ full })));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 77);
+    QCOMPARE(finalOut(m_doc, 62), 66);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(outputAt(universe, 101), 40);       // the pan goes out on the tilt channel (swapped)
+    QCOMPARE(finalOut(m_doc, 103), 0);           // not parked: the grand master
+    QCOMPARE(finalOut(m_doc, 60), 255);          // the effect: never the grand master
+    io->setGrandMasterValue(255);
+    universe->setMixerLayer(QSharedPointer<const MixerLayer>());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+
+    // blackout: an intensity park goes dark unless also in blackout, an LTP
+    // park holds, the effect is 0
+    QVERIFY(io->setBlackout(true));
+    QCOMPARE(wire->lastAt(61), 0);
+    QCOMPARE(wire->lastAt(62), 66);
+    QCOMPARE(wire->lastAt(101), 40);
+    QCOMPARE(wire->lastAt(60), 0);
+    QCOMPARE(wire->lastAt(103), 0);
+    QCOMPARE(outputAt(universe, 62, true), 66);
+    QVERIFY(io->setBlackout(false));
+
+    // 2. the fade to black (1 s): the intensities down, a park too unless it
+    // is also in blackout; never the effect; not the LTP channels
+    universe->setOutputLayer(sfxLayer(1, { unit }, parks, {}, false, 1, 1000));
+    renderFrames(m_doc, 26);      // 500 ms in
+    QCOMPARE(finalOut(m_doc, 103), 128);
+    QCOMPARE(finalOut(m_doc, 61), 39);
+    QCOMPARE(finalOut(m_doc, 62), 66);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(finalOut(m_doc, 101), 50);
+    // the same ramp in a new layer goes on; at its end, dark
+    universe->setOutputLayer(sfxLayer(1, { unit }, parks, {}, false, 1, 1000));
+    renderFrames(m_doc, 25);
+    QCOMPARE(finalOut(m_doc, 103), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(finalOut(m_doc, 62), 66);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    universe->setOutputLayer(sfxLayer(1, { unit }, parks));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    sfxEvents(events);
+
+    // 3. the show stop: above the parks and the blackout; a Hold keeps what
+    // went out when it came (the park of the pan); never on an effect,
+    // which it cuts
+    const QList<OutputLayer::Forced> forced = { { 61, 200, false }, { 100, 0, true }, { 103, 255, false },
+                                                { 60, 255, false } };
+    universe->setOutputLayer(sfxLayer(1, { unit }, parks, forced, true));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 200);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QStringList cut = sfxEvents(events);
+    QVERIFY2(cut.count() == 1 && cut.first().startsWith("ended showstop"), qPrintable(cut.join(", ")));
+    // the pan unparked under it: still what it held
+    universe->setOutputLayer(sfxLayer(1, { unit }, { { 61, 77, false } }, forced, true));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(int(universe->preGMValue(100)), 200);
+    // in blackout too
+    QVERIFY(io->setBlackout(true));
+    QCOMPARE(wire->lastAt(61), 200);
+    QCOMPARE(wire->lastAt(103), 255);
+    QCOMPARE(wire->lastAt(101), 40);
+    QCOMPARE(wire->lastAt(60), 0);
+    QCOMPARE(wire->lastAt(62), 0);
+    QVERIFY(io->setBlackout(false));
+
+    // released: the functions as they are now; the effect waits for a release
+    universe->setOutputLayer(sfxLayer(1, { unit }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    QCOMPARE(finalOut(m_doc, 100), 200);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::effectGateCost()
+{
+    // 8 universes, each with 20 effects firing (or under a show stop), 32
+    // parks, 400 show stop values and a fade to black
+    InputOutputMap *io = m_doc->inputOutputMap();
+    while (io->universesCount() < 8)
+        QVERIFY(io->addUniverse());
+    Scene *scene = new Scene(m_doc);
+    for (int u = 0; u < 8; u++)
+        QCOMPARE(m_patch->addFixtures("Generic", KGenericDimmerModel, "", QString("CO2 %1").arg(u), u, 1, 20), 20);
+    for (Fixture *fxi : m_doc->fixtures())
+        scene->setValue(fxi->id(), 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 5);
+
+    auto measure = [&]() {
+        renderFrames(m_doc, 10);
+        QElapsedTimer clock;
+        clock.start();
+        renderFrames(m_doc, 500);
+        return clock.nsecsElapsed() / 500;
+    };
+    const qint64 plain = measure();
+    for (int u = 0; u < 8; u++)
+    {
+        QList<OutputLayer::Unit> units;
+        for (int a = 0; a < 20; a++)
+            units.append(sfxUnit(fixtureAtAddress(m_doc, a, quint32(u)), { quint16(a) }));
+        QList<OutputLayer::Park> parks;
+        for (int a = 20; a < 52; a++)
+            parks.append({ quint16(a), uchar(a), a % 2 == 0 });
+        QList<OutputLayer::Forced> forced;
+        for (int a = 100; a < 500; a++)
+            forced.append({ quint16(a), uchar(a), a % 2 == 0 });
+        io->universes().at(u)->setOutputLayer(sfxLayer(1, units, parks, forced, u >= 4, u < 4 ? 1 : 0, 60000));
+    }
+    const qint64 staged = measure();
+    qInfo() << "8 universes, a frame:" << plain / 1000 << "us without the stage," << staged / 1000 << "us with it";
+    QVERIFY2(staged < 2000000, qPrintable(QString("%1 us").arg(staged / 1000)));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+}
+
+void Backend_Test::outputStageBlackoutLive()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 30000, 0) }));
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    InputOutputMap *io = m_doc->inputOutputMap();
+    io->startUniverses();
+    m_doc->masterTimer()->start();
+    QTRY_VERIFY_WITH_TIMEOUT(wire->writes() > 2, 3000);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 255, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(60), 255, 3000);
+
+    // the blackout goes out from the thread of the universe, never from here
+    QVERIFY(io->setBlackout(true));
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 0, 1000);
+    QCOMPARE(wire->wireAt(60), 0);
+    QVERIFY(io->setBlackout(false));
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 255, 1000);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(60), 255, 1000);
+
+    // the timer stopped (it stops the functions too; no frames from it): a
+    // source by hand, and the blackout frame is still sent at once
+    m_doc->masterTimer()->stop();
+    SfxPress byHand(m_doc, par, 0, false);
+    byHand.press(200);
+    universe->requestFrame();
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 200, 1000);
+    QVERIFY(io->setBlackout(true));
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 0, 1000);
+    QCOMPARE(wire->wireAt(60), 0);
+    QVERIFY(io->setBlackout(false));
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 200, 1000);
+    QCOMPARE(wire->wireAt(60), 0);
+    QCOMPARE(wire->writesFromGui(), 0);
+    byHand.release();
+}
+
+void Backend_Test::effectGateWatchdogLive()
+{
+    // no master timer at all: the universe sends a frame when asked; an
+    // effect that fires is cut by the watchdog of its thread
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    universe->setOutputLayer(sfxLayer(1, { sfxUnit(co2, { 60 }, 800, 0) }));
+    m_doc->inputOutputMap()->startUniverses();
+    QVERIFY(m_doc->masterTimer()->isTicking() == false);
+    // a first frame with the layer (a source already there would wait for a release)
+    universe->requestFrame();
+    QTRY_VERIFY_WITH_TIMEOUT(wire->writes() >= 1, 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), universe->outputLayer()->serial, 2000);
+
+    SfxPress press(m_doc, co2);
+    press.press();
+    universe->requestFrame();
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(60), 255, 2000);
+    QElapsedTimer clock;
+    clock.start();
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(60), 0, 3000);
+    QVERIFY2(clock.elapsed() < 2500, qPrintable(QString::number(clock.elapsed())));
+    QCOMPARE(wire->writesFromGui(), 0);
+    QCOMPARE(int(universe->preGMValue(60)), 255);
+    press.release();
+}
+
+void Backend_Test::outputLayerChecked()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+
+    // a unit whose roles were never marked (and a channel past the universe)
+    OutputLayer *careless = new OutputLayer();
+    careless->serial = 77;
+    OutputLayer::Unit unit = sfxUnit(co2, { 60, 600 });
+    unit.aux = { 700 };
+    unit.safety = 800;
+    careless->units.append(unit);
+    careless->parks.append({ 100, 50, false });
+    careless->forced.append({ 900, 255, false });
+    const QSharedPointer<const OutputLayer> given(careless);
+    universe->setOutputLayer(given);
+    const QSharedPointer<const OutputLayer> used = universe->outputLayer();
+    QVERIFY(used.data() != given.data());
+    QCOMPARE(used->serial, 77u);
+    QCOMPARE(int(used->roles.size()), UNIVERSE_SIZE);
+    QCOMPARE(int(used->role(60)), int(OutputLayer::Fire));
+    QCOMPARE(used->units.count(), 1);
+    QCOMPARE(used->units.first().fire, QVector<quint16>({ 60 }));
+    QVERIFY(used->units.first().aux.isEmpty());
+    QCOMPARE(used->units.first().safety, -1);
+    QCOMPARE(used->parkMode(100), 1);
+    QVERIFY(used->forced.isEmpty());
+    QCOMPARE(used->span(), 101);
+
+    // so it is protected: a scene at full sends 0 (disarmed)
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(int(universe->preGMValue(60)), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 100), 50);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+
+    // a sound one is used as it is
+    const QSharedPointer<const OutputLayer> sound = sfxLayer(0, { sfxUnit(co2, { 60 }) }, { { 100, 50, true } });
+    universe->setOutputLayer(sound);
+    QCOMPARE(universe->outputLayer().data(), sound.data());
+    QCOMPARE(sound->parkMode(100), 2);
+    // roles too short (marked by hand, no unit): sized, the marked one still
+    // protected, so it sends 0
+    OutputLayer *shortRoles = new OutputLayer();
+    shortRoles->roles = QByteArray(100, char(OutputLayer::Free));
+    shortRoles->roles[60] = char(OutputLayer::Fire);
+    universe->setOutputLayer(QSharedPointer<const OutputLayer>(shortRoles));
+    QCOMPARE(int(universe->outputLayer()->roles.size()), UNIVERSE_SIZE);
+    QCOMPARE(int(universe->outputLayer()->role(60)), int(OutputLayer::Fire));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(int(universe->preGMValue(60)), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    // and none at all: nothing
+    universe->setOutputLayer(QSharedPointer<const OutputLayer>());
+    QVERIFY(universe->outputLayer().isNull());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 100), 0);
+}
+
+/*****************************************************************************
+ * The protected special effects (Parte 1): protection in the patch, the
+ * layers SafetyManager gives the universes, arming, disarming, the log
+ *****************************************************************************/
+
+namespace
+{
+
+/** Looks at the layer of the first universe a map adds from now on, each
+ *  time one of its new universes starts (in the thread of that universe,
+ *  before its first frame) */
+class LayerWatch : public QObject
+{
+    Q_OBJECT
+public:
+    explicit LayerWatch(InputOutputMap *map)
+        : m_map(map)
+    {
+        connect(map, SIGNAL(universeAdded(quint32)), this, SLOT(added(quint32)));
+    }
+    int started() const { return m_started.load(); }
+    int startedWithUnits() const { return m_withUnits.load(); }
+
+public slots:
+    void added(quint32 id)
+    {
+        Universe *universe = m_map->universe(id);
+        if (universe == nullptr)
+            return;
+        QMutexLocker locker(&m_mutex);
+        m_universes.append(universe);
+        connect(universe, SIGNAL(started()), this, SLOT(onStarted()), Qt::DirectConnection);
+    }
+    void onStarted()
+    {
+        QMutexLocker locker(&m_mutex);
+        if (m_universes.isEmpty())
+            return;
+        const QSharedPointer<const OutputLayer> layer = m_universes.first()->outputLayer();
+        if (layer.isNull() == false && layer->hasUnits())
+            m_withUnits++;
+        m_started++;
+    }
+
+private:
+    InputOutputMap *m_map;
+    QMutex m_mutex;
+    QList<Universe *> m_universes;
+    std::atomic<int> m_started { 0 };
+    std::atomic<int> m_withUnits { 0 };
+};
+
+/** The unit of $fixture in $layer (a default one when it has none) */
+OutputLayer::Unit unitOf(const QSharedPointer<const OutputLayer> &layer, quint32 fixture)
+{
+    if (layer.isNull() == false)
+    {
+        for (const OutputLayer::Unit &unit : layer->units)
+            if (unit.fixture == fixture)
+                return unit;
+    }
+    OutputLayer::Unit none;
+    none.fixture = Fixture::invalidId();
+    return none;
+}
+
+/** The ids of a list of maps (firing, waiting, recentFires) */
+QList<quint32> idsOf(const QVariantList &list)
+{
+    QList<quint32> ids;
+    for (const QVariant &v : list)
+        ids.append(v.toMap().value("id").toUInt());
+    return ids;
+}
+
+/** The Plan element of a saved show: the attributes of its Fixture $id
+ *  (empty when it has none, "-" when it is not there) */
+QString planAttributes(const QByteArray &show, quint32 id)
+{
+    const QString text = QString::fromUtf8(show);
+    const int from = int(text.indexOf("<Plan>"));
+    const int to = int(text.indexOf("</Plan>"));
+    if (from < 0 || to < from)
+        return "-";
+    const QRegularExpression fixture(QString("<Fixture ID=\"%1\"([^>]*)/>").arg(id));
+    const QRegularExpressionMatch match = fixture.match(text.mid(from, to - from));
+    return match.hasMatch() ? match.captured(1) : QString("-");
+}
+
+} // namespace
+
+void Backend_Test::effectDefaultsByKind()
+{
+    QSignalSpy changed(m_patch, SIGNAL(protectionChanged()));
+    QVERIFY(m_patch->hasProtected() == false);
+    struct Case
+    {
+        const char *name;
+        bool protect;
+        int fireMs;
+    };
+    const QList<Case> cases = {
+        { "CO2 1", true, 3000 }, { "FLAME 2", true, 2000 }, { "SPARK 1", true, 5000 }, { "CONFETTI 1", true, 2000 },
+        { "BUBBLES 1", false, 3000 }, { "SNOW 1", false, 3000 }, { "PAR 1", false, 3000 }, { "FOCO2", false, 3000 },
+        // (a zero for the O: not found, a documented limit)
+        { "C02 1", false, 3000 },
+    };
+    int dmx = 1;
+    for (const Case &c : cases)
+    {
+        const quint32 id = patchSfx(m_patch, m_doc, c.name, dmx++);
+        QVERIFY2(id != Fixture::invalidId(), c.name);
+        QVERIFY2(m_patch->isProtected(id) == c.protect, c.name);
+        const PatchManager::EffectRule rule = m_patch->effectRule(id);
+        QVERIFY2(rule.protect == c.protect, c.name);
+        QCOMPARE(int(rule.maxFireMs), c.fireMs);
+        QCOMPARE(int(rule.minWaitMs), 1000);
+        QCOMPARE(rule.safety, -1);
+        const QVariantMap settings = m_patch->effectSettings({ id });
+        QCOMPARE(settings.value("count").toInt(), 1);
+        QCOMPARE(settings.value("protected").toBool(), c.protect);
+        QVERIFY(settings.value("byKind").toBool());
+        QCOMPARE(settings.value("maxFireMs").toInt(), c.fireMs);
+        QCOMPARE(settings.value("defaultFireMs").toInt(), c.fireMs);
+        QCOMPARE(settings.value("minWaitMs").toInt(), 1000);
+        QCOMPARE(settings.value("safetyChannel").toInt(), -1);
+        QVERIFY(settings.value("crossUniverse").toBool() == false);
+        // the shield of the list and the plan
+        QCOMPARE(planFixture(m_patch, id).value("protected").toBool(), c.protect);
+        QVERIFY(planFixture(m_patch, id).value("crossUniverse").toBool() == false);
+    }
+    QVERIFY(m_patch->hasProtected());
+    // told for each fixture that came protected
+    QCOMPARE(changed.count(), 4);
+
+    // the kinds, by their names in the plan
+    for (const char *kind : { "co2", "flame", "spark", "confetti" })
+        QVERIFY2(PatchManager::protectedByDefault(kind), kind);
+    for (const char *kind : { "bubbles", "snow", "smoke", "hazer", "dimmer", "strobe", "laser", "other", "" })
+        QVERIFY2(PatchManager::protectedByDefault(kind) == false, kind);
+    QCOMPARE(PatchManager::defaultFireMs("other"), 3000);
+    QCOMPARE(PatchManager::defaultWaitMs(), 1000);
+
+    // a fixture of the library whose words say it (an "Other" called a CO2 jet)
+    addSfxDef(m_doc, "CO2 Jet Pro", { { "Valve", QLCChannel::Intensity, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "CO2 Jet Pro", "1ch", "Jet", 0, 100, 1), 1);
+    const quint32 jet = fixtureAtAddress(m_doc, 99);
+    QVERIFY(m_patch->isProtected(jet));
+    QCOMPARE(m_patch->effectRule(jet).maxFireMs, 3000u);
+
+    // gone: not protected, and told
+    changed.clear();
+    m_patch->removeFixture(jet);
+    QVERIFY(m_patch->isProtected(jet) == false);
+    QCOMPARE(changed.count(), 1);
+}
+
+void Backend_Test::effectRenameRules()
+{
+    QSignalSpy messages(m_patch, SIGNAL(protectionMessage(QString)));
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 1);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 2", 2);
+    QVERIFY(m_patch->isProtected(co2));
+    QVERIFY(m_patch->isProtected(par) == false);
+
+    // a CO2 called «PAR 1»: still protected (nothing unprotects by itself)
+    m_patch->renameFixture(co2, "PAR 1");
+    QVERIFY(m_patch->isProtected(co2));
+    QCOMPARE(messages.count(), 0);
+
+    // a PAR called «FLAME 9»: protected, with the times of a flame, and told
+    QSignalSpy changed(m_patch, SIGNAL(protectionChanged()));
+    m_patch->renameFixture(par, "FLAME 9");
+    QVERIFY(m_patch->isProtected(par));
+    QCOMPARE(m_patch->effectRule(par).maxFireMs, 2000u);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.takeFirst().at(0).toString(), QString("FLAME 9 is now a protected special effect"));
+    QVERIFY(planFixture(m_patch, par).value("protected").toBool());
+
+    // a CO2 unprotected by hand and called «CO2 9»: its kind is the same, it
+    // stays as the user said
+    const quint32 jet = patchSfx(m_patch, m_doc, "CO2 1", 3);
+    QVERIFY(m_patch->isProtected(jet));
+    QVERIFY(m_patch->setEffectSetting({ jet }, "protected", false));
+    QVERIFY(m_patch->isProtected(jet) == false);
+    m_patch->renameFixture(jet, "CO2 9");
+    QVERIFY(m_patch->isProtected(jet) == false);
+    QCOMPARE(messages.count(), 0);
+    // through another kind, then a flame: protected again
+    m_patch->renameFixture(jet, "PAR");
+    QVERIFY(m_patch->isProtected(jet) == false);
+    m_patch->renameFixture(jet, "FLAME 1");
+    QVERIFY(m_patch->isProtected(jet));
+    QCOMPARE(messages.count(), 1);
+    messages.clear();
+
+    // the name given in the editor of the fixture, the same
+    const quint32 dimmer = patchSfx(m_patch, m_doc, "Dimmer 7", 4);
+    QVERIFY(m_patch->isProtected(dimmer) == false);
+    QCOMPARE(m_patch->updateFixture(dimmer, "Confetti L", "", 0, 5), QString());
+    QVERIFY(m_patch->isProtected(dimmer));
+    QCOMPARE(m_patch->effectRule(dimmer).maxFireMs, 2000u);
+    QCOMPARE(messages.count(), 1);
+    // and renamed again: what was said stays
+    m_patch->renameFixture(dimmer, "Dimmer 7");
+    QVERIFY(m_patch->isProtected(dimmer));
+}
+
+void Backend_Test::effectIconByHand()
+{
+    QSignalSpy messages(m_patch, SIGNAL(protectionMessage(QString)));
+    const quint32 sfx = patchSfx(m_patch, m_doc, "SFX 1", 1);
+    QVERIFY(m_patch->isProtected(sfx) == false);
+
+    // the icon of a CO2 jet: protected, told
+    m_patch->setFixtureIcon({ sfx }, "co2");
+    QVERIFY(m_patch->isProtected(sfx));
+    QCOMPARE(m_patch->effectRule(sfx).maxFireMs, 3000u);
+    QCOMPARE(messages.count(), 1);
+    QVERIFY(messages.first().at(0).toString().startsWith("SFX 1 "));
+    // automatic again (a dimmer): still protected
+    m_patch->setFixtureIcon({ sfx }, "auto");
+    QCOMPARE(m_patch->fixtureIcon(sfx), QString());
+    QVERIFY(m_patch->isProtected(sfx));
+    QVERIFY(planFixture(m_patch, sfx).value("protected").toBool());
+
+    // another icon on a CO2 (a blinder): protected all the same
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 2);
+    m_patch->setFixtureIcon({ co2 }, "blinder");
+    QCOMPARE(planFixture(m_patch, co2).value("kind").toString(), QString("blinder"));
+    QVERIFY(m_patch->isProtected(co2));
+
+    // several at once: one message
+    const quint32 sfx2 = patchSfx(m_patch, m_doc, "SFX 2", 4);
+    const quint32 sfx3 = patchSfx(m_patch, m_doc, "SFX 3", 5);
+    messages.clear();
+    m_patch->setFixtureIcon({ sfx2, sfx3 }, "confetti");
+    QVERIFY(m_patch->isProtected(sfx2));
+    QVERIFY(m_patch->isProtected(sfx3));
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().at(0).toString(), QString("2 fixture(s) are now protected special effects"));
+
+    // bubbles and snow are harmless: their icons protect nothing
+    const quint32 machine = patchSfx(m_patch, m_doc, "Machine", 3);
+    messages.clear();
+    m_patch->setFixtureIcon({ machine }, "bubbles");
+    QVERIFY(m_patch->isProtected(machine) == false);
+    m_patch->setFixtureIcon({ machine }, "snow");
+    QVERIFY(m_patch->isProtected(machine) == false);
+    QCOMPARE(messages.count(), 0);
+    // sparks: protected, with their 5 s
+    m_patch->setFixtureIcon({ machine }, "spark");
+    QVERIFY(m_patch->isProtected(machine));
+    QCOMPARE(m_patch->effectRule(machine).maxFireMs, 5000u);
+}
+
+void Backend_Test::effectSettingsRanges()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 1);
+    const quint32 flame = patchSfx(m_patch, m_doc, "FLAME 1", 11, 3);
+    QSignalSpy changed(m_patch, SIGNAL(protectionChanged()));
+    m_doc->resetModified();
+
+    // the times: to the nearest of their range
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 50));
+    QCOMPARE(m_patch->effectRule(co2).maxFireMs, 100u);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 40000));
+    QCOMPARE(m_patch->effectRule(co2).maxFireMs, 30000u);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", -5));
+    QCOMPARE(m_patch->effectRule(co2).minWaitMs, 0u);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 70000));
+    QCOMPARE(m_patch->effectRule(co2).minWaitMs, 60000u);
+    QCOMPARE(changed.count(), 4);
+    QVERIFY(m_doc->isModified());
+    QVERIFY(m_patch->effectSettings({ co2 }).value("byKind").toBool() == false);
+    // not a number, not a setting: refused, nothing changes
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", "abc") == false);
+    QVERIFY(m_patch->lastError().isEmpty() == false);
+    QCOMPARE(m_patch->effectRule(co2).maxFireMs, 30000u);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "colour", 3) == false);
+    QVERIFY(m_patch->setEffectSetting({ 999 }, "protected", true) == false);
+    QCOMPARE(changed.count(), 4);
+
+    // a safety channel: one that each of them has, else none of them changes
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "safetyChannel", 1) == false);
+    QVERIFY(m_patch->lastError().contains("CO2 1"));
+    // its only channel: it would have nothing left to fire
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "safetyChannel", 0) == false);
+    QVERIFY(m_patch->lastError().contains("CO2 1"));
+    QCOMPARE(m_patch->effectRule(co2).safety, -1);
+    QVERIFY(m_patch->setEffectSetting({ flame, co2 }, "safetyChannel", 2) == false);
+    QCOMPARE(m_patch->effectRule(flame).safety, -1);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", -2) == false);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", 2));
+    PatchManager::EffectRule rule = m_patch->effectRule(flame);
+    QCOMPARE(rule.safety, 2);
+    QCOMPARE(int(rule.from), 1);
+    QCOMPARE(int(rule.to), 255);
+    // its window: from never above to
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyTo", 200));
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyFrom", 128));
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyFrom", 210) == false);
+    QVERIFY(m_patch->lastError().contains("210"));
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyTo", 100) == false);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyTo", 300));
+    QCOMPARE(int(m_patch->effectRule(flame).to), 255);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyTo", 200));
+    rule = m_patch->effectRule(flame);
+    QCOMPARE(rule.safety, 2);
+    QCOMPARE(int(rule.from), 128);
+    QCOMPARE(int(rule.to), 200);
+    // none, and back
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", -1));
+    QCOMPARE(m_patch->effectRule(flame).safety, -1);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", 2));
+
+    // one of them: what the dialog shows
+    const QVariantMap one = m_patch->effectSettings({ flame });
+    QCOMPARE(one.value("kind").toString(), QString("flame"));
+    QCOMPARE(one.value("maxFireMs").toInt(), 2000);
+    QCOMPARE(one.value("safetyChannel").toInt(), 2);
+    QCOMPARE(one.value("safetyFrom").toInt(), 128);
+    QCOMPARE(one.value("safetyTo").toInt(), 200);
+    QVERIFY(one.value("sameMode").toBool());
+    QCOMPARE(one.value("channels").toList().count(), 3);
+    QCOMPARE(one.value("channels").toList().at(2).toMap().value("index").toInt(), 2);
+    QVERIFY(one.value("mixed").toStringList().isEmpty());
+    // two different ones: what differs, and no channels to choose from
+    const QVariantMap both = m_patch->effectSettings({ co2, flame });
+    QCOMPARE(both.value("count").toInt(), 2);
+    const QStringList mixed = both.value("mixed").toStringList();
+    for (const char *key : { "kind", "maxFireMs", "minWaitMs", "safetyChannel", "safetyFrom", "safetyTo", "defaultFireMs" })
+        QVERIFY2(mixed.contains(key), key);
+    QVERIFY(mixed.contains("protected") == false);
+    QVERIFY(both.value("sameMode").toBool() == false);
+    QVERIFY(both.value("channels").toList().isEmpty());
+    // two of the same mode: their channels
+    const quint32 co2b = patchSfx(m_patch, m_doc, "CO2 2", 2);
+    const QVariantMap pair = m_patch->effectSettings({ co2, co2b });
+    QVERIFY(pair.value("sameMode").toBool());
+    QCOMPARE(pair.value("channels").toList().count(), 1);
+    QVERIFY(pair.value("mixed").toStringList().contains("maxFireMs"));
+    // several at once
+    QVERIFY(m_patch->setEffectSetting({ co2, co2b }, "maxFireMs", 2500));
+    QCOMPARE(m_patch->effectRule(co2b).maxFireMs, 2500u);
+    QVERIFY(m_patch->effectSettings({ co2, co2b }).value("mixed").toStringList().contains("maxFireMs") == false);
+
+    // back to what their kind says
+    m_patch->resetEffectSettings({ co2, flame });
+    QCOMPARE(m_patch->effectRule(co2).maxFireMs, 3000u);
+    QCOMPARE(m_patch->effectRule(co2).minWaitMs, 1000u);
+    QCOMPARE(m_patch->effectRule(flame).safety, -1);
+    QVERIFY(m_patch->effectSettings({ co2 }).value("byKind").toBool());
+    QVERIFY(m_patch->effectSettings({ flame }).value("byKind").toBool());
+    // unprotected by hand: not as its kind
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "protected", false));
+    QVERIFY(m_patch->isProtected(co2) == false);
+    QVERIFY(m_patch->effectRule(co2).protect == false);
+    QVERIFY(m_patch->effectSettings({ co2 }).value("byKind").toBool() == false);
+    m_patch->resetEffectSettings({ co2 });
+    QVERIFY(m_patch->isProtected(co2));
+    QCOMPARE(m_patch->effectSettings({ 999 }).value("count").toInt(), 0);
+}
+
+void Backend_Test::effectShowFileRoundTrip()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Effects.qxw");
+    quint32 co2 = 0, co2b = 0, flame = 0, par = 0, bubbles = 0;
+    QByteArray saved;
+    {
+        DtcCore core;
+        PatchManager *patch = core.patch();
+        co2 = patchSfx(patch, core.doc(), "CO2 1", 1);
+        co2b = patchSfx(patch, core.doc(), "CO2 2", 2);
+        flame = patchSfx(patch, core.doc(), "FLAME 3", 11, 3);
+        par = patchSfx(patch, core.doc(), "PAR 1", 21);
+        bubbles = patchSfx(patch, core.doc(), "BUBBLES 1", 22);
+        QVERIFY(patch->setEffectSetting({ co2b }, "protected", false));
+        QVERIFY(patch->setEffectSetting({ flame }, "maxFireMs", 1500));
+        QVERIFY(patch->setEffectSetting({ flame }, "minWaitMs", 2500));
+        QVERIFY(patch->setEffectSetting({ flame }, "safetyChannel", 2));
+        QVERIFY(patch->setEffectSetting({ flame }, "safetyTo", 200));
+        QVERIFY(patch->setEffectSetting({ flame }, "safetyFrom", 128));
+        QVERIFY(patch->setEffectSetting({ par }, "protected", true));
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+    }
+
+    // in the plan, in the section of DMX Total Control (QLC+ never reads it):
+    // protected always said, unprotected only for a protected kind, the
+    // rest only when it isn't the default
+    const int section = int(saved.indexOf("<DMXTotalControl>"));
+    QVERIFY(section > 0);
+    QVERIFY(saved.left(section).contains("Protected") == false);
+    QCOMPARE(planAttributes(saved, co2), QString(" Protected=\"1\""));
+    QCOMPARE(planAttributes(saved, co2b), QString(" Protected=\"0\""));
+    QCOMPARE(planAttributes(saved, flame),
+             QString(" Protected=\"1\" MaxFire=\"1500\" MinWait=\"2500\" Safety=\"2\" SafetyFrom=\"128\" SafetyTo=\"200\""
+                     " SafetyName=\"Dimmer #3\""));
+    QCOMPARE(planAttributes(saved, par), QString(" Protected=\"1\""));
+    QCOMPARE(planAttributes(saved, bubbles), QString("-"));
+
+    {
+        DtcCore core;
+        // (the universes of the show come with it: each one, as it starts,
+        // finds the layer of the first one with its effects)
+        LayerWatch watch(core.doc()->inputOutputMap());
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        PatchManager *patch = core.patch();
+        QVERIFY(patch->isProtected(co2));
+        QVERIFY(patch->isProtected(co2b) == false);
+        QVERIFY(patch->isProtected(flame));
+        QVERIFY(patch->isProtected(par));
+        QVERIFY(patch->isProtected(bubbles) == false);
+        const PatchManager::EffectRule rule = patch->effectRule(flame);
+        QCOMPARE(rule.maxFireMs, 1500u);
+        QCOMPARE(rule.minWaitMs, 2500u);
+        QCOMPARE(rule.safety, 2);
+        QCOMPARE(int(rule.from), 128);
+        QCOMPARE(int(rule.to), 200);
+        QVERIFY(patch->effectSettings({ co2b }).value("byKind").toBool() == false);
+        QVERIFY(core.modified() == false);
+        // decided before the output started
+        const int universes = int(core.doc()->inputOutputMap()->universesCount());
+        QTRY_COMPARE_WITH_TIMEOUT(watch.started(), universes, 3000);
+        QCOMPARE(watch.startedWithUnits(), universes);
+        const QSharedPointer<const OutputLayer> layer = core.doc()->inputOutputMap()->universes().at(0)->outputLayer();
+        QCOMPARE(int(layer->role(0)), int(OutputLayer::Fire));
+        QCOMPARE(int(layer->role(1)), int(OutputLayer::Free));
+        QCOMPARE(int(layer->role(12)), int(OutputLayer::Safety));
+        QCOMPARE(int(layer->role(20)), int(OutputLayer::Fire));
+        QCOMPARE(int(layer->role(21)), int(OutputLayer::Free));
+        // saved again: the same file
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        QCOMPARE(planAttributes(fileBytes(path), flame), planAttributes(saved, flame));
+        QCOMPARE(planAttributes(fileBytes(path), co2b), QString(" Protected=\"0\""));
+    }
+
+    // a show that says nothing of it (an older one): what the kinds say
+    QString oldText = QString::fromUtf8(saved);
+    oldText.remove(QRegularExpression(" (Protected|MaxFire|MinWait|Safety|SafetyFrom|SafetyTo|SafetyName)=\"[^\"]*\""));
+    QVERIFY(oldText.contains("Protected") == false);
+    const QString oldPath = dir.filePath("Old.qxw");
+    QVERIFY(writeBytes(oldPath, oldText.toUtf8()));
+    // and one from QLC+: no section of DMX Total Control at all
+    QString qlcText = QString::fromUtf8(saved);
+    const int start = int(qlcText.indexOf("<DMXTotalControl>"));
+    const int end = int(qlcText.indexOf("</DMXTotalControl>")) + int(qstrlen("</DMXTotalControl>"));
+    QVERIFY(start > 0 && end > start);
+    qlcText.remove(start, end - start);
+    const QString qlcPath = dir.filePath("Qlc.qxw");
+    QVERIFY(writeBytes(qlcPath, qlcText.toUtf8()));
+    for (const QString &file : { oldPath, qlcPath })
+    {
+        DtcCore core;
+        QVERIFY(core.openShow(QUrl::fromLocalFile(file)));
+        PatchManager *patch = core.patch();
+        QVERIFY2(patch->isProtected(co2), qPrintable(file));
+        QVERIFY2(patch->isProtected(co2b), qPrintable(file));
+        QVERIFY(patch->isProtected(flame));
+        QVERIFY(patch->isProtected(par) == false);
+        QVERIFY(patch->isProtected(bubbles) == false);
+        const PatchManager::EffectRule rule = patch->effectRule(flame);
+        QCOMPARE(rule.maxFireMs, 2000u);
+        QCOMPARE(rule.minWaitMs, 1000u);
+        QCOMPARE(rule.safety, -1);
+        QVERIFY(core.doc()->inputOutputMap()->universes().at(0)->outputLayer()->hasUnits());
+        QVERIFY(core.safety()->hasProtected());
+    }
+
+    // the safety channel names the channel it was chosen on: another one at
+    // that place now (an updated definition) leaves none, and it is said; a
+    // file without the name keeps it. One past its channels (a definition
+    // with fewer now): none, said too
+    for (const QString &variant : { QString("other"), QString("unnamed"), QString("past") })
+    {
+        const bool lost = variant != QLatin1String("unnamed");
+        QString text = QString::fromUtf8(saved);
+        QCOMPARE(text.count(" SafetyName=\"Dimmer #3\""), 1);
+        if (variant == QLatin1String("past"))
+        {
+            QCOMPARE(text.count(" Safety=\"2\""), 1);
+            text.replace(" Safety=\"2\"", " Safety=\"3\"");
+        }
+        else
+        {
+            text.replace(" SafetyName=\"Dimmer #3\"", lost ? " SafetyName=\"Fire\"" : "");
+        }
+        const QString file = dir.filePath(variant + ".qxw");
+        QVERIFY(writeBytes(file, text.toUtf8()));
+        DtcCore core;
+        QSignalSpy messages(core.patch(), SIGNAL(protectionMessage(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(file)));
+        QCOMPARE(core.patch()->effectRule(flame).safety, lost ? -1 : 2);
+        QTest::qWait(100);
+        int said = 0;
+        for (const QList<QVariant> &args : std::as_const(messages))
+            said += args.at(0).toString().contains("FLAME 3") && args.at(0).toString().contains("safety channel") ? 1 : 0;
+        QVERIFY2(said == (lost ? 1 : 0), qPrintable(variant));
+    }
+
+    // damaged values fail closed: any value but "0" protects, a time that
+    // isn't a number is the default (one out of range the nearest), a
+    // window that can't be leaves no safety channel
+    QString damaged = QString::fromUtf8(saved);
+    auto change = [&damaged](const QString &from, const QString &to) {
+        QCOMPARE(damaged.count(from), 1);
+        damaged.replace(from, to);
+    };
+    change(QString("<Fixture ID=\"%1\" Protected=\"0\"/>").arg(co2b), QString("<Fixture ID=\"%1\" Protected=\"yes\"/>").arg(co2b));
+    change("MaxFire=\"1500\"", "MaxFire=\"abc\"");
+    change("MinWait=\"2500\"", "MinWait=\"99999\"");
+    change("SafetyFrom=\"128\"", "SafetyFrom=\"300\"");
+    change(QString("<Fixture ID=\"%1\" Protected=\"1\"/>").arg(par), QString("<Fixture ID=\"%1\" Protected=\"\"/>").arg(par));
+    // an entry without an ID, or with one that isn't a number, is left out:
+    // it never unprotects fixture 0 (the first CO2)
+    QCOMPARE(co2, 0u);
+    // (and a safety channel on the CO2, its only channel by its name: none,
+    // said; the flame's window that can't be is a damaged value, not said)
+    change(QString("<Fixture ID=\"%1\" Protected=\"1\"/>").arg(co2),
+           QString("<Fixture ID=\"%1\" Protected=\"1\" Safety=\"0\" SafetyName=\"Dimmer #1\"/><Fixture Protected=\"0\"/>"
+                   "<Fixture ID=\"x\" Protected=\"0\"/>").arg(co2));
+    const QString damagedPath = dir.filePath("Damaged.qxw");
+    QVERIFY(writeBytes(damagedPath, damaged.toUtf8()));
+    {
+        DtcCore core;
+        QSignalSpy messages(core.patch(), SIGNAL(protectionMessage(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(damagedPath)));
+        QTest::qWait(100);
+        QStringList lostSaid;
+        for (const QList<QVariant> &args : std::as_const(messages))
+        {
+            if (args.at(0).toString().contains("safety channel"))
+                lostSaid << args.at(0).toString();
+        }
+        QCOMPARE(lostSaid.count(), 1);
+        QVERIFY2(lostSaid.first().contains("CO2 1") && lostSaid.first().contains("FLAME 3") == false,
+                 qPrintable(lostSaid.first()));
+        QCOMPARE(core.patch()->effectRule(co2).safety, -1);
+        PatchManager *patch = core.patch();
+        QVERIFY(patch->isProtected(co2));
+        QVERIFY(patch->isProtected(co2b));
+        QVERIFY(patch->isProtected(par));
+        const PatchManager::EffectRule rule = patch->effectRule(flame);
+        QVERIFY(rule.protect);
+        QCOMPARE(rule.maxFireMs, 2000u);
+        QCOMPARE(rule.minWaitMs, 60000u);
+        QCOMPARE(rule.safety, -1);
+        // (the channel of the safety is one more of the flame: it fires)
+        QCOMPARE(int(core.doc()->inputOutputMap()->universes().at(0)->outputLayer()->role(12)), int(OutputLayer::Fire));
+    }
+}
+
+void Backend_Test::safetyArm()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    QSignalSpy armed(&safety, SIGNAL(armedChanged()));
+    QSignalSpy disarmed(&safety, SIGNAL(disarmed(QString)));
+    Universe *universe = sfxUniverse(m_doc);
+
+    // the layers of a show without effects: empty, disarmed, with a serial
+    QVERIFY(universe->outputLayer().isNull() == false);
+    QVERIFY(universe->outputLayer()->isEmpty());
+    QCOMPARE(universe->outputLayer()->serial, safety.serial());
+    QCOMPARE(sfxUniverse(m_doc, 3)->outputLayer()->serial, safety.serial());
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(safety.disarmIn(), -1);
+
+    // nothing protected: nothing to arm, and said
+    patchSfx(m_patch, m_doc, "PAR 1", 70);
+    QVERIFY(safety.hasProtected() == false);
+    QVERIFY(safety.arm() == false);
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(messages.count(), 1);
+    QVERIFY(messages.first().at(1).toBool());
+    messages.clear();
+    QCOMPARE(armed.count(), 0);
+
+    // a CO2: armed, with a token of its own in every layer
+    QSignalSpy protection(&safety, SIGNAL(protectionChanged()));
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    QVERIFY(protection.count() >= 1);
+    QVERIFY(safety.hasProtected());
+    QVERIFY(universe->outputLayer()->hasUnits());
+    QCOMPARE(universe->outputLayer()->armToken, 0u);
+    QVERIFY(safety.arm());
+    QVERIFY(safety.armed());
+    QCOMPARE(armed.count(), 1);
+    const quint32 first = safety.armToken();
+    QVERIFY(first != 0);
+    QCOMPARE(universe->outputLayer()->armToken, first);
+    QCOMPARE(sfxUniverse(m_doc, 1)->outputLayer()->armToken, first);
+    QCOMPARE(universe->outputLayer()->serial, safety.serial());
+    // the countdown of the auto-disarm: 10 minutes
+    QCOMPARE(settings.autoDisarmMinutes(), 10);
+    QVERIFY(safety.disarmIn() > 590 && safety.disarmIn() <= 600);
+    // again: nothing changes
+    QVERIFY(safety.arm());
+    QCOMPARE(armed.count(), 1);
+    QCOMPARE(safety.armToken(), first);
+
+    // disarmed by hand: token 0, the reason told
+    safety.disarm();
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(armed.count(), 2);
+    QCOMPARE(universe->outputLayer()->armToken, 0u);
+    QCOMPARE(safety.armToken(), 0u);
+    QCOMPARE(safety.disarmIn(), -1);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+    safety.disarm();
+    QCOMPARE(disarmed.count(), 0);
+    QCOMPARE(armed.count(), 2);
+
+    // each arming a new token
+    safety.toggleArmed();
+    QVERIFY(safety.armed());
+    const quint32 second = safety.armToken();
+    QVERIFY(second != 0 && second != first);
+    QCOMPARE(universe->outputLayer()->armToken, second);
+    safety.toggleArmed();
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+    QVERIFY(safety.arm());
+    QVERIFY(safety.armToken() != second);
+
+    // Blackout disarms, and arming waits for it to go
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(true));
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("blackout"));
+    QCOMPARE(universe->outputLayer()->armToken, 0u);
+    QVERIFY(safety.arm() == false);
+    QCOMPARE(messages.count(), 1);
+    QVERIFY(messages.first().at(0).toString().contains("Blackout"));
+    QVERIFY(messages.first().at(1).toBool());
+    QVERIFY(m_doc->inputOutputMap()->setBlackout(false));
+    QVERIFY(safety.arm());
+
+    // the last protected fixture gone while armed: nothing to fire, disarmed
+    m_patch->removeFixture(co2);
+    QVERIFY(safety.hasProtected() == false);
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("none"));
+    QVERIFY(universe->outputLayer()->isEmpty());
+
+    // the reasons in words
+    QCOMPARE(safety.reasonText("stopAll"), QString("Stop all"));
+    QCOMPARE(safety.reasonText("blackout"), QString("Blackout"));
+    QCOMPARE(safety.reasonText("show"), QString("another show"));
+    QVERIFY(safety.reasonText("idle").contains("10"));
+    QCOMPARE(safety.reasonText("showStop"), QString("show stop"));
+    QCOMPARE(safety.reasonText("fadeToBlack"), QString("fade to black"));
+    QCOMPARE(safety.reasonText("exit"), QString("the program closed"));
+    QCOMPARE(safety.reasonText("hand"), QString("by hand"));
+
+    // the option of the auto-disarm: 0 to 120 minutes
+    settings.setAutoDisarmMinutes(500);
+    QCOMPARE(settings.autoDisarmMinutes(), 120);
+    settings.setAutoDisarmMinutes(-3);
+    QCOMPARE(settings.autoDisarmMinutes(), 0);
+    QCOMPARE(QSettings().value("safety/autoDisarmMinutes").toInt(), 0);
+}
+
+void Backend_Test::safetyLayerBuild()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+
+    // one channel: it fires
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    // three of a generic dimmer: intensities, they fire; one is the safety
+    const quint32 flame = patchSfx(m_patch, m_doc, "FLAME 1", 71, 3);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", 2));
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyFrom", 100));
+    // a flame head: its flame fires, its pan and tilt pass while armed
+    addSfxDef(m_doc, "Flame Head", { { "Flame", QLCChannel::Intensity, false }, { "Pan", QLCChannel::Pan, false },
+                                     { "Tilt", QLCChannel::Tilt, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "Flame Head", "3ch", "Head", 0, 81, 1), 1);
+    const quint32 head = fixtureAtAddress(m_doc, 80);
+    QVERIFY(m_patch->isProtected(head));
+    // a machine without intensities: all of it fires but its safety channel
+    addSfxDef(m_doc, "Spark Machine", { { "Height", QLCChannel::Speed, false }, { "Arm", QLCChannel::Maintenance, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "Spark Machine", "2ch", "Sparks", 0, 91, 1), 1);
+    const quint32 sparks = fixtureAtAddress(m_doc, 90);
+    QVERIFY(m_patch->isProtected(sparks));
+    QVERIFY(m_patch->setEffectSetting({ sparks }, "safetyChannel", 1));
+    // a PAR: nothing
+    patchSfx(m_patch, m_doc, "PAR", 100);
+
+    const QSharedPointer<const OutputLayer> layer = sfxUniverse(m_doc)->outputLayer();
+    QCOMPARE(layer->serial, safety.serial());
+    QCOMPARE(layer->armToken, 0u);
+    QCOMPARE(layer->units.count(), 4);
+    const QList<QPair<int, OutputLayer::Role>> roles = {
+        { 59, OutputLayer::Free }, { 60, OutputLayer::Fire }, { 70, OutputLayer::Fire }, { 71, OutputLayer::Fire },
+        { 72, OutputLayer::Safety }, { 80, OutputLayer::Fire }, { 81, OutputLayer::Aux }, { 82, OutputLayer::Aux },
+        { 90, OutputLayer::Fire }, { 91, OutputLayer::Safety }, { 99, OutputLayer::Free }, { 300, OutputLayer::Free } };
+    for (const auto &role : roles)
+        QVERIFY2(layer->role(role.first) == role.second, qPrintable(QString::number(role.first)));
+    OutputLayer::Unit unit = unitOf(layer, flame);
+    QCOMPARE(unit.fire, QVector<quint16>({ 70, 71 }));
+    QVERIFY(unit.aux.isEmpty());
+    QCOMPARE(unit.safety, 72);
+    QCOMPARE(int(unit.safetyFrom), 100);
+    QCOMPARE(int(unit.safetyTo), 255);
+    QCOMPARE(unit.maxFireMs, 2000u);
+    QCOMPARE(unit.minWaitMs, 1000u);
+    QVERIFY(unit.canFire);
+    unit = unitOf(layer, head);
+    QCOMPARE(unit.fire, QVector<quint16>({ 80 }));
+    QCOMPARE(unit.aux, QVector<quint16>({ 81, 82 }));
+    QCOMPARE(unit.safety, -1);
+    QCOMPARE(unit.maxFireMs, 2000u);
+    unit = unitOf(layer, sparks);
+    QCOMPARE(unit.fire, QVector<quint16>({ 90 }));
+    QCOMPARE(unit.safety, 91);
+    QCOMPARE(unit.maxFireMs, 5000u);
+    QCOMPARE(unitOf(layer, co2).fire, QVector<quint16>({ 60 }));
+    QCOMPARE(unitOf(layer, co2).maxFireMs, 3000u);
+    // the next universe: nothing protected there, the same serial
+    QVERIFY(sfxUniverse(m_doc, 1)->outputLayer()->isEmpty());
+    QCOMPARE(sfxUniverse(m_doc, 1)->outputLayer()->serial, safety.serial());
+
+    // a fixture across two universes (a show from QLC+): it never fires,
+    // in either part
+    const QByteArray xml = "<Fixture><Manufacturer>Generic</Manufacturer><Model>Generic</Model>"
+                           "<Mode>4 Channel</Mode><ID>40</ID><Name>CO2 X</Name><Universe>0</Universe>"
+                           "<CrossUniverse/><Address>510</Address><Channels>4</Channels></Fixture>";
+    QXmlStreamReader reader(xml);
+    QVERIFY(reader.readNextStartElement());
+    QVERIFY(Fixture::loader(reader, m_doc));
+    const quint32 cross = 40;
+    QVERIFY(m_doc->fixture(cross) != nullptr);
+    QVERIFY(m_patch->isProtected(cross));
+    QVERIFY(PatchManager::crossesUniverses(m_doc->fixture(cross)));
+    QVERIFY(m_patch->effectSettings({ cross }).value("crossUniverse").toBool());
+    QVERIFY(m_patch->effectSettings({ co2, cross }).value("crossUniverse").toBool());
+    QVERIFY(planFixture(m_patch, cross).value("crossUniverse").toBool());
+    const OutputLayer::Unit firstPart = unitOf(sfxUniverse(m_doc, 0)->outputLayer(), cross);
+    const OutputLayer::Unit secondPart = unitOf(sfxUniverse(m_doc, 1)->outputLayer(), cross);
+    QCOMPARE(firstPart.fire, QVector<quint16>({ 510, 511 }));
+    QCOMPARE(secondPart.fire, QVector<quint16>({ 0, 1 }));
+    QVERIFY(firstPart.canFire == false);
+    QVERIFY(secondPart.canFire == false);
+    QCOMPARE(int(sfxUniverse(m_doc, 1)->outputLayer()->role(1)), int(OutputLayer::Fire));
+    QCOMPARE(int(sfxUniverse(m_doc, 1)->outputLayer()->role(2)), int(OutputLayer::Free));
+
+    // armed: the CO2 fires, the one across two universes doesn't (refused
+    // in both parts)
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    for (quint32 c = 0; c < 4; c++)
+        scene->setValue(cross, c, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    renderFrames(m_doc);
+    QVERIFY(safety.arm());
+    SFX_EVENT_SPY(events, m_doc->inputOutputMap());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(int(sfxUniverse(m_doc, 0)->preGMValue(511)), 255);
+    QCOMPARE(finalOut(m_doc, 510, 0), 0);
+    QCOMPARE(finalOut(m_doc, 511, 0), 0);
+    QCOMPARE(finalOut(m_doc, 0, 1), 0);
+    QCOMPARE(finalOut(m_doc, 1, 1), 0);
+    QStringList told = sfxEvents(events, true);
+    told.sort();
+    QCOMPARE(told, QStringList({ QString("%1: started").arg(co2), QString("%1: refused notallowed").arg(cross),
+                                 QString("%1: refused notallowed").arg(cross) }));
+    QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+    QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ cross }));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QVERIFY(safety.firing().isEmpty());
+    QVERIFY(safety.waiting().isEmpty());
+    safety.disarm();
+}
+
+void Backend_Test::safetyFireSplit()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    // a CO2 jet with LEDs: its valve is an effect channel, not an intensity
+    addSfxDef(m_doc, "CO2 Jet LED", { { "LED", QLCChannel::Intensity, false }, { "Fire", QLCChannel::Effect, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "CO2 Jet LED", "2ch", "Jet", 0, 61, 1), 1);
+    const quint32 jet = fixtureAtAddress(m_doc, 60);
+    QVERIFY(m_patch->isProtected(jet));
+    // a jet that aims: no intensity, its angle a tilt, its output an effect,
+    // its first channel the safety one
+    addSfxDef(m_doc, "CO2 Aim Jet", { { "Safety", QLCChannel::Maintenance, false }, { "Angle", QLCChannel::Tilt, false },
+                                      { "Output", QLCChannel::Effect, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "CO2 Aim Jet", "3ch", "Aim", 0, 71, 1), 1);
+    const quint32 aim = fixtureAtAddress(m_doc, 70);
+    QVERIFY(m_patch->isProtected(aim));
+    QVERIFY(m_patch->setEffectSetting({ aim }, "safetyChannel", 0));
+    QVERIFY(m_patch->setEffectSetting({ aim }, "safetyFrom", 200));
+
+    // every channel fires but pan, tilt and the safety one
+    const QSharedPointer<const OutputLayer> layer = sfxUniverse(m_doc)->outputLayer();
+    QCOMPARE(unitOf(layer, jet).fire, QVector<quint16>({ 60, 61 }));
+    QVERIFY(unitOf(layer, jet).aux.isEmpty());
+    QCOMPARE(unitOf(layer, aim).fire, QVector<quint16>({ 72 }));
+    QCOMPARE(unitOf(layer, aim).aux, QVector<quint16>({ 71 }));
+    QCOMPARE(unitOf(layer, aim).safety, 70);
+
+    // the valve: armed while a scene holds it, 0 until it is let go;
+    // pressed again, cut at its maximum time though it is still held
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(jet, 1, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QVERIFY(safety.arm());
+    renderFrames(m_doc, 20);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QVERIFY(safety.firing().isEmpty());
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    QCOMPARE(fireFrames(m_doc, 61, 300), 149);
+    QCOMPARE(safety.recentFires().first().toMap().value("reason").toString(), QString("time"));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 60);
+
+    // a scene that only aims the other one: the angle goes out, nothing
+    // fires (no time, no safety value)
+    Scene *aimOnly = new Scene(m_doc);
+    aimOnly->setValue(aim, 1, 90);
+    QVERIFY(m_doc->addFunction(aimOnly));
+    SFX_EVENT_SPY(events, m_doc->inputOutputMap());
+    aimOnly->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 200);
+    QCOMPARE(finalOut(m_doc, 71), 90);
+    QCOMPARE(finalOut(m_doc, 70), 0);
+    QCOMPARE(finalOut(m_doc, 72), 0);
+    QVERIFY(safety.firing().isEmpty());
+    QVERIFY(sfxEvents(events).isEmpty());
+    // disarmed: the angle at 0 too
+    safety.disarm();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 71), 0);
+    aimOnly->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::safetyReaddress()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    Universe *universe = sfxUniverse(m_doc);
+    QCOMPARE(int(universe->outputLayer()->role(60)), int(OutputLayer::Fire));
+
+    // moved: protected at the new address, not at the old one; once while
+    // the universes are held (no frame in between), once when Doc tells it
+    const quint32 before = safety.serial();
+    QVERIFY(m_patch->setFixtureAddress(co2, 0, 101));
+    QCOMPARE(int(universe->outputLayer()->role(100)), int(OutputLayer::Fire));
+    QCOMPARE(int(universe->outputLayer()->role(60)), int(OutputLayer::Free));
+    QCOMPARE(safety.serial(), before + 2);
+    // to another universe
+    QVERIFY(m_patch->setFixtureAddress(co2, 1, 5));
+    QCOMPARE(int(universe->outputLayer()->role(100)), int(OutputLayer::Free));
+    QCOMPARE(int(sfxUniverse(m_doc, 1)->outputLayer()->role(4)), int(OutputLayer::Fire));
+
+    // the hook of applyPatch runs with the new address already set
+    quint32 seen = 0;
+    int calls = 0;
+    PatchManager::setPatchHook(m_doc, [&]() {
+        seen = m_doc->fixture(co2)->address();
+        calls++;
+    });
+    QVERIFY(m_patch->setFixtureAddress(co2, 1, 31));
+    QCOMPARE(calls, 1);
+    QCOMPARE(seen, 30u);
+    // (a Doc without a hook: nothing)
+    PatchManager::setPatchHook(m_doc, {});
+    QVERIFY(m_patch->setFixtureAddress(co2, 1, 41));
+    QCOMPARE(calls, 1);
+}
+
+/** A frame of $doc each time Doc tells of a patch change (as a tick of the
+ *  timer that comes in between, before the faders follow the fixtures),
+ *  and the highest byte any of them sent on $addresses */
+class PatchGapFrames : public QObject
+{
+    Q_OBJECT
+public:
+    PatchGapFrames(Doc *doc, const QList<int> &addresses)
+        : m_doc(doc)
+        , m_addresses(addresses)
+    {
+        connect(doc, SIGNAL(fixtureChanged(quint32)), this, SLOT(frame()));
+        connect(doc, SIGNAL(fixtureRemoved(quint32)), this, SLOT(frame()));
+    }
+    int highest() const { return m_highest; }
+    int frames() const { return m_frames; }
+
+public slots:
+    void frame()
+    {
+        renderFrames(m_doc);
+        m_frames++;
+        for (int address : std::as_const(m_addresses))
+            m_highest = qMax(m_highest, finalOut(m_doc, address));
+    }
+
+private:
+    Doc *m_doc;
+    QList<int> m_addresses;
+    int m_highest = 0;
+    int m_frames = 0;
+};
+
+void Backend_Test::safetyPatchEditHeld()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 11);
+    const quint32 co2b = patchSfx(m_patch, m_doc, "CO2 2", 12);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 13);
+    // (no wait in the way: only the latch keeps them dark)
+    QVERIFY(m_patch->setEffectSetting({ co2, co2b }, "minWaitMs", 0));
+    Scene *scene = new Scene(m_doc);
+    for (const quint32 id : { co2, co2b, par })
+        scene->setValue(id, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(renderedValue(m_doc, 10), 255);
+    QCOMPARE(finalOut(m_doc, 10), 0);
+    QCOMPARE(finalOut(m_doc, 12), 255);
+    // armed while the scene holds them: they wait for a release
+    QVERIFY(safety.arm());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 10), 0);
+    QCOMPARE(finalOut(m_doc, 11), 0);
+
+    // both redirected at once, with frames in between: never a fire, at the
+    // new addresses or the old ones; they still wait
+    {
+        PatchGapFrames gap(m_doc, { 10, 11, 20, 21 });
+        QCOMPARE(m_patch->readdressFixtures({ co2, co2b }, 0, 21, 0), QString());
+        QVERIFY(gap.frames() >= 2);
+        for (int frame = 0; frame < 100; frame++)
+            gap.frame();
+        QCOMPARE(gap.highest(), 0);
+    }
+    QCOMPARE(renderedValue(m_doc, 20), 255);
+    QCOMPARE(renderedValue(m_doc, 10), 0);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(finalOut(m_doc, 12), 255);
+    // released and pressed: they fire at the new addresses
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 20), 255);
+    QCOMPARE(finalOut(m_doc, 21), 255);
+
+    // disarmed, still held: one moved, then deleted, and the other deleted
+    // (as a selection): their old addresses never go out
+    safety.disarm();
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 20), 0);
+    {
+        PatchGapFrames gap(m_doc, { 20, 30 });
+        QVERIFY(m_patch->setFixtureAddress(co2, 0, 31));
+        QVERIFY(gap.frames() >= 1);
+        for (int frame = 0; frame < 10; frame++)
+            gap.frame();
+        QCOMPARE(gap.highest(), 0);
+    }
+    QCOMPARE(renderedValue(m_doc, 30), 255);
+    {
+        PatchGapFrames gap(m_doc, { 30, 21 });
+        m_patch->removeFixture(co2);
+        m_patch->removeFixtures({ co2b });
+        QVERIFY(gap.frames() >= 2);
+        for (int frame = 0; frame < 10; frame++)
+            gap.frame();
+        QCOMPARE(gap.highest(), 0);
+    }
+    QCOMPARE(finalOut(m_doc, 12), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+/** Holds a frame of another thread when a fader writes in it (the fader's
+ *  monitoring tells it, Qt::DirectConnection): until let go, or 300 ms */
+class FrameHold : public QObject
+{
+    Q_OBJECT
+public:
+    std::atomic<int> stage { 0 };   // 1: a frame is held; 2: let go
+
+public slots:
+    void hold()
+    {
+        int expected = 0;
+        if (stage.compare_exchange_strong(expected, 1) == false)
+            return;
+        QElapsedTimer waited;
+        waited.start();
+        while (stage.load() != 2 && waited.elapsed() < 300)
+            QThread::msleep(1);
+    }
+};
+
+void Backend_Test::safetyPatchEditInFrame()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 11);
+    // (no wait in the way: only the latch keeps it dark)
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(renderedValue(m_doc, 10), 255);
+    QCOMPARE(finalOut(m_doc, 10), 0);
+    Universe *universe = sfxUniverse(m_doc);
+    QSharedPointer<GenericFader> fader;
+    for (const QSharedPointer<GenericFader> &f : universe->faders())
+    {
+        if (f.isNull() == false && f->parentFunctionID() == scene->id())
+            fader = f;
+    }
+    QVERIFY(fader.isNull() == false);
+
+    // a frame in another thread, as the universe's: it stops once it has
+    // its layer, just before the scene writes (the scene's fader tells it),
+    // until the CO2 is moved or 300 ms went by. Disarmed, then armed while
+    // held (it waits for a release)
+    int address = 10;
+    for (const bool armed : { false, true })
+    {
+        if (armed)
+        {
+            QVERIFY(safety.arm());
+            renderFrames(m_doc, 3);
+        }
+        const int next = address + 10;
+        QByteArray sent;
+        {
+            FrameHold hold;
+            std::atomic<int> &stage = hold.stage;
+            QVERIFY(connect(fader.data(), SIGNAL(preWriteData(quint32,QByteArray)), &hold, SLOT(hold()),
+                            Qt::DirectConnection));
+            fader->setMonitoring(true);
+            std::unique_ptr<QThread> thread(QThread::create([universe, &sent]() {
+                universe->renderFrame(MasterTimer::tick());
+                sent = universe->finalValues();
+            }));
+            thread->start();
+            QElapsedTimer started;
+            started.start();
+            while (stage.load() == 0 && started.elapsed() < 5000)
+                QThread::msleep(1);
+            const bool inFrame = stage.load() == 1;
+            const bool moved = m_patch->setFixtureAddress(co2, 0, next + 1);
+            stage = 2;
+            const bool ended = thread->wait(5000);
+            fader->setMonitoring(false);
+            QVERIFY(ended);
+            QVERIFY(inFrame);
+            QVERIFY(moved);
+        }
+        // that frame: the old layer, the CO2 where it was (0 there; its new
+        // address not even in that frame)
+        auto inSent = [&sent](int a) { return a < sent.size() ? int(uchar(sent.at(a))) : 0; };
+        QVERIFY(sent.size() > address);
+        QCOMPARE(inSent(next), 0);
+        QCOMPARE(inSent(address), 0);
+        // (what it told, from its thread)
+        QCoreApplication::processEvents();
+        // the next ones: the new layer, the CO2 at its new address
+        for (int frame = 0; frame < 20; frame++)
+        {
+            renderFrames(m_doc);
+            QCOMPARE(finalOut(m_doc, next), 0);
+            QCOMPARE(finalOut(m_doc, address), 0);
+        }
+        QCOMPARE(renderedValue(m_doc, next), 255);
+        QVERIFY(safety.firing().isEmpty());
+        address = next;
+    }
+
+    // released and pressed: it fires at its new address
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, address), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::safetyGateThroughManager()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // disarmed: the scene holds it, nothing of it goes out; the PAR as always
+    QCOMPARE(renderedValue(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ co2 }));
+    QCOMPARE(safety.waiting().first().toMap().value("reason").toString(), QString("release"));
+    QCOMPARE(safety.waiting().first().toMap().value("name").toString(), QString("CO2 1"));
+
+    // armed while the scene holds it: it waits for a release
+    QVERIFY(safety.arm());
+    renderFrames(m_doc, 20);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(safety.firing().isEmpty());
+    // released and pressed again: it fires, 3 s at most
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QVERIFY(safety.waiting().isEmpty());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+    QCOMPARE(safety.firing().first().toMap().value("number").toInt(), m_patch->fixtureNumber(co2));
+    QCOMPARE(fireFrames(m_doc, 60), 149);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ co2 }));
+    QCOMPARE(safety.recentFires().count(), 1);
+    QCOMPARE(safety.recentFires().first().toMap().value("reason").toString(), QString("time"));
+    QCOMPARE(safety.recentFires().first().toMap().value("ms").toInt(), 3000);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 60);
+
+    // the programmer never fires it, armed or not (a CO2 selected alone);
+    // the PAR takes it as always
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.selectFixtures({ co2, par });
+    QVERIFY(prog.setDimmer(255) >= 1);
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    prog.selectFixtures({ co2 });
+    QCOMPARE(prog.setDimmer(200), 1);
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(safety.firing().isEmpty());
+    prog.clear();
+    renderFrames(m_doc, 2);
+    safety.disarm();
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+}
+
+void Backend_Test::safetyDisarmTriggers()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Sfx.qxw");
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    // a program starts disarmed
+    QVERIFY(safety != nullptr);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(safety->disarmIn(), -1);
+
+    const quint32 co2 = patchSfx(core.patch(), core.doc(), "CO2 1", 61);
+    // (no time limit nor wait in the way)
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Scene *made = new Scene(core.doc());
+    made->setValue(co2, 0, 255);
+    QVERIFY(core.doc()->addFunction(made));
+    const quint32 sceneId = made->id();
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    QSignalSpy disarmed(safety, SIGNAL(disarmed(QString)));
+
+    auto universe = [&core]() { return core.doc()->inputOutputMap()->universes().at(0); };
+    auto scene = [&core, sceneId]() { return core.doc()->function(sceneId); };
+    // armed, then the scene: it fires (the universes run)
+    auto fire = [&]() {
+        QTRY_VERIFY_WITH_TIMEOUT(scene()->stopped(), 3000);
+        QTRY_COMPARE_WITH_TIMEOUT(int(universe()->finalValue(60)), 0, 3000);
+        // (a frame with the effect in it first: one that a source already
+        // holds when it comes waits for a release, armed or not)
+        QTRY_COMPARE_WITH_TIMEOUT(universe()->sentLayerSerial(), safety->serial(), 3000);
+        // (and let go since the last time: a scene stopped and started again
+        // between two frames would hold it all along)
+        QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty() && safety->firing().isEmpty(), 3000);
+        QVERIFY(safety->arm());
+        scene()->start(core.doc()->masterTimer(), FunctionParent::master());
+        QTRY_COMPARE_WITH_TIMEOUT(int(universe()->finalValue(60)), 255, 3000);
+        QTRY_COMPARE_WITH_TIMEOUT(int(safety->firing().count()), 1, 3000);
+    };
+    // disarmed at once, the CO2 to 0
+    auto cut = [&](const QString &reason) {
+        QVERIFY(safety->armed() == false);
+        QCOMPARE(disarmed.count(), 1);
+        QCOMPARE(disarmed.takeFirst().at(0).toString(), reason);
+        QTRY_COMPARE_WITH_TIMEOUT(int(universe()->finalValue(60)), 0, 3000);
+    };
+
+    // Stop all (Esc)
+    fire();
+    if (QTest::currentTestFailed())
+        return;
+    core.stopAll();
+    cut("stopAll");
+
+    // the Blackout of the top bar
+    fire();
+    core.setBlackout(true);
+    cut("blackout");
+    core.setBlackout(false);
+    // (still held: it waits for a release, dark)
+    QTest::qWait(100);
+    QCOMPARE(int(universe()->finalValue(60)), 0);
+    scene()->stop(FunctionParent::master());
+
+    // the Blackout of a button of the SHOW (straight to the engine)
+    {
+        ShowSurface surface(core.doc(), core.zones());
+        fire();
+        surface.press({ { "action", "blackout" } });
+        QVERIFY(core.blackout());
+        cut("blackout");
+        surface.press({ { "action", "blackout" } });
+        QVERIFY(core.blackout() == false);
+        scene()->stop(FunctionParent::master());
+    }
+
+    // some time without a fire
+    safety->setAutoDisarmMsForTest(300);
+    QVERIFY(safety->arm());
+    QVERIFY(safety->disarmIn() >= 0 && safety->disarmIn() <= 1);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->armed() == false, 3000);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("idle"));
+    // never while one fires: the time runs from its end
+    safety->setAutoDisarmMsForTest(-1);
+    fire();
+    safety->setAutoDisarmMsForTest(300);
+    QTest::qWait(700);
+    QVERIFY(safety->armed());
+    QCOMPARE(int(universe()->finalValue(60)), 255);
+    scene()->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->firing().isEmpty(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->armed() == false, 3000);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("idle"));
+    safety->setAutoDisarmMsForTest(-1);
+
+    // another show: a new one, one opened
+    fire();
+    core.newShow();
+    cut("show");
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    QVERIFY(safety->armed() == false);
+    QVERIFY(safety->hasProtected());
+    fire();
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    cut("show");
+    QVERIFY(disarmed.isEmpty());
+}
+
+void Backend_Test::safetyFlushBeforeClear()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString other = dir.filePath("Other.qxw");
+    DtcCore core;
+    QVERIFY(core.saveShow(QUrl::fromLocalFile(other)));
+    const quint32 co2 = patchSfx(core.patch(), core.doc(), "CO2 1", 61);
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    Universe *universe = core.doc()->inputOutputMap()->universes().at(0);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(core.doc());
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    Scene *scene = new Scene(core.doc());
+    scene->setValue(co2, 0, 255);
+    QVERIFY(core.doc()->addFunction(scene));
+    // (a frame with the effect in it first, as the program gives it)
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), core.safety()->serial(), 3000);
+    QVERIFY(core.safety()->arm());
+    scene->start(core.doc()->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(60), 255, 3000);
+
+    // another show while it fires: the universes that go sent the cut, in time
+    QTest::failOnWarning(QRegularExpression("didn't send the last layer"));
+    QVERIFY(core.openShow(QUrl::fromLocalFile(other)));
+    QVERIFY(core.safety()->armed() == false);
+    QCOMPARE(wire->lastAt(60), 0);
+    QCOMPARE(wire->wireAt(60), 0);
+    QVERIFY(core.doc()->fixture(co2) == nullptr);
+}
+
+void Backend_Test::safetyFireLog()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const QRegularExpression stamp("^\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\.\\d{3}\t");
+    QString logFile;
+    {
+        SafetyManager safety(m_doc, m_patch, &settings);
+        QVERIFY(safety.logFile().isEmpty());
+        Scene *scene = new Scene(m_doc);
+        scene->setValue(co2, 0, 255);
+        QVERIFY(m_doc->addFunction(scene));
+        renderFrames(m_doc);
+        QVERIFY(safety.arm());
+        QSignalSpy recent(&safety, SIGNAL(recentFiresChanged()));
+        logFile = safety.logFile();
+        QVERIFY2(logFile.startsWith(data.path + "/effects-log/"), qPrintable(logFile));
+        QVERIFY(logFile.endsWith(".txt"));
+        QVERIFY(QFileInfo::exists(logFile));
+
+        // let go after 1 s
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 50);
+        QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+        scene->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.firing().isEmpty());
+        // after its wait, held: cut at its maximum time
+        renderFrames(m_doc, 50);
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 160);
+        QVERIFY(safety.firing().isEmpty());
+        scene->stop(FunctionParent::master());
+        renderFrames(m_doc, 55);
+        // disarmed while it fires
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 25);
+        QCOMPARE(safety.firing().count(), 1);
+        safety.disarm();
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.firing().isEmpty());
+        scene->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+
+        // the log: armed, each fire (number, name, time, what ended it), disarmed
+        // (lines of text: CRLF on Windows)
+        const QStringList lines = readUtf8(logFile).remove('\r').split('\n', Qt::SkipEmptyParts);
+        QCOMPARE(lines.count(), 5);
+        for (const QString &line : lines)
+            QVERIFY2(stamp.match(line).hasMatch(), qPrintable(line));
+        QVERIFY(lines.at(0).endsWith("\t\t\t\tSpecial effects armed"));
+        QCOMPARE(lines.at(1).section('\t', 1), QString("1\tCO2 1\t1000 ms\treleased"));
+        QCOMPARE(lines.at(2).section('\t', 1), QString("1\tCO2 1\t3000 ms\tcut at its maximum time"));
+        QVERIFY(lines.at(3).endsWith("\t\t\t\tSpecial effects disarmed: by hand"));
+        QCOMPARE(lines.at(4).section('\t', 1), QString("1\tCO2 1\t500 ms\tdisarmed"));
+        // (each fire when it started)
+        QVERIFY(lines.at(1).left(23) <= lines.at(2).left(23));
+
+        // the last fires, newest first
+        QCOMPARE(recent.count(), 3);
+        QVariantList fires = safety.recentFires();
+        QCOMPARE(fires.count(), 3);
+        QCOMPARE(fires.at(0).toMap().value("reason").toString(), QString("disarmed"));
+        QCOMPARE(fires.at(0).toMap().value("ms").toInt(), 500);
+        QCOMPARE(fires.at(1).toMap().value("reason").toString(), QString("time"));
+        QCOMPARE(fires.at(1).toMap().value("reasonText").toString(), QString("cut at its maximum time"));
+        QCOMPARE(fires.at(2).toMap().value("reason").toString(), QString("released"));
+        QCOMPARE(fires.at(2).toMap().value("ms").toInt(), 1000);
+        QCOMPARE(fires.at(2).toMap().value("name").toString(), QString("CO2 1"));
+        QCOMPARE(fires.at(2).toMap().value("number").toInt(), 1);
+        QVERIFY(QRegularExpression("^\\d\\d:\\d\\d:\\d\\d$").match(fires.at(2).toMap().value("time").toString()).hasMatch());
+        // ten at most
+        QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+        QVERIFY(safety.arm());
+        for (int i = 0; i < 12; i++)
+        {
+            scene->start(m_doc->masterTimer(), FunctionParent::master());
+            renderFrames(m_doc, 3);
+            scene->stop(FunctionParent::master());
+            renderFrames(m_doc, 2);
+        }
+        fires = safety.recentFires();
+        QCOMPARE(fires.count(), 10);
+        QCOMPARE(fires.first().toMap().value("reason").toString(), QString("released"));
+        QCOMPARE(fires.first().toMap().value("ms").toInt(), 60);
+        safety.disarm();
+        QCOMPARE(readUtf8(logFile).remove('\r').split('\n', Qt::SkipEmptyParts).count(), 5 + 1 + 12 + 1);
+    }
+
+    // a log that can't be written (its folder is a file): said once, the
+    // effects arm and fire all the same
+    QVERIFY(QFile::remove(logFile));
+    QVERIFY(QDir(data.path + "/effects-log").removeRecursively());
+    QVERIFY(writeBytes(data.path + "/effects-log", "not a folder"));
+    {
+        SafetyManager safety(m_doc, m_patch, &settings);
+        QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+        QVERIFY(safety.arm());
+        QCOMPARE(messages.count(), 1);
+        QVERIFY(messages.first().at(1).toBool());
+        QVERIFY(safety.logFile().isEmpty());
+        safety.disarm();
+        QVERIFY(safety.arm());
+        safety.disarm();
+        QCOMPARE(messages.count(), 1);
+    }
+}
+
+void Backend_Test::safetyFireLogRemoved()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    // (another one: the effects stay armed)
+    patchSfx(m_patch, m_doc, "CO2 2", 62);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    renderFrames(m_doc);
+    QVERIFY(safety.arm());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 10);
+    QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+
+    // deleted while it fires: still told as it was until its end comes,
+    // then logged as removed with its number and name
+    QVERIFY(m_doc->deleteFixture(co2));
+    QCOMPARE(safety.firing().count(), 1);
+    QCOMPARE(safety.firing().first().toMap().value("name").toString(), QString("CO2 1"));
+    QCOMPARE(safety.firing().first().toMap().value("number").toInt(), 1);
+    renderFrames(m_doc, 2);
+    QVERIFY(safety.firing().isEmpty());
+    QVERIFY(safety.armed());
+    const QVariantList fires = safety.recentFires();
+    QCOMPARE(fires.count(), 1);
+    QCOMPARE(fires.first().toMap().value("name").toString(), QString("CO2 1"));
+    QCOMPARE(fires.first().toMap().value("number").toInt(), 1);
+    QCOMPARE(fires.first().toMap().value("reason").toString(), QString("removed"));
+    const QStringList lines = readUtf8(safety.logFile()).remove('\r').split('\n', Qt::SkipEmptyParts);
+    QVERIFY(lines.isEmpty() == false);
+    QVERIFY2(lines.last().section('\t', 1).startsWith("1\tCO2 1\t"), qPrintable(lines.last()));
+    QVERIFY2(lines.last().endsWith(" ms\tremoved"), qPrintable(lines.last()));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    safety.disarm();
+}
+
+void Backend_Test::safetyNotSavedArmed()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Armed.qxw");
+    QString logFile;
+    {
+        DtcCore core;
+        patchSfx(core.patch(), core.doc(), "CO2 1", 61);
+        QVERIFY(core.safety()->arm());
+        logFile = core.safety()->logFile();
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        // (saving doesn't disarm)
+        QVERIFY(core.safety()->armed());
+    }
+    // the end of the program disarmed them
+    QVERIFY(readUtf8(logFile).contains("\t\t\t\tSpecial effects disarmed: the program closed"));
+
+    const QString file = readUtf8(path);
+    QVERIFY(file.contains("Protected=\"1\""));
+    QVERIFY(file.contains("armed", Qt::CaseInsensitive) == false);
+    QVERIFY(file.contains("token", Qt::CaseInsensitive) == false);
+    {
+        DtcCore core;
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(core.safety()->hasProtected());
+        QVERIFY(core.safety()->armed() == false);
+        for (Universe *universe : core.doc()->inputOutputMap()->universes())
+            QCOMPARE(universe->outputLayer()->armToken, 0u);
+    }
+}
+
+void Backend_Test::planLiveStatesFinal()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    auto dimmerOf = [this](quint32 id) {
+        for (const QVariant &v : m_patch->liveStates())
+            if (v.toMap().value("id").toUInt() == id)
+                return v.toMap().value("dimmer").toDouble();
+        return -1.0;
+    };
+    // disarmed: dark, though its scene plays; the PAR as before
+    QCOMPARE(renderedValue(m_doc, 60), 255);
+    QCOMPARE(dimmerOf(co2), 0.0);
+    QCOMPARE(dimmerOf(par), 1.0);
+
+    // armed and pressed again: lit, and never by the grand master
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QVERIFY(safety.arm());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(dimmerOf(co2), 1.0);
+    m_doc->inputOutputMap()->setGrandMasterValue(51);
+    renderFrames(m_doc);
+    QCOMPARE(dimmerOf(par), 0.2);
+    QCOMPARE(dimmerOf(co2), 1.0);
+    // disarmed: dark at once
+    safety.disarm();
+    renderFrames(m_doc);
+    QCOMPARE(dimmerOf(co2), 0.0);
+    m_doc->inputOutputMap()->setGrandMasterValue(255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+void Backend_Test::safetyMappingTarget()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    ControlMapper *mapper = core.mapping();
+    QSignalSpy messages(safety, SIGNAL(message(QString,bool)));
+    QSignalSpy disarmed(safety, SIGNAL(disarmed(QString)));
+
+    // a button among the targets, by its name
+    QVariantMap info;
+    for (const QVariant &v : mapper->targets())
+        if (v.toMap().value("target").toString() == "armEffects")
+            info = v.toMap();
+    QCOMPARE(info.value("kind").toString(), QString("button"));
+    QCOMPARE(info.value("name").toString(), QString("Arm the special effects"));
+    QCOMPARE(info.value("needs").toString(), QString());
+    QVERIFY(mapper->isButton("armEffects"));
+    QCOMPARE(mapper->describeTarget({ { "target", "armEffects" } }), QString("Arm the special effects"));
+    const QVariantMap toggle({ { "target", "armEffects" } });
+    QCOMPARE(mapper->targetState(toggle), 0);
+
+    // nothing protected: refused, and said
+    mapper->pressTarget(toggle, true);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.takeFirst().at(1).toBool(), true);
+
+    const quint32 co2 = patchSfx(core.patch(), core.doc(), "CO2 1", 61);
+    QVERIFY(co2 != Fixture::invalidId());
+    // toggle (the default): a press arms, a release does nothing, the next press disarms
+    mapper->pressTarget(toggle, true);
+    QVERIFY(safety->armed());
+    QCOMPARE(mapper->targetState(toggle), 1);
+    mapper->pressTarget(toggle, false);
+    QVERIFY(safety->armed());
+    mapper->pressTarget(toggle, true);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(mapper->targetState(toggle), 0);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+
+    // on: arms; pressed again it stays the same arming (no new token: what
+    // fires goes on); off: disarms, and again nothing more
+    const QVariantMap on({ { "target", "armEffects" }, { "mode", "on" } });
+    const QVariantMap off({ { "target", "armEffects" }, { "mode", "off" } });
+    mapper->pressTarget(on, true);
+    QVERIFY(safety->armed());
+    const quint32 token = safety->armToken();
+    QVERIFY(token != 0);
+    mapper->pressTarget(on, true);
+    mapper->pressTarget(on, false);
+    QVERIFY(safety->armed());
+    QCOMPARE(safety->armToken(), token);
+    QCOMPARE(mapper->targetState(off), 1);
+    mapper->pressTarget(off, true);
+    QVERIFY(safety->armed() == false);
+    mapper->pressTarget(off, true);
+    mapper->pressTarget(on, false);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    disarmed.clear();
+
+    // flash: armed while held (the release disarms)
+    const QVariantMap flash({ { "target", "armEffects" }, { "mode", "flash" } });
+    mapper->pressTarget(flash, true);
+    QVERIFY(safety->armed());
+    mapper->pressTarget(flash, false);
+    QVERIFY(safety->armed() == false);
+
+    // a right click (stopTarget): disarmed; disarmed, it stays so
+    QVERIFY(safety->arm());
+    disarmed.clear();
+    mapper->stopTarget(on);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    mapper->stopTarget(toggle);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+
+    // a key mapped to it: each press toggles, a release does nothing
+    QVERIFY(mapper->addMapping({ { "source", "key" }, { "key", "a" }, { "target", "armEffects" } }) > 0);
+    QVERIFY(mapper->keyEvent("A", true));
+    QVERIFY(mapper->keyEvent("A", false));
+    QVERIFY(safety->armed());
+    QVERIFY(mapper->keyEvent("A", true));
+    QVERIFY(mapper->keyEvent("A", false));
+    QVERIFY(safety->armed() == false);
+    // Blackout on: refused, said
+    core.setBlackout(true);
+    messages.clear();
+    QVERIFY(mapper->keyEvent("A", true));
+    QVERIFY(mapper->keyEvent("A", false));
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(mapper->targetState(toggle), 0);
+    core.setBlackout(false);
+    // armed, Stop all and Blackout disarm it: its state follows
+    QVERIFY(safety->arm());
+    core.stopAll();
+    QCOMPARE(mapper->targetState(toggle), 0);
+
+    // learnt on a controller: an RGB pad lights red while armed (100 % on the
+    // APC mini mk2, solid on the APC40 mkII), a pad of the APC mini red; dark
+    // disarmed. A button with a single LED keeps its own, and a device that
+    // isn't a known controller has no LEDs of its own
+    const quint32 note = 128;
+    auto learn = [&](const QString &device, quint32 channel) {
+        mapper->startLearn(toggle);
+        mapper->handleInput("midi", device, channel, QString(), 254);
+        mapper->handleInput("midi", device, channel, QString(), 0);
+        return mapper->mappings().last().toMap();
+    };
+    auto leds = [](const QVariantMap &m) {
+        return QList<int>({ m.value("onValue").toInt(), m.value("onChannel").toInt(), m.value("pausedValue").toInt(),
+                            m.value("pausedChannel").toInt(), m.value("offValue").toInt(), m.value("offChannel").toInt() });
+    };
+    mapper->setLearnMode(true);
+    const QVariantMap pad = learn("MIDI|APC mini mk2", note + 5);
+    QCOMPARE(pad.value("target").toString(), QString("armEffects"));
+    QCOMPARE(pad.value("mode").toString(), QString("toggle"));
+    QCOMPARE(leds(pad), QList<int>({ 5, 7, 5, 7, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC mini mk2", note + 112)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC MINI", note + 5)), QList<int>({ 3, 0, 3, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC MINI", note + 82)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 32)), QList<int>({ 5, 1, 5, 1, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", (3 << 12) | (note + 50))), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|nanoKONTROL2", note + 5)), QList<int>({ 127, 0, 64, 0, 0, 0 }));
+    mapper->setLearnMode(false);
+    // (learning never armed)
+    QVERIFY(safety->armed() == false);
+    // the pad: a press arms it, its state lit
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 5, QString(), 254);
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 5, QString(), 0);
+    QVERIFY(safety->armed());
+    QCOMPARE(mapper->targetState(pad), 1);
+    safety->disarm();
+
+    // an action of a cue never arms (a show edited by hand); its other
+    // actions are done
+    Cuelist *cl = new Cuelist(core.doc());
+    QVERIFY(core.doc()->addFunction(cl));
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.actions = { { { "target", "armEffects" }, { "mode", "on" } }, { { "target", "bpm" }, { "value", "90" } } };
+    QCOMPARE(cl->addCue(cue), 0);
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotCueActions", Qt::DirectConnection,
+                                      Q_ARG(quint32, cl->id()), Q_ARG(quint32, cl->cueAt(0).uid)));
+    QCOMPARE(core.bpm(), 90);
+    QVERIFY(safety->armed() == false);
+}
+
+void Backend_Test::safetySurfaceAction()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    ShowSurface *surface = core.surface();
+    QVERIFY(patchSfx(core.patch(), core.doc(), "CO2 1", 61) != Fixture::invalidId());
+    QSignalSpy disarmed(safety, SIGNAL(disarmed(QString)));
+
+    // toggle: a press arms, a release does nothing, the next press disarms
+    // (a button without a mode, an older one, toggles too)
+    const QVariantMap toggle({ { "action", "armEffects" }, { "mode", "toggle" } });
+    QVERIFY(surface->isActive(toggle) == false);
+    surface->press(toggle);
+    QVERIFY(safety->armed());
+    QVERIFY(surface->isActive(toggle));
+    surface->release(toggle);
+    QVERIFY(safety->armed());
+    surface->press({ { "action", "armEffects" } });
+    QVERIFY(safety->armed() == false);
+    QVERIFY(surface->isActive(toggle) == false);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+
+    // on: arms, again the same arming; off: disarms. Lit while armed,
+    // whatever its mode
+    const QVariantMap on({ { "action", "armEffects" }, { "mode", "on" } });
+    const QVariantMap off({ { "action", "armEffects" }, { "mode", "off" } });
+    surface->press(on);
+    QVERIFY(safety->armed());
+    const quint32 token = safety->armToken();
+    surface->press(on);
+    surface->release(on);
+    QCOMPARE(safety->armToken(), token);
+    QVERIFY(surface->isActive(off));
+    surface->press(off);
+    QVERIFY(safety->armed() == false);
+    surface->press(off);
+    QVERIFY(safety->armed() == false);
+    QVERIFY(surface->isActive(on) == false);
+    QCOMPARE(disarmed.count(), 1);
+    disarmed.clear();
+    // a flash (a show edited by hand) is a toggle: a release never disarms
+    // nor arms it
+    const QVariantMap flash({ { "action", "armEffects" }, { "mode", "flash" } });
+    surface->press(flash);
+    surface->release(flash);
+    QVERIFY(safety->armed());
+    surface->press(flash);
+    QVERIFY(safety->armed() == false);
+    disarmed.clear();
+
+    // the buttons follow the arming from anywhere (the top bar, a pad, Esc)
+    QSignalSpy revision(surface, SIGNAL(revisionChanged()));
+    QVERIFY(safety->arm());
+    QVERIFY(revision.count() >= 1);
+    QVERIFY(surface->isActive(toggle));
+    revision.clear();
+    core.stopAll();
+    QVERIFY(revision.count() >= 1);
+    QVERIFY(surface->isActive(toggle) == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("stopAll"));
+
+    // a right click disarms, whatever its mode; disarmed, nothing more
+    surface->press(toggle);
+    QVERIFY(safety->armed());
+    surface->stop(on);
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+    surface->stop(toggle);
+    QVERIFY(safety->armed() == false);
+    QVERIFY(disarmed.isEmpty());
+
+    // Blackout on: a press is refused, the button stays dark
+    core.setBlackout(true);
+    surface->press(toggle);
+    QVERIFY(safety->armed() == false);
+    QVERIFY(surface->isActive(toggle) == false);
+    core.setBlackout(false);
+
+    // Alt+click on the button of the top bar: a native button that toggles
+    const QVariantMap at = surface->addFromTarget({ { "target", "armEffects" } });
+    QVERIFY(at.isEmpty() == false);
+    const QVariantMap made = surface->item(at.value("page").toInt(), at.value("section").toString(), at.value("cell").toInt());
+    QCOMPARE(made.value("action").toString(), QString("armEffects"));
+    QCOMPARE(made.value("mode").toString(), QString("toggle"));
+    QCOMPARE(made.value("color").toString(), QString("#e5484d"));
+    surface->press(made);
+    QVERIFY(safety->armed());
+    surface->press(made);
+    QVERIFY(safety->armed() == false);
+
+    // a surface without a core (no mappings): nothing arms
+    ShowSurface bare(core.doc(), core.zones());
+    bare.press(toggle);
+    QVERIFY(safety->armed() == false);
+    QVERIFY(bare.isActive(toggle) == false);
+}
+
+void Backend_Test::safetyRemoteArm()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    RemoteServer *remote = core.remote();
+    auto state = [&]() { return remote->stateMessage().value("safety").toMap(); };
+
+    // no protected fixture: the phone hides its button
+    QVariantMap s = state();
+    QCOMPARE(s.value("hasProtected").toBool(), false);
+    QCOMPARE(s.value("armed").toBool(), false);
+    QCOMPARE(s.value("disarmIn").toInt(), -1);
+    QCOMPARE(s.value("firing").toStringList(), QStringList());
+    remote->handleCommand({ { "cmd", "global" }, { "action", "arm" }, { "on", true } });
+    QVERIFY(safety->armed() == false);
+
+    const quint32 co2 = patchSfx(core.patch(), core.doc(), "CO2 1", 61);
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "minWaitMs", 0));
+    QCOMPARE(state().value("hasProtected").toBool(), true);
+
+    // on: true arms; again, the same arming
+    QSignalSpy disarmed(safety, SIGNAL(disarmed(QString)));
+    remote->handleCommand({ { "cmd", "global" }, { "action", "arm" }, { "on", true } });
+    QVERIFY(safety->armed());
+    const quint32 token = safety->armToken();
+    remote->handleCommand({ { "cmd", "global" }, { "action", "arm" }, { "on", true } });
+    QCOMPARE(safety->armToken(), token);
+    s = state();
+    QCOMPARE(s.value("armed").toBool(), true);
+    // (10 minutes by default)
+    QVERIFY2(s.value("disarmIn").toInt() >= 590 && s.value("disarmIn").toInt() <= 600, qPrintable(s.value("disarmIn").toString()));
+
+    // on: false disarms (by hand)
+    remote->handleCommand({ { "cmd", "global" }, { "action", "arm" }, { "on", false } });
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.takeFirst().at(0).toString(), QString("hand"));
+    QCOMPARE(state().value("armed").toBool(), false);
+    QCOMPARE(state().value("disarmIn").toInt(), -1);
+    // anything but on: true disarms (a message without it, a text "true")
+    for (const QVariantMap &wrong : { QVariantMap({ { "cmd", "global" }, { "action", "arm" } }),
+                                      QVariantMap({ { "cmd", "global" }, { "action", "arm" }, { "on", "true" } }),
+                                      QVariantMap({ { "cmd", "global" }, { "action", "arm" }, { "on", 1 } }) })
+    {
+        QVERIFY(safety->arm());
+        remote->handleCommand(wrong);
+        QVERIFY(safety->armed() == false);
+    }
+
+    // a SHOW button (Alt+click on the one of the top bar) arms from the
+    // phone too, lit in its state; its label, red, with a flame
+    const QVariantMap at = core.surface()->addFromTarget({ { "target", "armEffects" } });
+    const int page = at.value("page").toInt();
+    const QString section = at.value("section").toString();
+    const int cell = at.value("cell").toInt();
+    const QString key = QString("%1/%2/%3").arg(page).arg(section).arg(cell);
+    QCOMPARE(remote->stateMessage().value("items").toMap().value(key).toMap().value("active").toBool(), false);
+    remote->handleCommand({ { "cmd", "press" }, { "page", page }, { "section", section }, { "cell", cell } });
+    remote->handleCommand({ { "cmd", "release" }, { "page", page }, { "section", section }, { "cell", cell } });
+    QVERIFY(safety->armed());
+    QCOMPARE(remote->stateMessage().value("items").toMap().value(key).toMap().value("active").toBool(), true);
+    const QVariantMap root = remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap();
+    const QVariantMap shown = root.value("items").toMap().value(QString::number(cell)).toMap();
+    QCOMPARE(shown.value("label").toString(), QString("Arm effects"));
+    QCOMPARE(shown.value("color").toString(), QString("#e5484d"));
+    QCOMPARE(shown.value("icon").toString(), QString(QChar(0xf06d)));
+    // one that only disarms says so, with the power sign (as on the banner);
+    // one that only arms, as the toggle
+    auto shownItem = [&]() {
+        return remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap()
+            .value("items").toMap().value(QString::number(cell)).toMap();
+    };
+    core.surface()->setItem(page, section, cell, { { "mode", "off" } });
+    QCOMPARE(shownItem().value("label").toString(), QString("Disarm effects"));
+    QCOMPARE(shownItem().value("icon").toString(), QString(QChar(0xf011)));
+    core.surface()->setItem(page, section, cell, { { "mode", "on" } });
+    QCOMPARE(shownItem().value("label").toString(), QString("Arm effects"));
+    QCOMPARE(shownItem().value("icon").toString(), QString(QChar(0xf06d)));
+    core.surface()->setItem(page, section, cell, { { "mode", "toggle" } });
+    // (one without a colour: red too)
+    core.surface()->setItem(page, section, cell, { { "color", QString() } });
+    QCOMPARE(remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap()
+                 .value("items").toMap().value(QString::number(cell)).toMap().value("color").toString(), QString("#e5484d"));
+
+    // what fires: by name (the universes run)
+    Scene *made = new Scene(core.doc());
+    made->setValue(co2, 0, 255);
+    QVERIFY(core.doc()->addFunction(made));
+    Universe *universe = core.doc()->inputOutputMap()->universes().at(0);
+    // (a frame with the effect first: then pressed)
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    made->start(core.doc()->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(int(universe->finalValue(60)), 255, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(state().value("firing").toStringList(), QStringList({ "CO2 1" }), 3000);
+    // Esc on the phone (Stop all): disarmed, nothing fires
+    remote->handleCommand({ { "cmd", "global" }, { "action", "stopAll" } });
+    QVERIFY(safety->armed() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(int(universe->finalValue(60)), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(state().value("firing").toStringList(), QStringList(), 3000);
+}
+
+void Backend_Test::safetyClosing()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+
+    // the program closes (releaseOutput): disarmed and sent; from then on
+    // nothing arms them again (the phone, a pad, a button of the SHOW)
+    {
+        SafetyManager safety(m_doc, m_patch, &settings);
+        QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.arm());
+        safety.disarmAndFlush("exit");
+        QVERIFY(safety.armed() == false);
+        QVERIFY(safety.arm() == false);
+        safety.toggleArmed();
+        QVERIFY(safety.armed() == false);
+        QCOMPARE(int(safety.armToken()), 0);
+        QCOMPARE(int(universe->outputLayer()->armToken), 0);
+        // (refused without a word: nothing to tell while it closes)
+        QVERIFY(messages.isEmpty());
+    }
+    {
+        SafetyManager safety(m_doc, m_patch, &settings);
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.arm());
+        // (another show: arming again is fine)
+        safety.disarmAndFlush("show");
+        QVERIFY(safety.arm());
+        safety.disarm();
+    }
+
+    // gone while armed (not through releaseOutput): disarmed, and the 0 is
+    // on the wire at once, without one more frame
+    {
+        SafetyManager safety(m_doc, m_patch, &settings);
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.arm());
+        renderFrames(m_doc);
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QCOMPARE(wire->wireAt(60), 255);
+    }
+    QCOMPARE(wire->wireAt(60), 0);
+    QVERIFY(wire->lastChanged);
+    QCOMPARE(int(universe->outputLayer()->armToken), 0);
+    QCOMPARE(universe->sentLayerSerial(), universe->outputLayer()->serial);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    universe->setOutputPatch(nullptr, QLCIOPlugin::invalidLine(), 0);
+}
+
+void Backend_Test::safetyEventSignals()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    renderFrames(m_doc, 2);
+    QSignalSpy firing(&safety, SIGNAL(firingChanged()));
+    QSignalSpy waiting(&safety, SIGNAL(waitingChanged()));
+    QSignalSpy revision(&safety, SIGNAL(revisionChanged()));
+
+    // a chaser on a CO2, disarmed: a refusal and a release at each step.
+    // Nothing fires: what shows the fires isn't told
+    for (int step = 0; step < 4; step++)
+    {
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ co2 }));
+        scene->stop(FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QVERIFY(safety.waiting().isEmpty());
+    }
+    QCOMPARE(firing.count(), 0);
+    QCOMPARE(waiting.count(), 8);
+    QCOMPARE(revision.count(), 8);
+
+    // armed: it fires and is let go; what waits doesn't change
+    QVERIFY(safety.arm());
+    renderFrames(m_doc);
+    firing.clear();
+    waiting.clear();
+    revision.clear();
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(firing.count(), 2);
+    QCOMPARE(waiting.count(), 0);
+    QCOMPARE(revision.count(), 2);
+
+    // cut at its time: it fires no more and waits for a release (both)
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 100));
+    renderFrames(m_doc);
+    firing.clear();
+    waiting.clear();
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 10);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ co2 }));
+    QCOMPARE(firing.count(), 2);
+    QCOMPARE(waiting.count(), 1);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(waiting.count(), 2);
+    safety.disarm();
+}
+
+void Backend_Test::effectImportKeepsProtection()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Source.qxw");
+    {
+        // another show: «JET 1» protected by hand with times of its own,
+        // «JET 2» with the icon of a CO2 jet, a CO2 unprotected by hand
+        DtcCore source;
+        PatchManager *patch = source.patch();
+        const quint32 jet1 = patchSfx(patch, source.doc(), "JET 1", 1);
+        const quint32 jet2 = patchSfx(patch, source.doc(), "JET 2", 2);
+        const quint32 co2 = patchSfx(patch, source.doc(), "CO2 3", 3);
+        QVERIFY(patch->isProtected(jet1) == false);
+        QVERIFY(patch->isProtected(jet2) == false);
+        QVERIFY(patch->setEffectSetting({ jet1 }, "protected", true));
+        QVERIFY(patch->setEffectSetting({ jet1 }, "maxFireMs", 1500));
+        QVERIFY(patch->setEffectSetting({ jet1 }, "minWaitMs", 4000));
+        patch->setFixtureIcon({ jet2 }, "co2");
+        QVERIFY(patch->isProtected(jet2));
+        QVERIFY(patch->setEffectSetting({ co2 }, "protected", false));
+        Scene *scene = new Scene(source.doc());
+        scene->setName("Jets");
+        scene->setValue(jet1, 0, 255);
+        scene->setValue(jet2, 0, 255);
+        scene->setValue(co2, 0, 255);
+        QVERIFY(source.doc()->addFunction(scene));
+        QVERIFY(source.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    // its patch and its scenes into this one (a fixture of its own where
+    // they were: the copies go after it)
+    DtcCore core;
+    QVERIFY(patchSfx(core.patch(), core.doc(), "PAR", 1) != Fixture::invalidId());
+    const QString done = core.importFromShow(QUrl::fromLocalFile(path), true, true);
+    QVERIFY2(done.isEmpty() == false, qPrintable(core.lastError()));
+    auto copyOf = [&core](const QString &name) -> Fixture * {
+        for (Fixture *fxi : core.doc()->fixtures())
+            if (fxi->name() == name)
+                return fxi;
+        return nullptr;
+    };
+    Fixture *jet1 = copyOf("JET 1");
+    Fixture *jet2 = copyOf("JET 2");
+    Fixture *co2 = copyOf("CO2 3");
+    QVERIFY(jet1 != nullptr && jet2 != nullptr && co2 != nullptr);
+    PatchManager *patch = core.patch();
+    // protected as there, with its times; the icon too
+    QVERIFY(patch->isProtected(jet1->id()));
+    QCOMPARE(patch->effectRule(jet1->id()).maxFireMs, 1500u);
+    QCOMPARE(patch->effectRule(jet1->id()).minWaitMs, 4000u);
+    QVERIFY(patch->isProtected(jet2->id()));
+    QCOMPARE(patch->fixtureIcon(jet2->id()), QString("co2"));
+    QCOMPARE(planFixture(patch, jet2->id()).value("kind").toString(), QString("co2"));
+    // fail closed: what that show said never unprotects a CO2 here
+    QVERIFY(patch->isProtected(co2->id()));
+    QVERIFY(core.safety()->hasProtected());
+
+    // the scene that came with them plays, disarmed: none of them goes out
+    Function *jets = nullptr;
+    for (Function *f : core.doc()->functions())
+        if (f->name() == "Jets")
+            jets = f;
+    QVERIFY(jets != nullptr);
+    Universe *universe = core.doc()->inputOutputMap()->universes().at(0);
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), core.safety()->serial(), 3000);
+    for (Fixture *fxi : { jet1, jet2, co2 })
+        QVERIFY(universe->outputLayer()->role(int(fxi->address())) != OutputLayer::Free);
+    jets->start(core.doc()->masterTimer(), FunctionParent::master());
+    for (Fixture *fxi : { jet1, jet2, co2 })
+        QTRY_COMPARE_WITH_TIMEOUT(renderedValue(core.doc(), int(fxi->address())), 255, 3000);
+    QTest::qWait(100);
+    for (Fixture *fxi : { jet1, jet2, co2 })
+        QCOMPARE(int(universe->finalValue(int(fxi->address()))), 0);
+    jets->stop(FunctionParent::master());
+}
+
+void Backend_Test::effectOlderShowTold()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Older.qxw");
+    const QString fogDef = QDir(QStringLiteral(DTC_SYSTEM_FIXTURES)).filePath("Stairville/Stairville-AF-180-LED-Fogger-Co2-FX.qxf");
+    quint32 flame = 0, par = 0, fogger = 0;
+    QByteArray saved;
+    {
+        // a fireplace lamp called «Fuego chimenea» and a fog machine whose
+        // model says CO2: protected by their kind
+        DtcCore core;
+        QVERIFY(core.doc()->fixtureDefCache()->loadQXF(fogDef));
+        flame = patchSfx(core.patch(), core.doc(), "Fuego chimenea", 1);
+        par = patchSfx(core.patch(), core.doc(), "PAR 1", 2);
+        QCOMPARE(core.patch()->addFixtures("Stairville", "AF-180 LED Fogger Co2 FX", "7 Channel", "Fogger", 0, 11, 1), 1);
+        fogger = fixtureAtAddress(core.doc(), 10);
+        QVERIFY(core.patch()->isProtected(flame));
+        QVERIFY(core.patch()->isProtected(fogger));
+        QVERIFY(core.patch()->isProtected(par) == false);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+    }
+    // as a show of an older version: nothing of protection in it
+    QString old = QString::fromUtf8(saved);
+    old.remove(QRegularExpression(" (Protected|MaxFire|MinWait|Safety|SafetyFrom|SafetyTo)=\"[^\"]*\""));
+    QVERIFY(old.contains("Protected") == false);
+    QVERIFY(writeBytes(path, old.toUtf8()));
+    {
+        // opened: protected all the same (fail closed), and said once, once
+        // it is open, with their names
+        DtcCore core;
+        QVERIFY(core.doc()->fixtureDefCache()->loadQXF(fogDef));
+        QSignalSpy messages(core.patch(), SIGNAL(protectionMessage(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(core.patch()->isProtected(flame));
+        QVERIFY(core.patch()->isProtected(fogger));
+        QVERIFY(core.patch()->isProtected(par) == false);
+        QTRY_COMPARE_WITH_TIMEOUT(messages.count(), 1, 2000);
+        QTest::qWait(50);
+        QCOMPARE(messages.count(), 1);
+        const QString text = messages.first().at(0).toString();
+        QVERIFY2(text.startsWith("2 fixture(s) of this show are protected special effects now: Fuego chimenea, Fogger. "),
+                 qPrintable(text));
+        QVERIFY(text.contains("Patch › Special effect"));
+        // saved by this version: the file says it
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+    }
+    {
+        // opened again: nothing new to say
+        DtcCore core;
+        QVERIFY(core.doc()->fixtureDefCache()->loadQXF(fogDef));
+        QSignalSpy messages(core.patch(), SIGNAL(protectionMessage(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QTest::qWait(100);
+        QCOMPARE(messages.count(), 0);
+        QVERIFY(core.patch()->isProtected(flame));
+        QVERIFY(core.patch()->isProtected(fogger));
+    }
+}
+
+void Backend_Test::effectPyroWords()
+{
+    // the words of pyrotechnics (Spanish, Portuguese, Italian, Catalan,
+    // French, German) and the French fire: a flame
+    for (const char *name : { "PIRO 1", "Piro", "PIROS", "piro_2", "BigPiro", "Pirotecnia", "PIROTECNIA 2", "Pirotécnico 3",
+                              "Pirotécnica", "pirotecnico", "Pirotecnica L", "Pirotècnia", "Pyrotechnie 1", "Pyrotechnik",
+                              "FEU 2", "Feu" })
+        QVERIFY2(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", name) == "flame", name);
+    QCOMPARE(PatchManager::kindFromWords("Acme Fuente pirotécnica"), QString("flame"));
+    // (whole words: a name that only starts so is none)
+    QCOMPARE(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", "PAR Piroulette"), QString("wash"));
+    // (the lights of a French stage, «feux», «plein feu», are no fire)
+    for (const char *name : { "Piroetta 1", "Pirouette", "Piropo", "Vampiro", "Papiro 2", "Spiro", "Feutre", "Feux",
+                              "FEUX RAMPE", "Feux de rampe", "Plein feu", "Plein-feu", "Pleins feux" })
+        QVERIFY2(PatchManager::fixtureKind("Generic", "Generic", "Dimmer", name) == "dimmer", name);
+
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    {
+        // patched: protected; disarmed, a scene at full gives them 0, and the
+        // PAR goes out
+        AppSettings settings;
+        SafetyManager safety(m_doc, m_patch, &settings);
+        const quint32 piro = patchSfx(m_patch, m_doc, "PIRO 1", 1);
+        const quint32 pirotecnia = patchSfx(m_patch, m_doc, "Pirotecnia", 2);
+        const quint32 par = patchSfx(m_patch, m_doc, "PAR Piroulette", 3);
+        QVERIFY(m_patch->isProtected(piro));
+        QVERIFY(m_patch->isProtected(pirotecnia));
+        QVERIFY(m_patch->isProtected(par) == false);
+        Scene *scene = new Scene(m_doc);
+        for (const quint32 id : { piro, pirotecnia, par })
+            scene->setValue(id, 0, 255);
+        QVERIFY(m_doc->addFunction(scene));
+        scene->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc, 2);
+        QCOMPARE(finalOut(m_doc, 0), 0);
+        QCOMPARE(finalOut(m_doc, 1), 0);
+        QCOMPARE(finalOut(m_doc, 2), 255);
+        scene->stop(FunctionParent::master());
+        renderFrames(m_doc);
+    }
+
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Pyro.qxw");
+    quint32 piro = 0, pirotecnia = 0, par = 0;
+    QByteArray saved;
+    {
+        DtcCore core;
+        piro = patchSfx(core.patch(), core.doc(), "PIRO 1", 1);
+        pirotecnia = patchSfx(core.patch(), core.doc(), "Pirotecnia", 2);
+        par = patchSfx(core.patch(), core.doc(), "PAR Piroulette", 3);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+    }
+    // as a show of an older version or of QLC+: nothing of protection in it
+    QString old = QString::fromUtf8(saved);
+    old.remove(QRegularExpression(" (Protected|MaxFire|MinWait|Safety|SafetyFrom|SafetyTo)=\"[^\"]*\""));
+    QVERIFY(old.contains("Protected") == false);
+    QVERIFY(writeBytes(path, old.toUtf8()));
+    {
+        // opened: protected by their name before the output starts, and said
+        DtcCore core;
+        LayerWatch watch(core.doc()->inputOutputMap());
+        QSignalSpy messages(core.patch(), SIGNAL(protectionMessage(QString)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(core.patch()->isProtected(piro));
+        QVERIFY(core.patch()->isProtected(pirotecnia));
+        QVERIFY(core.patch()->isProtected(par) == false);
+        QCOMPARE(core.patch()->kindOf(core.doc()->fixture(piro)), QString("flame"));
+        QCOMPARE(core.patch()->kindOf(core.doc()->fixture(par)), QString("wash"));
+        const int universes = int(core.doc()->inputOutputMap()->universesCount());
+        QTRY_COMPARE_WITH_TIMEOUT(watch.started(), universes, 3000);
+        QCOMPARE(watch.startedWithUnits(), universes);
+        const QSharedPointer<const OutputLayer> layer = core.doc()->inputOutputMap()->universes().at(0)->outputLayer();
+        QCOMPARE(int(layer->role(0)), int(OutputLayer::Fire));
+        QCOMPARE(int(layer->role(1)), int(OutputLayer::Fire));
+        QCOMPARE(int(layer->role(2)), int(OutputLayer::Free));
+        QTRY_COMPARE_WITH_TIMEOUT(messages.count(), 1, 2000);
+        const QString text = messages.first().at(0).toString();
+        QVERIFY2(text.startsWith("2 fixture(s) of this show are protected special effects now: PIRO 1, Pirotecnia. "),
+                 qPrintable(text));
+    }
+}
+
+/*********************************************************************
+ * Parte 1, S2d: the sources leave the protected special effects out
+ *********************************************************************/
+
+/** The fixtures the programmer has values of, by ID */
+static QList<quint32> programmerFixtures(const Programmer &prog)
+{
+    QList<quint32> ids;
+    for (const SceneValue &scv : prog.sceneValues())
+        if (ids.contains(scv.fxi) == false)
+            ids.append(scv.fxi);
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+void Backend_Test::effectSafetyChannelMode()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy told(m_patch, SIGNAL(protectionMessage(QString)));
+    // a flame machine of two modes: A (Fire, Safety), B (Height, Fire, Reset)
+    QLCFixtureDef *def = new QLCFixtureDef();
+    def->setManufacturer("Test");
+    def->setModel("Flame Machine");
+    def->setType(QLCFixtureDef::Other);
+    auto channel = [def](const QString &name, QLCChannel::Group group) {
+        QLCChannel *ch = new QLCChannel();
+        ch->setName(name);
+        ch->setGroup(group);
+        def->addChannel(ch);
+        return ch;
+    };
+    QLCChannel *fire = channel("Fire", QLCChannel::Intensity);
+    QLCChannel *safe = channel("Safety", QLCChannel::Maintenance);
+    QLCChannel *height = channel("Height", QLCChannel::Speed);
+    QLCChannel *reset = channel("Reset", QLCChannel::Maintenance);
+    QLCFixtureMode *a = new QLCFixtureMode(def);
+    a->setName("A");
+    a->insertChannel(fire, 0);
+    a->insertChannel(safe, 1);
+    def->addMode(a);
+    QLCFixtureMode *b = new QLCFixtureMode(def);
+    b->setName("B");
+    b->insertChannel(height, 0);
+    b->insertChannel(fire, 1);
+    b->insertChannel(reset, 2);
+    def->addMode(b);
+    m_doc->fixtureDefCache()->addFixtureDef(def);
+    QCOMPARE(m_patch->addFixtures("Test", "Flame Machine", "A", "FLAME 1", 0, 201, 1), 1);
+    const quint32 flame = fixtureAtAddress(m_doc, 200);
+    QVERIFY(m_patch->isProtected(flame));
+    // (the rule of the kinds, as the dialog reads it: «As its kind» asks
+    // before it takes away a protection its kind doesn't give)
+    QVERIFY(planFixture(m_patch, flame).value("kindProtected").toBool());
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 9", 300);
+    QCOMPARE(planFixture(m_patch, par).value("kindProtected").toBool(), false);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", 1));
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyFrom", 200));
+    QCOMPARE(m_patch->effectRule(flame).safety, 1);
+    QCOMPARE(int(sfxUniverse(m_doc)->outputLayer()->role(201)), int(OutputLayer::Safety));
+    told.clear();
+
+    // mode B: what was its safety channel is its fire now. It has none,
+    // and it is said once
+    QCOMPARE(m_patch->updateFixture(flame, QString(), "B", 0, 201), QString());
+    QCOMPARE(m_patch->effectRule(flame).safety, -1);
+    QCOMPARE(m_patch->effectSettings({ flame }).value("safetyChannel").toInt(), -1);
+    QCOMPARE(int(sfxUniverse(m_doc)->outputLayer()->role(201)), int(OutputLayer::Fire));
+    QCOMPARE(told.count(), 1);
+    QVERIFY2(told.first().at(0).toString().contains("FLAME 1"), qPrintable(told.first().at(0).toString()));
+    // armed, a scene that only sets its height: its fire channel stays 0
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(flame, 0, 100);
+    QVERIFY(m_doc->addFunction(scene));
+    renderFrames(m_doc);
+    QVERIFY(safety.arm());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    for (int frame = 0; frame < 20; frame++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 201), 0);
+    }
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    safety.disarm();
+
+    // chosen again in mode B (Reset); redirected in the same mode it stays,
+    // nothing more said
+    QVERIFY(m_patch->setEffectSetting({ flame }, "safetyChannel", 2));
+    told.clear();
+    QCOMPARE(m_patch->updateFixture(flame, "FLAME 2", "B", 0, 211), QString());
+    QCOMPARE(m_patch->effectRule(flame).safety, 2);
+    QCOMPARE(told.count(), 0);
+    // back to mode A: it has no channel 3, none
+    QCOMPARE(m_patch->updateFixture(flame, QString(), "A", 0, 211), QString());
+    QCOMPARE(m_patch->effectRule(flame).safety, -1);
+    QCOMPARE(m_patch->effectSettings({ flame }).value("safetyChannel").toInt(), -1);
+}
+
+void Backend_Test::effectProgrammerMixed()
+{
+    // a CO2, and a flame with colour protected by hand, beside a PAR and a
+    // wash (no gate here: only what the programmer keeps)
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Wash", 0, 71, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Colour flame", 0, 81, 1), 1);
+    const quint32 wash = fixtureAtAddress(m_doc, 70);
+    const quint32 flame = fixtureAtAddress(m_doc, 80);
+    QVERIFY(m_patch->setEffectSetting({ flame }, "protected", true));
+    QVERIFY(m_patch->isProtected(co2) && m_patch->isProtected(flame));
+    QVERIFY(m_patch->isProtected(par) == false && m_patch->isProtected(wash) == false);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    PaletteManager palettes(m_doc, &prog, m_patch);
+    prog.setPalettes(&palettes);
+    QList<quint32> lights = { par, wash };
+    std::sort(lights.begin(), lights.end());
+
+    // @ FULL on the four: the PAR alone has a dimmer that takes it (the CO2
+    // is left out, the RGBs have none)
+    prog.selectFixtures({ co2, par, wash, flame });
+    QCOMPARE(prog.setDimmer(255), 1);
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ par }));
+    // a colour, the dimmer fader, a nudge, Locate
+    prog.setColor(QColor(255, 0, 0));
+    prog.setChannelValue(prog.attributeKey(co2, 0), 200);
+    QCOMPARE(prog.nudgeDimmer(10), 1);
+    QCOMPARE(prog.setChannelFan(prog.attributeKey(co2, 0), 0, 255, false), 1);
+    prog.locate();
+    QCOMPARE(programmerFixtures(prog), lights);
+    QCOMPARE(prog.heldEffects(), 0);
+    // the faders: the PAR's and the wash's, none held
+    const QVariantList faders = prog.channels();
+    QCOMPARE(faders.count(), 4);
+    for (const QVariant &v : faders)
+        QVERIFY2(v.toMap().contains("held") == false, qPrintable(v.toMap().value("key").toString()));
+
+    // the colour wheel of the SHOW on a group of the wash and the flame: the
+    // wash; on the flame alone (its own group): kept, to record it
+    prog.clear();
+    prog.setColorFor({ wash, flame }, QColor(0, 0, 255));
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ wash }));
+    prog.setColorFor({ flame }, QColor(0, 0, 255));
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ wash, flame }));
+    QCOMPARE(prog.heldEffects(), 3);
+    // (and its XY grid the same way: nothing to move here)
+    prog.setPositionFor({ wash, flame }, 0.5, 0.5);
+    QCOMPARE(prog.heldEffects(), 3);
+
+    // a palette «All» with the CO2 in it: recorded from the CO2 alone, then
+    // with the PAR (a selection with the PAR gives the CO2 nothing: it keeps
+    // what it had)
+    prog.clear();
+    prog.selectFixtures({ co2 });
+    QCOMPARE(prog.setDimmer(255), 1);
+    QCOMPARE(prog.heldEffects(), 1);
+    prog.selectFixtures({ co2, par });
+    QCOMPARE(prog.setDimmer(100), 1);
+    QCOMPARE(int(prog.valueMap().value(qMakePair(co2, 0u))), 255);
+    QCOMPARE(int(prog.valueMap().value(qMakePair(par, 0u))), 100);
+    const int all = palettes.record("all", "All");
+    QVERIFY(all > 0);
+    QVERIFY(palettes.valuesFor(all, co2).isEmpty() == false);
+    // applied on the two: the CO2 is left out
+    prog.clear();
+    prog.selectFixtures({ co2, par });
+    palettes.apply(all);
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ par }));
+    // live on its fixtures (a SHOW button): left out too, and it doesn't
+    // come from the palette
+    prog.clear();
+    palettes.setLive(all, -1, true);
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ par }));
+    QVERIFY(prog.paletteRefs().contains(qMakePair(co2, 0u)) == false);
+    QVERIFY(prog.paletteRefs().contains(qMakePair(par, 0u)));
+    palettes.setLive(all, -1, false);
+    // on the CO2 alone: kept (held)
+    prog.clear();
+    prog.selectFixtures({ co2 });
+    palettes.apply(all);
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ co2 }));
+    QCOMPARE(prog.heldEffects(), 1);
+    prog.clear();
+}
+
+void Backend_Test::effectProgrammerProtectedOnly()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 co2b = patchSfx(m_patch, m_doc, "CO2 2", 62);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 63);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+
+    // a selection of only them: what they are given is kept (to record a
+    // scene of them), and shown held
+    prog.selectFixtures({ co2, co2b });
+    QSignalSpy values(&prog, SIGNAL(valuesChanged()));
+    QCOMPARE(prog.setDimmer(255), 2);
+    QCOMPARE(prog.heldEffects(), 2);
+    QVERIFY(values.count() >= 1);
+    const QVariantList faders = prog.channels();
+    QCOMPARE(faders.count(), 1);
+    QCOMPARE(faders.first().toMap().value("held").toBool(), true);
+    QCOMPARE(faders.first().toMap().value("value").toInt(), 255);
+    QCOMPARE(faders.first().toMap().value("active").toBool(), true);
+    // never sent, armed or not
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(safety.arm());
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QVERIFY(safety.firing().isEmpty());
+
+    // recorded: the scene has them, and armed it fires them (a scene is
+    // what fires them)
+    const int id = prog.recordScene("CO2");
+    Scene *scene = qobject_cast<Scene *>(m_doc->function(quint32(qMax(0, id))));
+    QVERIFY(id >= 0 && scene != nullptr);
+    QCOMPARE(int(scene->value(co2, 0)), 255);
+    QCOMPARE(int(scene->value(co2b, 0)), 255);
+    prog.clear();
+    QCOMPARE(prog.heldEffects(), 0);
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+
+    // with a PAR in the selection: its fader, not theirs; what the CO2 holds stays held
+    prog.selectFixtures({ co2 });
+    QCOMPARE(prog.setDimmer(200), 1);
+    prog.selectFixtures({ co2, par });
+    QCOMPARE(prog.channels().count(), 1);
+    QVERIFY(prog.channels().first().toMap().contains("held") == false);
+    QCOMPARE(prog.heldEffects(), 1);
+    // unprotected by hand: its value goes out like any other
+    values.clear();
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "protected", false));
+    QVERIFY(values.count() >= 1);
+    QCOMPARE(prog.heldEffects(), 0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 200);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    prog.clear();
+    safety.disarm();
+    renderFrames(m_doc);
+}
+
+void Backend_Test::effectProgrammerLoadScene()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    scene->setValue(par, 0, 100);
+    QVERIFY(m_doc->addFunction(scene));
+
+    // loaded to edit: the CO2 is kept (held), both are selected
+    QVERIFY(prog.loadScene(scene->id()));
+    QCOMPARE(prog.selectionIds(), QList<quint32>({ co2, par }));
+    QCOMPARE(int(prog.valueMap().value(qMakePair(co2, 0u))), 255);
+    QCOMPARE(prog.heldEffects(), 1);
+    // changed with both selected: the PAR only; saved again, the CO2 stays
+    QCOMPARE(prog.setDimmer(50), 1);
+    QVERIFY(prog.updateScene(scene->id()));
+    QCOMPARE(int(scene->value(co2, 0)), 255);
+    QCOMPARE(int(scene->value(par, 0)), 50);
+    // (a step loaded the same way)
+    prog.loadValues(scene->values());
+    QCOMPARE(int(prog.valueMap().value(qMakePair(co2, 0u))), 255);
+    prog.clear();
+
+    // a scene with FX: one on the CO2 alone, one on the PAR. The programmer
+    // keeps both (saved again as they were); only the one of the PAR plays
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ co2, par });
+    fx->setValue(co2, 0, 200);
+    fx->setValue(par, 0, 120);
+    FXScene::Layer onCo2 = FxTools::defaultLayer("dimmer");
+    onCo2.fixtures = { co2 };
+    FXScene::Layer onPar = FxTools::defaultLayer("dimmer");
+    onPar.fixtures = { par };
+    fx->setLayers({ onCo2, onPar });
+    QVERIFY(m_doc->addFunction(fx));
+    QVERIFY(prog.loadScene(fx->id()));
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    QCOMPARE(prog.fxLayerList().at(0).fixtures, QList<quint32>({ co2 }));
+    QCOMPARE(prog.fxScene()->layers().count(), 1);
+    QCOMPARE(prog.fxScene()->layers().first().fixtures, QList<quint32>({ par }));
+    QCOMPARE(prog.fxScene()->fixtures(), QList<quint32>({ par }));
+    QCOMPARE(prog.heldEffects(), 1);
+    // the preview of the PAR's: the FX that plays (the second one of the
+    // programmer, the first of its FX scene)
+    prog.selectFixtures({ par });
+    QCOMPARE(prog.fxPreview("dimmer", 0.25).count(), 1);
+    // the CO2 alone has no FX that plays
+    prog.selectFixtures({ co2 });
+    QVERIFY(prog.fxPreview("dimmer", 0.25).isEmpty());
+    QVERIFY(prog.updateScene(fx->id()));
+    QCOMPARE(fx->layers().count(), 2);
+    QCOMPARE(fx->layers().at(0).fixtures, QList<quint32>({ co2 }));
+    QCOMPARE(int(fx->values().value(qMakePair(co2, 0u))), 200);
+    QCOMPARE(int(fx->values().value(qMakePair(par, 0u))), 120);
+    prog.clear();
+    QVERIFY(prog.fxScene()->layers().isEmpty());
+}
+
+void Backend_Test::effectIdentifyHighlight()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    const quint32 par2 = patchSfx(m_patch, m_doc, "PAR 2", 63);
+    // (no gate here: what the sources write is what is read)
+    QCOMPARE(m_patch->identify({ par, co2 }), 1);
+    QCOMPARE(m_patch->identified(), QVariantList({ par }));
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    QCOMPARE(renderedValue(m_doc, 60), 0);
+    // the CO2 alone (the button of its row, the toolbar): nothing, said by the count
+    QCOMPARE(m_patch->toggleIdentify(co2), 1);
+    QCOMPARE(m_patch->identified(), QVariantList({ par }));
+    QCOMPARE(m_patch->identify({ co2 }), 1);
+    QVERIFY(m_patch->identified().isEmpty());
+    QCOMPARE(m_patch->identify({}), 0);
+    // one identified that becomes protected stops blinking
+    QCOMPARE(m_patch->identify({ par, par2 }), 0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 62), 255);
+    QVERIFY(m_patch->setEffectSetting({ par2 }, "protected", true));
+    QCOMPARE(m_patch->identified(), QVariantList({ par }));
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 62), 0);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    m_patch->stopIdentify();
+    QVERIFY(m_patch->setEffectSetting({ par2 }, "protected", false));
+    renderFrames(m_doc, 2);
+
+    // the highlight of a selection with the CO2: never on it
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    prog.selectFixtures({ co2, par });
+    prog.setHighlight(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    QCOMPARE(renderedValue(m_doc, 60), 0);
+    // nor on it alone
+    prog.selectFixtures({ co2 });
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 60), 0);
+    QCOMPARE(renderedValue(m_doc, 61), 0);
+    // one that becomes protected while highlighted goes dark
+    prog.selectFixtures({ par2 });
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 62), 255);
+    QVERIFY(m_patch->setEffectSetting({ par2 }, "protected", true));
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 62), 0);
+    prog.setHighlight(false);
+    renderFrames(m_doc);
+}
+
+void Backend_Test::effectMixerSkips()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    QVERIFY(m_patch->isProtected(co2));
+    LiveMixer mixer(m_doc);
+    mixer.setIsProtected([this](quint32 id) { return m_patch->isProtected(id); });
+    connect(m_patch, &PatchManager::protectionChanged, &mixer, &LiveMixer::updateProtection);
+
+    // Full on every fixture: the PAR, never the CO2 (no gate here: what the
+    // mixer writes is what is read)
+    mixer.set(-1, "full", true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    QCOMPARE(renderedValue(m_doc, 60), 0);
+    // the PAR protected by hand: left out at once; unprotected, it takes it again
+    QVERIFY(m_patch->setEffectSetting({ par }, "protected", true));
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 61), 0);
+    QVERIFY(m_patch->setEffectSetting({ par }, "protected", false));
+    renderFrames(m_doc, 2);
+    QCOMPARE(renderedValue(m_doc, 61), 255);
+    mixer.set(-1, "full", false);
+
+    // armed, with the gate: Flash leaves the CO2 at 0, the PAR at full
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QVERIFY(safety.arm());
+    mixer.set(-1, "flash", true);
+    renderFrames(m_doc, 5);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    QVERIFY(safety.firing().isEmpty());
+    mixer.reset();
+    safety.disarm();
+    renderFrames(m_doc);
+}
+
+void Backend_Test::effectFxCreation()
+{
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    addSfxDef(m_doc, "Flame head", { { "Flame", QLCChannel::Intensity, false }, { "Pan", QLCChannel::Pan, false },
+                                     { "Tilt", QLCChannel::Tilt, false } });
+    QCOMPARE(m_patch->addFixtures("Test", "Flame head", "3ch", "FLAME 1", 0, 71, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 head = fixtureAtAddress(m_doc, 70);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);
+    QVERIFY(m_patch->isProtected(head) && m_patch->isProtected(spot) == false);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    EffectEditor effects(m_doc, &prog, &zones);
+    effects.setIsProtected([this](quint32 id) { return m_patch->isProtected(id); });
+    QSignalSpy said(&effects, SIGNAL(message(QString,bool)));
+    const QString leftOne("1 protected special effect(s) left out of the FX");
+    auto lastSaid = [&said]() { return said.isEmpty() ? QString() : said.last().at(0).toString(); };
+    auto lastError = [&said]() { return said.isEmpty() == false && said.last().at(1).toBool(); };
+    auto groupOf = [this](int id) {
+        RGBMatrix *matrix = qobject_cast<RGBMatrix *>(m_doc->function(quint32(qMax(0, id))));
+        FixtureGroup *group = matrix != nullptr ? m_doc->fixtureGroup(matrix->fixtureGroup()) : nullptr;
+        return group != nullptr ? group->fixtureList() : QList<quint32>({ Fixture::invalidId() });
+    };
+    auto curveOf = [this](int id) {
+        CurveFX *curve = qobject_cast<CurveFX *>(m_doc->function(quint32(qMax(0, id))));
+        return curve != nullptr ? curve->fixtures() : QList<quint32>({ Fixture::invalidId() });
+    };
+    auto efxOf = [this](quint32 id) {
+        QList<quint32> ids;
+        if (EFX *efx = qobject_cast<EFX *>(m_doc->function(id)))
+            for (EFXFixture *ef : efx->fixtures())
+                ids.append(ef->head().fxi);
+        return ids;
+    };
+
+    // a Colour FX, a mapping on the plan, a Curve FX and a strobe of a PAR
+    // and a CO2: on the PAR, said (not as a problem)
+    prog.selectFixtures({ par, co2 });
+    const int colour = effects.createColourFx("Colour");
+    QVERIFY(colour >= 0);
+    QCOMPARE(groupOf(colour), QList<quint32>({ par }));
+    QCOMPARE(lastSaid(), leftOne);
+    QVERIFY(lastError() == false);
+    said.clear();
+    const int mapping = effects.createMapping("Map");
+    QVERIFY(mapping >= 0);
+    QCOMPARE(groupOf(mapping), QList<quint32>({ par }));
+    QCOMPARE(lastSaid(), leftOne);
+    said.clear();
+    const int curve = effects.createCurveFx("Curve");
+    QCOMPARE(curveOf(curve), QList<quint32>({ par }));
+    QCOMPARE(lastSaid(), leftOne);
+    QCOMPARE(curveOf(effects.createStrobe("Strobe")), QList<quint32>({ par }));
+    // a Move FX of the flame head and a spot: on the spot
+    prog.selectFixtures({ head, spot });
+    said.clear();
+    const int move = effects.createMoveFx("Move");
+    QVERIFY(move >= 0);
+    QCOMPARE(efxOf(quint32(move)), QList<quint32>({ spot }));
+    QCOMPARE(lastSaid(), leftOne);
+
+    // only them: nothing made, said as a problem
+    const int functions = int(m_doc->functions().count());
+    prog.selectFixtures({ co2 });
+    said.clear();
+    QCOMPARE(effects.createColourFx("None"), -1);
+    QCOMPARE(lastSaid(), leftOne);
+    QVERIFY(lastError());
+    QCOMPARE(effects.createCurveFx("None"), -1);
+    QCOMPARE(effects.createMapping("None"), -1);
+    prog.selectFixtures({ head });
+    QCOMPARE(effects.createMoveFx("None"), -1);
+    QVERIFY(lastError());
+    QCOMPARE(int(m_doc->functions().count()), functions);
+
+    // the selection given to an effect: never them
+    prog.selectFixtures({ co2 });
+    said.clear();
+    QVERIFY(effects.useSelection(quint32(curve)) == false);
+    QCOMPARE(curveOf(curve), QList<quint32>({ par }));
+    QVERIFY(lastError());
+    prog.selectFixtures({ co2, par });
+    QVERIFY(effects.useSelection(quint32(colour)));
+    QCOMPARE(groupOf(colour), QList<quint32>({ par }));
+    prog.selectFixtures({ head, spot });
+    QVERIFY(effects.useSelection(quint32(move)));
+    QCOMPARE(efxOf(quint32(move)), QList<quint32>({ spot }));
+    // (the layout of the colour FX, made again: without them)
+    effects.setColourFx(quint32(colour), "layout", "plan");
+    QCOMPARE(groupOf(colour), QList<quint32>({ par }));
+
+    // a Move FX of an older show with the flame head, as an FX scene: without it
+    EFX *old = new EFX(m_doc);
+    old->addFixture(head, 0);
+    old->addFixture(spot, 0);
+    QVERIFY(m_doc->addFunction(old));
+    const quint32 oldId = old->id();
+    said.clear();
+    QVERIFY(effects.convertToFx(oldId));
+    FXScene *fx = qobject_cast<FXScene *>(m_doc->function(oldId));
+    QVERIFY(fx != nullptr);
+    QCOMPARE(fx->fixtures(), QList<quint32>({ spot }));
+    const QHash<QPair<quint32, quint32>, uchar> converted = fx->values();
+    for (auto it = converted.cbegin(); it != converted.cend(); ++it)
+        QVERIFY(it.key().first != head);
+    QCOMPARE(lastSaid(), leftOne);
+    // of only it: not converted (it stays as it was), said as a problem
+    EFX *flameOnly = new EFX(m_doc);
+    flameOnly->addFixture(head, 0);
+    QVERIFY(m_doc->addFunction(flameOnly));
+    const quint32 flameId = flameOnly->id();
+    QVERIFY(effects.convertToFx(flameId) == false);
+    QVERIFY(qobject_cast<EFX *>(m_doc->function(flameId)) != nullptr);
+    QVERIFY(lastError());
+
+    // Follow on the flame head and the spot: the spot aims, the head gets
+    // nothing (and the aim holds)
+    prog.selectFixtures({ head, spot });
+    const QVariantMap aimed = prog.aimAt(0, 3000, 0);
+    QCOMPARE(aimed.value("aimed").toList(), QVariantList({ spot }));
+    QVERIFY(prog.aim().value("active").toBool());
+    QCOMPARE(programmerFixtures(prog), QList<quint32>({ spot }));
+    prog.clear();
+
+    // the FX of the programmer on a PAR and a CO2: on the PAR, said once
+    QSignalSpy told(&prog, SIGNAL(message(QString)));
+    prog.selectFixtures({ par, co2 });
+    prog.setFx("dimmer", { { "mode", 1 } });
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(prog.fxLayerList().first().fixtures, QList<quint32>({ par }));
+    QCOMPARE(told.count(), 1);
+    QCOMPARE(told.last().at(0).toString(), leftOne);
+    prog.setFx("dimmer", { { "swing", 80 } });
+    QCOMPARE(told.count(), 1);
+    QCOMPARE(prog.fxOf("dimmer").value("count").toInt(), 1);
+    QCOMPARE(prog.fxScene()->fixtures(), QList<quint32>({ par }));
+    // the CO2 alone: no FX on it
+    prog.selectFixtures({ co2 });
+    prog.setFx("dimmer", { { "mode", 1 } });
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(prog.fxLayerList().first().fixtures, QList<quint32>({ par }));
+    QCOMPARE(told.count(), 2);
+    // a macro: the same
+    prog.stopAllFx();
+    prog.selectFixtures({ par, co2 });
+    QCOMPARE(prog.applyFxMacro({ FxTools::defaultLayer("dimmer") }, {}), 1);
+    QCOMPARE(prog.fxLayerList().first().fixtures, QList<quint32>({ par }));
+    QCOMPARE(told.count(), 3);
+    prog.selectFixtures({ co2 });
+    QCOMPARE(prog.applyFxMacro({ FxTools::defaultLayer("dimmer") }, {}), 0);
+    QCOMPARE(told.count(), 4);
+    prog.clear();
+}
+
+void Backend_Test::effectSnapshotAndConvert()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+
+    // a snapshot while a CO2 fires (armed): the PAR, not the CO2 (a scene of
+    // it would fire it again)
+    Scene *look = new Scene(m_doc);
+    look->setValue(co2, 0, 255);
+    look->setValue(par, 0, 200);
+    QVERIFY(m_doc->addFunction(look));
+    renderFrames(m_doc);
+    QVERIFY(safety.arm());
+    look->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(renderedValue(m_doc, 60), 255);
+    const int snap = prog.snapshotAll("Snapshot");
+    Scene *shot = qobject_cast<Scene *>(m_doc->function(quint32(qMax(0, snap))));
+    QVERIFY(snap >= 0 && shot != nullptr);
+    QCOMPARE(shot->fixtures(), QList<quint32>({ par }));
+    QCOMPARE(int(shot->value(par, 0)), 200);
+    look->stop(FunctionParent::master());
+    safety.disarm();
+    renderFrames(m_doc, 2);
+
+    // the steps of an FX that moves the CO2 and the PAR: the PAR's (said)
+    auto waves = [this](const QList<quint32> &fixtures) {
+        FXScene *fx = new FXScene(m_doc);
+        fx->setFixtures(fixtures);
+        FXScene::Layer layer = FxTools::defaultLayer("dimmer");
+        layer.fixtures = fixtures;
+        for (quint32 fid : fixtures)
+            fx->setValue(fid, 0, 128);
+        fx->setLayers({ layer });
+        return m_doc->addFunction(fx) ? fx->id() : Function::invalidId();
+    };
+    const quint32 both = waves({ co2, par });
+    QVERIFY(both != Function::invalidId());
+    EffectEditor effects(m_doc, &prog, &zones);
+    effects.setIsProtected([this](quint32 id) { return m_patch->isProtected(id); });
+    QSignalSpy said(&effects, SIGNAL(message(QString,bool)));
+    const QString leftOne("1 protected special effect(s) left out of the steps");
+    const int steps = effects.convertToSteps(both, 100);
+    QVERIFY2(steps >= 0, said.isEmpty() ? "" : qPrintable(said.last().at(0).toString()));
+    Sequence *sequence = qobject_cast<Sequence *>(m_doc->function(quint32(steps)));
+    QVERIFY(sequence != nullptr);
+    QVERIFY(sequence->stepsCount() > 1);
+    QSet<uchar> parLevels;
+    for (const ChaserStep &step : sequence->steps())
+    {
+        for (const SceneValue &scv : step.values)
+        {
+            QVERIFY(scv.fxi != co2);
+            if (scv.fxi == par)
+                parLevels.insert(scv.value);
+        }
+    }
+    QVERIFY(parLevels.count() > 1);
+    Scene *bound = qobject_cast<Scene *>(m_doc->function(sequence->boundSceneID()));
+    QVERIFY(bound != nullptr);
+    QCOMPARE(bound->fixtures(), QList<quint32>({ par }));
+    QVERIFY(said.isEmpty() == false);
+    QCOMPARE(said.last().at(0).toString(), leftOne);
+    QVERIFY(said.last().at(1).toBool() == false);
+
+    // of only the CO2: no steps, said as a problem
+    const quint32 alone = waves({ co2 });
+    const int functions = int(m_doc->functions().count());
+    QCOMPARE(effects.convertToSteps(alone, 100), -1);
+    QCOMPARE(int(m_doc->functions().count()), functions);
+    QCOMPARE(said.last().at(0).toString(), leftOne);
+    QVERIFY(said.last().at(1).toBool());
+}
+
+void Backend_Test::effectQlcCopy()
+{
+    typedef Cuelist::Key Key;
+    ScopedTestSettings settings;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    DtcCore core;
+    Doc *doc = core.doc();
+    const quint32 co2 = patchSfx(core.patch(), doc, "CO2 1", 1);
+    const quint32 par = patchSfx(core.patch(), doc, "PAR", 2);
+    QVERIFY(co2 != Fixture::invalidId() && par != Fixture::invalidId());
+    // a scene with the CO2, a cuelist that fires it, one that only puts it
+    // at 0 and one without it
+    Scene *look = new Scene(doc);
+    look->setName("Fire look");
+    look->setValue(co2, 0, 255);
+    look->setValue(par, 0, 100);
+    QVERIFY(doc->addFunction(look));
+    auto cuelist = [doc](const QString &name, const QHash<Key, uchar> &values) {
+        Cuelist *cl = new Cuelist(doc);
+        cl->setName(name);
+        Cuelist::Cue cue;
+        cue.number = 1000;
+        cue.values = values;
+        cl->addCue(cue);
+        return doc->addFunction(cl) ? cl->id() : Function::invalidId();
+    };
+    const quint32 fires = cuelist("Fires", { { Key(co2, 0), 255 }, { Key(par, 0), 200 } });
+    const quint32 zero = cuelist("Zero", { { Key(co2, 0), 0 }, { Key(par, 0), 50 } });
+    const quint32 calm = cuelist("Calm", { { Key(par, 0), 50 } });
+    QVERIFY(fires != Function::invalidId() && zero != Function::invalidId() && calm != Function::invalidId());
+
+    // the dialog: the show has a protected special effect (QLC+ has no gate),
+    // and the cuelist that fires it says so
+    QCOMPARE(core.qlcCopyWarnings(),
+             QStringList({ "1 protected special effect(s): QLC+ doesn't arm them nor limit their time" }));
+    const QString firesLine("It fires protected special effects: QLC+ doesn't arm them nor limit their time");
+    for (const QString &format : QStringList({ "sequence", "chaser" }))
+    {
+        const QVariantList info = core.qlcExportInfo(format);
+        QCOMPARE(info.count(), 3);
+        for (const QVariant &v : info)
+        {
+            const QVariantMap list = v.toMap();
+            QCOMPARE(list.value("lost").toStringList().contains(firesLine), list.value("id").toUInt() == fires);
+        }
+    }
+
+    // the copy keeps the CO2: its fixture, its scene and its steps (QLC+
+    // fires it as the show says)
+    const QString copyPath = dir.filePath("Sfx (QLC+).qxw");
+    QVERIFY2(core.saveCopyForQlc(QUrl::fromLocalFile(copyPath), { fires, zero, calm }, {}), qPrintable(core.lastError()));
+    QStringList read;
+    const QByteArray engine = qlcPlusEngine(fileBytes(copyPath), &read);
+    QCOMPARE(read.count("Fixture"), 2);
+    Doc qlc(this);
+    qlc.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(loadQlcEngine(&qlc, engine));
+    QVERIFY(qlc.fixture(co2) != nullptr);
+    QCOMPARE(qlc.fixture(co2)->name(), QString("CO2 1"));
+    Scene *copiedLook = qobject_cast<Scene *>(qlc.function(look->id()));
+    QVERIFY(copiedLook != nullptr);
+    QCOMPARE(int(copiedLook->value(co2, 0)), 255);
+    Sequence *sequence = qobject_cast<Sequence *>(qlc.function(fires));
+    QVERIFY(sequence != nullptr);
+    QVERIFY2(qlcStepValues(sequence->steps().at(0).values).contains(QString("%1.0=255").arg(co2)),
+             qPrintable(qlcStepValues(sequence->steps().at(0).values)));
+
+    // nothing protected: nothing to say
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "protected", false));
+    QVERIFY(core.qlcCopyWarnings().isEmpty());
+    for (const QVariant &v : core.qlcExportInfo("sequence"))
+        QVERIFY(v.toMap().value("lost").toStringList().contains(firesLine) == false);
+}
+
+/** The parks of $safety on $fixture: "channel=value" (with "b" also in
+ *  blackout), in channel order */
+static QStringList parksOf(const SafetyManager *safety, quint32 fixture)
+{
+    QStringList list;
+    for (const SafetyManager::ParkEntry &park : safety->parks())
+        if (park.fixture == fixture)
+            list.append(QString("%1=%2%3").arg(park.channel).arg(park.value).arg(park.inBlackout ? "b" : ""));
+    return list;
+}
+
+/** The highest value $address of the first universe sends in $frames
+ *  offline frames */
+static int maxOut(Doc *doc, int address, int frames)
+{
+    int most = 0;
+    for (int i = 0; i < frames; i++)
+    {
+        renderFrames(doc);
+        most = qMax(most, finalOut(doc, address));
+    }
+    return most;
+}
+
+/** The last message of $spy (SafetyManager::message), "" with none */
+static QString lastMessage(const QSignalSpy &spy)
+{
+    return spy.isEmpty() ? QString() : spy.last().at(0).toString();
+}
+
+void Backend_Test::parkAboveEverything()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    SafetyManager *safety = core.safety();
+    Programmer *prog = core.programmer();
+    const quint32 par = patchSfx(core.patch(), doc, "PAR 1", 62);
+    const quint32 other = patchSfx(core.patch(), doc, "PAR 2", 63);
+    Universe *universe = doc->inputOutputMap()->universes().at(0);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    auto out = [universe](int address) { return int(universe->finalValue(address)); };
+
+    // parked at 77 from the programmer: the byte that went out (no limits),
+    // and the programmer lets it go
+    prog->selectFixtures({ par });
+    QCOMPARE(prog->setDimmer(77), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(out(61), 77, 3000);
+    QSignalSpy messages(safety, SIGNAL(message(QString,bool)));
+    QSignalSpy parksChanged(safety, SIGNAL(parksChanged()));
+    QCOMPARE(safety->parkProgrammer(), 1);
+    QCOMPARE(lastMessage(messages), QString("1 fixture(s) parked at the values of the programmer"));
+    QVERIFY(messages.last().at(1).toBool() == false);
+    QCOMPARE(parksChanged.count(), 1);
+    QVERIFY(prog->hasValues() == false);
+    QVERIFY(safety->isParked(par));
+    QVERIFY(safety->isParked(other) == false);
+    QCOMPARE(safety->parkedCount(), 1);
+    QCOMPARE(safety->parkedFixtures(), QVariantMap({ { QString::number(par), 1 } }));
+    QCOMPARE(parksOf(safety, par), QStringList({ "0=77" }));
+    QVERIFY(core.modified());
+    QTest::qWait(100);
+    QCOMPARE(out(61), 77);
+
+    // a scene at 255 under it: the other PAR plays it
+    Scene *scene = new Scene(doc);
+    scene->setValue(par, 0, 255);
+    scene->setValue(other, 0, 255);
+    QVERIFY(doc->addFunction(scene));
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(62), 255, 3000);
+    QCOMPARE(out(61), 77);
+    // the programmer at 200
+    prog->selectFixtures({ par, other });
+    QCOMPARE(prog->setDimmer(200), 2);
+    QTest::qWait(100);
+    QCOMPARE(out(61), 77);
+    QVERIFY(out(62) >= 200);
+    // the mixer's Full, then the grand master at 0
+    core.mixer()->set(-1, "full", true);
+    QTest::qWait(60);
+    QCOMPARE(out(61), 77);
+    doc->inputOutputMap()->setGrandMasterValue(0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(62), 0, 3000);
+    QCOMPARE(out(61), 77);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 77, 3000);
+    // Stop all (Esc) stops the scene, never the park
+    core.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(scene->stopped(), 3000);
+    doc->inputOutputMap()->setGrandMasterValue(255);
+    core.mixer()->reset();
+    prog->clear();
+    QTest::qWait(100);
+    QCOMPARE(out(61), 77);
+    QCOMPARE(out(62), 0);
+    QVERIFY(safety->isParked(par));
+
+    // Blackout: a parked intensity goes dark, unless parked also in blackout
+    core.setBlackout(true);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->lastAt(61), 0, 3000);
+    QCOMPARE(out(61), 77);
+    QVERIFY(safety->parkInBlackout({ par }) == false);
+    safety->setParkInBlackout({ par }, true);
+    QVERIFY(safety->parkInBlackout({ par }));
+    QCOMPARE(parksOf(safety, par), QStringList({ "0=77b" }));
+    QTRY_COMPARE_WITH_TIMEOUT(wire->lastAt(61), 77, 3000);
+    QCOMPARE(wire->lastAt(62), 0);
+    // Blackout off: still parked
+    core.setBlackout(false);
+    QTest::qWait(100);
+    QCOMPARE(wire->lastAt(61), 77);
+    QVERIFY(safety->isParked(par));
+
+    // unparked: what the scenes say (nothing plays: 0)
+    safety->unpark({ par });
+    QCOMPARE(lastMessage(messages), QString("1 fixture(s) unparked"));
+    QVERIFY(safety->isParked(par) == false);
+    QCOMPARE(safety->parkedCount(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(61), 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(61), 0, 3000);
+}
+
+void Backend_Test::parkLtpInBlackout()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);   // pan 100, tilt 101, dimmer 103
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 0, 40);
+    scene->setValue(spot, 1, 60);
+    scene->setValue(spot, 3, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // parked as it is now, then the scene goes on elsewhere
+    QCOMPARE(safety.parkCurrent({ spot }), 1);
+    QCOMPARE(safety.parks().count(), 9);
+    QCOMPARE(parksOf(&safety, spot).mid(0, 4), QStringList({ "0=40", "1=60", "2=0", "3=255" }));
+    scene->setValue(spot, 0, 200);
+    scene->setValue(spot, 3, 10);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+
+    // in blackout the pan (LTP) holds its park, the dimmer goes dark
+    InputOutputMap *io = m_doc->inputOutputMap();
+    QVERIFY(io->setBlackout(true));
+    QCOMPARE(wire->lastAt(100), 40);
+    QCOMPARE(wire->lastAt(101), 60);
+    QCOMPARE(wire->lastAt(103), 0);
+    QCOMPARE(outputAt(universe, 100, true), 40);
+    renderFrames(m_doc, 2);
+    QCOMPARE(wire->lastAt(100), 40);
+    QCOMPARE(wire->lastAt(103), 0);
+    // also in blackout: the dimmer too
+    safety.setParkInBlackout({ spot }, true);
+    renderFrames(m_doc);
+    QCOMPARE(wire->lastAt(103), 255);
+    QCOMPARE(wire->lastAt(100), 40);
+    QVERIFY(io->setBlackout(false));
+    renderFrames(m_doc);
+    QCOMPARE(wire->lastAt(103), 255);
+
+    // the program closes: the parks let go (kept), the stage as the
+    // functions leave it; nothing arms any more
+    safety.disarmAndFlush("exit");
+    QCOMPARE(wire->lastAt(100), 200);
+    QVERIFY(universe->outputLayer()->parks.isEmpty());
+    QCOMPARE(safety.parks().count(), 9);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 100), 200);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+}
+
+void Backend_Test::parkFromProgrammer()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    // (without a programmer: nothing to park)
+    QVERIFY(safety.canParkProgrammer() == false);
+    QCOMPARE(safety.parkProgrammer(), 0);
+    safety.setProgrammer(&prog);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);   // pan 100, dimmer 103
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 1", 62);
+    m_patch->setLimits({ spot }, { { "dimmerMax", 50 } });
+    Universe *universe = sfxUniverse(m_doc);
+
+    prog.selectFixtures({ par });
+    QCOMPARE(prog.setDimmer(150), 1);
+    prog.selectFixtures({ spot });
+    QCOMPARE(prog.setDimmer(200), 1);
+    prog.setChannelValue(prog.attributeKey(spot, 0), 90);
+    renderFrames(m_doc, 2);
+    // the limit: what goes out is less than the programmer says
+    const int limited = finalOut(m_doc, 103);
+    QVERIFY2(limited > 0 && limited < 200, qPrintable(QString::number(limited)));
+    QVERIFY(universe->channelModifier(103) != nullptr);
+    QCOMPARE(limited, int(universe->channelModifier(103)->getValue(200)));
+
+    // the values of the selection (not the PAR's) parked as they go out,
+    // and let go by the programmer
+    QVERIFY(safety.canParkProgrammer());
+    QCOMPARE(safety.parkProgrammer(), 1);
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=90", QString("3=%1").arg(limited) }));
+    QVERIFY(parksOf(&safety, par).isEmpty());
+    QCOMPARE(lastMessage(messages), QString("1 fixture(s) parked at the values of the programmer"));
+    QCOMPARE(prog.sceneValues().count(), 1);
+    QCOMPARE(prog.sceneValues().first().fxi, par);
+    QVERIFY(safety.canParkProgrammer() == false);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 103), limited);
+    QCOMPARE(finalOut(m_doc, 100), 90);
+    QCOMPARE(finalOut(m_doc, 61), 150);
+    // later limits don't change it; the grand master never scales it
+    m_patch->setLimits({ spot }, { { "dimmerMax", 100 } });
+    m_doc->inputOutputMap()->setGrandMasterValue(0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 103), limited);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    m_doc->inputOutputMap()->setGrandMasterValue(255);
+
+    // nothing of the selection in the programmer: refused, said
+    QCOMPARE(safety.parkProgrammer(), 0);
+    QCOMPARE(lastMessage(messages), QString("The programmer has no values on the selected fixtures to park"));
+    QVERIFY(messages.last().at(1).toBool());
+    // parked again from the programmer: only the channels it holds change
+    prog.setChannelValue(prog.attributeKey(spot, 0), 20);
+    QCOMPARE(safety.parkProgrammer(), 1);
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=20", QString("3=%1").arg(limited) }));
+    prog.clear();
+}
+
+void Backend_Test::parkAsNowAndOff()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "4ch DRGB", "Par", 0, 1, 1), 1);
+    const quint32 par = fixtureAtAddress(m_doc, 0);       // dimmer 0, red 1, green 2, blue 3
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);    // pan 100, tilt 101, dimmer 103, shutter 104
+    QCOMPARE(m_patch->addFixtures("Generic", "Hazer", "2ch Haze+Fan", "Hazer", 0, 21, 1), 1);
+    const quint32 hazer = fixtureAtAddress(m_doc, 20);    // haze 20, fan 21: no intensity
+    Universe *universe = sfxUniverse(m_doc);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(par, 0, 100);
+    scene->setValue(par, 1, 255);
+    scene->setValue(par, 2, 10);
+    scene->setValue(spot, 0, 40);
+    scene->setValue(spot, 1, 60);
+    scene->setValue(spot, 3, 255);
+    scene->setValue(spot, 4, 30);
+    scene->setValue(hazer, 0, 120);
+    scene->setValue(hazer, 1, 80);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    // the mixer's Full on the PAR's dimmer
+    MixerUnit full;
+    full.dimmers = { 0 };
+    full.full = true;
+    universe->setMixerLayer(QSharedPointer<const MixerLayer>(new MixerLayer({ full })));
+    renderFrames(m_doc, 2);
+
+    // as it is now: what went out (the mixer too)
+    const QByteArray before = universe->finalValues();
+    QCOMPARE(uchar(before.at(0)), uchar(255));
+    QCOMPARE(safety.parkCurrent({ par, par }), 1);
+    QCOMPARE(lastMessage(messages), QString("1 fixture(s) parked as they are now"));
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=255", "1=255", "2=10", "3=0" }));
+
+    // off: its intensities (dimmers, colours) 0, the rest as now; one
+    // without intensities (a hazer): all of it 0
+    QCOMPARE(safety.parkOff({ spot, hazer }), 2);
+    QCOMPARE(lastMessage(messages), QString("2 fixture(s) parked off"));
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=40", "1=60", "2=0", "3=0", "4=30", "5=0", "6=0", "7=0", "8=0" }));
+    QCOMPARE(parksOf(&safety, hazer), QStringList({ "0=0", "1=0" }));
+    QCOMPARE(safety.parkOff({ par }), 1);
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=0", "1=0", "2=0", "3=0" }));
+    QCOMPARE(safety.parkCurrent({ par }), 1);
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=0", "1=0", "2=0", "3=0" }));
+    QCOMPARE(safety.parkedCount(), 3);
+
+    // the mixer and the scene go: the parks stay
+    universe->setMixerLayer(QSharedPointer<const MixerLayer>());
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(finalOut(m_doc, 104), 30);
+    QCOMPARE(finalOut(m_doc, 103), 0);
+    QCOMPARE(finalOut(m_doc, 20), 0);
+
+    // parked again, it keeps «also in blackout»
+    safety.setParkInBlackout({ spot }, true);
+    QVERIFY(safety.parkInBlackout({ spot }));
+    QVERIFY(safety.parkInBlackout({ spot, par }) == false);
+    QVERIFY(safety.parkInBlackout({ 9999 }) == false);
+    QCOMPARE(safety.parkCurrent({ spot }), 1);
+    QVERIFY(safety.parkInBlackout({ spot }));
+    // nothing to park: nothing said
+    const int said = messages.count();
+    QCOMPARE(safety.parkCurrent({ 9999 }), 0);
+    safety.unpark({ 9999 });
+    QCOMPARE(messages.count(), said);
+    // all of them unparked
+    safety.unparkAll();
+    QCOMPARE(lastMessage(messages), QString("3 fixture(s) unparked"));
+    QVERIFY(safety.parks().isEmpty());
+    QVERIFY(universe->outputLayer()->isEmpty());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 100), 0);
+}
+
+void Backend_Test::parkProtectedOff()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    safety.setProgrammer(&prog);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Universe *universe = sfxUniverse(m_doc);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(co2, 0, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    renderFrames(m_doc);
+    QVERIFY(safety.arm());
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QCOMPARE(idsOf(safety.firing()), QList<quint32>({ co2 }));
+
+    // parked as it is now while it fires: parked off, cut at once
+    const QString offOnly("A protected special effect can only be parked off");
+    SFX_EVENT_SPY(events, universe);
+    QCOMPARE(safety.parkCurrent({ co2 }), 1);
+    QCOMPARE(lastMessage(messages), "1 fixture(s) parked as they are now · " + offOnly);
+    QCOMPARE(parksOf(&safety, co2), QStringList({ "0=0" }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(safety.recentFires().first().toMap().value("reason").toString(), QString("parked"));
+    QCOMPARE(safety.recentFires().first().toMap().value("reasonText").toString(), QString("parked"));
+    const QStringList cut = sfxEvents(events);
+    QVERIFY2(cut.count() == 1 && cut.first().startsWith("ended parked"), qPrintable(cut.join(", ")));
+    // the gate has it: parked off (never a park entry on it)
+    const QSharedPointer<const OutputLayer> layer = universe->outputLayer();
+    QCOMPARE(layer->units.count(), 1);
+    QVERIFY(layer->units.first().parked);
+    QVERIFY(layer->units.first().canFire == false);
+    QVERIFY(layer->parks.isEmpty());
+    QCOMPARE(layer->parkMode(60), 0);
+    QCOMPARE(int(layer->role(60)), int(OutputLayer::Fire));
+
+    // never fires while parked, armed, released and pressed again
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    QCOMPARE(maxOut(m_doc, 60, 100), 0);
+    QVERIFY(safety.firing().isEmpty());
+    QCOMPARE(idsOf(safety.waiting()), QList<quint32>({ co2 }));
+    QCOMPARE(sfxEvents(events), QStringList({ "unlatched", "refused parked" }));
+    // unparked: it waits for a release, then fires
+    safety.unpark({ co2 });
+    QVERIFY(universe->outputLayer()->units.first().canFire);
+    QCOMPARE(maxOut(m_doc, 60, 20), 0);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // what the programmer holds for a CO2 alone (never sent): parked off, said
+    prog.selectFixtures({ co2 });
+    QCOMPARE(prog.setDimmer(200), 1);
+    QVERIFY(safety.canParkProgrammer());
+    QCOMPARE(safety.parkProgrammer(), 1);
+    QCOMPARE(lastMessage(messages), "1 fixture(s) parked at the values of the programmer · " + offOnly);
+    QCOMPARE(parksOf(&safety, co2), QStringList({ "0=0" }));
+    QVERIFY(prog.hasValues() == false);
+    // parked off is no refusal
+    QCOMPARE(safety.parkOff({ co2 }), 1);
+    QCOMPARE(lastMessage(messages), QString("1 fixture(s) parked off"));
+    safety.unpark({ co2 });
+
+    // a PAR parked lit that becomes a protected special effect: parked off
+    prog.selectFixtures({ par });
+    QCOMPARE(prog.setDimmer(180), 1);
+    QCOMPARE(safety.parkProgrammer(), 1);
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=180" }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 180);
+    QVERIFY(m_patch->setEffectSetting({ par }, "protected", true));
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=0" }));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QVERIFY(universe->outputLayer()->parks.isEmpty());
+    // unprotected again, it stays parked off (a plain park at 0)
+    QVERIFY(m_patch->setEffectSetting({ par }, "protected", false));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 61), 0);
+    QCOMPARE(universe->outputLayer()->parkMode(61), 1);
+    safety.disarm();
+}
+
+void Backend_Test::parkSwapReaddressMode()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    safety.setProgrammer(&prog);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);   // pan 100, tilt 101, dimmer 103
+    m_patch->setLimits({ spot }, { { "swapPanTilt", true } });
+    Universe *universe = sfxUniverse(m_doc);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 0, 200);
+    scene->setValue(spot, 1, 50);
+    scene->setValue(spot, 3, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(outputAt(universe, 101), 200);
+
+    // the pan alone parked (the programmer held only it): it goes out on
+    // the tilt channel, as the pan does
+    prog.selectFixtures({ spot });
+    prog.setChannelValue(prog.attributeKey(spot, 0), 40);
+    QCOMPARE(safety.parkProgrammer(), 1);
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=40" }));
+    QCOMPARE(safety.parkedFixtures().value(QString::number(spot)).toInt(), 1);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 100), 40);
+    QCOMPARE(outputAt(universe, 101), 40);
+    QCOMPARE(outputAt(universe, 100), 50);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+
+    // moved: the park goes with it
+    QVERIFY(m_patch->setFixtureAddress(spot, 0, 201));
+    renderFrames(m_doc, 2);
+    QCOMPARE(universe->outputLayer()->parkMode(100), 0);
+    QCOMPARE(universe->outputLayer()->parkMode(200), 1);
+    QCOMPARE(finalOut(m_doc, 200), 40);
+    QCOMPARE(outputAt(universe, 201), 40);
+    // to another universe
+    QVERIFY(m_patch->setFixtureAddress(spot, 1, 11));
+    QCOMPARE(universe->outputLayer()->parkMode(200), 0);
+    QCOMPARE(sfxUniverse(m_doc, 1)->outputLayer()->parkMode(10), 1);
+    QVERIFY(m_patch->setFixtureAddress(spot, 0, 201));
+
+    // another mode: its channels are others, the parks go (said)
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    QCOMPARE(m_patch->updateFixture(spot, "Spot", "11ch Standard", 0, 201), QString());
+    QVERIFY(safety.isParked(spot) == false);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(lastMessage(messages), QString("The parked channels of Spot were removed: its mode changed"));
+    QVERIFY(universe->outputLayer()->parks.isEmpty());
+    // a rename keeps them
+    QCOMPARE(safety.parkCurrent({ spot }), 1);
+    QCOMPARE(safety.parks().count(), 11);
+    QCOMPARE(m_patch->updateFixture(spot, "Spot 2", "11ch Standard", 0, 201), QString());
+    QCOMPARE(safety.parks().count(), 11);
+    // deleted: they go
+    QSignalSpy parksChanged(&safety, SIGNAL(parksChanged()));
+    scene->stop(FunctionParent::master());
+    m_patch->removeFixtures({ spot });
+    QVERIFY(safety.parks().isEmpty());
+    QCOMPARE(safety.parkedCount(), 0);
+    QCOMPARE(parksChanged.count(), 1);
+    QVERIFY(universe->outputLayer()->parks.isEmpty());
+
+    // a protected one of another mode stays parked off, all of it
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Jet", 0, 301, 1), 1);
+    const quint32 jet = fixtureAtAddress(m_doc, 300);
+    QVERIFY(m_patch->setEffectSetting({ jet }, "protected", true));
+    QCOMPARE(safety.parkOff({ jet }), 1);
+    QCOMPARE(parksOf(&safety, jet), QStringList({ "0=0", "1=0", "2=0" }));
+    messages.clear();
+    QCOMPARE(m_patch->updateFixture(jet, "Jet", "4ch DRGB", 0, 301), QString());
+    QCOMPARE(parksOf(&safety, jet), QStringList({ "0=0", "1=0", "2=0", "3=0" }));
+    QVERIFY(messages.isEmpty());
+    QVERIFY(universe->outputLayer()->units.first().parked);
+}
+
+void Backend_Test::parkShowFile()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Parks.qxw");
+    quint32 par = 0, co2 = 0, hazer = 0;
+    QByteArray saved;
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        par = patchSfx(core.patch(), core.doc(), "PAR 1", 1);
+        co2 = patchSfx(core.patch(), core.doc(), "CO2 1", 2);
+        QCOMPARE(core.patch()->addFixtures("Generic", "Hazer", "2ch Haze+Fan", "HAZER", 0, 11, 1), 1);
+        hazer = fixtureAtAddress(core.doc(), 10);
+        // a show without parks: nothing of them in its file (as before)
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        QVERIFY(fileBytes(path).contains("<Safety") == false);
+        QVERIFY(core.qlcCopyWarnings().join('\n').contains("park") == false);
+
+        Programmer *prog = core.programmer();
+        prog->selectFixtures({ hazer });
+        prog->setChannelValue(prog->attributeKey(hazer, 0), 77);
+        prog->setChannelValue(prog->attributeKey(hazer, 1), 30);
+        QCOMPARE(core.safety()->parkProgrammer(), 1);
+        QCOMPARE(core.safety()->parkOff({ co2 }), 1);
+        prog->selectFixtures({ par });
+        QCOMPARE(prog->setDimmer(200), 1);
+        QCOMPARE(core.safety()->parkProgrammer(), 1);
+        core.safety()->setParkInBlackout({ par }, true);
+        QVERIFY(core.modified());
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+        QVERIFY(core.qlcCopyWarnings().contains("3 parked fixture(s): QLC+ doesn't park channels"));
+    }
+
+    // in the section of DMX Total Control, which QLC+ never reads
+    const int section = int(saved.indexOf("<DMXTotalControl>"));
+    QVERIFY(section > 0);
+    QVERIFY(saved.left(section).contains("<Safety") == false);
+    QVERIFY(saved.left(section).contains("<Park ") == false);
+    const QString xml = QString::fromUtf8(saved.mid(section));
+    QVERIFY2(xml.contains(QString("<Park Fixture=\"%1\" Channel=\"0\" Value=\"200\" Blackout=\"1\" Mode=\"1 Channel\"/>").arg(par)),
+             qPrintable(xml));
+    QVERIFY(xml.contains(QString("<Park Fixture=\"%1\" Channel=\"0\" Value=\"0\" Mode=\"1 Channel\"/>").arg(co2)));
+    QVERIFY(xml.contains(QString("<Park Fixture=\"%1\" Channel=\"0\" Value=\"77\" Mode=\"2ch Haze+Fan\"/>").arg(hazer)));
+    QVERIFY(xml.contains(QString("<Park Fixture=\"%1\" Channel=\"1\" Value=\"30\" Mode=\"2ch Haze+Fan\"/>").arg(hazer)));
+    QCOMPARE(int(xml.count("<Park ")), 4);
+    // QLC+ reads every fixture of it (and nothing of the parks)
+    QStringList read;
+    qlcPlusEngine(saved, &read);
+    QCOMPARE(read.count("Fixture"), 3);
+
+    // opened: parked again at once (before the output starts), said once
+    // with their names, in the order of their numbers
+    auto check = [&](DtcCore &core) {
+        SafetyManager *safety = core.safety();
+        QCOMPARE(parksOf(safety, par), QStringList({ "0=200b" }));
+        QCOMPARE(parksOf(safety, co2), QStringList({ "0=0" }));
+        QCOMPARE(parksOf(safety, hazer), QStringList({ "0=77", "1=30" }));
+        const QSharedPointer<const OutputLayer> layer = core.doc()->inputOutputMap()->universes().at(0)->outputLayer();
+        QCOMPARE(layer->parkMode(0), 2);
+        QCOMPARE(layer->parkMode(1), 0);
+        QCOMPARE(layer->parkMode(10), 1);
+        QCOMPARE(layer->parkMode(11), 1);
+        QVERIFY(layer->units.first().parked);
+    };
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QSignalSpy messages(core.safety(), SIGNAL(message(QString,bool)));
+        LayerWatch watch(core.doc()->inputOutputMap());
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        check(core);
+        if (QTest::currentTestFailed())
+            return;
+        QVERIFY(core.modified() == false);
+        QTRY_COMPARE_WITH_TIMEOUT(messages.count(), 1, 3000);
+        QCOMPARE(lastMessage(messages), QString("3 parked fixture(s): PAR 1, CO2 1, HAZER (Patch)"));
+        QVERIFY(messages.last().at(1).toBool() == false);
+        QTRY_COMPARE_WITH_TIMEOUT(int(core.doc()->inputOutputMap()->universes().at(0)->finalValue(10)), 77, 3000);
+        // (each universe had its layer before its first frame)
+        const int universes = int(core.doc()->inputOutputMap()->universesCount());
+        QTRY_COMPARE_WITH_TIMEOUT(watch.started(), universes, 3000);
+        QCOMPARE(watch.startedWithUnits(), universes);
+        // saved again: the same parks
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        QCOMPARE(int(QString::fromUtf8(fileBytes(path)).count("<Park ")), 4);
+        // another show: none
+        core.newShow();
+        QVERIFY(core.safety()->parks().isEmpty());
+        QCOMPARE(core.safety()->parkedCount(), 0);
+        QVERIFY(core.doc()->inputOutputMap()->universes().at(0)->outputLayer()->parks.isEmpty());
+    }
+
+    // an older show (no Safety): no parks, nothing said
+    QString oldText = QString::fromUtf8(saved);
+    const int start = int(oldText.indexOf("<Safety>"));
+    const int end = int(oldText.indexOf("</Safety>")) + int(qstrlen("</Safety>"));
+    QVERIFY(start > 0 && end > start);
+    oldText.remove(start, end - start);
+    const QString oldPath = dir.filePath("Old.qxw");
+    QVERIFY(writeBytes(oldPath, oldText.toUtf8()));
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QSignalSpy messages(core.safety(), SIGNAL(message(QString,bool)));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(oldPath)));
+        QVERIFY(core.safety()->parks().isEmpty());
+        QTest::qWait(100);
+        QVERIFY(messages.isEmpty());
+    }
+
+    // damaged parks are left out (not a number, out of range, a channel it
+    // doesn't have, another mode, a fixture that isn't there); a protected
+    // one of another mode stays parked off
+    QString damaged = QString::fromUtf8(saved);
+    auto change = [&damaged](const QString &from, const QString &to) {
+        QCOMPARE(damaged.count(from), 1);
+        damaged.replace(from, to);
+    };
+    change(QString("Fixture=\"%1\" Channel=\"0\" Value=\"200\" Blackout=\"1\" Mode=\"1 Channel\"").arg(par),
+           QString("Fixture=\"%1\" Channel=\"0\" Value=\"200\" Blackout=\"1\" Mode=\"Other\"").arg(par));
+    change(QString("Fixture=\"%1\" Channel=\"0\" Value=\"0\" Mode=\"1 Channel\"").arg(co2),
+           QString("Fixture=\"%1\" Channel=\"0\" Value=\"0\" Mode=\"Other\"").arg(co2));
+    change("Value=\"77\"", "Value=\"300\"");
+    change(QString("Fixture=\"%1\" Channel=\"1\"").arg(hazer), QString("Fixture=\"%1\" Channel=\"5\"").arg(hazer));
+    change("<Safety>", "<Safety>\n  <Park Fixture=\"9999\" Channel=\"0\" Value=\"5\"/>\n  <Park Fixture=\"abc\" Channel=\"0\" Value=\"5\"/>\n"
+                       "  <Park Fixture=\"" + QString::number(hazer) + "\" Channel=\"x\" Value=\"5\"/>\n  <Other/>");
+    const QString damagedPath = dir.filePath("Damaged.qxw");
+    QVERIFY(writeBytes(damagedPath, damaged.toUtf8()));
+    {
+        DtcCore core;
+        core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QVERIFY(core.openShow(QUrl::fromLocalFile(damagedPath)));
+        SafetyManager *safety = core.safety();
+        QCOMPARE(safety->parks().count(), 1);
+        QCOMPARE(parksOf(safety, co2), QStringList({ "0=0" }));
+        QVERIFY(safety->isParked(par) == false);
+        QVERIFY(safety->isParked(hazer) == false);
+        QVERIFY(core.doc()->inputOutputMap()->universes().at(0)->outputLayer()->units.first().parked);
+    }
+}
+
+void Backend_Test::parkMarks()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR", 62);
+    patchSfx(m_patch, m_doc, "PAR 2", 63);
+    QSignalSpy revisions(&safety, SIGNAL(revisionChanged()));
+    QSignalSpy parksChanged(&safety, SIGNAL(parksChanged()));
+
+    // a protected special effect: a shield; nothing else
+    QVariantMap marks = safety.channelMarks(0);
+    QCOMPARE(marks.count(), 1);
+    QCOMPARE(marks.value("60").toMap(), QVariantMap({ { "kind", "effect" }, { "parked", false }, { "armed", false } }));
+    // a park: a lock, with its value
+    QCOMPARE(safety.parkOff({ par }), 1);
+    QCOMPARE(parksChanged.count(), 1);
+    QVERIFY(revisions.count() >= 1);
+    marks = safety.channelMarks(0);
+    QCOMPARE(marks.count(), 2);
+    QCOMPARE(marks.value("61").toMap(), QVariantMap({ { "kind", "park" }, { "value", 0 }, { "inBlackout", false },
+                                                       { "showStop", false }, { "ramp", false } }));
+    QVERIFY(marks.contains("62") == false);
+    // armed; the CO2 parked off: a shield still (the gate's), parked
+    QVERIFY(safety.arm());
+    QCOMPARE(safety.channelMarks(0).value("60").toMap().value("armed").toBool(), true);
+    QCOMPARE(safety.parkOff({ co2 }), 1);
+    marks = safety.channelMarks(0);
+    QCOMPARE(marks.count(), 2);
+    QCOMPARE(marks.value("60").toMap(), QVariantMap({ { "kind", "effect" }, { "parked", true }, { "armed", true } }));
+    QCOMPARE(safety.parkedCount(), 2);
+    QCOMPARE(safety.parkedFixtures(), QVariantMap({ { QString::number(co2), 1 }, { QString::number(par), 1 } }));
+    // also in blackout
+    safety.setParkInBlackout({ par }, true);
+    QCOMPARE(safety.channelMarks(0).value("61").toMap().value("inBlackout").toBool(), true);
+    // other universes: nothing; none there: nothing
+    QVERIFY(safety.channelMarks(1).isEmpty());
+    QVERIFY(safety.channelMarks(-1).isEmpty());
+    QVERIFY(safety.channelMarks(99).isEmpty());
+    safety.disarm();
+
+    // the show stop lights the PAR parked off: its park is under it (Niveles
+    // DMX says so); PAR 2 is the show stop's; the CO2 the gate's
+    safety.setShowStop(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 61), 255);
+    marks = safety.channelMarks(0);
+    QCOMPARE(marks.value("61").toMap().value("kind").toString(), QString("park"));
+    QCOMPARE(marks.value("61").toMap().value("showStop").toBool(), true);
+    QCOMPARE(marks.value("62").toMap(), QVariantMap({ { "kind", "showStop" }, { "hold", false } }));
+    QCOMPARE(marks.value("60").toMap().value("kind").toString(), QString("effect"));
+    safety.setShowStop(false);
+    marks = safety.channelMarks(0);
+    QCOMPARE(marks.value("61").toMap().value("showStop").toBool(), false);
+    QVERIFY(marks.contains("62") == false);
+    // a fade to black takes the parked intensity down, not the one also in
+    // blackout
+    safety.setParkInBlackout({ par }, false);
+    safety.fadeToBlack(60000);
+    QCOMPARE(safety.channelMarks(0).value("61").toMap().value("ramp").toBool(), true);
+    safety.setParkInBlackout({ par }, true);
+    QCOMPARE(safety.channelMarks(0).value("61").toMap().value("ramp").toBool(), false);
+    // (again: Blackout at once, the ramp over)
+    safety.fadeToBlack(60000);
+    QVERIFY(m_doc->inputOutputMap()->blackout());
+    QVERIFY(safety.fadingToBlack() == false);
+    m_doc->inputOutputMap()->setBlackout(false);
+    safety.setParkInBlackout({ par }, false);
+    QCOMPARE(safety.channelMarks(0).value("61").toMap().value("ramp").toBool(), false);
+    safety.unparkAll();
+    renderFrames(m_doc);
+}
+
+void Backend_Test::parkUnderShowStop()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);    // pan 100, tilt 101, dimmer 103, shutter 104, colour 105
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 1", 1);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(spot, 0, 40);
+    scene->setValue(spot, 3, 128);
+    scene->setValue(spot, 4, 150);
+    scene->setValue(spot, 5, 15);
+    scene->setValue(par, 0, 90);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // the show stop: the spot at open white, its shutter open; parked as it
+    // is now, that would stay for good (saved with the show): refused
+    safety.setShowStop(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    QCOMPARE(finalOut(m_doc, 104), 11);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    messages.clear();
+    QCOMPARE(safety.parkCurrent({ spot, par }), 0);
+    QCOMPARE(lastMessage(messages), QString("The show stop is on: take it away to park as it is now"));
+    QVERIFY(messages.last().at(1).toBool());
+    QVERIFY(safety.parks().isEmpty());
+    // off: its intensities 0, the rest as the show sends it (not the open
+    // shutter nor the white wheel of the show stop)
+    QCOMPARE(safety.parkOff({ spot }), 1);
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=40", "1=0", "2=0", "3=0", "4=150", "5=15", "6=0", "7=0", "8=0" }));
+    // released: the spot dark, its shutter and wheel where the show had them
+    safety.setShowStop(false);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 103), 0);
+    QCOMPARE(finalOut(m_doc, 104), 150);
+    QCOMPARE(finalOut(m_doc, 105), 15);
+    QCOMPARE(finalOut(m_doc, 0), 90);
+    safety.unparkAll();
+
+    // a fade to black going down: as it is now refused, off parks what the
+    // show sends
+    safety.fadeToBlack(60000);
+    renderFrames(m_doc, 25);
+    QVERIFY2(finalOut(m_doc, 0) < 90, qPrintable(QString::number(finalOut(m_doc, 0))));
+    messages.clear();
+    QCOMPARE(safety.parkCurrent({ par }), 0);
+    QCOMPARE(lastMessage(messages), QString("A fade to black runs: park as it is now once it is over"));
+    QVERIFY(safety.parks().isEmpty());
+    QCOMPARE(safety.parkOff({ spot }), 1);
+    QCOMPARE(parksOf(&safety, spot), QStringList({ "0=40", "1=0", "2=0", "3=0", "4=150", "5=15", "6=0", "7=0", "8=0" }));
+    // (again: Blackout at once, the ramp over; then as it is now works again)
+    safety.fadeToBlack(60000);
+    QVERIFY(m_doc->inputOutputMap()->blackout());
+    m_doc->inputOutputMap()->setBlackout(false);
+    renderFrames(m_doc, 2);
+    QCOMPARE(safety.parkCurrent({ par }), 1);
+    QCOMPARE(parksOf(&safety, par), QStringList({ "0=90" }));
+    safety.unparkAll();
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+}
+
+/*********************************************************************
+ * The show stop (Parte 1, S4)
+ *********************************************************************/
+
+/** The values $address of the first universe sends in $frames offline
+ *  frames, one about every 10 ms (the strobe of the mixer runs on the clock) */
+static QList<int> outOverTime(Doc *doc, int address, int frames)
+{
+    QList<int> values;
+    for (int i = 0; i < frames; i++)
+    {
+        renderFrames(doc);
+        values.append(finalOut(doc, address));
+        QTest::qWait(10);
+    }
+    return values;
+}
+
+/** The forced values of $layer on $address: "value" or "hold" ("" none) */
+static QString forcedAt(const QSharedPointer<const OutputLayer> &layer, int address)
+{
+    QString found;
+    if (layer.isNull())
+        return found;
+    for (const OutputLayer::Forced &value : layer->forced)
+        if (value.address == address)
+            found = value.hold ? QStringLiteral("hold") : QString::number(value.value);
+    return found;
+}
+
+void Backend_Test::fixtureLookShowStop()
+{
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 1), 1);
+    // pan 0, tilt 1, pan fine 2, tilt fine 3, speed 4, dimmer 5, shutter 6, colour 7, gobo 8, prism 9, control 10
+    const Fixture *spot = m_doc->fixture(fixtureAtAddress(m_doc, 0));
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "8ch Full", "Par", 0, 21, 1), 1);
+    // dimmer 0, red 1, green 2, blue 3, white 4, strobe 5 (Strobe slow to fast), program 6, speed 7
+    const Fixture *par = m_doc->fixture(fixtureAtAddress(m_doc, 20));
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "4ch RGBW", "Mix", 0, 41, 1), 1);
+    const Fixture *mix = m_doc->fixture(fixtureAtAddress(m_doc, 40));
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Wash RGBW", "10ch Basic", "Wash", 0, 51, 1), 1);
+    const Fixture *wash = m_doc->fixture(fixtureAtAddress(m_doc, 50));
+    QVERIFY(spot != nullptr && par != nullptr && mix != nullptr && wash != nullptr);
+
+    // the open white of the programmer is the shared one, unchanged
+    for (const Fixture *fxi : { spot, par, mix, wash })
+        QCOMPARE(prog.openWhite(fxi), FixtureLook::openWhite(fxi));
+    const QMap<quint32, uchar> white = FixtureLook::openWhite(spot);
+    QCOMPARE(int(white.value(5)), 255);
+    QCOMPARE(int(white.value(6)), 11);      // shutter "Open" 8-15
+    QCOMPARE(int(white.value(7)), 4);       // colour wheel "White" 0-9
+    QVERIFY(white.contains(0) == false);
+    QCOMPARE(FixtureLook::capabilityValue(spot->channel(6), { "closed", "open" }), 3);
+    QCOMPARE(FixtureLook::capabilityValue(spot->channel(6), { "nothing" }), -1);
+    QCOMPARE(FixtureLook::capabilityValue(nullptr, { "open" }), -1);
+
+    // the shutters open: the "open"; a "Strobe slow to fast" without one, 0
+    QCOMPARE(FixtureLook::shutterOpen(spot), (QMap<quint32, uchar>({ { 6, 11 } })));
+    QCOMPARE(FixtureLook::shutterOpen(par), (QMap<quint32, uchar>({ { 5, 0 } })));
+    QVERIFY(FixtureLook::shutterOpen(mix).isEmpty());
+    // the pan and tilt, the fine ones too (not the speed)
+    QCOMPARE(FixtureLook::motionChannels(spot), QList<quint32>({ 0, 1, 2, 3 }));
+    QVERIFY(FixtureLook::motionChannels(par).isEmpty());
+    QCOMPARE(FixtureLook::intensityChannels(par), QList<quint32>({ 0, 1, 2, 3, 4 }));
+
+    // the light of the show stop: the dimmer at the level, white from the
+    // colours, the shutter open, the colour wheel white, no program
+    QMap<quint32, uchar> light = FixtureLook::showStopLight(spot, 153);
+    QCOMPARE(int(light.value(5)), 153);
+    QCOMPARE(int(light.value(6)), 11);
+    QCOMPARE(int(light.value(7)), 4);
+    QVERIFY(light.contains(0) == false && light.contains(1) == false && light.contains(8) == false);
+    light = FixtureLook::showStopLight(par, 153);
+    QCOMPARE(light, (QMap<quint32, uchar>({ { 0, 153 }, { 1, 255 }, { 2, 255 }, { 3, 255 }, { 4, 255 },
+                                            { 5, 0 }, { 6, 4 } })));
+    // without a dimmer: the colours at the level (their mix is the light)
+    QCOMPARE(FixtureLook::showStopLight(mix, 102),
+             (QMap<quint32, uchar>({ { 0, 102 }, { 1, 102 }, { 2, 102 }, { 3, 102 } })));
+    QCOMPARE(int(FixtureLook::showStopLight(wash, 255).value(3)), 255);
+
+    // the hand of the show stop (Theme.iconHand) is in the icon font
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    const QRegularExpressionMatch hand = QRegularExpression("property string iconHand: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    QVERIFY(hand.hasMatch());
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QVERIFY(font.supportsCharacter(hand.captured(1).toUInt(nullptr, 16)));
+}
+
+void Backend_Test::fixtureLookShutterPreset()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    // a PAR with a dimmer and a shutter of these ranges (from, to, name, preset)
+    auto define = [this](const QString &model, const QList<std::tuple<int, int, QString, QLCCapability::Preset>> &ranges) {
+        QLCFixtureDef *def = new QLCFixtureDef();
+        def->setManufacturer("Test");
+        def->setModel(model);
+        def->setType(QLCFixtureDef::ColorChanger);
+        QLCChannel *dimmer = new QLCChannel();
+        dimmer->setName("Dimmer");
+        dimmer->setGroup(QLCChannel::Intensity);
+        QLCChannel *shutter = new QLCChannel();
+        shutter->setName("Strobing");
+        shutter->setGroup(QLCChannel::Shutter);
+        for (const auto &range : ranges)
+        {
+            QLCCapability *cap = new QLCCapability(uchar(std::get<0>(range)), uchar(std::get<1>(range)), std::get<2>(range));
+            cap->setPreset(std::get<3>(range));
+            QVERIFY(shutter->addCapability(cap));
+        }
+        def->addChannel(dimmer);
+        def->addChannel(shutter);
+        QLCFixtureMode *mode = new QLCFixtureMode(def);
+        mode->setName("2ch");
+        mode->insertChannel(dimmer, 0);
+        mode->insertChannel(shutter, 1);
+        def->addMode(mode);
+        m_doc->fixtureDefCache()->addFixtureDef(def);
+    };
+    // its open range said only by its preset; at rest 0, dark
+    define("Hex PAR", { { 0, 31, "LED OFF", QLCCapability::ShutterClose }, { 32, 63, "LED ON", QLCCapability::ShutterOpen },
+                        { 64, 95, "Strobing Slow-Fast", QLCCapability::StrobeSlowToFast },
+                        { 96, 255, "Pulse Strobing Slow-Fast", QLCCapability::PulseSlowToFast } });
+    // two ranges marked open, the first one named off (a slip of a definition)
+    define("Twin PAR", { { 0, 31, "LED off", QLCCapability::ShutterOpen }, { 32, 63, "LED on", QLCCapability::ShutterOpen },
+                         { 64, 255, "Strobe", QLCCapability::StrobeSlowToFast } });
+    // a strobe whose no strobe is only marked open («Off»)
+    define("Pulse PAR", { { 0, 15, "Off", QLCCapability::ShutterOpen },
+                          { 16, 255, "Strobe slow-fast", QLCCapability::StrobeSlowToFast } });
+    QCOMPARE(m_patch->addFixtures("Test", "Hex PAR", "2ch", "Hex", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Twin PAR", "2ch", "Twin", 0, 11, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Pulse PAR", "2ch", "Pulse", 0, 21, 1), 1);
+    const Fixture *hex = m_doc->fixture(fixtureAtAddress(m_doc, 0));
+    const Fixture *twin = m_doc->fixture(fixtureAtAddress(m_doc, 10));
+    const Fixture *pulse = m_doc->fixture(fixtureAtAddress(m_doc, 20));
+    QVERIFY(hex != nullptr && twin != nullptr && pulse != nullptr);
+    QCOMPARE(FixtureLook::shutterOpen(hex), (QMap<quint32, uchar>({ { 1, 47 } })));
+    QCOMPARE(FixtureLook::shutterOpen(twin), (QMap<quint32, uchar>({ { 1, 47 } })));
+    QCOMPARE(FixtureLook::shutterOpen(pulse), (QMap<quint32, uchar>({ { 1, 7 } })));
+    QCOMPARE(FixtureLook::showStopLight(hex, 255), (QMap<quint32, uchar>({ { 0, 255 }, { 1, 47 } })));
+
+    // a range marked open wins over the names of the others: a strobe effect
+    // named open (a ramp, with its preset or none), a dark «NO Function»
+    define("Ramp PAR", { { 0, 7, "LED OFF", QLCCapability::ShutterClose }, { 8, 15, "LED ON", QLCCapability::ShutterOpen },
+                         { 16, 131, "Strobing slow - fast", QLCCapability::StrobeSlowToFast },
+                         { 132, 255, "Slow open - fast close", QLCCapability::RampUpFastToSlow } });
+    define("Closed PAR", { { 0, 31, "NO Function", QLCCapability::ShutterClose },
+                        { 32, 95, "Strobe slow to fast", QLCCapability::StrobeSlowToFast },
+                        { 96, 127, "LEDs ON", QLCCapability::ShutterOpen },
+                        { 128, 255, "Pulse effect slow to fast", QLCCapability::PulseSlowToFast } });
+    define("Unmarked PAR", { { 0, 5, "No function", QLCCapability::Custom }, { 6, 10, "Full on", QLCCapability::ShutterOpen },
+                         { 11, 255, "Slow open - fast close", QLCCapability::Custom } });
+    // of two marked open, the one named so (the other a strobe marked open)
+    define("Sync PAR", { { 0, 199, "Strobe sync slow - fast", QLCCapability::ShutterOpen },
+                         { 200, 255, "Open", QLCCapability::ShutterOpen } });
+    // none marked open: the names, as before
+    define("Word PAR", { { 0, 7, "Closed", QLCCapability::Custom }, { 8, 15, "Open", QLCCapability::Custom },
+                         { 16, 255, "Strobe", QLCCapability::StrobeSlowToFast } });
+    QCOMPARE(m_patch->addFixtures("Test", "Ramp PAR", "2ch", "Ramp", 0, 31, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Closed PAR", "2ch", "Closed", 0, 41, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Unmarked PAR", "2ch", "Unmarked", 0, 51, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Sync PAR", "2ch", "Sync", 0, 61, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Test", "Word PAR", "2ch", "Word", 0, 71, 1), 1);
+    QCOMPARE(FixtureLook::shutterOpen(m_doc->fixture(fixtureAtAddress(m_doc, 30))), (QMap<quint32, uchar>({ { 1, 11 } })));
+    QCOMPARE(FixtureLook::shutterOpen(m_doc->fixture(fixtureAtAddress(m_doc, 40))), (QMap<quint32, uchar>({ { 1, 111 } })));
+    QCOMPARE(FixtureLook::shutterOpen(m_doc->fixture(fixtureAtAddress(m_doc, 50))), (QMap<quint32, uchar>({ { 1, 8 } })));
+    QCOMPARE(FixtureLook::shutterOpen(m_doc->fixture(fixtureAtAddress(m_doc, 60))), (QMap<quint32, uchar>({ { 1, 227 } })));
+    QCOMPARE(FixtureLook::shutterOpen(m_doc->fixture(fixtureAtAddress(m_doc, 70))), (QMap<quint32, uchar>({ { 1, 11 } })));
+
+    // the show stop with nothing playing: open (its rest is dark); a scene
+    // that strobes it: open too; released, the scene's again
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 1), 0);
+    safety.setShowStop(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    QCOMPARE(finalOut(m_doc, 1), 47);
+    QCOMPARE(finalOut(m_doc, 11), 47);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(hex->id(), 1, 80);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 1), 47);
+    safety.setShowStop(false);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 1), 80);
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+}
+
+void Backend_Test::showStopOverride()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    LiveMixer mixer(m_doc);
+    safety.setMixer(&mixer);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.setPatch(m_patch);
+    QSignalSpy messages(&safety, SIGNAL(message(QString,bool)));
+    QSignalSpy disarmed(&safety, SIGNAL(disarmed(QString)));
+    QSignalSpy changed(&safety, SIGNAL(showStopChanged()));
+
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "6ch DRGBW+Strobe", "PAR", 0, 1, 1), 1);
+    const quint32 par = fixtureAtAddress(m_doc, 0);       // dimmer 0, RGBW 1-4, strobe 5
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);    // pan 100, tilt 101, dimmer 103, shutter 104, colour 105, gobo 106
+    QCOMPARE(m_patch->addFixtures("Generic", "Strobe", "2ch Dimmer+Strobe", "Strobe", 0, 21, 1), 1);
+    const quint32 strobe = fixtureAtAddress(m_doc, 20);   // dimmer 20, strobe 21
+    QCOMPARE(m_patch->addFixtures("Generic", "Hazer", "2ch Haze+Fan", "Hazer", 0, 31, 1), 1);
+    const quint32 hazer = fixtureAtAddress(m_doc, 30);    // haze 30, fan 31
+    QCOMPARE(m_patch->addFixtures("Generic", "Laser", "6ch", "Laser", 0, 41, 1), 1);
+    const quint32 laser = fixtureAtAddress(m_doc, 40);    // mode 40 ... speed 45
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Universe *universe = sfxUniverse(m_doc);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(m_doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+
+    // the show plays: a red PAR strobing, a spot moving (an EFX) at half,
+    // red, its shutter strobing; a strobe flashing, the hazer, a laser in
+    // auto, a CO2 held
+    Scene *scene = new Scene(m_doc);
+    for (const auto &v : QList<std::tuple<quint32, quint32, uchar>>({
+             { par, 0, 100 }, { par, 1, 255 }, { par, 5, 200 }, { spot, 3, 128 }, { spot, 4, 150 }, { spot, 5, 15 },
+             { spot, 6, 20 }, { strobe, 0, 255 }, { strobe, 1, 180 }, { hazer, 0, 120 }, { hazer, 1, 80 },
+             { laser, 0, 60 }, { laser, 1, 10 }, { co2, 0, 255 } }))
+        scene->setValue(std::get<0>(v), std::get<1>(v), std::get<2>(v));
+    QVERIFY(m_doc->addFunction(scene));
+    EFX *efx = new EFX(m_doc);
+    EFXFixture *ef = new EFXFixture(efx);
+    ef->setHead(GroupHead(spot, 0));
+    efx->addFixture(ef);
+    efx->setWidth(100);
+    efx->setHeight(100);
+    efx->setXOffset(128);
+    efx->setYOffset(128);
+    efx->setDuration(1000);
+    QVERIFY(m_doc->addFunction(efx));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    efx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 10);
+    // armed while the scene holds the CO2: it waits for a release (0)
+    QVERIFY(safety.arm());
+    // the programmer puts the PAR dark, the grand master is at 0
+    prog.selectFixtures({ par });
+    QCOMPARE(prog.setDimmer(0), 1);
+    m_doc->inputOutputMap()->setGrandMasterValue(0);
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    const int pan = finalOut(m_doc, 100);
+    const int tilt = finalOut(m_doc, 101);
+
+    // engaged: disarmed (and arming refused), no strobe of the mixer
+    QVERIFY(safety.showStop() == false);
+    safety.setShowStop(true);
+    QVERIFY(safety.showStop());
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.first().at(0).toString(), QString("showStop"));
+    QVERIFY(mixer.strobeSuppressed());
+    messages.clear();
+    QVERIFY(safety.arm() == false);
+    QCOMPARE(lastMessage(messages), QString("The show stop is on: take it away to arm the special effects"));
+    QVERIFY(messages.last().at(1).toBool());
+    safety.setShowStop(true);
+    QCOMPARE(changed.count(), 1);
+    // its layer: on, never a value on the CO2
+    const QSharedPointer<const OutputLayer> layer = universe->outputLayer();
+    QVERIFY(layer->showStop);
+    QCOMPARE(forcedAt(layer, 60), QString());
+    QCOMPARE(forcedAt(layer, 100), QString("hold"));
+    QCOMPARE(forcedAt(layer, 30), QString());
+
+    renderFrames(m_doc, 2);
+    // the PAR at full white above the programmer and the grand master; no strobe
+    for (int a : { 0, 1, 2, 3, 4 })
+        QCOMPARE(finalOut(m_doc, a), 255);
+    QCOMPARE(finalOut(m_doc, 5), 0);
+    // the spot: its dimmer at the level, its shutter open, white, where it was
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    QCOMPARE(finalOut(m_doc, 104), 11);
+    QCOMPARE(finalOut(m_doc, 105), 4);
+    QCOMPARE(finalOut(m_doc, 106), 20);
+    QCOMPARE(finalOut(m_doc, 100), pan);
+    QCOMPARE(finalOut(m_doc, 101), tilt);
+    // the strobe dark, the laser all at 0 (off), the hazer as it was, the CO2 0
+    QCOMPARE(finalOut(m_doc, 20), 0);
+    QCOMPARE(finalOut(m_doc, 21), 0);
+    for (int a = 40; a < 46; a++)
+        QCOMPARE(finalOut(m_doc, a), 0);
+    QCOMPARE(finalOut(m_doc, 30), 120);
+    QCOMPARE(finalOut(m_doc, 31), 80);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->wireAt(1), 255, 1000);
+    QCOMPARE(wire->wireAt(60), 0);
+
+    // the heads stay where they were while the EFX goes on underneath
+    QSet<int> moved;
+    for (int i = 0; i < 50; i++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(finalOut(m_doc, 100), pan);
+        QCOMPARE(finalOut(m_doc, 101), tilt);
+        moved.insert(renderedValue(m_doc, 100));
+    }
+    QVERIFY2(moved.count() > 5, qPrintable(QString::number(moved.count())));
+
+    // Blackout: the show stop above it (the rest dark), the CO2 0
+    InputOutputMap *io = m_doc->inputOutputMap();
+    QVERIFY(io->setBlackout(true));
+    QCOMPARE(outputAt(universe, 0, true), 255);
+    QCOMPARE(outputAt(universe, 1, true), 255);
+    QCOMPARE(outputAt(universe, 103, true), 255);
+    QCOMPARE(outputAt(universe, 100, true), pan);
+    QCOMPARE(outputAt(universe, 60, true), 0);
+    QCOMPARE(wire->lastAt(0), 255);
+    QCOMPARE(wire->lastAt(20), 0);
+    renderFrames(m_doc);
+    QCOMPARE(wire->lastAt(1), 255);
+    QCOMPARE(wire->lastAt(60), 0);
+    QVERIFY(io->setBlackout(false));
+
+    // released: what the scenes play now, that frame (the programmer and
+    // the grand master as they are put back); the mixer strobes again
+    prog.clear();
+    io->setGrandMasterValue(255);
+    safety.setShowStop(false);
+    QCOMPARE(changed.count(), 2);
+    QVERIFY(mixer.strobeSuppressed() == false);
+    QVERIFY(universe->outputLayer()->showStop == false);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 0), 100);
+    QCOMPARE(finalOut(m_doc, 2), 0);
+    QCOMPARE(finalOut(m_doc, 5), 200);
+    QCOMPARE(finalOut(m_doc, 104), 150);
+    QCOMPARE(finalOut(m_doc, 105), 15);
+    QCOMPARE(finalOut(m_doc, 20), 255);
+    QCOMPARE(finalOut(m_doc, 40), 60);
+    QCOMPARE(finalOut(m_doc, 100), renderedValue(m_doc, 100));
+    // the CO2 still waits for a release, disarmed
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    QVERIFY(safety.armed() == false);
+    QVERIFY(safety.arm());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    safety.disarm();
+    efx->stop(FunctionParent::master());
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc, 2);
+    universe->setOutputPatch(nullptr, 0);
+}
+
+void Backend_Test::showStopDefaults()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    // generic dimmers say what they stand in for by their name (a video
+    // trigger, a pyro channel, a relay say nothing of a light)
+    const QStringList names({ "PAR", "BLINDER1", "FRESNEL", "HAZER", "SMOKE", "LASER", "FAN", "BUBBLES", "CO2 1",
+                              "VIDEO 1", "PIRO 1", "FOCO 3", "PANTALLA SALA", "Relé 2", "CH 15" });
+    QHash<QString, quint32> ids;
+    for (int i = 0; i < names.count(); i++)
+        ids.insert(names.at(i), patchSfx(m_patch, m_doc, names.at(i), i + 1));
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);
+    Scene *scene = new Scene(m_doc);
+    for (const QString &name : names)
+        scene->setValue(ids.value(name), 0, 100);
+    scene->setValue(spot, 3, 100);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 100);
+
+    // the kinds it lights: the lights; never smoke, hazers, fans, effects
+    for (const char *kind : { "movinghead", "scanner", "wash", "ledbar", "blinder", "dimmer" })
+        QVERIFY2(SafetyManager::showStopLights(kind), kind);
+    for (const char *kind : { "strobe", "laser", "smoke", "hazer", "co2", "flame", "spark", "confetti", "bubbles",
+                              "snow", "fan", "effect", "other" })
+        QVERIFY2(SafetyManager::showStopLights(kind) == false, kind);
+
+    // every light by default, at 100 %: the PAR, the blinder, the fresnel
+    // and the head lit; the hazer, the smoke, the fan and the bubbles as
+    // they were; the laser dark; the CO2 never
+    QCOMPARE(safety.showStopLevel(), 100);
+    QVERIFY(safety.showStopGroups().isEmpty());
+    // the PAR parked off (a broken one): the show stop wins over the park
+    QCOMPARE(safety.parkOff({ ids.value("PAR") }), 1);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    safety.setShowStop(true);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    QCOMPARE(finalOut(m_doc, 1), 255);
+    QCOMPARE(finalOut(m_doc, 2), 255);
+    QCOMPARE(finalOut(m_doc, 103), 255);
+    QCOMPARE(finalOut(m_doc, 3), 100);
+    QCOMPARE(finalOut(m_doc, 4), 100);
+    QCOMPARE(finalOut(m_doc, 5), 0);
+    QCOMPARE(finalOut(m_doc, 6), 100);
+    QCOMPARE(finalOut(m_doc, 7), 100);
+    QCOMPARE(finalOut(m_doc, 8), 0);
+    const QMap<quint32, SafetyManager::StopValue> values = SafetyManager::showStopValues(m_doc, m_patch, 100, {});
+    for (int a : { 3, 4, 6, 7, 8 })
+        QVERIFY2(values.contains(quint32(a)) == false, qPrintable(QString::number(a)));
+    QCOMPARE(int(values.value(5).value), 0);
+    QCOMPARE(values.value(100).hold, true);
+    // a generic dimmer whose name says nothing of a light (a video trigger,
+    // a screen of the hall, a relay, a bare channel) stays as it is; FOCO 3
+    // is a light; a pyro channel (PIRO 1) is a protected flame: 0, always
+    for (int a : { 9, 12, 13, 14 })
+    {
+        QVERIFY2(values.contains(quint32(a)) == false, qPrintable(QString::number(a)));
+        QCOMPARE(finalOut(m_doc, a), 100);
+    }
+    QVERIFY(m_patch->isProtected(ids.value("PIRO 1")));
+    QVERIFY(values.contains(10) == false);
+    QCOMPARE(finalOut(m_doc, 10), 0);
+    QCOMPARE(finalOut(m_doc, 11), 255);
+    // its icon in the plan says what it is: a light lit, a dimmer drawn as
+    // a fog machine never
+    m_patch->setFixtureIcon({ ids.value("CH 15") }, "dimmer");
+    m_patch->setFixtureIcon({ ids.value("FOCO 3") }, "smoke");
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 14), 255);
+    QCOMPARE(finalOut(m_doc, 11), 100);
+    m_patch->setFixtureIcon({ ids.value("CH 15"), ids.value("FOCO 3") }, "auto");
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 14), 100);
+    QCOMPARE(finalOut(m_doc, 11), 255);
+    // in a group chosen too (a group of everything has the video triggers)
+    const int all = m_patch->createGroup("All", { ids.value("VIDEO 1"), ids.value("PAR") });
+    QVERIFY(all >= 0);
+    safety.setShowStopGroups({ all });
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 9), 100);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    QCOMPARE(finalOut(m_doc, 11), 100);
+    safety.setShowStopGroups({});
+    m_patch->deleteGroup(quint32(all));
+    // the words: a light named so; never one that says something else too
+    for (const char *name : { "PAR 1", "Dimmer 4", "FRESNEL 2", "BLINDER", "Frontal 3", "Contra 2", "Luz sala",
+                              "PC 1", "House lights", "Cyc", "Batten 2", "Spot 5" })
+        QVERIFY2(SafetyManager::genericDimmerLight(name, QString()), name);
+    for (const char *name : { "VIDEO 1", "Vid 2", "Video trigger", "PIRO 1", "Pyro 2", "Relé 3", "Relay", "MOTOR",
+                              "Pantalla", "Screen L", "Kabuki", "Telón", "Trigger 4", "Disparador", "CH 15", "12",
+                              "Foco video", "HAZER", "CO2 1", "Pirotecnia 2", "Pirotécnico frontal", "Feu 3",
+                              "FrontVideo", "FrontScreen", "SpotTrigger 1", "FocoVideo" })
+        QVERIFY2(SafetyManager::genericDimmerLight(name, QString()) == false, name);
+    QVERIFY(SafetyManager::genericDimmerLight("VIDEO 1", "wash"));
+    QVERIFY(SafetyManager::genericDimmerLight("PAR 1", "smoke") == false);
+    QVERIFY(SafetyManager::genericDimmerLight("PAR 1", "bogus"));
+    // a dimmer named BLINDER1 renamed HAZER 2: a hazer now, never lit
+    m_patch->renameFixture(ids.value("BLINDER1"), "HAZER 2");
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 1), 100);
+    // released: the PAR parked off again
+    safety.setShowStop(false);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    safety.unparkAll();
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+}
+
+void Backend_Test::showStopGroupsAndLevel()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    LiveMixer mixer(m_doc);
+    safety.setMixer(&mixer);
+    QSignalSpy settingsChanged(&safety, SIGNAL(showStopSettingsChanged()));
+    const quint32 par1 = patchSfx(m_patch, m_doc, "PAR 1", 1);
+    const quint32 par2 = patchSfx(m_patch, m_doc, "PAR 2", 2);
+    const quint32 hazer = patchSfx(m_patch, m_doc, "HAZER 1", 3);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Wash", 0, 11, 1), 1);
+    const quint32 wash = fixtureAtAddress(m_doc, 10);     // dimmer 10, RGBW 11-14
+    const int washes = m_patch->createGroup("Washes", { par1, hazer, wash });
+    QVERIFY(washes >= 0);
+    Scene *scene = new Scene(m_doc);
+    scene->setValue(par1, 0, 50);
+    scene->setValue(par2, 0, 200);
+    scene->setValue(hazer, 0, 90);
+    scene->setValue(wash, 0, 40);
+    scene->setValue(wash, 2, 255);
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 2);
+
+    // the levels and groups it takes: 0-100 %, groups of the show, each once
+    safety.setShowStopLevel(150);
+    QCOMPARE(safety.showStopLevel(), 100);
+    QCOMPARE(settingsChanged.count(), 0);
+    safety.setShowStopLevel(-5);
+    QCOMPARE(safety.showStopLevel(), 0);
+    safety.setShowStopLevel(60);
+    QCOMPARE(safety.showStopLevel(), 60);
+    QCOMPARE(settingsChanged.count(), 2);
+    safety.setShowStopGroups({ 999, washes, washes, "x" });
+    QCOMPARE(safety.showStopGroups(), QVariantList({ quint32(washes) }));
+    QCOMPARE(settingsChanged.count(), 3);
+    QVERIFY(m_doc->isModified());
+
+    // the strobe of the mixer on every fixture: PAR 2 blinks
+    mixer.set(-1, "strobeHz", 10.0);
+    mixer.set(-1, "strobe", true);
+    QList<int> seen = outOverTime(m_doc, 1, 30);
+    QVERIFY2(seen.contains(0) && seen.contains(200), qPrintable(QString::number(seen.count(0))));
+
+    // engaged: only the washes' lights at 60 % (153); their hazer as it
+    // was, PAR 2 as the scene says, and no strobe
+    safety.setShowStop(true);
+    QVERIFY(mixer.strobeSuppressed());
+    seen = outOverTime(m_doc, 1, 30);
+    QCOMPARE(seen.count(200), 30);
+    QCOMPARE(finalOut(m_doc, 0), 153);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    QCOMPARE(finalOut(m_doc, 10), 153);
+    for (int a : { 11, 12, 13, 14 })
+        QCOMPARE(finalOut(m_doc, a), 255);
+    // a new level, while it is on
+    safety.setShowStopLevel(20);
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 0), 51);
+    QCOMPARE(finalOut(m_doc, 10), 51);
+    // PAR 2 put in the group: lit too
+    m_patch->setGroupFixtures(quint32(washes), { par1, par2, hazer, wash });
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 1), 51);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    // the group deleted: every light
+    m_patch->deleteGroup(quint32(washes));
+    QVERIFY(safety.showStopGroups().isEmpty());
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 1), 51);
+    QCOMPARE(finalOut(m_doc, 0), 51);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    // released: the strobe of the mixer again
+    safety.setShowStop(false);
+    QVERIFY(mixer.strobeSuppressed() == false);
+    seen = outOverTime(m_doc, 1, 30);
+    QVERIFY(seen.contains(0) && seen.contains(200));
+    mixer.reset();
+    scene->stop(FunctionParent::master());
+    renderFrames(m_doc);
+}
+
+void Backend_Test::showStopHoldLogic()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy changed(&safety, SIGNAL(showStopChanged()));
+    QSignalSpy holding(&safety, SIGNAL(holdingChanged()));
+    QCOMPARE(safety.holdMs(), 1000);
+
+    // let go too soon: nothing
+    safety.holdShowStop(true);
+    QVERIFY(safety.holding());
+    QCOMPARE(holding.count(), 1);
+    QTest::qWait(400);
+    safety.holdShowStop(false);
+    QVERIFY(safety.holding() == false);
+    QCOMPARE(holding.count(), 2);
+    QTest::qWait(900);
+    QVERIFY(safety.showStop() == false);
+    QCOMPARE(changed.count(), 0);
+
+    // held a second: on, the hold over (its up does nothing)
+    safety.holdShowStop(true);
+    QTRY_VERIFY_WITH_TIMEOUT(safety.showStop(), 3000);
+    QVERIFY(safety.holding() == false);
+    QCOMPARE(changed.count(), 1);
+    safety.holdShowStop(false);
+    safety.holdShowStop(false);
+    QVERIFY(safety.showStop());
+    QVERIFY(safety.holding() == false);
+    // held again: off
+    safety.holdShowStop(true);
+    QTRY_VERIFY_WITH_TIMEOUT(safety.showStop() == false, 3000);
+    QCOMPARE(changed.count(), 2);
+    safety.holdShowStop(false);
+
+    // a release lost (the hold toggles all the same), then the next hold works
+    safety.holdShowStop(true);
+    QTRY_VERIFY_WITH_TIMEOUT(safety.showStop(), 3000);
+    safety.holdShowStop(true);
+    QVERIFY(safety.holding());
+    QTRY_VERIFY_WITH_TIMEOUT(safety.showStop() == false, 3000);
+    QCOMPARE(changed.count(), 4);
+
+    // two controls held together (the key and a pad): one hold, one toggle;
+    // one let go of, the other still holds
+    safety.holdShowStop(true);
+    QTest::qWait(300);
+    safety.holdShowStop(true);
+    safety.holdShowStop(false);
+    QVERIFY(safety.holding());
+    QTRY_VERIFY_WITH_TIMEOUT(safety.showStop(), 3000);
+    QCOMPARE(changed.count(), 5);
+    safety.holdShowStop(false);
+    QTest::qWait(1200);
+    QVERIFY(safety.showStop());
+    QCOMPARE(changed.count(), 5);
+    safety.setShowStop(false);
+
+    // the Pause key: pressed once, nothing (its second press waited for a
+    // while, then forgotten); twice within the time, at once; the time
+    // starts again with each first press
+    QSignalSpy pending(&safety, SIGNAL(keyPendingChanged()));
+    QCOMPARE(safety.keyWindowMs(), 2000);
+    changed.clear();
+    safety.pressShowStopKey();
+    QVERIFY(safety.keyPending());
+    QVERIFY(safety.holding() == false);
+    QCOMPARE(pending.count(), 1);
+    QTest::qWait(1200);
+    QVERIFY(safety.showStop() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(safety.keyPending() == false, 3000);
+    QCOMPARE(pending.count(), 2);
+    QCOMPARE(changed.count(), 0);
+    safety.pressShowStopKey();
+    QTest::qWait(300);
+    safety.pressShowStopKey();
+    QVERIFY(safety.showStop());
+    QVERIFY(safety.keyPending() == false);
+    QCOMPARE(changed.count(), 1);
+    // and twice again: taken away
+    safety.pressShowStopKey();
+    safety.pressShowStopKey();
+    QVERIFY(safety.showStop() == false);
+    QCOMPARE(changed.count(), 2);
+    // one press, then another control puts it: the press waited for is
+    // forgotten (a second one doesn't take back what was just done)
+    safety.pressShowStopKey();
+    safety.setShowStop(true);
+    QVERIFY(safety.keyPending() == false);
+    safety.pressShowStopKey();
+    QVERIFY(safety.showStop());
+    QVERIFY(safety.keyPending());
+    QTRY_VERIFY_WITH_TIMEOUT(safety.keyPending() == false, 3000);
+    QVERIFY(safety.showStop());
+    safety.setShowStop(false);
+
+    // the program closes: nothing holds it any more, and it lets go
+    safety.setShowStop(true);
+    safety.disarmAndFlush("exit");
+    QVERIFY(sfxUniverse(m_doc)->outputLayer()->showStop == false);
+    safety.holdShowStop(true);
+    QVERIFY(safety.holding() == false);
+    safety.pressShowStopKey();
+    safety.pressShowStopKey();
+    QVERIFY(safety.keyPending() == false);
+    QTest::qWait(1200);
+    QVERIFY(sfxUniverse(m_doc)->outputLayer()->showStop == false);
+}
+
+void Backend_Test::showStopEscKeeps()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    SafetyManager *safety = core.safety();
+    const quint32 par = patchSfx(core.patch(), doc, "PAR 1", 1);
+    const quint32 hazer = patchSfx(core.patch(), doc, "HAZER 1", 2);
+    Universe *universe = doc->inputOutputMap()->universes().at(0);
+    WirePlugin *wire = new WirePlugin();
+    wire->setParent(doc);
+    QVERIFY(universe->setOutputPatch(wire, 0));
+    auto out = [universe](int address) { return int(universe->finalValue(address)); };
+    Scene *scene = new Scene(doc);
+    scene->setValue(par, 0, 40);
+    scene->setValue(hazer, 0, 90);
+    QVERIFY(doc->addFunction(scene));
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 90, 3000);
+
+    safety->setShowStop(true);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+    // Esc: the functions stop underneath, the show stop stays
+    core.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(scene->stopped(), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 0, 3000);
+    QVERIFY(safety->showStop());
+    QCOMPARE(out(0), 255);
+    // Blackout: the show stop above it, the rest dark
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 90, 3000);
+    core.setBlackout(true);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->lastAt(1), 0, 3000);
+    QCOMPARE(wire->lastAt(0), 255);
+    QVERIFY(safety->showStop());
+    core.setBlackout(false);
+    // released: what plays now
+    safety->setShowStop(false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 40, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(wire->lastAt(0), 40, 3000);
+    // another show: off, as a new one starts (never saved on)
+    safety->setShowStop(true);
+    core.newShow();
+    QVERIFY(safety->showStop() == false);
+    QVERIFY(universe->outputLayer().isNull() || universe->outputLayer()->showStop == false);
+}
+
+void Backend_Test::showStopMappingAndKey()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    ControlMapper *mapper = core.mapping();
+    ShowSurface *surface = core.surface();
+    QSignalSpy changed(safety, SIGNAL(showStopChanged()));
+
+    // a button target, by its name
+    QVariantMap info;
+    for (const QVariant &v : mapper->targets())
+        if (v.toMap().value("target").toString() == "showStop")
+            info = v.toMap();
+    QCOMPARE(info.value("kind").toString(), QString("button"));
+    QCOMPARE(info.value("name").toString(), QString("Show stop (hold 1 s)"));
+    QVERIFY(mapper->isButton("showStop"));
+    QCOMPARE(mapper->describeTarget({ { "target", "showStop" } }), QString("Show stop (hold 1 s)"));
+
+    // held (2: the "paused" LED, blinking), then on (1); its release does
+    // nothing, nor a right click; whatever its mode
+    const QVariantMap target({ { "target", "showStop" }, { "mode", "on" } });
+    QCOMPARE(mapper->targetState(target), 0);
+    mapper->pressTarget(target, true);
+    QCOMPARE(mapper->targetState(target), 2);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop(), 3000);
+    QCOMPARE(mapper->targetState(target), 1);
+    mapper->pressTarget(target, false);
+    mapper->stopTarget(target);
+    QVERIFY(safety->showStop());
+    // a short press of a pad: nothing
+    mapper->pressTarget(target, true);
+    QTest::qWait(200);
+    mapper->pressTarget(target, false);
+    QTest::qWait(1000);
+    QVERIFY(safety->showStop());
+    QCOMPARE(changed.count(), 1);
+
+    // the Pause key, from the window (an item gets it too: only once), with
+    // a modifier, never a shortcut. As Windows sends it: its release with its
+    // press, however long it is held. One press: nothing, whatever the time;
+    // its releases and auto-repeats count for nothing; a second press within
+    // the time: at once
+    QWindow window;
+    QObject item;
+    auto pause = [&](QObject *to, QEvent::Type type, bool autoRepeat = false) {
+        QKeyEvent event(type, Qt::Key_Pause, Qt::ShiftModifier, QString(), autoRepeat);
+        return mapper->eventFilter(to, &event);
+    };
+    QKeyEvent shortcut(QEvent::ShortcutOverride, Qt::Key_Pause, Qt::NoModifier);
+    shortcut.ignore();
+    QVERIFY(mapper->eventFilter(&item, &shortcut));
+    QVERIFY(shortcut.isAccepted());
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QVERIFY(pause(&window, QEvent::KeyRelease));
+    QVERIFY(safety->keyPending());
+    QVERIFY(safety->holding() == false);
+    QVERIFY(pause(&item, QEvent::KeyPress));
+    QVERIFY(pause(&window, QEvent::KeyPress, true));
+    QTest::qWait(1100);
+    QVERIFY(safety->showStop());
+    QCOMPARE(changed.count(), 1);
+    // the second press: taken away at once
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QVERIFY(pause(&window, QEvent::KeyRelease));
+    QVERIFY(safety->showStop() == false);
+    QVERIFY(safety->keyPending() == false);
+    QCOMPARE(changed.count(), 2);
+    // a press, then its release long after (a keyboard that sends one):
+    // nothing; the time over, the next press is a first one again
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QTest::qWait(1100);
+    QVERIFY(pause(&window, QEvent::KeyRelease));
+    QVERIFY(safety->showStop() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->keyPending() == false, 3000);
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QVERIFY(safety->showStop() == false);
+    QVERIFY(safety->keyPending());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->keyPending() == false, 3000);
+    QCOMPARE(changed.count(), 2);
+    // (never a key of a mapping)
+    QVERIFY(ControlMapper::keyName(Qt::Key_Pause).isEmpty());
+
+    // learning a mapping: Pause isn't learnt, it works all the same
+    mapper->setLearnMode(true);
+    mapper->startLearn({ { "target", "tap" } });
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QVERIFY(pause(&window, QEvent::KeyRelease));
+    QCOMPARE(mapper->pendingTarget().value("target").toString(), QString("tap"));
+    QVERIFY(safety->keyPending());
+    QVERIFY(pause(&window, QEvent::KeyPress));
+    QVERIFY(safety->showStop());
+    safety->setShowStop(false);
+    QCOMPARE(mapper->pendingTarget().value("target").toString(), QString("tap"));
+    mapper->cancelLearn();
+    changed.clear();
+
+    // learnt on a controller: red while on, red blinking while held (the
+    // APC mini mk2 at 100 % and blinking 1/4, the APC40 mkII solid and
+    // blinking, the APC mini red and red blinking); a button with one LED
+    // its own (on, blinking)
+    const quint32 note = 128;
+    auto learn = [&](const QString &device, quint32 channel) {
+        mapper->startLearn({ { "target", "showStop" } });
+        mapper->handleInput("midi", device, channel, QString(), 254);
+        mapper->handleInput("midi", device, channel, QString(), 0);
+        return mapper->mappings().last().toMap();
+    };
+    auto leds = [](const QVariantMap &m) {
+        return QList<int>({ m.value("onValue").toInt(), m.value("onChannel").toInt(), m.value("pausedValue").toInt(),
+                            m.value("pausedChannel").toInt(), m.value("offValue").toInt(), m.value("offChannel").toInt() });
+    };
+    const QVariantMap pad = learn("MIDI|APC mini mk2", note + 6);
+    QCOMPARE(pad.value("target").toString(), QString("showStop"));
+    QCOMPARE(leds(pad), QList<int>({ 5, 7, 5, 14, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC mini mk2", note + 112)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC MINI", note + 6)), QList<int>({ 3, 0, 4, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 33)), QList<int>({ 5, 1, 5, 14, 0, 0 }));
+    mapper->setLearnMode(false);
+    // (learning never held it)
+    QVERIFY(safety->holding() == false);
+    QVERIFY(safety->showStop() == false);
+    // the pad held a second: on; held again: off
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 6, QString(), 254);
+    QCOMPARE(mapper->targetState(pad), 2);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop(), 3000);
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 6, QString(), 0);
+    QCOMPARE(mapper->targetState(pad), 1);
+    // a key mapped to it (a laptop without Pause): the same
+    QVERIFY(mapper->addMapping({ { "source", "key" }, { "key", "x" }, { "target", "showStop" } }) > 0);
+    QVERIFY(mapper->keyEvent("X", true));
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop() == false, 3000);
+    QVERIFY(mapper->keyEvent("X", false));
+    // the window loses the keyboard while it is held (its release goes to
+    // another program): let go of, nothing toggles
+    QVERIFY(mapper->keyEvent("X", true));
+    QVERIFY(safety->holding());
+    QFocusEvent focusOut(QEvent::FocusOut, Qt::ActiveWindowFocusReason);
+    QVERIFY(mapper->eventFilter(&window, &focusOut) == false);
+    QVERIFY(safety->holding() == false);
+    QTest::qWait(1200);
+    QVERIFY(safety->showStop() == false);
+    // the same when the program goes to the background; a release that
+    // comes after all does nothing
+    QVERIFY(mapper->keyEvent("X", true));
+    QVERIFY(safety->holding());
+    QApplicationStateChangeEvent inactive(Qt::ApplicationInactive);
+    QVERIFY(mapper->eventFilter(qApp, &inactive) == false);
+    QVERIFY(safety->holding() == false);
+    QTest::qWait(1200);
+    QVERIFY(mapper->keyEvent("X", false));
+    QVERIFY(safety->showStop() == false);
+    // (an item that loses the focus, the program active again: nothing)
+    QVERIFY(mapper->keyEvent("X", true));
+    QFocusEvent itemOut(QEvent::FocusOut, Qt::OtherFocusReason);
+    QVERIFY(mapper->eventFilter(&item, &itemOut) == false);
+    QApplicationStateChangeEvent active(Qt::ApplicationActive);
+    QVERIFY(mapper->eventFilter(qApp, &active) == false);
+    QVERIFY(safety->holding());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop(), 3000);
+    QVERIFY(mapper->keyEvent("X", false));
+    safety->setShowStop(false);
+
+    // a button of the SHOW: held a second (lit while on); a right click never
+    // takes it away
+    const QVariantMap button({ { "action", "showStop" } });
+    QVERIFY(surface->isActive(button) == false);
+    surface->press(button);
+    QVERIFY(safety->holding());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop(), 3000);
+    surface->release(button);
+    QVERIFY(surface->isActive(button));
+    surface->stop(button);
+    QVERIFY(safety->showStop());
+    surface->press(button);
+    QTest::qWait(300);
+    surface->release(button);
+    QVERIFY(safety->holding() == false);
+    QVERIFY(safety->showStop());
+    safety->setShowStop(false);
+    QVERIFY(surface->isActive(button) == false);
+
+    // an action of a cue never holds it (a show edited by hand)
+    Cuelist *cl = new Cuelist(core.doc());
+    QVERIFY(core.doc()->addFunction(cl));
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.actions = { { { "target", "showStop" } }, { { "target", "bpm" }, { "value", "95" } } };
+    QCOMPARE(cl->addCue(cue), 0);
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotCueActions", Qt::DirectConnection,
+                                      Q_ARG(quint32, cl->id()), Q_ARG(quint32, cl->cueAt(0).uid)));
+    QCOMPARE(core.bpm(), 95);
+    QVERIFY(safety->holding() == false);
+    QTest::qWait(1100);
+    QVERIFY(safety->showStop() == false);
+}
+
+void Backend_Test::showStopPauseMappingTold()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    ControlMapper *mapper = core.mapping();
+    QSignalSpy told(mapper, SIGNAL(message(QString)));
+    auto load = [mapper](const QString &mappings) {
+        QXmlStreamReader reader(QString("<Mappings>%1</Mappings>").arg(mappings));
+        reader.readNextStartElement();
+        return mapper->loadXML(reader);
+    };
+
+    // a show of before, with Pause on «Pause all» and Q on Blackout: Pause
+    // goes on doing that there (nothing changes for it), said once the show
+    // is open; the list marks it
+    QVERIFY(load("<Mapping id=\"1\" source=\"key\" key=\"pause\" target=\"pauseAll\"/>"
+                 "<Mapping id=\"2\" source=\"key\" key=\"q\" target=\"blackout\"/>"));
+    QCOMPARE(told.count(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(told.count(), 1, 3000);
+    QCOMPARE(told.first().at(0).toString(),
+             QString("This show maps the Pause key (Pause all): Pause does that and not the show stop, which goes on "
+                     "with a SHOW button, a pad or the phone. Delete that mapping in Mappings to have the show stop on Pause"));
+    QVariantList list = mapper->mappings();
+    QCOMPARE(list.count(), 2);
+    QCOMPARE(list.at(0).toMap().value("pauseKey").toBool(), true);
+    QCOMPARE(list.at(0).toMap().value("sourceText").toString(), QString("Key PAUSE (instead of the show stop)"));
+    QCOMPARE(list.at(1).toMap().value("pauseKey").toBool(), false);
+    QCOMPARE(list.at(1).toMap().value("sourceText").toString(), QString("Key Q"));
+    QVERIFY(ControlMapper::onPauseKey({ { "source", "key" }, { "key", "PAUSE" } }));
+    QVERIFY(ControlMapper::onPauseKey({ { "source", "osc" }, { "key", "pause" } }) == false);
+    // Pause pressed: «Pause all», as before; pressed twice, never the show stop
+    QWindow window;
+    QKeyEvent press(QEvent::KeyPress, Qt::Key_Pause, Qt::NoModifier);
+    QKeyEvent release(QEvent::KeyRelease, Qt::Key_Pause, Qt::NoModifier);
+    QKeyEvent shortcut(QEvent::ShortcutOverride, Qt::Key_Pause, Qt::NoModifier);
+    QVERIFY(mapper->eventFilter(&window, &shortcut));
+    QVERIFY(mapper->eventFilter(&window, &press));
+    QVERIFY(mapper->eventFilter(&window, &release));
+    QVERIFY(core.zones()->paused());
+    QVERIFY(core.safety()->keyPending() == false);
+    QVERIFY(mapper->eventFilter(&window, &press));
+    QVERIFY(mapper->eventFilter(&window, &release));
+    QVERIFY(core.zones()->paused() == false);
+    QVERIFY(core.safety()->showStop() == false);
+    QVERIFY(core.safety()->keyPending() == false);
+    // learning another mapping: Pause is never learnt (nor drives it then)
+    mapper->startLearn({ { "target", "stopAll" } });
+    QVERIFY(mapper->eventFilter(&window, &press));
+    QVERIFY(mapper->eventFilter(&window, &release));
+    QCOMPARE(mapper->mappings().count(), 2);
+    QVERIFY(core.zones()->paused() == false);
+    mapper->cancelLearn();
+    QTest::qWait(100);
+    QCOMPARE(told.count(), 1);
+
+    // two on it: one message with both
+    told.clear();
+    QVERIFY(load("<Mapping id=\"1\" source=\"key\" key=\"Pause\" target=\"pauseAll\"/>"
+                 "<Mapping id=\"2\" source=\"key\" key=\"pause\" target=\"stopAll\"/>"));
+    QTRY_COMPARE_WITH_TIMEOUT(told.count(), 1, 3000);
+    QCOMPARE(told.first().at(0).toString(),
+             QString("This show maps the Pause key (Pause all, Stop all): Pause does that and not the show stop, which goes "
+                     "on with a SHOW button, a pad or the phone. Delete that mapping in Mappings to have the show stop on Pause"));
+    QTest::qWait(100);
+    QCOMPARE(told.count(), 1);
+
+    // a show without one: nothing said, Pause is the show stop's again (one
+    // press waits for the second)
+    told.clear();
+    QVERIFY(load("<Mapping id=\"1\" source=\"key\" key=\"q\" target=\"blackout\"/>"));
+    QTest::qWait(100);
+    QCOMPARE(told.count(), 0);
+    QCOMPARE(mapper->mappings().at(0).toMap().value("pauseKey").toBool(), false);
+    QVERIFY(mapper->eventFilter(&window, &press));
+    QVERIFY(core.safety()->keyPending());
+    QVERIFY(core.zones()->paused() == false);
+}
+
+void Backend_Test::showStopRemote()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    SafetyManager *safety = core.safety();
+    RemoteServer *remote = core.remote();
+    ShowSurface *surface = core.surface();
+    auto state = [&]() { return remote->stateMessage().value("safety").toMap(); };
+    QVariantMap s = state();
+    QCOMPARE(s.value("showStop").toBool(), false);
+    QCOMPARE(s.value("holding").toBool(), false);
+    QCOMPARE(s.value("holdMs").toInt(), 1000);
+
+    // a SHOW button of the show stop on the phone: its label, orange, a hand,
+    // held (the page draws its hold)
+    const int page = surface->addPage("Safety", "buttons");
+    const QString section = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->setItem(page, section, 0, { { "action", "showStop" }, { "color", QString() } });
+    const QVariantMap shown = remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap()
+                                  .value("items").toMap().value("0").toMap();
+    QCOMPARE(shown.value("label").toString(), QString("Show stop"));
+    QCOMPARE(shown.value("color").toString(), QString("#f5a524"));
+    QCOMPARE(shown.value("icon").toString(), QString(QChar(0xf256)));
+    QCOMPARE(shown.value("hold").toBool(), true);
+
+    // without a phone (the commands as they come): held, let go
+    remote->handleCommand({ { "cmd", "global" }, { "action", "showStop" }, { "down", true } });
+    QVERIFY(safety->holding());
+    QCOMPARE(state().value("holding").toBool(), true);
+    remote->handleCommand({ { "cmd", "global" }, { "action", "showStop" }, { "down", false } });
+    QVERIFY(safety->holding() == false);
+
+    remote->startOn(18931);
+    QVERIFY(remote->running());
+    QWebSocket phone;
+    QList<QVariantMap> received;
+    connect(&phone, &QWebSocket::textMessageReceived, this, [&received](const QString &text) {
+        received.append(QJsonDocument::fromJson(text.toUtf8()).object().toVariantMap());
+    });
+    auto sendJson = [&phone](const QVariantMap &m) {
+        phone.sendTextMessage(QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m)).toJson(QJsonDocument::Compact)));
+    };
+    phone.open(QUrl("ws://127.0.0.1:18931/"));
+    QTRY_COMPARE_WITH_TIMEOUT(phone.state(), QAbstractSocket::ConnectedState, 3000);
+    sendJson({ { "cmd", "hello" }, { "pin", remote->pin() } });
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 1, 3000);
+    const QVariantMap down({ { "cmd", "global" }, { "action", "showStop" }, { "down", true } });
+    const QVariantMap up({ { "cmd", "global" }, { "action", "showStop" }, { "down", false } });
+
+    // held on the phone a second: on, in its state; the phone's up of it
+    // does nothing more
+    sendJson(down);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->holding(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->showStop(), 3000);
+    sendJson(up);
+    auto phoneSaysOn = [&received]() {
+        for (int i = int(received.count()) - 1; i >= 0; i--)
+            if (received.at(i).value("type").toString() == "state")
+                return received.at(i).value("safety").toMap().value("showStop").toBool();
+        return false;
+    };
+    QTRY_VERIFY_WITH_TIMEOUT(phoneSaysOn(), 3000);
+    // a second down of the same phone holds it once: one up lets it go
+    sendJson(down);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->holding(), 3000);
+    sendJson(down);
+    sendJson(up);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->holding() == false, 3000);
+    QVERIFY(safety->showStop());
+
+    // the phone goes while it holds it (its button, the one of the SHOW):
+    // the hold is let go of, nothing changes
+    sendJson(down);
+    sendJson({ { "cmd", "press" }, { "page", page }, { "section", section }, { "cell", 0 } });
+    QTRY_VERIFY_WITH_TIMEOUT(safety->holding(), 3000);
+    phone.close();
+    QTRY_COMPARE_WITH_TIMEOUT(remote->clients(), 0, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->holding() == false, 3000);
+    QTest::qWait(1200);
+    QVERIFY(safety->showStop());
+    safety->setShowStop(false);
+}
+
+void Backend_Test::showStopShowFile()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("Stop.qxw");
+    int washes = -1;
+    QByteArray saved;
+    {
+        DtcCore core;
+        SafetyManager *safety = core.safety();
+        const quint32 par = patchSfx(core.patch(), core.doc(), "PAR 1", 1);
+        patchSfx(core.patch(), core.doc(), "PAR 2", 2);
+        // a show of its own settings: nothing of the show stop in its file
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        QVERIFY(fileBytes(path).contains("<Safety") == false);
+        QVERIFY(fileBytes(path).contains("ShowStop") == false);
+
+        washes = core.patch()->createGroup("Washes", { par });
+        safety->setShowStopLevel(60);
+        safety->setShowStopGroups({ washes });
+        QVERIFY(core.modified());
+        // on when saved: never saved on
+        safety->setShowStop(true);
+        QVERIFY(core.saveShow(QUrl::fromLocalFile(path)));
+        saved = fileBytes(path);
+        QVERIFY(safety->showStop());
+        // opened again (this one, now): off, its settings
+        QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+        QVERIFY(safety->showStop() == false);
+        QCOMPARE(safety->showStopLevel(), 60);
+        QCOMPARE(safety->showStopGroups(), QVariantList({ quint32(washes) }));
+        // another show: as a new one
+        core.newShow();
+        QCOMPARE(safety->showStopLevel(), 100);
+        QVERIFY(safety->showStopGroups().isEmpty());
+    }
+
+    // in the section of DMX Total Control, which QLC+ never reads
+    const int section = int(saved.indexOf("<DMXTotalControl>"));
+    QVERIFY(section > 0);
+    QVERIFY(saved.left(section).contains("ShowStop") == false);
+    const QString xml = QString::fromUtf8(saved.mid(section));
+    QVERIFY2(xml.contains(QString("<Safety>")), qPrintable(xml));
+    QVERIFY2(xml.contains(QString("<ShowStop Level=\"60\" Groups=\"%1\"/>").arg(washes)), qPrintable(xml));
+    QCOMPARE(int(xml.count("<ShowStop")), 1);
+    QVERIFY(xml.contains("Engaged", Qt::CaseInsensitive) == false);
+    QStringList read;
+    qlcPlusEngine(saved, &read);
+    QCOMPARE(read.count("Fixture"), 2);
+
+    // damaged settings (a file edited by hand): full, the groups that are there
+    auto reopen = [&](const QString &element) {
+        QString text = QString::fromUtf8(saved);
+        const int at = int(text.indexOf("<ShowStop"));
+        const int end = int(text.indexOf("/>", at)) + 2;
+        text.replace(at, end - at, element);
+        const QString other = dir.filePath("Other.qxw");
+        QFile file(other);
+        if (file.open(QIODevice::WriteOnly) == false)
+            return QVariantMap();
+        file.write(text.toUtf8());
+        file.close();
+        DtcCore core;
+        if (core.openShow(QUrl::fromLocalFile(other)) == false)
+            return QVariantMap();
+        return QVariantMap({ { "level", core.safety()->showStopLevel() }, { "groups", core.safety()->showStopGroups() },
+                             { "on", core.safety()->showStop() } });
+    };
+    QVariantMap got = reopen(QString("<ShowStop Level=\"abc\" Groups=\"x,999,%1,%1\"/>").arg(washes));
+    QCOMPARE(got.value("level").toInt(), 100);
+    QCOMPARE(got.value("groups").toList(), QVariantList({ quint32(washes) }));
+    QCOMPARE(got.value("on").toBool(), false);
+    got = reopen("<ShowStop Level=\"300\"/>");
+    QCOMPARE(got.value("level").toInt(), 100);
+    QVERIFY(got.value("groups").toList().isEmpty());
+    got = reopen("<ShowStop Level=\"0\" Groups=\"999\"/>");
+    QCOMPARE(got.value("level").toInt(), 0);
+    QVERIFY(got.value("groups").toList().isEmpty());
+    // an older show, without it: every light at 100 %
+    got = reopen("");
+    QCOMPARE(got.value("level").toInt(), 100);
+    QVERIFY(got.value("groups").toList().isEmpty());
+}
+
+/*********************************************************************
+ * Stop all undone, Stop all with a fade, the fade to black (Parte 1, S5)
+ *********************************************************************/
+
+/** A generic dimmer scene of the tests: $fixture's channel 0 at $value */
+static Scene *dimmerScene(Doc *doc, quint32 fixture, uchar value)
+{
+    Scene *scene = new Scene(doc);
+    scene->setValue(fixture, 0, value);
+    return doc->addFunction(scene) ? scene : nullptr;
+}
+
+/** A page of faders of the SHOW with one fader that holds $fid up (a
+ *  "scene" target): its item */
+static QVariantMap holdingFader(ShowSurface *surface, quint32 fid)
+{
+    const int page = surface->addPage("Faders");
+    const QString sid = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->updateSection(page, sid, { { "type", "faders" }, { "cols", 4 } });
+    surface->setItem(page, sid, 0, { { "targets", QVariantList({ QVariantMap({ { "target", "scene" },
+                                                                                 { "functionId", int(fid) } }) }) } });
+    return surface->item(page, sid, 0);
+}
+
+void Backend_Test::recoverAfterStopAll()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    LiveRecall *recall = core.recall();
+    SafetyManager *safety = core.safety();
+    ShowSurface *surface = core.surface();
+    QVERIFY(recall != nullptr);
+    QCOMPARE(recall->windowMs(), 10000);
+    QVERIFY(recall->available() == false);
+    QVERIFY(recall->summary().isEmpty());
+    QCOMPARE(recall->msLeft(), 0);
+    // (nothing to bring back: nothing done)
+    QVERIFY(recall->recall() == false);
+    QSignalSpy taken(recall, SIGNAL(taken()));
+    QSignalSpy available(recall, SIGNAL(availableChanged()));
+    QSignalSpy messages(recall, SIGNAL(message(QString)));
+
+    QList<quint32> par;
+    for (int i = 0; i < 6; i++)
+        par.append(patchSfx(core.patch(), doc, QString("PAR %1").arg(i + 1), i + 1));
+    auto out = [doc](int address) { return int(doc->inputOutputMap()->universes().at(0)->finalValue(address)); };
+
+    // a scene of a group (Live)
+    Zone *zone = core.zones()->addZone("A");
+    Scene *grouped = dimmerScene(doc, par.at(0), 101);
+    zone->addFunction(grouped->id());
+    zone->start(grouped->id());
+    // a scene of a button of the SHOW (no group)
+    Scene *button = dimmerScene(doc, par.at(1), 102);
+    surface->press({ { "action", "scene" }, { "functionId", int(button->id()) } });
+    // a cuelist on its cue 3, on a playback at 60 %
+    Cuelist *cl = new Cuelist(doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(doc->addFunction(cl));
+    for (int i = 0; i < 4; i++)
+        QCOMPARE(cl->addCue(testCue(1000 * (i + 1), { { Cuelist::Key(par.at(2), 0), uchar(10 * (i + 1)) } })), i);
+    PlaybackManager *playbacks = core.playbacks();
+    playbacks->assign(0, 0, int(cl->id()));
+    playbacks->setLevel(0, 0, 0.6);
+    playbacks->goToFunction(int(cl->id()), 2);
+    // a flash held on the SHOW, a scene a fader of the SHOW holds up
+    Scene *flash = dimmerScene(doc, par.at(3), 104);
+    const QVariantMap flashButton({ { "action", "scene" }, { "functionId", int(flash->id()) }, { "mode", "flash" } });
+    surface->press(flashButton);
+    Scene *held = dimmerScene(doc, par.at(4), 105);
+    surface->setLevel(holdingFader(surface, held->id()), 1.0);
+    QVERIFY(surface->holds(held->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 101, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 102, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 18, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 104, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(4), 105, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(cl->status().current, 2, 3000);
+    const quint32 uid = cl->status().currentUid;
+    QCOMPARE(uid, cl->cueAt(2).uid);
+    QVERIFY(surface->flashScenes().contains(flash->id()));
+
+    // Stop all: what played, but the flash and what the fader holds
+    core.stopAll();
+    QVERIFY(recall->available());
+    QCOMPARE(taken.count(), 1);
+    QCOMPARE(available.count(), 1);
+    QCOMPARE(recall->reason(), QString("stopAll"));
+    QCOMPARE(recall->summary(), QString("2 scene(s) and 1 cuelist(s)"));
+    QVERIFY(recall->msLeft() > 9000 && recall->msLeft() <= 10000);
+    const QVariantMap shot = recall->snapshot();
+    QCOMPARE(shot.value("reason").toString(), QString("stopAll"));
+    QCOMPARE(shot.value("zoneScenes").toList(),
+             QVariantList({ QVariantMap({ { "zone", zone->id() }, { "fid", grouped->id() } }) }));
+    QCOMPARE(shot.value("functions").toList(),
+             QVariantList({ QVariantMap({ { "fid", button->id() }, { "playback", false }, { "level", 1.0 } }) }));
+    const QVariantList lists = shot.value("cuelists").toList();
+    QCOMPARE(lists.count(), 1);
+    QCOMPARE(lists.first().toMap().value("fid").toUInt(), cl->id());
+    QCOMPARE(lists.first().toMap().value("cueUid").toUInt(), uid);
+    QCOMPARE(lists.first().toMap().value("paused").toBool(), false);
+    QCOMPARE(lists.first().toMap().value("zone").toInt(), -1);
+    QCOMPARE(lists.first().toMap().value("playback").toBool(), true);
+    QCOMPARE(lists.first().toMap().value("level").toDouble(), 0.6);
+    for (int a = 0; a < 4; a++)
+        QTRY_COMPARE_WITH_TIMEOUT(out(a), 0, 3000);
+    QCOMPARE(out(4), 105);
+    // (the flash let go after: nothing to bring back of it)
+    surface->release(flashButton);
+    QVERIFY(surface->flashScenes().isEmpty());
+
+    // brought back: the scene in its group, the button's, the cuelist on its
+    // cue at its level; once
+    QVERIFY(recall->recall());
+    QVERIFY(recall->available() == false);
+    QCOMPARE(available.count(), 2);
+    QVERIFY(recall->recall() == false);
+    QVERIFY(zone->isActive(grouped->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 101, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 102, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 18, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(cl->status().currentUid, uid, 3000);
+    QVERIFY(button->isStartedBy(FunctionParent::master()));
+    QVERIFY(cl->isStartedBy(PlaybackManager::playbackParent()));
+    QCOMPARE(playbacks->level(0, 0), 0.6);
+    QCOMPARE(out(3), 0);
+    QCOMPARE(out(4), 105);
+    QCOMPARE(messages.count(), 1);
+    QCOMPARE(messages.first().at(0).toString(), QString("Brought back: 2 scene(s) and 1 cuelist(s)"));
+
+    // its time over, nothing to bring back
+    recall->setWindowMsForTest(200);
+    core.stopAll();
+    QVERIFY(recall->available());
+    QTRY_VERIFY_WITH_TIMEOUT(recall->available() == false, 3000);
+    QVERIFY(recall->recall() == false);
+    QTest::qWait(100);
+    QCOMPARE(out(0), 0);
+    QVERIFY(grouped->stopped());
+    recall->setWindowMsForTest(10000);
+
+    // the special effects are never armed again: a CO2 brought back stays
+    // at 0, armed it waits for its scene to let go
+    const quint32 co2 = patchSfx(core.patch(), doc, "CO2 1", 61);
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "minWaitMs", 0));
+    Scene *fire = dimmerScene(doc, co2, 255);
+    Universe *universe = doc->inputOutputMap()->universes().at(0);
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    QVERIFY(safety->arm());
+    fire->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 255, 3000);
+    core.stopAll();
+    QVERIFY(safety->armed() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 0, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(fire->stopped(), 3000);
+    QVERIFY(recall->recall());
+    QTRY_VERIFY_WITH_TIMEOUT(fire->isRunning(), 3000);
+    QVERIFY(safety->armed() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty() == false, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    QVERIFY(safety->arm());
+    QTest::qWait(300);
+    QCOMPARE(out(60), 0);
+    QVERIFY(safety->firing().isEmpty());
+    // let go and pressed again: it fires
+    fire->stop(FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty(), 3000);
+    fire->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 255, 3000);
+    safety->disarm();
+}
+
+void Backend_Test::recoverFlashesNotTaken()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    LiveRecall *recall = core.recall();
+    ControlMapper *mapper = core.mapping();
+    PlaybackManager *playbacks = core.playbacks();
+    QList<quint32> par;
+    for (int i = 0; i < 4; i++)
+        par.append(patchSfx(core.patch(), doc, QString("PAR %1").arg(i + 1), i + 1));
+    auto fids = [recall]() {
+        QSet<quint32> ids;
+        const QVariantMap shot = recall->snapshot();
+        for (const QString &key : { QString("zoneScenes"), QString("functions"), QString("cuelists") })
+            for (const QVariant &v : shot.value(key).toList())
+                ids.insert(v.toMap().value("fid").toUInt());
+        return ids;
+    };
+
+    // a flash of a group (Live), held
+    Zone *zone = core.zones()->addZone("A");
+    Scene *liveFlash = dimmerScene(doc, par.at(0), 50);
+    zone->addFunction(liveFlash->id());
+    zone->setOption(liveFlash->id(), "flash", true);
+    zone->press(liveFlash->id());
+    QVERIFY(zone->pressedFlashes().contains(liveFlash->id()));
+    // a flash mapping (a pad), held
+    Scene *padFlash = dimmerScene(doc, par.at(1), 60);
+    const QVariantMap pad({ { "target", "scene" }, { "functionId", int(padFlash->id()) }, { "mode", "flash" } });
+    mapper->pressTarget(pad, true);
+    QVERIFY(mapper->flashScenes().contains(padFlash->id()));
+    // the flash of a playback that started it
+    Scene *pbFlash = dimmerScene(doc, par.at(2), 70);
+    playbacks->assign(0, 0, int(pbFlash->id()));
+    playbacks->flash(0, 0, true);
+    QVERIFY(playbacks->startedByFlash(pbFlash->id()));
+    // and a scene that plays
+    Scene *plays = dimmerScene(doc, par.at(3), 80);
+    plays->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(liveFlash->isRunning() && padFlash->isRunning() && pbFlash->isRunning() &&
+                             plays->isRunning(), 3000);
+
+    core.stopAll();
+    QCOMPARE(fids(), QSet<quint32>({ plays->id() }));
+    QCOMPARE(recall->summary(), QString("1 scene(s)"));
+    // let go: none of them is a flash any more
+    zone->unpress(liveFlash->id());
+    mapper->pressTarget(pad, false);
+    playbacks->flash(0, 0, false);
+    QVERIFY(zone->pressedFlashes().isEmpty());
+    QVERIFY(mapper->flashScenes().isEmpty());
+    QVERIFY(playbacks->startedByFlash(pbFlash->id()) == false);
+    QVERIFY(recall->recall());
+    QTRY_VERIFY_WITH_TIMEOUT(plays->isRunning(), 3000);
+    QTest::qWait(200);
+    QVERIFY(liveFlash->isRunning() == false && padFlash->isRunning() == false && pbFlash->isRunning() == false);
+
+    // nothing plays: nothing to bring back (the one taken before stays)
+    core.stopAll();
+    QVERIFY(recall->available());
+    QVERIFY(recall->recall());
+    QTRY_VERIFY_WITH_TIMEOUT(plays->isRunning(), 3000);
+    core.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(plays->stopped(), 3000);
+    recall->clear();
+    QVERIFY(recall->available() == false);
+    core.stopAll();
+    QVERIFY(recall->available() == false);
+    // a cuelist that is paused comes back paused, once it has faded in
+    Cuelist *cl = new Cuelist(doc);
+    QVERIFY(doc->addFunction(cl));
+    QCOMPARE(cl->addCue(testCue(1000, { { Cuelist::Key(par.at(3), 0), 200 } })), 0);
+    playbacks->goFunction(int(cl->id()));
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning() && cl->status().current == 0, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(int(doc->inputOutputMap()->universes().at(0)->finalValue(3)), 200, 3000);
+    cl->setPause(true);
+    core.stopAll();
+    const QVariantList lists = recall->snapshot().value("cuelists").toList();
+    QCOMPARE(lists.count(), 1);
+    QCOMPARE(lists.first().toMap().value("paused").toBool(), true);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->stopped() && cl->isRunning() == false, 3000);
+    QVERIFY(recall->recall());
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isRunning(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(cl->isPaused(), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(int(doc->inputOutputMap()->universes().at(0)->finalValue(3)), 200, 3000);
+}
+
+void Backend_Test::recoverReleaseGroupsMerge()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    LiveRecall *recall = core.recall();
+    ShowSurface *surface = core.surface();
+    ControlMapper *mapper = core.mapping();
+    QSignalSpy taken(recall, SIGNAL(taken()));
+    QList<quint32> par;
+    for (int i = 0; i < 3; i++)
+        par.append(patchSfx(core.patch(), doc, QString("PAR %1").arg(i + 1), i + 1));
+    auto out = [doc](int address) { return int(doc->inputOutputMap()->universes().at(0)->finalValue(address)); };
+    Zone *a = core.zones()->addZone("A");
+    Zone *b = core.zones()->addZone("B");
+    Scene *inA = dimmerScene(doc, par.at(0), 11);
+    Scene *inB = dimmerScene(doc, par.at(1), 22);
+    Scene *own = dimmerScene(doc, par.at(2), 33);
+    a->addFunction(inA->id());
+    b->addFunction(inB->id());
+    auto play = [&]() {
+        a->start(inA->id());
+        b->start(inB->id());
+    };
+
+    // nothing in the groups: nothing taken
+    core.releaseGroups();
+    QVERIFY(recall->available() == false);
+
+    // «Release groups»: only the groups (the rest plays on)
+    play();
+    own->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 33, 3000);
+    core.releaseGroups();
+    QVERIFY(recall->available());
+    QCOMPARE(recall->reason(), QString("releaseGroups"));
+    QCOMPARE(recall->summary(), QString("2 scene(s)"));
+    QCOMPARE(recall->snapshot().value("functions").toList().count(), 0);
+    QVERIFY(a->isActive(inA->id()) == false && b->isActive(inB->id()) == false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    QCOMPARE(out(2), 33);
+    // Stop all a moment later: it joins (the window starts again)
+    QTest::qWait(300);
+    core.stopAll();
+    QCOMPARE(taken.count(), 2);
+    QCOMPARE(recall->reason(), QString("stopAll"));
+    QCOMPARE(recall->summary(), QString("3 scene(s)"));
+    QVERIFY(recall->msLeft() > 9500);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 0, 3000);
+    // both brought back
+    QVERIFY(recall->recall());
+    QVERIFY(a->isActive(inA->id()) && b->isActive(inB->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 11, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 22, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 33, 3000);
+    core.stopAll();
+    recall->clear();
+
+    // every way to release every group can bring them back: the SHOW button
+    // (and its right click), the mapping (and its right click)
+    const QList<std::function<void()>> releases = {
+        [&]() { surface->press({ { "action", "release" }, { "zoneId", -1 } }); },
+        [&]() { surface->stop({ { "action", "release" }, { "zoneId", -1 } }); },
+        [&]() { mapper->pressTarget({ { "target", "groupRelease" }, { "zoneId", -1 } }, true); },
+        [&]() { mapper->stopTarget({ { "target", "groupRelease" }, { "zoneId", -1 } }); },
+    };
+    for (const auto &release : releases)
+    {
+        play();
+        release();
+        QVERIFY(recall->available());
+        QCOMPARE(recall->reason(), QString("releaseGroups"));
+        QCOMPARE(recall->summary(), QString("2 scene(s)"));
+        QVERIFY(a->isActive(inA->id()) == false);
+        recall->clear();
+    }
+    // releasing one group only: nothing to bring back (as before)
+    play();
+    surface->press({ { "action", "release" }, { "zoneId", int(a->id()) } });
+    QVERIFY(a->isActive(inA->id()) == false);
+    QVERIFY(recall->available() == false);
+}
+
+void Backend_Test::recoverWhileArmed()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    LiveRecall *recall = core.recall();
+    SafetyManager *safety = core.safety();
+    QSignalSpy disarmed(safety, SIGNAL(disarmed(QString)));
+    const quint32 par = patchSfx(core.patch(), doc, "PAR 1", 1);
+    const quint32 co2 = patchSfx(core.patch(), doc, "CO2 1", 61);
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 300));
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "minWaitMs", 100));
+    Universe *universe = doc->inputOutputMap()->universes().at(0);
+    auto out = [universe](int address) { return int(universe->finalValue(address)); };
+    // a CO2 scene as a tile of a group (toggle, not a flash), a PAR in another
+    Zone *effects = core.zones()->addZone("Effects");
+    Zone *lights = core.zones()->addZone("Lights");
+    Scene *fire = dimmerScene(doc, co2, 255);
+    Scene *light = dimmerScene(doc, par, 120);
+    effects->addFunction(fire->id());
+    lights->addFunction(light->id());
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+
+    // armed, it fires, and its maximum time cuts it while the scene holds it
+    QVERIFY(safety->arm());
+    effects->start(fire->id());
+    lights->start(light->id());
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 255, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 0, 3000);
+    QVERIFY(fire->isRunning());
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty() == false, 3000);
+    // «Release groups» doesn't disarm: the scene stops, the CO2 can fire again
+    core.releaseGroups();
+    QVERIFY(safety->armed());
+    QVERIFY(recall->available());
+    QTRY_VERIFY_WITH_TIMEOUT(fire->stopped(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty(), 3000);
+    QTest::qWait(300);
+    // brought back: disarmed first (said), the CO2 scene back but dark,
+    // waiting for a release (no new fire); the PAR back
+    const int fires = int(safety->recentFires().count());
+    QCOMPARE(fires, 1);
+    disarmed.clear();
+    QVERIFY(recall->recall());
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.first().at(0).toString(), QString("recall"));
+    QCOMPARE(safety->reasonText("recall"), QString("Bring back what was playing"));
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    QVERIFY(effects->isActive(fire->id()));
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 120, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty() == false, 3000);
+    for (int i = 0; i < 10; i++)
+    {
+        QCOMPARE(out(60), 0);
+        QTest::qWait(50);
+    }
+    QVERIFY(safety->firing().isEmpty());
+    QCOMPARE(int(safety->recentFires().count()), fires);
+    // armed again: it still waits for its scene to let go
+    QVERIFY(safety->arm());
+    QTest::qWait(400);
+    QCOMPARE(out(60), 0);
+    QVERIFY(safety->firing().isEmpty());
+    QCOMPARE(int(safety->recentFires().count()), fires);
+    // let go and pressed again: it fires (it is a CO2 like any other)
+    effects->stop(fire->id());
+    QTRY_VERIFY_WITH_TIMEOUT(fire->stopped(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty(), 3000);
+    QTest::qWait(200);
+    effects->start(fire->id());
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 255, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 0, 3000);
+
+    // Stop all (it disarms), armed again in its window, brought back: the
+    // CO2 never fires
+    core.stopAll();
+    QVERIFY(safety->armed() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(fire->stopped() && light->stopped(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(safety->waiting().isEmpty(), 3000);
+    QTest::qWait(300);
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    QVERIFY(safety->arm());
+    QVERIFY(recall->available());
+    const int fired = int(safety->recentFires().count());
+    disarmed.clear();
+    QVERIFY(recall->recall());
+    QVERIFY(safety->armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    QTRY_VERIFY_WITH_TIMEOUT(fire->isRunning(), 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 120, 3000);
+    for (int i = 0; i < 10; i++)
+    {
+        QCOMPARE(out(60), 0);
+        QTest::qWait(50);
+    }
+    QVERIFY(safety->firing().isEmpty());
+    QCOMPARE(int(safety->recentFires().count()), fired);
+
+    // nothing armed: a recall says nothing of the effects
+    core.stopAll();
+    QTRY_VERIFY_WITH_TIMEOUT(fire->stopped(), 3000);
+    disarmed.clear();
+    QVERIFY(recall->recall());
+    QCOMPARE(disarmed.count(), 0);
+    core.stopAll();
+}
+
+void Backend_Test::recoverClearedWithShow()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    LiveRecall *recall = core.recall();
+    QSignalSpy messages(recall, SIGNAL(message(QString)));
+    const quint32 par = patchSfx(core.patch(), doc, "PAR 1", 1);
+    Scene *scene = dimmerScene(doc, par, 90);
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    core.stopAll();
+    QVERIFY(recall->available());
+
+    // a function deleted since: nothing comes back (nor said)
+    const quint32 id = scene->id();
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning() == false, 3000);
+    QVERIFY(doc->deleteFunction(id));
+    QVERIFY(recall->recall());
+    QCOMPARE(messages.count(), 0);
+
+    // a new show: nothing of the one before
+    Scene *again = dimmerScene(doc, par, 90);
+    again->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_VERIFY_WITH_TIMEOUT(again->isRunning(), 3000);
+    core.stopAll();
+    QVERIFY(recall->available());
+    core.newShow();
+    QVERIFY(recall->available() == false);
+    QVERIFY(recall->summary().isEmpty());
+    QVERIFY(recall->recall() == false);
+}
+
+void Backend_Test::stopFadeEngine()
+{
+    // the faders of the functions fade out from where they are (one fading
+    // out already too, in the new time), but those kept; their functions
+    // stop meanwhile and they go on fading; cut: their channels at rest the
+    // next frame. A source that is no function (the programmer) never.
+    // Offline frames: 20 ms each
+    const quint32 p1 = patchSfx(m_patch, m_doc, "PAR 1", 1);
+    const quint32 p2 = patchSfx(m_patch, m_doc, "PAR 2", 2);
+    const quint32 p3 = patchSfx(m_patch, m_doc, "PAR 3", 3);
+    const quint32 p4 = patchSfx(m_patch, m_doc, "PAR 4", 4);
+    Scene *a = dimmerScene(m_doc, p1, 255);
+    Scene *kept = dimmerScene(m_doc, p2, 255);
+    Scene *slow = dimmerScene(m_doc, p4, 255);
+    slow->setFadeOutSpeed(10000);
+    SfxPress programmer(m_doc, p3, 0, false);
+    programmer.press(90);
+    for (Scene *s : { a, kept, slow })
+        s->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    QCOMPARE(finalOut(m_doc, 1), 255);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    QCOMPARE(finalOut(m_doc, 3), 255);
+    // (the slow one stopped before: its own 10 s)
+    slow->stop(FunctionParent::master());
+    renderFrames(m_doc, 5);
+    QVERIFY(finalOut(m_doc, 3) > 240);
+
+    Universe *universe = sfxUniverse(m_doc);
+    universe->fadeOutFunctionFaders(1000, { kept->id() });
+    a->stop(FunctionParent::master());
+    renderFrames(m_doc, 25);
+    QVERIFY(a->isRunning() == false);
+    QVERIFY2(qAbs(finalOut(m_doc, 0) - 127) <= 3, qPrintable(QString::number(finalOut(m_doc, 0))));
+    QVERIFY2(qAbs(finalOut(m_doc, 3) - 126) <= 4, qPrintable(QString::number(finalOut(m_doc, 3))));
+    QCOMPARE(finalOut(m_doc, 1), 255);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    QVERIFY(universe->hasFunctionFaders());
+
+    // cut: the next frame at rest
+    QCOMPARE(universe->cutFadeOuts({ kept->id() }), 2);
+    renderFrames(m_doc, 1);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    QCOMPARE(finalOut(m_doc, 3), 0);
+    QCOMPARE(finalOut(m_doc, 1), 255);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+    QVERIFY(fadersOf(m_doc, a->id(), false).isEmpty());
+    QCOMPARE(universe->cutFadeOuts({ kept->id() }), 0);
+
+    // to the end of a fade without a cut, then nothing left of it
+    universe->fadeOutFunctionFaders(200, {});
+    kept->stop(FunctionParent::master());
+    renderFrames(m_doc, 5);
+    QVERIFY(finalOut(m_doc, 1) > 0 && finalOut(m_doc, 1) < 255);
+    renderFrames(m_doc, 8);
+    QCOMPARE(finalOut(m_doc, 1), 0);
+    QVERIFY(universe->hasFunctionFaders() == false);
+    QCOMPARE(finalOut(m_doc, 2), 90);
+}
+
+void Backend_Test::stopAllWithFade()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    AppSettings *settings = core.settings();
+    SafetyManager *safety = core.safety();
+    LiveRecall *recall = core.recall();
+    ShowSurface *surface = core.surface();
+    QSignalSpy fading(&core, SIGNAL(stopFadingChanged()));
+    QSignalSpy taken(recall, SIGNAL(taken()));
+
+    // the option: 0 (at once) by default, 0-5 s, in live/stopAllFadeMs
+    QCOMPARE(settings->stopAllFadeMs(), 0);
+    settings->setStopAllFadeMs(9000);
+    QCOMPARE(settings->stopAllFadeMs(), 5000);
+    settings->setStopAllFadeMs(-5);
+    QCOMPARE(settings->stopAllFadeMs(), 0);
+    QCOMPARE(QSettings().value("live/stopAllFadeMs").toInt(), 0);
+
+    QList<quint32> par;
+    for (int i = 0; i < 4; i++)
+        par.append(patchSfx(core.patch(), doc, QString("PAR %1").arg(i + 1), i + 1));
+    const quint32 co2 = patchSfx(core.patch(), doc, "CO2 1", 61);
+    QVERIFY(core.patch()->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    Universe *universe = doc->inputOutputMap()->universes().at(0);
+    auto out = [universe](int address) { return int(universe->finalValue(address)); };
+    Scene *scene = dimmerScene(doc, par.at(0), 255);
+    Scene *held = dimmerScene(doc, par.at(1), 200);
+    Scene *parked = dimmerScene(doc, par.at(2), 77);
+    Scene *fire = dimmerScene(doc, co2, 255);
+    Scene *later = dimmerScene(doc, par.at(3), 150);
+    const QVariantMap fader = holdingFader(surface, held->id());
+
+    // without a fade: at once, as always
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+    core.stopAll();
+    QVERIFY(core.stopFading() == false);
+    QCOMPARE(fading.count(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    recall->clear();
+    taken.clear();
+
+    // a fade of 3 s: a PAR, a scene a SHOW fader holds, a parked PAR, a CO2
+    // that fires
+    settings->setStopAllFadeMs(3000);
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    surface->setLevel(fader, 1.0);
+    parked->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(2), 77, 3000);
+    QCOMPARE(safety->parkCurrent({ par.at(2) }), 1);
+    parked->stop(FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(universe->sentLayerSerial(), safety->serial(), 3000);
+    QVERIFY(safety->arm());
+    fire->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(1), 200, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 255, 3000);
+    QElapsedTimer clock;
+    clock.start();
+    core.stopAll();
+    QVERIFY(core.stopFading());
+    QCOMPARE(core.stopFadeMs(), 3000);
+    QCOMPARE(fading.count(), 1);
+    QCOMPARE(taken.count(), 1);
+    // the CO2 at once (disarmed), the PAR fades, the held scene and the park stay
+    QVERIFY(safety->armed() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(60), 0, 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->stopped(), 1000);
+    QTest::qWait(500);
+    QVERIFY2(out(0) > 0 && out(0) < 255, qPrintable(QString::number(out(0))));
+    QCOMPARE(out(1), 200);
+    QCOMPARE(out(2), 77);
+    QVERIFY(held->isRunning());
+    // something started meanwhile
+    later->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 150, 3000);
+    QVERIFY(core.stopFading());
+
+    // Stop all again: at once, what started meanwhile too (not taken again)
+    core.stopAll();
+    QVERIFY(core.stopFading() == false);
+    QCOMPARE(fading.count(), 2);
+    QCOMPARE(taken.count(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 1000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(3), 0, 1000);
+    QVERIFY2(clock.elapsed() < 2500, qPrintable(QString::number(clock.elapsed())));
+    QCOMPARE(out(1), 200);
+    QCOMPARE(out(2), 77);
+    QVERIFY(held->isRunning());
+    // what the first one stopped can be brought back
+    QVERIFY(recall->available());
+    QVERIFY(recall->recall());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+
+    // brought back during its fade: the fade is over (the next Stop all is a
+    // new one, with its fade, and taken again)
+    core.stopAll();
+    QVERIFY(core.stopFading());
+    QCOMPARE(taken.count(), 2);
+    QVERIFY(recall->recall());
+    QVERIFY(core.stopFading() == false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+    // a fade that ends by itself
+    core.stopAll();
+    QVERIFY(core.stopFading());
+    QCOMPARE(taken.count(), 3);
+    QTRY_VERIFY_WITH_TIMEOUT(core.stopFading() == false, 5000);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    QCOMPARE(out(1), 200);
+    // nothing plays: no fade to show
+    surface->setLevel(fader, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(held->stopped(), 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(universe->hasFunctionFaders() == false, 3000);
+    core.stopAll();
+    QVERIFY(core.stopFading() == false);
+    // a new show during a fade: over
+    scene->start(doc->masterTimer(), FunctionParent::master());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 255, 3000);
+    core.stopAll();
+    QVERIFY(core.stopFading());
+    core.newShow();
+    QVERIFY(core.stopFading() == false);
+}
+
+void Backend_Test::fadeToBlackRamp()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    QSignalSpy disarmed(&safety, SIGNAL(disarmed(QString)));
+    QSignalSpy changed(&safety, SIGNAL(fadeToBlackChanged()));
+
+    const quint32 p1 = patchSfx(m_patch, m_doc, "PAR 1", 1);
+    const quint32 p2 = patchSfx(m_patch, m_doc, "PAR 2", 2);
+    const quint32 p3 = patchSfx(m_patch, m_doc, "PAR 3", 3);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 101, 1), 1);
+    const quint32 spot = fixtureAtAddress(m_doc, 100);    // pan 100, dimmer 103
+    const quint32 co2 = patchSfx(m_patch, m_doc, "CO2 1", 61);
+    QVERIFY(m_patch->setEffectSetting({ co2 }, "maxFireMs", 30000));
+    Universe *universe = sfxUniverse(m_doc);
+    InputOutputMap *map = m_doc->inputOutputMap();
+    Scene *scene = new Scene(m_doc);
+    for (const auto &v : QList<std::tuple<quint32, quint32, uchar>>({
+             { p1, 0, 255 }, { p2, 0, 200 }, { p3, 0, 100 }, { spot, 0, 128 }, { spot, 3, 255 } }))
+        scene->setValue(std::get<0>(v), std::get<1>(v), std::get<2>(v));
+    QVERIFY(m_doc->addFunction(scene));
+    Scene *fire = dimmerScene(m_doc, co2, 255);
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    // a park that stays in blackout (never ramped), one that doesn't (it ramps)
+    QCOMPARE(safety.parkCurrent({ p2 }), 1);
+    safety.setParkInBlackout({ p2 }, true);
+    QCOMPARE(safety.parkCurrent({ p3 }), 1);
+    QVERIFY(safety.arm());
+    fire->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 60), 255);
+    QVERIFY(safety.fadingToBlack() == false);
+    QCOMPARE(safety.fadeToBlackMs(), 0);
+
+    // a second: the special effects disarmed at once, the light down
+    safety.fadeToBlack(1000);
+    QVERIFY(safety.fadingToBlack());
+    QCOMPARE(safety.fadeToBlackMs(), 1000);
+    QCOMPARE(changed.count(), 1);
+    QVERIFY(safety.armed() == false);
+    QCOMPARE(disarmed.count(), 1);
+    QCOMPARE(disarmed.first().at(0).toString(), QString("fadeToBlack"));
+    QVERIFY(universe->outputLayer()->rampId != 0);
+    QCOMPARE(int(universe->outputLayer()->rampMs), 1000);
+    renderFrames(m_doc, 1);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    // half way (500 ms): the intensities at half, the park in blackout not,
+    // the park without it at half, a pan as it was
+    renderFrames(m_doc, 25);
+    QVERIFY2(qAbs(finalOut(m_doc, 0) - 127) <= 3, qPrintable(QString::number(finalOut(m_doc, 0))));
+    QVERIFY2(qAbs(finalOut(m_doc, 103) - 127) <= 3, qPrintable(QString::number(finalOut(m_doc, 103))));
+    QCOMPARE(finalOut(m_doc, 1), 200);
+    QVERIFY2(qAbs(finalOut(m_doc, 2) - 50) <= 2, qPrintable(QString::number(finalOut(m_doc, 2))));
+    QCOMPARE(finalOut(m_doc, 100), 128);
+    QCOMPARE(finalOut(m_doc, 60), 0);
+    // at its end: dark, then Blackout (the light full under it)
+    renderFrames(m_doc, 30);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    QCOMPARE(finalOut(m_doc, 1), 200);
+    QCOMPARE(finalOut(m_doc, 100), 128);
+    QTRY_VERIFY_WITH_TIMEOUT(map->blackout(), 3000);
+    QVERIFY(safety.fadingToBlack() == false);
+    QCOMPARE(changed.count(), 2);
+    QCOMPARE(int(universe->outputLayer()->rampId), 0);
+    renderFrames(m_doc, 1);
+    QCOMPARE(outputAt(universe, 0, true), 0);
+    QCOMPARE(outputAt(universe, 1, true), 200);
+    QCOMPARE(outputAt(universe, 2, true), 0);
+    QCOMPARE(outputAt(universe, 100, true), 128);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+    // Blackout off: the light again
+    map->setBlackout(false);
+    renderFrames(m_doc, 1);
+    QCOMPARE(outputAt(universe, 0), 255);
+    QCOMPARE(outputAt(universe, 2), 100);
+    // Blackout on already: nothing
+    map->setBlackout(true);
+    safety.fadeToBlack(1000);
+    QVERIFY(safety.fadingToBlack() == false);
+    map->setBlackout(false);
+
+    // pressed again during it: Blackout at once
+    safety.fadeToBlack(1000);
+    renderFrames(m_doc, 5);
+    QVERIFY(finalOut(m_doc, 0) < 255);
+    safety.fadeToBlack(1000);
+    QVERIFY(map->blackout());
+    QVERIFY(safety.fadingToBlack() == false);
+    map->setBlackout(false);
+    renderFrames(m_doc, 1);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+
+    // Blackout during it: the ramp goes (and no Blackout comes later)
+    safety.fadeToBlack(300);
+    renderFrames(m_doc, 5);
+    QVERIFY(finalOut(m_doc, 0) < 255);
+    map->setBlackout(true);
+    QVERIFY(safety.fadingToBlack() == false);
+    map->setBlackout(false);
+    QTest::qWait(500);
+    QVERIFY(map->blackout() == false);
+    renderFrames(m_doc, 1);
+    QCOMPARE(finalOut(m_doc, 0), 255);
+
+    // the grand master and the ramp: both
+    map->setGrandMasterValue(128);
+    safety.fadeToBlack(1000);
+    renderFrames(m_doc, 26);
+    QVERIFY2(qAbs(finalOut(m_doc, 0) - 64) <= 3, qPrintable(QString::number(finalOut(m_doc, 0))));
+    safety.fadeToBlack(1000);
+    map->setBlackout(false);
+    map->setGrandMasterValue(255);
+
+    // its time: 0.1 to 60 s
+    safety.fadeToBlack(10);
+    QCOMPARE(safety.fadeToBlackMs(), 100);
+    safety.fadeToBlack(1000);
+    map->setBlackout(false);
+    safety.fadeToBlack(999999);
+    QCOMPARE(safety.fadeToBlackMs(), 60000);
+    // the program closes during one: no Blackout, the stage at rest
+    safety.disarmAndFlush("exit");
+    QVERIFY(safety.fadingToBlack() == false);
+    QCOMPARE(int(universe->outputLayer()->rampId), 0);
+    QVERIFY(map->blackout() == false);
+    safety.fadeToBlack(1000);
+    QVERIFY(safety.fadingToBlack() == false);
+}
+
+void Backend_Test::recoverTargets()
+{
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    DtcCore core;
+    Doc *doc = core.doc();
+    ControlMapper *mapper = core.mapping();
+    ShowSurface *surface = core.surface();
+    LiveRecall *recall = core.recall();
+    SafetyManager *safety = core.safety();
+    RemoteServer *remote = core.remote();
+    const quint32 par = patchSfx(core.patch(), doc, "PAR 1", 1);
+    Scene *scene = dimmerScene(doc, par, 90);
+    auto play = [&]() {
+        scene->start(doc->masterTimer(), FunctionParent::master());
+        QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    };
+
+    // two button targets: by their names; the fade to black has its time
+    QVariantMap recover, fade;
+    for (const QVariant &v : mapper->targets())
+    {
+        if (v.toMap().value("target").toString() == "recoverStopped")
+            recover = v.toMap();
+        if (v.toMap().value("target").toString() == "fadeToBlack")
+            fade = v.toMap();
+    }
+    QCOMPARE(recover.value("kind").toString(), QString("button"));
+    QCOMPARE(recover.value("name").toString(), QString("Bring back what was playing"));
+    QCOMPARE(recover.value("needs").toString(), QString());
+    QCOMPARE(fade.value("kind").toString(), QString("button"));
+    QCOMPARE(fade.value("name").toString(), QString("Fade to black"));
+    QCOMPARE(fade.value("needs").toString(), QString("time"));
+    // (a mapping of it gets 3 s)
+    QVERIFY(mapper->addMapping({ { "source", "key" }, { "key", "y" }, { "target", "fadeToBlack" } }) > 0);
+    QCOMPARE(mapper->mappings().last().toMap().value("time").toInt(), 3000);
+    QCOMPARE(mapper->describeTarget({ { "target", "recoverStopped" } }), QString("Bring back what was playing"));
+    QCOMPARE(mapper->describeTarget({ { "target", "fadeToBlack" }, { "time", 500 } }),
+             QString("Fade to black — %1 s").arg(QLocale().toString(0.5, 'f', 1)));
+    QCOMPARE(mapper->describeTarget({ { "target", "fadeToBlack" } }), QString("Fade to black — 3 s"));
+
+    // bring back: lit (1) while it can, the press brings it back
+    const QVariantMap recoverTarget({ { "target", "recoverStopped" } });
+    QCOMPARE(mapper->targetState(recoverTarget), 0);
+    mapper->pressTarget(recoverTarget, true);
+    QVERIFY(scene->stopped());
+    play();
+    core.stopAll();
+    QCOMPARE(mapper->targetState(recoverTarget), 1);
+    mapper->pressTarget(recoverTarget, false);
+    QVERIFY(recall->available());
+    mapper->pressTarget(recoverTarget, true);
+    QVERIFY(recall->available() == false);
+    QCOMPARE(mapper->targetState(recoverTarget), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    // (a right click: nothing)
+    core.stopAll();
+    mapper->stopTarget(recoverTarget);
+    QVERIFY(recall->available());
+
+    // a SHOW button: the same (lit while it can); its right click nothing
+    const QVariantMap recoverButton({ { "action", "recoverStopped" } });
+    QVERIFY(surface->isActive(recoverButton));
+    surface->stop(recoverButton);
+    QVERIFY(recall->available());
+    surface->press(recoverButton);
+    surface->release(recoverButton);
+    QVERIFY(recall->available() == false);
+    QVERIFY(surface->isActive(recoverButton) == false);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+
+    // the phone: its state (the time left), its command
+    core.stopAll();
+    // (the seconds left, whole: the state changes once a second; the take it
+    // is of: one more at each)
+    QVariantMap state = remote->stateMessage().value("recall").toMap();
+    QCOMPARE(state.value("available").toBool(), true);
+    QCOMPARE(state.value("left").toInt(), 10);
+    QCOMPARE(state.value("windowMs").toInt(), 10000);
+    const int serial = state.value("serial").toInt();
+    QCOMPARE(serial, recall->serial());
+    play();
+    core.stopAll();
+    QCOMPARE(remote->stateMessage().value("recall").toMap().value("serial").toInt(), serial + 1);
+    remote->handleCommand({ { "cmd", "global" }, { "action", "recall" } });
+    QVERIFY(recall->available() == false);
+    QCOMPARE(remote->stateMessage().value("recall").toMap().value("left").toInt(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+    // (nothing to bring back: nothing)
+    remote->handleCommand({ { "cmd", "global" }, { "action", "recall" } });
+
+    // the fade to black, of its time: lit (1) while it runs, the SHOW the same
+    const QVariantMap fadeTarget({ { "target", "fadeToBlack" }, { "time", 500 } });
+    QCOMPARE(mapper->targetState(fadeTarget), 0);
+    mapper->pressTarget(fadeTarget, true);
+    QVERIFY(safety->fadingToBlack());
+    QCOMPARE(safety->fadeToBlackMs(), 500);
+    QCOMPARE(mapper->targetState(fadeTarget), 1);
+    QCOMPARE(remote->stateMessage().value("safety").toMap().value("fadingToBlack").toBool(), true);
+    mapper->pressTarget(fadeTarget, false);
+    QVERIFY(safety->fadingToBlack());
+    QTRY_VERIFY_WITH_TIMEOUT(core.blackout(), 3000);
+    QCOMPARE(mapper->targetState(fadeTarget), 0);
+    core.setBlackout(false);
+    const QVariantMap fadeButton({ { "action", "fadeToBlack" }, { "time", 2000 } });
+    QVERIFY(surface->isActive(fadeButton) == false);
+    surface->press(fadeButton);
+    QCOMPARE(safety->fadeToBlackMs(), 2000);
+    QVERIFY(surface->isActive(fadeButton));
+    surface->stop(fadeButton);
+    QVERIFY(safety->fadingToBlack());
+    // pressed again: Blackout at once
+    surface->press(fadeButton);
+    QVERIFY(core.blackout());
+    QVERIFY(safety->fadingToBlack() == false);
+    core.setBlackout(false);
+    // (a button with no time: 3 s)
+    surface->press({ { "action", "fadeToBlack" } });
+    QCOMPARE(safety->fadeToBlackMs(), 3000);
+    core.setBlackout(true);
+    core.setBlackout(false);
+
+    // the phone shows them with their names and icons
+    const int page = surface->addPage("Recall", "buttons");
+    const QString section = surface->pages().at(page).toMap().value("root").toMap().value("id").toString();
+    surface->setItem(page, section, 0, recoverButton);
+    surface->setItem(page, section, 1, fadeButton);
+    const QVariantMap items = remote->layoutMessage().value("pages").toList().at(page).toMap().value("root").toMap()
+                                  .value("items").toMap();
+    QCOMPARE(items.value("0").toMap().value("label").toString(), QString("Bring back"));
+    QCOMPARE(items.value("0").toMap().value("icon").toString(), QString(QChar(0xf0e2)));
+    QCOMPARE(items.value("1").toMap().value("label").toString(), QString("Fade to black"));
+    QCOMPARE(items.value("1").toMap().value("icon").toString(), QString(QChar(0xf186)));
+    // Alt+click on such a control puts its button on the SHOW (its time)
+    auto addedItem = [surface](const QVariantMap &target) {
+        const QVariantMap where = surface->addFromTarget(target);
+        return surface->item(where.value("page").toInt(), where.value("section").toString(), where.value("cell").toInt());
+    };
+    const QVariantMap added = addedItem({ { "target", "fadeToBlack" }, { "time", 700 } });
+    QCOMPARE(added.value("action").toString(), QString("fadeToBlack"));
+    QCOMPARE(added.value("time").toInt(), 700);
+    QCOMPARE(addedItem(recoverTarget).value("action").toString(), QString("recoverStopped"));
+
+    // learnt on a controller: yellow pulsing on the RGB pads, yellow on the
+    // APC mini; a button with one LED its own
+    const quint32 note = 128;
+    auto learn = [&](const QString &device, quint32 channel) {
+        mapper->setLearnMode(true);
+        mapper->startLearn(recoverTarget);
+        mapper->handleInput("midi", device, channel, QString(), 254);
+        mapper->handleInput("midi", device, channel, QString(), 0);
+        mapper->setLearnMode(false);
+        return mapper->mappings().last().toMap();
+    };
+    auto leds = [](const QVariantMap &m) {
+        return QList<int>({ m.value("onValue").toInt(), m.value("onChannel").toInt(), m.value("pausedValue").toInt(),
+                            m.value("pausedChannel").toInt(), m.value("offValue").toInt(), m.value("offChannel").toInt() });
+    };
+    const QVariantMap pad = learn("MIDI|APC mini mk2", note + 6);
+    QCOMPARE(pad.value("target").toString(), QString("recoverStopped"));
+    QCOMPARE(leds(pad), QList<int>({ 13, 10, 13, 10, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC mini mk2", note + 112)), QList<int>({ 1, 0, 2, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC MINI", note + 6)), QList<int>({ 5, 0, 5, 0, 0, 0 }));
+    QCOMPARE(leds(learn("MIDI|APC40 mkII", note + 33)), QList<int>({ 13, 10, 13, 10, 0, 0 }));
+    // (learning never brought anything back) the pad then does
+    core.stopAll();
+    QVERIFY(recall->available());
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 6, QString(), 254);
+    mapper->handleInput("midi", "MIDI|APC mini mk2", note + 6, QString(), 0);
+    QVERIFY(recall->available() == false);
+    QTRY_VERIFY_WITH_TIMEOUT(scene->isRunning(), 3000);
+
+    // an action of a cue never brings back nor fades to black (a show
+    // edited by hand)
+    core.stopAll();
+    Cuelist *cl = new Cuelist(doc);
+    QVERIFY(doc->addFunction(cl));
+    Cuelist::Cue cue;
+    cue.number = 1000;
+    cue.actions = { { { "target", "recoverStopped" } }, { { "target", "fadeToBlack" }, { "time", "500" } },
+                    { { "target", "bpm" }, { "value", "95" } } };
+    QCOMPARE(cl->addCue(cue), 0);
+    QVERIFY(QMetaObject::invokeMethod(mapper, "slotCueActions", Qt::DirectConnection,
+                                      Q_ARG(quint32, cl->id()), Q_ARG(quint32, cl->cueAt(0).uid)));
+    QCOMPARE(core.bpm(), 95);
+    QVERIFY(recall->available());
+    QVERIFY(safety->fadingToBlack() == false);
+
+    // the icons are in the icon font: the undo arrow, the moon
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    const QRegularExpressionMatch moon = QRegularExpression("property string iconMoon: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    const QRegularExpressionMatch undo = QRegularExpression("property string iconUndo: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    QVERIFY(moon.hasMatch() && undo.hasMatch());
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QVERIFY(font.supportsCharacter(moon.captured(1).toUInt(nullptr, 16)));
+    QVERIFY(font.supportsCharacter(undo.captured(1).toUInt(nullptr, 16)));
 }
 
 #undef QCOMPARE_LEVEL

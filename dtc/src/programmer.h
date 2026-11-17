@@ -76,6 +76,9 @@ class Programmer : public QObject
     Q_PROPERTY(bool highlight READ highlight WRITE setHighlight NOTIFY highlightChanged)
     /** Going through the selection one fixture at a time: { active, index, count } */
     Q_PROPERTY(QVariantMap stepping READ stepping NOTIFY selectionChanged)
+    /** DMX Total Control: how many programmer values are on protected special
+     *  effects (CO2, flames...): kept to be recorded, never sent */
+    Q_PROPERTY(int heldEffects READ heldEffects NOTIFY valuesChanged)
 
 public:
     Programmer(Doc *doc, ZoneManager *zones, QObject *parent = nullptr);
@@ -104,11 +107,15 @@ public:
      * Values
      *********************************************************************/
     /** The merged channels of the selection:
-     *  [{ key, name, group, colour, value, active, capabilities }] */
+     *  [{ key, name, group, colour, value, active, capabilities }]. DMX Total
+     *  Control: a selection with other fixtures leaves its protected special
+     *  effects out; one of only them gives each channel held: true (what it
+     *  is given is recorded, never sent) */
     QVariantList channels() const;
 
     bool hasValues() const;
     int valuesCount() const;
+    int heldEffects() const;
 
     Q_INVOKABLE void setChannelValue(const QString &key, int value);
     Q_INVOKABLE void releaseChannel(const QString &key);
@@ -366,6 +373,9 @@ signals:
     /** updateScene() saved the programmer in that scene: what shows it
      *  (channels, fixtures) reads it again. Doc says nothing of it */
     void sceneUpdated(quint32 id);
+    /** DMX Total Control: something to tell the user (protected special
+     *  effects left out of an FX) */
+    void message(const QString &text);
 
 private slots:
     void slotFixtureRemoved(quint32 fixtureId);
@@ -377,6 +387,9 @@ private slots:
     /** A cuelist went to a cue (MasterTimer::cueStarted): the live edits it takes back */
     void slotCueStarted(quint32 functionId, quint32 cueUid);
     void slotSelectionChanged();
+    /** DMX Total Control: a fixture became a protected special effect, or
+     *  stopped being one */
+    void slotProtectionChanged();
 
 private:
     QString channelKey(quint32 fixtureId, quint32 channel) const;
@@ -385,7 +398,10 @@ private:
     QList<quint32> spatialOrder() const;
     void setBeam(bool on);
     void notifyValues();
-    void setValue(quint32 fixtureId, quint32 channel, uchar value);
+    /** The funnel of every value. DMX Total Control: one on a protected
+     *  special effect is kept or not by m_protectedRule. @return whether it
+     *  was kept */
+    bool setValue(quint32 fixtureId, quint32 channel, uchar value);
     void updateHighlight();
     void setStep(int index);
 
@@ -490,6 +506,35 @@ private:
     /** Pan and tilt of one fixture as they leave it (0..1 of their travel):
      *  through the inversions, limits and swap of the patch */
     void writeAim(quint32 fixtureId, qreal pan, qreal tilt);
+
+    /*********************************************************************
+     * DMX Total Control: protected special effects (CO2, flames, sparks,
+     * confetti). The output never sends what the programmer gives them, so
+     * what it shows and records must not say otherwise: a value on one is
+     * kept only from a selection of only them (to program a scene of them)
+     * or from a look that is loaded; an FX, the highlight and a snapshot
+     * leave them out
+     *********************************************************************/
+    /** Selection: kept unless the selection has other fixtures; Skip: never
+     *  kept; Keep: always kept */
+    enum class ProtectedRule { Selection, Skip, Keep };
+    ProtectedRule m_protectedRule = ProtectedRule::Selection;
+    bool isProtected(quint32 fixtureId) const;
+    /** $fixtures have one that is not protected */
+    bool hasUnprotected(const QList<quint32> &fixtures) const;
+    /** The selection has one that is not protected (cached for the
+     *  selection it was worked out for, until the protection changes) */
+    bool selectionMixed() const;
+    mutable QList<quint32> m_mixedFor;
+    mutable bool m_mixed = false;
+    mutable bool m_mixedValid = false;
+    /** The selected protected fixtures that have $param: an FX leaves them out */
+    int protectedWith(const QString &param) const;
+    /** "%n protected special effect(s) left out of the FX" */
+    void tellLeftOut(int count);
+    /** The index in the FX scene of each FX of m_fxLayers (-1: only
+     *  protected fixtures, it doesn't play) */
+    QVector<int> m_fxPlayIndex;
 };
 
 #endif

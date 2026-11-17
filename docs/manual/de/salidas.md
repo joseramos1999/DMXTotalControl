@@ -32,11 +32,12 @@ Die Verbindung wird für den nächsten Programmstart gespeichert.
 
 ## DMX-Pegel
 
-**„DMX-Pegel“** zeigt die 512 Kanäle eines Universums so, wie sie das Programm verlassen, mit allem angewendet (Szenen, Programmer, Mischer, Grand Master, Grenzen…):
+**„DMX-Pegel“** zeigt die 512 Kanäle eines Universums so, wie sie das Programm verlassen, mit allem angewendet (Szenen, Programmer, Mischer, Grand Master, Grenzen, geparkte Kanäle, Show-Stopp…); ein entschärfter geschützter Spezialeffekt steht auf 0, auch wenn seine Szene läuft:
 
 - Wählen Sie das **Universum** in der Auswahlliste.
 - Jedes Feld enthält die Kanalnummer und ihren Wert (0–255). **„In % anzeigen“** wechselt zu Prozent.
 - Felder mit Rand gehören zu einem Fixture. Fahren Sie mit der Maus über einen Kanal, um zu sehen, zu welchem Fixture er gehört („Name — Kanal N“).
+- Oben rechts im Feld kennzeichnet ein **Schloss** einen [geparkten](patch.md#kanäle-parken) Kanal („geparkt auf 77“, „· auch im Blackout“), ein **Schild** einen [geschützten Spezialeffekt](directo.md#geschützte-spezialeffekte) („geschützter Spezialeffekt (entschärft: Ausgang 0)“, „(scharf)“ oder, mit Schloss, „ausgeschaltet geparkt“) und eine **rote Hand**, was der [Show-Stopp](directo.md#show-stopp) setzt („Show-Stopp“ oder „Show-Stopp: bleibt, wo er ist“ bei Pan und Tilt). Ein unter dem Show-Stopp geparkter Kanal sagt „geparkt auf 77, unter dem Show-Stopp“, und während eines Ausblendens auf Schwarz sagt einer ohne „auch im Blackout“ „geparkt auf 77, sinkt mit dem Ausblenden auf Schwarz“. Die Markierungen stehen auf dem eigenen Kanal des Fixtures, vor dem Tauschen von Pan und Tilt.
 
 > **Tipp:** Reagiert ein Fixture nicht, schauen Sie hier, ob sich sein Kanal bewegt. Bewegt er sich, liegt das Problem im Kabel, in der Adresse des Geräts oder im Interface; wenn nicht, im Patch oder in dem, was Sie starten.
 

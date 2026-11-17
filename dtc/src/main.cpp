@@ -58,6 +58,8 @@
 #include "uiaudit.h"
 #include "singleinstance.h"
 #include "zone.h"
+#include "powerguard.h"
+#include "safetymanager.h"
 #include "qlcconfig.h"
 
 #if defined(Q_OS_WIN)
@@ -65,10 +67,13 @@
 #include "hotplugmonitor.h"
 
 /** The device changes Windows sends the window (a USB device plugged in or
- *  out), on to the hot plug monitor: the DMX USB interfaces (IOManager) */
+ *  out), on to the hot plug monitor: the DMX USB interfaces (IOManager);
+ *  and the power changes (the charger plugged in or out) to PowerGuard */
 class HotPlugFilter final : public QAbstractNativeEventFilter
 {
 public:
+    explicit HotPlugFilter(PowerGuard *power) : m_power(power) {}
+
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override
     {
         Q_UNUSED(result)
@@ -76,10 +81,15 @@ public:
         {
             long handled = 0;
             HotPlugMonitor::parseWinEvent(message, &handled);
+            if (m_power != nullptr)
+                m_power->nativeMessage(message);
         }
         // (Qt handles every message as always)
         return false;
     }
+
+private:
+    PowerGuard *m_power;
 };
 #endif
 
@@ -157,7 +167,7 @@ int main(int argc, char *argv[])
     parser.addOption(learnOption);
     QCommandLineOption mappingOption("mapping", "Developer: open the Mappings page with this mapping ID selected.", "id");
     parser.addOption(mappingOption);
-    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, matrix, add, share: the GDTF-Share browser of Add fixtures; import: the Import menu; look: the Look menu of the plan, on its Icon entry).", "view");
+    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, effect: the special effect of the first protected fixture, matrix, add, share: the GDTF-Share browser of Add fixtures; import: the Import menu; look: the Look menu of the plan, on its Icon entry).", "view");
     parser.addOption(patchViewOption);
     QCommandLineOption patchImportOption("patch-import", "Developer: the preview of a patch import from this fixture table (CSV).", "file.csv");
     parser.addOption(patchImportOption);
@@ -195,7 +205,7 @@ int main(int argc, char *argv[])
     parser.addOption(pbDialogOption);
     QCommandLineOption pbNextOption("pb-next", "Developer: 1.7 seconds after start (after --pb-go), Next on a cue of a playback of the current page (slot:cue index).", "slot:cue");
     parser.addOption(pbNextOption);
-    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms, the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), rclick:x,y clicks the right button, press:x,y and release:x,y press and release the left button in two steps (held between them), move:x,y moves the pointer there (no button), drag:x1,y1,x2,y2 drags (drag:x1,y1,x2,y2,shift or ,ctrl with that key held). Steps separated by ';'.", "steps");
+    QCommandLineOption keysOption("keys", "Developer: from one second after start, a step every 100 ms (wait:ms waits that long before the next step), the focus item logged after each: page:N shows a page, key:Space presses a key sequence (hold:Space holds it, 3 auto-repeats), down:A and up:A press and release a key in two steps, text:abc types, click:x,y clicks (left button; click:x,y,shift or ,ctrl with that key held), rclick:x,y clicks the right button, press:x,y and release:x,y press and release the left button in two steps (held between them), move:x,y moves the pointer there (no button), drag:x1,y1,x2,y2 drags (drag:x1,y1,x2,y2,shift or ,ctrl with that key held), close: asks the window to close (as its close button). Steps separated by ';'.", "steps");
     parser.addOption(keysOption);
     QCommandLineOption guideOption("guide", "Developer: open the first steps guide on this step (from 0).", "step");
     parser.addOption(guideOption);
@@ -205,6 +215,24 @@ int main(int argc, char *argv[])
     parser.addOption(themeOption);
     QCommandLineOption updateUrlOption("update-url", "Developer: check for updates at once against this release list (a GitHub API URL, or a file:/// JSON in its shape), without the repository rule.", "url");
     parser.addOption(updateUrlOption);
+    QCommandLineOption grabAfterOption("grab-after", "Developer: with --grab, the screenshot this many ms after start (2000).", "ms");
+    parser.addOption(grabAfterOption);
+    QCommandLineOption showModeOption("show-mode", "Developer: start in show mode (Options, saved: the screenshots have settings of their own).");
+    parser.addOption(showModeOption);
+    QCommandLineOption onBatteryOption("on-battery", "Developer: with --grab, the computer runs on its battery, at this percent (-1: unknown). The screenshots never read the battery nor the power plan of this computer. Without --grab it does nothing: the program reads this computer.", "percent");
+    parser.addOption(onBatteryOption);
+    QCommandLineOption armedOption("armed", "Developer: with --grab, arm the special effects once the show is open (before --play). Without --grab it does nothing: the program always starts disarmed.");
+    parser.addOption(armedOption);
+    QCommandLineOption showStopOption("show-stop", "Developer: with --grab, the show stop on 0.8 s after the show is open (after --armed and --play: a head holds where the scene put it). Without --grab it does nothing.");
+    parser.addOption(showStopOption);
+    QCommandLineOption recallOption("recall", "Developer: with --grab, Stop all 0.8 s after the show is open (after --play): what it stopped can be brought back. Without --grab it does nothing.");
+    parser.addOption(recallOption);
+    QCommandLineOption fadeBlackOption("fade-black", "Developer: with --grab, a fade to black of this many ms 0.8 s after the show is open (after --play). Without --grab it does nothing.", "ms");
+    parser.addOption(fadeBlackOption);
+    QCommandLineOption stopFadeOption("stop-fade", "Developer: with --grab, Stop all fades out in this many ms (Options, saved: the screenshots have settings of their own). Without --grab it does nothing.", "ms");
+    parser.addOption(stopFadeOption);
+    QCommandLineOption usbSuspendOption("usb-suspend", "Developer: with --grab, the power plan lets Windows suspend the USB ports (USB selective suspend). Without --grab it does nothing: the program reads this computer.");
+    parser.addOption(usbSuspendOption);
     QCommandLineOption pageOption("page", "Page to show at startup (0 Live, 1 Show, 2 Program, 3 Scenes, 4 Patch, 5 Fixtures, 6 Outputs, 7 Mappings, 8 Options, 9 Playbacks).", "index");
     parser.addOption(pageOption);
     parser.process(app);
@@ -250,6 +278,23 @@ int main(int argc, char *argv[])
 
     QQuickStyle::setStyle("Basic");
 
+    // the screenshots show the same computer each time: plugged in, no
+    // battery, no USB selective suspend, but for what they are told. Only
+    // them: a shortcut with --usb-suspend never hides the real battery
+    if (grabbing)
+    {
+        PowerGuard::Reading reading;
+        reading.usbSuspendAc = parser.isSet(usbSuspendOption) ? 1 : 0;
+        reading.usbSuspendDc = reading.usbSuspendAc;
+        if (parser.isSet(onBatteryOption))
+        {
+            reading.hasBattery = true;
+            reading.onBattery = true;
+            reading.batteryPercent = qBound(-1, parser.value(onBatteryOption).toInt(), 100);
+        }
+        PowerGuard::setReaderForTest([reading]() { return reading; });
+    }
+
     DtcCore core;
     // the manual in the language of the interface (English without a translation)
     core.setUiLanguage(translator.isEmpty() ? QString("") : translator.language());
@@ -279,6 +324,9 @@ int main(int argc, char *argv[])
     qmlRegisterUncreatableType<CuelistEditor>(DTC_QML_BACKEND, 1, 0, "CuelistEditor", "Owned by Core");
     qmlRegisterUncreatableType<PlaybackManager>(DTC_QML_BACKEND, 1, 0, "PlaybackManager", "Owned by Core");
     qmlRegisterUncreatableType<TimecodeReader>(DTC_QML_BACKEND, 1, 0, "TimecodeReader", "Owned by Core");
+    qmlRegisterUncreatableType<PowerGuard>(DTC_QML_BACKEND, 1, 0, "PowerGuard", "Owned by Core");
+    qmlRegisterUncreatableType<SafetyManager>(DTC_QML_BACKEND, 1, 0, "SafetyManager", "Owned by Core");
+    qmlRegisterUncreatableType<LiveRecall>(DTC_QML_BACKEND, 1, 0, "LiveRecall", "Owned by Core");
 
     if (parser.positionalArguments().isEmpty() == false)
     {
@@ -292,6 +340,9 @@ int main(int argc, char *argv[])
 
     // keyboard mappings work on every page
     app.installEventFilter(core.mapping());
+
+    if (parser.isSet(showModeOption))
+        core.settings()->setShowMode(true);
 
     QQmlApplicationEngine engine;
     // Qt.uiLanguage: the language of the interface ("en" without a translation)
@@ -307,7 +358,7 @@ int main(int argc, char *argv[])
                            qobject_cast<QQuickWindow *>(engine.rootObjects().first());
 #if defined(Q_OS_WIN)
     // the window is told of the USB devices plugged in or out
-    HotPlugFilter hotPlugFilter;
+    HotPlugFilter hotPlugFilter(core.power());
     if (window)
     {
         app.installNativeEventFilter(&hotPlugFilter);
@@ -365,10 +416,29 @@ int main(int argc, char *argv[])
         window->setProperty("startPatchImportPick", parser.isSet(patchImportPickOption));
         window->setProperty("startPatchImport", QUrl::fromLocalFile(QFileInfo(parser.value(patchImportOption)).absoluteFilePath()));
     }
+    // (armed before the scene plays: a scene that already holds an effect
+    // when the effects are armed never fires it). Only for a screenshot: a
+    // shortcut or a script with --armed never starts the program armed
+    if (window && parser.isSet(armedOption) && parser.isSet(grabOption))
+        core.safety()->arm();
     if (window && parser.isSet(playOption))
     {
         core.effects()->togglePreview(parser.value(playOption).toUInt());
         window->setProperty("showLevels", true);
+    }
+    // (a moment later: the scene of --play went out, the heads hold there.
+    // Only for a screenshot, as --armed)
+    if (window && parser.isSet(showStopOption) && parser.isSet(grabOption))
+        QTimer::singleShot(800, &core, [&core]() { core.safety()->setShowStop(true); });
+    // (Stop all, a fade to black: only for a screenshot, as --armed)
+    if (parser.isSet(stopFadeOption) && parser.isSet(grabOption))
+        core.settings()->setStopAllFadeMs(parser.value(stopFadeOption).toInt());
+    if (window && parser.isSet(recallOption) && parser.isSet(grabOption))
+        QTimer::singleShot(800, &core, [&core]() { core.stopAll(); });
+    if (window && parser.isSet(fadeBlackOption) && parser.isSet(grabOption))
+    {
+        const int ms = parser.value(fadeBlackOption).toInt();
+        QTimer::singleShot(800, &core, [&core, ms]() { core.safety()->fadeToBlack(ms); });
     }
 
     if (window && parser.isSet(sizeOption))
@@ -465,10 +535,19 @@ int main(int argc, char *argv[])
     {
         // through the window system, as typed: shortcuts and focus as for real
         const QStringList steps = parser.value(keysOption).split(';', Qt::SkipEmptyParts);
+        // (wait:ms: the next step that much later instead of 100 ms)
+        int at = 1000;
         for (int i = 0; i < steps.count(); i++)
         {
             const QString step = steps.at(i).trimmed();
-            QTimer::singleShot(1000 + i * 100, window, [window, step]() {
+            if (step.startsWith(QLatin1String("wait:")))
+            {
+                at += qMax(0, step.section(QLatin1Char(':'), 1).toInt());
+                continue;
+            }
+            const int stepAt = at;
+            at += 100;
+            QTimer::singleShot(stepAt, window, [window, step]() {
                 using WSI = QWindowSystemInterface;
                 const QString arg = step.section(QLatin1Char(':'), 1);
                 if (step.startsWith(QLatin1String("page:")))
@@ -541,6 +620,12 @@ int main(int argc, char *argv[])
                     const QPointF local(arg.section(QLatin1Char(','), 0, 0).toDouble(), arg.section(QLatin1Char(','), 1, 1).toDouble());
                     WSI::handleMouseEvent<WSI::SynchronousDelivery>(window, local, window->mapToGlobal(local), Qt::NoButton, Qt::NoButton, QEvent::MouseMove);
                 }
+                else if (step == QLatin1String("close:"))
+                {
+                    // the window asked to close, as its close button or Alt+F4 do
+                    // (show mode asks first; else the program ends)
+                    window->close();
+                }
                 else if (step.startsWith(QLatin1String("rclick:")))
                 {
                     // the right button: context menus
@@ -583,7 +668,8 @@ int main(int argc, char *argv[])
     {
         const QString grabFile = parser.value(grabOption);
         const QString auditFile = parser.value(auditOption);
-        QTimer::singleShot(2000, window, [window, grabFile, auditFile]() {
+        const int grabAfter = parser.isSet(grabAfterOption) ? qMax(0, parser.value(grabAfterOption).toInt()) : 2000;
+        QTimer::singleShot(grabAfter, window, [window, grabFile, auditFile]() {
             // what is hard to read on the screen grabbed, a line each
             if (auditFile.isEmpty() == false)
             {

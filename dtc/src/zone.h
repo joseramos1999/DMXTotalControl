@@ -145,6 +145,13 @@ public:
     /** Flash scenes play while pressed */
     Q_INVOKABLE void press(quint32 fid);
     Q_INVOKABLE void unpress(quint32 fid);
+    /** The flash scenes of this group held pressed now (Live) */
+    QSet<quint32> pressedFlashes() const { return m_flashPressed; }
+
+    /** Stop all undone (LiveRecall): $fid plays again in this group, faded
+     *  in in $fadeMs (a function in beats: its own fade), releasing nothing
+     *  (what played with it comes back too) */
+    void recall(quint32 fid, uint fadeMs);
 
     /** Start the next/previous scene of the group, stopping the current one */
     Q_INVOKABLE void next();
@@ -211,8 +218,9 @@ private:
     void step(int direction);
     /** Apply speed, phase and size to a running scene */
     void applyLiveControls(quint32 fid);
-    /** start(), releasing the scenes it replaces or not ($release) */
-    void startScene(quint32 fid, bool release);
+    /** start(), releasing the scenes it replaces or not ($release); a
+     *  $fadeMs of 0 or more instead of the fade in of the group */
+    void startScene(quint32 fid, bool release, int fadeMs = -1);
     /** stop(), held or not */
     void stopScene(quint32 fid);
     /** What this group keeps of a scene it played, gone (stopped or not) */
@@ -263,6 +271,8 @@ private:
     QHash<quint32, qreal> m_runSpeeds;
     /** The scenes faders of the SHOW hold up (hold()) */
     QSet<quint32> m_held;
+    /** The flash scenes pressed in Live (press(), until unpress()) */
+    QSet<quint32> m_flashPressed;
     /** The scene started last, for next/previous */
     quint32 m_lastStarted;
 };

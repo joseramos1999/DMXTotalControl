@@ -407,6 +407,9 @@ void PatchManager::clearPlan()
     m_importIcons.clear();
     m_aims.clear();
     m_importIds.clear();
+    // (until the fixtures go, each one is protected as its kind says)
+    m_effects.clear();
+    m_effectKinds.clear();
 }
 
 /*********************************************************************
@@ -558,15 +561,23 @@ QVariantList PatchManager::liveStates() const
 {
     QVariantList list;
     QList<Universe *> universes = m_doc->inputOutputMap()->claimUniverses();
+    // what each universe sends: dimmer limits, grand master and the output
+    // stage included (a protected special effect disarmed sends 0, parks,
+    // the show stop), before the pan/tilt swaps. Read once each
+    QVector<QByteArray> sent(universes.count());
+    for (int u = 0; u < universes.count(); u++)
+        sent[u] = universes.at(u)->finalValues();
 
     for (Fixture *fxi : m_doc->fixtures())
     {
         if (fxi->universe() >= quint32(universes.count()))
             continue;
-        Universe *universe = universes.at(int(fxi->universe()));
-        // what goes out (dimmer limits and grand master included)
+        const QByteArray &values = sent.at(int(fxi->universe()));
         auto value = [&](quint32 channel) -> int {
-            return channel == QLCChannel::invalid() ? -1 : universe->postGMValue(int(fxi->address() + channel));
+            if (channel == QLCChannel::invalid())
+                return -1;
+            const int address = int(fxi->address() + channel);
+            return address < values.size() ? uchar(values.at(address)) : 0;
         };
         auto level = [&](quint32 channel) { return qMax(0, value(channel)) / 255.0; };
 

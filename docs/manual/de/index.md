@@ -58,16 +58,18 @@ Von links nach rechts:
 - **Datei**: „Neue Show (Strg+N)“, „Öffnen (Strg+O)“, der Pfeil **▾** mit den letzten Shows und „Beispiele“, „Speichern (Strg+S)“ und „Speichern unter…“ (Strg+Umschalt+S).
 - **Rhythmus**: **„GO“** und **„Stop“** ändern, was die Szenentasten tun (unter Live, in der SHOW, in den Zuordnungen und auf dem Smartphone). Mit **GO** an startet ein Druck auf eine Szene diese, und die folgenden Drücke geben ihren Rhythmus vor, ohne sie je zu stoppen; mit **Stop** an stoppt ein Druck auf eine Szene diese. Eine der beiden ist immer an, und das Programm startet in **GO** ([Live](directo.md#rhythmus-einer-szene-mit-schritten)). Jede Taste einer laufenden Szene mit Schritten, Cuelist oder FX auf „BPM der Show“ (unter Live, in der SHOW, auf den Playbacks und auf dem Smartphone) enthält einen **zweigeteilten Balken**, der bei jedem Schritt (bei einem FX bei jedem Schlag) erst die eine, dann die andere Hälfte aufleuchten lässt: So sehen Sie den Rhythmus jeder einzelnen. Danach kommen **„BeatGO“** (nächste Unterteilung der Szenen, die mit BeatGO laufen, auch mit der Taste G) und **„Puls“**, der den Audioeingang des Computers abhört (auswählbar unter [Optionen](opciones.md#audio)): Jede Spitze, die die Linie des Pegelmessers überschreitet, bewegt die Szenen, die mit Puls laufen. Ziehen Sie die Linie des Pegelmessers, um die Schwelle zu ändern. Das Tempo der Show, also das der FX und der Szenen im BPM-Modus, ändern Sie mit einem BPM-Fader oder -Drehregler der [SHOW](show.md) oder mit den [Zuordnungen](mapeos.md).
 - **Das Schloss**: sperrt Bildschirme, damit sich nichts versehentlich ändert (siehe [Optionen](opciones.md#show-und-sperre)).
+- **Das Schild**: der [Show-Modus](directo.md#show-modus). Eingeschaltet (orange) muss zum Schließen des Programms oder Öffnen einer anderen Show eine Taste gedrückt gehalten werden.
 - **Die Zielscheibe**: der Lernmodus, um MIDI- oder OSC-Bedienelemente oder Tasten zuzuordnen (siehe [Zuordnungen](mapeos.md#lernmodus)). Ihre grüne Kontrollleuchte blinkt bei jeder eingehenden Nachricht.
 - **„N laufen“**: wie viele Szenen und Effekte gerade laufen.
 - **GM**: der Grand Master. Unter 100 % wird er orange.
-- **„Blackout“** (Strg+B): schaltet alles auf Schwarz, solange er an ist.
-- **„Alles stoppen“** (Esc): stoppt alles, was läuft. Der Programmer wird nicht geleert. Die Szenen, die ein hochgezogener Fader des SHOW hält, laufen weiter: Nur das Herunterziehen dieses Faders stoppt sie.
+- **„Effekte scharf schalten“**: nur, wenn die Show geschützte Spezialeffekte hat (CO2, Flammen, Funken, Konfetti). Schaltet sie scharf oder entschärft sie; ihr Pfeil **▾** zeigt die letzten Auslösungen (siehe [Live](directo.md#geschützte-spezialeffekte)).
+- **„Blackout“** (Strg+B): schaltet alles auf Schwarz, solange er an ist. Er entschärft auch die Spezialeffekte.
+- **„Alles stoppen“** (Esc): stoppt alles, was läuft. Der Programmer wird nicht geleert. Die Szenen, die ein hochgezogener Fader des SHOW hält, laufen weiter: Nur das Herunterziehen dieses Faders stoppt sie. Es entschärft auch die Spezialeffekte, und 10 s lang können Sie [zurückholen, was lief](directo.md#zurückholen-was-lief).
 - **„?“**: öffnet dieses Handbuch (F12).
 
-In einem schmalen Fenster oder auf einem kleinen Bildschirm wird die Leiste kompakter: Der Showname wird gekürzt, „Speichern unter…“ erscheint nur als Symbol, „N laufen“ nur als Zahl, und in den schmalsten Fenstern zeigen „Blackout“ und „Alles stoppen“ nur ihr Symbol. Fahren Sie mit der Maus über ein Symbol, um zu sehen, was es ist. Wirkt alles zu klein oder zu groß, ändern Sie die **Größe der Oberfläche** unter [Optionen](opciones.md#allgemein).
+In einem schmalen Fenster oder auf einem kleinen Bildschirm wird die Leiste kompakter: Der Showname wird gekürzt, „Speichern unter…“ erscheint nur als Symbol, „N laufen“ nur als Zahl, und in den schmalsten Fenstern zeigen „Blackout“ und „Alles stoppen“ nur ihr Symbol (mit Spezialeffekten in der Show auch „Effekte scharf schalten“, unter 1450 px Breite). Fahren Sie mit der Maus über ein Symbol, um zu sehen, was es ist. Wirkt alles zu klein oder zu groß, ändern Sie die **Größe der Oberfläche** unter [Optionen](opciones.md#allgemein).
 
-Wenn Sie das Programm schließen oder eine andere Show öffnen oder anlegen und es ungespeicherte Änderungen gibt, fragt das Programm „Änderungen speichern?“ mit „Abbrechen“, „Nicht speichern“ und „Speichern“. Beim Schließen stoppt das Programm zuerst alle Szenen, die Playbacks und den Programmer und lässt die Ausgänge die Bühne in Ruhe senden: Viele Geräte behalten das Letzte, was sie empfangen haben.
+Wenn Sie das Programm schließen oder eine andere Show öffnen oder anlegen und es ungespeicherte Änderungen gibt, fragt das Programm „Änderungen speichern?“ mit „Abbrechen“, „Nicht speichern“ und „Speichern“; bei eingeschaltetem [Show-Modus](directo.md#show-modus) muss vorher eine Taste gedrückt gehalten werden. Beim Schließen entschärft das Programm die Spezialeffekte, lässt die geparkten Kanäle los, stoppt alle Szenen, die Playbacks und den Programmer und lässt die Ausgänge die Bühne in Ruhe senden: Viele Geräte behalten das Letzte, was sie empfangen haben.
 
 Verwendet die Show, die Sie öffnen, fehlende Dateien (ihre Sounds, Videos oder Bilder; zum Beispiel bei einer Show von einem anderen Computer), erscheint ein Hinweis mit der Liste. Die Show läuft ohne sie. Mit **„In einem Ordner suchen…“** wählen Sie den Ordner, in dem sie liegen: Sie werden nach ihrem Namen gesucht, auch in den Unterordnern, und die Show verwendet sie dann (speichern Sie die Show, damit das so bleibt).
 
@@ -78,16 +80,16 @@ Verwendet die Show, die Sie öffnen, fehlende Dateien (ihre Sounds, Videos oder 
 Beginnen Sie mit **Erste Schritte**, wenn Sie das Programm zum ersten Mal benutzen. Die übrigen Seiten erklären je eine Seite des Programms und lassen sich in beliebiger Reihenfolge lesen.
 
 1. [Erste Schritte](primeros-pasos.md): eine vollständige erste Sitzung, vom Patch bis zum Speichern der Show.
-2. [Live](directo.md): Gruppen, exklusiv oder mischen, Überblendung, Master, Freigaben, Flash und Mischer.
+2. [Live](directo.md): Gruppen, exklusiv oder mischen, Überblendung, Master, Freigaben, Flash, Mischer und Sicherheit während der Show (Show-Modus, geschützte Spezialeffekte, Show-Stopp, Zurückholen, was lief, und Ausblenden auf Schwarz).
 3. [Show](show.md): der Touchscreen, seine Bereiche, Tasten, Fader, Drehregler, Farbrad, XY-Feld, Bearbeitung und Sperre.
 4. [Playbacks](playbacks.md): Playback-Seiten, GO, Pause/Zurück, Flash, Pegel, Aufnehmen auf ein Playback und APC-Controller.
 5. [Programmieren](programar.md): Auswahl, Gruppen, 2D-Plan, Dimmer, Farbe, Position, Features, Fader, Paletten, FX, Fächer, Blind, Hervorheben und Lokalisieren, Befehlszeile, Aufnehmen und Aktualisieren.
 6. [Szenen](escenas.md): alle Szenentypen, Superszenen, Cuelists mit Tracking, Ordner, Import und Export.
-7. [Patch](patch.md): Fixtures hinzufügen, Adressen, Universen, Nummern, Fixture-Gruppen, 2D-Plan, Grenzen, LED-Matrizen und Import aus einer anderen Show.
+7. [Patch](patch.md): Fixtures hinzufügen, Adressen, Universen, Nummern, Fixture-Gruppen, 2D-Plan, Grenzen, LED-Matrizen, Import aus einer anderen Show, geschützte Spezialeffekte und Kanäle parken.
 8. [Fixtures](fixtures.md): die Bibliothek, der Fixture-Editor, die Open Fixture Library, GDTF-Share, GDTF und Ihre Fixtures.
 9. [Ausgänge](salidas.md): Universen, DMX-USB-Interfaces, Art-Net und sACN sowie der Monitor für die DMX-Pegel.
 10. [Zuordnungen](mapeos.md): MIDI, OSC, DMX-Eingang und Tastatur, der Lernmodus und die Vorlagen für Akai APC.
-11. [Optionen](opciones.md): Sprache, Design, Größe, Start, Sperre, automatisches Speichern, Prioritäten, Fernsteuerung, Bibliothek, Updates.
+11. [Optionen](opciones.md): Sprache, Design, Größe, Start, Sperre, Sicherheit während der Show, automatisches Speichern, Prioritäten, Fernsteuerung, Bibliothek, Updates.
 12. [Fernsteuerung](remoto.md): die SHOW auf dem Smartphone oder Tablet.
 13. [Tastenkürzel](atajos.md): alle Tasten und Kombinationen.
 
@@ -104,3 +106,5 @@ Beginnen Sie mit **Erste Schritte**, wenn Sie das Programm zum ersten Mal benutz
 - **Palette**: ein gespeicherter Wert (eine Farbe, eine Position…), dem die Szenen per Referenz folgen: Ändern Sie die Palette, ändern sich die Szenen, die sie verwenden.
 - **Priorität**: von 0 bis 10. Steuern zwei Szenen denselben Kanal, gewinnt die mit der höheren Priorität.
 - **SHOW**: der Bedienbildschirm, den Sie selbst bauen.
+- **Geschützter Spezialeffekt**: eine CO2-, Flammen-, Funken- oder Konfettimaschine, die nur bei scharf geschalteten Effekten auslöst (siehe [Live](directo.md#geschützte-spezialeffekte)).
+- **Parken**: Kanäle mit einem festen Wert am Ausgang halten, über allem anderen (siehe [Patch](patch.md#kanäle-parken)).

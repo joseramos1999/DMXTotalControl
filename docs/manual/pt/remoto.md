@@ -58,9 +58,11 @@ Se você abrir o remoto com o código QR ou com um endereço numérico, o celula
 
 No topo fica a barra do remoto:
 
-- O **nome do show** e as **abas** das páginas do SHOW. O celular lembra a última página que você abriu.
+- O **nome do show** e as **abas** das páginas do SHOW. O celular lembra a última página que você abriu. Em um celular estreito o nome fica mais curto, e só some se as abas não tiverem espaço (em um show com efeitos especiais, cujo botão de armar fica na barra).
 - Um **ponto** que indica se há conexão com o computador.
 - **BO**: blackout.
+- **Armar** (com uma chama): só se o show tem efeitos especiais protegidos; em vermelho, “ARMADOS”, com os efeitos armados. Em um celular na vertical (480 px de largura ou menos) mostra só a chama.
+- A **mão**: a [parada de show](directo.md#parada-de-show). Mantenha-a pressionada por um segundo (uma faixa se enche); em vermelho enquanto está ativa.
 - O botão de **tela cheia**.
 
 Embaixo, a página com suas seções, como no computador:
@@ -84,6 +86,15 @@ Se algum playback tiver algo atribuído, o remoto adiciona uma página **“Play
 
 O remoto usa o mesmo [tema](opciones.md#geral) que o programa e aparece no idioma do celular se for espanhol, português, francês, italiano ou alemão (se não, em inglês).
 
+## Segurança no celular
+
+- **Armar**: um toque pede o contrário do que o celular mostra, então uma mensagem que chega atrasada ou duas vezes nunca arma o que acabou de ser desarmado. Armados, uma barra vermelha **“EFEITOS ARMADOS”** diz o que dispara e tem **“Desarmar”** (veja [Efeitos especiais protegidos](directo.md#efeitos-especiais-protegidos)).
+- **Parada de show**: a mão da barra, ou um botão “Parada de show” do SHOW, mantidos por um segundo. Ativa, uma barra vermelha **“PARADA DE SHOW”** com **“Mantenha para tirar”**. Um celular que se desconecta enquanto a mantém a solta sem mudar nada, e dois celulares ao mesmo tempo contam como um só toque (veja [Parada de show](directo.md#parada-de-show)).
+- **Recuperar o que estava tocando**: depois de Parar tudo, uma barra azul com **“Recuperar”** e uma faixa de 10 s (um toque no seu primeiro meio segundo não conta).
+- Essas barras ficam sob a barra do remoto, e a página fica mais curta. Os botões do SHOW “Armar efeitos”, “Parada de show”, “Recuperar” e “Fade para preto” funcionam a partir do celular e acendem também nele.
+
+> **Não testado com equipamento real:** o remoto não foi testado em um celular real em um wifi com quedas; só o lado do computador e a página em um navegador.
+
 ## Se a conexão cair
 
-Se o celular perde a conexão, aparece “Sem conexão com o DMX Total Control. Tentando de novo…” e ele se reconecta sozinho. O que o dedo estava pressionando (um flash, um botão) é solto no computador, para que nada fique ligado.
+Se o celular perde a conexão, aparece “Sem conexão com o DMX Total Control. Tentando de novo…” e ele se reconecta sozinho. O que o dedo estava pressionando (um flash, um botão) é solto no computador, para que nada fique ligado. Uma parada de show que estava sendo mantida também é solta, sem mudar nada.

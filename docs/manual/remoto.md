@@ -58,9 +58,11 @@ Si abres el remoto con el código QR o con una dirección numérica, el móvil c
 
 Arriba está la barra del remoto:
 
-- El **nombre del show** y las **pestañas** de las páginas del SHOW. El móvil recuerda la última página que abriste.
+- El **nombre del show** y las **pestañas** de las páginas del SHOW. El móvil recuerda la última página que abriste. En un móvil estrecho el nombre se acorta, y solo se oculta si las pestañas no tendrían sitio (en un show con efectos especiales, cuyo botón de armar va en la barra).
 - Un **punto** que indica si hay conexión con el ordenador.
 - **BO**: blackout.
+- **Armar** (con una llama): solo si el show tiene efectos especiales protegidos; en rojo, «ARMADOS», con los efectos armados. En un móvil en vertical (480 px de ancho o menos) muestra solo la llama.
+- La **mano**: la [parada de show](directo.md#parada-de-show). Mantenla pulsada un segundo (se llena una tira); en rojo mientras está puesta.
 - El botón de **pantalla completa**.
 
 Debajo, la página con sus secciones, como en el ordenador:
@@ -84,6 +86,15 @@ Si algún playback tiene algo asignado, el remoto añade una página **«Playbac
 
 El remoto usa el mismo [tema](opciones.md#general) que el programa y sale en el idioma del móvil si es español, portugués, francés, italiano o alemán (si no, en inglés).
 
+## Seguridad en el móvil
+
+- **Armar**: un toque pide lo contrario de lo que ve el móvil, así que un mensaje que llega tarde o dos veces nunca arma lo que se acaba de desarmar. Armados, una barra roja **«EFECTOS ARMADOS»** dice lo que dispara y tiene **«Desarmar»** (consulta [Efectos especiales protegidos](directo.md#efectos-especiales-protegidos)).
+- **Parada de show**: la mano de la barra, o un botón «Parada de show» del SHOW, mantenidos un segundo. Puesta, una barra roja **«PARADA DE SHOW»** con **«Mantén para quitar»**. Un móvil que se desconecta mientras la mantiene la suelta sin cambiar nada, y dos móviles a la vez cuentan como una sola pulsación (consulta [Parada de show](directo.md#parada-de-show)).
+- **Recuperar lo que sonaba**: después de Parar todo, una barra azul con **«Recuperar»** y una tira de 10 s (un toque en su primer medio segundo no cuenta).
+- Estas barras van bajo la barra del remoto, y la página se acorta. Los botones del SHOW «Armar efectos», «Parada de show», «Recuperar» y «Fundido a negro» funcionan desde el móvil y se encienden también allí.
+
+> **Sin probar con equipos reales:** el remoto no se ha probado en un móvil real por una wifi con cortes; solo el lado del ordenador y la página en un navegador.
+
 ## Si se corta la conexión
 
-Si el móvil pierde la conexión, aparece «Sin conexión con DMX Total Control. Reintentando…» y vuelve a conectar solo. Lo que el dedo tenía pulsado (un flash, un botón) se suelta en el ordenador, para que nada se quede encendido.
+Si el móvil pierde la conexión, aparece «Sin conexión con DMX Total Control. Reintentando…» y vuelve a conectar solo. Lo que el dedo tenía pulsado (un flash, un botón) se suelta en el ordenador, para que nada se quede encendido. Una parada de show que se estaba manteniendo también se suelta, sin cambiar nada.

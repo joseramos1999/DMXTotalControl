@@ -1043,6 +1043,14 @@ QString PatchManager::importTableData(const QByteArray &data, const QVariantMap 
     // the new ones the table gives no place (or not placed): in the free slots of the plan
     autoLayout(false);
 
+    // a generic dimmer given the icon of a CO2 jet (the table's name) is a
+    // protected special effect (as one patched with its name: not told)
+    QList<quint32> imported;
+    for (quint32 id : std::as_const(ids))
+        if (id != Fixture::invalidId())
+            imported.append(id);
+    recheckKinds(imported, false);
+
     // remembered for the next import: the fixtures chosen by hand, the view
     QSettings settings;
     if (plan.choices.isEmpty() == false)

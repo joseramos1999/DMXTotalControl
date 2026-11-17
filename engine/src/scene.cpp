@@ -699,6 +699,8 @@ void Scene::writeDMX(MasterTimer *timer, QList<Universe *> ua)
                     fader->setBlendMode(blendMode());
                     fader->setName(name());
                     fader->setParentFunctionID(id());
+                    // DMX Total Control: a scene of the show may fire a special effect
+                    fader->setMayFire(id() != Function::invalidId());
                     m_fadersMap[universe] = fader;
                 }
 
@@ -742,6 +744,8 @@ void Scene::processValue(MasterTimer *timer, QList<Universe*> ua, uint fadeIn, c
         fader->setBlendMode(blendMode());
         fader->setName(name());
         fader->setParentFunctionID(id());
+        // DMX Total Control: a scene of the show may fire a special effect
+        fader->setMayFire(id() != Function::invalidId());
         fader->setParentIntensity(getAttributeValue(ParentIntensity));
         fader->setHandleSecondary(true);
         m_fadersMap[universe->id()] = fader;

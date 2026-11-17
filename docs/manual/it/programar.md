@@ -16,6 +16,7 @@ La pagina ha, dall'alto in basso: l'intestazione con i suoi tasti, la [riga di c
 - **«Cieco»**: vedi [Cieco](programar.md#cieco).
 - **«Azzera tutto»**: rilascia tutte le modifiche dal vivo (valori e FX). Le scene tornano visibili.
 - **«Azzera selezione»**: rilascia solo quelle delle fixture selezionate.
+- **«Parcheggia»**: parcheggia in uscita i valori del programmatore delle fixture selezionate (vedi [Parcheggiare](programar.md#parcheggiare)).
 - **«Snapshot»** e **«Registra…»**: vedi [Registrare](programar.md#registrare).
 
 In una finestra stretta alcuni tasti mostrano solo la loro icona; passando il mouse se ne vede il nome.
@@ -52,7 +53,7 @@ Il tasto con la griglia nell'intestazione del pannello («Pianta 2D») sostituis
 - **Trascina** sul palco vuoto per selezionare con un rettangolo. Un clic nel vuoto annulla la selezione.
 - La **rotella** fa lo zoom; trascinare con il **tasto destro** o centrale sposta la vista, e un doppio clic con quei tasti la ricentra.
 
-In Programma la pianta è sempre **dal vivo**: ogni fixture mostra il suo colore, il suo dimmer, il suo strobo (lampeggia) e il suo gobo, e ogni pixel delle barre e delle matrici. Le fixture si posizionano nella [pianta 2D del Patch](patch.md#pianta-2d).
+In Programma la pianta è sempre **dal vivo**: ogni fixture mostra il suo colore, il suo dimmer, il suo strobo (lampeggia) e il suo gobo, e ogni pixel delle barre e delle matrici. Le fixture si posizionano nella [pianta 2D del Patch](patch.md#pianta-2d). Gli effetti speciali protetti hanno il loro scudo e le fixture parcheggiate il loro lucchetto, come nel Patch.
 
 ## Il pannello Rapido
 
@@ -125,11 +126,20 @@ Se muovi la croce, il ventaglio o «Centra», o cambi la selezione, il punto sco
 
 Con **«Cieco»** attivo, il programmatore modifica **senza mandare niente alle luci**: il palco continua a mostrare ciò che è in riproduzione e tu prepari il look successivo. Il sottotitolo avvisa: «Cieco: le luci non mostrano ciò che programmi». Puoi registrare come sempre. Quando lo disattivi, ciò che c'è nel programmatore esce.
 
+## Effetti speciali protetti
+
+Il programmatore non manda mai in uscita un [effetto speciale protetto](directo.md#effetti-speciali-protetti) (un CO2, una fiamma…), nemmeno con gli effetti armati:
+
+- In una selezione che mescola effetti protetti e altre fixture, il programmatore non dà loro niente: né `@ FULL`, né livelli, colori, fader, «Localizza», «Beam on» o «Beam off», palette «Tutto», FX o macro. I loro fader non compaiono, quindi una scena registrata da quella selezione non li contiene mai.
+- In una selezione **di soli effetti protetti**, i valori si tengono perché tu possa programmare una scena di CO2, ma non escono mai, armati o no. Il sottotitolo dice «N canali di effetti speciali: si registrano, non escono», e i loro fader e riquadri hanno uno scudo rosso «non esce». La scena che registri li attiva dallo SHOW, da un pad o dal telefono con gli effetti armati.
+- Quando carichi una scena, un passo o una cue con un CO2, i suoi valori restano, e salvarla di nuovo non li perde. I suoi FX su effetti protetti restano nella scena, ma non suonano nel programmatore.
+- «Snapshot» li lascia fuori, anche mentre si attivano; «Evidenzia» non li accende mai. Gli FX e le macro FX non suonano mai su di loro, e un avviso lo dice («1 effetto speciale protetto resta fuori dall'FX»). Follow non punta una testa a fiamma protetta selezionata insieme ad altre fixture.
+
 ## Evidenziare e localizzare
 
 Nella barra della riga di comando:
 
-- **«Evidenzia»**: la selezione al massimo in bianco aperto, sopra tutto, per vedere quali fixture sono. Non viene registrato. Premi di nuovo per toglierlo.
+- **«Evidenzia»**: la selezione al massimo in bianco aperto, sopra tutto, per vedere quali fixture sono. Non viene registrato. Premi di nuovo per toglierlo. Non accende mai gli effetti speciali protetti.
 - **«Localizza»**: mette la selezione al massimo, in bianco aperto, centrata e con il fascio aperto, **nel programmatore** (questi valori invece vengono registrati).
 - **◀ ▶** (PREV / NEXT): percorre la selezione **una alla volta**: resta selezionata una sola fixture e si vede a quale sei («2/8»). **«Tutte»** torna a tutta la selezione (ALL).
 
@@ -347,7 +357,7 @@ Una cue salva solo ciò che il programmatore cambia rispetto a ciò che lasciano
 Il menu **«Snapshot»** ha:
 
 - **«Salva le modifiche in una scena»**: mette i valori del programmatore in una scena statica già esistente.
-- **«Tutto ciò che è in scena, in una nuova scena…»**: tutto ciò che mostrano ora le luci (scene, modifiche dal vivo e il mixer, senza il grand master) diventa una nuova scena statica, su ogni fixture accesa. Se «Evidenzia» è attivo, bisogna toglierlo prima («Disattiva evidenziazione»).
+- **«Tutto ciò che è in scena, in una nuova scena…»**: tutto ciò che mostrano ora le luci (scene, modifiche dal vivo e il mixer, senza il grand master) diventa una nuova scena statica, su ogni fixture accesa. Se «Evidenzia» è attivo, bisogna toglierlo prima («Disattiva evidenziazione»). Lascia fuori gli effetti speciali protetti, anche mentre si attivano.
 - **«Solo le modifiche, in una nuova scena…»**.
 
 ### Modificare scene e cue
@@ -362,3 +372,7 @@ Il menu **«Snapshot»** ha:
 - La **×** di un riquadro o di un fader: solo quel canale.
 
 Cosa succede alle modifiche dal vivo quando avvii una scena, e la loro priorità rispetto alle scene, si decide in [Opzioni](opciones.md#riproduzione).
+
+## Parcheggiare
+
+**«Parcheggia»**, nell'intestazione (dopo «Azzera selezione»), parcheggia i valori che il programmatore ha sulle fixture selezionate: passano in uscita con i loro [limiti](patch.md#limiti) (senza il grand master), sopra tutto, e il programmatore li rilascia. I valori delle altre fixture restano nel programmatore, e gli FX del programmatore non si parcheggiano. È disattivato se la selezione non ha valori. Se poi cambi i limiti, ciò che è parcheggiato non cambia. Un effetto speciale protetto si parcheggia spento. Per toglierlo dal parcheggio, usa il menu della fixture nel Patch (clic destro): vedi [Parcheggiare i canali](patch.md#parcheggiare-i-canali).

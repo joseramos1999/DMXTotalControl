@@ -10,6 +10,7 @@ No cabeçalho você escolhe a vista e tem as ferramentas para adicionar:
 - **“Canais”**: os 512 canais de cada universo, com os fixtures por cima.
 - **“Plano 2D”**: o palco visto de cima.
 - **“Importar”**, **“Matriz de LED”** e **“Adicionar fixtures”**.
+- Com fixtures estacionados, **“N estacionados · Desestacionar tudo”**: quantos são e o botão para desestacionar todos (veja [Estacionar canais](patch.md#estacionar-canais)).
 
 ## Adicionar fixtures
 
@@ -35,7 +36,7 @@ Para dimmers avulsos, escolha **Generic › Generic Dimmer**: em vez de modo, vo
 
 ## A lista
 
-Colunas: caixa de seleção, **#** (número), **NOME**, **ENDEREÇO** (universo . endereço), **CANAIS**, **FIXTURE** (fabricante e modelo), **MODO**, **INVERTER** (pan e tilt) e o botão de identificar.
+Colunas: caixa de seleção, **#** (número), **NOME**, **ENDEREÇO** (universo . endereço), **CANAIS**, **FIXTURE** (fabricante e modelo), **MODO**, **INVERTER** (pan e tilt) e o botão de identificar. Depois do nome, um **escudo** marca um [efeito especial protegido](patch.md#efeitos-especiais-protegidos) e um **cadeado**, um fixture com canais [estacionados](patch.md#estacionar-canais).
 
 - **“Agrupar por fixture”** os agrupa por modelo, com uma caixa para selecionar todos os de cada modelo. Um clique no cabeçalho de um modelo o recolhe (oculta os fixtures dele) ou o expande.
 - **Clique duplo** em um fixture o edita.
@@ -45,9 +46,11 @@ Colunas: caixa de seleção, **#** (número), **NOME**, **ENDEREÇO** (universo 
 As ferramentas da barra trabalham sobre a seleção:
 
 - **Clique** seleciona; **Ctrl+clique** adiciona ou tira; **Shift+clique** seleciona todos os fixtures desde o último que você clicou até esse (nesse sentido, que é a ordem da seleção), e **Ctrl+Shift+clique** os adiciona. **“Todos”** e **“Nenhum”**. A caixa de seleção de uma linha adiciona ou tira o fixture dela (como Ctrl+clique); com Shift, adiciona todos desde o último que você clicou.
-- **“Identificar”**: os fixtures selecionados piscam em branco para que você os encontre no palco. **“Parar de identificar”** interrompe isso (também para ao sair da página). O botão de cada linha identifica só esse fixture. A lista fica onde estava.
+- **“Identificar”**: os fixtures selecionados piscam em branco para que você os encontre no palco. **“Parar de identificar”** interrompe isso (também para ao sair da página). O botão de cada linha identifica só esse fixture. A lista fica onde estava. Os efeitos especiais protegidos nunca são identificados (piscar um CO2 o dispararia): um aviso diz quantos ficaram de fora.
 - **Inverter pan** e **inverter tilt** (os ícones de setas): para os fixtures que os têm.
-- **“Limites”**, **“Editar”**, **“Reendereçar”**, **“Renumerar”**, **“Criar grupo”** e **“Excluir”**: são explicados a seguir.
+- **“Limites”**, o botão da **chama** (**“Efeito especial”**), **“Editar”**, **“Reendereçar”**, **“Renumerar”**, **“Criar grupo”** e **“Excluir”**: são explicados a seguir.
+
+**Clique com o botão direito** em uma linha da lista, ou em um fixture do plano 2D sem mover o mouse, para abrir o menu do fixture: **“Efeito especial…”**, **“Identificar”**, **“Limites…”**, **“Editar…”**, **“Estacionar como está agora”**, **“Estacionar apagado”**, **“Também em blackout”**, **“Desestacionar”** e **“Desestacionar tudo”**. Se o fixture não estava selecionado, ele é selecionado antes.
 
 ## Endereços e universos
 
@@ -115,9 +118,9 @@ As ferramentas (trabalham sobre a seleção e na ordem dela):
 - **15°** (botão direito: para o outro lado) e **90°**: giram a seleção.
 - **“Altura e orientação”**: onde estão pendurados os moving heads selecionados, para o [Follow](patch.md#altura-e-orientação-follow).
 
-Os moving heads têm uma pequena seta na borda (um entalhe, quando o plano os mostra pequenos): para onde eles apontam. Os nomes dos fixtures muito próximos ficam ocultos para não se sobreporem: aproxime o zoom para lê-los.
+Os moving heads têm uma pequena seta na borda (um entalhe, quando o plano os mostra pequenos): para onde eles apontam. Os nomes dos fixtures muito próximos ficam ocultos para não se sobreporem: aproxime o zoom para lê-los. Um **escudo** no canto superior esquerdo marca um efeito especial protegido (fraco; vermelho com os efeitos armados; com um anel que pulsa enquanto dispara) e um **cadeado** no canto superior direito, um fixture estacionado.
 
-A **roda** do mouse faz zoom, o **botão direito** ou o do meio arrastam a vista e um clique duplo com eles a centraliza. Os botões do canto também fazem zoom.
+A **roda** do mouse faz zoom, o **botão direito** ou o do meio arrastam a vista e um clique duplo com eles a centraliza. Os botões do canto também fazem zoom. Um clique com o botão direito sem mover o mouse abre o [menu do fixture](patch.md#selecionar).
 
 > **Dica:** posicione os fixtures na ordem em que você quer que os efeitos corram: selecione-os da esquerda para a direita e use “Organizar › Linha”.
 
@@ -172,6 +175,51 @@ Com um só fixture, a lista **Canais** permite decidir para cada canal:
 
 Os limites atuam na saída: cenas, efeitos e edição ao vivo mantêm seus valores, mas o que sai os respeita. Com vários fixtures aparecem os valores do primeiro que tem cada controle, e o que você mudar é aplicado a todos os que o têm.
 
+## Efeitos especiais protegidos
+
+Um **efeito especial protegido** só dispara com os efeitos armados, a partir de cenas, cuelists e chasers, e cada disparo dura no máximo o seu tempo máximo. Como armá-los e o que os dispara está em [Ao vivo](directo.md#efeitos-especiais-protegidos).
+
+**Quais são.** As máquinas de **CO2**, **chamas**, **faíscas frias** e **confete** são protegidas sozinhas; as de **bolhas** e **neve**, não (proteja-as manualmente se quiser). A classe vem do tipo de fixture, das palavras da definição dele, do nome de um dimmer genérico (“CO2 1”, “FLAME 3”, “FOGO 2”, “PIRO 1”) ou do ícone escolhido no plano. As regras automáticas só protegem, nunca tiram a proteção: mudar o nome ou o ícone nunca desprotege um fixture; um fixture que passa a ser de uma dessas classes é protegido, e um aviso diz isso (“CO2 4 agora é um efeito especial protegido”); um CO2 que você desprotegeu manualmente continua desprotegido mesmo que o chame de “CO2 9”.
+
+> **Limites:** “C02” escrito com um zero não é reconhecido, e “FOCO2” não é um CO2. Uma máquina que não é reconhecida não está protegida: confira o escudo na lista e proteja-a manualmente.
+
+**“Efeito especial”** (o botão da chama, ao lado de “Limites”, ou “Efeito especial…” no menu do fixture) abre os ajustes para a seleção:
+
+- **“Efeito especial protegido”**: desligá-lo pergunta antes (“Tirar a proteção?”). Sem ela, o fixture sai como qualquer outro canal: sem armar, sem tempo máximo e também a partir do programador, de Identificar, do mixer e dos FX.
+- **“Tempo máximo de disparo”**: de 0,1 a 30 s (por padrão: CO2 3 s, chamas 2 s, faíscas 5 s, confete 2 s, os outros 3 s).
+- **“Espera mínima entre disparos”**: de 0 a 60 s (1 s por padrão), desde que se solta.
+- **“Canal de segurança”**: **“Nenhum”** ou o canal do fixture de que a máquina precisa para disparar, com os seus **“Valores de / até”** (de 0 a 255; “de” não pode ser maior que “até”). Esse canal só sai dentro desses valores enquanto o efeito está armado e disparando (“de”, se a cena não lhe dá valor); senão, 0. Só pode ser escolhido quando os fixtures selecionados têm os mesmos canais, e um fixture de um só canal não pode ter um (“… precisa de outro canal para poder disparar”). Se o fixture muda de modo ou de definição e fica outro canal no lugar dele, o canal de segurança é tirado, e um aviso diz isso (“O canal de segurança de … foi tirado”).
+- **“Conforme a sua classe (…)”**: volta à proteção e aos tempos da sua classe, sem canal de segurança.
+
+**Quais canais disparam.** Todos menos o pan, o tilt e o de segurança, seja qual for o tipo (intensidade, efeito, altura…): a eles se aplica o tempo máximo. O pan e o tilt só saem com os efeitos armados e a partir de cenas, sem limite de tempo, e em 0 desarmados: uma cena que só aponta a máquina não a dispara. Uma máquina que só tem pan e tilt dispara com todos os canais menos o de segurança. Um fixture entre dois universos (de um show do QLC+) nunca dispara: a janela avisa; mova-o para um só universo.
+
+Na lista, um **escudo** depois do nome; no plano, um escudo no canto superior esquerdo: fraco normalmente, vermelho com os efeitos armados e com um anel que pulsa enquanto dispara. **Identificar** nunca os acende. [Níveis DMX](salidas.md#níveis-dmx) e o plano ao vivo mostram o que sai de verdade: um CO2 desarmado aparece em 0 mesmo com a cena dele tocando.
+
+A proteção é salva com o show, na seção do DMX Total Control, e [importar o patch de outro show](patch.md#importar-de-outro-show) a traz. Ao abrir um show anterior ou do QLC+, um aviso diz uma vez quais fixtures agora são efeitos protegidos pela classe (“2 fixtures deste show agora são efeitos especiais protegidos: …”); também uma máquina de fumaça cujo modelo diz “CO2” ou um dimmer genérico chamado “Fuego…” ou “Fire…”. Para mudar, use “Efeito especial”. O QLC+ não lê essa proteção: aberto no QLC+, o show dispara esses fixtures de qualquer lugar, sem armar e sem tempo máximo. As versões anteriores do DMX Total Control também não a leem: disparam esses fixtures sem armar e, ao salvar o show, tiram a proteção feita à mão, os tempos e o canal de segurança. Use esta versão em todos os computadores do show.
+
+## Estacionar canais
+
+Um canal **estacionado** sai sempre com um valor fixo, acima das cenas, das cuelists, dos FX, do programador, do mixer (Full, Flash…), do grand master e de Parar tudo: o hazer a 30 % a noite toda, uma cabeça quebrada apagada e parada, a luz da plateia. Esc e Blackout nunca o desestacionam.
+
+No [menu do fixture](patch.md#selecionar) (botão direito na lista ou no plano):
+
+- **“Estacionar como está agora”**: todos os canais no que sai agora, então o grand master, o mixer e os limites desse momento ficam incluídos. Não é possível durante a parada de show nem durante um fade para preto (a luz deles ficaria estacionada para sempre).
+- **“Estacionar apagado”**: os canais de intensidade (dimmers e cores) em 0 e os outros como estão agora; um fixture sem canais de intensidade (uma máquina de fumaça ou um hazer da biblioteca), tudo em 0. Durante a parada de show ou um fade para preto, os outros canais são estacionados no que o show envia por baixo.
+- **“Também em blackout”**: com o Blackout, as intensidades estacionadas mantêm o valor. Sem ela, apagam-se com o Blackout; o pan, o tilt, o gobo e os outros canais que não são luz continuam sempre estacionados.
+- **“Desestacionar”** e **“Desestacionar tudo”**.
+
+Em [Programar](programar.md#estacionar), **“Estacionar”** estaciona os valores que o programador tem nos fixtures selecionados.
+
+Com fixtures estacionados, o cabeçalho do Patch mostra **“N estacionados · Desestacionar tudo”** (em uma janela estreita, o cadeado, o número e o botão só com o ícone). Na lista, um **cadeado** depois do nome (“Estacionado: N canais com um valor fixo na saída”); no plano 2D, do Patch e de Programar, um cadeado no canto superior direito. Em [Níveis DMX](salidas.md#níveis-dmx), um cadeado em cada canal estacionado.
+
+- Um efeito especial protegido só pode ser estacionado **apagado**: “Estacionar como está agora” ou “Estacionar” de Programar o estacionam em 0 e dizem isso (“Um efeito especial protegido só pode ser estacionado apagado”). Estacionado, nunca dispara, mesmo armado; um disparo cortado por estacioná-lo aparece no registro como “estacionado”. Um fixture estacionado aceso que passa a ser protegido é estacionado apagado; se depois for desprotegido, continua estacionado em 0 até você desestacioná-lo. Desestacionado, só dispara depois de soltar a cena dele e pressioná-la de novo.
+- Os canais estacionados seguem o fixture se você o reendereçar. Mudar o modo de um fixture remove os canais estacionados dele (“Os canais estacionados de Spot 3 foram retirados: o modo mudou”), menos em um efeito protegido, que continua estacionado apagado. Excluir um fixture remove os dele. Um pan estacionado de um fixture com pan e tilt trocados sai pelo canal do tilt, como o pan.
+- A [parada de show](directo.md#parada-de-show) ganha dos canais estacionados: um fixture estacionado apagado também se ilumina, e um hazer estacionado continua estacionado. Um [fade para preto](directo.md#fade-para-preto) desce os estacionados sem “Também em blackout”.
+
+Os canais estacionados são salvos com o show, na seção do DMX Total Control (importar o patch de outro show não os traz). Ao abrir um show com canais estacionados, eles se aplicam na hora, e um aviso diz quais (“2 fixtures estacionados: HAZER, Spot 3 (Patch)”). Abrir outro show ou um novo os remove. Ao fechar o programa eles são soltos (o palco fica em repouso), mas continuam no show. O QLC+ não estaciona canais: lá eles tocam como as cenas disserem, e a cópia para o QLC+ avisa (“2 fixtures estacionados: o QLC+ não estaciona canais”). As versões anteriores do DMX Total Control não os aplicam e, ao salvar o show, os tiram, assim como os ajustes da parada de show.
+
+> **Não testado com equipamento real:** estacionar não foi testado com interfaces, nós nem hazers reais.
+
 ## Matrizes e fitas de LED
 
 **“Matriz de LED”** patcheia de uma vez uma matriz ou uma fita de pixels:
@@ -189,7 +237,7 @@ Os limites atuam na saída: cenas, efeitos e edição ao vivo mantêm seus valor
 
 **“Importar”** traz para este show parte de outro (do DMX Total Control ou do QLC+):
 
-- **“Patch de outro show…”**: os fixtures dele. Vão para os mesmos endereços se estiverem livres; se não, para os seguintes.
+- **“Patch de outro show…”**: os fixtures dele. Vão para os mesmos endereços se estiverem livres; se não, para os seguintes. Eles trazem a proteção de efeito especial, os tempos, o canal de segurança e o ícone do plano (o que o outro show diz nunca desprotege um CO2), mas não os canais estacionados.
 - **“Cenas de outro show…”**: as cenas dele, atribuídas aos fixtures deste show que coincidem (por endereço e modelo, por nome ou por modelo). Entram em grupos com o mesmo nome.
 - **“Patch e cenas de outro show…”**: as duas coisas.
 - **“Patch de um programa de visualização (CSV)…”**: a tabela de fixtures que o seu programa de visualização exporta; veja [Importar um patch de um programa de visualização](patch.md#importar-um-patch-de-um-programa-de-visualização).

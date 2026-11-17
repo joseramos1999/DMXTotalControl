@@ -23,14 +23,26 @@ Alle Tasten und Kombinationen des Programms, nach Seite. Die Tasten, die Sie sel
 | **Strg+S** | Die Show speichern (beim ersten Mal wird nach einem Namen gefragt) |
 | **Strg+Umschalt+S** | Die Show unter einem anderen Namen speichern („Speichern unter…“) |
 | **Strg+B** | Blackout (ein und aus) |
+| **Pause** zweimal (innerhalb von 2 s) | Löst den [Show-Stopp](directo.md#show-stopp) aus oder hebt ihn auf, auf jeder Seite, mit jeder Zusatztaste und auch beim Schreiben. Ein einziger Druck warnt nur („Show-Stopp: Erneut Pause drücken, um ihn auszulösen“); sie zu halten tut nichts weiter. Sie lässt sich unter Zuordnungen nicht zuweisen; eine Show, die sie schon zugeordnet hatte, behält sie |
 | **Esc** | Alles stoppen. Im Lernmodus bricht es das ausstehende Bedienelement ab oder verlässt den Modus; bei aktiviertem „Aufnehmen“ unter Playbacks deaktiviert es die Aufnahme; bei einer im Plan des Patch isolierten Gruppe beendet es die Isolierung (bei einem offenen Menü, einer offenen Auswahlliste oder einem offenen Fenster des Patch, etwa „Fixtures hinzufügen“, „Bearbeiten“ oder „Grenzen“, schließt es nur dieses; ein Hinweis wie „Änderungen speichern?“ schließt sich nicht mit Esc). In einem Fenster zur Eingabe eines Namens oder einer Nummer („Gruppe erstellen“, „Umbenennen“, „Nummerieren“…) schließt es dieses, ohne etwas zu übernehmen: Drücken Sie erneut Esc, um alles zu stoppen |
+| **Esc** zweimal | Während des Ausblendens von „Alles stoppen mit Ausblenden“ stoppt es alles sofort |
+| **Strg+Z** | Unter Live und in der SHOW (nicht im Bearbeitungsmodus und nicht beim Schreiben), bis 10 s nach „Alles stoppen“ oder „Gruppen freigeben“: [zurückholen, was lief](directo.md#zurückholen-was-lief) |
 | **Strg+→** | Nächste Szene in jeder laufenden Gruppe |
 | **Strg+←** | Vorherige Szene in jeder laufenden Gruppe |
 | **G** | BeatGO (außer auf der Seite Show) |
 
 Ist eine Seite gesperrt, fragt ihre Taste das Passwort ab (falls es eines gibt) und entsperrt. Bei gesperrter SHOW (Kiosk-Modus) funktionieren die Seitentasten nicht, und bei gesperrtem Setup auch nicht Strg+N, Strg+O und Strg+Umschalt+S.
 
-T, G und die Tasten, die Sie unter Zuordnungen zuweisen, wirken nicht, während Sie in ein Textfeld schreiben, etwa in die Befehlszeile unter Programmieren.
+T, G und die Tasten, die Sie unter Zuordnungen zuweisen, wirken nicht, während Sie in ein Textfeld schreiben, etwa in die Befehlszeile unter Programmieren. Die Pause-Taste (der Show-Stopp) wirkt dagegen auch beim Schreiben.
+
+## Show-Modus
+
+Bei eingeschaltetem [Show-Modus](directo.md#show-modus), wenn Sie das Programm schließen oder eine andere Show öffnen oder beginnen:
+
+| Taste | Was sie tut |
+|---|---|
+| **Leertaste** oder **Eingabetaste** 1,5 s halten | Wie das Halten der Taste: bestätigt (die Tastenwiederholung zählt nicht) |
+| **Esc** | Bricht ab; in diesem Fenster stoppt es nie die Show |
 
 ## Playbacks
 
@@ -120,5 +132,6 @@ Nachdem Sie auf einen Fader oder Schieberegler geklickt haben:
 | Mausrad | 2D-Plan | Zoom |
 | Ziehen mit der rechten oder mittleren Maustaste | 2D-Plan | Verschiebt die Ansicht (Doppelklick: zentriert sie) |
 | Rechtsklick | Taste 15° im 2D-Plan | Dreht andersherum |
-| Rechtsklick | Taste des SHOW (live) | Stoppt, was sie abspielt (ihre Szene, Gruppe, ihr Playback oder ihre Palette), auch mit GO |
+| Rechtsklick | Taste des SHOW (live) | Stoppt, was sie abspielt (ihre Szene, Gruppe, ihr Playback oder ihre Palette), auch mit GO; die von „Effekte scharf schalten“ entschärft sie |
 | „Entsperren“ gedrückt halten | Gesperrte SHOW | Entsperrt |
+| 1 s gedrückt halten | SHOW-Taste „Show-Stopp“, ein zugeordnetes Pad oder eine zugeordnete Taste, die Hand des Smartphones, „Halten zum Aufheben“ | Löst den Show-Stopp aus oder hebt ihn auf |

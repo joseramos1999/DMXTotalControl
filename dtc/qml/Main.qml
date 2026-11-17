@@ -68,9 +68,17 @@ ApplicationWindow {
 
     property int currentPage: pageLive
     /* The top bar on smaller screens: icons for Save as and the running
-       count, a shorter grand master; narrow: Blackout and Stop all too */
-    readonly property bool compactBar: width < 1600
-    readonly property bool narrowBar: width < 1300
+       count, a shorter grand master; narrow: Blackout and Stop all too.
+       (With the button of the special effects, from a wider window: at
+       1600 «Stop all» went off its edge in Spanish and French, armed) */
+    readonly property bool compactBar: width < (Core.safety.hasProtected || Core.safety.armed ? 1700 : 1600)
+    /* (the button of the special effects, in a show that has some, needs
+       its room: narrow from a wider window. 1450: German, French and
+       Spanish fit from there with show mode on and something running) */
+    readonly property bool narrowBar: width < (Core.safety.hasProtected || Core.safety.armed ? 1450 : 1300)
+    /** Narrower still (towards the minimum width) with the button of the
+     *  special effects: the running count goes and the grand master is shorter */
+    readonly property bool tightBar: width < 1200
     /** Developer option --scene: open the Scenes page on this scene */
     property int startScene: -1
     onStartSceneChanged: if (startScene >= 0) { scenesPage.select(startScene); currentPage = pageScenes }
@@ -151,17 +159,39 @@ ApplicationWindow {
     Connections {
         target: Core.settings
         function onLockChanged() { if (window.pageLocked(window.currentPage)) window.currentPage = window.pageLive }
+        // (show mode off on the battery: its banner goes, a message says it)
+        function onLiveSafetyChanged() { window.tellPower() }
     }
 
-    /** Show page lock: no navigation, no editing */
+    /** Show page lock: no navigation, no editing. Locking it (the kiosk, also
+     *  at startup) turns the show mode on; unlocking leaves it on */
     property bool locked: false
-    onLockedChanged: if (locked) Core.mapping.learnMode = false
+    onLockedChanged: {
+        if (locked) {
+            Core.mapping.learnMode = false
+            Core.settings.showMode = true
+        }
+    }
     property bool closeConfirmed: false
+    /** Show mode: the button to close was held, for the close that comes
+     *  next (the unsaved changes are asked then) */
+    property bool holdPassed: false
+    /** The notice of USB selective suspend was hidden (until the next start) */
+    property bool usbNoticeHidden: false
 
+    /** When the toast got its last message */
+    property double toastAt: 0
     function showMessage(text, isError) {
-        toast.text = text
-        toast.isError = !!isError
+        // messages that come together (a show that opens: its parks, its
+        // special effects, its mappings on Pause) are all shown, one under
+        // the other; one that comes later replaces them
+        const together = toast.visible && Date.now() - toastAt < 500 && toast.text !== text
+        toast.text = together ? toast.text + "\n" + text : text
+        toast.isError = together ? (toast.isError || !!isError) : !!isError
+        toastAt = Date.now()
         toast.open()
+        // (open already: its time starts again with the new message)
+        toastTimer.restart()
     }
 
     function saveOrAsk(then) {
@@ -191,14 +221,31 @@ ApplicationWindow {
     }
 
     /** Do $action (New, Open...: it replaces the show) once the unsaved
-     *  changes are saved or left, as the user says */
-    function whenSaved(action) {
-        if (Core.modified) {
-            closeDialog.then = action
-            closeDialog.open()
-        } else {
-            action()
+     *  changes are saved or left, as the user says. In show mode a button
+     *  is held first, also without changes ($kind: "new", "open" or "close",
+     *  what the question says; "open" when it is left out) */
+    function whenSaved(action, kind) {
+        const proceed = () => {
+            if (Core.modified) {
+                closeDialog.then = action
+                closeDialog.open()
+            } else {
+                action()
+            }
         }
+        if (Core.settings.showMode)
+            askHold(kind || "open", proceed)
+        else
+            proceed()
+    }
+    /** Show mode: hold a button before what ends the show ($kind as whenSaved) */
+    function askHold(kind, then) {
+        if (kind === "close")
+            holdDialog.ask(qsTr("Close DMX Total Control?"), "", qsTr("Hold to close"), then)
+        else if (kind === "new")
+            holdDialog.ask(qsTr("Start a new show?"), "", qsTr("Hold to continue"), then)
+        else
+            holdDialog.ask(qsTr("Open another show?"), "", qsTr("Hold to open"), then)
     }
 
     /** A second launch of the program (a show opened from the Explorer)
@@ -208,7 +255,33 @@ ApplicationWindow {
         if (window.locked || window.setupLocked)
             showMessage(qsTr("The screens are locked: another show can't be opened now"), true)
         else
-            whenSaved(() => window.openShow(url))
+            whenSaved(() => window.openShow(url), "open")
+    }
+
+    /** The battery, outside show mode (in show mode a banner says it until
+     *  the charger is plugged in): a message once each time it runs on it,
+     *  and once more when it is low. Options says it too */
+    property bool toldOnBattery: false
+    property bool toldLowBattery: false
+    function tellPower() {
+        if (!Core.power.onBattery) {
+            toldOnBattery = false
+            toldLowBattery = false
+            return
+        }
+        if (Core.settings.showMode || (toldOnBattery && (toldLowBattery || !Core.power.batteryLow)))
+            return
+        toldOnBattery = true
+        toldLowBattery = Core.power.batteryLow
+        showMessage(batteryText(), true)
+    }
+    function batteryText() {
+        return qsTr("Running on battery: plug in the charger")
+               + (Core.power.batteryLow ? "  ·  " + qsTr("Battery at %1 %").arg(Core.power.batteryPercent) : "")
+    }
+    Connections {
+        target: Core.power
+        function onChanged() { window.tellPower() }
     }
 
     /** The example shows installed with the program */
@@ -247,7 +320,7 @@ ApplicationWindow {
             } else {
                 showMessage(Core.updates.error, true)
             }
-        })
+        }, "close")
     }
 
     function setFullScreen(enable) {
@@ -267,6 +340,17 @@ ApplicationWindow {
     }
 
     onClosing: (close) => {
+        // show mode: a held button first, also without changes (the window's
+        // ×, Alt+F4, the menu of the taskbar); then the changes, as always.
+        // (the hold counts for this close only: a cancelled question of the
+        // changes asks for it again)
+        const held = holdPassed
+        holdPassed = false
+        if (Core.settings.showMode && !held && !closeConfirmed) {
+            close.accepted = false
+            askHold("close", () => { window.holdPassed = true; window.close() })
+            return
+        }
         if (Core.modified && !closeConfirmed) {
             close.accepted = false
             closeDialog.then = null
@@ -282,6 +366,8 @@ ApplicationWindow {
             if (Core.settings.startShowLocked)
                 locked = true
         }
+        // on the battery from the start (the problems of the show say more)
+        tellPower()
         // (the problems of the show opened wait for the answer: the copy may
         // replace it)
         if (Core.hasRecovery)
@@ -298,8 +384,8 @@ ApplicationWindow {
      * ****************************************************************/
     Shortcut { sequences: [StandardKey.Save]; enabled: !window.locked; onActivated: window.saveOrAsk() }
     Shortcut { sequences: [StandardKey.SaveAs]; enabled: !window.locked && !window.setupLocked; onActivated: saveDialog.start() }
-    Shortcut { sequences: [StandardKey.Open]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => openDialog.start()) }
-    Shortcut { sequences: [StandardKey.New]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => Core.newShow()) }
+    Shortcut { sequences: [StandardKey.Open]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => openDialog.start(), "open") }
+    Shortcut { sequences: [StandardKey.New]; enabled: !window.locked && !window.setupLocked; onActivated: window.whenSaved(() => Core.newShow(), "new") }
     Shortcut { sequence: "F1"; enabled: !window.locked; onActivated: window.currentPage = window.pageLive }
     Shortcut { sequence: "F2"; enabled: !window.locked; onActivated: window.currentPage = window.pageShow }
     Shortcut { sequence: "F3"; enabled: !window.locked; onActivated: window.goTo(window.pageProgram) }
@@ -323,6 +409,18 @@ ApplicationWindow {
             contentItem.forceActiveFocus()
     }
     readonly property bool playbackKeys: !window.locked && window.currentPage === window.pagePlaybacks && !window.textFocus
+    // what Stop all (or Release groups) stopped plays again, for some
+    // seconds: Ctrl+Z in Live and in the SHOW (not while it is edited: there
+    // Ctrl+Z may undo an edit one day), never while typing
+    readonly property int shownPage: window.locked ? window.pageShow : window.currentPage
+    /** Ctrl+Z brings it back on the page shown (the bar says it only then) */
+    readonly property bool recallKey: !window.textFocus &&
+        (window.shownPage === window.pageLive || (window.shownPage === window.pageShow && !showPage.editing))
+    Shortcut {
+        sequences: [StandardKey.Undo]
+        enabled: Core.recall.available && window.recallKey
+        onActivated: Core.recall.recall()
+    }
     Shortcut { sequence: "Space"; enabled: window.playbackKeys; autoRepeat: false; onActivated: Core.playbacks.mainGo() }
     Shortcut { sequence: "Shift+Space"; enabled: window.playbackKeys; autoRepeat: false; onActivated: Core.playbacks.mainBack() }
     Shortcut { sequence: "PgUp"; enabled: window.playbackKeys; onActivated: Core.playbacks.previousPage() }
@@ -356,7 +454,9 @@ ApplicationWindow {
         enabled: !(window.currentPage === window.pagePatch && patchPage.isolatedGroupId >= 0
                    && !Core.mapping.learnMode && !playbacksPage.recordArmed && window.focusInPopup())
         onActivated: {
-            if (Core.mapping.pendingTarget.target !== undefined) Core.mapping.cancelLearn()
+            // (the question of the show mode first: Esc only cancels it, nothing stops)
+            if (holdDialog.opened) holdDialog.close()
+            else if (Core.mapping.pendingTarget.target !== undefined) Core.mapping.cancelLearn()
             else if (Core.mapping.learnMode) Core.mapping.learnMode = false
             else if (playbacksPage.recordArmed) playbacksPage.recordArmed = false
             else if (window.currentPage === window.pagePatch && patchPage.isolatedGroupId >= 0) patchPage.endIsolation()
@@ -366,6 +466,8 @@ ApplicationWindow {
     Connections {
         target: Core.mapping
         function onLearnt(description) { window.showMessage(qsTr("Mapped: %1").arg(description)) }
+        // (a show opened with mappings on the Pause key, the show stop's now)
+        function onMessage(text) { window.showMessage(text, true) }
     }
     // nothing protects the show when the autosave fails (a full disk, a
     // read-only file): the user must know
@@ -381,6 +483,61 @@ ApplicationWindow {
     Connections {
         target: Core.cuelists
         function onMessage(text) { window.showMessage(text, true) }
+    }
+    // the protected special effects: a fixture protected by itself (its new
+    // name or icon), an arming refused, a log that can't be written
+    Connections {
+        target: Core.patch
+        function onProtectionMessage(text) { window.showMessage(text) }
+    }
+    // (protected special effects left out of an FX of the programmer)
+    Connections {
+        target: Core.programmer
+        function onMessage(text) { window.showMessage(text) }
+    }
+    // (what Stop all stopped, brought back)
+    Connections {
+        target: Core.recall
+        function onMessage(text) { window.showMessage(text) }
+        function onTaken() { window.restartRecall() }
+    }
+    /** What is left of the time to bring back what Stop all stopped, 1 to 0
+     *  (the strip of its bar) */
+    property real recallLeft: 1
+    NumberAnimation on recallLeft {
+        id: recallCountdown
+        running: false
+        to: 0
+    }
+    /** Its bar hidden (×) until the next Stop all */
+    property bool recallHidden: false
+    /** When its bar came (again): a tap on «Bring back» right after a Stop
+     *  all (a second panic tap) does nothing */
+    property double recallShownAt: 0
+    function restartRecall() {
+        recallHidden = false
+        recallShownAt = Date.now()
+        recallCountdown.stop()
+        const total = Math.max(1, Core.recall.windowMs)
+        const left = Math.max(0, Math.min(total, Core.recall.msLeft()))
+        recallCountdown.from = left / total
+        recallCountdown.duration = left
+        recallCountdown.start()
+    }
+    Connections {
+        target: Core.safety
+        function onMessage(text, error) { window.showMessage(text, error) }
+        // (by hand, Stop all, Blackout, another show, some minutes without a fire)
+        function onDisarmed(reason) {
+            window.showMessage(qsTr("Special effects disarmed: %1").arg(Core.safety.reasonText(reason)))
+        }
+    }
+    /** How far a hold of the show stop is, 0 to 1 (it runs while one holds it) */
+    property real holdProgress: 0
+    NumberAnimation on holdProgress {
+        running: Core.safety.holding
+        from: 0; to: 1
+        duration: Core.safety.holdMs
     }
     // (and the super scene editor: an audio it can't add, static values)
     Connections {
@@ -445,7 +602,8 @@ ApplicationWindow {
 
         RowLayout {
             anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
-            spacing: 10
+            // (a narrow window: closer, so Stop all stays in sight)
+            spacing: window.narrowBar ? 6 : 10
 
             // brand: the icon of the application
             Image {
@@ -473,13 +631,25 @@ ApplicationWindow {
                     color: Theme.text
                     elide: Text.ElideRight
                 }
-                Text {
+                RowLayout {
                     Layout.fillWidth: true
-                    text: (Core.modified ? "● " : "") + Core.showTitle
-                          + (Core.lastAutosave.length ? "  ·  " + qsTr("recovery copy %1").arg(Core.lastAutosave) : "")
-                    font.pixelSize: Theme.fontSmall
-                    color: Core.modified ? Theme.warning : Theme.textDim
-                    elide: Text.ElideRight
+                    spacing: 0
+                    // the show mode, before the show
+                    Text {
+                        visible: Core.settings.showMode
+                        text: qsTr("Show mode") + " · "
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Font.Bold
+                        color: Theme.readableOn(Theme.warning, Theme.surface)
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: (Core.modified ? "● " : "") + Core.showTitle
+                              + (Core.lastAutosave.length ? "  ·  " + qsTr("recovery copy %1").arg(Core.lastAutosave) : "")
+                        font.pixelSize: Theme.fontSmall
+                        color: Core.modified ? Theme.warning : Theme.textDim
+                        elide: Text.ElideRight
+                    }
                 }
             }
 
@@ -487,8 +657,8 @@ ApplicationWindow {
                 visible: !window.locked
                 spacing: 2
                 enabled: !window.setupLocked
-                AppButton { iconGlyph: Theme.iconFile; flat: true; ToolTip.text: qsTr("New show (Ctrl+N)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => Core.newShow()) }
-                AppButton { iconGlyph: Theme.iconOpen; flat: true; ToolTip.text: qsTr("Open (Ctrl+O)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => openDialog.start()) }
+                AppButton { iconGlyph: Theme.iconFile; flat: true; ToolTip.text: qsTr("New show (Ctrl+N)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => Core.newShow(), "new") }
+                AppButton { iconGlyph: Theme.iconOpen; flat: true; ToolTip.text: qsTr("Open (Ctrl+O)"); ToolTip.visible: hovered; onClicked: window.whenSaved(() => openDialog.start(), "open") }
                 AppButton {
                     text: "▾"
                     flat: true
@@ -507,7 +677,7 @@ ApplicationWindow {
                                 // (a path with '#' or '%' stays a path)
                                 onTriggered: {
                                     const url = Core.localFileUrl(modelData)
-                                    window.whenSaved(() => window.openShow(url))
+                                    window.whenSaved(() => window.openShow(url), "open")
                                 }
                             }
                             onObjectAdded: (index, object) => recentMenu.insertItem(index, object)
@@ -524,7 +694,7 @@ ApplicationWindow {
                                 delegate: MenuItem {
                                     required property var modelData
                                     text: modelData.name
-                                    onTriggered: window.whenSaved(() => window.openShow(modelData.url))
+                                    onTriggered: window.whenSaved(() => window.openShow(modelData.url), "open")
                                 }
                                 onObjectAdded: (index, object) => examplesMenu.insertItem(index, object)
                                 onObjectRemoved: (index, object) => examplesMenu.removeItem(object)
@@ -707,6 +877,21 @@ ApplicationWindow {
                 ToolTip.delay: 500
             }
 
+            // show mode: closing the program or opening another show waits
+            // for a held button (lit while it is on; a locked SHOW shows it)
+            AppButton {
+                id: showModeButton
+                iconGlyph: Theme.iconShield
+                highlighted: Core.settings.showMode
+                accentColor: Theme.warning
+                enabled: !window.locked
+                onClicked: Core.settings.showMode = !Core.settings.showMode
+                ToolTip.text: Core.settings.showMode ? qsTr("Show mode: closing or opening another show asks to hold a button (click to turn it off)")
+                                                     : qsTr("Show mode: closing or opening another show will ask to hold a button (click to turn it on)")
+                ToolTip.visible: hovered
+                ToolTip.delay: 500
+            }
+
             // external control: learn mode, and a LED that blinks on each message in
             AppButton {
                 id: learnButton
@@ -733,8 +918,10 @@ ApplicationWindow {
                 }
             }
 
-            // running functions (on a short bar: the number alone)
+            // running functions (on a short bar: the number alone; a very
+            // narrow one with the button of the special effects: not there)
             Row {
+                visible: !(window.tightBar && armRow.visible)
                 spacing: 6
                 HoverHandler { id: runningHover }
                 ToolTip.text: qsTr("%n running", "", Core.runningFunctions)
@@ -751,9 +938,10 @@ ApplicationWindow {
                 }
             }
 
-            // grand master
+            // grand master (a very narrow bar with the button of the special
+            // effects: a bit shorter, so Stop all stays in sight at 1100 px)
             Rectangle {
-                Layout.preferredWidth: window.compactBar ? 150 : 190
+                Layout.preferredWidth: window.tightBar && armRow.visible ? 136 : window.compactBar ? 150 : 190
                 Layout.preferredHeight: 36
                 radius: Theme.radiusSmall
                 color: Theme.surfaceRaised
@@ -792,15 +980,104 @@ ApplicationWindow {
                 ToolTip.visible: hovered
                 onClicked: window.showHelp()
             }
+            // the protected special effects (only in a show that has some;
+            // also locked): they fire only armed. Armed: red, with the time
+            // until they disarm by themselves, glowing while one fires; ▾ the
+            // last fires and what waits for a release
+            Row {
+                id: armRow
+                visible: Core.safety.hasProtected || Core.safety.armed
+                spacing: 2
+                AppButton {
+                    id: armButton
+                    readonly property bool armed: Core.safety.armed
+                    readonly property bool firing: Core.safety.firing.length > 0
+                    anchors.verticalCenter: parent.verticalCenter
+                    // (a shorter bar: the time alone, the banner says they are armed)
+                    text: window.narrowBar ? ""
+                          : armed ? (Theme.disarmClock(Core.safety.disarmIn).length === 0 ? qsTr("ARMED")
+                                     : window.compactBar ? Theme.disarmClock(Core.safety.disarmIn) : qsTr("ARMED") + " · " + Theme.disarmClock(Core.safety.disarmIn))
+                          : window.compactBar ? qsTr("Arm") : qsTr("Arm effects")
+                    iconGlyph: Theme.iconFire
+                    primary: armed
+                    accentColor: Theme.danger
+                    onClicked: Core.safety.toggleArmed()
+                    ToolTip.text: armed
+                        ? qsTr("Special effects armed: click to disarm. Stop all, Blackout and opening another show disarm them too")
+                          + (Theme.disarmClock(Core.safety.disarmIn).length > 0 ? " · " + qsTr("they disarm by themselves in %1 without a fire").arg(Theme.disarmClock(Core.safety.disarmIn)) : "")
+                        : qsTr("Arm the special effects: the protected ones (CO2, flames, sparks, confetti) only fire armed, from scenes, cuelists and chasers")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    MapTarget { target: ({ target: "armEffects" }) }
+                    // (a glow that pulses while one fires)
+                    Rectangle {
+                        anchors { fill: parent; margins: -3 }
+                        radius: Theme.radiusSmall + 3
+                        color: "transparent"
+                        border.color: Theme.warning
+                        border.width: 2
+                        visible: armButton.firing
+                        SequentialAnimation on opacity {
+                            running: armButton.firing
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 1; to: 0.25; duration: 300 }
+                            NumberAnimation { from: 0.25; to: 1; duration: 300 }
+                        }
+                    }
+                }
+                AppButton {
+                    id: armMore
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "▾"
+                    flat: true
+                    implicitWidth: window.narrowBar ? 20 : 26
+                    leftPadding: 2
+                    rightPadding: 2
+                    ToolTip.text: qsTr("The last fires and what waits for a release")
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    onClicked: firesPopup.opened ? firesPopup.close() : firesPopup.open()
+                    EffectsPopup {
+                        id: firesPopup
+                        y: armMore.height + 6
+                        x: armMore.width - width
+                        locked: window.locked
+                        onPatchWanted: window.goTo(window.pagePatch)
+                    }
+                }
+            }
             AppButton {
+                id: blackoutButton
                 text: window.narrowBar ? "" : qsTr("Blackout")
                 iconGlyph: Theme.iconPower
                 highlighted: Core.blackout
                 accentColor: Theme.danger
                 onClicked: Core.blackout = !Core.blackout
-                ToolTip.text: window.narrowBar ? qsTr("Blackout") + " (Ctrl+B)" : "Ctrl+B"
-                ToolTip.visible: hovered
+                // (a fade to black runs: Blackout comes at its end, the button now)
+                ToolTip.text: Core.safety.fadingToBlack ? qsTr("Fading to black: Blackout comes at its end (Blackout now: at once)")
+                              : window.narrowBar ? qsTr("Blackout") + " (Ctrl+B)" : "Ctrl+B"
+                ToolTip.visible: hovered || Core.safety.fadingToBlack
                 MapTarget { target: ({ target: "blackout" }) }
+                // the fade to black: how far down it is
+                Rectangle {
+                    id: fadeBlackStrip
+                    property real progress: 0
+                    visible: Core.safety.fadingToBlack
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 3; bottomMargin: 2 }
+                    width: (parent.width - 6) * progress
+                    height: 3
+                    radius: 1.5
+                    color: Theme.readable(Theme.danger, Theme.surface)
+                    // (started here, with the time of the fade that starts)
+                    NumberAnimation { id: fadeBlackRun; target: fadeBlackStrip; property: "progress"; from: 0; to: 1 }
+                    onVisibleChanged: {
+                        fadeBlackRun.stop()
+                        if (visible) {
+                            fadeBlackRun.duration = Math.max(1, Core.safety.fadeToBlackMs)
+                            fadeBlackRun.start()
+                        }
+                    }
+                }
             }
             AppButton {
                 text: window.narrowBar ? "" : qsTr("Stop all")
@@ -808,9 +1085,31 @@ ApplicationWindow {
                 accentColor: Theme.danger
                 primary: true
                 onClicked: Core.stopAll()
-                ToolTip.text: window.narrowBar ? qsTr("Stop all") + " (Esc)" : "Esc"
-                ToolTip.visible: hovered
+                // (Stop all with a fade: Esc again stops at once)
+                ToolTip.text: Core.stopFading ? qsTr("Fading out: Esc again stops at once")
+                              : window.narrowBar ? qsTr("Stop all") + " (Esc)" : "Esc"
+                ToolTip.visible: hovered || Core.stopFading
                 MapTarget { target: ({ target: "stopAll" }) }
+                // the fade of Stop all: how far it is
+                Rectangle {
+                    id: stopFadeStrip
+                    property real progress: 0
+                    visible: Core.stopFading
+                    anchors { left: parent.left; bottom: parent.bottom; leftMargin: 3; bottomMargin: 2 }
+                    width: (parent.width - 6) * progress
+                    height: 3
+                    radius: 1.5
+                    color: Theme.textOn(Theme.fill(Theme.danger))
+                    // (started here, with the time of the fade that starts)
+                    NumberAnimation { id: stopFadeRun; target: stopFadeStrip; property: "progress"; from: 0; to: 1 }
+                    onVisibleChanged: {
+                        stopFadeRun.stop()
+                        if (visible) {
+                            stopFadeRun.duration = Math.max(1, Core.stopFadeMs)
+                            stopFadeRun.start()
+                        }
+                    }
+                }
             }
         }
     }
@@ -906,6 +1205,112 @@ ApplicationWindow {
             Layout.fillHeight: true
             spacing: 0
 
+            // the show stop: the first, big, on every page (also locked and
+            // full screen). Held a second (the button, a pad, the phone) or
+            // Pause pressed twice it goes, as it came: the backend counts the time
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: Core.safety.showStop
+                level: "danger"
+                big: true
+                icon: Theme.iconHand
+                text: qsTr("SHOW STOP") + (Core.safety.keyPending ? "  ·  " + qsTr("Press Pause again to take it away") : "")
+                progress: Core.safety.holding ? window.holdProgress : -1
+                HoldButton {
+                    text: qsTr("Hold to release")
+                    iconGlyph: Theme.iconHand
+                    implicitHeight: 36
+                    holdMs: Core.safety.holdMs
+                    // (pressed and let go: the backend toggles, not held())
+                    onHoldingChanged: Core.safety.holdShowStop(holding)
+                    // (taken away: empty again for the next time)
+                    onVisibleChanged: if (!visible) reset()
+                }
+            }
+            // held to put it (a pad, a button): how far the hold is; Pause
+            // pressed once: the second press is waited for
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: (Core.safety.holding || Core.safety.keyPending) && !Core.safety.showStop
+                level: "warning"
+                icon: Theme.iconHand
+                text: Core.safety.holding ? qsTr("Show stop: keep holding…") : qsTr("Show stop: press Pause again to put it")
+                progress: Core.safety.holding ? window.holdProgress : -1
+            }
+            // the special effects armed: big, on every page (also locked and
+            // full screen), what fires or waits for a release; one click
+            // disarms (the safe way)
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: Core.safety.armed
+                level: "danger"
+                big: true
+                icon: Theme.iconFire
+                text: qsTr("SPECIAL EFFECTS ARMED")
+                      + (Core.safety.firing.length > 0 ? "  ·  " + qsTr("Firing: %1").arg(Theme.effectNames(Core.safety.firing))
+                         : Core.safety.waiting.length > 0 ? "  ·  " + qsTr("Waiting for a release: %1").arg(Theme.effectNames(Core.safety.waiting))
+                         : "")
+                AppButton {
+                    text: qsTr("Disarm")
+                    iconGlyph: Theme.iconPower
+                    implicitHeight: 36
+                    onClicked: Core.safety.disarm()
+                }
+            }
+            // what Stop all (or Release groups) stopped: brought back with
+            // its button, or Ctrl+Z, while its strip runs (also in the
+            // kiosk). A bar above the page, never over its buttons
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: Core.recall.available && !window.recallHidden
+                level: "info"
+                icon: Theme.iconUndo
+                dismissible: true
+                text: (Core.recall.reason === "releaseGroups" ? qsTr("Released: %1") : qsTr("Stopped: %1")).arg(Core.recall.summary)
+                      + "  ·  " + (window.recallKey ? qsTr("Bring back what was playing (Ctrl+Z)") : qsTr("Bring back what was playing"))
+                progress: window.recallLeft
+                onDismissed: window.recallHidden = true
+                AppButton {
+                    text: qsTr("Bring back")
+                    iconGlyph: Theme.iconUndo
+                    primary: true
+                    implicitHeight: 28
+                    focusPolicy: Qt.NoFocus
+                    // (a second panic tap where the bar came does nothing)
+                    onClicked: if (Date.now() - window.recallShownAt >= 500) Core.recall.recall()
+                }
+            }
+            // how the computer is during the show (on every page, also
+            // locked): on the battery in show mode, until the charger is
+            // plugged in again (outside show mode a message says it once)
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: Core.settings.showMode && Core.power.onBattery
+                level: "danger"
+                text: window.batteryText()
+            }
+            // Windows may suspend the USB ports: said at each start, until hidden
+            StatusBanner {
+                Layout.fillWidth: true
+                Layout.preferredHeight: implicitHeight
+                visible: Core.power.usbSelectiveSuspend && !window.usbNoticeHidden
+                level: "info"
+                dismissible: true
+                text: qsTr("Windows may suspend the USB ports (USB selective suspend): the DMX interface may stop")
+                onDismissed: window.usbNoticeHidden = true
+                AppButton {
+                    text: qsTr("How to turn it off")
+                    implicitHeight: 28
+                    // (its section of the manual: <a id="usb-selective-suspend"></a>)
+                    onClicked: helpPanel.show("opciones#usb-selective-suspend")
+                }
+            }
+
             // learn mode: what to do next
             Rectangle {
                 Layout.fillWidth: true
@@ -995,6 +1400,7 @@ ApplicationWindow {
                 OptionsPage {
                     onInstallUpdate: window.installUpdate()
                     onManualWanted: helpPanel.show("index")
+                    onHelpWanted: (name) => helpPanel.show(name)
                     onGuideWanted: firstSteps.start()
                 }
                 // (the last one: its index is pagePlaybacks)
@@ -1035,6 +1441,9 @@ ApplicationWindow {
     }
 
     LockDialog { id: lockDialog }
+
+    // show mode: a button held before closing or opening another show
+    HoldDialog { id: holdDialog }
 
     // the sounds, videos and pictures of the show that opened and aren't there
     // (a locked SHOW, a kiosk, only says it)
@@ -1124,7 +1533,7 @@ ApplicationWindow {
         pageLive: window.pageLive
         pagePlaybacks: window.pagePlaybacks
         onPageWanted: (page) => window.goTo(page)
-        onPracticeWanted: (url) => window.whenSaved(() => window.openShow(url))
+        onPracticeWanted: (url) => window.whenSaved(() => window.openShow(url), "open")
         onManualWanted: helpPanel.show("primeros-pasos")
     }
 

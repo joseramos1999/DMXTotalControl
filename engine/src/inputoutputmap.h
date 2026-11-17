@@ -273,6 +273,11 @@ signals:
     void universeRemoved(quint32 id);
     void universeWritten(quint32 index, const QByteArray& universesData);
 
+    /** DMX Total Control: a protected special effect of $universe fired,
+     *  stopped or was refused (Universe::effectEvent, OutputLayer::EventKind
+     *  and EventReason) */
+    void effectEvent(quint32 universe, quint32 fixture, int kind, int reason, uint durationMs);
+
 private slots:
     /** DMX Total Control: the master timer ticked (in its own thread): every
      *  universe writes its frame, in its own thread. Not through the event

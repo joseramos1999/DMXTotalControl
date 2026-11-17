@@ -86,19 +86,23 @@ Il modo più rapido per riempire una tabella è **trascinare le scene** dall'ele
 | **Una palette** | Mette la palette sulle fixture con cui è stata registrata («Le sue fixture») o su un gruppo di fixture, come una modifica dal vivo del programmatore: va sopra le scene finché non premi di nuovo. |
 | **GO della cuelist** / **Indietro della cuelist** / **Rilascia una cuelist** | Sulla cuelist che scegli in **Cuelist**. |
 | **Vai a una cue…** | Salta alla **Cue** che scegli di quella cuelist. |
+| **Arma effetti** | Arma o disarma gli [effetti speciali protetti](directo.md#effetti-speciali-protetti). Acceso finché sono armati. Per impostazione predefinita, rosso e con una fiamma. |
+| **Arresto dello show (tenere premuto 1 s)** | Tienilo premuto un secondo per attivare l'[arresto dello show](directo.md#arresto-dello-show), e di nuovo per toglierlo; mentre lo tieni premuto, una striscia si riempie lungo il suo bordo inferiore. Acceso finché è attivo. Per impostazione predefinita, giallo e con una mano. |
+| **Recupera ciò che suonava** | Per 10 s dopo «Ferma tutto» o «Rilascia gruppi» (tutti i gruppi, non uno solo), riavvia ciò che hanno fermato ([Recupera ciò che suonava](directo.md#recupera-ciò-che-suonava)). Acceso finché si può. Con una freccia di annullamento. |
+| **Dissolvenza al nero** | Abbassa la luce nel suo **Tempo** (da 0,1 a 60 s; 3 s per impostazione predefinita) e poi attiva il Blackout ([Dissolvenza al nero](directo.md#dissolvenza-al-nero)). Acceso, con una striscia, durante la dissolvenza. Con una luna. |
 
 Un tasto portato da un'altra pagina con Alt+clic mostra «Un controllo su un'altra pagina» e sotto ciò che fa («Fa: …»).
 
-**Clic destro** su un tasto: ferma ciò che avvia, anche con **GO** nella barra superiore (con GO, premere una scena che suona non la ferma). La sua scena si ferma; i tasti successiva, precedente e rilascia rilasciano il loro gruppo; quelli di una cuelist o di un playback lo rilasciano; quello di una palette la spegne. Una scena che un fader alzato trattiene continua: solo il suo fader la ferma. Gli altri (blackout, ferma tutto, tap, BeatGO) non fanno niente. Su uno schermo touch, usa **Stop** nella barra superiore.
+**Clic destro** su un tasto: ferma ciò che avvia, anche con **GO** nella barra superiore (con GO, premere una scena che suona non la ferma). La sua scena si ferma; i tasti successiva, precedente e rilascia rilasciano il loro gruppo; quelli di una cuelist o di un playback lo rilasciano; quello di una palette la spegne. Una scena che un fader alzato trattiene continua: solo il suo fader la ferma. Quello di «Arma effetti» li disarma. Gli altri (blackout, ferma tutto, tap, BeatGO, arresto dello show, recupera e dissolvenza al nero) non fanno niente. Su uno schermo touch, usa **Stop** nella barra superiore.
 
 ### Opzioni di un tasto
 
 - **Etichetta**: il suo testo. Vuota («Automatica»), mostra il nome della scena, della palette o dell'azione.
-- **Comportamento** (scena, blackout e palette): **«Commuta: acceso / spento»** o **«Flash: finché è premuto»**. I tasti flash hanno un fulmine nell'angolo. Su una scena, al posto di «Commuta» c'è **«Premi: secondo GO / Stop»**: la avvia o la ferma secondo **GO** e **Stop** della barra superiore.
-- **Tasto della tastiera**: un tasto della tastiera che lo preme mentre sei nella pagina Show. La lettera si vede nell'angolo del tasto.
+- **Comportamento** (scena, blackout e palette): **«Commuta: acceso / spento»** o **«Flash: finché è premuto»**. I tasti flash hanno un fulmine nell'angolo. Su una scena, al posto di «Commuta» c'è **«Premi: secondo GO / Stop»**: la avvia o la ferma secondo **GO** e **Stop** della barra superiore. Su «Arma effetti»: **«Commuta: arma / disarma»**, **«Arma»** o **«Disarma»** (questo si chiama «Disarma gli effetti» e ha l'icona di spegnimento).
+- **Tasto della tastiera**: un tasto della tastiera che lo preme mentre sei nella pagina Show. La lettera si vede nell'angolo del tasto. Su un tasto «Arresto dello show», tieni premuto il tasto della tastiera per un secondo.
 - **Colore**, **Icona** e **Immagine** di sfondo (l'immagine appare attenuata mentre il tasto è spento).
 
-Un tasto acceso si riempie con il suo colore.
+Il suo colore è una striscia in alto (un quinto del tasto); acceso, si riempie tutto con esso. I colori sono vivi e ben distinti, anche sul telefono.
 
 ### Spostare e rimuovere
 
@@ -147,7 +151,7 @@ Per girarle, trascina intorno al centro con il mouse o con il dito, oppure su e 
 - **Ruota dei colori**: tocca la ruota per dare tonalità e saturazione (bianco al centro) alle fixture della sezione, o premi uno dei campioni sotto.
 - **Griglia XY (pan e tilt)**: trascina il punto per muovere le teste. **«Centro»** le porta al centro.
 
-Entrambe agiscono come una modifica dal vivo del programmatore: vanno sopra le scene finché non premi **«Rilascia»**, e allora le scene tornano a dare il colore o la posizione.
+Entrambe agiscono come una modifica dal vivo del programmatore: vanno sopra le scene finché non premi **«Rilascia»**, e allora le scene tornano a dare il colore o la posizione. Come il programmatore, lasciano fuori gli [effetti speciali protetti](programar.md#effetti-speciali-protetti) di un gruppo misto; in un gruppo di soli effetti protetti, i valori restano nel programmatore ma non escono. Le palette «Tutto» su un gruppo fanno lo stesso.
 
 ## Gruppi e mixer
 
@@ -183,14 +187,14 @@ Nella modalità modifica, rilascia una scena su una striscia per metterla su que
 
 ## Portare qualsiasi controllo nello SHOW
 
-**Alt+clic** su quasi qualsiasi controllo del programma lo copia nella pagina dello SHOW che hai aperta: una scena di Live, il master di un gruppo, un tasto del mixer, il grand master, il blackout, una palette di Programma, i tasti e il fader di un playback… Il programma avvisa «Aggiunto allo SHOW, pagina «…»».
+**Alt+clic** su quasi qualsiasi controllo del programma lo copia nella pagina dello SHOW che hai aperta: una scena di Live, il master di un gruppo, un tasto del mixer, il grand master, il blackout, «Arma effetti», una palette di Programma, i tasti e il fader di un playback… Il programma avvisa «Aggiunto allo SHOW, pagina «…»».
 
 Il nuovo controllo va nella prima cella libera di una tabella di tasti o di fader di quella pagina. Se non ce n'è nessuna, una sezione vuota si trasforma in una (con il titolo «Touch»), oppure si divide l'ultima sezione.
 
 ## Schermo intero e blocco
 
 - **«Schermo intero»** (F11) e **«Esci da schermo intero»**.
-- **«Blocca»**: nasconde la barra laterale e lascia solo lo SHOW, senza modifica né navigazione. Per uscire, **tieni premuto «Sblocca»** (una barra si riempie sotto il tasto). Se c'è una password di blocco, la chiede.
+- **«Blocca»**: nasconde la barra laterale e lascia solo lo SHOW, senza modifica né navigazione. Per uscire, **tieni premuto «Sblocca»** (una barra si riempie sotto il tasto). Se c'è una password di blocco, la chiede. Bloccare attiva anche la [Modalità show](directo.md#modalità-show).
 
 ### Blocco e modalità chiosco
 

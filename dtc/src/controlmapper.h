@@ -220,6 +220,9 @@ public:
     Q_INVOKABLE void setTargetLevel(const QVariantMap &target, qreal level);
     /** -1: nothing there, 0 off, 1 on, 2 paused */
     Q_INVOKABLE int targetState(const QVariantMap &target) const;
+    /** The scenes flash mappings hold pressed now: Stop all doesn't keep
+     *  them to bring them back */
+    QSet<quint32> flashScenes() const;
     Q_INVOKABLE qreal targetLevel(const QVariantMap &target) const;
     /** The cue index a "go to a cue" target plays: by "cueUid" when it has
      *  one (a SHOW button on a cue of a cuelist: cues recorded, deleted or
@@ -309,6 +312,9 @@ public:
     bool eventFilter(QObject *obj, QEvent *event) override;
     /** The name of a key for the mappings: "Q", "1", "Space", "F10" */
     static QString keyName(int key);
+    /** A mapping on the Pause key (learnt before it was the show stop's):
+     *  while the show has one, Pause drives it and not the show stop */
+    static bool onPauseKey(const QVariantMap &m);
 
     /** An input message (also used by the tests) */
     void handleInput(const QString &source, const QString &device, quint32 channel,
@@ -343,6 +349,8 @@ signals:
     void activityChanged();
     /** A mapping was learnt (for a message in the UI) */
     void learnt(const QString &description);
+    /** Something to tell the user (a show opened with mappings on Pause) */
+    void message(const QString &text);
 
 private slots:
     void slotInputValueChanged(quint32 universe, quint32 channel, uchar value, const QString &key);
@@ -470,6 +478,8 @@ private:
      *  its release stops (another one may be selected meanwhile), by
      *  mapping ID (0: pressTarget) */
     QHash<int, quint32> m_flashScene;
+    /** The scenes flash mappings hold pressed: how many presses each */
+    QHash<quint32, int> m_flashPressed;
     /** Pickup, by mapping ID: the last level a fader gave its target (only
      *  while the fader is still there), and where the fader was (even when
      *  it didn't drive it) */
@@ -499,6 +509,15 @@ private:
      *  and when (on m_actionClock) */
     QHash<quint32, QPair<QSet<quint32>, qint64>> m_actionChain;
     QElapsedTimer m_actionClock;
+    /** The mapped keys held down now (lower case) */
+    QSet<QString> m_keysDown;
+    /** The window lost the keyboard: the keys held down on the show stop
+     *  are let go of (their release won't come) */
+    void releaseShowStopKeys();
+    /** The show maps Pause (onPauseKey): it keeps the key */
+    bool pauseMapped() const;
+    /** The mappings on Pause, said once (a show opened with them) */
+    void tellPauseKey();
 };
 
 #endif

@@ -23,14 +23,26 @@ Toutes les touches et combinaisons du programme, par page. Les touches que vous 
 | **Ctrl+S** | Enregistrer le show (la première fois, demande un nom) |
 | **Ctrl+Maj+S** | Enregistrer le show sous un autre nom (« Enregistrer sous… ») |
 | **Ctrl+B** | Blackout (allumer et éteindre) |
+| **Pause** deux fois (en 2 s) | Met ou lève l’[arrêt du show](directo.md#arrêt-du-show), sur n’importe quelle page, avec n’importe quel modificateur et même pendant que vous tapez. Un seul appui ne fait qu’avertir (« Arrêt du show : appuyez de nouveau sur Pause pour le mettre ») ; la maintenir ne fait rien de plus. Elle ne peut pas être assignée dans Mappages ; un show qui la mappait déjà la garde |
 | **Échap** | Tout arrêter. En mode Mapper, annule le contrôle en attente ou quitte le mode ; avec « Enregistrer » armé dans Playbacks, le désarme ; avec un groupe isolé sur le plan de Patch, termine l’isolement (avec un menu, une liste déroulante ou une fenêtre de Patch ouverts, comme « Ajouter des fixtures », « Modifier » ou « Limites », il les ferme seulement ; un avertissement comme « Enregistrer les modifications ? » ne se ferme pas avec Échap). Dans une fenêtre où vous tapez un nom ou un numéro (« Créer un groupe », « Renommer », « Renuméroter »…), la ferme sans rien appliquer : appuyez de nouveau sur Échap pour tout arrêter |
+| **Échap** deux fois | Pendant le fondu de « Tout arrêter en fondu », arrête tout tout de suite |
+| **Ctrl+Z** | Dans Direct et dans le SHOW (pas en mode édition ni pendant que vous tapez), pendant 10 s après « Tout arrêter » ou « Libérer les groupes » : [ramener ce qui jouait](directo.md#ramener-ce-qui-jouait) |
 | **Ctrl+→** | Scène suivante dans chaque groupe qui joue |
 | **Ctrl+←** | Scène précédente dans chaque groupe qui joue |
 | **G** | BeatGO (sauf sur la page Show) |
 
 Si une page est verrouillée, sa touche demande le mot de passe (s’il y en a un) et déverrouille. Avec le SHOW verrouillé (mode borne), les touches de page ne fonctionnent pas, et avec la Configuration verrouillée, Ctrl+N, Ctrl+O et Ctrl+Maj+S non plus.
 
-T, G et les touches que vous assignez dans Mappages n’agissent pas pendant que vous tapez dans un champ de texte, comme la ligne de commande de Programmer.
+T, G et les touches que vous assignez dans Mappages n’agissent pas pendant que vous tapez dans un champ de texte, comme la ligne de commande de Programmer. La touche Pause (l’arrêt du show), elle, fonctionne pendant que vous tapez.
+
+## Mode show
+
+Avec le [Mode show](directo.md#mode-show) activé, quand vous fermez le programme ou ouvrez ou commencez un autre show :
+
+| Touche | Ce qu’elle fait |
+|---|---|
+| Maintenir **Espace** ou **Entrée** 1,5 s | Comme maintenir le bouton : confirme (la répétition de la touche ne compte pas) |
+| **Échap** | Annule ; dans cette fenêtre, n’arrête jamais le show |
 
 ## Playbacks
 
@@ -120,5 +132,6 @@ Après avoir cliqué sur un fader ou un curseur :
 | Molette | Plan 2D | Zoom |
 | Glisser avec le bouton droit ou celui du milieu | Plan 2D | Déplace la vue (double-clic : la recentre) |
 | Clic droit | Bouton 15° du plan 2D | Tourne dans l’autre sens |
-| Clic droit | Bouton du SHOW (en direct) | Arrête ce qu’il lance (sa scène, son groupe, son playback ou sa palette), même avec GO |
+| Clic droit | Bouton du SHOW (en direct) | Arrête ce qu’il lance (sa scène, son groupe, son playback ou sa palette), même avec GO ; celui d’« Armer les effets » les désarme |
 | Maintenir « Déverrouiller » enfoncé | Show verrouillé | Déverrouille |
+| Maintenir 1 s | Bouton « Arrêt du show » du SHOW, un pad ou une touche mappés, la main du téléphone, « Maintenir pour lever » | Met ou lève l’arrêt du show |

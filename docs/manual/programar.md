@@ -16,6 +16,7 @@ La página tiene, de arriba abajo: la cabecera con sus botones, la [línea de co
 - **«Ciego»**: consulta [Ciego](programar.md#ciego).
 - **«Restablecer todo»**: libera todas las ediciones en vivo (valores y FX). Las escenas vuelven a verse.
 - **«Restablecer selección»**: libera solo las de los fixtures seleccionados.
+- **«Aparcar»**: aparca en la salida los valores del programador de los fixtures seleccionados (consulta [Aparcar](programar.md#aparcar)).
 - **«Snapshot»** y **«Grabar…»**: consulta [Grabar](programar.md#grabar).
 
 En una ventana estrecha algunos botones muestran solo su icono; al pasar el ratón se ve su nombre.
@@ -52,7 +53,7 @@ El botón de la rejilla en la cabecera del panel («Plano 2D») cambia las ficha
 - **Arrastra** sobre el escenario vacío para seleccionar con un recuadro. Un clic en el vacío quita la selección.
 - La **rueda** hace zoom; arrastrar con el **botón derecho** o el central mueve la vista, y un doble clic con esos botones la centra de nuevo.
 
-En Programar el plano está siempre **en vivo**: cada fixture muestra su color, su dimmer, su estrobo (parpadea) y su gobo, y cada píxel de las barras y matrices. Los fixtures se colocan en el [plano 2D del Patch](patch.md#plano-2d).
+En Programar el plano está siempre **en vivo**: cada fixture muestra su color, su dimmer, su estrobo (parpadea) y su gobo, y cada píxel de las barras y matrices. Los fixtures se colocan en el [plano 2D del Patch](patch.md#plano-2d). Los efectos especiales protegidos llevan su escudo y los fixtures aparcados su candado, como en el Patch.
 
 ## El panel Rápido
 
@@ -125,11 +126,20 @@ Si mueves la cruz, el abanico o «Centrar», o cambias la selección, el punto d
 
 Con **«Ciego»** activo, el programador edita **sin sacar nada a las luces**: el escenario sigue mostrando lo que suena y tú preparas el siguiente look. El subtítulo avisa: «Modo ciego: las luces no muestran lo que programas». Puedes grabar igual que siempre. Al desactivarlo, lo que hay en el programador sale.
 
+## Efectos especiales protegidos
+
+El programador nunca saca un [efecto especial protegido](directo.md#efectos-especiales-protegidos) (un CO2, una llama…), ni con los efectos armados:
+
+- En una selección que mezcla efectos protegidos con otros fixtures, el programador no les da nada: ni `@ FULL`, ni niveles, colores, faders, «Localizar», «Beam on» o «Beam off», paletas «Todo», FX ni macros. Sus faders no salen, así que una escena grabada desde esa selección nunca los lleva.
+- En una selección **solo de efectos protegidos**, los valores se guardan para que puedas programar una escena de CO2, pero no salen nunca, armados o no. El subtítulo dice «N canales de efectos especiales: se graban, no salen», y sus faders y tarjetas llevan un escudo rojo «no sale». La escena que grabes los dispara desde el SHOW, un pad o el móvil con los efectos armados.
+- Al cargar una escena, un paso o una cue con un CO2, sus valores se quedan, y al guardarla otra vez no se pierden. Sus FX sobre efectos protegidos se guardan en la escena, pero no suenan en el programador.
+- «Snapshot» los deja fuera, aunque estén disparando; «Resaltar» nunca los enciende. Los FX y las macros FX nunca suenan en ellos, y un aviso lo dice («1 efecto especial protegido queda fuera del FX»). Follow no apunta una cabeza de llamas protegida que está seleccionada con otros fixtures.
+
 ## Resaltar y localizar
 
 En la barra de la línea de comandos:
 
-- **«Resaltar»**: la selección a tope en blanco abierto, por encima de todo, para ver qué fixtures son. No se graba. Vuelve a pulsar para quitarlo.
+- **«Resaltar»**: la selección a tope en blanco abierto, por encima de todo, para ver qué fixtures son. No se graba. Vuelve a pulsar para quitarlo. Nunca enciende los efectos especiales protegidos.
 - **«Localizar»**: pone la selección a tope, en blanco abierto, centrada y con el haz abierto, **en el programador** (esos valores sí se graban).
 - **◀ ▶** (PREV / NEXT): recorre la selección **de uno en uno**: solo queda seleccionado un fixture y se ve en cuál vas («2/8»). **«Todas»** vuelve a toda la selección (ALL).
 
@@ -347,7 +357,7 @@ Una cue guarda solo lo que el programador cambia respecto a lo que dejan en el e
 El menú **«Snapshot»** tiene:
 
 - **«Guardar las ediciones en una escena»**: mete los valores del programador en una escena estática que ya existe.
-- **«Todo lo que sale, en una escena nueva…»**: todo lo que muestran ahora las luces (escenas, ediciones en vivo y el mezclador, sin el gran master) pasa a ser una escena estática nueva, en cada fixture con luz. Si «Resaltar» está activo, hay que quitarlo antes («Quitar resaltado»).
+- **«Todo lo que sale, en una escena nueva…»**: todo lo que muestran ahora las luces (escenas, ediciones en vivo y el mezclador, sin el gran master) pasa a ser una escena estática nueva, en cada fixture con luz. Si «Resaltar» está activo, hay que quitarlo antes («Quitar resaltado»). Deja fuera los efectos especiales protegidos, aunque estén disparando.
 - **«Solo las ediciones, en una escena nueva…»**.
 
 ### Editar escenas y cues
@@ -362,3 +372,7 @@ El menú **«Snapshot»** tiene:
 - La **×** de una tarjeta o de un fader: solo ese canal.
 
 Qué pasa con la edición en vivo al lanzar una escena, y su prioridad frente a las escenas, se decide en [Opciones](opciones.md#reproducción).
+
+## Aparcar
+
+**«Aparcar»**, en la cabecera (tras «Restablecer selección»), aparca los valores que el programador tiene en los fixtures seleccionados: pasan a la salida con sus [límites](patch.md#límites) (sin el gran master), por encima de todo, y el programador los suelta. Los valores de los demás fixtures siguen en el programador, y los FX del programador no se aparcan. Está desactivado si la selección no tiene valores. Si después cambias los límites, lo aparcado no cambia. Un efecto especial protegido se aparca apagado. Para desaparcar, usa el menú del fixture en el Patch (clic derecho): consulta [Aparcar canales](patch.md#aparcar-canales).

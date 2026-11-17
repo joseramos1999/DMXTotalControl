@@ -58,16 +58,18 @@ Da sinistra a destra:
 - **File**: «Nuovo show (Ctrl+N)», «Apri (Ctrl+O)», la freccia **▾** con gli show recenti e gli «Esempi», «Salva (Ctrl+S)» e «Salva come…» (Ctrl+Maiusc+S).
 - **Ritmo**: **«GO»** e **«Stop»** cambiano ciò che fanno i tasti delle scene (in Live, nello SHOW, nelle mappature e sul telefono). Con **GO** acceso, premere una scena la avvia e le pressioni successive ne battono il ritmo, senza mai fermarla; con **Stop** acceso, premere una scena la ferma. Uno dei due è sempre acceso, e il programma parte in **GO** ([Live](directo.md#ritmo-di-una-scena-a-passi)). Ogni tasto di una scena a passi, di una cuelist o di un FX in «BPM dello show» in riproduzione (in Live, nello SHOW, nei playback e sul telefono) contiene una **barra divisa in due** che accende un lato e poi l'altro a ogni passo (in un FX, a ogni battito): così vedi il ritmo di ciascuna. Poi **«BeatGO»** (divisione successiva delle scene guidate da BeatGO, anche con il tasto G) e **«Impulso»**, che ascolta l'ingresso audio del computer (si sceglie in [Opzioni](opciones.md#audio)): ogni picco che supera la linea del misuratore fa avanzare le scene guidate da Impulso. Trascina la linea del misuratore per cambiare la soglia. Il tempo dello show, quello degli FX e delle scene in modalità BPM, si cambia con un fader o una manopola di BPM dello [SHOW](show.md) o con le [mappature](mapeos.md).
 - **Il lucchetto**: blocca le schermate perché niente cambi per errore (vedi [Opzioni](opciones.md#show-e-blocco)).
+- **Lo scudo**: la [Modalità show](directo.md#modalità-show). Attiva (arancione), chiudere il programma o aprire un altro show chiede di tenere premuto un tasto.
 - **Il bersaglio**: la modalità Apprendi, per assegnare controlli MIDI, OSC o tasti (vedi [Mappature](mapeos.md#modalità-apprendi)). La sua spia verde lampeggia a ogni messaggio in arrivo.
 - **«N in esecuzione»**: quante scene ed effetti sono in riproduzione.
 - **GM**: il grand master. Sotto il 100 % diventa arancione.
-- **«Blackout»** (Ctrl+B): manda tutto al buio finché è acceso.
-- **«Ferma tutto»** (Esc): ferma tutto ciò che è in riproduzione. Il programmatore non viene svuotato. Le scene che un fader dello SHOW alzato trattiene continuano: solo abbassare quel fader le ferma.
+- **«Arma effetti»**: solo se lo show ha effetti speciali protetti (CO2, fiamme, scintille, coriandoli). Li arma o li disarma; la sua freccia **▾** mostra le ultime attivazioni (vedi [Live](directo.md#effetti-speciali-protetti)).
+- **«Blackout»** (Ctrl+B): manda tutto al buio finché è acceso. Disarma anche gli effetti speciali.
+- **«Ferma tutto»** (Esc): ferma tutto ciò che è in riproduzione. Il programmatore non viene svuotato. Le scene che un fader dello SHOW alzato trattiene continuano: solo abbassare quel fader le ferma. Disarma anche gli effetti speciali, e per 10 s si può [recuperare ciò che suonava](directo.md#recupera-ciò-che-suonava).
 - **«?»**: apre questo manuale (F12).
 
-In una finestra stretta o su uno schermo piccolo, la barra si compatta: il nome dello show viene accorciato, «Salva come…» resta come icona, «N in esecuzione» si riduce al numero e, nelle più strette, «Blackout» e «Ferma tutto» restano solo con la loro icona. Passa il mouse sopra un'icona per vedere cos'è. Se tutto appare piccolo o grande, cambia la **Dimensione dell'interfaccia** in [Opzioni](opciones.md#generale).
+In una finestra stretta o su uno schermo piccolo, la barra si compatta: il nome dello show viene accorciato, «Salva come…» resta come icona, «N in esecuzione» si riduce al numero e, nelle più strette, «Blackout» e «Ferma tutto» restano solo con la loro icona (con effetti speciali nello show, anche «Arma effetti», sotto i 1450 px di larghezza). Passa il mouse sopra un'icona per vedere cos'è. Se tutto appare piccolo o grande, cambia la **Dimensione dell'interfaccia** in [Opzioni](opciones.md#generale).
 
-Quando chiudi il programma, o apri o crei un altro show, se ci sono modifiche non salvate viene chiesto «Salvare le modifiche?» con «Annulla», «Non salvare» e «Salva». Alla chiusura, il programma ferma prima tutte le scene, i playback e il programmatore, e lascia che le uscite inviino il palco a riposo: molti apparecchi restano con l'ultima cosa che hanno ricevuto.
+Quando chiudi il programma, o apri o crei un altro show, se ci sono modifiche non salvate viene chiesto «Salvare le modifiche?» con «Annulla», «Non salvare» e «Salva»; con la [Modalità show](directo.md#modalità-show) attiva, prima bisogna tenere premuto un tasto. Alla chiusura, il programma disarma gli effetti speciali, rilascia i canali parcheggiati, ferma tutte le scene, i playback e il programmatore, e lascia che le uscite inviino il palco a riposo: molti apparecchi restano con l'ultima cosa che hanno ricevuto.
 
 Se lo show che apri usa file che mancano (i suoi suoni, video o immagini; per esempio, uno show portato da un altro computer), compare un avviso con l'elenco. Lo show funziona senza di loro. Con **«Cerca in una cartella…»** scegli la cartella dove si trovano: vengono cercati per nome, anche nelle sottocartelle, e lo show passa a usarli (salvalo per mantenerlo così).
 
@@ -78,16 +80,16 @@ Se lo show che apri usa file che mancano (i suoi suoni, video o immagini; per es
 Inizia da **Primi passi** se è la prima volta. Le altre pagine spiegano ogni pagina del programma e si possono leggere in qualsiasi ordine.
 
 1. [Primi passi](primeros-pasos.md): una prima sessione completa, dal patch al salvataggio dello show.
-2. [Live](directo.md): gruppi, esclusivo o mix, dissolvenza incrociata, master, rilasci, flash e mixer.
+2. [Live](directo.md): gruppi, esclusivo o mix, dissolvenza incrociata, master, rilasci, flash, mixer e la sicurezza durante lo show (Modalità show, effetti speciali protetti, arresto dello show, recupera ciò che suonava e dissolvenza al nero).
 3. [Show](show.md): la schermata touch, le sue sezioni, tasti, fader, manopole, ruota dei colori, griglia XY, modifica e blocco.
 4. [Playback](playbacks.md): pagine di playback, GO, Pausa/Indietro, Flash, livelli, registrare su un playback e controller APC.
 5. [Programma](programar.md): selezione, gruppi, pianta 2D, dimmer, colore, posizione, funzioni, fader, palette, FX, ventaglio, cieco, evidenziare e localizzare, riga di comando, registrare e aggiornare.
 6. [Scene](escenas.md): tutti i tipi di scena, super scene, cuelist con tracking, cartelle, importare ed esportare.
-7. [Patch](patch.md): aggiungere fixture, indirizzi, universi, numeri, gruppi di fixture, pianta 2D, limiti, matrici LED e importare da un altro show.
+7. [Patch](patch.md): aggiungere fixture, indirizzi, universi, numeri, gruppi di fixture, pianta 2D, limiti, matrici LED, importare da un altro show, effetti speciali protetti e parcheggio dei canali.
 8. [Fixture](fixtures.md): la libreria, il creatore di fixture, la Open Fixture Library, GDTF-Share, GDTF e le tue fixture.
 9. [Uscite](salidas.md): universi, interfacce DMX USB, Art-Net e sACN, e il monitor dei livelli DMX.
 10. [Mappature](mapeos.md): MIDI, OSC, ingresso DMX e tastiera, la modalità Apprendi e i modelli per Akai APC.
-11. [Opzioni](opciones.md): lingua, tema, dimensione, avvio, blocco, salvataggio automatico, priorità, controllo remoto, libreria, aggiornamenti.
+11. [Opzioni](opciones.md): lingua, tema, dimensione, avvio, blocco, sicurezza durante lo show, salvataggio automatico, priorità, controllo remoto, libreria, aggiornamenti.
 12. [Controllo remoto](remoto.md): lo SHOW sul telefono o sul tablet.
 13. [Scorciatoie da tastiera](atajos.md): tutti i tasti e le combinazioni.
 
@@ -104,3 +106,5 @@ Inizia da **Primi passi** se è la prima volta. Le altre pagine spiegano ogni pa
 - **Palette**: un valore salvato (un colore, una posizione…) che le scene seguono per riferimento: se cambi la palette, cambiano le scene che la usano.
 - **Priorità**: da 0 a 10. Se due scene controllano lo stesso canale, vince quella con priorità più alta.
 - **SHOW**: la schermata operativa che costruisci tu.
+- **Effetto speciale protetto**: una macchina di CO2, di fiamme, di scintille o di coriandoli che si attiva solo con gli effetti armati (vedi [Live](directo.md#effetti-speciali-protetti)).
+- **Parcheggiare**: tenere dei canali a un valore fisso in uscita, sopra tutto il resto (vedi [Patch](patch.md#parcheggiare-i-canali)).

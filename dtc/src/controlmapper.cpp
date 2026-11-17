@@ -25,6 +25,7 @@
 #include <QGuiApplication>
 #include <QKeySequence>
 #include <QKeyEvent>
+#include <QLocale>
 #include <QSet>
 #include <qmath.h>
 #include <algorithm>
@@ -39,6 +40,7 @@
 #include "livemixer.h"
 #include "showsurface.h"
 #include "dtccore.h"
+#include "liverecall.h"
 #include "zone.h"
 #include "scenetaps.h"
 
@@ -829,6 +831,14 @@ QVariantList ControlMapper::targets() const
         << t("groupPrevious", "button", tr("Previous scene of a group"), "zoneAll")
         << t("blackout", "button", tr("Blackout"), "")
         << t("stopAll", "button", tr("Stop all"), "")
+        // (the protected special effects: they only fire armed)
+        << t("armEffects", "button", tr("Arm the special effects"), "")
+        // (a safety light: held a second, as the Pause key)
+        << t("showStop", "button", tr("Show stop (hold 1 s)"), "")
+        // (Stop all undone, in its 10 s; a fade to black of its time, then
+        // Blackout: pressed again during it, Blackout at once)
+        << t("recoverStopped", "button", tr("Bring back what was playing"), "")
+        << t("fadeToBlack", "button", tr("Fade to black"), "time")
         << t("pauseAll", "button", tr("Pause all"), "")
         << t("tap", "button", tr("Tap tempo"), "")
         << t("beatgo", "button", tr("BeatGO"), "")
@@ -941,6 +951,9 @@ QVariantMap ControlMapper::defaultsFor(const QString &target) const
         m.insert("paletteId", -1);
         m.insert("groupId", -1);
     }
+    // (its time, ms)
+    if (target == "fadeToBlack")
+        m.insert("time", SafetyManager::fadeToBlackDefaultMs());
     if (target.startsWith("playback"))
     {
         // a slot of the current playback page (pbPage -1), the first cue;
@@ -965,6 +978,8 @@ QVariantList ControlMapper::mappings() const
         item.insert("sourceText", describeSource(m));
         item.insert("targetText", describeTarget(m));
         item.insert("button", isButton(m.value("target").toString()));
+        // (on Pause: it has the key, not the show stop; the list shows it)
+        item.insert("pauseKey", onPauseKey(m));
         list.append(item);
     }
     return list;
@@ -1116,12 +1131,14 @@ void ControlMapper::clear()
     m_sentFeedback.clear();
     m_pressed.clear();
     m_flashScene.clear();
+    m_flashPressed.clear();
     m_applied.clear();
     m_physical.clear();
     m_touch.clear();
     m_sceneOn.clear();
     m_fadeOutUntil.clear();
     m_animatedLed.clear();
+    m_keysDown.clear();
     m_lastId = 0;
     // a control being learnt was for a mapping or a target of that show (the
     // next show reuses the IDs)
@@ -1318,6 +1335,9 @@ QString ControlMapper::describeSource(const QVariantMap &m) const
     if (device.isEmpty())
         device = tr("any device");
 
+    // (a key mapping on Pause, learnt before it was the show stop's)
+    if (onPauseKey(m))
+        return tr("Key PAUSE (instead of the show stop)");
     if (source == "key")
         return tr("Key %1").arg(m.value("key").toString().toUpper());
     if (source == "osc")
@@ -1355,6 +1375,11 @@ QString ControlMapper::describeTarget(const QVariantMap &m) const
                                      : zoneId == DELETED_GROUP ? tr("no group") : QString();
     if (target.startsWith("mixer"))
         detail = m_core->mixer()->mixerName(m.value("mixerId").toInt());
+    if (target == "fadeToBlack")
+    {
+        const int ms = SafetyManager::fadeToBlackTime(m);
+        detail = tr("%1 s").arg(QLocale().toString(ms / 1000.0, 'f', ms % 1000 == 0 ? 0 : 1));
+    }
     if (target == "palette")
     {
         const QVariantMap palette = m_core->palettes()->palette(m.value("paletteId").toInt());
@@ -1542,8 +1567,53 @@ bool ControlMapper::keyEvent(const QString &key, bool pressed)
                 used = true;
     }
     if (used)
+    {
+        // (the keys held down: let go of when the window loses the keyboard)
+        if (pressed)
+            m_keysDown.insert(key.toLower());
+        else
+            m_keysDown.remove(key.toLower());
         handleInput("key", QString(), 0, key.toLower(), pressed ? 255 : 0);
+    }
     return used;
+}
+
+void ControlMapper::releaseShowStopKeys()
+{
+    const QSet<QString> down = m_keysDown;
+    for (const QString &key : down)
+    {
+        bool showStop = false;
+        for (const QVariantMap &m : std::as_const(m_mappings))
+            showStop = showStop || (m.value("source") == "key" && m.value("target") == "showStop" &&
+                                    m.value("key").toString().compare(key, Qt::CaseInsensitive) == 0);
+        if (showStop)
+            keyEvent(key, false);
+    }
+}
+
+bool ControlMapper::onPauseKey(const QVariantMap &m)
+{
+    return m.value("source") == "key" && m.value("key").toString().compare("pause", Qt::CaseInsensitive) == 0;
+}
+
+bool ControlMapper::pauseMapped() const
+{
+    return std::any_of(m_mappings.cbegin(), m_mappings.cend(), onPauseKey);
+}
+
+void ControlMapper::tellPauseKey()
+{
+    QStringList targets;
+    for (const QVariantMap &m : std::as_const(m_mappings))
+    {
+        if (onPauseKey(m))
+            targets.append(describeTarget(m));
+    }
+    if (targets.isEmpty() == false)
+        emit message(tr("This show maps the Pause key (%1): Pause does that and not the show stop, which goes on with a "
+                        "SHOW button, a pad or the phone. Delete that mapping in Mappings to have the show stop on Pause")
+                         .arg(targets.join(", ")));
 }
 
 QString ControlMapper::keyName(int key)
@@ -1560,6 +1630,9 @@ QString ControlMapper::keyName(int key)
         case Qt::Key_CapsLock:
         case Qt::Key_NumLock:
         case Qt::Key_ScrollLock:
+        // (the show stop has it: never learnt; a show that mapped it before
+        // keeps it, eventFilter)
+        case Qt::Key_Pause:
             return QString();
         default:
             return QKeySequence(key).toString(QKeySequence::PortableText);
@@ -1572,10 +1645,48 @@ bool ControlMapper::eventFilter(QObject *obj, QEvent *event)
     // (another translation: the names of the targets in it)
     if (type == QEvent::LanguageChange)
         m_targetNames.clear();
+    // the window lost the keyboard (another program, a dialog of the
+    // system): the release of a key held now goes elsewhere. The keys that
+    // hold the show stop are let go of (held on, it would toggle all the same)
+    if ((type == QEvent::FocusOut && obj->isWindowType()) ||
+        (type == QEvent::ApplicationStateChange &&
+         static_cast<QApplicationStateChangeEvent *>(event)->applicationState() != Qt::ApplicationActive))
+    {
+        releaseShowStopKeys();
+        return false;
+    }
     if (type != QEvent::KeyPress && type != QEvent::KeyRelease && type != QEvent::ShortcutOverride)
         return false;
 
     QKeyEvent *ke = static_cast<QKeyEvent *>(event);
+    // a show of before that maps Pause: it keeps the key, as it was (the
+    // show stop has its SHOW buttons, pads and the phone; said when it
+    // opened). Never learnt, though: in learn mode it does nothing
+    const bool pauseKept = ke->key() == Qt::Key_Pause && pauseMapped();
+    if (pauseKept && m_pendingTarget.isEmpty() == false)
+    {
+        if (type == QEvent::ShortcutOverride)
+            event->accept();
+        return true;
+    }
+    // the Pause key: the show stop (on any page, with any modifier, while
+    // typing too: a safety light). Never a shortcut nor a mapping, also in
+    // learn mode; once, from the window. It can't be held: a PC keyboard
+    // sends no release of its own for it (Windows sends its release with its
+    // press, however long it is held). Pressed twice, it toggles the show
+    // stop; its releases and auto-repeats count for nothing
+    if (ke->key() == Qt::Key_Pause && pauseKept == false)
+    {
+        if (type == QEvent::ShortcutOverride)
+        {
+            event->accept();
+            return true;
+        }
+        if (obj->isWindowType() && type == QEvent::KeyPress && ke->isAutoRepeat() == false &&
+            m_core->safety() != nullptr)
+            m_core->safety()->pressShowStopKey();
+        return true;
+    }
     if (ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
         return false;
     // typing in a text field
@@ -1583,7 +1694,8 @@ bool ControlMapper::eventFilter(QObject *obj, QEvent *event)
     if (focus && (focus->inherits("QQuickTextInput") || focus->inherits("QQuickTextEdit")))
         return false;
 
-    QString key = keyName(ke->key());
+    // (keyName never gives Pause: nothing learns it)
+    QString key = pauseKept ? QStringLiteral("Pause") : keyName(ke->key());
     if (key.isEmpty())
         return false;
     bool used = m_pendingTarget.isEmpty() == false;
@@ -1605,6 +1717,95 @@ bool ControlMapper::eventFilter(QObject *obj, QEvent *event)
     if (ke->isAutoRepeat() == false)
         keyEvent(key, type == QEvent::KeyPress);
     return true;
+}
+
+/** The LEDs of a pad that arms the special effects (or, $showStop, puts the
+ *  show stop), learnt on a known controller ($props: its source, channel
+ *  and controller): red while they are armed (never the green of what
+ *  plays), dark when they are not; the show stop red while it is on, red
+ *  blinking while it is held. A button with a single LED keeps its own (on,
+ *  blinking). (Not tried on the controllers) */
+static void armLeds(QVariantMap &props, bool showStop = false)
+{
+    const QString controller = props.value("controller").toString();
+    const quint32 channel = props.value("channel").toUInt();
+    const int code = int(channel & 0x0FFF);
+    // the pads of the APC mini (notes 0-63 on MIDI channel 1): 1 green, 3 red, 5 yellow
+    const bool miniPad = controller == "apcmini" && props.value("source").toString() == "midi" &&
+                         (channel >> 12) == 0 && code >= 128 && code <= 128 + 63;
+    int on = 0;
+    int onChannel = 0;
+    // (held, the show stop: red blinking; the arming is never paused: as on)
+    int paused = 0;
+    int pausedChannel = 0;
+    if (controller == "apcmini2" && ControlMapper::isRgbPad(props))
+    {
+        // red, at 100 % (blinking: 1/4)
+        on = 5;
+        onChannel = 7;
+        paused = 5;
+        pausedChannel = showStop ? 14 : onChannel;
+    }
+    else if (controller == "apc40mk2" && ControlMapper::isRgbPad(props))
+    {
+        // red, solid (blinking: 1/4)
+        on = 5;
+        onChannel = 1;
+        paused = 5;
+        pausedChannel = showStop ? 14 : onChannel;
+    }
+    else if (miniPad)
+    {
+        // red (red blinking)
+        on = 3;
+        paused = showStop ? 4 : on;
+    }
+    else
+    {
+        return;
+    }
+    props.insert("onValue", on);
+    props.insert("onChannel", onChannel);
+    props.insert("pausedValue", paused);
+    props.insert("pausedChannel", pausedChannel);
+    props.insert("offValue", 0);
+    props.insert("offChannel", 0);
+}
+
+/** The LEDs of a pad that brings back what Stop all stopped, learnt on a
+ *  known controller: yellow, pulsing, while it can (its 10 s), dark when
+ *  not. A button with a single LED keeps its own. (Not tried on the
+ *  controllers) */
+static void recallLeds(QVariantMap &props)
+{
+    const QString controller = props.value("controller").toString();
+    const quint32 channel = props.value("channel").toUInt();
+    const int code = int(channel & 0x0FFF);
+    const bool miniPad = controller == "apcmini" && props.value("source").toString() == "midi" &&
+                         (channel >> 12) == 0 && code >= 128 && code <= 128 + 63;
+    int on = 0;
+    int onChannel = 0;
+    if ((controller == "apcmini2" || controller == "apc40mk2") && ControlMapper::isRgbPad(props))
+    {
+        // yellow, pulsing
+        on = 13;
+        onChannel = 10;
+    }
+    else if (miniPad)
+    {
+        // yellow
+        on = 5;
+    }
+    else
+    {
+        return;
+    }
+    props.insert("onValue", on);
+    props.insert("onChannel", onChannel);
+    props.insert("pausedValue", on);
+    props.insert("pausedChannel", onChannel);
+    props.insert("offValue", 0);
+    props.insert("offChannel", 0);
 }
 
 void ControlMapper::handleInput(const QString &source, const QString &device, quint32 channel,
@@ -1636,6 +1837,14 @@ void ControlMapper::handleInput(const QString &source, const QString &device, qu
         const QVariantMap known = controllerDefaults(source, device, channel, button && m_learnSourceOf < 0);
         for (auto it = known.cbegin(); it != known.cend(); ++it)
             props.insert(it.key(), it.value());
+        // the arming of the special effects: red while armed, dark when not;
+        // the show stop: red while on, blinking while held
+        const QString learning = m_pendingTarget.value("target").toString();
+        if ((learning == "armEffects" || learning == "showStop") && known.contains("onValue"))
+            armLeds(props, learning == "showStop");
+        // Stop all undone: yellow, pulsing, while it can be brought back
+        if (learning == "recoverStopped" && known.contains("onValue"))
+            recallLeds(props);
 
         int id = m_learnSourceOf;
         if (id >= 0)
@@ -1854,16 +2063,30 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed, bool select)
         applyPlaybackButton(m, pressed);
         return;
     }
+    // the show stop: the press and the release, whatever the mode (held a
+    // second it is put or taken away)
+    if (target == "showStop")
+    {
+        if (m_core->safety() != nullptr)
+            m_core->safety()->holdShowStop(pressed);
+        return;
+    }
 
     // momentary actions: on the press
     if (target == "stopAll" || target == "tap" || target == "beatgo" ||
         target == "groupRelease" || target == "groupNext" || target == "groupPrevious" ||
-        target == "pressGo" || target == "pressStop")
+        target == "pressGo" || target == "pressStop" || target == "recoverStopped" || target == "fadeToBlack")
     {
         if (pressed == false)
             return;
         if (target == "stopAll")
             m_core->stopAll();
+        // (what Stop all stopped: nothing when it can't any more)
+        else if (target == "recoverStopped")
+            m_core->recall()->recall();
+        // (pressed again during it: Blackout at once)
+        else if (target == "fadeToBlack")
+            m_core->safety()->fadeToBlack(SafetyManager::fadeToBlackTime(m));
         else if (target == "tap")
             m_core->tapTempo();
         else if (target == "beatgo")
@@ -1872,8 +2095,9 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed, bool select)
         // Stop: pressing the one that is on keeps it)
         else if (target == "pressGo" || target == "pressStop")
             m_core->setPressMode(target == "pressGo" ? "go" : "stop");
+        // (every group: what they played can be brought back)
         else if (target == "groupRelease")
-            allZones ? zones->stopAll() : (zone ? zone->stopAll() : void());
+            allZones ? m_core->releaseGroups() : (zone ? zone->stopAll() : void());
         else if (target == "groupNext")
             allZones ? zones->nextAll() : (zone ? zone->next() : void());
         else if (target == "groupPrevious")
@@ -1913,6 +2137,17 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed, bool select)
         Function *f = m_core->doc()->function(fid);
         if (f == nullptr)
             return;
+        // (held: Stop all doesn't keep it to bring it back)
+        if (mode == "flash" && pressed)
+        {
+            m_flashPressed[fid]++;
+        }
+        else if (mode == "flash")
+        {
+            auto held = m_flashPressed.find(fid);
+            if (held != m_flashPressed.end() && --held.value() <= 0)
+                m_flashPressed.erase(held);
+        }
         // a press selects it (a group selects the scenes it starts too); an
         // action of a cue doesn't: nobody pressed it
         if (select && pressed && mode != "off")
@@ -1953,6 +2188,15 @@ void ControlMapper::applyButton(const QVariantMap &m, bool pressed, bool select)
     else if (target == "blackout")
     {
         m_core->setBlackout(next);
+    }
+    else if (target == "armEffects")
+    {
+        // (refused when nothing is protected or Blackout is on: it says so.
+        // A flash arms while it is held)
+        if (next)
+            m_core->safety()->arm();
+        else
+            m_core->safety()->disarm(QStringLiteral("hand"));
     }
     else if (target == "palette")
     {
@@ -2074,6 +2318,17 @@ int ControlMapper::buttonState(const QVariantMap &m) const
         return m_core->palettes()->isLive(m.value("paletteId").toInt(), m.value("groupId", -1).toInt()) ? 1 : 0;
     if (target == "blackout")
         return m_core->blackout() ? 1 : 0;
+    if (target == "armEffects")
+        return m_core->safety() != nullptr && m_core->safety()->armed() ? 1 : 0;
+    // (held: the "paused" LED, blinking)
+    if (target == "showStop")
+        return m_core->safety() == nullptr ? 0 : m_core->safety()->holding() ? 2 : m_core->safety()->showStop() ? 1 : 0;
+    // (lit while what Stop all stopped can be brought back; while the fade
+    // to black runs)
+    if (target == "recoverStopped")
+        return m_core->recall() != nullptr && m_core->recall()->available() ? 1 : 0;
+    if (target == "fadeToBlack")
+        return m_core->safety() != nullptr && m_core->safety()->fadingToBlack() ? 1 : 0;
     if (target == "pressGo" || target == "pressStop")
         return m_core->pressMode() == (target == "pressGo" ? "go" : "stop") ? 1 : 0;
     if (target == "pauseAll")
@@ -2703,6 +2958,7 @@ bool ControlMapper::loadXML(QXmlStreamReader &root)
     m_mappings.clear();
     m_pressed.clear();
     m_flashScene.clear();
+    m_flashPressed.clear();
     m_applied.clear();
     m_physical.clear();
     m_touch.clear();
@@ -2772,7 +3028,13 @@ bool ControlMapper::loadXML(QXmlStreamReader &root)
         slotFunctionRemoved(fid);
 
     m_sentFeedback.clear();
+    m_keysDown.clear();
     emit mappingsChanged();
+    // the Pause key is the show stop's now: a mapping learnt on it before
+    // keeps it (nothing changes for that show), and the show stop has its
+    // other controls there. Said once the show is open (its names all there)
+    if (pauseMapped())
+        QMetaObject::invokeMethod(this, [this]() { tellPauseKey(); }, Qt::QueuedConnection);
     return true;
 }
 
@@ -2814,10 +3076,11 @@ void ControlMapper::stopTarget(const QVariantMap &target)
     }
     else if (kind == "groupRelease" || kind == "groupNext" || kind == "groupPrevious")
     {
-        // its group released, or all of them (a deleted group: none)
+        // its group released, or all of them (a deleted group: none; every
+        // group: what they played can be brought back)
         ZoneManager *zones = m_core->zones();
         if (m.value("zoneId").toInt() == ALL_GROUPS)
-            zones->stopAll();
+            m_core->releaseGroups();
         else if (Zone *zone = zones->zoneById(m.value("zoneId").toUInt()))
             zone->stopAll();
     }
@@ -2835,6 +3098,12 @@ void ControlMapper::stopTarget(const QVariantMap &target)
     {
         m_core->palettes()->setLive(m.value("paletteId").toInt(), m.value("groupId", -1).toInt(), false);
     }
+    else if (kind == "armEffects")
+    {
+        // (the arming stopped: disarmed, the safe way)
+        m_core->safety()->disarm(QStringLiteral("hand"));
+    }
+    // (the show stop: only held a second takes it away, never a right click)
 }
 
 void ControlMapper::setTargetLevel(const QVariantMap &target, qreal level)
@@ -2843,6 +3112,14 @@ void ControlMapper::setTargetLevel(const QVariantMap &target, qreal level)
     for (auto it = target.cbegin(); it != target.cend(); ++it)
         m.insert(it.key(), it.value());
     applyFader(m, qBound(0.0, level, 1.0));
+}
+
+QSet<quint32> ControlMapper::flashScenes() const
+{
+    QSet<quint32> pressed;
+    for (auto it = m_flashPressed.cbegin(); it != m_flashPressed.cend(); ++it)
+        pressed.insert(it.key());
+    return pressed;
 }
 
 int ControlMapper::targetState(const QVariantMap &target) const
@@ -2908,6 +3185,10 @@ void ControlMapper::slotCueActions(quint32 functionId, quint32 cueUid)
         const int fid = target.value("functionId", -1).toInt();
         // (on the list itself: a link of the cue does that)
         if (fid == int(functionId))
+            continue;
+        // a cue never arms the special effects, holds the show stop, brings
+        // back what Stop all stopped nor fades to black (a show edited by hand)
+        if (kind == "armEffects" || kind == "showStop" || kind == "recoverStopped" || kind == "fadeToBlack")
             continue;
         if ((kind == "playbackGo" || kind == "playbackGoTo") && fid >= 0)
         {

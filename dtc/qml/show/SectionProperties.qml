@@ -52,15 +52,17 @@ Flickable {
         return list.every(i => !!i.color && Qt.colorEqual(i.color, list[0].color)) ? list[0].color : ""
     }
 
-    readonly property var swatches: ["#3d8bfd", "#30a46c", "#e5484d", "#f5a524", "#ae3ec9",
-                                     "#17a2b8", "#d6336c", "#f76707", "#e7e9ef", "#5d6475"]
+    // (the colours saved; a button, fader or dial shows the bright one, Theme.showColour)
+    readonly property var swatches: Theme.showSwatches
     readonly property var actions: ["scene", "next", "previous", "release", "blackout", "stopAll", "tap", "beatgo", "palette",
-                                    "cuelistGo", "cuelistBack", "cuelistGoTo", "cuelistRelease"]
+                                    "cuelistGo", "cuelistBack", "cuelistGoTo", "cuelistRelease", "armEffects", "showStop",
+                                    "recoverStopped", "fadeToBlack"]
     readonly property var actionNames: [qsTr("Play a scene"), qsTr("Next scene of a group"),
                                         qsTr("Previous scene of a group"), qsTr("Release a group"),
                                         qsTr("Blackout"), qsTr("Stop all"), qsTr("Tap tempo"), qsTr("BeatGO (next division)"),
                                         qsTr("A palette"), qsTr("Cuelist GO"), qsTr("Cuelist back"), qsTr("Go to a cue…"),
-                                        qsTr("Release a cuelist")]
+                                        qsTr("Release a cuelist"), qsTr("Arm effects"), qsTr("Show stop (hold 1 s)"),
+                                        qsTr("Bring back what was playing"), qsTr("Fade to black")]
     // the cuelist actions are playback targets on a function (stored as "map"
     // buttons, with no slot: without a cuelist yet they do nothing)
     readonly property var cuelistTargets: ({ cuelistGo: "playbackGo", cuelistBack: "playbackBack",
@@ -79,6 +81,16 @@ Flickable {
     readonly property string itemAction: actionOf(item)
     readonly property bool cuelistAction: cuelistTargets[itemAction] !== undefined
     function setAction(action) {
+        // arming the special effects: red, unless it has a colour of its own
+        if (action === "armEffects" && item && (!item.color || Qt.colorEqual(item.color, "#3d8bfd"))) {
+            setItem({ action: action, color: "#e5484d" })
+            return
+        }
+        // the show stop: yellow, unless it has a colour of its own
+        if (action === "showStop" && item && (!item.color || Qt.colorEqual(item.color, "#3d8bfd"))) {
+            setItem({ action: action, color: "#f5a524" })
+            return
+        }
         if (cuelistTargets[action] === undefined) {
             setItemKey("action", action)
             return
@@ -250,34 +262,58 @@ Flickable {
 
             // its background: a colour of the buttons, or the one of the theme
             Caption { text: qsTr("Background") }
+            // (as the colours of the buttons below: the chosen one, a ring round it on the panel)
             Flow {
                 Layout.fillWidth: true
-                spacing: 5
-                Rectangle {
-                    readonly property bool chosen: !props.section.background
-                    width: 24
-                    height: 24
-                    radius: 12
-                    color: Theme.surface
-                    border.color: chosen ? Theme.text : Theme.borderStrong
-                    border.width: chosen ? 2 : 1
-                    Text { anchors.centerIn: parent; text: "∅"; color: Theme.textDim; font.pixelSize: 12 }
+                Item {
+                    width: 30
+                    height: 30
                     ToolTip.text: qsTr("None: the colour of the theme")
                     ToolTip.visible: noBackgroundMouse.containsMouse
                     ToolTip.delay: 300
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 15
+                        color: "transparent"
+                        border.color: Theme.text
+                        border.width: 2
+                        visible: !props.section.background
+                    }
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 22
+                        height: 22
+                        radius: 11
+                        color: Theme.surface
+                        border.color: Theme.borderStrong
+                        Text { anchors.centerIn: parent; text: "∅"; color: Theme.textDim; font.pixelSize: 12 }
+                    }
                     MouseArea { id: noBackgroundMouse; anchors.fill: parent; hoverEnabled: true; onClicked: props.setSection({ background: "" }) }
                 }
                 Repeater {
                     model: props.swatches
-                    Rectangle {
+                    // (the raw colour: the background is a faint tint of it)
+                    Item {
                         required property string modelData
-                        width: 24
-                        height: 24
-                        radius: 12
-                        color: modelData
-                        opacity: Theme.lightLevel
-                        border.color: Theme.text
-                        border.width: !!props.section.background && Qt.colorEqual(props.section.background, modelData) ? 2 : 0
+                        width: 30
+                        height: 30
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 15
+                            color: "transparent"
+                            border.color: Theme.text
+                            border.width: 2
+                            visible: !!props.section.background && Qt.colorEqual(props.section.background, parent.modelData)
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: parent.modelData
+                            opacity: Theme.lightLevel
+                            border.color: Theme.edgeFor(color, Theme.surface)
+                        }
                         MouseArea { anchors.fill: parent; onClicked: props.setSection({ background: parent.modelData }) }
                     }
                 }
@@ -292,18 +328,32 @@ Flickable {
             Flow {
                 Layout.fillWidth: true
                 visible: props.isTable && props.itemCount > 0
-                spacing: 5
                 Repeater {
                     model: props.swatches
-                    Rectangle {
+                    // (the chosen one: a ring round it, on the panel, so it
+                    // shows on any colour; an edge where the colour doesn't
+                    // stand out, the white on a light theme)
+                    Item {
                         required property string modelData
-                        width: 24
-                        height: 24
-                        radius: 12
-                        color: modelData
-                        opacity: Theme.lightLevel
-                        border.color: Theme.text
-                        border.width: props.itemsColour.length > 0 && Qt.colorEqual(props.itemsColour, modelData) ? 2 : 0
+                        width: 30
+                        height: 30
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 15
+                            color: "transparent"
+                            border.color: Theme.text
+                            border.width: 2
+                            visible: props.itemsColour.length > 0 && Qt.colorEqual(props.itemsColour, parent.modelData)
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: Theme.showColour(parent.modelData)
+                            opacity: Theme.lightLevel
+                            border.color: Theme.edgeFor(color, Theme.surface)
+                        }
                         MouseArea {
                             anchors.fill: parent
                             onClicked: Core.surface.setItemsColour(props.surface.currentPage, props.sid, parent.modelData)
@@ -856,6 +906,63 @@ Flickable {
                     currentIndex: props.item && props.item.mode === "flash" ? 1 : 0
                     onActivated: (i) => props.setItemKey("mode", i === 1 ? "flash" : "toggle")
                 }
+                // arming the special effects: toggle, or a button that only
+                // arms or only disarms (never a flash)
+                readonly property bool armMode: props.item !== undefined && props.type === "buttons" &&
+                                                props.item.action === "armEffects"
+                readonly property var armModes: ["toggle", "on", "off"]
+                Caption { visible: parent.armMode; text: qsTr("Behaviour") }
+                ComboBox {
+                    Layout.fillWidth: true
+                    visible: parent.armMode
+                    model: [qsTr("Toggle: arm / disarm"), qsTr("Arm"), qsTr("Disarm")]
+                    currentIndex: props.item ? Math.max(0, parent.armModes.indexOf(props.item.mode)) : 0
+                    onActivated: (i) => props.setItemKey("mode", parent.armModes[i])
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: parent.armMode
+                    text: qsTr("Lit while the effects are armed. A right click disarms them. Stop all and Blackout disarm them too.")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: props.item !== undefined && props.type === "buttons" && props.item.action === "showStop"
+                    text: qsTr("Hold it a second: open white on the lights (Options › Show stop), strobes and lasers dark, the heads still, the special effects disarmed, above Blackout. Hold it again to take it away. Lit while it is on.")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: props.item !== undefined && props.type === "buttons" && props.item.action === "recoverStopped"
+                    text: qsTr("For 10 seconds after Stop all or Release groups, what they stopped plays again, with a short fade (also Ctrl+Z). Lit while it can.")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.WordWrap
+                }
+                // the fade to black: its time
+                readonly property bool fadeMode: props.item !== undefined && props.type === "buttons" &&
+                                                 props.item.action === "fadeToBlack"
+                Caption { visible: parent.fadeMode; text: qsTr("Time") }
+                TimeSpin {
+                    visible: parent.fadeMode
+                    implicitWidth: 150
+                    from: 1
+                    to: 600
+                    engineValue: props.item && props.item.time !== undefined ? props.item.time : Core.safety.defaultFadeToBlackMs
+                    onEdited: (ms) => props.setItemKey("time", ms)
+                }
+                Text {
+                    Layout.fillWidth: true
+                    visible: parent.fadeMode
+                    text: qsTr("The light goes down in this time, then Blackout comes (Blackout off brings it back). Pressed again, or Blackout: at once. It disarms the special effects. Lit while it fades.")
+                    color: Theme.textDim
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.WordWrap
+                }
 
                 readonly property bool needsGroup: props.item !== undefined &&
                     props.type === "buttons" && ["next", "previous", "release"].indexOf(props.item.action) >= 0
@@ -888,18 +995,30 @@ Flickable {
                 Caption { text: qsTr("Colour") }
                 Flow {
                     Layout.fillWidth: true
-                    spacing: 5
                     Repeater {
                         model: props.swatches
-                        Rectangle {
+                        // (as the colour of all of them: the ring round the chosen one)
+                        Item {
                             required property string modelData
-                            width: 24
-                            height: 24
-                            radius: 12
-                            color: modelData
-                            opacity: Theme.lightLevel
-                            border.color: Theme.text
-                            border.width: props.item && props.item.color && Qt.colorEqual(props.item.color, modelData) ? 2 : 0
+                            width: 30
+                            height: 30
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 15
+                                color: "transparent"
+                                border.color: Theme.text
+                                border.width: 2
+                                visible: !!props.item && !!props.item.color && Qt.colorEqual(props.item.color, parent.modelData)
+                            }
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 22
+                                height: 22
+                                radius: 11
+                                color: Theme.showColour(parent.modelData)
+                                opacity: Theme.lightLevel
+                                border.color: Theme.edgeFor(color, Theme.surface)
+                            }
                             MouseArea { anchors.fill: parent; onClicked: props.setItemKey("color", parent.modelData) }
                         }
                     }

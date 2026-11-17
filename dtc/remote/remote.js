@@ -17,7 +17,10 @@ const STRINGS = {
     universe: "Universo %1",
     full: "Full", blackout: "Blackout", hue: "Tono", saturation: "Saturación",
     resetColour: "Restablecer color", strobe: "Estrobo", flashExcl: "Flash excl.", fullExcl: "Full excl.",
-    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B",
+    arm: "Armar", armed: "ARMADOS", armedBanner: "EFECTOS ARMADOS", firing: "Disparando: %1", disarm: "Desarmar",
+    showStop: "Parada de show (mantén 1 s)", showStopBanner: "PARADA DE SHOW", holdToRelease: "Mantén para quitar",
+    recallText: "Recuperar lo que sonaba", recallButton: "Recuperar"
   },
   en: {
     connecting: "Connecting…", offline: "No connection with DMX Total Control. Trying again…",
@@ -30,7 +33,10 @@ const STRINGS = {
     universe: "Universe %1",
     full: "Full", blackout: "Blackout", hue: "Hue", saturation: "Saturation",
     resetColour: "Reset colour", strobe: "Strobe", flashExcl: "Flash excl.", fullExcl: "Full excl.",
-    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B",
+    arm: "Arm", armed: "ARMED", armedBanner: "EFFECTS ARMED", firing: "Firing: %1", disarm: "Disarm",
+    showStop: "Show stop (hold 1 s)", showStopBanner: "SHOW STOP", holdToRelease: "Hold to release",
+    recallText: "Bring back what was playing", recallButton: "Bring back"
   },
   pt: {
     connecting: "Conectando…", offline: "Sem conexão com o DMX Total Control. Tentando de novo…",
@@ -43,7 +49,10 @@ const STRINGS = {
     universe: "Universo %1",
     full: "Full", blackout: "Blackout", hue: "Matiz", saturation: "Saturação",
     resetColour: "Redefinir cor", strobe: "Strobo", flashExcl: "Flash excl.", fullExcl: "Full excl.",
-    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B",
+    arm: "Armar", armed: "ARMADOS", armedBanner: "EFEITOS ARMADOS", firing: "Disparando: %1", disarm: "Desarmar",
+    showStop: "Parada de show (mantenha 1 s)", showStopBanner: "PARADA DE SHOW", holdToRelease: "Mantenha para tirar",
+    recallText: "Recuperar o que estava tocando", recallButton: "Recuperar"
   },
   fr: {
     connecting: "Connexion…", offline: "Pas de connexion avec DMX Total Control. Nouvel essai…",
@@ -56,7 +65,10 @@ const STRINGS = {
     universe: "Univers %1",
     full: "Full", blackout: "Blackout", hue: "Teinte", saturation: "Saturation",
     resetColour: "Réinitialiser la couleur", strobe: "Stroboscope", flashExcl: "Flash excl.", fullExcl: "Full excl.",
-    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 fixture", fixtures: "%1 fixtures", hz: "%1 Hz", ab: "A/B",
+    arm: "Armer", armed: "ARMÉS", armedBanner: "EFFETS ARMÉS", firing: "Déclenchement : %1", disarm: "Désarmer",
+    showStop: "Arrêt du show (maintenir 1 s)", showStopBanner: "ARRÊT DU SHOW", holdToRelease: "Maintenir pour lever",
+    recallText: "Ramener ce qui jouait", recallButton: "Ramener"
   },
   it: {
     connecting: "Connessione…", offline: "Nessuna connessione con DMX Total Control. Nuovo tentativo…",
@@ -69,7 +81,10 @@ const STRINGS = {
     universe: "Universo %1",
     full: "Full", blackout: "Blackout", hue: "Tonalità", saturation: "Saturazione",
     resetColour: "Ripristina colore", strobe: "Strobo", flashExcl: "Flash escl.", fullExcl: "Full escl.",
-    fixture1: "%1 fixture", fixtures: "%1 fixture", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 fixture", fixtures: "%1 fixture", hz: "%1 Hz", ab: "A/B",
+    arm: "Arma", armed: "ARMATI", armedBanner: "EFFETTI ARMATI", firing: "In azione: %1", disarm: "Disarma",
+    showStop: "Arresto dello show (tieni premuto 1 s)", showStopBanner: "ARRESTO DELLO SHOW", holdToRelease: "Tieni premuto per togliere",
+    recallText: "Recupera ciò che suonava", recallButton: "Recupera"
   },
   de: {
     connecting: "Verbinden…", offline: "Keine Verbindung mit DMX Total Control. Neuer Versuch…",
@@ -82,7 +97,10 @@ const STRINGS = {
     universe: "Universum %1",
     full: "Voll", blackout: "Blackout", hue: "Farbton", saturation: "Sättigung",
     resetColour: "Farbe zurücksetzen", strobe: "Stroboskop", flashExcl: "Flash exkl.", fullExcl: "Voll exkl.",
-    fixture1: "%1 Fixture", fixtures: "%1 Fixtures", hz: "%1 Hz", ab: "A/B"
+    fixture1: "%1 Fixture", fixtures: "%1 Fixtures", hz: "%1 Hz", ab: "A/B",
+    arm: "Scharf schalten", armed: "SCHARF", armedBanner: "EFFEKTE SCHARF", firing: "Feuert: %1", disarm: "Entschärfen",
+    showStop: "Show-Stopp (1 s halten)", showStopBanner: "SHOW-STOPP", holdToRelease: "Halten zum Aufheben",
+    recallText: "Zurückholen, was lief", recallButton: "Zurückholen"
   }
 };
 // the language of the phone, if the remote has it
@@ -308,6 +326,31 @@ window.addEventListener("hashchange", () => {
   send({ cmd: "hello", pin: pin });
 });
 $("blackout").addEventListener("click", () => send({ cmd: "global", action: "blackout" }));
+// the special effects: the state wanted, not a toggle (a late message, or
+// two phones, never arm what was just disarmed)
+$("arm").addEventListener("click", () => send({ cmd: "global", action: "arm", on: !(state && state.safety && state.safety.armed) }));
+$("disarm").addEventListener("click", () => send({ cmd: "global", action: "arm", on: false }));
+$("disarm").textContent = tr("disarm");
+// the show stop: held a second puts it, and the same takes it away (the
+// computer counts the time; it lets go of it when the phone goes)
+for (const id of ["showStop", "showStopRelease"]) {
+  $(id).addEventListener("pointerdown", (e) => {
+    capture($(id), e.pointerId);
+    holdDown("showStop", e.pointerId, { cmd: "global", action: "showStop", down: true },
+             { cmd: "global", action: "showStop", down: false });
+  });
+}
+$("showStop").title = tr("showStop");
+$("showStopRelease").textContent = tr("holdToRelease");
+$("showStopText").textContent = tr("showStopBanner");
+// what Stop all stopped plays again (the computer does nothing once its
+// time is over)
+$("recallButton").addEventListener("click", () => {
+  if (performance.now() - recallShownAt >= 500)
+    send({ cmd: "global", action: "recall" });
+});
+$("recallButton").textContent = tr("recallButton");
+$("recallText").textContent = tr("recallText");
 $("fullscreen").addEventListener("click", () => {
   if (document.fullscreenElement)
     document.exitFullscreen();
@@ -355,6 +398,10 @@ const holds = new Map();
 let holdPainters = [];
 function paintHolds() {
   holdPainters.forEach((paint) => paint());
+  // (the show stop held: its buttons fill)
+  const stopHeld = holds.has("showStop");
+  $("showStop").classList.toggle("holding", stopHeld);
+  $("showStopRelease").classList.toggle("holding", stopHeld);
 }
 function holdDown(what, pointerId, down, up) {
   let hold = holds.get(what);
@@ -486,6 +533,28 @@ function tintSection(section, colour) {
   }
 }
 
+/* A button of a colour as the program shows it (Theme.readable, fill): off,
+   its icon towards the text where it doesn't read on its body (3.2); on,
+   its colour as dark as a light text needs to read on it (4.5: the night) */
+function tintButton(button, colour) {
+  const css = getComputedStyle(document.documentElement);
+  const tint = rgbOf(colour), raised = rgbOf(css.getPropertyValue("--raised"));
+  const text = rgbOf(css.getPropertyValue("--text")), onKind = rgbOf(css.getPropertyValue("--on-kind"));
+  if (!tint || !raised || !text || !onKind) return;
+  const level = (parseFloat(css.getPropertyValue("--category")) || 100) / 100;
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const asCss = (c) => "rgb(" + c.map(Math.round).join(",") + ")";
+  const kind = tint.map((v) => v * level);
+  if (contrast(kind, mix(raised, kind, 0.07)) < 3.2)
+    button.style.setProperty("--glyph", asCss(mix(kind, text, 0.55)));
+  if (luminance(onKind) > 0.18) {
+    let lit = kind;
+    for (let i = 0; i < 60 && contrast(onKind, lit) < 4.5; i++)
+      lit = lit.map((v) => v / 1.03);
+    button.style.setProperty("--lit", asCss(lit));
+  }
+}
+
 function sizeCanvas(canvas) {
   const ratio = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
@@ -612,6 +681,16 @@ function timerText(ms, countdown) {
   const pad = (n) => (n < 10 ? "0" : "") + n;
   return (h > 0 ? h + ":" + pad(m) : pad(m)) + ":" + pad(sec) + (countdown ? "" : "." + Math.floor((ms % 1000) / 100));
 }
+
+// the colours of the SHOW controls as they show: bright and far apart. The
+// shows keep the ones of the first palette (the keys), and those of the
+// groups (the last four: the others are in the palette); the same in Theme.qml
+const SHOW_COLOURS = {
+  "#e5484d": "#ff2b2b", "#f76707": "#ff8a00", "#f5a524": "#ffe500", "#30a46c": "#2ee05a", "#17a2b8": "#00d9ff",
+  "#3d8bfd": "#2f6bff", "#ae3ec9": "#b02cff", "#d6336c": "#ff3d9e", "#e7e9ef": "#ffffff", "#5d6475": "#6f7789",
+  "#f59f00": "#ffc400", "#2fb344": "#2ee05a", "#d63939": "#ff2b2b", "#74b816": "#b5e61d"
+};
+const showColour = (c) => SHOW_COLOURS[String(c).toLowerCase()] || c;
 
 const TYPE_COLOURS = {
   Scene: "#3d8bfd", Chaser: "#f59f00", Sequence: "#f76707", EFX: "#ae3ec9", RGBMatrix: "#2fb344",
@@ -921,14 +1000,21 @@ const BUILDERS = {
       const item = node.items[String(c)];
       if (item) {
         const b = el("div", "btn" + (item.image ? " image" : ""));
-        b.style.setProperty("--tint", item.color || "#3d8bfd");
+        b.style.setProperty("--tint", showColour(item.color || "#3d8bfd"));
+        tintButton(b, showColour(item.color || "#3d8bfd"));
         if (item.image)
           b.style.backgroundImage = "url('" + item.image + "')";
+        // (its colour on the top fifth, the icon and the label under it)
+        const body = el("div", "body");
         if (item.icon && !item.image)
-          b.appendChild(el("div", "glyph", item.icon));
-        b.appendChild(el("div", "", item.label || ""));
+          body.appendChild(el("div", "glyph", item.icon));
+        body.appendChild(el("div", "", item.label || ""));
+        b.appendChild(body);
         if (item.flash)
           b.appendChild(el("span", "flash", ""));
+        // (the show stop: held a second, it fills while held)
+        if (item.hold)
+          b.classList.add("hold");
         if (item.functionId !== undefined)
           rhythmBar(b, item.functionId);
         const at = { page: pageIndex, section: node.id, cell: c };
@@ -957,7 +1043,7 @@ const BUILDERS = {
       const item = node.items[String(c)];
       if (item) {
         const f = el("div", "fader");
-        f.style.setProperty("--tint", item.color || "#3d8bfd");
+        f.style.setProperty("--tint", showColour(item.color || "#3d8bfd"));
         f.appendChild(el("div", "label", item.label || ""));
         const track = el("div", "track"), fill = el("div", "fill"), knob = el("div", "knob");
         track.appendChild(fill);
@@ -1030,7 +1116,7 @@ const BUILDERS = {
         const value = el("div", "value", "");
         d.appendChild(value);
         const at = { page: pageIndex, section: node.id, cell: c };
-        const tint = item.color || "#3d8bfd";
+        const tint = showColour(item.color || "#3d8bfd");
         // level is the position (the arc), raw the value (the text)
         let level = 0, raw = 0, wheel = 0, dragging = false, lastY = 0, rest = 0;
         const draw = () => {
@@ -1430,9 +1516,88 @@ const BUILDERS = {
   }
 };
 
+/* the protected special effects: the button of the bar (only with some in
+   the show), and while they are armed a red bar above the page */
+function updateSafety() {
+  const safety = state.safety || {};
+  const armed = !!safety.armed;
+  $("arm").classList.toggle("hidden", !safety.hasProtected && !armed);
+  $("arm").classList.toggle("on", armed);
+  // (a phone held upright shows the flame alone: the label in its title)
+  $("armLabel").textContent = armed ? tr("armed") : tr("arm");
+  $("arm").title = armed ? tr("armed") : tr("arm");
+  const firing = safety.firing || [];
+  $("armedText").textContent = tr("armedBanner") + (firing.length ? " · " + tr("firing").replace("%1", firing.join(", ")) : "");
+  $("armedBanner").classList.toggle("hidden", !armed);
+  // the show stop: the button red, and the bar (above the page, as the one of the effects)
+  const stopped = !!safety.showStop;
+  $("showStop").classList.toggle("on", stopped);
+  $("showStopBanner").classList.toggle("hidden", !stopped);
+  document.documentElement.style.setProperty("--hold", (safety.holdMs || 1000) + "ms");
+  if (document.body.classList.contains("stopped") !== stopped) {
+    document.body.classList.toggle("stopped", stopped);
+    requestAnimationFrame(() => { updaters.forEach((u) => u(state)); paintLevels(); });
+  }
+  // (the page below it gets shorter: what draws on a canvas draws again)
+  if (document.body.classList.contains("armed") !== armed) {
+    document.body.classList.toggle("armed", armed);
+    requestAnimationFrame(() => { updaters.forEach((u) => u(state)); paintLevels(); });
+  }
+}
+
+/* what Stop all stopped can be brought back for some seconds: the toast,
+   its bar from the seconds left the computer says (again for each Stop all) */
+let recallSerial = -1;
+// when its bar came (again): a tap on its button right after (a second
+// panic tap on Stop all) does nothing
+let recallShownAt = 0;
+function updateRecall() {
+  const recall = state.recall || {};
+  const shown = !!recall.available;
+  $("recall").classList.toggle("hidden", !shown);
+  // (the page below it gets shorter: what draws on a canvas draws again)
+  if (document.body.classList.contains("recall") !== shown) {
+    document.body.classList.toggle("recall", shown);
+    requestAnimationFrame(() => { updaters.forEach((u) => u(state)); paintLevels(); });
+  }
+  if (!shown) {
+    recallSerial = -1;
+    return;
+  }
+  if (recall.serial === recallSerial)
+    return;
+  recallSerial = recall.serial;
+  recallShownAt = performance.now();
+  const left = Math.max(0, (recall.left || 0) * 1000);
+  const bar = $("recallBar");
+  bar.style.transition = "none";
+  bar.style.width = (100 * left / (recall.windowMs || 10000)) + "%";
+  void bar.offsetWidth;
+  bar.style.transition = "width " + left + "ms linear";
+  bar.style.width = "0%";
+}
+
+/* the name of the show in the bar says which show the phone drives: it
+   stays, shorter on a narrow phone, unless the pages would have no room
+   left (the arm button of a show with special effects on a narrow phone) */
+let titleFitFor = "";
+function fitTitle() {
+  const key = window.innerWidth + "|" + $("arm").classList.contains("hidden") + "|" + $("title").textContent +
+              "|" + $("pages").scrollWidth;
+  if (key === titleFitFor)
+    return;
+  titleFitFor = key;
+  $("title").classList.remove("squeezed");
+  if (window.innerWidth <= 480 && $("pages").clientWidth < 80)
+    $("title").classList.add("squeezed");
+}
+
 function update() {
   if (!state) return;
   $("blackout").classList.toggle("on", !!state.blackout);
+  updateSafety();
+  updateRecall();
+  fitTitle();
   updaters.forEach((u) => u(state));
   // (a page that follows the computer: its flashes are another playback's now)
   paintHolds();

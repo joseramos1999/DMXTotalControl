@@ -2,9 +2,9 @@
 
 ![La página Opciones](img/opciones.png)
 
-**Opciones** (F9) reúne los ajustes del programa. A la izquierda están los ajustes generales, el arranque, el bloqueo, el autoguardado, la reproducción y el audio; a la derecha, el control remoto, la biblioteca de fixtures, las actualizaciones, la ayuda y «Acerca de».
+**Opciones** (F9) reúne los ajustes del programa. A la izquierda están los ajustes generales, el arranque, el bloqueo, la seguridad en el directo, el autoguardado, la reproducción y el audio; a la derecha, el control remoto, la biblioteca de fixtures, las actualizaciones, la ayuda y «Acerca de».
 
-Los ajustes de esta página son del ordenador, no del show: valen para todos los shows que abras.
+Los ajustes de esta página son del ordenador, no del show: valen para todos los shows que abras. Solo la parada de show (en [Seguridad en el directo](opciones.md#parada-de-show)) se guarda con el show.
 
 ## General
 
@@ -34,6 +34,40 @@ El bloqueo evita que algo cambie por error durante el show. Directo y el SHOW si
 4. Pulsa **«Bloquear»**.
 
 Las páginas bloqueadas llevan un candado en la barra lateral. Al abrir una, se pide la contraseña (si la hay) y se desbloquea todo. Para desbloquear, pulsa el candado de la barra superior. **«Quitar la contraseña»** está en la misma ventana, al bloquear.
+
+## Seguridad en el directo
+
+Lo que protege el show durante el directo (consulta [Seguridad en el directo](directo.md#seguridad-en-el-directo)):
+
+- **Mantener el equipo despierto** (activado por defecto): mientras el programa está abierto, Windows no suspende el equipo ni apaga la pantalla. Al cerrar el programa, o al desactivarlo, Windows vuelve a hacerlo como siempre. No cambia nada de la configuración de Windows.
+- **Modo show** (desactivado por defecto): cerrar el programa o abrir otro show pide mantener pulsado un botón. Bloquear el SHOW lo activa; desbloquearlo no lo quita. El escudo de la barra superior lo pone y lo quita igual (consulta [Modo show](directo.md#modo-show)).
+- **Parar todo con fundido**: de 0 a 5 s (0 por defecto: al momento, como siempre). Las funciones bajan en ese tiempo; Esc dos veces, al momento. Durante 10 segundos, Ctrl+Z recupera lo que paró (consulta [Parar todo con fundido](directo.md#parar-todo-con-fundido)).
+- **Desarmar los efectos sin uso tras**: de 0 a 120 minutos sin disparos (10 por defecto; 0, «Nunca»). Nunca mientras uno dispara (consulta [Efectos especiales protegidos](directo.md#efectos-especiales-protegidos)).
+- **Funcionando con batería** y **La suspensión selectiva de USB está activada** solo aparecen cuando pasa. La primera dice cuánta batería queda; la segunda tiene **«Cómo quitarla»**, que abre la sección [Suspensión selectiva de USB](opciones.md#suspensión-selectiva-de-usb), más abajo.
+
+### Parada de show
+
+Qué ilumina la [parada de show](directo.md#parada-de-show) y a qué nivel. Esto sí se guarda con el show, en su sección de DMX Total Control (QLC+ no lo lee).
+
+- **Fixtures**: **«Todas las luces»** (por defecto) o **«Estos grupos…»**, que abre la lista de los grupos de fixtures del show para marcarlos («Grupos que ilumina la parada de show»). Sin ninguno marcado, todas las luces. Un grupo eliminado se quita solo. De los grupos elegidos solo se iluminan las luces: su humo, sus hazers, sus estrobos y sus láseres, nunca.
+- **Nivel**: de 0 a 100 % (100 por defecto).
+
+Se iluminan las cabezas móviles, los escáneres, los PAR y washes, las barras LED, los blinders y los dimmers. Un dimmer genérico (Generic › Generic Dimmer) solo cuando su nombre dice que es una luz (PAR, FRESNEL, DIMMER, BLINDER, FOCO, FRONTAL, CONTRA, CENITAL, LUZ, SPOT, PC, SALA…) o su icono en el plano es el de una luz. Los que se llaman VIDEO, TRIGGER, DISPARADOR, RELÉ, MOTOR, PANTALLA, KABUKI, TELÓN… se quedan como están, también dentro de un grupo elegido; un PIRO… es un efecto especial protegido y se apaga. Para iluminar uno de ellos, dale un icono de luz en Patch › «Aspecto» › «Icono». Los dimmers de la biblioteca se iluminan como siempre.
+
+<a id="usb-selective-suspend"></a>
+
+### Suspensión selectiva de USB
+
+Windows puede suspender un puerto USB que le parece sin uso para ahorrar energía, y con él la interfaz DMX: la salida se para en mitad del show. Es un ajuste del plan de energía de Windows. El programa solo lo lee al arrancar (y lo avisa con una barra azul y en esta página): nunca lo cambia. Para quitarla:
+
+1. Abre el **Panel de control** › **Hardware y sonido** › **Opciones de energía**.
+2. Junto al plan que usas, pulsa **«Cambiar la configuración del plan»** y después **«Cambiar la configuración avanzada de energía»**.
+3. Abre **«Configuración de USB»** › **«Configuración de suspensión selectiva de USB»** y elige **«Deshabilitado»** en **«Con batería»** y en **«Con corriente alterna»** (sin batería, solo hay un valor).
+4. Pulsa **«Aceptar»**.
+
+Si la interfaz se sigue parando, abre el **Administrador de dispositivos** y, en las propiedades de cada **«Concentrador raíz USB»**, en la pestaña **«Administración de energía»**, quita **«Permitir que el equipo apague este dispositivo para ahorrar energía»**. Los nombres pueden cambiar un poco según la versión de Windows.
+
+> **Sin probar con equipos reales:** los cambios de batería y de corriente, el porcentaje de batería, el efecto real de mantener el equipo despierto y la lectura de la suspensión selectiva de USB.
 
 ## Autoguardado
 

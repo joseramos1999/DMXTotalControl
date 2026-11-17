@@ -127,7 +127,7 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             readonly property real level: cell.held >= 0 ? cell.held : cell.level
-            readonly property color tint: cell.item.color ? Theme.category(cell.item.color) : Theme.accent
+            readonly property color tint: cell.item.color ? Theme.category(Theme.showColour(cell.item.color)) : Theme.accent
             onLevelChanged: requestPaint()
             onTintChanged: requestPaint()
             onWidthChanged: requestPaint()

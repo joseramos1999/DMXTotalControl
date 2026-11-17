@@ -23,14 +23,26 @@ Todas las teclas y combinaciones del programa, por página. Las teclas que asign
 | **Ctrl+S** | Guardar el show (la primera vez, pide nombre) |
 | **Ctrl+Mayús+S** | Guardar el show con otro nombre («Guardar como…») |
 | **Ctrl+B** | Blackout (encender y apagar) |
+| **Pausa** dos veces (en 2 s) | Pone o quita la [parada de show](directo.md#parada-de-show), en cualquier página, con cualquier modificador y aunque estés escribiendo. Una sola pulsación solo avisa («Parada de show: pulsa Pausa otra vez para ponerla»); mantenerla no hace nada más. No se puede asignar en Mapeos; un show que ya la tenía mapeada la conserva |
 | **Esc** | Parar todo. En el modo Mapear, cancela el control pendiente o sale del modo; con «Grabar» armado en Playbacks, lo desarma; con un grupo aislado en el plano de Patch, termina el aislamiento (con un menú, una lista desplegable o una ventana de Patch abiertos, como «Añadir fixtures», «Editar» o «Límites», solo los cierra; un aviso como «¿Guardar los cambios?» no se cierra con Esc). En una ventana para escribir un nombre o un número («Crear grupo», «Renombrar», «Numerar»…), la cierra sin aplicar nada: pulsa Esc otra vez para parar todo |
+| **Esc** dos veces | Durante el fundido de «Parar todo con fundido», lo para todo al momento |
+| **Ctrl+Z** | En Directo y en el SHOW (no en su modo edición ni mientras escribes), durante 10 s después de «Parar todo» o «Liberar grupos»: [recuperar lo que sonaba](directo.md#recuperar-lo-que-sonaba) |
 | **Ctrl+→** | Escena siguiente en cada grupo que suena |
 | **Ctrl+←** | Escena anterior en cada grupo que suena |
 | **G** | BeatGO (menos en la página Show) |
 
 Si una página está bloqueada, su tecla pide la contraseña (si la hay) y desbloquea. Con el SHOW bloqueado (modo quiosco) las teclas de página no funcionan, y con el Setup bloqueado tampoco Ctrl+N, Ctrl+O ni Ctrl+Mayús+S.
 
-T, G y las teclas que asignes en Mapeos no actúan mientras escribes en un campo de texto, como la línea de comandos de Programar.
+T, G y las teclas que asignes en Mapeos no actúan mientras escribes en un campo de texto, como la línea de comandos de Programar. La tecla Pausa (la parada de show) sí funciona mientras escribes.
+
+## Modo show
+
+Con el [Modo show](directo.md#modo-show) puesto, al cerrar el programa o al abrir o empezar otro show:
+
+| Tecla | Qué hace |
+|---|---|
+| Mantener **Espacio** o **Intro** 1,5 s | Como mantener pulsado el botón: confirma (la repetición de la tecla no cuenta) |
+| **Esc** | Cancela; en esa ventana nunca para el show |
 
 ## Playbacks
 
@@ -120,5 +132,6 @@ Después de hacer clic en un fader o un deslizador:
 | Rueda | Plano 2D | Zoom |
 | Arrastrar con el botón derecho o central | Plano 2D | Mueve la vista (doble clic: la centra) |
 | Clic derecho | Botón 15° del plano 2D | Gira hacia el otro lado |
-| Clic derecho | Botón del SHOW (en directo) | Para lo que lanza (su escena, su grupo, su playback o su paleta), también con GO |
+| Clic derecho | Botón del SHOW (en directo) | Para lo que lanza (su escena, su grupo, su playback o su paleta), también con GO; el de «Armar efectos» los desarma |
 | Mantener pulsado «Desbloquear» | Show bloqueado | Desbloquea |
+| Mantener pulsado 1 s | Botón «Parada de show» del SHOW, un pad o una tecla mapeados, la mano del móvil, «Mantén para quitar» | Pone o quita la parada de show |
