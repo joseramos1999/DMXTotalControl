@@ -50,7 +50,7 @@ Die Werkzeuge der Leiste arbeiten mit der Auswahl:
 - **Pan invertieren** und **Tilt invertieren** (die Pfeilsymbole): für die Fixtures, die diese Achsen haben.
 - **„Grenzen“**, die Taste mit der **Flamme** (**„Spezialeffekt“**), **„Bearbeiten“**, **„Neu adressieren“**, **„Nummerieren“**, **„Gruppe erstellen“** und **„Löschen“**: werden im Folgenden erklärt.
 
-Ein **Rechtsklick** auf eine Zeile der Liste oder auf ein Fixture im 2D-Plan, ohne die Maus zu bewegen, öffnet das Fixture-Menü: **„Spezialeffekt…“**, **„Identifizieren“**, **„Grenzen…“**, **„Bearbeiten…“**, **„So parken, wie es jetzt ist“**, **„Ausgeschaltet parken“**, **„Auch im Blackout“**, **„Entparken“** und **„Alle entparken“**. War das Fixture nicht ausgewählt, wird es zuerst ausgewählt.
+Ein **Rechtsklick** auf eine Zeile der Liste oder auf ein Fixture im 2D-Plan, ohne die Maus zu bewegen, öffnet das Fixture-Menü: **„Spezialeffekt…“**, **„Identifizieren“**, **„Grenzen…“**, **„Vor dem Grand Master schützen“**, **„Bearbeiten…“**, **„So parken, wie es jetzt ist“**, **„Ausgeschaltet parken“**, **„Auch im Blackout“**, **„Entparken“** und **„Alle entparken“**. War das Fixture nicht ausgewählt, wird es zuerst ausgewählt.
 
 ## Adressen und Universen
 
@@ -167,11 +167,12 @@ Wählen Sie Fixtures aus und drücken Sie **„Grenzen“**:
 - **Dimmer**, **Pan** und **Tilt**: der erlaubte Bereich, von 0 bis 100 %. Zum Beispiel ein Dimmer, der nicht über 80 % geht, oder ein Tilt, der nicht ins Publikum zielt.
 - **„Pan invertieren“**, **„Tilt invertieren“** und **„Pan und Tilt tauschen“** (für kopfüber hängende oder gedrehte Köpfe).
 - **„Zurücksetzen“**: keine Grenzen, keine invertierten oder vertauschten Achsen.
+- **„Vor dem Grand Master schützen“**: Der Grand Master senkt keinen seiner Kanäle ab, ob er nur auf die Intensität oder auf alle wirkt: das Saallicht, ein Medienserver, ein Hazer. Die Gruppen-Master, die Szenen-Dimmer, Blackout und das [Ausblenden auf Schwarz](directo.md#ausblenden-auf-schwarz) senken es weiterhin ab. Bei mehreren Fixtures, von denen nur einige geschützt sind, ist der Schalter aus und zeigt „(nur einige)“; Einschalten schützt alle. Der Eintrag steht auch im [Fixture-Menü](patch.md#auswählen), abgehakt, wenn alle ausgewählten geschützt sind. In der Liste ein **Anker** nach dem Namen („Vor dem Grand Master geschützt: geht nicht mit ihm herunter“); im 2D-Plan, im Patch und unter Programmieren, ein Anker unten links (bei einer Leiste rechts daneben). „Zurücksetzen“ entfernt den Schutz nicht. Er wird mit der Show gespeichert, in jedem Fixture, und [den Patch einer anderen Show importieren](patch.md#aus-einer-anderen-show-importieren) übernimmt ihn. QLC+ liest ihn nicht: Dort senkt der Grand Master das Fixture ab.
 
 Bei einem einzelnen Fixture legen Sie in der Liste **Kanäle** für jeden Kanal fest:
 
 - **Überblendungen**: ob er den Überblendzeiten folgt. Aus: Er springt direkt auf seinen Wert (nützlich bei Farb- und Goborädern).
-- **Dimmer**: ob ihn der Grand Master, die Gruppen-Master und die Szenen-Dimmer skalieren. Der Grand Master skaliert außerdem nur das Licht (siehe [Master](directo.md#master)).
+- **Dimmer**: ob ihn der Grand Master, die Gruppen-Master und die Szenen-Dimmer skalieren. Der Grand Master skaliert außerdem nur das Licht (siehe [Master](directo.md#master)). Ist das Fixture vor dem Grand Master geschützt, skalieren ihn nur die Gruppen-Master und die Szenen-Dimmer.
 
 Die Grenzen wirken auf die Ausgabe: Szenen, Effekte und Live-Änderungen behalten ihre Werte, aber die Ausgabe hält sich an die Grenzen. Bei mehreren Fixtures sehen Sie die Werte des ersten Fixtures, das den jeweiligen Regler hat, und was Sie ändern, gilt für alle, die ihn haben.
 

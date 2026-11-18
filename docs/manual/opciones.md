@@ -83,7 +83,7 @@ El autoguardado no toca el archivo del show: cada pocos minutos, si hay cambios 
   - **«Le devuelven sus canales a la escena»**: los canales que toca la escena dejan de estar en el programador.
   - **«Se mantienen siempre»**.
   - **«Se restablecen todas»**: el programador se vacía.
-- **El grand master actúa sobre**: **«Canales de intensidad»** (la luz: los dimmers y los colores de los fixtures sin dimmer) o **«Todos los canales»**.
+- **El grand master actúa sobre**: **«Canales de intensidad»** (la luz: los dimmers y los colores de los fixtures sin dimmer) o **«Todos los canales»**. Nunca baja los fixtures [protegidos del gran master](patch.md#límites).
 
 ## Audio
 

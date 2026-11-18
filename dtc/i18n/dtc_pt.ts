@@ -3265,6 +3265,18 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Trocar pan e tilt</translation>
     </message>
     <message>
+        <source>The grand master doesn&apos;t lower it. The group masters, the scene dimmers, Blackout and the fade to black still do</source>
+        <translation>O grand master não o baixa. Os masters de grupo, os dimmers de cena, o Blackout e o fade para preto, sim</translation>
+    </message>
+    <message>
+        <source>Protect from the grand master</source>
+        <translation>Proteger do grand master</translation>
+    </message>
+    <message>
+        <source>(only some)</source>
+        <translation>(só alguns)</translation>
+    </message>
+    <message>
         <source>This fixture has no dimmer, pan or tilt to limit.</source>
         <translation>Este fixture não tem dimmer, pan nem tilt para limitar.</translation>
     </message>
@@ -3287,6 +3299,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
     <message>
         <source>Follows the fade times. Off: jumps straight to its value (colour and gobo wheels)</source>
         <translation>Segue os tempos de fade. Desligado: salta direto para o valor (rodas de cor e de gobos)</translation>
+    </message>
+    <message>
+        <source>Scaled by the group masters and the scene dimmers (protected from the grand master)</source>
+        <translation>Escalado pelos masters de grupo e pelos dimmers de cena (protegido do grand master)</translation>
     </message>
     <message>
         <source>Scaled by the grand master, the group masters and the scene dimmers</source>
@@ -4504,6 +4520,13 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
 </context>
 <context>
     <name>Main</name>
+    <message numerus="yes">
+        <source>The grand master doesn&apos;t lower %n fixture(s) protected from it</source>
+        <translation>
+            <numerusform>O grand master não baixa %n fixture protegido dele</numerusform>
+            <numerusform>O grand master não baixa %n fixtures protegidos dele</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Show saved</source>
         <translation>Show salvo</translation>
@@ -7819,6 +7842,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
         <translation>Limites…</translation>
     </message>
     <message>
+        <source>Protect from the grand master</source>
+        <translation>Proteger do grand master</translation>
+    </message>
+    <message>
         <source>Edit…</source>
         <translation>Editar…</translation>
     </message>
@@ -7850,6 +7877,10 @@ Cuelists: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE
             <numerusform>Estacionado: %n canal com um valor fixo na saída</numerusform>
             <numerusform>Estacionado: %n canais com um valor fixo na saída</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Protected from the grand master: it doesn&apos;t go down with it</source>
+        <translation>Protegido do grand master: não desce com ele</translation>
     </message>
     <message>
         <source>Park as it is now</source>
@@ -11101,6 +11132,10 @@ Adicione alguns na página Patch.</translation>
 </context>
 <context>
     <name>StagePlan</name>
+    <message>
+        <source>Protected from the grand master: it doesn&apos;t go down with it</source>
+        <translation>Protegido do grand master: não desce com ele</translation>
+    </message>
     <message>
         <source>AUDIENCE</source>
         <translation>PÚBLICO</translation>

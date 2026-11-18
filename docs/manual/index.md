@@ -61,7 +61,7 @@ De izquierda a derecha:
 - **El escudo**: el [Modo show](directo.md#modo-show). Encendido (naranja), cerrar el programa o abrir otro show pide mantener pulsado un botón.
 - **La diana**: el modo Mapear, para asignar controles MIDI, OSC o teclas (consulta [Mapeos](mapeos.md#modo-mapear)). Su piloto verde parpadea con cada mensaje que llega.
 - **«N en marcha»**: cuántas escenas y efectos están sonando.
-- **GM**: el gran master. Por debajo del 100 % se pone naranja.
+- **GM**: el gran master. Por debajo del 100 % se pone naranja. Con fixtures protegidos de él, un **ancla** al lado (consulta [Masters](directo.md#masters)).
 - **«Armar efectos»**: solo si el show tiene efectos especiales protegidos (CO2, llamas, chispas, confeti). Los arma o los desarma; su flecha **▾** muestra los últimos disparos (consulta [Directo](directo.md#efectos-especiales-protegidos)).
 - **«Blackout»** (Ctrl+B): saca todo a negro mientras está encendido. También desarma los efectos especiales.
 - **«Parar todo»** (Esc): para todo lo que suena. El programador no se limpia. Las escenas que sujeta un fader del SHOW subido siguen: solo las para bajar ese fader. También desarma los efectos especiales, y durante 10 s se puede [recuperar lo que sonaba](directo.md#recuperar-lo-que-sonaba).

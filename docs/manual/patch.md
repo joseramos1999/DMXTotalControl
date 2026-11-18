@@ -50,7 +50,7 @@ Las herramientas de la barra trabajan sobre la selección:
 - **Invertir pan** e **invertir tilt** (los iconos de flechas): para los fixtures que lo tienen.
 - **«Límites»**, el botón de la **llama** (**«Efecto especial»**), **«Editar»**, **«Redireccionar»**, **«Numerar»**, **«Crear grupo»** y **«Eliminar»**: se explican a continuación.
 
-**Clic derecho** en una fila de la lista, o en un fixture del plano 2D sin mover el ratón, abre el menú del fixture: **«Efecto especial…»**, **«Identificar»**, **«Límites…»**, **«Editar…»**, **«Aparcar como está ahora»**, **«Aparcar apagado»**, **«También en blackout»**, **«Desaparcar»** y **«Desaparcar todo»**. Si el fixture no estaba seleccionado, primero lo selecciona.
+**Clic derecho** en una fila de la lista, o en un fixture del plano 2D sin mover el ratón, abre el menú del fixture: **«Efecto especial…»**, **«Identificar»**, **«Límites…»**, **«Proteger del gran master»**, **«Editar…»**, **«Aparcar como está ahora»**, **«Aparcar apagado»**, **«También en blackout»**, **«Desaparcar»** y **«Desaparcar todo»**. Si el fixture no estaba seleccionado, primero lo selecciona.
 
 ## Direcciones y universos
 
@@ -167,11 +167,12 @@ Selecciona fixtures y pulsa **«Límites»**:
 - **Dimmer**, **Pan** y **Tilt**: el rango permitido, de 0 a 100 %. Por ejemplo, un dimmer que no pase del 80 % o un tilt que no apunte al público.
 - **«Invertir pan»**, **«Invertir tilt»** e **«Intercambiar pan y tilt»** (para cabezas colgadas al revés o giradas).
 - **«Restablecer»**: sin límites ni ejes invertidos o intercambiados.
+- **«Proteger del gran master»**: el gran master no baja ninguno de sus canales, actúe solo sobre la intensidad o sobre todos: la luz de sala, un servidor de medios, un hazer. Los masters de grupo, los dimmers de escena, el Blackout y el [fundido a negro](directo.md#fundido-a-negro) sí lo bajan. Con varios fixtures de los que solo algunos están protegidos, sale apagado con «(solo algunos)», y al activarlo se protegen todos. También está en el [menú del fixture](patch.md#seleccionar), marcado cuando todos los seleccionados lo están. En la lista, un **ancla** tras el nombre («Protegido del gran master: no baja con él»); en el plano 2D, del Patch y de Programar, un ancla abajo a la izquierda (en una barra, a su derecha). «Restablecer» no quita la protección. Se guarda con el show, en cada fixture, e [importar el patch de otro show](patch.md#importar-de-otro-show) la trae. QLC+ no la lee: allí el gran master baja el fixture.
 
 Con un solo fixture, la lista **Canales** permite decidir para cada canal:
 
 - **Fundidos**: si sigue los tiempos de fundido. Apagado, salta directamente a su valor (útil en ruedas de color y gobos).
-- **Dimmer**: si lo escalan el gran master, los masters de grupo y los dimmers de escena. El gran master, además, solo escala la luz (consulta [Masters](directo.md#masters)).
+- **Dimmer**: si lo escalan el gran master, los masters de grupo y los dimmers de escena. El gran master, además, solo escala la luz (consulta [Masters](directo.md#masters)). Si el fixture está protegido del gran master, solo lo escalan los masters de grupo y los dimmers de escena.
 
 Los límites actúan en la salida: escenas, efectos y edición en vivo conservan sus valores, pero lo que sale los respeta. Con varios fixtures se ven los valores del primero que tiene cada control, y lo que cambies se aplica a todos los que lo tienen.
 

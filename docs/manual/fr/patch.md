@@ -50,7 +50,7 @@ Les outils de la barre agissent sur la sélection :
 - **Inverser le pan** et **inverser le tilt** (les icônes de flèches) : pour les fixtures qui en ont.
 - **« Limites »**, le bouton de la **flamme** (**« Effet spécial »**), **« Modifier »**, **« Réadresser »**, **« Renuméroter »**, **« Créer un groupe »** et **« Supprimer »** : expliqués ci-dessous.
 
-Un **clic droit** sur une ligne de la liste, ou sur un fixture du plan 2D sans bouger la souris, ouvre le menu du fixture : **« Effet spécial… »**, **« Identifier »**, **« Limites… »**, **« Modifier… »**, **« Parquer tel quel »**, **« Parquer éteint »**, **« Aussi en blackout »**, **« Déparquer »** et **« Tout déparquer »**. Si le fixture n’était pas sélectionné, il le sélectionne d’abord.
+Un **clic droit** sur une ligne de la liste, ou sur un fixture du plan 2D sans bouger la souris, ouvre le menu du fixture : **« Effet spécial… »**, **« Identifier »**, **« Limites… »**, **« Protéger du grand master »**, **« Modifier… »**, **« Parquer tel quel »**, **« Parquer éteint »**, **« Aussi en blackout »**, **« Déparquer »** et **« Tout déparquer »**. Si le fixture n’était pas sélectionné, il le sélectionne d’abord.
 
 ## Adresses et univers
 
@@ -167,11 +167,12 @@ Sélectionnez des fixtures et appuyez sur **« Limites »** :
 - **Dimmer**, **Pan** et **Tilt** : la plage autorisée, de 0 à 100 %. Par exemple, un dimmer qui ne dépasse pas 80 % ou un tilt qui ne vise pas le public.
 - **« Inverser le pan »**, **« Inverser le tilt »** et **« Permuter pan et tilt »** (pour des lyres suspendues à l’envers ou tournées).
 - **« Réinitialiser »** : aucune limite, aucun axe inversé ou permuté.
+- **« Protéger du grand master »** : le grand master ne baisse aucun de ses canaux, qu’il agisse seulement sur l’intensité ou sur tous : la lumière de salle, un serveur média, un hazer. Les masters de groupe, les dimmers de scène, le Blackout et le [fondu au noir](directo.md#fondu-au-noir) le baissent toujours. Avec plusieurs fixtures dont seuls certains sont protégés, il apparaît désactivé avec « (seulement certains) », et l’activer les protège tous. Il est aussi dans le [menu du fixture](patch.md#sélectionner), coché quand tous les fixtures sélectionnés sont protégés. Dans la liste, une **ancre** après le nom (« Protégé du grand master : il ne baisse pas avec lui ») ; sur le plan 2D, du Patch et de Programmer, une ancre en bas à gauche (sur une barre, à sa droite). « Réinitialiser » n’enlève pas la protection. Elle est enregistrée avec le show, dans chaque fixture, et [importer le patch d’un autre show](patch.md#importer-dun-autre-show) la reprend. QLC+ ne la lit pas : là-bas, le grand master baisse le fixture.
 
 Avec un seul fixture, la liste **Canaux** permet de décider pour chaque canal :
 
 - **Fondus** : s’il suit les temps de fondu. Désactivé, il saute directement à sa valeur (utile pour les roues de couleur et de gobos).
-- **Dimmer** : s’il est proportionnel au grand master, aux masters de groupe et aux dimmers de scène. Le grand master, en outre, ne règle que la lumière (voir [Masters](directo.md#masters)).
+- **Dimmer** : s’il est proportionnel au grand master, aux masters de groupe et aux dimmers de scène. Le grand master, en outre, ne règle que la lumière (voir [Masters](directo.md#masters)). Si le fixture est protégé du grand master, seuls les masters de groupe et les dimmers de scène le règlent.
 
 Les limites agissent sur la sortie : les scènes, les effets et les modifications en direct gardent leurs valeurs, mais ce qui sort les respecte. Avec plusieurs fixtures, les valeurs affichées sont celles du premier qui a chaque contrôle, et ce que vous changez s’applique à tous ceux qui l’ont.
 

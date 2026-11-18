@@ -83,7 +83,7 @@ Il salvataggio automatico non tocca il file dello show: ogni pochi minuti, se ci
   - **«Restituiscono alla scena i suoi canali»**: i canali che la scena tocca escono dal programmatore.
   - **«Restano sempre»**.
   - **«Vengono tutte azzerate»**: il programmatore si svuota.
-- **Il grand master agisce su**: **«Canali di intensità»** (la luce: i dimmer e i colori delle fixture senza dimmer) o **«Tutti i canali»**.
+- **Il grand master agisce su**: **«Canali di intensità»** (la luce: i dimmer e i colori delle fixture senza dimmer) o **«Tutti i canali»**. Non abbassa mai le fixture [protette dal grand master](patch.md#limiti).
 
 ## Audio
 

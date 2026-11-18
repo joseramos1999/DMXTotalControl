@@ -83,7 +83,7 @@ O salvamento automático não mexe no arquivo do show: a cada poucos minutos, se
   - **“Devolvem os canais à cena”**: os canais que a cena toca deixam de estar no programador.
   - **“Ficam sempre”**.
   - **“São todas redefinidas”**: o programador é esvaziado.
-- **O grand master atua sobre**: **“Canais de intensidade”** (a luz: os dimmers e as cores dos fixtures sem dimmer) ou **“Todos os canais”**.
+- **O grand master atua sobre**: **“Canais de intensidade”** (a luz: os dimmers e as cores dos fixtures sem dimmer) ou **“Todos os canais”**. Nunca baixa os fixtures [protegidos do grand master](patch.md#limites).
 
 ## Áudio
 

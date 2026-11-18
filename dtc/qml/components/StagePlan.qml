@@ -854,6 +854,35 @@ Rectangle {
                     color: fxItem.typeColor
                 }
             }
+            // protected from the grand master: an anchor hanging out of its
+            // bottom left (a bar: at its right end, its glyph is on the left).
+            // Smaller with the plan, and under the marks that matter more on
+            // a small body: the selection index, the shield, the lock
+            Rectangle {
+                visible: !!fxItem.modelData.gmProtected
+                anchors.right: fxItem.bar ? undefined : parent.left
+                anchors.rightMargin: -Math.round(width / 3)
+                anchors.bottom: fxItem.bar ? undefined : parent.bottom
+                anchors.left: fxItem.bar ? parent.right : undefined
+                anchors.leftMargin: 2
+                anchors.verticalCenter: fxItem.bar ? parent.verticalCenter : undefined
+                width: Math.max(13, Math.round(18 * plan.bodyScale))
+                height: width
+                radius: width / 2
+                color: Theme.plan
+                border.color: Theme.readable(Theme.accent, Theme.plan)
+                border.width: 1
+                IconLabel {
+                    anchors.centerIn: parent
+                    icon: Theme.iconAnchor
+                    size: Math.round(parent.width / 2)
+                    color: Theme.readable(Theme.accent, Theme.plan)
+                }
+                HoverHandler { id: anchorHover }
+                ToolTip.text: qsTr("Protected from the grand master: it doesn't go down with it")
+                ToolTip.visible: anchorHover.hovered
+                ToolTip.delay: 500
+            }
             // selection index: effects and fans follow this order
             Rectangle {
                 anchors.centerIn: parent

@@ -60,6 +60,7 @@ class Doc;
 // DMX Total Control
 #define KXMLFixtureDimmerExceptions QStringLiteral("DimmerExceptions")
 #define KXMLFixtureSwapPanTilt      QStringLiteral("SwapPanTilt")
+#define KXMLFixtureNoGrandMaster    QStringLiteral("ProtectedFromGrandMaster")
 
 #define KXMLFixtureChannelModifier  QStringLiteral("Modifier")
 #define KXMLFixtureChannelIndex     QStringLiteral("Channel")
@@ -342,8 +343,20 @@ public:
      *  dimmer, nor a colour mixing one (cyan, magenta, yellow, hue,
      *  saturation), nor the colours of a head (or fixture) with a dimmer of
      *  its own that follows the masters: its dimmer does it (the light
-     *  would go down twice) */
+     *  would go down twice), nor any channel of a fixture protected from it
+     *  (see setProtectedFromGrandMaster) */
     bool channelFollowsGrandMaster(int idx) const;
+
+    /** DMX Total Control: whether the channel $idx is the amount of light
+     *  of the fixture by the rules above, protected from the grand master
+     *  or not (the dimmer FX of a fixture without a dimmer moves these) */
+    bool channelCarriesLight(int idx) const;
+
+    /** DMX Total Control: the grand master never lowers the fixture (house
+     *  lights, a media server, a hazer). The masters of the groups, the
+     *  scene dimmers, Blackout and the fade to black still do */
+    void setProtectedFromGrandMaster(bool protect);
+    bool protectedFromGrandMaster() const;
 
     /** DMX Total Control: swap pan and tilt at the output (a fixture hung
      *  turned by 90 degrees) */
@@ -383,9 +396,11 @@ protected:
     QMap<quint32, ChannelModifier*> m_channelModifiers;
 
     /** DMX Total Control: the channels whose dimmer behaviour isn't the
-     *  default one, and the pan/tilt swap */
+     *  default one, the pan/tilt swap and the protection from the grand
+     *  master */
     QList<int> m_dimmerSwappedIndices;
     bool m_swapPanTilt;
+    bool m_noGrandMaster;
 
     /*********************************************************************
      * Channel info

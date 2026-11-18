@@ -83,7 +83,7 @@ La sauvegarde automatique ne touche pas au fichier du show : toutes les quelque
   - **« Rendent ses canaux à la scène »** : les canaux que touche la scène ne sont plus dans le programmeur.
   - **« Restent toujours »**.
   - **« Sont toutes réinitialisées »** : le programmeur est vidé.
-- **Le grand master agit sur** : **« Canaux d’intensité »** (la lumière : les dimmers et les couleurs des fixtures sans dimmer) ou **« Tous les canaux »**.
+- **Le grand master agit sur** : **« Canaux d’intensité »** (la lumière : les dimmers et les couleurs des fixtures sans dimmer) ou **« Tous les canaux »**. Il ne baisse jamais les fixtures [protégés du grand master](patch.md#limites).
 
 ## Audio
 

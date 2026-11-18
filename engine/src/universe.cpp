@@ -725,6 +725,10 @@ uchar Universe::valueBelow(int address) const
 
 uchar Universe::applyGM(int channel, uchar value)
 {
+    // DMX Total Control: a fixture protected from the grand master
+    if (m_channelsMask->at(channel) & NoGrandMaster)
+        return value;
+
     if ((m_grandMaster->channelMode() == GrandMaster::Intensity && m_channelsMask->at(channel) & Intensity) ||
         (m_grandMaster->channelMode() == GrandMaster::AllChannels))
     {
@@ -1143,6 +1147,16 @@ void Universe::setChannelFollowsDimmer(ushort channel, bool follows)
 
     char mask = m_channelsMask->at(channel);
     (*m_channelsMask)[channel] = follows ? char(mask | Intensity) : char(mask & ~Intensity);
+    updatePostGMValue(channel);
+}
+
+void Universe::setChannelProtectedFromGrandMaster(ushort channel, bool protect)
+{
+    if (channel >= (ushort)m_channelsMask->length())
+        return;
+
+    char mask = m_channelsMask->at(channel);
+    (*m_channelsMask)[channel] = protect ? char(mask | NoGrandMaster) : char(mask & ~NoGrandMaster);
     updatePostGMValue(channel);
 }
 

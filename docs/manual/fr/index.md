@@ -61,7 +61,7 @@ De gauche à droite :
 - **Le bouclier** : le [Mode show](directo.md#mode-show). Activé (orange), fermer le programme ou ouvrir un autre show demande de maintenir un bouton enfoncé.
 - **La cible** : le mode Mapper, pour assigner des contrôles MIDI, OSC ou des touches (voir [Mappages](mapeos.md#mode-mapper)). Son voyant vert clignote à chaque message reçu.
 - **« N en cours »** : le nombre de scènes et d’effets en cours.
-- **GM** : le grand master. En dessous de 100 %, il devient orange.
+- **GM** : le grand master. En dessous de 100 %, il devient orange. Avec des fixtures qui en sont protégés, une **ancre** à côté (voir [Masters](directo.md#masters)).
 - **« Armer les effets »** : seulement si le show a des effets spéciaux protégés (CO2, flammes, étincelles, confettis). Il les arme ou les désarme ; sa flèche **▾** montre les derniers déclenchements (voir [Direct](directo.md#effets-spéciaux-protégés)).
 - **« Blackout »** (Ctrl+B) : met toute la sortie au noir tant qu’il est allumé. Il désarme aussi les effets spéciaux.
 - **« Tout arrêter »** (Échap) : arrête tout ce qui joue. Le programmeur n’est pas vidé. Les scènes qu’un fader du SHOW monté retient continuent : seul le fait de descendre ce fader les arrête. Il désarme aussi les effets spéciaux, et pendant 10 s vous pouvez [ramener ce qui jouait](directo.md#ramener-ce-qui-jouait).

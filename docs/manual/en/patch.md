@@ -50,7 +50,7 @@ The tools of the bar work on the selection:
 - **Invert pan** and **invert tilt** (the arrow icons): for the fixtures that have them.
 - **“Limits”**, the **flame** button (**“Special effect”**), **“Edit”**, **“Re-address”**, **“Renumber”**, **“Create group”** and **“Delete”**: explained below.
 
-A **right click** on a row of the list, or on a fixture of the 2D plan without moving the mouse, opens the fixture menu: **“Special effect…”**, **“Identify”**, **“Limits…”**, **“Edit…”**, **“Park as it is now”**, **“Park off”**, **“Also in blackout”**, **“Unpark”** and **“Unpark all”**. If the fixture wasn't selected, it selects it first.
+A **right click** on a row of the list, or on a fixture of the 2D plan without moving the mouse, opens the fixture menu: **“Special effect…”**, **“Identify”**, **“Limits…”**, **“Protect from the grand master”**, **“Edit…”**, **“Park as it is now”**, **“Park off”**, **“Also in blackout”**, **“Unpark”** and **“Unpark all”**. If the fixture wasn't selected, it selects it first.
 
 ## Addresses and universes
 
@@ -167,11 +167,12 @@ Select fixtures and press **“Limits”**:
 - **Dimmer**, **Pan** and **Tilt**: the allowed range, from 0 to 100 %. For example, a dimmer that never goes above 80 % or a tilt that never points at the audience.
 - **“Invert pan”**, **“Invert tilt”** and **“Swap pan and tilt”** (for heads hung upside down or rotated).
 - **“Reset”**: no limits and no inverted or swapped axes.
+- **“Protect from the grand master”**: the grand master lowers none of its channels, whether it acts only on the intensity or on all of them: the house lights, a media server, a hazer. The group masters, the scene dimmers, Blackout and the [fade to black](directo.md#fade-to-black) still lower it. With several fixtures of which only some are protected, it shows off with “(only some)”, and turning it on protects them all. It is also in the [fixture menu](patch.md#selecting), ticked when all the selected ones are protected. In the list, an **anchor** after the name (“Protected from the grand master: it doesn't go down with it”); on the 2D plan, of the Patch and of Program, an anchor at the bottom left (on a bar, at its right end). “Reset” doesn't remove the protection. It is saved with the show, in each fixture, and [importing the patch of another show](patch.md#importing-from-another-show) brings it. QLC+ doesn't read it: there the grand master lowers the fixture.
 
 With a single fixture, the **Channels** list lets you decide for each channel:
 
 - **Fades**: whether it follows the fade times. Off, it jumps straight to its value (useful for colour wheels and gobos).
-- **Dimmer**: whether it is scaled by the grand master, the group masters and the scene dimmers. The grand master, besides, only scales the light (see [Masters](directo.md#masters)).
+- **Dimmer**: whether it is scaled by the grand master, the group masters and the scene dimmers. The grand master, besides, only scales the light (see [Masters](directo.md#masters)). If the fixture is protected from the grand master, only the group masters and the scene dimmers scale it.
 
 Limits act on the output: scenes, effects and live edits keep their values, but the output respects the limits. With several fixtures you see the values of the first one that has each control, and what you change is applied to all the ones that have it.
 

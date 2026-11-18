@@ -61,7 +61,7 @@ From left to right:
 - **The shield**: [Show mode](directo.md#show-mode). When it is on (orange), closing the program or opening another show asks you to hold a button.
 - **The target**: Learn mode, to assign MIDI or OSC controls or keys (see [Mappings](mapeos.md#learn-mode)). Its green light blinks with each message that comes in.
 - **“N running”**: how many scenes and effects are playing.
-- **GM**: the grand master. Below 100 % it turns orange.
+- **GM**: the grand master. Below 100 % it turns orange. With fixtures protected from it, an **anchor** next to it (see [Masters](directo.md#masters)).
 - **“Arm effects”**: only when the show has protected special effects (CO2, flames, sparks, confetti). It arms or disarms them; its **▾** arrow shows the last fires (see [Live](directo.md#protected-special-effects)).
 - **“Blackout”** (Ctrl+B): sends everything to black while it is on. It also disarms the special effects.
 - **“Stop all”** (Esc): stops everything that is playing. The programmer is not cleared. The scenes a raised SHOW fader holds go on: only lowering that fader stops them. It also disarms the special effects, and for 10 s you can [bring back what was playing](directo.md#bring-back-what-was-playing).

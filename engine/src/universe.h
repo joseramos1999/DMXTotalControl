@@ -134,7 +134,9 @@ public:
         Undefined  = 0,
         LTP        = 1 << 0,
         HTP        = 1 << 1,
-        Intensity  = 1 << 2
+        Intensity  = 1 << 2,
+        // DMX Total Control: the grand master never scales it, in any mode
+        NoGrandMaster = 1 << 3
     };
 
     static quint32 invalid() { return UINT_MAX; }
@@ -371,6 +373,11 @@ public:
     /** DMX Total Control: whether the grand master scales the channel
      *  (call it after setChannelCapability) */
     void setChannelFollowsDimmer(ushort channel, bool follows);
+
+    /** DMX Total Control: the grand master never scales the channel, not
+     *  even when it acts on all the channels (a fixture protected from it;
+     *  call it after setChannelCapability) */
+    void setChannelProtectedFromGrandMaster(ushort channel, bool protect);
 
     /** DMX Total Control: the output $channel sends the value of $source
      *  instead of its own (pan/tilt swap). -1: its own value */

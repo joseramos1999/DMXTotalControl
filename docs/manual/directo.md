@@ -101,7 +101,7 @@ Mientras suena, cada ficha de una escena con pasos, de una cuelist o de una esce
 ## Masters
 
 - **Master del grupo**: el deslizador «Master» al pie de cada columna escala la intensidad de todas sus escenas.
-- **Gran master**: el «GM» de la barra superior escala la luz de toda la salida: los dimmers y, en los fixtures sin dimmer, sus colores. No toca la mezcla de color (cian, magenta, amarillo, tono y saturación) ni los colores de un fixture o una cabeza con dimmer propio, que bajan con su dimmer. En Opciones decides si actúa solo sobre la intensidad o sobre todos los canales.
+- **Gran master**: el «GM» de la barra superior escala la luz de toda la salida: los dimmers y, en los fixtures sin dimmer, sus colores. No toca la mezcla de color (cian, magenta, amarillo, tono y saturación) ni los colores de un fixture o una cabeza con dimmer propio, que bajan con su dimmer. En Opciones decides si actúa solo sobre la intensidad o sobre todos los canales. No baja los fixtures **protegidos del gran master** (en los [límites del fixture](patch.md#límites) o en su menú): la luz de sala, un servidor de medios, un hazer. Si hay alguno, un **ancla** junto a «GM» lo recuerda (si la barra tiene sitio) y, al pasar el ratón, dice cuántos («El gran master no baja 3 fixtures protegidos de él»).
 - **Dimmer en vivo**: cada escena tiene además su propio dimmer, en sus propiedades, por encima del master del grupo.
 
 Los masters y el gran master no afectan a los canales que tienen desactivada la opción «Dimmer» en los [límites del fixture](patch.md#límites). Si es el dimmer de un fixture, ya no cuenta como su dimmer propio: el gran master baja entonces sus colores.
@@ -286,7 +286,7 @@ Con **«Parar todo con fundido»** en [Opciones](opciones.md#seguridad-en-el-dir
 
 Un **«Fundido a negro»** (un [botón del SHOW](show.md#acciones-de-un-botón) o un [mapeo](mapeos.md#controla), con su tiempo: 3 s por defecto) baja las intensidades en la salida en ese tiempo y luego pone el Blackout, por ejemplo al final de un set. Por debajo, la luz vuelve a estar a tope: al quitar el Blackout, vuelve.
 
-- Actúa por encima del gran master y en los canales aparcados sin «También en blackout».
+- Actúa por encima del gran master (también en los fixtures protegidos de él) y en los canales aparcados sin «También en blackout».
 - No toca los aparcados con «También en blackout», el pan, el tilt ni otros canales que no son luz, ni los efectos protegidos.
 - Al empezar, desarma los efectos especiales.
 - Otra pulsación, o el Blackout, lo terminan al momento. Con el Blackout ya puesto, no hace nada.

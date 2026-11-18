@@ -101,7 +101,7 @@ While it plays, each tile of a scene with steps, of a cuelist or of an FX scene 
 ## Masters
 
 - **Group master**: the “Master” slider at the foot of each column scales the intensity of all its scenes.
-- **Grand master**: the “GM” in the top bar scales the light of the whole output: the dimmers and, on fixtures without a dimmer, their colours. It leaves the colour mixing alone (cyan, magenta, yellow, hue and saturation), and the colours of a fixture or head with a dimmer of its own, which go down with that dimmer. In Options you decide whether it acts only on the intensity or on all channels.
+- **Grand master**: the “GM” in the top bar scales the light of the whole output: the dimmers and, on fixtures without a dimmer, their colours. It leaves the colour mixing alone (cyan, magenta, yellow, hue and saturation), and the colours of a fixture or head with a dimmer of its own, which go down with that dimmer. In Options you decide whether it acts only on the intensity or on all channels. It doesn't lower the fixtures **protected from the grand master** (in the [fixture limits](patch.md#limits) or its menu): the house lights, a media server, a hazer. If there are any, an **anchor** next to “GM” says so (when the bar has room for it) and, on hover, how many (“The grand master doesn't lower 3 fixtures protected from it”).
 - **Live dimmer**: each scene also has its own dimmer, in its properties, on top of the group master.
 
 The masters and the grand master do not affect the channels that have the “Dimmer” option turned off in the [fixture limits](patch.md#limits). If it is the dimmer of a fixture, it no longer counts as a dimmer of its own: the grand master then lowers its colours.
@@ -286,7 +286,7 @@ With **“Stop all with a fade”** in [Options](opciones.md#safety-during-the-s
 
 A **“Fade to black”** (a [SHOW button](show.md#button-actions) or a [mapping](mapeos.md#drives), with its time: 3 s by default) takes the intensities down at the output over that time and then puts Blackout on, for example at the end of a set. Underneath, the light is at full again: when you turn Blackout off, it comes back.
 
-- It acts above the grand master and on parked channels without “Also in blackout”.
+- It acts above the grand master (also on the fixtures protected from it) and on parked channels without “Also in blackout”.
 - It doesn't touch parked channels with “Also in blackout”, pan, tilt or other channels that aren't light, nor protected effects.
 - When it starts, it disarms the special effects.
 - Another press, or Blackout, end it at once. With Blackout already on, it does nothing.

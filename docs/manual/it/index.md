@@ -61,7 +61,7 @@ Da sinistra a destra:
 - **Lo scudo**: la [Modalità show](directo.md#modalità-show). Attiva (arancione), chiudere il programma o aprire un altro show chiede di tenere premuto un tasto.
 - **Il bersaglio**: la modalità Apprendi, per assegnare controlli MIDI, OSC o tasti (vedi [Mappature](mapeos.md#modalità-apprendi)). La sua spia verde lampeggia a ogni messaggio in arrivo.
 - **«N in esecuzione»**: quante scene ed effetti sono in riproduzione.
-- **GM**: il grand master. Sotto il 100 % diventa arancione.
+- **GM**: il grand master. Sotto il 100 % diventa arancione. Con fixture che ne sono protette, un'**ancora** accanto (vedi [Master](directo.md#master)).
 - **«Arma effetti»**: solo se lo show ha effetti speciali protetti (CO2, fiamme, scintille, coriandoli). Li arma o li disarma; la sua freccia **▾** mostra le ultime attivazioni (vedi [Live](directo.md#effetti-speciali-protetti)).
 - **«Blackout»** (Ctrl+B): manda tutto al buio finché è acceso. Disarma anche gli effetti speciali.
 - **«Ferma tutto»** (Esc): ferma tutto ciò che è in riproduzione. Il programmatore non viene svuotato. Le scene che un fader dello SHOW alzato trattiene continuano: solo abbassare quel fader le ferma. Disarma anche gli effetti speciali, e per 10 s si può [recuperare ciò che suonava](directo.md#recupera-ciò-che-suonava).

@@ -101,7 +101,7 @@ Während sie läuft, trägt jede Kachel einer Szene mit Schritten, einer Cuelist
 ## Master
 
 - **Gruppen-Master**: Der Schieberegler „Master“ unten in jeder Spalte skaliert die Intensität aller ihrer Szenen.
-- **Grand Master**: Der „GM“ in der oberen Leiste skaliert das Licht der ganzen Ausgabe: die Dimmer und, bei Fixtures ohne Dimmer, deren Farben. Die Farbmischung (Cyan, Magenta, Gelb, Farbton und Sättigung) lässt er unberührt, ebenso die Farben eines Fixtures oder Kopfes mit eigenem Dimmer, die mit diesem Dimmer abnehmen. Unter Optionen legen Sie fest, ob er nur auf die Intensität wirkt oder auf alle Kanäle.
+- **Grand Master**: Der „GM“ in der oberen Leiste skaliert das Licht der ganzen Ausgabe: die Dimmer und, bei Fixtures ohne Dimmer, deren Farben. Die Farbmischung (Cyan, Magenta, Gelb, Farbton und Sättigung) lässt er unberührt, ebenso die Farben eines Fixtures oder Kopfes mit eigenem Dimmer, die mit diesem Dimmer abnehmen. Unter Optionen legen Sie fest, ob er nur auf die Intensität wirkt oder auf alle Kanäle. Fixtures, die **vor dem Grand Master geschützt** sind (in den [Grenzen des Fixtures](patch.md#grenzen) oder in seinem Menü), senkt er nicht ab: das Saallicht, einen Medienserver, einen Hazer. Gibt es welche, erinnert ein **Anker** neben „GM“ daran (wenn die Leiste Platz hat) und zeigt beim Überfahren mit der Maus, wie viele es sind („Der Grand Master senkt 3 davor geschützte Fixtures nicht ab“).
 - **Live-Dimmer**: Jede Szene hat außerdem ihren eigenen Dimmer, in ihren Eigenschaften, über dem Gruppen-Master.
 
 Die Master und der Grand Master wirken nicht auf Kanäle, bei denen die Option „Dimmer“ in den [Grenzen des Fixtures](patch.md#grenzen) ausgeschaltet ist. Ist es der Dimmer eines Fixtures, zählt er nicht mehr als dessen eigener Dimmer: Der Grand Master senkt dann seine Farben.
@@ -286,7 +286,7 @@ Mit **„Alles stoppen mit Ausblenden“** in den [Optionen](opciones.md#sicherh
 
 Ein **„Ausblenden auf Schwarz“** (eine [SHOW-Taste](show.md#aktionen-einer-taste) oder eine [Zuordnung](mapeos.md#steuert), mit ihrer Zeit: Standard 3 s) nimmt die Intensitäten am Ausgang in dieser Zeit herunter und schaltet dann den Blackout ein, zum Beispiel am Ende eines Sets. Darunter ist das Licht wieder voll: Schalten Sie den Blackout aus, kommt es zurück.
 
-- Es wirkt über dem Grand Master und auf geparkte Kanäle ohne „Auch im Blackout“.
+- Es wirkt über dem Grand Master (auch auf die davor geschützten Fixtures) und auf geparkte Kanäle ohne „Auch im Blackout“.
 - Es berührt keine geparkten Kanäle mit „Auch im Blackout“, kein Pan, kein Tilt und keine anderen Kanäle, die kein Licht sind, und keine geschützten Effekte.
 - Bei seinem Beginn entschärft es die Spezialeffekte.
 - Ein weiterer Druck oder der Blackout beenden es sofort. Bei schon eingeschaltetem Blackout tut es nichts.

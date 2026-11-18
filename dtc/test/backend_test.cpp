@@ -1218,6 +1218,17 @@ private slots:
     // their mapping targets, SHOW buttons, phone, learnt LEDs, Alt+click,
     // never from a cue; their icons in the font
     void recoverTargets();
+    // protected from the grand master: none of its channels goes down with
+    // it in any mode, the others do; the intensity of its scene, Blackout
+    // and the fade to black still lower it; changed while it plays, the next frame,
+    // with what it plays kept; one call for several, its marks, the mixed
+    // state of a selection
+    void grandMasterProtected();
+    // ... in the XML of the fixture, saved and opened with the show, kept by
+    // the patch of another show and a new export of a table; without it,
+    // unprotected; under it, the master of its group and its scene dimmer;
+    // changed while the universes run
+    void grandMasterProtectedShow();
 
 private:
     Doc *m_doc = nullptr;
@@ -60210,6 +60221,320 @@ void Backend_Test::recoverTargets()
     QVERIFY(font.isValid());
     QVERIFY(font.supportsCharacter(moon.captured(1).toUInt(nullptr, 16)));
     QVERIFY(font.supportsCharacter(undo.captured(1).toUInt(nullptr, 16)));
+}
+
+void Backend_Test::grandMasterProtected()
+{
+    // the house light, a screen without a dimmer and a spot protected from
+    // the grand master: with it at 0 or at half, on the intensity or on all
+    // the channels, reducing or limiting, they send what their scene says
+    // (the colours of the screen too, the pan of the spot too). A dimmer and
+    // a spot not protected go down as always. Offline frames
+    ScopedTestSettings scoped;
+    ScopedAppData data;
+    AppSettings settings;
+    SafetyManager safety(m_doc, m_patch, &settings);
+    const quint32 house = patchSfx(m_patch, m_doc, "HOUSE 1", 1);
+    const quint32 par = patchSfx(m_patch, m_doc, "PAR 1", 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Screen", 0, 11, 1), 1);
+    const quint32 screen = fixtureAtAddress(m_doc, 10);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 21, 2), 2);
+    const quint32 kept = fixtureAtAddress(m_doc, 20);     // pan 20, dimmer 23
+    const quint32 spot = fixtureAtAddress(m_doc, 29);     // pan 29, dimmer 32
+    for (quint32 id : { house, par, screen, kept, spot })
+        QVERIFY(m_doc->fixture(id) != nullptr);
+    Universe *universe = sfxUniverse(m_doc);
+    InputOutputMap *io = m_doc->inputOutputMap();
+
+    // one call for several (one that isn't there is left out): modified and
+    // told once; the same again changes nothing
+    QSignalSpy told(m_patch, SIGNAL(fixturesChanged()));
+    m_doc->resetModified();
+    m_patch->setProtectedFromGrandMaster({ house, screen, kept, 999 }, true);
+    QCOMPARE(told.count(), 1);
+    QVERIFY(m_doc->isModified());
+    for (quint32 id : { house, screen, kept })
+        QVERIFY(m_doc->fixture(id)->protectedFromGrandMaster());
+    QVERIFY(m_doc->fixture(par)->protectedFromGrandMaster() == false);
+    m_doc->resetModified();
+    m_patch->setProtectedFromGrandMaster({ house, screen }, true);
+    QCOMPARE(told.count(), 1);
+    QVERIFY(m_doc->isModified() == false);
+    QCOMPARE(m_patch->grandMasterProtectedCount(), 3);
+
+    // its marks (the list, the plan), the options of a selection: all of
+    // them, some (mixed), none
+    auto entry = [this](quint32 id) {
+        for (const QVariant &v : m_patch->fixtures())
+            if (v.toMap().value("id").toUInt() == id)
+                return v.toMap();
+        return QVariantMap();
+    };
+    QVERIFY(entry(house).value("gmProtected").toBool());
+    QVERIFY(entry(par).contains("gmProtected"));
+    QVERIFY(entry(par).value("gmProtected").toBool() == false);
+    QVERIFY(m_patch->fixtureOptions(house).value("gmProtected").toBool());
+    QVariantMap options = m_patch->selectionOptions({ house, screen });
+    QVERIFY(options.value("gmProtected").toBool());
+    QVERIFY(options.value("gmProtectedMixed").toBool() == false);
+    options = m_patch->selectionOptions({ house, par });
+    QVERIFY(options.value("gmProtected").toBool() == false);
+    QVERIFY(options.value("gmProtectedMixed").toBool());
+    options = m_patch->selectionOptions({ par, spot });
+    QVERIFY(options.value("gmProtected").toBool() == false);
+    QVERIFY(options.value("gmProtectedMixed").toBool() == false);
+    // every channel of the spot in the universe, its pan too; not the next one
+    QVERIFY(universe->channelCapabilities(0) & Universe::NoGrandMaster);
+    QVERIFY((universe->channelCapabilities(1) & Universe::NoGrandMaster) == 0);
+    for (int a = 20; a < 29; a++)
+        QVERIFY2(universe->channelCapabilities(ushort(a)) & Universe::NoGrandMaster, qPrintable(QString::number(a)));
+    QVERIFY((universe->channelCapabilities(29) & Universe::NoGrandMaster) == 0);
+    // the colours of the screen are still its light: a dimmer FX moves them
+    QCOMPARE(FXScene::virtualDimmerChannels(m_doc->fixture(screen)).count(), 3);
+    QVERIFY(m_doc->fixture(screen)->channelFollowsGrandMaster(0) == false);
+    QVERIFY(m_doc->fixture(screen)->channelCarriesLight(0));
+
+    Scene *scene = new Scene(m_doc);
+    for (const auto &v : QList<std::tuple<quint32, quint32, uchar>>({
+             { house, 0, 200 }, { par, 0, 200 }, { screen, 0, 255 }, { screen, 1, 128 }, { screen, 2, 40 },
+             { kept, 0, 200 }, { kept, 3, 200 }, { spot, 0, 200 }, { spot, 3, 200 } }))
+        scene->setValue(std::get<0>(v), std::get<1>(v), std::get<2>(v));
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(finalOut(m_doc, 1), 200);
+
+    const QList<QPair<int, int>> protectedOut({ { 0, 200 }, { 10, 255 }, { 11, 128 }, { 12, 40 }, { 20, 200 }, { 23, 200 } });
+    for (GrandMaster::ChannelMode channels : { GrandMaster::Intensity, GrandMaster::AllChannels })
+    {
+        for (GrandMaster::ValueMode values : { GrandMaster::Reduce, GrandMaster::Limit })
+        {
+            io->setGrandMasterChannelMode(channels);
+            io->setGrandMasterValueMode(values);
+            for (int gm : { 0, 128 })
+            {
+                io->setGrandMasterValue(uchar(gm));
+                renderFrames(m_doc);
+                const QString where = QString("%1 %2 at %3").arg(channels == GrandMaster::Intensity ? "intensity" : "all",
+                                                                 values == GrandMaster::Reduce ? "reduce" : "limit")
+                                                            .arg(gm);
+                // what the grand master makes of 200
+                const int down = values == GrandMaster::Limit ? qMin(200, gm) : (400 * gm + 255) / 510;
+                for (const QPair<int, int> &out : protectedOut)
+                {
+                    QVERIFY2(finalOut(m_doc, out.first) == out.second,
+                             qPrintable(QString("%1: %2 sends %3").arg(where).arg(out.first).arg(finalOut(m_doc, out.first))));
+                }
+                QVERIFY2(finalOut(m_doc, 1) == down, qPrintable(where));
+                QVERIFY2(finalOut(m_doc, 32) == down, qPrintable(where));
+                // a pan only on all the channels
+                QVERIFY2(finalOut(m_doc, 29) == (channels == GrandMaster::AllChannels ? down : 200), qPrintable(where));
+            }
+        }
+    }
+    io->setGrandMasterChannelMode(GrandMaster::Intensity);
+    io->setGrandMasterValueMode(GrandMaster::Reduce);
+    io->setGrandMasterValue(0);
+    renderFrames(m_doc);
+
+    // changed while it plays: the next frame, and back. What its scene wrote
+    // stays in the universe (not its default values: a frame in between
+    // would send them), and only the grand master changes on it
+    m_patch->setProtectedFromGrandMaster({ house, kept }, false);
+    QVERIFY((universe->channelCapabilities(0) & Universe::NoGrandMaster) == 0);
+    QVERIFY(universe->channelCapabilities(0) & Universe::Intensity);
+    for (int a : { 0, 20, 23 })
+        QVERIFY2(uchar(universe->preGMValues().at(a)) == 200, qPrintable(QString::number(a)));
+    QCOMPARE(uchar(universe->postGMValues()->at(0)), uchar(0));
+    QCOMPARE(uchar(universe->postGMValues()->at(20)), uchar(200));
+    QCOMPARE(uchar(universe->postGMValues()->at(23)), uchar(0));
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    QCOMPARE(finalOut(m_doc, 23), 0);
+    QCOMPARE(finalOut(m_doc, 10), 255);
+    m_patch->setProtectedFromGrandMaster({ house, kept }, true);
+    QVERIFY((universe->channelCapabilities(0) & Universe::Intensity) == 0);
+    for (int a : { 0, 20, 23 })
+    {
+        QVERIFY2(uchar(universe->preGMValues().at(a)) == 200, qPrintable(QString::number(a)));
+        QVERIFY2(uchar(universe->postGMValues()->at(a)) == 200, qPrintable(QString::number(a)));
+    }
+    renderFrames(m_doc);
+    QCOMPARE(finalOut(m_doc, 0), 200);
+    QCOMPARE(finalOut(m_doc, 23), 200);
+
+    // the intensity of its scene (what the scene dimmers and the masters of
+    // the groups move) still scales it
+    FadeChannel dimmer(m_doc, house, 0);
+    QVERIFY(dimmer.flags() & FadeChannel::Intensity);
+    scene->adjustAttribute(0.5, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 100);
+    QVERIFY2(qAbs(finalOut(m_doc, 10) - 128) <= 1, qPrintable(QString::number(finalOut(m_doc, 10))));
+    scene->adjustAttribute(1.0, Function::Intensity);
+    renderFrames(m_doc, 2);
+    QCOMPARE(finalOut(m_doc, 0), 200);
+
+    // Blackout darkens it: the house light and the colours of the screen
+    QCOMPARE(outputAt(universe, 0, true), 0);
+    QCOMPARE(outputAt(universe, 10, true), 0);
+    QCOMPARE(outputAt(universe, 23, true), 0);
+    QCOMPARE(outputAt(universe, 0), 200);
+
+    // so does the fade to black: at half half way, dark at its end, then
+    // Blackout
+    safety.fadeToBlack(1000);
+    QVERIFY(safety.fadingToBlack());
+    renderFrames(m_doc, 26);
+    QVERIFY2(qAbs(finalOut(m_doc, 0) - 100) <= 3, qPrintable(QString::number(finalOut(m_doc, 0))));
+    QVERIFY2(qAbs(finalOut(m_doc, 10) - 127) <= 3, qPrintable(QString::number(finalOut(m_doc, 10))));
+    renderFrames(m_doc, 30);
+    QCOMPARE(finalOut(m_doc, 0), 0);
+    QCOMPARE(finalOut(m_doc, 10), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(io->blackout(), 3000);
+    io->setBlackout(false);
+    renderFrames(m_doc, 1);
+    QCOMPARE(finalOut(m_doc, 0), 200);
+
+    scene->stop(FunctionParent::master());
+    io->setGrandMasterValue(255);
+
+    // its mark is in the icon font
+    const QString theme = readUtf8(QString("%1/Theme.qml").arg(DTC_QML));
+    const QRegularExpressionMatch anchor = QRegularExpression("property string iconAnchor: \"\\\\u([0-9a-f]{4})\"").match(theme);
+    QVERIFY(anchor.hasMatch());
+    QRawFont font(QString("%1/../../resources/fonts/FontAwesome7-Free-Solid-900.otf").arg(DTC_SOURCES), 16);
+    QVERIFY(font.isValid());
+    QVERIFY(font.supportsCharacter(anchor.captured(1).toUInt(nullptr, 16)));
+}
+
+void Backend_Test::grandMasterProtectedShow()
+{
+    // the protection from the grand master is in the XML of each fixture
+    // (QLC+ skips a tag it doesn't know); a show saved with it opens with it
+    // (and the universe knows it before anything plays); the patch of that
+    // show imported keeps it, and so do the fixtures a new export of a
+    // visualizer table updates. A fixture without it is not protected. The
+    // master of its group and its scene dimmer still scale it
+    ScopedTestSettings settings;
+    QTemporaryDir dir;
+    const QString path = dir.filePath("house.qxw");
+    auto xmlOf = [](Fixture *fxi) {
+        QByteArray xml;
+        QBuffer buffer(&xml);
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        fxi->saveXML(&writer);
+        buffer.close();
+        return xml;
+    };
+    auto loaded = [](const QByteArray &xml, Doc *doc) {
+        QXmlStreamReader reader(xml);
+        reader.readNextStartElement();
+        Fixture *fxi = new Fixture(doc);
+        if (fxi->loadXML(reader, doc, doc->fixtureDefCache()) == false)
+        {
+            delete fxi;
+            return std::unique_ptr<Fixture>();
+        }
+        return std::unique_ptr<Fixture>(fxi);
+    };
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(other.patch()->addFixtures("Generic", KGenericDimmerModel, "", "HOUSE", 0, 1, 1, 0, 1), 1);
+        QCOMPARE(other.patch()->addFixtures("Generic", KGenericDimmerModel, "", "PAR", 0, 2, 1, 0, 1), 1);
+        Fixture *house = other.doc()->fixture(fixtureAtAddress(other.doc(), 0));
+        Fixture *par = other.doc()->fixture(fixtureAtAddress(other.doc(), 1));
+        QVERIFY(house != nullptr && par != nullptr);
+        other.patch()->setProtectedFromGrandMaster({ house->id() }, true);
+        const QByteArray xml = xmlOf(house);
+        QVERIFY2(xml.contains("<ProtectedFromGrandMaster>True</ProtectedFromGrandMaster>"), xml.constData());
+        QVERIFY(xmlOf(par).contains("ProtectedFromGrandMaster") == false);
+        // through its XML: protected; without the tag (QLC+, earlier versions): not
+        std::unique_ptr<Fixture> copy = loaded(xml, other.doc());
+        QVERIFY(copy != nullptr);
+        QVERIFY(copy->protectedFromGrandMaster());
+        copy = loaded(xmlOf(par), other.doc());
+        QVERIFY(copy != nullptr);
+        QVERIFY(copy->protectedFromGrandMaster() == false);
+        QVERIFY(other.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QVERIFY(core.openShow(QUrl::fromLocalFile(path)));
+    Doc *doc = core.doc();
+    const quint32 house = fixtureAtAddress(doc, 0);
+    const quint32 par = fixtureAtAddress(doc, 1);
+    QVERIFY(doc->fixture(house) != nullptr && doc->fixture(par) != nullptr);
+    QVERIFY(doc->fixture(house)->protectedFromGrandMaster());
+    QVERIFY(doc->fixture(par)->protectedFromGrandMaster() == false);
+    QCOMPARE(core.patch()->grandMasterProtectedCount(), 1);
+    Universe *universe = doc->inputOutputMap()->universes().first();
+    QVERIFY(universe->channelCapabilities(0) & Universe::NoGrandMaster);
+    QVERIFY((universe->channelCapabilities(1) & Universe::NoGrandMaster) == 0);
+
+    // the grand master at 0: the house light stays, under the master of its
+    // group and the dimmer of its scene
+    auto out = [&](int channel) { return core.io()->channelValues(0).at(channel).toInt(); };
+    Scene *scene = new Scene(doc);
+    scene->setValue(house, 0, 200);
+    scene->setValue(par, 0, 200);
+    QVERIFY(doc->addFunction(scene));
+    Zone *zone = core.zones()->addZone("House");
+    zone->addFunction(scene->id());
+    core.setGrandMaster(0);
+    zone->start(scene->id());
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    QCOMPARE(out(1), 0);
+    // changed while the universes send their frames (between two of them)
+    core.patch()->setProtectedFromGrandMaster({ house }, false);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 0, 3000);
+    core.patch()->setProtectedFromGrandMaster({ house }, true);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    zone->setMaster(0.5);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 100, 3000);
+    zone->setMaster(1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    core.surface()->setSceneDimmer(scene->id(), 0.25);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 50, 3000);
+    core.surface()->setSceneDimmer(scene->id(), 1.0);
+    QTRY_COMPARE_WITH_TIMEOUT(out(0), 200, 3000);
+    QCOMPARE(out(1), 0);
+    core.stopAll();
+    core.setGrandMaster(255);
+
+    // the patch of that show again: the copy of the house light is protected
+    const QString done = core.importFromShow(QUrl::fromLocalFile(path), true, false);
+    QVERIFY2(done.isEmpty() == false, qPrintable(core.lastError()));
+    Fixture *houseCopy = doc->fixture(fixtureAtAddress(doc, 2));
+    Fixture *parCopy = doc->fixture(fixtureAtAddress(doc, 3));
+    QVERIFY(houseCopy != nullptr && parCopy != nullptr);
+    QCOMPARE(houseCopy->name(), QString("HOUSE"));
+    QVERIFY(houseCopy->protectedFromGrandMaster());
+    QVERIFY(parCopy->protectedFromGrandMaster() == false);
+    QVERIFY(universe->channelCapabilities(2) & Universe::NoGrandMaster);
+    QVERIFY((universe->channelCapabilities(3) & Universe::NoGrandMaster) == 0);
+
+    // a visualizer table imported again: the fixture it updates (moved) keeps it
+    PatchManager *patch = core.patch();
+    auto table = [](const QString &address) {
+        return fixtureTable({ tableRow("Zzq Houselight", "HOUSE TABLE", "1", address, "1 Channel", 1,
+                                       "0m", "2m", "0m", "id-house") });
+    };
+    QVERIFY2(patch->importTableData(table("101")).isEmpty() == false, qPrintable(patch->lastError()));
+    Fixture *fromTable = fixtureNamed(doc, "HOUSE TABLE");
+    QVERIFY(fromTable != nullptr);
+    QCOMPARE(fromTable->address(), quint32(100));
+    patch->setProtectedFromGrandMaster({ fromTable->id() }, true);
+    QVERIFY(universe->channelCapabilities(100) & Universe::NoGrandMaster);
+    QVERIFY2(patch->importTableData(table("120")).isEmpty() == false, qPrintable(patch->lastError()));
+    QCOMPARE(fixtureNamed(doc, "HOUSE TABLE"), fromTable);
+    QCOMPARE(fromTable->address(), quint32(119));
+    QVERIFY(fromTable->protectedFromGrandMaster());
+    QVERIFY(universe->channelCapabilities(119) & Universe::NoGrandMaster);
+    QVERIFY((universe->channelCapabilities(100) & Universe::NoGrandMaster) == 0);
 }
 
 #undef QCOMPARE_LEVEL

@@ -57,6 +57,11 @@ Item {
     readonly property var parked: Core.safety.parkedFixtures
     /** Some fixture of the selection is parked */
     readonly property bool selectionParked: selectedIds.some(id => parked[id] !== undefined)
+    /** Every fixture of the selection is protected from the grand master */
+    readonly property bool selectionGmProtected: {
+        const sel = fixtures.filter(f => selectedIds.indexOf(f.id) >= 0)
+        return sel.length > 0 && sel.every(f => f.gmProtected)
+    }
     /** Every parked fixture of the selection stays parked in blackout too */
     readonly property bool selectionParkedInBlackout: {
         Core.safety.parkedFixtures
@@ -278,9 +283,16 @@ Item {
             effectDialog.openFor(selectedIds)
             return
         }
-        if (what === "limits" || what === "matrix") {
-            selectedIds = fixtures.filter(f => f.hasPan).slice(0, 1).map(f => f.id)
-            if (what === "limits") optionsDialog.openFor(selectedIds)
+        // the menu of the fixtures protected from the grand master
+        if (what === "menu") {
+            selectedIds = fixtures.filter(f => f.gmProtected).map(f => f.id)
+            Qt.callLater(() => fixtureMenu.popup(page, page.width / 3, 160))
+            return
+        }
+        if (what === "limits" || what === "limits-all" || what === "matrix") {
+            selectedIds = what === "limits-all" ? fixtures.map(f => f.id)
+                                                : fixtures.filter(f => f.hasPan).slice(0, 1).map(f => f.id)
+            if (what !== "matrix") optionsDialog.openFor(selectedIds)
             else matrixDialog.open()
             return
         }
@@ -1017,6 +1029,16 @@ Item {
                                                 ToolTip.text: qsTr("Parked: %n channel(s) with a fixed value at the output", "", count)
                                                 ToolTip.visible: lockHover.hovered
                                             }
+                                            // protected from the grand master: an anchor
+                                            IconLabel {
+                                                visible: !!parent.parent.parent.fx.gmProtected
+                                                icon: Theme.iconAnchor
+                                                size: 12
+                                                color: Theme.readable(Theme.accent)
+                                                HoverHandler { id: anchorHover }
+                                                ToolTip.text: qsTr("Protected from the grand master: it doesn't go down with it")
+                                                ToolTip.visible: anchorHover.hovered
+                                            }
                                             Item { Layout.fillWidth: true }
                                         }
                                         Text {
@@ -1433,6 +1455,13 @@ Item {
         MenuItem {
             text: qsTr("Limits…")
             onTriggered: optionsDialog.openFor(page.selectedIds)
+        }
+        // the grand master doesn't lower them (house lights, a media server):
+        // ticked when all of them are, a click sets them all
+        CheckMenuItem {
+            text: qsTr("Protect from the grand master")
+            selected: page.selectionGmProtected
+            onTriggered: Core.patch.setProtectedFromGrandMaster(page.selectedIds, !page.selectionGmProtected)
         }
         MenuItem {
             text: qsTr("Edit…")

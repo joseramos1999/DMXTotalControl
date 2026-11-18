@@ -660,15 +660,8 @@ void Doc::applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &un
     for (quint32 i = 0; i < fixture->channels(); i++)
     {
         const QLCChannel *channel(fixture->channel(i));
-        quint32 uni = fixture->universe();
-        quint32 addr = fxAddress + i;
-
-        if (crossUniverse)
-        {
-            uni = floor((fixture->universeAddress() + i) / 512);
-            addr = (fixture->universeAddress() + i) - (uni * 512);
-        }
-        if (channel == NULL || int(uni) >= universes.count() || addr >= UNIVERSE_SIZE)
+        quint32 uni, addr;
+        if (channelAddress(fixture, i, crossUniverse, universes.count(), uni, addr) == false)
             continue;
         Universe *universe = universes.at(int(uni));
 
@@ -689,14 +682,60 @@ void Doc::applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &un
 
         // DMX Total Control: the grand master (only the amount of light) and
         // the pan/tilt swap. (The masters of the groups and scenes follow
-        // channelFollowsDimmer, in the faders)
+        // channelFollowsDimmer, in the faders). A fixture protected from it:
+        // none of its channels, also when it acts on all of them
         universe->setChannelFollowsDimmer(addr, fixture->channelFollowsGrandMaster(int(i)));
+        universe->setChannelProtectedFromGrandMaster(addr, fixture->protectedFromGrandMaster());
         if (crossUniverse == false)
         {
             quint32 out = fixture->outputChannel(i);
             universe->setOutputSource(fxAddress + out, out != i ? int(fxAddress + i) : -1);
         }
     }
+}
+
+bool Doc::channelAddress(const Fixture *fixture, quint32 i, bool crossUniverse, int universes,
+                         quint32 &uni, quint32 &addr)
+{
+    // DMX Total Control
+    uni = fixture->universe();
+    addr = fixture->address() + i;
+    if (crossUniverse)
+    {
+        uni = floor((fixture->universeAddress() + i) / 512);
+        addr = (fixture->universeAddress() + i) - (uni * 512);
+    }
+    return fixture->channel(i) != NULL && int(uni) < universes && addr < UNIVERSE_SIZE;
+}
+
+void Doc::setFixturesProtectedFromGrandMaster(const QList<Fixture *> &fixtures, bool protect)
+{
+    // DMX Total Control: not through updateFixtureChannelCapabilities, which
+    // writes the default values and drops the protection for a moment (a
+    // frame in between would send them, or scale the channel). Here no frame
+    // runs while it changes (as in a patch edit), and only the grand master
+    // bits move: the values played stay, scaled or not from the next frame
+    QList<Universe *> universes = inputOutputMap()->claimUniverses();
+    for (Universe *universe : universes)
+        universe->lockFrames();
+
+    for (Fixture *fixture : fixtures)
+    {
+        fixture->setProtectedFromGrandMaster(protect);
+        for (quint32 i = 0; i < fixture->channels(); i++)
+        {
+            quint32 uni, addr;
+            if (channelAddress(fixture, i, fixture->crossUniverse(), universes.count(), uni, addr) == false)
+                continue;
+            Universe *universe = universes.at(int(uni));
+            universe->setChannelFollowsDimmer(addr, fixture->channelFollowsGrandMaster(int(i)));
+            universe->setChannelProtectedFromGrandMaster(addr, protect);
+        }
+    }
+
+    for (Universe *universe : universes)
+        universe->unlockFrames();
+    inputOutputMap()->releaseUniverses(true);
 }
 
 void Doc::refreshChannelCapabilities()

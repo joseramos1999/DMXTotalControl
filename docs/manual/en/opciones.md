@@ -83,7 +83,7 @@ The autosave doesn't touch the show file: every few minutes, if there are unsave
   - **“Give the scene its channels back”**: the channels that the scene touches leave the programmer.
   - **“Always stay”**.
   - **“Are all reset”**: the programmer is cleared.
-- **Grand master acts on**: **“Intensity channels”** (the light: the dimmers and the colours of fixtures without a dimmer) or **“All channels”**.
+- **Grand master acts on**: **“Intensity channels”** (the light: the dimmers and the colours of fixtures without a dimmer) or **“All channels”**. It never lowers the fixtures [protected from the grand master](patch.md#limits).
 
 ## Audio
 

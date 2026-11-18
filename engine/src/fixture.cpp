@@ -47,6 +47,7 @@ Fixture::Fixture(QObject* parent)
     , m_crossUniverse(false)
     , m_channels(0)
     , m_swapPanTilt(false)
+    , m_noGrandMaster(false)
     , m_fixtureDef(NULL)
     , m_fixtureMode(NULL)
 {
@@ -603,6 +604,21 @@ static bool isDimmerChannel(const QLCChannel *ch)
 }
 
 bool Fixture::channelFollowsGrandMaster(int idx) const
+{
+    return m_noGrandMaster == false && channelCarriesLight(idx);
+}
+
+void Fixture::setProtectedFromGrandMaster(bool protect)
+{
+    m_noGrandMaster = protect;
+}
+
+bool Fixture::protectedFromGrandMaster() const
+{
+    return m_noGrandMaster;
+}
+
+bool Fixture::channelCarriesLight(int idx) const
 {
     // the 'Dimmer' option of the channel decides first
     if (channelFollowsDimmer(idx) == false)
@@ -1323,6 +1339,7 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
     QList<ChannelModifier *>modifierPointers;
     QList<int> dimmerExceptions;
     bool swapPanTilt = false;
+    bool noGrandMaster = false;
 
     if (xmlDoc.name() != KXMLFixture)
     {
@@ -1412,6 +1429,11 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
         {
             // DMX Total Control
             swapPanTilt = xmlDoc.readElementText() == KXMLQLCTrue;
+        }
+        else if (xmlDoc.name() == KXMLFixtureNoGrandMaster)
+        {
+            // DMX Total Control (QLC+ skips it: an unknown tag)
+            noGrandMaster = xmlDoc.readElementText() == KXMLQLCTrue;
         }
         else if (xmlDoc.name() == KXMLFixtureChannelModifier)
         {
@@ -1542,6 +1564,7 @@ bool Fixture::loadXML(QXmlStreamReader &xmlDoc, Doc *doc,
         setChannelModifier(modifierIndices.at(i), modifierPointers.at(i));
     m_dimmerSwappedIndices = dimmerExceptions;
     m_swapPanTilt = swapPanTilt;
+    m_noGrandMaster = noGrandMaster;
     setID(id);
 
     return true;
@@ -1641,6 +1664,8 @@ bool Fixture::saveXML(QXmlStreamWriter *doc) const
     }
     if (m_swapPanTilt)
         doc->writeTextElement(KXMLFixtureSwapPanTilt, KXMLQLCTrue);
+    if (m_noGrandMaster)
+        doc->writeTextElement(KXMLFixtureNoGrandMaster, KXMLQLCTrue);
 
     {
         QMapIterator<quint32, ChannelModifier *> it(m_channelModifiers);

@@ -3266,6 +3266,18 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Intercambiar pan y tilt</translation>
     </message>
     <message>
+        <source>The grand master doesn&apos;t lower it. The group masters, the scene dimmers, Blackout and the fade to black still do</source>
+        <translation>El gran master no lo baja. Los masters de grupo, los dimmers de escena, el Blackout y el fundido a negro sí</translation>
+    </message>
+    <message>
+        <source>Protect from the grand master</source>
+        <translation>Proteger del gran master</translation>
+    </message>
+    <message>
+        <source>(only some)</source>
+        <translation>(solo algunos)</translation>
+    </message>
+    <message>
         <source>This fixture has no dimmer, pan or tilt to limit.</source>
         <translation>Este fixture no tiene dimmer, pan ni tilt que limitar.</translation>
     </message>
@@ -3288,6 +3300,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Follows the fade times. Off: jumps straight to its value (colour and gobo wheels)</source>
         <translation>Sigue los tiempos de fundido. Apagado: salta directamente a su valor (ruedas de color y gobos)</translation>
+    </message>
+    <message>
+        <source>Scaled by the group masters and the scene dimmers (protected from the grand master)</source>
+        <translation>Lo escalan los masters de grupo y los dimmers de escena (protegido del gran master)</translation>
     </message>
     <message>
         <source>Scaled by the grand master, the group masters and the scene dimmers</source>
@@ -4505,6 +4521,13 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
 </context>
 <context>
     <name>Main</name>
+    <message numerus="yes">
+        <source>The grand master doesn&apos;t lower %n fixture(s) protected from it</source>
+        <translation>
+            <numerusform>El gran master no baja %n fixture protegido de él</numerusform>
+            <numerusform>El gran master no baja %n fixtures protegidos de él</numerusform>
+        </translation>
+    </message>
     <message>
         <source>Show saved</source>
         <translation>Show guardado</translation>
@@ -7820,6 +7843,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Límites…</translation>
     </message>
     <message>
+        <source>Protect from the grand master</source>
+        <translation>Proteger del gran master</translation>
+    </message>
+    <message>
         <source>Edit…</source>
         <translation>Editar…</translation>
     </message>
@@ -7851,6 +7878,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
             <numerusform>Aparcado: %n canal con un valor fijo en la salida</numerusform>
             <numerusform>Aparcado: %n canales con un valor fijo en la salida</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Protected from the grand master: it doesn&apos;t go down with it</source>
+        <translation>Protegido del gran master: no baja con él</translation>
     </message>
     <message>
         <source>Park as it is now</source>
@@ -11102,6 +11133,10 @@ Añádelos en la página Patch.</translation>
 </context>
 <context>
     <name>StagePlan</name>
+    <message>
+        <source>Protected from the grand master: it doesn&apos;t go down with it</source>
+        <translation>Protegido del gran master: no baja con él</translation>
+    </message>
     <message>
         <source>AUDIENCE</source>
         <translation>PÚBLICO</translation>

@@ -101,7 +101,7 @@ Durante la riproduzione, ogni riquadro di una scena a passi, di una cuelist o di
 ## Master
 
 - **Master del gruppo**: il cursore «Master» in fondo a ogni colonna scala l'intensità di tutte le sue scene.
-- **Grand master**: il «GM» della barra superiore scala la luce di tutta l'uscita: i dimmer e, nelle fixture senza dimmer, i loro colori. Non tocca la miscelazione del colore (ciano, magenta, giallo, tinta e saturazione) né i colori di una fixture o di una testa con un dimmer proprio, che scendono con quel dimmer. In Opzioni decidi se agisce solo sull'intensità o su tutti i canali.
+- **Grand master**: il «GM» della barra superiore scala la luce di tutta l'uscita: i dimmer e, nelle fixture senza dimmer, i loro colori. Non tocca la miscelazione del colore (ciano, magenta, giallo, tinta e saturazione) né i colori di una fixture o di una testa con un dimmer proprio, che scendono con quel dimmer. In Opzioni decidi se agisce solo sull'intensità o su tutti i canali. Non abbassa le fixture **protette dal grand master** (nei [limiti della fixture](patch.md#limiti) o nel suo menu): la luce di sala, un media server, un hazer. Se ce n'è qualcuna, un'**ancora** accanto a «GM» lo ricorda (se la barra ha spazio) e, passando il mouse, dice quante sono («Il grand master non abbassa 3 fixture che ne sono protette»).
 - **Dimmer dal vivo**: ogni scena ha inoltre il suo dimmer, nelle sue proprietà, sopra il master del gruppo.
 
 I master e il grand master non influiscono sui canali che hanno disattivata l'opzione «Dimmer» nei [limiti della fixture](patch.md#limiti). Se è il dimmer di una fixture, non conta più come suo dimmer proprio: il grand master abbassa allora i suoi colori.
@@ -286,7 +286,7 @@ Con **«Ferma tutto con dissolvenza»** in [Opzioni](opciones.md#sicurezza-duran
 
 Una **«Dissolvenza al nero»** (un [tasto dello SHOW](show.md#azioni-di-un-tasto) o una [mappatura](mapeos.md#controlla), con il suo tempo: 3 s per impostazione predefinita) abbassa le intensità in uscita in quel tempo e poi attiva il Blackout, per esempio alla fine di un set. Sotto, la luce torna al massimo: togliendo il Blackout, torna.
 
-- Agisce sopra il grand master e sui canali parcheggiati senza «Anche in blackout».
+- Agisce sopra il grand master (anche sulle fixture che ne sono protette) e sui canali parcheggiati senza «Anche in blackout».
 - Non tocca i parcheggiati con «Anche in blackout», il pan, il tilt né altri canali che non sono luce, né gli effetti protetti.
 - Quando comincia, disarma gli effetti speciali.
 - Un'altra pressione, o il Blackout, la terminano subito. Con il Blackout già attivo, non fa niente.

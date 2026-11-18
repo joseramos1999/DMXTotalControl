@@ -286,6 +286,8 @@ QtObject {
     readonly property string iconHand: "\uf256"
     // (the fade to black: a moon)
     readonly property string iconMoon: "\uf186"
+    // (protected from the grand master: an anchor, the master doesn't pull it down)
+    readonly property string iconAnchor: "\uf13d"
 
     /** The names of a list of Core.safety (firing, waiting), one after the other */
     function effectNames(list) {

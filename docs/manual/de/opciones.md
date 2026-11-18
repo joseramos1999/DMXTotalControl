@@ -83,7 +83,7 @@ Das automatische Speichern verändert die Show-Datei nicht: Alle paar Minuten sp
   - **„Geben der Szene ihre Kanäle zurück“**: Die Kanäle, die die Szene berührt, sind nicht mehr im Programmer.
   - **„Bleiben immer“**.
   - **„Werden alle zurückgesetzt“**: Der Programmer wird geleert.
-- **Grand Master wirkt auf**: **„Intensitätskanäle“** (das Licht: die Dimmer und die Farben der Fixtures ohne Dimmer) oder **„Alle Kanäle“**.
+- **Grand Master wirkt auf**: **„Intensitätskanäle“** (das Licht: die Dimmer und die Farben der Fixtures ohne Dimmer) oder **„Alle Kanäle“**. Fixtures, die [vor dem Grand Master geschützt](patch.md#grenzen) sind, senkt er nie ab.
 
 ## Audio
 

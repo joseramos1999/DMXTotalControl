@@ -25,8 +25,9 @@ import DMXTotalControl.Backend
 
 /**
  * Limitations: the range of the dimmer, pan and tilt of fixtures,
- * inverted or swapped axes, and per channel whether it fades and follows
- * the dimmers. Everything that goes out obeys them (scenes, effects, live).
+ * inverted or swapped axes, the protection from the grand master, and per
+ * channel whether it fades and follows the dimmers. Everything that goes
+ * out obeys them (scenes, effects, live).
  */
 Popup {
     id: dialog
@@ -194,6 +195,34 @@ Popup {
             }
         }
 
+        // any fixture: the grand master doesn't lower it (house lights, a
+        // media server, a hazer). Several that differ: off, and said
+        Row {
+            spacing: 6
+            HoverHandler { id: gmHover }
+            ToolTip.text: qsTr("The grand master doesn't lower it. The group masters, the scene dimmers, Blackout and the fade to black still do")
+            ToolTip.visible: gmHover.hovered
+            ToolTip.delay: 600
+            AppSwitch {
+                checked: !!dialog.options.gmProtected
+                onToggled: Core.patch.setProtectedFromGrandMaster(dialog.ids, checked)
+            }
+            IconLabel {
+                anchors.verticalCenter: parent.verticalCenter
+                icon: Theme.iconAnchor
+                size: 12
+                color: dialog.options.gmProtected || dialog.options.gmProtectedMixed ? Theme.readable(Theme.accent) : Theme.textDim
+            }
+            Text { text: qsTr("Protect from the grand master"); color: Theme.text; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                visible: !!dialog.options.gmProtectedMixed
+                anchors.verticalCenter: parent.verticalCenter
+                text: qsTr("(only some)")
+                color: Theme.readable(Theme.warning)
+                font.pixelSize: Theme.fontSmall
+            }
+        }
+
         Text {
             Layout.fillWidth: true
             visible: !dialog.options.hasDimmer && !dialog.options.hasPan && !dialog.options.hasTilt
@@ -266,7 +295,10 @@ Popup {
                         CheckBox {
                             Layout.preferredWidth: dialog.flagWidth
                             checked: parent.parent.modelData.dimmer
-                            ToolTip.text: qsTr("Scaled by the grand master, the group masters and the scene dimmers")
+                            // (the switch above takes the grand master out)
+                            ToolTip.text: dialog.options.gmProtected
+                                          ? qsTr("Scaled by the group masters and the scene dimmers (protected from the grand master)")
+                                          : qsTr("Scaled by the grand master, the group masters and the scene dimmers")
                             ToolTip.visible: hovered
                             ToolTip.delay: 600
                             onToggled: Core.patch.setChannelOptions(dialog.ids[0], parent.parent.modelData.index,

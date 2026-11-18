@@ -101,7 +101,7 @@ Pendant qu’elle joue, chaque tuile d’une scène à pas, d’une cuelist ou d
 ## Masters
 
 - **Master du groupe** : le curseur « Master » au pied de chaque colonne règle l’intensité de toutes ses scènes.
-- **Grand master** : le « GM » de la barre du haut règle la lumière de toute la sortie : les dimmers et, sur les fixtures sans dimmer, leurs couleurs. Il ne touche ni au mélange de couleurs (cyan, magenta, jaune, teinte et saturation) ni aux couleurs d’un fixture ou d’une tête qui a son propre dimmer, qui baissent avec ce dimmer. Dans Options, vous choisissez s’il agit seulement sur l’intensité ou sur tous les canaux.
+- **Grand master** : le « GM » de la barre du haut règle la lumière de toute la sortie : les dimmers et, sur les fixtures sans dimmer, leurs couleurs. Il ne touche ni au mélange de couleurs (cyan, magenta, jaune, teinte et saturation) ni aux couleurs d’un fixture ou d’une tête qui a son propre dimmer, qui baissent avec ce dimmer. Dans Options, vous choisissez s’il agit seulement sur l’intensité ou sur tous les canaux. Il ne baisse pas les fixtures **protégés du grand master** (dans les [limites du fixture](patch.md#limites) ou son menu) : la lumière de salle, un serveur média, un hazer. S’il y en a, une **ancre** à côté du « GM » le rappelle (si la barre a la place) et, au survol, indique combien (« Le grand master ne baisse pas 3 fixtures qui en sont protégés »).
 - **Dimmer en direct** : chaque scène a en plus son propre dimmer, dans ses propriétés, par-dessus le master du groupe.
 
 Les masters et le grand master n’agissent pas sur les canaux dont l’option « Dimmer » est désactivée dans les [limites du fixture](patch.md#limites). Si c’est le dimmer d’un fixture, il ne compte plus comme son propre dimmer : le grand master baisse alors ses couleurs.
@@ -286,7 +286,7 @@ Avec **« Tout arrêter en fondu »** dans [Options](opciones.md#sécurité-pe
 
 Un **« Fondu au noir »** (un [bouton du SHOW](show.md#actions-dun-bouton) ou un [mappage](mapeos.md#pilote), avec sa durée : 3 s par défaut) baisse les intensités en sortie pendant cette durée, puis active le Blackout, par exemple à la fin d’un set. En dessous, la lumière est de nouveau à fond : quand vous enlevez le Blackout, elle revient.
 
-- Il agit au-dessus du grand master et sur les canaux parqués sans « Aussi en blackout ».
+- Il agit au-dessus du grand master (aussi sur les fixtures qui en sont protégés) et sur les canaux parqués sans « Aussi en blackout ».
 - Il ne touche pas les canaux parqués avec « Aussi en blackout », le pan, le tilt ni les autres canaux qui ne sont pas de la lumière, ni les effets protégés.
 - À son début, il désarme les effets spéciaux.
 - Un autre appui, ou le Blackout, le terminent tout de suite. Avec le Blackout déjà activé, il ne fait rien.

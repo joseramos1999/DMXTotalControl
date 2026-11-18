@@ -816,12 +816,13 @@ QList<QPair<quint32, quint32>> FXScene::virtualDimmerChannels(const Fixture *fix
         return list;
 
     // the emitters the grand master dims: not the CMY, nor the ones whose
-    // 'Dimmer' option is off
+    // 'Dimmer' option is off (in a fixture protected from the grand master
+    // too: they are still its light)
     for (quint32 c = 0; c < fixture->channels(); c++)
     {
         const QLCChannel *ch = fixture->channel(c);
         if (isEmitter(ch) == false || ch->controlByte() != QLCChannel::MSB ||
-            fixture->channelFollowsGrandMaster(int(c)) == false)
+            fixture->channelCarriesLight(int(c)) == false)
             continue;
         // its fine channel: the LSB of the same colour right after it (as channelFor)
         quint32 fine = QLCChannel::invalid();

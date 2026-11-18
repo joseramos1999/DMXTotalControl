@@ -316,6 +316,14 @@ public:
      */
     void refreshChannelCapabilities();
 
+    /**
+     * DMX Total Control: protect $fixtures from the grand master, or not
+     * (Fixture::setProtectedFromGrandMaster), and tell their universes at
+     * once. Toggled during a show: between two frames, and only the grand
+     * master bits of their channels change (what they play stays)
+     */
+    void setFixturesProtectedFromGrandMaster(const QList<Fixture *> &fixtures, bool protect);
+
 private:
     /**
      * DMX Total Control: give the universes (claimed) the capabilities,
@@ -324,6 +332,14 @@ private:
      * a fixture across two universes)
      */
     void applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &universes, bool crossUniverse);
+
+    /**
+     * DMX Total Control: the universe and address of channel $i of $fixture
+     * (each in its own universe with $crossUniverse). False when it has no
+     * such channel or the universe isn't there
+     */
+    static bool channelAddress(const Fixture *fixture, quint32 i, bool crossUniverse, int universes,
+                               quint32 &uni, quint32 &addr);
 
     /**
      * DMX Total Control: the map of the addresses made again from all the

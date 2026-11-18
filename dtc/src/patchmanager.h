@@ -67,6 +67,8 @@ class PatchManager : public QObject
     Q_PROPERTY(QStringList fixtureKinds READ fixtureKindList CONSTANT)
     /** Some fixture of the show is a protected special effect */
     Q_PROPERTY(bool hasProtected READ hasProtected NOTIFY protectionChanged)
+    /** How many fixtures the grand master doesn't lower */
+    Q_PROPERTY(int grandMasterProtectedCount READ grandMasterProtectedCount NOTIFY fixturesChanged)
 
 public:
     PatchManager(Doc *doc, QObject *parent = nullptr);
@@ -74,7 +76,7 @@ public:
 
     /** [{ id, name, manufacturer, model, mode, type, universe, address,
      *     channels, x, y, positioned, heads, cells, kind, icon, typeKey,
-     *     colorIndex, protected, crossUniverse }]
+     *     colorIndex, protected, gmProtected, crossUniverse }]
      *  Addresses are 1-based, as displayed to the user.
      *  x/y is the position in the 2D stage plan, in millimeters.
      *  cells: the plan draws it as a row of cells, one per head (a bar, a
@@ -83,10 +85,12 @@ public:
      *  plan shows (fixtureKind(), with the icon chosen by hand); icon: the
      *  one chosen by hand ("" when automatic); typeKey and colorIndex: its
      *  type in fixtureTypes(); protected: a protected special effect
-     *  (isProtected); crossUniverse: its channels go on in the next universe
-     *  (a show from QLC+) */
+     *  (isProtected); gmProtected: the grand master doesn't lower it
+     *  (setProtectedFromGrandMaster); crossUniverse: its channels go on in
+     *  the next universe (a show from QLC+) */
     QVariantList fixtures() const;
     int fixturesCount() const;
+    int grandMasterProtectedCount() const;
 
     Q_INVOKABLE QStringList manufacturers() const;
     Q_INVOKABLE QStringList models(const QString &manufacturer) const;
@@ -286,17 +290,24 @@ public:
      *********************************************************************/
     /** { id, name, hasDimmer, hasPan, hasTilt, dimmerMin, dimmerMax, panMin,
      *    panMax, tiltMin, tiltMax (0-100 %), invertPan, invertTilt,
-     *    swapPanTilt, channels: [{ index, name, group, canFade, dimmer }] } */
+     *    swapPanTilt, gmProtected, channels: [{ index, name, group, canFade,
+     *    dimmer }] } */
     Q_INVOKABLE QVariantMap fixtureOptions(quint32 id) const;
     /** fixtureOptions() of several fixtures: what any of them has (a dimmer,
      *  pan, tilt), each with the values of the first fixture that has it;
-     *  id, name and channels of the first one */
+     *  id, name and channels of the first one. gmProtected: all of them are
+     *  protected from the grand master; gmProtectedMixed: some, not all */
     Q_INVOKABLE QVariantMap selectionOptions(const QVariantList &ids) const;
     /** Set some of the keys of fixtureOptions() on fixtures $ids: the
      *  limits are channel modifiers, applied to everything that goes out */
     Q_INVOKABLE void setLimits(const QVariantList &ids, const QVariantMap &limits);
     /** Whether channel $channel of fixture $id fades, and follows the dimmers */
     Q_INVOKABLE void setChannelOptions(quint32 id, int channel, bool canFade, bool followsDimmer);
+    /** The grand master never lowers fixtures $ids (all their channels), or
+     *  lowers them again: at once, also what plays now. The masters of the
+     *  groups, the scene dimmers, Blackout and the fade to black still do.
+     *  Saved with the show, in each fixture */
+    Q_INVOKABLE void setProtectedFromGrandMaster(const QVariantList &ids, bool protect);
 
     /*********************************************************************
      * LED matrices and strips

@@ -50,7 +50,7 @@ Gli strumenti della barra lavorano sulla selezione:
 - **Inverti pan** e **inverti tilt** (le icone con le frecce): per le fixture che li hanno.
 - **«Limiti»**, il tasto della **fiamma** (**«Effetto speciale»**), **«Modifica»**, **«Reindirizza»**, **«Rinumera»**, **«Crea gruppo»** ed **«Elimina»**: sono spiegati più avanti.
 
-Un **clic destro** su una riga dell'elenco, o su una fixture della pianta 2D senza muovere il mouse, apre il menu della fixture: **«Effetto speciale…»**, **«Identifica»**, **«Limiti…»**, **«Modifica…»**, **«Parcheggia com'è ora»**, **«Parcheggia spento»**, **«Anche in blackout»**, **«Togli dal parcheggio»** e **«Togli tutto dal parcheggio»**. Se la fixture non era selezionata, prima la seleziona.
+Un **clic destro** su una riga dell'elenco, o su una fixture della pianta 2D senza muovere il mouse, apre il menu della fixture: **«Effetto speciale…»**, **«Identifica»**, **«Limiti…»**, **«Proteggi dal grand master»**, **«Modifica…»**, **«Parcheggia com'è ora»**, **«Parcheggia spento»**, **«Anche in blackout»**, **«Togli dal parcheggio»** e **«Togli tutto dal parcheggio»**. Se la fixture non era selezionata, prima la seleziona.
 
 ## Indirizzi e universi
 
@@ -167,11 +167,12 @@ Seleziona le fixture e premi **«Limiti»**:
 - **Dimmer**, **Pan** e **Tilt**: l'intervallo consentito, da 0 a 100 %. Per esempio, un dimmer che non superi l'80 % o un tilt che non punti sul pubblico.
 - **«Inverti pan»**, **«Inverti tilt»** e **«Scambia pan e tilt»** (per teste appese al contrario o ruotate).
 - **«Ripristina»**: nessun limite, nessun asse invertito o scambiato.
+- **«Proteggi dal grand master»**: il grand master non abbassa nessuno dei suoi canali, che agisca solo sull'intensità o su tutti: la luce di sala, un media server, un hazer. I master di gruppo, i dimmer di scena, il Blackout e la [dissolvenza al nero](directo.md#dissolvenza-al-nero) la abbassano ancora. Con più fixture di cui solo alcune sono protette, appare spento con «(solo alcune)», e attivarlo le protegge tutte. È anche nel [menu della fixture](patch.md#selezionare), spuntato quando tutte le selezionate sono protette. Nell'elenco, un'**ancora** dopo il nome («Protetta dal grand master: non si abbassa con esso»); nella pianta 2D, del Patch e di Programma, un'ancora in basso a sinistra (su una barra, alla sua destra). «Ripristina» non toglie la protezione. Si salva con lo show, in ogni fixture, e [importare il patch da un altro show](patch.md#importare-da-un-altro-show) la porta. QLC+ non la legge: lì il grand master abbassa la fixture.
 
 Con una sola fixture, l'elenco **Canali** permette di decidere per ogni canale:
 
 - **Dissolvenze**: se segue i tempi di dissolvenza. Se è spento, salta direttamente al suo valore (utile per ruote colori e gobo).
-- **Dimmer**: se lo scalano il grand master, i master di gruppo e i dimmer di scena. Il grand master, inoltre, scala solo la luce (vedi [Master](directo.md#master)).
+- **Dimmer**: se lo scalano il grand master, i master di gruppo e i dimmer di scena. Il grand master, inoltre, scala solo la luce (vedi [Master](directo.md#master)). Se la fixture è protetta dal grand master, la scalano solo i master di gruppo e i dimmer di scena.
 
 I limiti agiscono sull'uscita: scene, effetti e modifiche dal vivo conservano i loro valori, ma ciò che esce li rispetta. Con più fixture si vedono i valori della prima che ha ciascun controllo, e ciò che cambi si applica a tutte quelle che lo hanno.
 

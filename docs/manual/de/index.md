@@ -61,7 +61,7 @@ Von links nach rechts:
 - **Das Schild**: der [Show-Modus](directo.md#show-modus). Eingeschaltet (orange) muss zum Schließen des Programms oder Öffnen einer anderen Show eine Taste gedrückt gehalten werden.
 - **Die Zielscheibe**: der Lernmodus, um MIDI- oder OSC-Bedienelemente oder Tasten zuzuordnen (siehe [Zuordnungen](mapeos.md#lernmodus)). Ihre grüne Kontrollleuchte blinkt bei jeder eingehenden Nachricht.
 - **„N laufen“**: wie viele Szenen und Effekte gerade laufen.
-- **GM**: der Grand Master. Unter 100 % wird er orange.
+- **GM**: der Grand Master. Unter 100 % wird er orange. Mit davor geschützten Fixtures ein **Anker** daneben (siehe [Master](directo.md#master)).
 - **„Effekte scharf schalten“**: nur, wenn die Show geschützte Spezialeffekte hat (CO2, Flammen, Funken, Konfetti). Schaltet sie scharf oder entschärft sie; ihr Pfeil **▾** zeigt die letzten Auslösungen (siehe [Live](directo.md#geschützte-spezialeffekte)).
 - **„Blackout“** (Strg+B): schaltet alles auf Schwarz, solange er an ist. Er entschärft auch die Spezialeffekte.
 - **„Alles stoppen“** (Esc): stoppt alles, was läuft. Der Programmer wird nicht geleert. Die Szenen, die ein hochgezogener Fader des SHOW hält, laufen weiter: Nur das Herunterziehen dieses Faders stoppt sie. Es entschärft auch die Spezialeffekte, und 10 s lang können Sie [zurückholen, was lief](directo.md#zurückholen-was-lief).

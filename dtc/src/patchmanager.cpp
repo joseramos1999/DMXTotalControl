@@ -294,6 +294,8 @@ QVariantList PatchManager::fixtures() const
         // and whether its kind is protected by itself («As its kind»)
         info.insert("protected", isProtected(fxi->id()));
         info.insert("kindProtected", protectedByDefault(kind));
+        // the grand master doesn't lower it (the anchor of the list and the plan)
+        info.insert("gmProtected", fxi->protectedFromGrandMaster());
         info.insert("crossUniverse", crossesUniverses(fxi));
         // a moving head: the way it faces and how high it hangs (Follow)
         bool aimable = false;
@@ -314,6 +316,14 @@ QVariantList PatchManager::fixtures() const
 int PatchManager::fixturesCount() const
 {
     return m_doc->fixturesCount();
+}
+
+int PatchManager::grandMasterProtectedCount() const
+{
+    int count = 0;
+    for (Fixture *fxi : m_doc->fixtures())
+        count += fxi->protectedFromGrandMaster() ? 1 : 0;
+    return count;
 }
 
 QStringList PatchManager::manufacturers() const
@@ -1247,6 +1257,7 @@ QVariantMap PatchManager::fixtureOptions(quint32 id) const
     info.insert("invertPan", pan.first > pan.second);
     info.insert("invertTilt", tilt.first > tilt.second);
     info.insert("swapPanTilt", fxi->swapPanTilt());
+    info.insert("gmProtected", fxi->protectedFromGrandMaster());
     info.insert("channels", channels);
     return info;
 }
@@ -1257,6 +1268,8 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
     // are shown all the same, with the values of the first head
     QVariantMap info;
     bool dimmer = false, pan = false, tilt = false, both = false;
+    // protected from the grand master: all of them, or some (mixed)
+    int count = 0, gmProtected = 0;
     for (const QVariant &v : ids)
     {
         const QVariantMap options = fixtureOptions(v.toUInt());
@@ -1264,6 +1277,8 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
             continue;
         if (info.isEmpty())
             info = options;
+        count++;
+        gmProtected += options.value("gmProtected").toBool() ? 1 : 0;
         auto take = [&](bool &taken, const char *has, const QStringList &keys) {
             if (taken || options.value(has).toBool() == false)
                 return;
@@ -1280,6 +1295,11 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
             both = true;
             info.insert("swapPanTilt", options.value("swapPanTilt"));
         }
+    }
+    if (count > 0)
+    {
+        info.insert("gmProtected", gmProtected == count);
+        info.insert("gmProtectedMixed", gmProtected > 0 && gmProtected < count);
     }
     return info;
 }
@@ -1336,6 +1356,24 @@ void PatchManager::setChannelOptions(quint32 id, int channel, bool canFade, bool
     fxi->setChannelCanFade(channel, canFade);
     fxi->setChannelFollowsDimmer(channel, followsDimmer);
     m_doc->updateFixtureChannelCapabilities(fxi->id(), fxi->forcedHTPChannels(), fxi->forcedLTPChannels());
+    m_doc->setModified();
+    notifyFixtures();
+}
+
+void PatchManager::setProtectedFromGrandMaster(const QVariantList &ids, bool protect)
+{
+    QList<Fixture *> changed;
+    for (const QVariant &v : ids)
+    {
+        Fixture *fxi = m_doc->fixture(v.toUInt());
+        if (fxi != nullptr && fxi->protectedFromGrandMaster() != protect && changed.contains(fxi) == false)
+            changed.append(fxi);
+    }
+    if (changed.isEmpty())
+        return;
+    // the universes know it at once, between two frames: what plays goes up
+    // or down from the next one
+    m_doc->setFixturesProtectedFromGrandMaster(changed, protect);
     m_doc->setModified();
     notifyFixtures();
 }

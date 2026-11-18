@@ -941,16 +941,30 @@ ApplicationWindow {
             // grand master (a very narrow bar with the button of the special
             // effects: a bit shorter, so Stop all stays in sight at 1100 px)
             Rectangle {
+                id: gmBox
                 Layout.preferredWidth: window.tightBar && armRow.visible ? 136 : window.compactBar ? 150 : 190
                 Layout.preferredHeight: 36
                 radius: Theme.radiusSmall
                 color: Theme.surfaceRaised
                 border.color: Theme.border
+                // the fixtures protected from it (house lights...): it doesn't
+                // lower them. An anchor says so when the bar has room for it
+                readonly property int gmProtected: Core.patch.grandMasterProtectedCount
+                HoverHandler { id: gmHover }
+                ToolTip.text: qsTr("The grand master doesn't lower %n fixture(s) protected from it", "", gmProtected)
+                ToolTip.visible: gmHover.hovered && gmProtected > 0
+                ToolTip.delay: 500
 
                 RowLayout {
                     anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
                     spacing: 8
                     Text { text: "GM"; color: Theme.textDim; font.weight: Font.Bold; font.pixelSize: Theme.fontSmall }
+                    IconLabel {
+                        visible: gmBox.gmProtected > 0 && !window.compactBar
+                        icon: Theme.iconAnchor
+                        size: 11
+                        color: Theme.readable(Theme.accent, Theme.surfaceRaised)
+                    }
                     HSlider {
                         id: gmSlider
                         fillColor: Core.grandMaster < 255 ? Theme.warning : Theme.accent
