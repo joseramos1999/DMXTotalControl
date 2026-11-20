@@ -2524,6 +2524,49 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
 <context>
     <name>EffectEditor</name>
     <message>
+        <source>The random flashes become a chase in random order</source>
+        <translation>I flash casuali diventano un chase in ordine casuale</translation>
+    </message>
+    <message>
+        <source>The random levels become a chase in random order</source>
+        <translation>I livelli casuali diventano un chase in ordine casuale</translation>
+    </message>
+    <message>
+        <source>On for %1 % of each cycle: the FX is on for half of it</source>
+        <translation>Acceso il %1 % di ogni ciclo: l&apos;FX lo è per metà</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) in dimmer or RGB mode stay out</source>
+        <translation>
+            <numerusform>%n fixture in modalità dimmer o RGB resta fuori</numerusform>
+            <numerusform>%n fixture in modalità dimmer o RGB restano fuori</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Turned, with a width other than its height: the figure stretches another way</source>
+        <translation>Ruotata, con una larghezza diversa dall&apos;altezza: la figura si allunga in un altro modo</translation>
+    </message>
+    <message>
+        <source>The square goes round smoothly, without jumps</source>
+        <translation>Il quadrato viene percorso in modo continuo, senza scatti</translation>
+    </message>
+    <message>
+        <source>The sides of the diamond become straight</source>
+        <translation>I lati del rombo diventano dritti</translation>
+    </message>
+    <message>
+        <source>The ramp along the line becomes a back and forth on it</source>
+        <translation>La rampa lungo la linea diventa un andirivieni su di essa</translation>
+    </message>
+    <message>
+        <source>The Lissajous figure of the FX goes 3 to 2 (this one %1 to %2), with phases of its own</source>
+        <translation>La figura lissajous degli FX va 3 a 2 (questa %1 a %2), con fasi sue</translation>
+    </message>
+    <message>
+        <source>The leaf becomes a circle: the FX have no figure like it</source>
+        <translation>La foglia diventa un cerchio: gli FX non hanno una figura così</translation>
+    </message>
+    <message>
         <source>Steps %1</source>
         <translation>Passi %1</translation>
     </message>
@@ -3391,8 +3434,12 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>BPM dello show</translation>
     </message>
     <message>
-        <source>The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene</source>
-        <translation>La velocità segue i BPM (tap, BeatGO), o il ritmo battuto sul pulsante della sua scena</translation>
+        <source>The speed and the beat follow the show (tap, BPM fader or dial), or the rhythm tapped on the button of its scene</source>
+        <translation>La velocità e il battito seguono lo show (tap, fader o manopola dei BPM), o il ritmo battuto sul pulsante della sua scena</translation>
+    </message>
+    <message>
+        <source>Its own rhythm, tapped on its button (%1 BPM): not on the beat of the show</source>
+        <translation>Ritmo proprio, battuto sul suo pulsante (%1 BPM): non va sul battito dello show</translation>
     </message>
     <message>
         <source>Multiplier</source>
@@ -3409,6 +3456,18 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
     <message>
         <source>Backwards</source>
         <translation>Al contrario</translation>
+    </message>
+    <message>
+        <source>Only some of the selected fixtures. A click turns it on for all of them</source>
+        <translation>Solo alcune delle fixture selezionate. Un clic lo attiva su tutte</translation>
+    </message>
+    <message>
+        <source>Only some fixtures of this FX. A click turns it on for all of them</source>
+        <translation>Solo alcune fixture di questo FX. Un clic lo attiva su tutte</translation>
+    </message>
+    <message>
+        <source>mixed</source>
+        <translation>vari</translation>
     </message>
     <message>
         <source>Rotate</source>
@@ -3463,8 +3522,20 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Dividi in X</translation>
     </message>
     <message>
-        <source>Mirror</source>
-        <translation>Specchio</translation>
+        <source>Outside in</source>
+        <translation>Da fuori a dentro</translation>
+    </message>
+    <message>
+        <source>From the outside in: the first and the last fixture are one set, then the second and the one before the last… It inverts nothing</source>
+        <translation>Da fuori a dentro: la prima e l&apos;ultima fixture sono un insieme, poi la seconda e la penultima… Non inverte nulla</translation>
+    </message>
+    <message>
+        <source>The groups of the Patch that split the fixtures of the FX without overlapping, not a group that has them all. «Per fixture» shows the group of each one</source>
+        <translation>I gruppi del Patch che dividono le fixture dell&apos;FX senza sovrapporsi, non un gruppo che le ha tutte. «Per fixture» mostra il gruppo di ognuna</translation>
+    </message>
+    <message>
+        <source>Fixtures in each set, half from each end: with 2, the first goes with the last</source>
+        <translation>Fixture di ogni insieme, metà da ogni estremità: con 2, la prima va con l&apos;ultima</translation>
     </message>
     <message>
         <source>By group</source>
@@ -3561,6 +3632,18 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Senza sfasamento né ritardo</translation>
     </message>
     <message>
+        <source>Reorder by number</source>
+        <translation>Riordina per numero</translation>
+    </message>
+    <message>
+        <source>The fixtures of the FX in the order of their numbers in the Patch: their places in the wave and in the mirror follow it</source>
+        <translation>Le fixture dell&apos;FX nell&apos;ordine dei loro numeri nel Patch: i loro posti nell&apos;onda e nello specchio lo seguono</translation>
+    </message>
+    <message>
+        <source>Group</source>
+        <translation>Gruppo</translation>
+    </message>
+    <message>
         <source>In the wave</source>
         <translation>Nell&apos;onda</translation>
     </message>
@@ -3587,6 +3670,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
 </context>
 <context>
     <name>FxMacros</name>
+    <message>
+        <source>FX of the same parameter went in as one, with the speed and the timing of the first one</source>
+        <translation>Gli FX dello stesso parametro sono entrati come uno solo, con la velocità e il timing del primo</translation>
+    </message>
     <message>
         <source>Circle</source>
         <translation>Cerchio</translation>
@@ -3714,6 +3801,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Ferma questo FX</translation>
     </message>
     <message>
+        <source>Stop this FX and the ones linked to it</source>
+        <translation>Ferma questo FX e quelli collegati</translation>
+    </message>
+    <message>
         <source>Stop all the FX</source>
         <translation>Ferma tutti gli FX</translation>
     </message>
@@ -3737,8 +3828,8 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Collega</translation>
     </message>
     <message>
-        <source>Linked FX share the speed and the timing (and stop together)</source>
-        <translation>Gli FX collegati condividono la velocità e il timing (e si fermano insieme)</translation>
+        <source>Linked FX share the speed, the timing and the clock, and stop together</source>
+        <translation>Gli FX collegati condividono la velocità, il timing e l&apos;orologio, e si fermano insieme</translation>
     </message>
     <message>
         <source>Start FX</source>
@@ -3767,13 +3858,28 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <source>Like the rest</source>
         <translation>Come le altre</translation>
     </message>
+    <message numerus="yes">
+        <source>The selection spans %n FX: a change goes to each one of them.</source>
+        <translation>
+            <numerusform>La selezione abbraccia %n FX: una modifica va a ciascuno.</numerusform>
+            <numerusform>La selezione abbraccia %n FX: una modifica va a ciascuno di essi.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Merge into one FX</source>
+        <translation>Unisci in un FX</translation>
+    </message>
+    <message>
+        <source>One FX of them, on the clock of the first one: each fixture keeps its shape, not its place in the wave of its FX</source>
+        <translation>Un solo FX con essi, sull&apos;orologio del primo: ogni fixture conserva la sua forma, non il suo posto nell&apos;onda del suo FX</translation>
+    </message>
     <message>
         <source>The selected fixtures follow the FX again</source>
         <translation>Le fixture selezionate tornano a seguire l&apos;FX</translation>
     </message>
     <message>
-        <source>Mirror: the fixtures that go the other way round follow the wave of their twin on the other side.</source>
-        <translation>Specchio: le fixture che vanno al contrario seguono l&apos;onda della loro gemella dall&apos;altro lato.</translation>
+        <source>Mirror: the inverted or backwards fixtures of one side follow the wave of their twin on the other side.</source>
+        <translation>Specchio: le fixture invertite o al contrario di un lato seguono l&apos;onda della loro gemella dall&apos;altro lato.</translation>
     </message>
     <message>
         <source>FX macros</source>
@@ -3915,8 +4021,8 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Collega</translation>
     </message>
     <message>
-        <source>Linked FX share the speed and the timing</source>
-        <translation>Gli FX collegati condividono la velocità e il timing</translation>
+        <source>Linked FX share the speed, the timing and the clock</source>
+        <translation>Gli FX collegati condividono la velocità, il timing e l&apos;orologio</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).</source>
@@ -3937,8 +4043,8 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <translation>Modalità</translation>
     </message>
     <message>
-        <source>The dotted line is the base value: the wave goes above it, below it or both. Modes 9 to 12 are for chases, with a step.</source>
-        <translation>La linea tratteggiata è il valore base: l&apos;onda va sopra, sotto o da entrambi i lati. Le modalità da 9 a 12 sono per i chase, a passi.</translation>
+        <source>The dotted line is the base value: the wave goes above it, below it or both. With an arrow (←), it goes from the last fixture to the first. Modes 9 to 12 are for chases, with a step.</source>
+        <translation>La linea tratteggiata è il valore base: l&apos;onda va sopra, sotto o da entrambi i lati. Con una freccia (←), va dall&apos;ultima fixture alla prima. Le modalità da 9 a 12 sono per i chase, a passi.</translation>
     </message>
 </context>
 <context>
@@ -8544,6 +8650,10 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
 <context>
     <name>Programmer</name>
     <message>
+        <source>The FX are not saved in a static scene: use Record… to keep them</source>
+        <translation>Gli FX non si salvano in una scena statica: usa «Registra…» per tenerli</translation>
+    </message>
+    <message>
         <source>Programmer FX</source>
         <translation>FX del programmatore</translation>
     </message>
@@ -9928,6 +10038,18 @@ Aggiungine alcune nella pagina Patch.</translation>
 </context>
 <context>
     <name>ScenesPage</name>
+    <message>
+        <source>It becomes an FX scene with the same ID, and this can&apos;t be undone.</source>
+        <translation>Diventa una scena FX con lo stesso ID, e non si può annullare.</translation>
+    </message>
+    <message>
+        <source>It becomes an FX scene with the same ID, and this can&apos;t be undone. What changes:</source>
+        <translation>Diventa una scena FX con lo stesso ID, e non si può annullare. Cosa cambia:</translation>
+    </message>
+    <message>
+        <source>Convert “%1” to FX?</source>
+        <translation>Convertire «%1» in FX?</translation>
+    </message>
     <message>
         <source>Scenes (%1)</source>
         <translation>Scene (%1)</translation>

@@ -38,6 +38,8 @@ namespace FxTools
     FXScene::Layer layerFromMap(const QVariantMap &map, const FXScene::Layer &base = FXScene::Layer());
     /** A new FX on $param: a circle for pan/tilt, a sine wave for the rest */
     FXScene::Layer defaultLayer(const QString &param);
+    /** DMX Total Control: a link group none of $layers has (above $after too) */
+    int newLink(const QList<FXScene::Layer> &layers, int after = 0);
     /** What linked layers share: the speed and the timing */
     QStringList timingKeys();
     /** What a fixture can do its own way in an FX: the shape, the size, the
@@ -62,12 +64,27 @@ namespace FxTools
     void fanOffset(FXScene::Layer &layer, const QList<quint32> &inEffectOrder, const QString &key, int last);
     /** How many fixtures of $layer do the shape, size, direction or phase their own way */
     int ownShapeCount(const FXScene::Layer &layer);
+    /** DMX Total Control: all of $shape as what a fixture does its own way
+     *  (its shift and delay too), to take it into another FX */
+    FXScene::Own shapeAsOwn(const FXScene::Shape &shape);
+    /** DMX Total Control: the ownKeys() $shapes don't all share: { key: true } */
+    QVariantMap mixedKeys(const QList<FXScene::Shape> &shapes);
+    /** DMX Total Control: the timingKeys() $layers don't all share (the BPM
+     *  only off the BPM of the show, the size of the sets only with sets) */
+    QVariantMap mixedTiming(const QList<FXScene::Layer> &layers);
+    /** DMX Total Control: whether the panel says «Mirror»: $layer is a mirror
+     *  (FXScene::mirrorTwins over $order) and none of its twins goes the
+     *  other way only by going backwards on a figure whose reverse is not
+     *  its mirror in pan (an eight, a diagonal, a circle turned 90°...:
+     *  «Invert pan» is) */
+    bool showsMirror(const FXScene::Layer &layer, const QList<quint32> &order);
     /** How many fixtures of $layer have a shift or a delay */
     int offsetCount(const FXScene::Layer &layer);
     /** The fixtures of $layer (or $sceneFixtures when it has none of its own)
      *  in the order of the effect: [{ id, name, selected, place (degrees
      *  behind in the wave, -1: none), step (1..., 0: none), shift, delay,
-     *  virtual (a dimmer FX dims its colour: it has no dimmer) }] */
+     *  virtual (a dimmer FX dims its colour: it has no dimmer), group (with
+     *  «By group», the name of the group of its set; "": alone) }] */
     QVariantList fixtureRows(const Doc *doc, const FXScene::Layer &layer, const QList<quint32> &sceneFixtures,
                              const QList<quint32> &selected);
     /** DMX Total Control: the virtual dimmer of $layer on $fixtures (its own
@@ -99,7 +116,9 @@ namespace FxTools
     int nearestPlace(int i, int n, int m);
     /** What the fixture $i of $n takes from $looks: the shape and the slots
      *  from its nearest place, the other bases, the shift and the delay in
-     *  between the two places around it */
+     *  between the two places around it. DMX Total Control: what repeats
+     *  every 2 or 3 places (twice at least: every other one backwards, two
+     *  colours) repeats so on any count; halves, fans and delays stretch */
     FixtureLook lookAt(const QList<FixtureLook> &looks, int i, int n);
 
     /** $samples values (-1..1) of a mode, to draw it */
@@ -140,6 +159,9 @@ public:
      *  what each of its fixtures did by its place in the FX (none when they
      *  all did the same). @return its id, or "" */
     Q_INVOKABLE QString save(const QString &name);
+    /** DMX Total Control: what the last save has to say (FX of a parameter
+     *  that went in as one at the speed of the first), or "" */
+    Q_INVOKABLE QString saveNote() const;
     Q_INVOKABLE void rename(const QString &id, const QString &name);
     Q_INVOKABLE void remove(const QString &id);
 
@@ -174,6 +196,7 @@ private:
     QList<Macro> m_factory;
     QList<Macro> m_user;
     QString m_path;
+    QString m_saveNote;
 };
 
 #endif

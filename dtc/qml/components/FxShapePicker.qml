@@ -57,7 +57,7 @@ Popup {
             Layout.fillWidth: true
             visible: !picker.figure
             wrapMode: Text.WordWrap
-            text: qsTr("The dotted line is the base value: the wave goes above it, below it or both. Modes 9 to 12 are for chases, with a step.")
+            text: qsTr("The dotted line is the base value: the wave goes above it, below it or both. With an arrow (←), it goes from the last fixture to the first. Modes 9 to 12 are for chases, with a step.")
             color: Theme.textDim
             font.pixelSize: Theme.fontSmall
         }

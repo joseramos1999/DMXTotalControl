@@ -41,6 +41,14 @@ ColumnLayout {
     /** The rhythm tapped on the button of its scene (BPM), 0: none. At the
      *  BPM of the show, the FX goes at it */
     property real tappedBpm: 0
+    /** Whether the fixtures shown don't all share $key (fx.mixed): a button
+     *  half lit, a value «mixed». Over several FX, their timing too */
+    function mixed(key) { return !!(fx.mixed && fx.mixed[key]) }
+    /** The fixtures shown are a selection (the programmer), not all the
+     *  fixtures of the FX (the scene editor) */
+    property bool selectionBased: false
+    readonly property string mixedTip: selectionBased ? qsTr("Only some of the selected fixtures. A click turns it on for all of them")
+                                                      : qsTr("Only some fixtures of this FX. A click turns it on for all of them")
 
     /** The user changed something */
     signal edit(var props)
@@ -52,7 +60,25 @@ ColumnLayout {
     // the speed slider: 0..1 -> 0..360 BPM, finer at the slow end
     function bpmToSlider(bpm) { return Math.sqrt(Math.max(0, Math.min(360, bpm)) / 360) }
     function sliderToBpm(v) { return Math.round(v * v * 360 * 10) / 10 }
-    readonly property var multipliers: [0.25, 0.5, 1, 2, 3, 4, 8]
+    readonly property var multipliers: [0.125, 0.25, 1 / 3, 0.5, 2 / 3, 1, 2, 3, 4, 8]
+    // the list, with the multiplier of the FX when it is another one (a Move
+    // FX converted: x0.17), so the combo shows what it goes at
+    readonly property var multiplierList: {
+        const m = controls.fx.multiplier || 1
+        let list = multipliers.slice()
+        if (!list.some(v => Math.abs(v - m) < 1e-6)) {
+            list.push(m)
+            list.sort((a, b) => a - b)
+        }
+        return list
+    }
+    function multiplierText(m) {
+        const fractions = [[0.125, "⅛"], [0.25, "¼"], [1 / 3, "⅓"], [0.5, "½"], [2 / 3, "⅔"]]
+        for (const f of fractions)
+            if (Math.abs(f[0] - m) < 1e-6)
+                return "×" + f[1]
+        return Number.isInteger(m) ? "×" + m : "×" + Number(m).toLocaleString(Qt.locale(), "f", 2)
+    }
 
     spacing: 8
 
@@ -90,7 +116,8 @@ ColumnLayout {
                 id: shapeLabel
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 3 }
                 horizontalAlignment: Text.AlignHCenter
-                text: controls.panTilt ? Theme.fxFigureNames[controls.fx.figure || 0] : qsTr("Mode %1").arg(controls.fx.mode || 1)
+                text: controls.mixed(controls.panTilt ? "figure" : "mode") ? qsTr("mixed")
+                      : controls.panTilt ? Theme.fxFigureNames[controls.fx.figure || 0] : qsTr("Mode %1").arg(controls.fx.mode || 1)
                 color: Theme.textDim
                 font.pixelSize: 10
                 elide: Text.ElideRight
@@ -122,7 +149,7 @@ ColumnLayout {
                 value: controls.fx.swing || 0
                 onMoved: controls.edit({ swing: Math.round(value) })
             }
-            Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; text: (controls.fx.swing || 0) + "%" }
+            Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; text: controls.mixed("swing") ? qsTr("mixed") : (controls.fx.swing || 0) + "%" }
 
             Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; visible: controls.panTilt; text: qsTr("Swing tilt") }
             HSlider {
@@ -135,7 +162,12 @@ ColumnLayout {
                 value: controls.fx.swingTilt || 0
                 onMoved: controls.edit({ swingTilt: Math.round(value) })
             }
-            Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; visible: controls.panTilt; text: (controls.fx.swingTilt || 0) + "%" }
+            Value {
+                Layout.preferredWidth: 62
+                Layout.minimumWidth: 62
+                visible: controls.panTilt
+                text: controls.mixed("swingTilt") ? qsTr("mixed") : (controls.fx.swingTilt || 0) + "%"
+            }
 
             Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; text: qsTr("Speed") }
             HSlider {
@@ -151,8 +183,9 @@ ColumnLayout {
             Value {
                 Layout.preferredWidth: 62
                 Layout.minimumWidth: 62
-                text: controls.fx.syncBpm ? (controls.tappedBpm > 0 ? Math.round(controls.tappedBpm) + " BPM" : qsTr("show"))
-                                          : (controls.fx.bpm || 0) === 0 ? qsTr("stop") : Math.round(controls.fx.bpm || 0) + " BPM"
+                text: controls.mixed("bpm") ? qsTr("mixed")
+                      : controls.fx.syncBpm ? (controls.tappedBpm > 0 ? Math.round(controls.tappedBpm) + " BPM" : qsTr("show"))
+                      : (controls.fx.bpm || 0) === 0 ? qsTr("stop") : Math.round(controls.fx.bpm || 0) + " BPM"
             }
 
             // the fixtures without a dimmer: the level their colour is dimmed from
@@ -196,31 +229,45 @@ ColumnLayout {
             implicitHeight: 28
             enabled: !controls.fx.syncBpm
             ToolTip.text: qsTr("Half the speed"); ToolTip.visible: hovered
-            onClicked: controls.edit({ bpm: Math.max(0.5, (controls.fx.bpm || 0) / 2) })
+            // (bpmScale: on each FX of a selection over several, from its own speed)
+            onClicked: controls.edit({ bpm: Math.max(0.5, (controls.fx.bpm || 0) / 2), bpmScale: 0.5 })
         }
         AppButton {
             text: "×2"
             implicitHeight: 28
             enabled: !controls.fx.syncBpm
             ToolTip.text: qsTr("Twice the speed"); ToolTip.visible: hovered
-            onClicked: controls.edit({ bpm: Math.min(360, Math.max(1, (controls.fx.bpm || 0) * 2)) })
+            onClicked: controls.edit({ bpm: Math.min(360, Math.max(1, (controls.fx.bpm || 0) * 2)), bpmScale: 2 })
         }
         AppButton {
             text: qsTr("BPM of the show")
             implicitHeight: 28
             checkable: true
-            checked: !!controls.fx.syncBpm
-            ToolTip.text: qsTr("The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene"); ToolTip.visible: hovered
+            // (some of the FX on it, some not: half lit)
+            partial: controls.mixed("syncBpm")
+            checked: !!controls.fx.syncBpm && !partial
+            ToolTip.text: qsTr("The speed and the beat follow the show (tap, BPM fader or dial), or the rhythm tapped on the button of its scene"); ToolTip.visible: hovered
             onClicked: controls.edit({ syncBpm: checked })
         }
         Text { text: qsTr("Multiplier"); color: Theme.textDim; font.pixelSize: Theme.fontSmall; height: 28; verticalAlignment: Text.AlignVCenter }
         ComboBox {
-            implicitWidth: 80
+            // (wide enough for a value of its own: ×0,17)
+            implicitWidth: 96
             implicitHeight: 28
-            model: controls.multipliers.map(m => m === 0.25 ? "×¼" : m === 0.5 ? "×½" : "×" + m)
-            currentIndex: Math.max(0, controls.multipliers.indexOf(controls.fx.multiplier || 1))
-            onActivated: (i) => controls.edit({ multiplier: controls.multipliers[i] })
+            model: controls.multiplierList.map(m => controls.multiplierText(m))
+            currentIndex: controls.multiplierList.findIndex(v => Math.abs(v - (controls.fx.multiplier || 1)) < 1e-6)
+            displayText: controls.mixed("multiplier") ? qsTr("mixed") : currentText
+            onActivated: (i) => controls.edit({ multiplier: controls.multiplierList[i] })
         }
+    }
+    // a rhythm of its own: it doesn't go on the beat of the show
+    Text {
+        Layout.fillWidth: true
+        visible: !!controls.fx.syncBpm && controls.tappedBpm > 0
+        text: qsTr("Its own rhythm, tapped on its button (%1 BPM): not on the beat of the show").arg(Math.round(controls.tappedBpm))
+        color: Theme.warning
+        font.pixelSize: Theme.fontSmall
+        wrapMode: Text.WordWrap
     }
 
     // ------------------------------------------------------------ pan/tilt
@@ -228,25 +275,32 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: controls.panTilt
         spacing: 6
+        // (some of the selection with it, some without: half lit, and a click turns it on)
         AppButton {
             text: qsTr("Invert pan")
             implicitHeight: 28
             checkable: true
-            checked: !!controls.fx.panInvert
+            partial: controls.mixed("panInvert")
+            checked: !!controls.fx.panInvert && !partial
+            ToolTip.text: controls.mixedTip; ToolTip.visible: hovered && partial
             onClicked: controls.edit({ panInvert: checked })
         }
         AppButton {
             text: qsTr("Invert tilt")
             implicitHeight: 28
             checkable: true
-            checked: !!controls.fx.tiltInvert
+            partial: controls.mixed("tiltInvert")
+            checked: !!controls.fx.tiltInvert && !partial
+            ToolTip.text: controls.mixedTip; ToolTip.visible: hovered && partial
             onClicked: controls.edit({ tiltInvert: checked })
         }
         AppButton {
             text: qsTr("Backwards")
             implicitHeight: 28
             checkable: true
-            checked: !!controls.fx.reverse
+            partial: controls.mixed("reverse")
+            checked: !!controls.fx.reverse && !partial
+            ToolTip.text: controls.mixedTip; ToolTip.visible: hovered && partial
             onClicked: controls.edit({ reverse: checked })
         }
     }
@@ -263,7 +317,7 @@ ColumnLayout {
             value: controls.fx.rotate || 0
             onMoved: controls.edit({ rotate: Math.round(value) })
         }
-        Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; text: (controls.fx.rotate || 0) + "°" }
+        Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; text: controls.mixed("rotate") ? qsTr("mixed") : (controls.fx.rotate || 0) + "°" }
     }
 
     // ------------------------------------------------------------ FX timing
@@ -285,8 +339,9 @@ ColumnLayout {
 
         component CountSpin: SpinBox {
             id: countSpin
-            // (its own property: an inline component does not see the ids of the file)
+            // (its own properties: an inline component does not see the ids of the file)
             property int sets: 1
+            property bool mixed: false
             from: -1
             to: 64
             editable: false
@@ -295,7 +350,8 @@ ColumnLayout {
             textFromValue: (v) => v === 0 ? qsTr("Off") : v < 0 ? qsTr("All (%1)").arg(sets) : v
             // its own text: the spin box would not redo it when only the sets change
             contentItem: Text {
-                text: countSpin.value === 0 ? qsTr("Off") : countSpin.value < 0 ? qsTr("All (%1)").arg(countSpin.sets) : countSpin.value
+                text: countSpin.mixed ? qsTr("mixed")
+                      : countSpin.value === 0 ? qsTr("Off") : countSpin.value < 0 ? qsTr("All (%1)").arg(countSpin.sets) : countSpin.value
                 color: Theme.text
                 font: countSpin.font
                 horizontalAlignment: Text.AlignHCenter
@@ -306,6 +362,7 @@ ColumnLayout {
         Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; text: qsTr("Wave per X") }
         CountSpin {
             sets: controls.sets
+            mixed: controls.mixed("wave")
             value: controls.fx.wave || 0
             onValueModified: controls.edit({ wave: value, step: value !== 0 ? 0 : (controls.fx.step || 0) })
             ToolTip.text: qsTr("The shape spreads over X fixtures (or sets): each one a bit later"); ToolTip.visible: hovered
@@ -313,6 +370,7 @@ ColumnLayout {
         Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; text: qsTr("Step per X") }
         CountSpin {
             sets: controls.sets
+            mixed: controls.mixed("step")
             value: controls.fx.step || 0
             onValueModified: controls.edit({ step: value, wave: value !== 0 ? 0 : (controls.fx.wave || 0) })
             ToolTip.text: qsTr("One fixture (or set) after the other, X of them"); ToolTip.visible: hovered
@@ -321,21 +379,44 @@ ColumnLayout {
         Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; text: qsTr("Grouping") }
         RowLayout {
             spacing: 4
+            // («Outside in» is saved as «mirror»: it pairs the ends, it inverts
+            // nothing. Wide enough for its longest entry in every language)
             ComboBox {
                 id: groupingBox
-                implicitWidth: 150
+                implicitContentWidthPolicy: ComboBox.WidestText
+                Layout.preferredWidth: Math.max(170, implicitContentWidth + leftPadding + rightPadding)
                 implicitHeight: 30
-                model: [qsTr("Off"), qsTr("Every X"), qsTr("Blocks of X"), qsTr("Divide by X"), qsTr("Mirror"), qsTr("By group")]
+                model: [qsTr("Off"), qsTr("Every X"), qsTr("Blocks of X"), qsTr("Divide by X"), qsTr("Outside in"), qsTr("By group")]
                 currentIndex: controls.fx.grouping || 0
+                displayText: controls.mixed("grouping") ? qsTr("mixed") : currentText
                 onActivated: (i) => controls.edit({ grouping: i })
+                ToolTip.text: (controls.fx.grouping || 0) === 4 ? qsTr("From the outside in: the first and the last fixture are one set, then the second and the one before the last… It inverts nothing")
+                            : (controls.fx.grouping || 0) === 5 ? qsTr("The groups of the Patch that split the fixtures of the FX without overlapping, not a group that has them all. «Per fixture» shows the group of each one")
+                            : ""
+                ToolTip.visible: hovered && ToolTip.text.length > 0
             }
             SpinBox {
+                id: groupSizeSpin
                 visible: (controls.fx.grouping || 0) >= 1 && (controls.fx.grouping || 0) <= 4
                 from: 1; to: 32
                 implicitWidth: 96
                 implicitHeight: 30
                 value: controls.fx.groupSize || 2
+                // («mixed» over its number: the spin box does not redo its text)
+                Binding { target: groupSizeSpin.contentItem; property: "color"; value: "transparent"; when: controls.mixed("groupSize") }
+                Text {
+                    parent: groupSizeSpin.contentItem
+                    anchors.fill: parent
+                    visible: controls.mixed("groupSize")
+                    text: qsTr("mixed")
+                    font: groupSizeSpin.font
+                    color: Theme.text
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onValueModified: controls.edit({ groupSize: value })
+                ToolTip.text: qsTr("Fixtures in each set, half from each end: with 2, the first goes with the last")
+                ToolTip.visible: hovered && (controls.fx.grouping || 0) === 4
             }
         }
         Caption { Layout.preferredWidth: 92; Layout.minimumWidth: 92; text: qsTr("Order") }
@@ -346,6 +427,7 @@ ColumnLayout {
                 implicitHeight: 30
                 model: [qsTr("Selection"), qsTr("Reversed"), qsTr("Random"), qsTr("By number")]
                 currentIndex: controls.fx.order || 0
+                displayText: controls.mixed("order") ? qsTr("mixed") : currentText
                 onActivated: (i) => controls.edit({ order: i })
             }
             AppButton {
@@ -361,6 +443,7 @@ ColumnLayout {
         TimeSpin {
             implicitHeight: 30
             engineValue: controls.fx.wait || 0
+            otherText: controls.mixed("wait") ? qsTr("mixed") : ""
             onEdited: (v) => controls.edit({ wait: v })
             ToolTip.text: qsTr("Time at the base after each run"); ToolTip.visible: hovered
         }
@@ -373,7 +456,7 @@ ColumnLayout {
                 value: controls.fx.phase || 0
                 onMoved: controls.edit({ phase: Math.round(value) })
             }
-            Value { Layout.preferredWidth: 36; text: (controls.fx.phase || 0) + "°" }
+            Value { Layout.preferredWidth: 62; Layout.minimumWidth: 62; text: controls.mixed("phase") ? qsTr("mixed") : (controls.fx.phase || 0) + "°" }
         }
     }
 

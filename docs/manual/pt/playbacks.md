@@ -110,8 +110,8 @@ Ela também está nos faders do [SHOW](show.md#faders) e nos [mapeamentos](mapeo
 
 Enquanto uma cue está em fade, o painel do playback selecionado mostra **“Tempo ao vivo”**: o atraso mais o fade dessa cue (por exemplo, “4,0 s”). Você pode mudá-lo enquanto ele corre:
 
-- Digite outro tempo, ou toque em **“×½”** ou **“×2”**: o fade continua de onde está e termina no tempo novo.
-- **“Agora”** termina o fade na hora.
+- Digite outro tempo, ou toque em **“×½”** ou **“×2”**: o fade continua de onde está e termina no tempo novo, também o dos FX da cue.
+- **“Agora”** termina o fade na hora, também o dos FX da cue.
 - Se a cue seguinte tem **Seguir**, ela espera o novo final.
 
 A mudança vale só para esta vez: a cue seguinte usa os próprios tempos. “Tempo ao vivo” fica laranja quando o tempo não é o da cue. **“Gravar na cue”** grava na cue os tempos mudados (também os dos atributos e fixtures dela). Não é possível quando a cue roda com um tempo de BACK ou com o fade de entrada de um grupo ou de um bloco, que não são os tempos dela. Isso se desfaz como qualquer outra edição da cuelist.

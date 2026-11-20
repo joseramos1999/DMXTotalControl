@@ -494,16 +494,18 @@ int Programmer::releaseChannels(const QList<quint32> &fixtures, const std::funct
             if (fxi == nullptr)
                 continue;
             QStringList params = layer.isPanTilt() ? QStringList({ "pan", "tilt" }) : QStringList({ layer.param });
+            bool matched = false;
             for (const QString &param : params)
             {
-                quint32 c = FXScene::channelFor(fxi, param);
-                if (c != QLCChannel::invalid() && match(fxi->channel(c)))
-                {
-                    layer.own.remove(fid);
-                    layer.fixtures.removeAt(i);
-                    fxChanged = true;
-                    break;
-                }
+                // (DMX Total Control: on every head it plays)
+                for (quint32 c : FXScene::channelsFor(fxi, param))
+                    matched = matched || match(fxi->channel(c));
+            }
+            if (matched)
+            {
+                layer.own.remove(fid);
+                layer.fixtures.removeAt(i);
+                fxChanged = true;
             }
         }
     }
@@ -643,6 +645,9 @@ void Programmer::clear()
     m_valueKeys.clear();
     m_paletteRefs.clear();
     m_fxLayers.clear();
+    // (DMX Total Control: nor links)
+    m_linkGroup = 0;
+    m_lastLink = 0;
     // (no fan either)
     m_fanFixtures.clear();
     m_fanBases.clear();
@@ -961,6 +966,8 @@ void Programmer::slotDocCleared()
     m_selection.clear();
     m_values.clear();
     m_fxLayers.clear();
+    m_linkGroup = 0;
+    m_lastLink = 0;
     syncFx();
 
     emit selectionChanged();
@@ -1267,8 +1274,11 @@ void Programmer::loadState(const QMap<QPair<quint32, quint32>, uchar> &values, c
     m_selection.clear();
 
     // the FX first, on the fixtures of the show: the values of their
-    // channels are then their base, not sent by the source
+    // channels are then their base, not sent by the source (DMX Total
+    // Control: with their link groups; a new one goes past them)
     m_fxLayers.clear();
+    m_linkGroup = 0;
+    m_lastLink = 0;
     for (FXScene::Layer layer : fx)
     {
         QList<quint32> ids;
@@ -1436,18 +1446,21 @@ bool Programmer::releaseFxOn(const QSet<QPair<quint32, quint32>> &keys)
         for (int i = layer.fixtures.count() - 1; i >= 0; i--)
         {
             const quint32 fid = layer.fixtures.at(i);
+            bool on = false;
             for (const QString &param : params)
             {
-                quint32 fine = QLCChannel::invalid();
-                const quint32 c = FXScene::channelFor(m_doc->fixture(fid), param, &fine);
-                if ((c != QLCChannel::invalid() && keys.contains(qMakePair(fid, c))) ||
-                    (fine != QLCChannel::invalid() && keys.contains(qMakePair(fid, fine))))
-                {
-                    layer.own.remove(fid);
-                    layer.fixtures.removeAt(i);
-                    fxChanged = true;
-                    break;
-                }
+                // (DMX Total Control: the channels of every head it plays)
+                QList<quint32> fines;
+                const QList<quint32> channels = FXScene::channelsFor(m_doc->fixture(fid), param, &fines);
+                for (int k = 0; k < channels.count(); k++)
+                    on = on || keys.contains(qMakePair(fid, channels.at(k))) ||
+                         (fines.at(k) != QLCChannel::invalid() && keys.contains(qMakePair(fid, fines.at(k))));
+            }
+            if (on)
+            {
+                layer.own.remove(fid);
+                layer.fixtures.removeAt(i);
+                fxChanged = true;
             }
         }
     }
@@ -1538,8 +1551,8 @@ void Programmer::releaseUsedBy(quint32 functionId)
             for (quint32 fid : layer.fixtures.isEmpty() ? fx->fixtures() : layer.fixtures)
                 for (const QString &param : params)
                 {
-                    quint32 c = FXScene::channelFor(m_doc->fixture(fid), param);
-                    if (c != QLCChannel::invalid())
+                    // (DMX Total Control: on every head)
+                    for (quint32 c : FXScene::channelsFor(m_doc->fixture(fid), param))
                         used.insert(qMakePair(fid, c));
                 }
         }
@@ -1896,6 +1909,10 @@ bool Programmer::mergeIntoScene(quint32 sceneId)
         QList<QPair<quint32, quint32>> written = m_values.keys();
         m_palettes->mergeSceneRefs(sceneId, paletteRefs(), written);
     }
+    // DMX Total Control: a static scene has no FX: they stay in the
+    // programmer, and the user may think they were saved
+    if (m_fxLayers.isEmpty() == false)
+        emit message(tr("The FX are not saved in a static scene: use Record… to keep them"));
 
     m_doc->setModified();
     return true;
@@ -2130,6 +2147,78 @@ int Programmer::fxLayerFor(const QString &param, bool exact) const
     return exact ? -1 : partial;
 }
 
+QList<int> Programmer::fxLayersFor(const QString &param) const
+{
+    QList<int> indexes;
+    const QList<quint32> with = selectionWith(param);
+    const QSet<quint32> selection(with.cbegin(), with.cend());
+    for (int i = 0; i < m_fxLayers.count() && selection.isEmpty() == false; i++)
+    {
+        const FXScene::Layer &layer = m_fxLayers.at(i);
+        if (layer.param == param && QSet<quint32>(layer.fixtures.cbegin(), layer.fixtures.cend()).intersects(selection))
+            indexes.append(i);
+    }
+    return indexes;
+}
+
+int Programmer::newLinkGroup()
+{
+    m_lastLink = FxTools::newLink(m_fxLayers, m_lastLink);
+    return m_lastLink;
+}
+
+void Programmer::linkFx(const QList<int> &indexes)
+{
+    if (indexes.isEmpty())
+        return;
+    auto alive = [this](int group) {
+        for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+            if (layer.link == group)
+                return true;
+        return false;
+    };
+    // the group of one of them, else of another FX on the selected
+    // fixtures, else the one linked last (an FX on other fixtures), else a new one
+    int group = 0;
+    for (int i : indexes)
+        if (group == 0 && m_fxLayers.at(i).link > 0)
+            group = m_fxLayers.at(i).link;
+    for (int i = 0; i < m_fxLayers.count() && group == 0; i++)
+    {
+        const FXScene::Layer &layer = m_fxLayers.at(i);
+        if (layer.link == 0 || indexes.contains(i))
+            continue;
+        for (quint32 fid : layer.fixtures)
+            if (m_selection.contains(fid))
+                group = layer.link;
+    }
+    if (group == 0 && m_linkGroup > 0 && alive(m_linkGroup))
+        group = m_linkGroup;
+    if (group == 0)
+        group = newLinkGroup();
+
+    // the ones that join take the timing of the group: of an FX in it
+    // already, else of the first of them
+    int source = -1;
+    for (int i = 0; i < m_fxLayers.count() && source < 0; i++)
+        if (m_fxLayers.at(i).link == group)
+            source = i;
+    if (source < 0)
+        source = indexes.first();
+    QVariantMap timing;
+    const QVariantMap theirs = FxTools::layerToMap(m_fxLayers.at(source));
+    for (const QString &key : FxTools::timingKeys())
+        timing.insert(key, theirs.value(key));
+    for (int i : indexes)
+    {
+        if (m_fxLayers.at(i).link == group)
+            continue;
+        m_fxLayers[i] = FxTools::layerFromMap(timing, m_fxLayers.at(i));
+        m_fxLayers[i].link = group;
+    }
+    m_linkGroup = group;
+}
+
 void Programmer::removeFromFx(const QString &param, const QList<quint32> &fixtures)
 {
     for (FXScene::Layer &layer : m_fxLayers)
@@ -2144,6 +2233,19 @@ void Programmer::removeFromFx(const QString &param, const QList<quint32> &fixtur
     }
     m_fxLayers.erase(std::remove_if(m_fxLayers.begin(), m_fxLayers.end(),
                                     [](const FXScene::Layer &l) { return l.fixtures.isEmpty(); }), m_fxLayers.end());
+}
+
+void Programmer::removeFromOverlapping(const QString &param, const QList<quint32> &fixtures)
+{
+    // (the engine plays a channel with the first FX on it: the other one
+    // went on in «FX en marcha» doing nothing)
+    QStringList others;
+    if (param == QLatin1String("pantilt"))
+        others = { QStringLiteral("pan"), QStringLiteral("tilt") };
+    else if (param == QLatin1String("pan") || param == QLatin1String("tilt"))
+        others = { QStringLiteral("pantilt") };
+    for (const QString &other : std::as_const(others))
+        removeFromFx(other, fixtures);
 }
 
 FXScene *Programmer::fxScene() const
@@ -2184,32 +2286,95 @@ QList<FXScene::Layer> Programmer::fxLayerList() const
     return m_fxLayers;
 }
 
+QList<FXScene::Layer> Programmer::fxLayersByParam(bool *otherTiming) const
+{
+    if (otherTiming != nullptr)
+        *otherTiming = false;
+    QList<FXScene::Layer> layers;
+    for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+    {
+        int into = -1;
+        for (int i = 0; i < layers.count() && into < 0; i++)
+            if (layers.at(i).param == layer.param)
+                into = i;
+        if (into < 0)
+        {
+            layers.append(layer);
+            continue;
+        }
+        FXScene::Layer &first = layers[into];
+        if (otherTiming != nullptr)
+        {
+            const QVariantMap a = FxTools::layerToMap(first), b = FxTools::layerToMap(layer);
+            for (const QString &key : FxTools::timingKeys())
+            {
+                // (what neither of them uses doesn't count)
+                const bool unused = (key == QLatin1String("bpm") && first.syncBpm && layer.syncBpm) ||
+                                    (key == QLatin1String("groupSize") && first.grouping == FXScene::NoGrouping &&
+                                     layer.grouping == FXScene::NoGrouping) ||
+                                    (key == QLatin1String("seed") && first.order != FXScene::Shuffled &&
+                                     layer.order != FXScene::Shuffled);
+                *otherTiming = *otherTiming || (unused == false && a.value(key) != b.value(key));
+            }
+        }
+        for (quint32 fid : layer.fixtures)
+        {
+            if (first.fixtures.contains(fid))
+                continue;
+            first.own.insert(fid, FxTools::shapeAsOwn(layer.shapeOf(fid)));
+            first.fixtures.insert(FXScene::placeByNumber(m_doc, first.fixtures, fid), fid);
+        }
+        first.own = first.tidyOwn();
+    }
+    return layers;
+}
+
 QVariantMap Programmer::fxOf(const QString &param) const
 {
     int index = fxLayerFor(param, false);
     FXScene::Layer layer = index >= 0 ? m_fxLayers.at(index) : FxTools::defaultLayer(param);
     QVariantMap map = FxTools::layerToMap(layer);
     const QList<quint32> with = selectionWith(param);
+    // DMX Total Control: the FX the selection is on (the first one is shown)
+    const QList<int> spans = fxLayersFor(param);
     int ownSelected = 0, offsetSelected = 0;
-    bool partial = false;
+    bool partial = false, mirror = false, linked = spans.isEmpty() == false;
     QVariantList rows;
-    if (index >= 0)
+    // DMX Total Control: what the selected fixtures do, to say what they don't share
+    QList<FXScene::Shape> shapes;
+    for (int i : spans)
     {
-        // what the first selected fixture of the FX does (its own way included)
-        const QMap<quint32, FXScene::Own> own = layer.tidyOwn();
-        quint32 first = Fixture::invalidId();
+        const FXScene::Layer &each = m_fxLayers.at(i);
+        const QMap<quint32, FXScene::Own> own = each.tidyOwn();
         for (quint32 fid : with)
         {
-            if (layer.fixtures.contains(fid) == false)
+            if (each.fixtures.contains(fid) == false)
                 continue;
-            if (first == Fixture::invalidId())
-                first = fid;
+            shapes.append(each.shapeOf(fid));
             // DMX Total Control: a shift or a delay alone is not "their own way"
             if (own.value(fid).hasShape())
                 ownSelected++;
             if (own.value(fid).hasOffset())
                 offsetSelected++;
         }
+        // DMX Total Control: its fixtures, with their shift and delay
+        rows.append(FxTools::fixtureRows(m_doc, each, each.fixtures, with));
+        // the ones on one side go the other way round: they follow the wave of
+        // their twins (DMX Total Control: said when it looks a mirror: not
+        // backwards on an eight)
+        mirror = mirror || FxTools::showsMirror(each, FXScene::orderedFixtures(each, each.fixtures, m_doc));
+        // the FX has fixtures that are not selected: the shape changes only on the selected ones
+        for (quint32 fid : each.fixtures)
+            partial = partial || with.contains(fid) == false;
+        linked = linked && each.isLinked();
+    }
+    if (index >= 0)
+    {
+        // what the first selected fixture of the FX does (its own way included)
+        quint32 first = Fixture::invalidId();
+        for (quint32 fid : with)
+            if (first == Fixture::invalidId() && layer.fixtures.contains(fid))
+                first = fid;
         const FXScene::Shape shape = layer.shapeOf(first);
         map.insert("mode", shape.mode);
         map.insert("figure", shape.figure);
@@ -2222,13 +2387,21 @@ QVariantMap Programmer::fxOf(const QString &param) const
         map.insert("reverse", shape.reverse);
         map.insert("ownCount", FxTools::ownShapeCount(layer));
         map.insert("offsetCount", FxTools::offsetCount(layer));
-        // DMX Total Control: its fixtures, with their shift and delay
-        rows = FxTools::fixtureRows(m_doc, layer, layer.fixtures, with);
-        // the ones on one side go the other way round: they follow the wave of their twins
-        map.insert("mirror", FXScene::mirrorTwins(layer, FXScene::orderedFixtures(layer, layer.fixtures)).contains(true));
-        // the FX has fixtures that are not selected: the shape changes only on the selected ones
-        for (quint32 fid : std::as_const(layer.fixtures))
-            partial = partial || with.contains(fid) == false;
+        map.insert("mirror", mirror);
+        map.insert("linked", linked);
+        // DMX Total Control: the controls the selected fixtures don't share
+        // (they showed the first one's: on or off by the order of the
+        // selection), and the timing of the FX it spans that they don't share
+        // (a step set the first one's value on all of them, unseen)
+        QVariantMap mixed = FxTools::mixedKeys(shapes);
+        if (spans.count() > 1)
+        {
+            QList<FXScene::Layer> spanned;
+            for (int i : spans)
+                spanned.append(m_fxLayers.at(i));
+            mixed.insert(FxTools::mixedTiming(spanned));
+        }
+        map.insert("mixed", mixed);
     }
     // DMX Total Control: the fixtures without a dimmer it dims (or would dim)
     // and the level it dims them from
@@ -2242,6 +2415,7 @@ QVariantMap Programmer::fxOf(const QString &param) const
     map.insert("rows", rows);
     map.insert("count", with.count());
     map.insert("sets", fxSets(param));
+    map.insert("spans", spans.count());
     return map;
 }
 
@@ -2250,7 +2424,7 @@ int Programmer::fxSets(const QString &param) const
     int index = fxLayerFor(param, false);
     FXScene::Layer layer = index >= 0 ? m_fxLayers.at(index) : FxTools::defaultLayer(param);
     int sets = 1;
-    FXScene::groupSets(m_doc, FXScene::orderedFixtures(layer, selectionWith(param)), layer.grouping, layer.groupSize, &sets);
+    FXScene::groupSets(m_doc, FXScene::orderedFixtures(layer, selectionWith(param), m_doc), layer.grouping, layer.groupSize, &sets);
     return sets;
 }
 
@@ -2268,71 +2442,66 @@ void Programmer::setFx(const QString &param, const QVariantMap &props)
         return;
     }
 
-    int index = fxLayerFor(param, false);
-    if (index < 0)
+    // DMX Total Control: the selected fixtures that come into an FX of the
+    // parameter leave the FX that move the same channels (Pan / tilt against
+    // Pan or Tilt): the last one takes them
+    QList<quint32> entering;
+    for (quint32 fid : with)
+    {
+        bool inFx = false;
+        for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
+            inFx = inFx || (layer.param == param && layer.fixtures.contains(fid));
+        if (inFx == false)
+            entering.append(fid);
+    }
+    removeFromOverlapping(param, entering);
+
+    // DMX Total Control: the FX of the parameter the selection is on. Each one
+    // stays what it is (its wave, its mirror): a change goes to each of them,
+    // and «Merge into one FX» makes one of them (mergeFx)
+    QList<int> indexes = fxLayersFor(param);
+    if (indexes.isEmpty())
     {
         // a new FX on the selection
         FXScene::Layer layer = FxTools::defaultLayer(param);
         layer.fixtures = with;
         m_fxLayers.append(layer);
-        index = m_fxLayers.count() - 1;
+        indexes = { int(m_fxLayers.count()) - 1 };
         tellLeftOut(leftOut);
     }
     else
     {
-        // DMX Total Control: an FX stays one, on one clock:
-        // the selected fixtures that are not on it join it. The ones of
-        // another FX of the parameter keep what they did there as their own
+        // the selected fixtures in none of them join the first one
+        const int first = fxLayerFor(param, false);
         QList<quint32> joined;
         for (quint32 fid : with)
-            if (m_fxLayers.at(index).fixtures.contains(fid) == false)
+        {
+            bool inFx = false;
+            for (int i : std::as_const(indexes))
+                inFx = inFx || m_fxLayers.at(i).fixtures.contains(fid);
+            if (inFx == false)
                 joined.append(fid);
-        if (joined.isEmpty() == false)
-            tellLeftOut(leftOut);
-        for (quint32 fid : std::as_const(joined))
-        {
-            for (int i = 0; i < m_fxLayers.count(); i++)
-            {
-                FXScene::Layer &other = m_fxLayers[i];
-                if (i == index || other.param != param || other.fixtures.contains(fid) == false)
-                    continue;
-                const FXScene::Shape s = other.shapeOf(fid);
-                FXScene::Own was;
-                was.mode = s.mode;
-                was.figure = s.figure;
-                was.swing = s.swing;
-                was.swingTilt = s.swingTilt;
-                was.phase = s.phase;
-                was.rotate = s.rotate;
-                was.panInvert = s.panInvert;
-                was.tiltInvert = s.tiltInvert;
-                was.reverse = s.reverse;
-                // (DMX Total Control: its shift and its delay too)
-                was.shift = s.shift;
-                was.delay = s.delay;
-                m_fxLayers[index].own.insert(fid, was);
-                other.fixtures.removeAll(fid);
-                other.own.remove(fid);
-            }
-            m_fxLayers[index].fixtures.append(fid);
         }
-        m_fxLayers[index].own = m_fxLayers.at(index).tidyOwn();
-        // the FX left without fixtures go
-        for (int i = m_fxLayers.count() - 1; i >= 0; i--)
+        if (joined.isEmpty() == false)
         {
-            if (m_fxLayers.at(i).fixtures.isEmpty())
-            {
-                m_fxLayers.removeAt(i);
-                if (i < index)
-                    index--;
-            }
+            tellLeftOut(leftOut);
+            // DMX Total Control: each one in its place by number (it went last,
+            // so the wave and the mirror changed with the history of the edits)
+            QList<quint32> &fixtures = m_fxLayers[first].fixtures;
+            for (quint32 fid : std::as_const(joined))
+                fixtures.insert(FXScene::placeByNumber(m_doc, fixtures, fid), fid);
         }
     }
 
-    const bool wasLinked = m_fxLayers.at(index).linked;
     QVariantMap changes = props;
     changes.remove("param");
     changes.remove("fixtures");
+    // DMX Total Control: the link goes apart (linkFx), and ½ or ×2 on each
+    // FX from its own speed
+    const bool linking = changes.contains("linked");
+    const bool link = changes.take("linked").toBool();
+    changes.remove("link");
+    const qreal bpmScale = changes.take("bpmScale").toDouble();
     // the speed, the timing and the link are the whole FX's; the shape, the
     // size and the direction are of the selected fixtures, for all of them
     // when they are all selected
@@ -2340,127 +2509,212 @@ void Programmer::setFx(const QString &param, const QVariantMap &props)
     for (const QString &key : FxTools::ownKeys())
         if (changes.contains(key))
             shape.insert(key, changes.take(key));
-    FXScene::Layer &layer = m_fxLayers[index];
-    layer = FxTools::layerFromMap(changes, layer);
-    bool all = true;
-    for (quint32 fid : std::as_const(layer.fixtures))
-        all = all && with.contains(fid);
-    if (all)
+    for (int index : std::as_const(indexes))
     {
-        layer = FxTools::layerFromMap(shape, layer);
-        FxTools::clearOwn(layer, shape.keys());
-    }
-    else
-    {
-        FxTools::setOwn(layer, with, shape);
-    }
-    changes.insert(shape);
-
-    // linked FX share the speed and the timing
-    if (m_fxLayers.at(index).linked)
-    {
-        QVariantMap timing;
-        if (wasLinked == false)
+        FXScene::Layer &layer = m_fxLayers[index];
+        QVariantMap timing = changes;
+        if (bpmScale > 0 && timing.contains("bpm"))
+            timing.insert("bpm", bpmScale < 1 ? qMax(0.5, layer.bpm * bpmScale) : qMin(360.0, qMax(1.0, layer.bpm * bpmScale)));
+        layer = FxTools::layerFromMap(timing, layer);
+        bool all = true;
+        for (quint32 fid : std::as_const(layer.fixtures))
+            all = all && with.contains(fid);
+        if (all)
         {
-            // it joins the others: it takes their timing
-            for (int i = 0; i < m_fxLayers.count(); i++)
-            {
-                if (i != index && m_fxLayers.at(i).linked)
-                {
-                    QVariantMap theirs = FxTools::layerToMap(m_fxLayers.at(i));
-                    for (const QString &key : FxTools::timingKeys())
-                        timing.insert(key, theirs.value(key));
-                    m_fxLayers[index] = FxTools::layerFromMap(timing, m_fxLayers.at(index));
-                    break;
-                }
-            }
+            layer = FxTools::layerFromMap(shape, layer);
+            FxTools::clearOwn(layer, shape.keys());
         }
         else
         {
-            for (const QString &key : FxTools::timingKeys())
-                if (changes.contains(key))
-                    timing.insert(key, changes.value(key));
-            for (int i = 0; i < m_fxLayers.count(); i++)
-                if (i != index && m_fxLayers.at(i).linked)
-                    m_fxLayers[i] = FxTools::layerFromMap(timing, m_fxLayers.at(i));
+            FxTools::setOwn(layer, with, shape);
         }
+    }
+
+    if (linking && link)
+    {
+        linkFx(indexes);
+    }
+    else if (linking)
+    {
+        for (int index : std::as_const(indexes))
+            m_fxLayers[index].link = 0;
+    }
+
+    // linked FX share the speed and the timing: the ones of their link group
+    QList<int> groups;
+    for (int index : std::as_const(indexes))
+    {
+        const int group = m_fxLayers.at(index).link;
+        if (group <= 0 || groups.contains(group))
+            continue;
+        groups.append(group);
+        QVariantMap timing;
+        const QVariantMap now = FxTools::layerToMap(m_fxLayers.at(index));
+        for (const QString &key : FxTools::timingKeys())
+            if (changes.contains(key))
+                timing.insert(key, now.value(key));
+        for (int i = 0; i < m_fxLayers.count() && timing.isEmpty() == false; i++)
+            if (i != index && m_fxLayers.at(i).link == group)
+                m_fxLayers[i] = FxTools::layerFromMap(timing, m_fxLayers.at(i));
     }
 
     setLastParam(param);
     syncFx();
 }
 
-void Programmer::stopFx(const QString &param)
+void Programmer::mergeFx(const QString &param)
 {
-    int index = fxLayerFor(param, false);
+    const int index = fxLayerFor(param, false);
     if (index < 0)
         return;
+    // the selected fixtures that are not on it join it. The ones of another
+    // FX of the parameter keep what they did there as their own
+    const QList<quint32> with = selectionWith(param);
+    QList<quint32> joined;
+    for (quint32 fid : with)
+        if (m_fxLayers.at(index).fixtures.contains(fid) == false)
+            joined.append(fid);
+    if (joined.isEmpty())
+        return;
+    for (quint32 fid : std::as_const(joined))
+    {
+        for (int i = 0; i < m_fxLayers.count(); i++)
+        {
+            FXScene::Layer &other = m_fxLayers[i];
+            if (i == index || other.param != param || other.fixtures.contains(fid) == false)
+                continue;
+            // (DMX Total Control: its shift and its delay too)
+            m_fxLayers[index].own.insert(fid, FxTools::shapeAsOwn(other.shapeOf(fid)));
+            other.fixtures.removeAll(fid);
+            other.own.remove(fid);
+        }
+        // (DMX Total Control: in its place by number)
+        QList<quint32> &fixtures = m_fxLayers[index].fixtures;
+        fixtures.insert(FXScene::placeByNumber(m_doc, fixtures, fid), fid);
+    }
+    m_fxLayers[index].own = m_fxLayers.at(index).tidyOwn();
+    // the FX left without fixtures go
+    m_fxLayers.erase(std::remove_if(m_fxLayers.begin(), m_fxLayers.end(),
+                                    [](const FXScene::Layer &l) { return l.fixtures.isEmpty(); }), m_fxLayers.end());
+    setLastParam(param);
+    syncFx();
+}
 
-    // stopping a linked FX stops the ones linked to it
-    QStringList params = { param };
-    if (m_fxLayers.at(index).linked)
-        for (const FXScene::Layer &layer : std::as_const(m_fxLayers))
-            if (layer.linked && params.contains(layer.param) == false)
-                params.append(layer.param);
-    for (const QString &p : std::as_const(params))
-        removeFromFx(p, m_selection);
+void Programmer::sortFxByNumber(const QString &param)
+{
+    // DMX Total Control: the fixtures of each FX the selection is on (and the
+    // places it keeps for the ones that left it) by number
+    bool changed = false;
+    for (int index : fxLayersFor(param))
+    {
+        FXScene::Layer &layer = m_fxLayers[index];
+        const QList<quint32> fixtures = layer.fixtures, spread = layer.spread;
+        FXScene::sortByNumber(m_doc, layer.fixtures);
+        FXScene::sortByNumber(m_doc, layer.spread);
+        changed = changed || layer.fixtures != fixtures || layer.spread != spread;
+    }
+    if (changed)
+        syncFx();
+}
+
+void Programmer::stopFx(const QString &param)
+{
+    const QList<int> indexes = fxLayersFor(param);
+    if (indexes.isEmpty())
+        return;
+
+    // DMX Total Control: the selected fixtures leave the FX of the parameter
+    // and every FX of their link groups (on other parameters, on other
+    // fixtures); an FX not linked to them keeps them
+    QList<int> groups;
+    for (int i : indexes)
+        if (m_fxLayers.at(i).link > 0)
+            groups.append(m_fxLayers.at(i).link);
+    for (int i = 0; i < m_fxLayers.count(); i++)
+    {
+        FXScene::Layer &layer = m_fxLayers[i];
+        if (indexes.contains(i) == false && groups.contains(layer.link) == false)
+            continue;
+        for (quint32 fid : std::as_const(m_selection))
+        {
+            layer.fixtures.removeAll(fid);
+            layer.own.remove(fid);
+        }
+    }
+    m_fxLayers.erase(std::remove_if(m_fxLayers.begin(), m_fxLayers.end(),
+                                    [](const FXScene::Layer &l) { return l.fixtures.isEmpty(); }), m_fxLayers.end());
+    syncFx();
+}
+
+void Programmer::stopFxAt(int index)
+{
+    if (index < 0 || index >= m_fxLayers.count())
+        return;
+    // DMX Total Control: the whole FX and its link group, whatever is selected
+    const int group = m_fxLayers.at(index).link;
+    for (int i = int(m_fxLayers.count()) - 1; i >= 0; i--)
+        if (i == index || (group > 0 && m_fxLayers.at(i).link == group))
+            m_fxLayers.removeAt(i);
     syncFx();
 }
 
 void Programmer::resetFxOwn(const QString &param)
 {
-    int index = fxLayerFor(param, false);
-    if (index < 0)
-        return;
-    FXScene::Layer &layer = m_fxLayers[index];
-    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
-    FxTools::clearOwn(layer, FxTools::ownKeys(), selectionWith(param));
-    if (layer.own != before)
+    // DMX Total Control: in each FX the selection is on
+    const QList<FXScene::Layer> before = m_fxLayers;
+    for (int index : fxLayersFor(param))
+        FxTools::clearOwn(m_fxLayers[index], FxTools::ownKeys(), selectionWith(param));
+    if (m_fxLayers != before)
         syncFx();
 }
 
 void Programmer::setFxOffset(const QString &param, quint32 fixtureId, const QString &key, int value)
 {
-    // the FX the selection is on, and a fixture of it
-    int index = fxLayerFor(param, false);
-    if (index < 0 || FxTools::offsetKeys().contains(key) == false ||
-        m_fxLayers.at(index).fixtures.contains(fixtureId) == false)
+    // the FX the selection is on that has the fixture (DMX Total Control: of
+    // all of them)
+    if (FxTools::offsetKeys().contains(key) == false)
         return;
-    FXScene::Layer &layer = m_fxLayers[index];
-    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
-    FxTools::setOffset(layer, { fixtureId }, key, value);
-    if (layer.own != before)
-        syncFx();
+    for (int index : fxLayersFor(param))
+    {
+        FXScene::Layer &layer = m_fxLayers[index];
+        if (layer.fixtures.contains(fixtureId) == false)
+            continue;
+        const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
+        FxTools::setOffset(layer, { fixtureId }, key, value);
+        if (layer.own != before)
+            syncFx();
+        return;
+    }
 }
 
 void Programmer::fanFxOffset(const QString &param, const QString &key, int last)
 {
-    int index = fxLayerFor(param, false);
-    if (index < 0 || FxTools::offsetKeys().contains(key) == false)
+    if (FxTools::offsetKeys().contains(key) == false)
         return;
-    // its selected fixtures, in the order of the effect
-    FXScene::Layer &layer = m_fxLayers[index];
+    // its selected fixtures, in the order of the effect (DMX Total Control:
+    // in each FX the selection is on)
     const QList<quint32> with = selectionWith(param);
-    const QList<quint32> ordered = FXScene::orderedFixtures(layer, layer.fixtures);
-    QList<quint32> order;
-    for (quint32 fid : ordered)
-        if (with.contains(fid))
-            order.append(fid);
-    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
-    FxTools::fanOffset(layer, order, key, last);
-    if (layer.own != before)
+    const QList<FXScene::Layer> before = m_fxLayers;
+    for (int index : fxLayersFor(param))
+    {
+        FXScene::Layer &layer = m_fxLayers[index];
+        const QList<quint32> ordered = FXScene::orderedFixtures(layer, layer.fixtures, m_doc);
+        QList<quint32> order;
+        for (quint32 fid : ordered)
+            if (with.contains(fid))
+                order.append(fid);
+        FxTools::fanOffset(layer, order, key, last);
+    }
+    if (m_fxLayers != before)
         syncFx();
 }
 
 void Programmer::clearFxOffsets(const QString &param)
 {
-    int index = fxLayerFor(param, false);
-    if (index < 0)
-        return;
-    FXScene::Layer &layer = m_fxLayers[index];
-    const QMap<quint32, FXScene::Own> before = layer.tidyOwn();
-    FxTools::clearOwn(layer, FxTools::offsetKeys(), selectionWith(param));
-    if (layer.own != before)
+    const QList<FXScene::Layer> before = m_fxLayers;
+    for (int index : fxLayersFor(param))
+        FxTools::clearOwn(m_fxLayers[index], FxTools::offsetKeys(), selectionWith(param));
+    if (m_fxLayers != before)
         syncFx();
 }
 
@@ -2489,13 +2743,32 @@ void Programmer::selectFx(int index)
 
 QVariantList Programmer::fxPreview(const QString &param, qreal cyclePos) const
 {
-    int index = fxLayerFor(param, false);
-    // (DMX Total Control: the FX scene doesn't have the ones of only
-    // protected special effects: they don't play)
-    const int played = index >= 0 ? m_fxPlayIndex.value(index, -1) : -1;
-    if (played < 0)
-        return QVariantList();
-    return m_fx->previewLayer(played, cyclePos);
+    return fxPreviewAt(param, cyclePos, false);
+}
+
+QVariantList Programmer::fxLivePreview(const QString &param, qreal cyclePos) const
+{
+    return fxPreviewAt(param, cyclePos, true);
+}
+
+QVariantList Programmer::fxPreviewAt(const QString &param, qreal cyclePos, bool live) const
+{
+    // DMX Total Control: the FX the selection is on that go on the clock of
+    // the first one (its link group), one after the other
+    const QList<int> indexes = fxLayersFor(param);
+    const int index = fxLayerFor(param, false);
+    QVariantList list;
+    for (int i : indexes)
+    {
+        if (i != index && (m_fxLayers.at(i).link == 0 || m_fxLayers.at(i).link != m_fxLayers.at(index).link))
+            continue;
+        // (DMX Total Control: the FX scene doesn't have the ones of only
+        // protected special effects: they don't play)
+        const int played = m_fxPlayIndex.value(i, -1);
+        if (played >= 0)
+            list.append(live ? m_fx->livePreviewLayer(played, cyclePos) : m_fx->previewLayer(played, cyclePos));
+    }
+    return list;
 }
 
 int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QString, int> &bases,
@@ -2515,6 +2788,9 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
     QList<QPair<quint32, QMap<QString, int>>> lookBases;
     // DMX Total Control: the protected special effects it leaves out
     QSet<quint32> leftOut;
+    // DMX Total Control: its links, each one a link group of its own (not
+    // the one of other FX), each time it goes on
+    QHash<int, int> links;
     for (int i = 0; i < layers.count(); i++)
     {
         FXScene::Layer layer = layers.at(i);
@@ -2540,6 +2816,8 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
             lookParams.unite(QSet<QString>(params.cbegin(), params.cend()));
         }
         removeFromFx(layer.param, fixtures);
+        // (DMX Total Control: and from the FX on the same channels)
+        removeFromOverlapping(layer.param, fixtures);
         layer.fixtures = fixtures;
         // (a macro is for any fixtures: what some did their own way stays out.
         // DMX Total Control: one saved fixture by fixture gives each one what
@@ -2552,6 +2830,12 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
             lookBases.append(qMakePair(fixtures.at(j), look.bases));
         }
         layer.own = layer.tidyOwn();
+        if (layer.link > 0)
+        {
+            if (links.contains(layer.link) == false)
+                links.insert(layer.link, newLinkGroup());
+            layer.link = links.value(layer.link);
+        }
         m_fxLayers.append(layer);
         dimmerApplied = dimmerApplied || layer.param == QLatin1String("dimmer");
         if (first.isEmpty())
@@ -2594,9 +2878,10 @@ int Programmer::applyFxMacro(const QList<FXScene::Layer> &layers, const QMap<QSt
 void Programmer::setMacroBase(quint32 fixtureId, const QString &param, int value, int dimmerLayer, bool &virtualSet)
 {
     const Fixture *fxi = m_doc->fixture(fixtureId);
-    quint32 fine = QLCChannel::invalid();
-    const quint32 c = FXScene::channelFor(fxi, param, &fine);
-    if (c == QLCChannel::invalid())
+    // DMX Total Control: on every head that has it
+    QList<quint32> fines;
+    const QList<quint32> channels = FXScene::channelsFor(fxi, param, &fines);
+    if (channels.isEmpty())
     {
         // DMX Total Control: without a dimmer, the level the FX dims
         // the colour from (once, for the layer)
@@ -2608,9 +2893,12 @@ void Programmer::setMacroBase(quint32 fixtureId, const QString &param, int value
         }
         return;
     }
-    setValue(fixtureId, c, uchar(qBound(0, value, 255)));
-    if (fine != QLCChannel::invalid())
-        setValue(fixtureId, fine, 0);
+    for (int i = 0; i < channels.count(); i++)
+    {
+        setValue(fixtureId, channels.at(i), uchar(qBound(0, value, 255)));
+        if (fines.at(i) != QLCChannel::invalid())
+            setValue(fixtureId, fines.at(i), 0);
+    }
 }
 
 QList<FxTools::FixtureLook> Programmer::fxFixtureLooks(const FXScene::Layer &layer) const

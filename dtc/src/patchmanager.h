@@ -545,6 +545,10 @@ private slots:
 
 private:
     bool isRangeFree(int universe, int address, int channels, quint32 ignoreId) const;
+    /** DMX Total Control: the FX go by the numbers of the fixtures and the
+     *  order of the groups: they get them (FXScene::setPatchOrder) each time
+     *  these change */
+    void shareOrder();
     bool isRangeFree(int universe, int address, int channels, const QList<quint32> &ignoreIds) const;
 
 private:

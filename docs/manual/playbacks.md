@@ -110,8 +110,8 @@ También está en los faders del [SHOW](show.md#faders) y en los [mapeos](mapeos
 
 Mientras una cue hace su fundido, el panel del playback seleccionado muestra **«Tiempo en vivo»**: el retardo más el fundido de esa cue (por ejemplo, «4,0 s»). Puedes cambiarlo mientras corre:
 
-- Escribe otro tiempo, o pulsa **«×½»** o **«×2»**: el fundido sigue desde donde está y acaba en el tiempo nuevo.
-- **«Ahora»** termina el fundido al momento.
+- Escribe otro tiempo, o pulsa **«×½»** o **«×2»**: el fundido sigue desde donde está y acaba en el tiempo nuevo, también el de los FX de la cue.
+- **«Ahora»** termina el fundido al momento, también el de los FX de la cue.
 - Si la cue siguiente tiene **Seguir**, espera al nuevo final.
 
 El cambio vale solo para esta vez: la cue siguiente usa sus propios tiempos. «Tiempo en vivo» se pone naranja cuando el tiempo no es el de la cue. **«Guardar en la cue»** guarda en la cue los tiempos cambiados (también los de sus atributos y fixtures). No se puede cuando la cue va con un tiempo de BACK o con el fundido de entrada de un grupo o de un bloque, que no son sus tiempos. Se deshace como cualquier otra edición de la cuelist.

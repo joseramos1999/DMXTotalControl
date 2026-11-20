@@ -268,13 +268,27 @@ public:
      *  that do the shape, size, direction or phase their own way. DMX Total
      *  Control: "rows", its fixtures in the order of the effect
      *  (FxTools::fixtureRows); "offsetCount", "offsetSelected": the fixtures
-     *  (selected ones) with a shift or a delay */
+     *  (selected ones) with a shift or a delay. "spans": how many FX of
+     *  $param the selection is on (the first one is shown; "partial", the
+     *  counts, "rows" and "mirror" are of all of them, "linked" when they
+     *  all are) */
     Q_INVOKABLE QVariantMap fxOf(const QString &param) const;
     /** Change (or start) the FX of $param on the selection. An FX stays one, on
-     *  one clock: the selected fixtures join it; the shape, size and direction
-     *  (FxTools::ownKeys) go to the selected fixtures only, the speed and the
-     *  timing to the whole FX */
+     *  one clock: the shape, size and direction (FxTools::ownKeys) go to the
+     *  selected fixtures only, the speed and the timing to the whole FX and
+     *  its link group. DMX Total Control: a selection over several FX of
+     *  $param changes each one of them; the selected fixtures in none join
+     *  the first one. "linked" puts them in one link group, or takes them
+     *  out of theirs; "bpmScale" multiplies the BPM of each one (1/2, x2) */
     Q_INVOKABLE void setFx(const QString &param, const QVariantMap &props);
+    /** DMX Total Control: the fixtures of each FX of $param the selection is
+     *  on go in the order of their numbers in the patch (their places in the
+     *  wave, the sets and the mirror follow it) */
+    Q_INVOKABLE void sortFxByNumber(const QString &param);
+    /** DMX Total Control: the FX of $param the selection is on become one, the
+     *  first one, with the selected fixtures in none of them: each fixture
+     *  keeps what it did as its own */
+    Q_INVOKABLE void mergeFx(const QString &param);
     /** The selected fixtures of the FX of $param do what the FX does again
      *  (their shift and delay stay) */
     Q_INVOKABLE void resetFxOwn(const QString &param);
@@ -286,17 +300,30 @@ public:
     Q_INVOKABLE void fanFxOffset(const QString &param, const QString &key, int last);
     /** The selected fixtures of the FX of $param lose their shift and delay */
     Q_INVOKABLE void clearFxOffsets(const QString &param);
-    /** Stop the FX of $param on the selection (and of what is linked to it) */
+    /** Stop the FX of $param on the selection: the selected fixtures leave
+     *  it, and every FX of its link group */
     Q_INVOKABLE void stopFx(const QString &param);
+    /** DMX Total Control: stop the FX $index of fxLayers() and its whole link
+     *  group, all their fixtures (the selection stays as it is) */
+    Q_INVOKABLE void stopFxAt(int index);
     Q_INVOKABLE void stopAllFx();
     /** Select the fixtures of an FX of the programmer and open its parameter */
     Q_INVOKABLE void selectFx(int index);
     /** How many sets the selection makes with the grouping of the FX of $param */
     Q_INVOKABLE int fxSets(const QString &param) const;
-    /** Each fixture of the FX of $param at $cyclePos, for a preview (blind too) */
+    /** Each fixture of the FX of $param at $cyclePos, for a preview (blind
+     *  too). DMX Total Control: of the FX the selection is on that go on
+     *  the clock of the first one (its link group) */
     Q_INVOKABLE QVariantList fxPreview(const QString &param, qreal cyclePos) const;
+    /** The same as it goes out while it plays (FXScene::livePreviewLayer) */
+    Q_INVOKABLE QVariantList fxLivePreview(const QString &param, qreal cyclePos) const;
 
     QList<FXScene::Layer> fxLayerList() const;
+    /** DMX Total Control: its FX with one by parameter, for a macro: the
+     *  fixtures of another FX of a parameter join the first one, each in its
+     *  place by number and doing what it did as its own. $otherTiming: whether
+     *  one of them went at another speed or timing (the first one's stays) */
+    QList<FXScene::Layer> fxLayersByParam(bool *otherTiming = nullptr) const;
     /** A macro on the selection: its layers where the fixtures have the parameter,
      *  and its base values. DMX Total Control: a layer with $looks (by layer;
      *  FxTools::lookAt) gives the selected fixtures with its parameter, in
@@ -411,8 +438,21 @@ private:
     QList<quint32> selectionWith(const QString &param) const;
     /** The FX of $param on exactly the selection, or (not $exact) on part of it; -1 */
     int fxLayerFor(const QString &param, bool exact) const;
+    /** DMX Total Control: every FX of $param the selection is on */
+    QList<int> fxLayersFor(const QString &param) const;
+    /** fxPreview and fxLivePreview ($live) */
+    QVariantList fxPreviewAt(const QString &param, qreal cyclePos, bool live) const;
+    /** DMX Total Control: the FX $indexes join one link group: the one of
+     *  some of them, else of another FX on the selection, else the one
+     *  linked last, else a new one. Those that join take its timing */
+    void linkFx(const QList<int> &indexes);
+    /** DMX Total Control: a link group no FX has (nor had since the FX were loaded) */
+    int newLinkGroup();
     /** $fixtures leave the FX of $param (FX left without fixtures go) */
     void removeFromFx(const QString &param, const QList<quint32> &fixtures);
+    /** DMX Total Control: $fixtures leave the FX that move the channels of
+     *  $param too (Pan / tilt against Pan or Tilt): the last one takes them */
+    void removeFromOverlapping(const QString &param, const QList<quint32> &fixtures);
     /** The base $value of a macro on $param of $fixtureId. DMX Total Control:
      *  a dimmer base on a fixture without a dimmer is the level of the
      *  virtual dimmer of the FX layer $dimmerLayer, once ($virtualSet) */
@@ -454,6 +494,10 @@ private:
     /** The channels the FX move (the source doesn't send them) */
     QSet<QPair<quint32, quint32>> m_fxChannels;
     QString m_lastParam;
+    /** DMX Total Control: the link group "Link" made or joined last (the
+     *  next "Link" on other fixtures joins it), and the last one given */
+    int m_linkGroup = 0;
+    int m_lastLink = 0;
 
     PaletteManager *m_palettes;
     /** The palette each value comes from */

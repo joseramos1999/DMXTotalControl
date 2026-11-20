@@ -39,7 +39,7 @@ Premi **«Nuova»**:
 - **La cartella** (icona della cartella): spostare la scena in una cartella.
 - **«Prova»** / **«Ferma»**: la riproduce ora, fuori dai gruppi. Le cuelist hanno il loro GO.
 - **«Aggiungi al gruppo…»**: la aggiunge a un gruppo di Live.
-- **Converti in passi** (rack, FX, Colour FX, Move FX, Curve FX e chaser): registra un ciclo in una nuova scena a passi, solo con i canali a cui la scena dà un valore: gli altri, anche se hanno un valore predefinito (il pan o lo zoom al centro di molte teste mobili), non entrano nei passi. Se un FX ha dei ritardi, registra il ciclo quando tutte le sue fixture sono già partite.
+- **Converti in passi** (rack, FX, Colour FX, Move FX, Curve FX e chaser): registra un ciclo in una nuova scena a passi, solo con i canali a cui la scena dà un valore: gli altri, anche se hanno un valore predefinito (il pan o lo zoom al centro di molte teste mobili), non entrano nei passi. Se un FX ha dei ritardi, registra il ciclo quando tutte le sue fixture sono già partite. Il ciclo è quello con cui suona: in «BPM dello show», ai BPM dello show o al suo ritmo battuto, e con un'attesa, la passata intera. Se tutti i suoi FX seguono i BPM dello show e la scena non ha un ritmo battuto, i passi vanno in battiti (modalità BPM) e seguono il battito dello show; altrimenti vanno in secondi, al tempo di adesso.
 - **Converti in cuelist** (passi e chaser): vedi [Cuelist](escenas.md#cuelist).
 - **«QLC+»** (cuelist): salva una copia dello show per QLC+; vedi [Cuelist e QLC+](escenas.md#cuelist-e-qlc).
 - **Esporta**, **«Duplica»** ed **«Elimina»** (viene rimossa anche dai suoi gruppi e rack).
@@ -88,7 +88,7 @@ Una scena FX ha dei **valori base** e uno o più **livelli di FX**. Si crea regi
 
 - A sinistra, l'elenco degli FX: parametro, fixture e velocità (in «BPM dello show», il ritmo battuto della scena se ce l'ha). Il cestino rimuove un livello.
 - A destra, i controlli del livello scelto (gli stessi di Programma) e la sua anteprima animata. Le modifiche si vedono dal vivo mentre la scena è in riproduzione.
-- **«Collega»**: i livelli collegati condividono velocità e timing.
+- **«Collega»**: i livelli collegati condividono velocità e timing, e vanno sullo stesso orologio. Un livello che colleghi qui si unisce al primo gruppo di collegamento della scena; se la scena ne ha più (fatti nel programmatore), ogni livello collegato mostra il numero del suo.
 - Se alcune fixture fanno l'FX a modo loro, viene segnalato: se qui cambi la forma, la dimensione, la direzione o la fase, tutte faranno lo stesso.
 - **«Per fixture»**: lo sfasamento e il ritardo di ogni fixture, anche dal vivo. Qui «Distribuisci…» e «Senza sfasamento né ritardo» valgono per tutte (vedi [Sfasamento e ritardo per fixture](programar.md#sfasamento-e-ritardo-per-fixture)).
 - Per aggiungere livelli o cambiare i valori base: **«Modifica nel programmatore»** e poi **«Salva il programmatore in questa scena»**.
@@ -116,7 +116,7 @@ I Colour FX, i mapping sulla pianta 2D, i Curve FX, i Move FX, «Usa la selezion
 
 Sono effetti del modulo precedente: i **Move FX** muovono pan/tilt con una forma e i **Curve FX** danno un'onda (sinusoide, triangolo, rampe, quadra, casuale, strobo…) ai canali. Li troverai in show vecchi o in show di QLC+; non si creano più da «Nuova».
 
-Si riproducono come prima e hanno il loro editor (forma, larghezza, altezza, rotazione, posizione, fase, distribuzione tra le fixture, simmetrico, relativo…). Un avviso offre **«Converti in FX»**: passano all'editor degli FX, anche nel programmatore, e i gruppi, i tasti dello SHOW e le mappature li conservano. La fase di un Move FX diventa la «Fase» dell'FX, e lo sfasamento di partenza di ogni fixture il suo «Sfasamento» ([Sfasamento e ritardo per fixture](programar.md#sfasamento-e-ritardo-per-fixture)).
+Si riproducono come prima e hanno il loro editor (forma, larghezza, altezza, rotazione, posizione, fase, distribuzione tra le fixture, simmetrico, relativo…). Un avviso offre **«Converti in FX»**: passano all'editor degli FX, anche nel programmatore, e i gruppi, i tasti dello SHOW e le mappature li conservano. La fase di un Move FX diventa la «Fase» dell'FX, e lo sfasamento di partenza di ogni fixture il suo «Sfasamento» ([Sfasamento e ritardo per fixture](programar.md#sfasamento-e-ritardo-per-fixture)). Prima di convertire, una conferma dice cosa cambia, se qualcosa cambia (una foglia diventa un cerchio, un Curve FX con un altro duty cycle resta acceso metà del ciclo…). Il resto rimane uguale: la figura, la sua rotazione e da dove parte, il senso di ogni fixture (il suo «Al contrario» proprio) e «Simmetrico» (la seconda metà con il pan invertito). Non si può annullare.
 
 ### Rack di effetti
 
@@ -137,7 +137,7 @@ Una **super scena** è una timeline con tracce di scene e di audio. Si avvia com
 
 ### La barra degli strumenti
 
-- **«Riproduci»** / **«Ferma»** (**Spazio**): dal cursore. **⏮** torna all'inizio. Accanto si vede il tempo (e la battuta).
+- **«Riproduci»** / **«Ferma»** (**Spazio**): dal cursore (una scena che parte a metà del suo blocco, anche un FX, è dove sarebbe). **⏮** torna all'inizio. Accanto si vede il tempo (e la battuta).
 - Le frecce **Annulla** e **Ripeti** (**Ctrl+Z** / **Ctrl+Y**). Vedi [Annullare](escenas.md#annullare).
 - **«Incolla»** (**Ctrl+V**): i blocchi copiati, sul cursore e a partire dalla traccia selezionata. Vedi [Copiare e incollare](escenas.md#copiare-e-incollare).
 - **«Tempo»** / **«Battute»**: la griglia. In battute, i **BPM**, il metro (**4/4**, **3/4**, **2/4**) e **«Battuta 1 qui»** perché la prima battuta inizi al cursore e coincida con la musica.
@@ -259,7 +259,7 @@ In cima all'editor:
 - **«Indietro»**: i tempi di BACK: **«Tempi della cue»** o **«Tempo fisso»**.
 - **«Priorità»**.
 - **«GO a tempo»**: «No», «BeatGO» o «Impulso» danno un GO a ogni divisione.
-- **«Ritmo battuto»**: il ritmo battuto premendo il suo tasto più volte di seguito, in BPM: un GO a ogni battito. Finché ce l'ha, i suoi Segui e Attendi non contano. **«Rimuovi»** torna ai suoi tempi.
+- **«Ritmo battuto»**: il ritmo battuto premendo il suo tasto più volte di seguito, in BPM: un GO a ogni battito. Finché ce l'ha, i suoi Segui e Attendi non contano. I suoi FX in «BPM dello show» vanno anche loro a quel ritmo, e le pressioni li muovono come in una scena FX; senza ritmo battuto, un GO con il suo tasto non li toglie dal battito dello show. **«Rimuovi»** torna ai suoi tempi.
 - **«Movimento al buio»**: quando una cue è finita, le fixture spente che la cue successiva accende prendono già la sua posizione, il colore e il fascio. Al GO salgono solo d'intensità. **«Dopo»** è l'attesa dopo la fine della cue (0 s di default). **«Tempo»** è quanto durano quei movimenti (2 s di default).
   - Una fixture che un altro playback o la cue stessa illumina non si muove.
   - In una fixture senza dimmer, il suo RGB è la sua luce: si preparano solo i suoi altri attributi.
@@ -281,10 +281,10 @@ Una cuelist **«Submaster»** è comandata dal fader del suo [playback](playback
 
 Una cuelist **«Chase»** percorre le sue cue da sola, in ciclo:
 
-- **«Velocità»**: un passo a ogni battito, in BPM (da 10 a 600; 120 come predefinito). Con **«BPM dello show»**, segue il tempo dello show. **×¼**, **×½**, **×1**, **×2** e **×4** la moltiplicano.
+- **«Velocità»**: un passo a ogni battito, in BPM (da 10 a 600; 120 come predefinito). Con **«BPM dello show»**, segue il tempo e il battito dello show: ogni passo cade su un battito, come gli FX in «BPM dello show» (con una velocità dal vivo o delle cue diversa da ×1, va al suo ritmo, fuori dal battito). **×¼**, **×½**, **×1**, **×2** e **×4** la moltiplicano.
 - **«Dissolvenza»**: la parte del passo che dura il cambio, in %. Con 0 (il predefinito) è un taglio. Con **«Tempi della cue»**, ogni cue usa il suo ritardo e la sua dissolvenza.
 - **«Direzione»**: **«Avanti»**, **«Al contrario»**, **«Andata e ritorno»** (torna indietro alla prima e all'ultima cue) o **«Casuale»** (non ripete mai un passo due volte di seguito).
-- GO passa subito al passo successivo, e i successivi contano da lì. Indietro va di un passo nell'altra direzione. Pausa la ferma dove si trova.
+- GO passa subito al passo successivo, e i successivi contano da lì (con «BPM dello show», il successivo cade sul primo battito almeno mezzo passo dopo). Indietro va di un passo nell'altra direzione. Pausa la ferma dove si trova.
 - Un **«Ritmo battuto»** vince sulla sua velocità; **«Rimuovi»** torna a essa. Con BeatGO o Impulso, avanza solo a ogni divisione.
 - La [velocità delle cue](playbacks.md#velocità-delle-cue) e la velocità dal vivo la accelerano o la rallentano.
 - Il tracking vale sempre: un passo può cambiare solo il colore e tenere il resto.
@@ -358,7 +358,7 @@ Mentre una cue è in dissolvenza, l'intestazione mostra anche **«Tempo dal vivo
 ### Registrare e modificare le cue
 
 - **«Registra la cue N»**: il programmatore diventa una nuova cue dopo quella selezionata, solo con ciò che cambia rispetto a ciò che eredita.
-- **«Aggiorna ▾»**: unisce il programmatore alla cue selezionata: **«Aggiorna la cue N (vale anche per le successive)»** o **«Solo questa cue (le successive mantengono il loro aspetto)»**.
+- **«Aggiorna ▾»**: unisce il programmatore alla cue selezionata: **«Aggiorna la cue N (vale anche per le successive)»** o **«Solo questa cue (le successive mantengono il loro aspetto)»**. Con «Solo questa cue», le successive mantengono anche i loro FX: un FX nuovo viene rilasciato nella cue seguente, e uno che cambia vi torna com'era.
 - **«Carica ▾»** (o doppio clic su una cue): la porta nel programmatore: **«Ciò che mostra il palco nella cue N»** o **«Solo ciò che cambia la cue N»**. Poi aggiornala dalla barra «Modifica della cue…» di Programma.
 - **«Togli ▾»**: con i canali del programmatore, **«Togli dalla cue N i canali del programmatore (tornano a ereditare)»** o **«[Rilascia] i canali del programmatore nella cue N»** (da quella cue tornano a ciò che c'è sotto: altre scene o il loro valore di riposo).
 - **Copia** alla fine: **«Copia ciò che cambia la cue N»** o **«Copia tutto l'aspetto della cue N (cue di blocco)»**.
@@ -369,7 +369,7 @@ In un elenco stretto (o in una lingua con parole lunghe), «Aggiorna», «Carica
 
 Il clic destro su una cue ha **«Vai alla cue N»**, i due modi di caricare, **«Aggiorna con il programmatore»**, **«Tempi…»**, **«Collegamento e azioni…»**, **«Numero…»** ed **«Elimina…»**.
 
-Le cue possono usare **palette per riferimento** e avere **livelli di FX**, che si ereditano da una cue all'altra.
+Le cue possono usare **palette per riferimento** e avere **livelli di FX**, che si ereditano da una cue all'altra. Se una cue successiva toglie alcune fixture a un livello (con un altro FX o rilasciandole), le altre restano al loro posto: nell'onda, nei loro gruppi e nel loro specchio.
 
 ### Il foglio di tracking
 
@@ -391,7 +391,7 @@ In una cue, ogni attributo e ogni fixture possono avere un ritardo e una dissolv
 - I dimmer che scendono usano la dissolvenza della loro fixture, se ce l'ha. Altrimenti la DISCESA della cue; con «=», la dissolvenza di Intensità.
 - Una cue dura quanto il suo tempo più lungo: Segui, la barra verde e la durata in una super scena ne tengono conto. Conta anche il tempo di un attributo che la cue non cambia.
 - Un solo tempo per tutto, come prima: la dissolvenza in entrata di un gruppo o di un blocco di super scena sulla prima cue, e un tempo fisso di **«Indietro»**. Con **«Tempi della cue»**, BACK usa tutti i tempi della cue a cui torna.
-- I livelli di FX entrano con la dissolvenza della cue.
+- I livelli di FX entrano, cambiano ed escono con i tempi della cue: una cue che cambia un FX già attivo (il suo centro, la sua dimensione, la sua figura) o che ne aggiunge un altro lo fa in dissolvenza, ogni canale con il ritardo e la dissolvenza del suo attributo (un dimmer che scende, con la DISCESA). Un FX che esce continua a muoversi mentre sfuma verso ciò che c'è sotto.
 - Una cue nuova prende i tempi di attributo della cue precedente, ma non quelli delle sue fixture. Copiare una cue copia tutti i suoi tempi.
 
 Esempio: la cue 2 cambia colore e posizione con dissolvenza 0, e Posizione ha ritardo 1 s e dissolvenza 3 s. Al GO il colore cambia subito; un secondo dopo, le teste mobili si muovono per 3 s.

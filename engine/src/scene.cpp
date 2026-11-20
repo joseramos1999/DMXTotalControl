@@ -782,7 +782,9 @@ void Scene::processValue(MasterTimer *timer, QList<Universe*> ua, uint fadeIn, c
         }
         else
         {
-            if (tempoType() == Beats)
+            // DMX Total Control: in beats when it was given in beats (a group
+            // gives its crossfade in ms)
+            if ((overrideFadeInSpeed() != defaultSpeed() ? overrideTempoType() : tempoType()) == Beats)
             {
                 int fadeInTime = beatsToTime(fadeIn, timer->beatTimeDuration());
                 int beatOffset = timer->nextBeatTimeOffset();
@@ -850,7 +852,9 @@ void Scene::handleFadersEnd(MasterTimer *timer)
     }
     else
     {
-        if (tempoType() == Beats)
+        // DMX Total Control: in beats when it was given in beats (a group
+        // gives its crossfade in ms)
+        if ((overrideFadeOutSpeed() != defaultSpeed() ? overrideTempoType() : tempoType()) == Beats)
             fadeout = beatsToTime(fadeout, timer->beatTimeDuration());
 
         // DMX Total Control: staggered fade out, in the same order as the fade in

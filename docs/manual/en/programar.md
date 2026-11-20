@@ -193,14 +193,14 @@ A link icon on the palette shows that there are scenes that use it; the hover te
 
 ## FX
 
-An **FX** moves a parameter of the selection (the dimmer, the red, the zoom, pan and tilt together…) around its value in the programmer or, if it has no value, around what the scenes below send. It plays at once and is recorded with the scene.
+An **FX** moves a parameter of the selection (the dimmer, the red, the zoom, pan and tilt together…) around its value in the programmer or, if it has no value, around what the scenes below send. It plays at once and is recorded with the scene. An FX without a base value stays above the static scenes of its own priority, even when you start them later. On a fixture with several heads (a pixel bar, a two-lamp blinder), when the parameter has no channel of the whole fixture, every head does it at once, as a single place of the wave.
 
 In **FX** there are three areas: the parameters and the running FX on the left, the FX controls in the centre and the macros on the right.
 
 ### Starting an FX
 
 1. Select fixtures.
-2. In **Parameter**, choose what to move. By default, the last parameter you touched is chosen. The ones that already have an FX on the selection carry the “FX” mark.
+2. In **Parameter**, choose what to move. By default, the last parameter you touched is chosen. The ones that already have an FX on the selection carry the “FX” mark. **Pan / tilt** and **Pan** or **Tilt** move the same channels: starting one takes those fixtures out of the other.
 3. Press **“Start FX”**, or click a **macro**.
 4. Adjust the controls: the FX changes live.
 
@@ -210,9 +210,9 @@ If a fixture has several dimmers of its own (a strobe with its flash and a colou
 
 ### The FX controls
 
-- **The figure or the mode** (the drawing on the left): click it to choose another one. For pan/tilt there are **12 figures** (circle, eight, square, triangle, diamond, pan line, tilt line, diagonal, leaf, lissajous, ballyhoo and cross). For the rest, **22 modes**: the dotted line is the base value and the wave goes above it, below it or on both sides; modes 9 to 12 are for chases, with a step.
+- **The figure or the mode** (the drawing on the left): click it to choose another one. For pan/tilt there are **12 figures** (circle, eight, square, triangle, diamond, pan line, tilt line, diagonal, leaf, lissajous, ballyhoo and cross). For the rest, **22 modes**: the dotted line is the base value and the wave goes above it, below it or on both sides; modes 9 to 12 are for chases, with a step. The modes with an arrow (←) go from the last fixture to the first: 2, 4, 6, 8, 10, 12, 14 and 20 (14 is 7 backwards).
 - **Swing** (from 0 to 250 %). On pan/tilt, **“Swing pan”** and **“Swing tilt”** separately.
-- **Speed**, in BPM. **½** and **×2** halve or double it. **“BPM of the show”** makes it follow the show tempo (a BPM fader or dial in the SHOW, or a BPM or Tap mapping). Recorded in an FX scene, it follows instead the rhythm you tap by pressing the button of the scene, if it has one ([Live](directo.md#rhythm-of-a-scene-with-steps)). **“Multiplier”**: from ×¼ to ×8.
+- **Speed**, in BPM. **½** and **×2** halve or double it. **“BPM of the show”** makes it follow the tempo and the beat of the show (a BPM fader or dial in the SHOW, or a BPM or Tap mapping): the FX at “BPM of the show”, started at any time, go on the same beat as the chases and the scenes in BPM mode, and each Tap press puts them back on it. Recorded in an FX scene, it follows instead the rhythm you tap by pressing the button of the scene, if it has one ([Live](directo.md#rhythm-of-a-scene-with-steps)), and the panel says so. **“Multiplier”**: from ×⅛ to ×8, with ×⅓ and ×⅔; a value that is not in the list (from a converted Move FX) shows as it is.
 - Pan/tilt only: **“Invert pan”**, **“Invert tilt”**, **“Backwards”** and **“Rotate”** (0–359°).
 - Only on a dimmer FX with fixtures without a dimmer: **“Virtual dimmer”**, the level their colour is dimmed from (0–100 %). With **“Auto”** it is the level of the dimmers of the same FX or, if there are none, full. Moving the level fixes it; the button next to it goes back to “Auto”. The colour underneath (the programmer's, the scene's or what the scenes below send) is its base, and a colour FX on the same fixture adds to it.
 
@@ -222,20 +222,23 @@ How the FX is spread over the fixtures:
 
 - **“Wave per X”**: the shape is spread over X fixtures (or sets), each one a bit later.
 - **“Step per X”**: one fixture (or set) after another, X at a time.
-- **“Grouping”**: “Off”, “Every X”, “Blocks of X”, “Divide by X”, “Mirror” or “By group” (of fixtures).
-- **“Order”**: “Selection”, “Reversed”, “Random” (with a button for another random order) or “By number”.
-- **“Wait”**: time at the base after each run.
+- **“Grouping”**: “Off”, “Every X”, “Blocks of X”, “Divide by X” (X parts, at most one fixture apart in size), “Outside in” or “By group” (of fixtures).
+  - **“Outside in”** puts the first and the last fixture together, then the second and the one before the last, and so on to the centre: the wave or the step runs from the outside in. X is how many fixtures each set has, half from each end (with 2, the first with the last). It inverts nothing; for a mirror, see [“The mirror”](programar.md#the-mirror). It is saved as the old “Mirror”, so earlier shows play the same.
+  - **“By group”** uses the groups of the Patch that split the fixtures of the FX without overlapping. A group that has them all does not count (for example, one with all the beams next to the groups of each row). If they can be split in several ways, the split with the most groups wins, then the one that leaves fewer fixtures alone, then the one with the smaller groups and, last, the order of the groups in the Patch. A fixture that is in none of those groups is a set of its own. “Per fixture” shows the group of each one.
+- **“Order”**: “Selection”, “Reversed”, “Random” (with a button for another random order) or “By number” (by the fixture numbers of the Patch).
+- **“Wait”**: time at the base after each run. At “BPM of the show”, the run with its wait lasts the nearest whole number of beats (at least the run without the wait), so each run starts on a beat. Off the beat of the show (a speed of its own or a tapped rhythm), a change of speed, BPM or multiplier goes on from where it is in the run; on the beat of the show, a new multiplier puts it back on the beat.
 - **“Phase”**.
 
 For a shift or a delay of each fixture, see [“Per fixture”](programar.md#per-fixture-shift-and-delay).
 
-Below, an animated preview draws how each fixture moves.
+Below, an animated preview draws how each fixture moves: while the FX plays, where it really is, with the movement speed of the SHOW and its delays.
 
 ### Running FX, linking and stopping
 
-- **“Running FX (N)”** lists the FX of the programmer. A click selects their fixtures and their parameter; the **×** stops it.
-- **“Link”**: linked FX share the speed and the timing, and stop together.
-- **“Stop”** stops the FX of the chosen parameter; **“Stop all the FX”**, all of them.
+- **“Running FX (N)”** lists the FX of the programmer. A click selects their fixtures and their parameter; the **×** stops the whole FX, with the FX linked to it, and leaves the selection as it is.
+- **“Link”**: linked FX share the speed and the timing, go on the same clock and stop together. An FX you link later goes where the ones already linked are. “Link” joins it to the link group of another FX of the selection or, if there is none, to the last one you linked; a macro with several linked FX makes a group of its own, apart from yours. With several groups, “Running FX” shows the number of each one. The movement speed of the SHOW goes to the whole group of a pan/tilt FX.
+- **“Stop”** takes the selected fixtures off the FX (with all of them, the whole FX) and off the FX linked to it too; a linked FX on other fixtures goes on (the **×** in “Running FX” stops it all); **“Stop all the FX”** stops them all.
+- A new FX starts on the clock of what is already playing. On fixtures taken from a running FX of the same parameter (a macro on part of it), it goes on from where that FX was. On other fixtures, if another FX of the parameter runs at the same speed and with the same multiplier, it goes where that one is: so “Invert pan” on a second group gives a mirror in phase. An FX with delays starts from 0.
 
 “Reset all” also removes the FX from the programmer. “Stop all” in the top bar does not remove them: they are live edits.
 
@@ -245,37 +248,43 @@ An FX is still **a single one** even if you change some of its fixtures. If you 
 
 - The panel warns you: “This FX is also on other fixtures…”.
 - With all its fixtures selected, the change applies to the whole FX.
-- If you select fixtures that were not in the FX, they join it. Two FX on the same parameter selected together merge into one, and each fixture keeps what it was doing.
+- If the selected fixtures don’t all do the same, **“Invert pan”**, **“Invert tilt”** and **“Backwards”** show half lit (with half a coloured bar at the bottom) and a click turns them on for all of them; the figure or the mode, the swing, the rotation and the phase say “mixed”.
+- If you select fixtures that were in no FX of the parameter, they join the FX (the first one, if there are several), each one in its place by its fixture number. If the selection spans several FX of the same parameter (for example, one per row), the panel says so (“The selection spans N FX”) and a change goes to each one: each FX keeps its wave and its mirror. **“Merge into one FX”** joins them into one, on the clock of the first: each fixture keeps its shape, but not its place in the wave of its FX.
 - In “Running FX” you see how many have something of their own (“N own”).
 - **“Like the rest”** removes what is their own from the selected fixtures: they go back to doing the same as the FX.
 
 ### Per-fixture shift and delay
 
-Under the controls of a running FX, **“Per fixture”** (unfold it with its arrow) lists its fixtures in the order of the FX: number, name, its place in the wave or the step, and two fields you change by hand. The selected fixtures are highlighted. A change plays at once, on the same clock.
+Under the controls of a running FX, **“Per fixture”** (unfold it with its arrow) lists its fixtures in the order of the FX: number, name, its place in the wave or the step (with “Grouping: By group”, also the group of its set), and two fields you change by hand. The selected fixtures are highlighted. A change plays at once, on the same clock.
 
 - **“Shift”** (0–1440°): how far behind the others it goes in the wave. 360° is a whole cycle and, in an FX with a step, one place. It adds to the wave and to the phase.
 - **“Delay”** (up to 60 s): how much later it does the FX. When the FX starts (its scene or its cue starts, or a new FX in the programmer), it waits that long at its base, so the fixtures start one after another. After that it stays that far behind. It is in seconds even when the FX follows the BPM of the show; to follow the tempo, use the shift.
 - **“Fan the shift…”** and **“Fan the delay…”** ask for the value of the last one and spread from 0 over the selected fixtures, in the order of the FX.
 - **“No shift or delay”** removes them from the selected fixtures.
+- **“Reorder by number”** puts the fixtures of the FX in the order of their numbers in the Patch, for example when one ended up at the end of a row. Their places in the wave and their mirror twins follow it.
 
 Changing the phase or the timing keeps them, and “Like the rest” does not touch them. It is not the same as the own phase of some fixtures: that phase replaces the phase of the FX; the shift adds to it. If you set a delay longer than the time the FX has been running, that fixture waits at its base until it gets there. The shift and the delay are recorded with the scene or the cue.
 
 ### The mirror
 
-If the fixtures that go backwards (or with their own inverted pan or tilt) are **all in one half** of the FX, each one follows the wave of its twin on the other side, so the wave also comes out mirrored. The panel shows it with “Mirror: …”.
+If the fixtures with their own inverted pan (or that go backwards, or with their own inverted tilt) are **all in one half** of the FX, each one follows the wave of its twin on the other side, so the wave also comes out mirrored. The panel shows it with “Mirror: …”.
 
 An example with 6 beams in a circle with a wave:
 
 1. Select all 6, choose **Pan / tilt**, press **“Start FX”**, figure **Circle** and **“Wave per X”** at “All”.
-2. Select only the last 3 and turn on **“Backwards”**.
+2. Select only the last 3 and turn on **“Invert pan”**.
 
-The last 3 turn backwards and follow the wave of the 3rd, the 2nd and the 1st: a synchronised mirror. If you set alternate ones backwards (2, 4 and 6) it is not a mirror: each one keeps its place in the wave.
+The last 3 move as a mirror of the first 3 and follow the wave of the 3rd, the 2nd and the 1st: a synchronised mirror, with any figure. **“Backwards”** only gives a mirror on the figures that are symmetric in pan (circle, square, triangle, diamond, leaf and pan line); on an eight, a diagonal, a lissajous, a tilt line, a ballyhoo or a cross, each fixture that goes backwards goes up when its twin goes down, and the panel does not say “Mirror”. If you invert alternate ones (2, 4 and 6) it is not a mirror: each one keeps its place in the wave.
+
+Inverting pan or tilt in the Patch (in [“Limits”](patch.md#limits)) is a physical correction, for heads hung upside down or rotated: it makes them move like the others, so it does not count for the mirror of the FX. The mirror is made in the FX.
+
+An FX has a single mirror, between its two halves. For a mirror within each row, with a wave in each row, make one FX per row and link them (**“Link”**): each one with its wave and its inverted half, all on the same clock.
 
 ### FX macros
 
-On the right, the built-in **FX macros** by category: **Position** (circle, circle wave, eight, ballyhoo, pan sweep, can-can, pan in mirror, square, triangle, leaf), **Intensity** (dimmer wave, chase, random, pulse, breathe, strobe, outside in), **Colour** (rainbow, red / blue, fire, cyan / magenta) and **Beam** (zoom, iris, focus). A click applies the macro to the selection.
+On the right, the built-in **FX macros** by category: **Position** (circle, circle wave, eight, ballyhoo, pan sweep, can-can, pan in mirror, square, triangle, leaf), **Intensity** (dimmer wave, chase, random, pulse, breathe, strobe, outside in), **Colour** (rainbow, red / blue, fire, cyan / magenta) and **Beam** (zoom, iris, focus). A click applies the macro to the selection. “Pan in mirror” inverts the pan of the second half of the selection: a mirror with any number of heads. The colour ones put out what they don't move: the white, the amber and the UV (and the yellow in cyan / magenta), so a white below doesn't turn them pastel.
 
-**“Save as a macro…”** saves the FX of the programmer as a macro of your own, in **“Mine”**, for all your shows. Right click one of your macros: **“Rename”** or **“Delete”**.
+**“Save as a macro…”** saves the FX of the programmer as a macro of your own, in **“Mine”**, for all your shows. Right click one of your macros: **“Rename”** or **“Delete”**. Two FX of the same parameter (a circle on some fixtures and an eight on others) go in as one, each fixture with its own; if they didn't go at the same speed or with the same timing, the macro keeps the first one's and says so.
 
 A macro of your own keeps what each fixture of the FX did, by its place in it (the order you selected them in):
 
@@ -283,7 +292,7 @@ A macro of your own keeps what each fixture of the FX did, by its place in it (t
 - what it did its own way: the shape, the size, the direction, the inversions (a mirror);
 - its shift and its delay.
 
-When you apply it, the first selected fixture gets what the first one had, the second what the second one had, and so on. With more or fewer fixtures, the first and the last get what the first and the last had, and the ones in between are spread out: fans and delays stretch, and a mirror stays a mirror. Colour and gobo wheels, the prism and the shutter are not spread: each fixture takes the value of its nearest place. If they all had the same values and nothing of their own, the macro works on any selection, like the built-in ones. Macros saved fixture by fixture carry the mark **1·2·3**; hover over one to see how many fixtures it had.
+When you apply it, the first selected fixture gets what the first one had, the second what the second one had, and so on. With more or fewer fixtures, the first and the last get what the first and the last had, and the ones in between are spread out: fans, delays and halves stretch, and a mirror stays a mirror. What repeats every 2 or 3 fixtures (every other one backwards, two alternating colours) repeats the same way on any number of fixtures. Colour and gobo wheels, the prism and the shutter are not spread: each fixture takes the value of its nearest place. If they all had the same values and nothing of their own, the macro works on any selection, like the built-in ones. Macros saved fixture by fixture carry the mark **1·2·3**; hover over one to see how many fixtures it had.
 
 ## Command line
 
@@ -356,9 +365,9 @@ A cue stores only what the programmer changes compared with what the previous cu
 
 The **“Snapshot”** menu has:
 
-- **“Save the edits into a scene”**: puts the values of the programmer into a static scene that already exists.
+- **“Save the edits into a scene”**: puts the values of the programmer into a static scene that already exists. The FX don't go in (a static scene has none) and a notice says so; to keep them, use **“Record…”**.
 - **“Everything on stage into a new scene…”**: everything the lights show now (scenes, live edits and the mixer, without the grand master) becomes a new static scene, on every fixture that has light. If “Highlight” is on, you have to turn it off first (“Highlight off”). It leaves protected special effects out, even while they fire.
-- **“Only the edits into a new scene…”**.
+- **“Only the edits into a new scene…”**: with FX too (the new scene is an FX scene).
 
 ### Editing scenes and cues
 

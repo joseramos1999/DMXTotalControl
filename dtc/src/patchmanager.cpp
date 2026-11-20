@@ -43,6 +43,7 @@
 #include "universe.h"
 #include "fixture.h"
 #include "programmer.h"
+#include "fxscene.h"
 #include "doc.h"
 
 /* Spacing of the automatic 2D layout, in millimeters */
@@ -107,11 +108,22 @@ PatchManager::PatchManager(Doc *doc, QObject *parent)
 
     // shows saved with an inverted axis need the modifier when they load
     invertModifier();
+    shareOrder();
 }
 
 PatchManager::~PatchManager()
 {
+    FXScene::clearPatchOrder(m_doc);
     delete m_identifySource;
+}
+
+void PatchManager::shareOrder()
+{
+    // the groups as the patch lists them: in the order given, the new ones after
+    QList<quint32> ids;
+    for (const QVariant &group : groups())
+        ids.append(group.toMap().value("id").toUInt());
+    FXScene::setPatchOrder(m_doc, m_numbers, ids);
 }
 
 void PatchManager::slotFixturesDirty()
@@ -827,6 +839,7 @@ void PatchManager::deleteGroup(quint32 id)
     {
         // (a new group given its ID doesn't take its place)
         m_groupOrder.removeAll(id);
+        shareOrder();
         emit groupsChanged();
     }
 }
@@ -874,6 +887,7 @@ void PatchManager::setGroupOrder(const QList<quint32> &ids)
     if (ids == m_groupOrder)
         return;
     m_groupOrder = ids;
+    shareOrder();
     m_doc->setModified();
     emit groupsChanged();
 }
@@ -1268,8 +1282,9 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
     // are shown all the same, with the values of the first head
     QVariantMap info;
     bool dimmer = false, pan = false, tilt = false, both = false;
-    // protected from the grand master: all of them, or some (mixed)
-    int count = 0, gmProtected = 0;
+    // protected from the grand master: all of them, or some (mixed).
+    // DMX Total Control: the inverted pan and tilt too, of the ones that have them
+    int count = 0, gmProtected = 0, pans = 0, panInverted = 0, tilts = 0, tiltInverted = 0;
     for (const QVariant &v : ids)
     {
         const QVariantMap options = fixtureOptions(v.toUInt());
@@ -1279,6 +1294,16 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
             info = options;
         count++;
         gmProtected += options.value("gmProtected").toBool() ? 1 : 0;
+        if (options.value("hasPan").toBool())
+        {
+            pans++;
+            panInverted += options.value("invertPan").toBool() ? 1 : 0;
+        }
+        if (options.value("hasTilt").toBool())
+        {
+            tilts++;
+            tiltInverted += options.value("invertTilt").toBool() ? 1 : 0;
+        }
         auto take = [&](bool &taken, const char *has, const QStringList &keys) {
             if (taken || options.value(has).toBool() == false)
                 return;
@@ -1300,6 +1325,11 @@ QVariantMap PatchManager::selectionOptions(const QVariantList &ids) const
     {
         info.insert("gmProtected", gmProtected == count);
         info.insert("gmProtectedMixed", gmProtected > 0 && gmProtected < count);
+        // (as the buttons of the toolbar: on when all of them are)
+        info.insert("invertPan", pans > 0 && panInverted == pans);
+        info.insert("invertPanMixed", panInverted > 0 && panInverted < pans);
+        info.insert("invertTilt", tilts > 0 && tiltInverted == tilts);
+        info.insert("invertTiltMixed", tiltInverted > 0 && tiltInverted < tilts);
     }
     return info;
 }
@@ -1448,6 +1478,7 @@ void PatchManager::slotDocCleared()
     m_aims.clear();
     m_importIds.clear();
     m_groupOrder.clear();
+    shareOrder();
     // (told always: clearPlan() may have forgotten them already)
     m_effects.clear();
     m_effectKinds.clear();
@@ -1578,6 +1609,7 @@ QString PatchManager::setFixtureNumber(quint32 id, int number)
     if (m_numbers.value(id) == number)
         return QString();
     m_numbers.insert(id, number);
+    shareOrder();
     m_doc->setModified();
     notifyFixtures();
     return QString();
@@ -1603,6 +1635,7 @@ QString PatchManager::renumberFixtures(const QVariantList &ids, int start)
     }
     for (int i = 0; i < fixtures.count(); i++)
         m_numbers.insert(fixtures.at(i), start + i);
+    shareOrder();
     m_doc->setModified();
     notifyFixtures();
     return QString();
@@ -1633,11 +1666,13 @@ void PatchManager::slotFixtureAdded(quint32 id)
     for (int n : std::as_const(m_numbers))
         last = qMax(last, n);
     m_numbers.insert(id, last + 1);
+    shareOrder();
 }
 
 void PatchManager::slotFixtureGone(quint32 id)
 {
     m_numbers.remove(id);
+    shareOrder();
     // Doc gives its ID to the next fixture patched: not its shape nor its icon
     m_shapes.remove(id);
     m_icons.remove(id);
@@ -1789,6 +1824,7 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
                 ids.append(id);
         }
         m_groupOrder = ids;
+        shareOrder();
         notifyGroups();
         return true;
     }
@@ -1831,6 +1867,7 @@ bool PatchManager::loadXML(QXmlStreamReader &root)
             last = qMax(last, number);
             m_numbers.insert(id, number);
         }
+        shareOrder();
         notifyFixtures();
         return true;
     }

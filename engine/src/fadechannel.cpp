@@ -46,6 +46,10 @@ FadeChannel::FadeChannel()
     , m_modBelow(false)
     , m_modFine(QLCChannel::invalid())
     , m_modScale(1.0)
+    , m_modLeaving(false)
+    , m_modFadeTime(0)
+    , m_modFadeDelay(0)
+    , m_modFadeElapsed(0)
 {
 }
 
@@ -70,6 +74,10 @@ FadeChannel::FadeChannel(const FadeChannel& ch)
     , m_modBelow(ch.m_modBelow)
     , m_modFine(ch.m_modFine)
     , m_modScale(ch.m_modScale)
+    , m_modLeaving(ch.m_modLeaving)
+    , m_modFadeTime(ch.m_modFadeTime)
+    , m_modFadeDelay(ch.m_modFadeDelay)
+    , m_modFadeElapsed(ch.m_modFadeElapsed)
 {
     //qDebug() << Q_FUNC_INFO;
 }
@@ -94,6 +102,10 @@ FadeChannel::FadeChannel(const Doc *doc, quint32 fxi, quint32 channel)
     , m_modBelow(false)
     , m_modFine(QLCChannel::invalid())
     , m_modScale(1.0)
+    , m_modLeaving(false)
+    , m_modFadeTime(0)
+    , m_modFadeDelay(0)
+    , m_modFadeElapsed(0)
 {
     m_channels.append(channel);
     autoDetect(doc);
@@ -127,6 +139,10 @@ FadeChannel &FadeChannel::operator=(const FadeChannel &fc)
         m_modBelow = fc.m_modBelow;
         m_modFine = fc.m_modFine;
         m_modScale = fc.m_modScale;
+        m_modLeaving = fc.m_modLeaving;
+        m_modFadeTime = fc.m_modFadeTime;
+        m_modFadeDelay = fc.m_modFadeDelay;
+        m_modFadeElapsed = fc.m_modFadeElapsed;
     }
 
     return *this;
@@ -499,6 +515,61 @@ void FadeChannel::setModulatedOutput(quint32 value)
 quint32 FadeChannel::modulatedOutput() const
 {
     return m_modOutput;
+}
+
+void FadeChannel::setModulationFade(uint ms, uint delay, uint elapsed)
+{
+    // DMX Total Control
+    m_modLeaving = true;
+    m_modFadeTime = ms;
+    m_modFadeDelay = delay;
+    m_modFadeElapsed = elapsed;
+}
+
+void FadeChannel::cancelModulationFade()
+{
+    m_modLeaving = false;
+    m_modFadeTime = 0;
+    m_modFadeDelay = 0;
+    m_modFadeElapsed = 0;
+}
+
+bool FadeChannel::modulationLeaving() const
+{
+    return m_modLeaving;
+}
+
+uint FadeChannel::modulationFadeTime() const
+{
+    return m_modFadeTime;
+}
+
+uint FadeChannel::modulationFadeDelay() const
+{
+    return m_modFadeDelay;
+}
+
+uint FadeChannel::modulationFadeElapsed() const
+{
+    return m_modFadeElapsed;
+}
+
+qreal FadeChannel::modulationLevel() const
+{
+    if (m_modLeaving == false || m_modFadeElapsed < m_modFadeDelay)
+        return 1.0;
+    if (m_modFadeTime == 0)
+        return 0.0;
+    // (linear, as a release)
+    return qMax(0.0, 1.0 - qreal(m_modFadeElapsed - m_modFadeDelay) / qreal(m_modFadeTime));
+}
+
+bool FadeChannel::advanceModulationFade(uint ms)
+{
+    if (m_modLeaving == false)
+        return false;
+    m_modFadeElapsed = m_modFadeElapsed < UINT_MAX - ms ? m_modFadeElapsed + ms : UINT_MAX;
+    return quint64(m_modFadeElapsed) >= quint64(m_modFadeDelay) + m_modFadeTime;
 }
 
 uchar FadeChannel::calculateCurrent(uint fadeTime, uint elapsedTime)

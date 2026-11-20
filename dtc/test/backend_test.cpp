@@ -184,6 +184,8 @@ private slots:
     void remoteControl();
     void demoTouchShow();
     void fixtureSetup();
+    void patchLimits16Bit();
+    void patchLimitsMixedInvert();
     void swappedOutput();
     void ledMatrix();
     void planTools();
@@ -233,6 +235,19 @@ private slots:
     void tapRhythmLateBeat();
     void goPressSteps();
     void fxSyncedWait();
+    // the beat of the show: one clock with fractions for the chases and the
+    // FX, the TAP, a wait in whole beats, a start in the middle, the preview,
+    // the rhythm of a cuelist, steps in beats
+    void beatClockFractional();
+    void beatClockExternalSource();
+    void beatStepsMixedLengths();
+    void fxOnShowBeat();
+    void fxWaitKeepsItsPlace();
+    void fxWaitWholeBeats();
+    void fxStartsMidBlock();
+    void programmerFxLivePreview();
+    void cuelistTapFx();
+    void convertFxStepsShowBeat();
     void pressModeGoOrStop();
     void followAim();
     void stopBeforeFirstFrame();
@@ -262,6 +277,25 @@ private slots:
     void cuelistAutoRelease();
     void stepsPlayedOutConvert();
     void cuelistFxSpeedAndPause();
+    void cuelistFxChangeFades();
+    void cuelistFxReleaseFades();
+    void fxSceneFadeOutMoves();
+    void cuelistLiveTimeFx();
+    void cuelistFxTrimKeepsPlaces();
+    void cuelistEditorCueOnlyFx();
+    void fxSceneRemoveFixtureKeepsClocks();
+    void fxFinePairs();
+    void fxEveryHead();
+    void programmerFxPanTiltOverlap();
+    void fxFollowsPatchChanges();
+    void fxBaselessAboveScenes();
+    void fxColourMacrosClearWhite();
+    void fxMacroSaveMergesSameParam();
+    void convertToFxKeepsMovement();
+    void convertCurveToFx();
+    void fxModeDirections();
+    void programmerSnapshotTellsFx();
+    void importScenesKeepsGroupOptions();
     void cuelistStartCueAndPausedEdits();
     void cuelistFadeStatus();
     void programmerReleaseOnGo();
@@ -305,6 +339,19 @@ private slots:
     void programmerFxOwn();
     void fxSceneLayerPositions();
     void fxMirrorWave();
+    void fxLinkGroups();
+    void fxLinkedMotion();
+    void cuelistFxLinkGroupsPerCue();
+    void programmerFxLinkStop();
+    void programmerFxSpansSeveral();
+    void fxNewLayerOnClock();
+    void fxGroupSetsByGroup();
+    void fxDivideExactParts();
+    void fxOrderByNumber();
+    void fxPanMirrorMacro();
+    void fxMirrorNoticeFigures();
+    void programmerFxMixedState();
+    void fxMacroRepeatsPattern();
     void programmerSnapshotWithoutHighlight();
     void programmerLoadEndsCueEdit();
     void programmerUpdateSceneInUse();
@@ -2822,7 +2869,7 @@ void Backend_Test::fxSceneEngine()
     pt.wait = 250;
     pt.rotate = 45;
     pt.panInvert = true;
-    pt.linked = true;
+    pt.link = 2;
     pt.syncBpm = true;
     pt.multiplier = 2;
     pt.fixtures = { spot };
@@ -5602,6 +5649,9 @@ void Backend_Test::fixtureSetup()
     universes.at(0)->write(0, 0);
     QCOMPARE(int(universes.at(0)->postGMValue(5)), 128);
     QCOMPARE(int(universes.at(0)->postGMValue(0)), 230);
+    // (the fine channel goes with it: the range is on the 16-bit value)
+    universes.at(0)->write(2, 0);
+    QCOMPARE(int(universes.at(0)->postGMValue(2)), 230);
     m_doc->inputOutputMap()->releaseUniverses(false);
 
     // a show keeps them: the range modifiers are made from their name
@@ -5661,6 +5711,126 @@ void Backend_Test::fixtureSetup()
     QVERIFY(universes.at(0)->channelModifier(1) == nullptr);
     QVERIFY(universes.at(0)->channelModifier(101) != nullptr);
     m_doc->inputOutputMap()->releaseUniverses(false);
+}
+
+void Backend_Test::patchLimits16Bit()
+{
+    // a limit on a 16-bit pan or tilt goes on the 16-bit value: a slow move
+    // stays smooth. It scaled the coarse byte only, so about every 5 coarse
+    // steps the output went back by one (51 times over the range)
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Basic", 0, 20, 1), 1);
+    quint32 spot = 0, basic = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->name().startsWith("Spot") ? spot : basic) = f->id();
+    // (11ch: pan 0, tilt 1, pan fine 2, tilt fine 3; 9ch at 19: pan 19, tilt 20)
+    m_patch->setLimits({ spot }, { { "panMin", 10 }, { "panMax", 90 }, { "tiltMin", 0 }, { "tiltMax", 80 } });
+    m_patch->setLimits({ basic }, { { "panMin", 10 }, { "panMax", 90 } });
+
+    // a ramp over the whole 16-bit range: what goes out, and how far back it ever went
+    auto ramp = [&](int coarse, int fine, int *first, int *last) {
+        QList<Universe *> universes = m_doc->inputOutputMap()->claimUniverses();
+        Universe *u = universes.at(0);
+        int worstBack = 0, previous = -1;
+        for (int v = 0; v <= 65535; v += 37)
+        {
+            u->write(coarse, uchar(v >> 8));
+            u->write(fine, uchar(v & 0xFF));
+            const int out = (int(u->postGMValue(coarse)) << 8) | int(u->postGMValue(fine));
+            if (previous >= 0)
+                worstBack = qMax(worstBack, previous - out);
+            if (previous < 0)
+                *first = out;
+            previous = out;
+        }
+        u->write(coarse, 255);
+        u->write(fine, 255);
+        *last = (int(u->postGMValue(coarse)) << 8) | int(u->postGMValue(fine));
+        m_doc->inputOutputMap()->releaseUniverses(false);
+        return worstBack;
+    };
+    int first = 0, last = 0;
+    QCOMPARE(ramp(0, 2, &first, &last), 0);
+    QCOMPARE(first >> 8, 26);
+    QCOMPARE(last >> 8, 230);
+    QCOMPARE(ramp(1, 3, &first, &last), 0);
+    QCOMPARE(first >> 8, 0);
+    QCOMPARE(last >> 8, 204);
+    // inverted: down all the way, never back up
+    m_patch->setInverted({ spot }, "pan", true);
+    QList<Universe *> universes = m_doc->inputOutputMap()->claimUniverses();
+    Universe *u = universes.at(0);
+    int worstUp = 0, previous = -1;
+    for (int v = 0; v <= 65535; v += 37)
+    {
+        u->write(0, uchar(v >> 8));
+        u->write(2, uchar(v & 0xFF));
+        const int out = (int(u->postGMValue(0)) << 8) | int(u->postGMValue(2));
+        if (previous >= 0)
+            worstUp = qMax(worstUp, out - previous);
+        previous = out;
+    }
+    QCOMPARE(worstUp, 0);
+    QCOMPARE(previous >> 8, 26);
+    // an 8-bit fixture: its coarse channel as before
+    u->write(19, 0);
+    QCOMPARE(int(u->postGMValue(19)), 26);
+    u->write(19, 255);
+    QCOMPARE(int(u->postGMValue(19)), 230);
+    m_doc->inputOutputMap()->releaseUniverses(false);
+
+    // inverted without limits: each byte the other way round, as before
+    m_patch->setLimits({ spot }, { { "panMin", 0 }, { "panMax", 100 } });
+    universes = m_doc->inputOutputMap()->claimUniverses();
+    u = universes.at(0);
+    u->write(0, 0x12);
+    u->write(2, 0x34);
+    QCOMPARE(int(u->postGMValue(0)), 255 - 0x12);
+    QCOMPARE(int(u->postGMValue(2)), 255 - 0x34);
+    m_doc->inputOutputMap()->releaseUniverses(false);
+    // and no limit at all: what is written
+    m_patch->setInverted({ spot }, "pan", false);
+    universes = m_doc->inputOutputMap()->claimUniverses();
+    u = universes.at(0);
+    u->write(0, 0x12);
+    u->write(2, 0x34);
+    QCOMPARE(int(u->postGMValue(0)), 0x12);
+    QCOMPARE(int(u->postGMValue(2)), 0x34);
+    m_doc->inputOutputMap()->releaseUniverses(false);
+}
+
+void Backend_Test::patchLimitsMixedInvert()
+{
+    // «Limits» on fixtures of which only some are inverted: off, with «(only
+    // some)», as the button of the toolbar and «Protect from the grand
+    // master». It showed the first fixture: on, if the first one was inverted
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QVariantList ids;
+    for (Fixture *f : m_doc->fixtures())
+        ids << f->id();
+    m_patch->setInverted({ ids.at(0), ids.at(1) }, "pan", true);
+    QVariantMap options = m_patch->selectionOptions(ids);
+    QVERIFY(options.value("invertPan").toBool() == false);
+    QVERIFY(options.value("invertPanMixed").toBool());
+    QVERIFY(options.value("invertTilt").toBool() == false);
+    QVERIFY(options.value("invertTiltMixed").toBool() == false);
+    // all of them, or none: not mixed
+    options = m_patch->selectionOptions({ ids.at(0), ids.at(1) });
+    QVERIFY(options.value("invertPan").toBool());
+    QVERIFY(options.value("invertPanMixed").toBool() == false);
+    options = m_patch->selectionOptions({ ids.at(2), ids.at(3) });
+    QVERIFY(options.value("invertPan").toBool() == false);
+    QVERIFY(options.value("invertPanMixed").toBool() == false);
+    // turned on: all of them
+    m_patch->setLimits(ids, { { "invertPan", true } });
+    options = m_patch->selectionOptions(ids);
+    QVERIFY(options.value("invertPan").toBool());
+    QVERIFY(options.value("invertPanMixed").toBool() == false);
+    // the tilt on its own
+    m_patch->setInverted({ ids.at(3) }, "tilt", true);
+    options = m_patch->selectionOptions(ids);
+    QVERIFY(options.value("invertTilt").toBool() == false);
+    QVERIFY(options.value("invertTiltMixed").toBool());
 }
 
 void Backend_Test::swappedOutput()
@@ -8361,7 +8531,7 @@ void Backend_Test::groundworkHelpers()
     layer.phase = 90;
     layer.wait = 200;
     layer.tiltInvert = true;
-    layer.linked = true;
+    layer.link = 3;
     layer.fixtures = { 4, 2, 9 };
     QBuffer buffer;
     buffer.open(QIODevice::WriteOnly);
@@ -10878,6 +11048,1495 @@ void Backend_Test::cuelistFxSpeedAndPause()
     renderFrames(m_doc, 2);
     fx->stop(FunctionParent::master());
     QVERIFY(framesUntil(m_doc, [&]() { return fx->isRunning() == false && output(0) == 0; }, 10) > 0);
+}
+
+/** $values as text, for a failure */
+static QString valuesText(const QList<int> &values)
+{
+    QStringList list;
+    for (int value : values)
+        list.append(QString::number(value));
+    return list.join(' ');
+}
+
+/** How far $values goes from the straight line between its ends: a fade
+ *  that froze goes straight, a wave that moves as it fades doesn't */
+static int bendOf(const QList<int> &values)
+{
+    int most = 0;
+    const int n = int(values.count()) - 1;
+    for (int i = 1; i < n; i++)
+    {
+        const qreal line = values.first() + qreal(values.last() - values.first()) * i / n;
+        most = qMax(most, int(std::round(qAbs(values.at(i) - line))));
+    }
+    return most;
+}
+
+/** How many times $values turns back (up then down, or down then up), the
+ *  steps of $least or less left out: a wave that moves turns, a fade doesn't */
+static int turnsOf(const QList<int> &values, int least = 1)
+{
+    int turns = 0;
+    int direction = 0;
+    for (int i = 1; i < values.count(); i++)
+    {
+        const int step = values.at(i) - values.at(i - 1);
+        if (qAbs(step) < least)
+            continue;
+        const int now = step > 0 ? 1 : -1;
+        if (direction != 0 && now != direction)
+            turns++;
+        direction = now;
+    }
+    return turns;
+}
+
+void Backend_Test::cuelistFxChangeFades()
+{
+    // a GO that changes the FX of a list that plays them fades the change
+    // with the cue, as its static values: the centre of a circle goes to
+    // its new base, a new FX grows in, a new size comes in, all after the
+    // delay of the cue; a base released under its FX goes to what is below.
+    // They snapped. Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 1, 2), 2);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [&](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    const quint32 s1 = spots.at(0), s2 = spots.at(1);
+    const Fixture *spot = m_doc->fixture(s1);
+    const quint32 pan = FXScene::channelFor(spot, "pan");
+    const quint32 tilt = FXScene::channelFor(spot, "tilt");
+    const quint32 dimmer = FXScene::channelFor(spot, "dimmer");
+    QVERIFY(pan != QLCChannel::invalid() && tilt != QLCChannel::invalid() && dimmer != QLCChannel::invalid());
+    auto out = [&](quint32 fixture, quint32 channel) {
+        return renderedValue(m_doc, int(m_doc->fixture(fixture)->address() + channel));
+    };
+    auto within = [](int value, int expected, int slack) { return qAbs(value - expected) <= slack; };
+    auto text = [](int value, int expected) { return QString("%1, not %2").arg(value).arg(expected); };
+
+    // still FX: a circle at a quarter (all on the pan), a square up
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.figure = FXScene::Circle;
+    circle.swing = 20;
+    circle.swingTilt = 20;
+    circle.bpm = 0;
+    circle.phase = 90;
+    circle.fixtures = { s1 };
+    FXScene::Layer pulse;
+    pulse.param = "dimmer";
+    pulse.mode = 7;
+    pulse.swing = 50;
+    pulse.bpm = 0;
+    pulse.fixtures = { s2 };
+    FXScene::Layer bigger = circle;
+    bigger.swing = 40;
+    bigger.swingTilt = 40;
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue first = testCue(1000, { { Key(s1, pan), 50 }, { Key(s1, tilt), 128 }, { Key(s1, dimmer), 255 },
+                                         { Key(s2, dimmer), 128 }, { Key(s2, pan), 0 } });
+    first.fx = { circle };
+    QCOMPARE(cl->addCue(first), 0);
+    // the centre to 200, a new FX on the second spot, its pan as a control
+    Cuelist::Cue second = testCue(2000, { { Key(s1, pan), 200 }, { Key(s2, pan), 200 } }, 1000);
+    second.fx = { pulse };
+    QCOMPARE(cl->addCue(second), 1);
+    Cuelist::Cue third = testCue(3000, {}, 1000);
+    third.fx = { bigger };
+    QCOMPARE(cl->addCue(third), 2);
+    QCOMPARE(cl->addCue(testCue(4000, { { Key(s1, pan), 50 } }, 1000, -1, 500)), 3);
+    Cuelist::Cue released = testCue(5000, {}, 1000);
+    released.releases = { Key(s1, pan) };
+    QCOMPARE(cl->addCue(released), 4);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 5);
+    QCOMPARE(cl->status().current, 0);
+    const int swing = out(s1, pan) - 50;
+    QVERIFY2(swing >= 20 && swing <= 30, qPrintable(QString::number(swing)));
+    QCOMPARE(out(s2, dimmer), 128);
+
+    // half way into the 1 s fade: the centre half way, the new FX at half its size
+    cl->go();
+    renderFrames(m_doc, 25);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY2(within(out(s2, pan), 100, 6), qPrintable(text(out(s2, pan), 100)));
+    QVERIFY2(within(out(s1, pan), 125 + swing, 6), qPrintable(text(out(s1, pan), 125 + swing)));
+    QVERIFY2(within(out(s2, dimmer), 160, 6), qPrintable(text(out(s2, dimmer), 160)));
+    renderFrames(m_doc, 30);
+    QVERIFY2(within(out(s1, pan), 200 + swing, 1), qPrintable(text(out(s1, pan), 200 + swing)));
+    QVERIFY2(within(out(s2, dimmer), 192, 1), qPrintable(text(out(s2, dimmer), 192)));
+
+    // a new size comes in with the cue
+    cl->go();
+    renderFrames(m_doc, 25);
+    QVERIFY2(within(out(s1, pan), 200 + swing * 3 / 2, 3), qPrintable(text(out(s1, pan), 200 + swing * 3 / 2)));
+    renderFrames(m_doc, 30);
+    const int wide = out(s1, pan) - 200;
+    QVERIFY2(within(wide, 2 * swing, 2), qPrintable(text(wide, 2 * swing)));
+
+    // the delay of the cue: nothing moves, then the fade
+    cl->go();
+    renderFrames(m_doc, 20);
+    QVERIFY2(within(out(s1, pan), 200 + wide, 1), qPrintable(text(out(s1, pan), 200 + wide)));
+    renderFrames(m_doc, 30);
+    QVERIFY2(within(out(s1, pan), 125 + wide, 8), qPrintable(text(out(s1, pan), 125 + wide)));
+    renderFrames(m_doc, 40);
+    QVERIFY2(within(out(s1, pan), 50 + wide, 1), qPrintable(text(out(s1, pan), 50 + wide)));
+
+    // its base released: the centre goes to what is below in the cue time
+    cl->go();
+    renderFrames(m_doc, 2);
+    const int start = out(s1, pan);
+    QVERIFY2(start > 40 + wide, qPrintable(QString::number(start)));
+    renderFrames(m_doc, 23);
+    const int middle = out(s1, pan);
+    renderFrames(m_doc, 40);
+    const int end = out(s1, pan);
+    QVERIFY2(end < 50 + wide - 20, qPrintable(QString::number(end)));
+    QVERIFY2(within(middle, (50 + wide + end) / 2, 8),
+             qPrintable(QString("%1 %2 %3").arg(start).arg(middle).arg(end)));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistFxReleaseFades()
+{
+    // a cue that releases some FX while others play: those fade to what is
+    // below in the cue time and go on moving meanwhile, with a base of their
+    // own (that goes back to the list) or without one (on a scene below);
+    // the last FX released as well. One without a base cut at once to what
+    // is below, and all of them froze. Offline frames
+    typedef Cuelist::Key Key;
+    typedef Cuelist::FxKey FxKey;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 21, 1), 1);
+    quint32 p1 = 0, p2 = 0, s = 0;
+    for (Fixture *f : m_doc->fixtures())
+    {
+        if (f->name().startsWith("Spot"))
+            s = f->id();
+        else
+            (f->address() == 0 ? p1 : p2) = f->id();
+    }
+    const Fixture *spot = m_doc->fixture(s);
+    const quint32 pan = FXScene::channelFor(spot, "pan");
+    const quint32 tilt = FXScene::channelFor(spot, "tilt");
+    auto out = [&](quint32 fixture, quint32 channel) {
+        return renderedValue(m_doc, int(m_doc->fixture(fixture)->address() + channel));
+    };
+
+    // below the list: a scene with the first dimmer at 60
+    Scene *below = new Scene(m_doc);
+    below->setValue(p1, 0, 60);
+    QVERIFY(m_doc->addFunction(below));
+    below->start(m_doc->masterTimer(), FunctionParent::master());
+
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 40;
+    wave.bpm = 60;
+    wave.fixtures = { p1, p2 };
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.swing = 20;
+    circle.swingTilt = 20;
+    circle.bpm = 60;
+    circle.fixtures = { s };
+
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setPriority(8);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue first = testCue(1000, { { Key(p2, 0), 100 }, { Key(p1, 1), 255 }, { Key(s, pan), 128 },
+                                         { Key(s, tilt), 128 } });
+    first.fx = { wave, circle };
+    QCOMPARE(cl->addCue(first), 0);
+    Cuelist::Cue second = testCue(2000, { { Key(p1, 1), 0 } }, 1000);
+    second.fxReleases = { FxKey("dimmer", p1), FxKey("dimmer", p2) };
+    QCOMPARE(cl->addCue(second), 1);
+    Cuelist::Cue third = testCue(3000, {}, 1000);
+    third.fxReleases = { FxKey("pan", s), FxKey("tilt", s) };
+    QCOMPARE(cl->addCue(third), 2);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 10);
+    // the wave on the scene below (60), and on its own base (100)
+    QList<int> on;
+    for (int i = 0; i < 50; i++)
+    {
+        renderFrames(m_doc);
+        on.append(out(p1, 0));
+    }
+    QVERIFY2(*std::min_element(on.cbegin(), on.cend()) < 30 && *std::max_element(on.cbegin(), on.cend()) > 90,
+             qPrintable(valuesText(on)));
+    // at a moment the first one is far from 60
+    QVERIFY(framesUntil(m_doc, [&]() { return out(p1, 0) > 100; }, 60) >= 0);
+
+    cl->go();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY2(out(p1, 0) > 85, qPrintable(QString::number(out(p1, 0))));
+    QList<int> free, based;
+    for (int i = 0; i < 45; i++)
+    {
+        renderFrames(m_doc);
+        free.append(out(p1, 0));
+        based.append(out(p2, 0));
+    }
+    // they go on moving, smaller and smaller
+    QVERIFY2(turnsOf(free.mid(5, 35)) >= 1, qPrintable(valuesText(free)));
+    QVERIFY2(turnsOf(based.mid(5, 35)) >= 1, qPrintable(valuesText(based)));
+    auto swingOf = [](const QList<int> &values, int around) {
+        int most = 0;
+        for (int value : values)
+            most = qMax(most, qAbs(value - around));
+        return most;
+    };
+    QVERIFY2(swingOf(free.mid(30), 60) < swingOf(free.mid(0, 15), 60), qPrintable(valuesText(free)));
+    QVERIFY2(swingOf(based.mid(30), 100) < swingOf(based.mid(0, 15), 100), qPrintable(valuesText(based)));
+    renderFrames(m_doc, 10);
+    QCOMPARE(out(p1, 0), 60);
+    QCOMPARE(out(p2, 0), 100);
+    QCOMPARE(out(p1, 1), 0);
+
+    // the last FX released: the circle goes on moving as it fades back to its base
+    QVERIFY(framesUntil(m_doc, [&]() { return qAbs(out(s, pan) - 128) > 15; }, 60) >= 0);
+    cl->go();
+    QList<int> moving;
+    for (int i = 0; i < 45; i++)
+    {
+        renderFrames(m_doc);
+        moving.append(out(s, pan));
+    }
+    QVERIFY2(turnsOf(moving.mid(5, 35)) >= 1, qPrintable(valuesText(moving)));
+    renderFrames(m_doc, 10);
+    QCOMPARE(out(s, pan), 128);
+    QCOMPARE(out(s, tilt), 128);
+    QVERIFY(fadersOf(m_doc, Function::invalidId(), false).isEmpty());
+    cl->stop(FunctionParent::master());
+    below->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxSceneFadeOutMoves()
+{
+    // an FX scene stopped with a fade out (its own, the crossfade of a
+    // group) goes on moving while its size and its bases fade to what is
+    // below: no channel fades in a straight line, and at the end the faders
+    // are gone (it froze: the same pattern, scaled down in a straight line).
+    // Started again meanwhile, the new run comes in above it. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 6), 6);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [&](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    auto out = [&](int par) { return renderedValue(m_doc, int(m_doc->fixture(pars.at(par))->address())); };
+    MasterTimer *timer = m_doc->masterTimer();
+
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 40;
+    wave.bpm = 60;
+    wave.wave = -1;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures(pars);
+    for (quint32 par : std::as_const(pars))
+        fx->setValue(par, 0, 128);
+    fx->setLayers({ wave });
+    fx->setFadeInSpeed(0);
+    fx->setFadeOutSpeed(1000);
+    QVERIFY(m_doc->addFunction(fx));
+    auto fadersOfFx = [&]() { return fadersOf(m_doc, fx->id(), false); };
+
+    auto fadeOut = [&](const QString &what) {
+        QList<QList<int>> samples(pars.count());
+        for (int frame = 0; frame < 45; frame++)
+        {
+            renderFrames(m_doc);
+            for (int p = 0; p < pars.count(); p++)
+                samples[p].append(out(p));
+        }
+        for (int p = 0; p < pars.count(); p++)
+            QVERIFY2(bendOf(samples.at(p).mid(5, 35)) >= 8, qPrintable(what + ": " + valuesText(samples.at(p))));
+        QVERIFY(framesUntil(m_doc, [&]() { return fadersOfFx().isEmpty(); }, 30) >= 0);
+        for (int p = 0; p < pars.count(); p++)
+            QCOMPARE(out(p), 0);
+    };
+
+    // its own fade out: the channels stay FX that leave as they fade
+    fx->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 30);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc);
+    int leaving = 0;
+    for (const QSharedPointer<GenericFader> &fader : fadersOfFx())
+    {
+        QVERIFY(fader->isFadingOut());
+        for (const FadeChannel &fc : fader->channels())
+        {
+            QVERIFY(fc.flags() & FadeChannel::Modulated);
+            QVERIFY(fc.modulationLeaving());
+            leaving++;
+        }
+    }
+    QCOMPARE(leaving, 6);
+    fadeOut("own fade out");
+
+    // the crossfade of a group (ms): the same
+    fx->setFadeOutSpeed(0);
+    fx->start(timer, FunctionParent::master(), 0, Function::defaultSpeed(), 1000, Function::defaultSpeed(),
+              Function::Time);
+    renderFrames(m_doc, 30);
+    fx->stop(FunctionParent::master());
+    fadeOut("crossfade");
+
+    // a stop all with a fade: its faders fade out first, then it stops
+    // without a fade of its own. The same
+    fx->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 30);
+    for (Universe *universe : m_doc->inputOutputMap()->claimUniverses())
+        universe->fadeOutFunctionFaders(1000, QSet<quint32>());
+    m_doc->inputOutputMap()->releaseUniverses(false);
+    fx->stop(FunctionParent::master());
+    fadeOut("stop all");
+
+    // started again as it fades out: the new run on top, the old one leaves
+    fx->setFadeOutSpeed(1000);
+    fx->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 30);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 10);
+    fx->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 60);
+    QCOMPARE(fadersOfFx().count(), 1);
+    QList<int> again;
+    for (int frame = 0; frame < 50; frame++)
+    {
+        renderFrames(m_doc);
+        again.append(out(0));
+    }
+    QVERIFY2(*std::min_element(again.cbegin(), again.cend()) < 90 &&
+             *std::max_element(again.cbegin(), again.cend()) > 165, qPrintable(valuesText(again)));
+    fx->setFadeOutSpeed(0);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(fadersOfFx().isEmpty());
+    QCOMPARE(out(0), 0);
+}
+
+void Backend_Test::cuelistLiveTimeFx()
+{
+    // Live Time reaches the FX of a list: «Now» ends their fade in (their
+    // bases and their size) with the static values, ×½ and ×2 change it from
+    // where it is, also a change of a GO to FX that play (they went on in
+    // their own time). Offline frames
+    typedef Cuelist::Key Key;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    const Key dimmer(par, 0), red(par, 1);
+    auto out = [&](int address) { return renderedValue(m_doc, address); };
+
+    // still at the top of its wave: the base + 51
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 40;
+    wave.bpm = 0;
+    wave.phase = 90;
+    wave.fixtures = { par };
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue first = testCue(1000, { { dimmer, 100 }, { red, 200 } }, 2000);
+    first.fx = { wave };
+    QCOMPARE(cl->addCue(first), 0);
+    QCOMPARE(cl->addCue(testCue(2000, { { dimmer, 200 } }, 2000)), 1);
+
+    // 200 ms into 2 s: a tenth of the way
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 10);
+    QVERIFY2(out(0) >= 8 && out(0) <= 24, qPrintable(QString::number(out(0))));
+    // now: all of it, with red
+    cl->setLiveTime(0);
+    renderFrames(m_doc, 2);
+    QCOMPARE(out(1), 200);
+    QCOMPARE(out(0), 151);
+    QVERIFY(cl->status().fading == false);
+
+    // a GO to FX that play: half of 2 s from a quarter of it ends in 500 ms more
+    cl->go();
+    renderFrames(m_doc, 25);
+    QVERIFY2(qAbs(out(0) - 176) <= 4, qPrintable(QString::number(out(0))));
+    cl->scaleLiveTime(0.5);
+    renderFrames(m_doc, 25);
+    QVERIFY2(qAbs(out(0) - 226) <= 6, qPrintable(QString::number(out(0))));
+    const int left = framesUntil(m_doc, [&]() { return out(0) == 251; }, 40);
+    QVERIFY2(left >= 8 && left <= 18, qPrintable(QString::number(left)));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistFxTrimKeepsPlaces()
+{
+    // a later cue that takes some fixtures of a layer the list tracks leaves
+    // the others in their places: the wave over the four PARs goes on over
+    // three of them as it was (it spread again over three: they jumped), and
+    // a mirror keeps its twins (it broke). The places go into the file with
+    // the layer. Offline frames
+    typedef Cuelist::Key Key;
+    typedef Cuelist::FxKey FxKey;
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 4), 4);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [&](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    auto dimmerOf = [&](int par) { return renderedValue(m_doc, int(m_doc->fixture(pars.at(par))->address())); };
+
+    // still: 128, 0, 128, 255 («Ola por X: Todas»)
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 100;
+    wave.bpm = 0;
+    wave.wave = -1;
+    wave.fixtures = pars;
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    cl->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(cl));
+    QHash<Key, uchar> dimmers;
+    for (quint32 par : std::as_const(pars))
+        dimmers.insert(Key(par, 0), 128);
+    Cuelist::Cue first = testCue(1000, dimmers);
+    first.fx = { wave };
+    QCOMPARE(cl->addCue(first), 0);
+    Cuelist::Cue second = testCue(2000, {});
+    second.fxReleases = { FxKey("dimmer", pars.at(0)) };
+    QCOMPARE(cl->addCue(second), 1);
+
+    const Cuelist::State trimmed = cl->trackedState(1);
+    QCOMPARE(trimmed.fx.count(), 1);
+    QCOMPARE(trimmed.fx.first().fixtures, pars.mid(1));
+    QCOMPARE(trimmed.fx.first().spread, pars);
+
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(QList<int>({ dimmerOf(0), dimmerOf(1), dimmerOf(2), dimmerOf(3) }), QList<int>({ 128, 0, 128, 255 }));
+    cl->go();
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(QList<int>({ dimmerOf(0), dimmerOf(1), dimmerOf(2), dimmerOf(3) }), QList<int>({ 128, 0, 128, 255 }));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the places go into the file, and come back
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    {
+        QXmlStreamWriter writer(&buffer);
+        FXScene::saveLayerXML(&writer, trimmed.fx.first());
+    }
+    buffer.close();
+    QXmlStreamReader reader(buffer.data());
+    reader.readNextStartElement();
+    const FXScene::Layer loaded = FXScene::loadLayerXML(reader);
+    QVERIFY(loaded == trimmed.fx.first());
+    QCOMPARE(loaded.spread, pars);
+    QVERIFY(buffer.data().contains("Spread="));
+
+    // 6 spots in a mirror (the last three the other way round): another FX
+    // on the first three leaves the last three where they were
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 101, 6), 6);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        if (f->name().startsWith("Spot"))
+            spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [&](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    const quint32 pan = FXScene::channelFor(m_doc->fixture(spots.first()), "pan");
+    const quint32 tilt = FXScene::channelFor(m_doc->fixture(spots.first()), "tilt");
+    auto panOf = [&](int s) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(s))->address() + pan)); };
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.swing = 40;
+    circle.swingTilt = 40;
+    circle.bpm = 0;
+    circle.wave = -1;
+    circle.fixtures = spots;
+    for (int s = 3; s < 6; s++)
+    {
+        FXScene::Own own;
+        own.reverse = true;
+        circle.own.insert(spots.at(s), own);
+    }
+    FXScene::Layer eight;
+    eight.param = "pantilt";
+    eight.figure = FXScene::Eight;
+    eight.swing = 10;
+    eight.swingTilt = 10;
+    eight.bpm = 0;
+    eight.fixtures = spots.mid(0, 3);
+    Cuelist *mirror = new Cuelist(m_doc);
+    mirror->setFadeOutSpeed(0);
+    mirror->setAtEnd(Cuelist::AtEndStay);
+    QVERIFY(m_doc->addFunction(mirror));
+    QHash<Key, uchar> centres;
+    for (quint32 spot : std::as_const(spots))
+    {
+        centres.insert(Key(spot, pan), 128);
+        centres.insert(Key(spot, tilt), 128);
+    }
+    Cuelist::Cue look = testCue(1000, centres);
+    look.fx = { circle };
+    QCOMPARE(mirror->addCue(look), 0);
+    Cuelist::Cue other = testCue(2000, {});
+    other.fx = { eight };
+    QCOMPARE(mirror->addCue(other), 1);
+    mirror->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    const QList<int> was = { panOf(3), panOf(4), panOf(5) };
+    // a mirror: each one of the last three the other way round from its twin
+    QVERIFY2(qAbs(was.at(0) + panOf(2) - 256) <= 1 && qAbs(was.at(1) + panOf(1) - 256) <= 1,
+             qPrintable(QString("%1 %2 %3 / %4 %5 %6").arg(panOf(0)).arg(panOf(1)).arg(panOf(2))
+                            .arg(was.at(0)).arg(was.at(1)).arg(was.at(2))));
+    mirror->go();
+    renderFrames(m_doc, 3);
+    QCOMPARE(mirror->status().current, 1);
+    QCOMPARE(QList<int>({ panOf(3), panOf(4), panOf(5) }), was);
+    mirror->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistEditorCueOnlyFx()
+{
+    // Update › «Solo esta cue» (and Merge with cue only, and the update of a
+    // playback): the next cues keep their look for the FX too: an FX the
+    // update adds is released in the next cue, one it changes comes back
+    // there as it was (they went on into the next cues)
+    typedef Cuelist::Key Key;
+    typedef Cuelist::FxKey FxKey;
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 4), 4);
+    QList<quint32> pars;
+    for (Fixture *f : core.doc()->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [&](quint32 a, quint32 b) {
+        return core.doc()->fixture(a)->address() < core.doc()->fixture(b)->address();
+    });
+    const quint32 p1 = pars.at(0), p2 = pars.at(1);
+    Programmer *prog = core.programmer();
+    CuelistEditor *editor = core.cuelists();
+
+    Cuelist *cl = new Cuelist(core.doc());
+    QVERIFY(core.doc()->addFunction(cl));
+    const quint32 id = cl->id();
+    cl->addCue(testCue(1000, { { Key(p1, 0), 255 }, { Key(p2, 0), 255 } }));
+    cl->addCue(testCue(2000, { { Key(p1, 1), 10 } }));
+    cl->addCue(testCue(3000, { { Key(p1, 1), 50 } }));
+
+    // a new FX, cue only: released in the next cue
+    QVERIFY(editor->loadCue(id, 0));
+    prog->selectFixtures({ p1, p2 });
+    prog->setFx("dimmer", { { "mode", 9 } });
+    QVERIFY(editor->updateCue(id, 0, { { "cueOnly", true } }));
+    QCOMPARE(cl->trackedState(0).fx.count(), 1);
+    QVERIFY(cl->trackedState(1).fx.isEmpty());
+    QVERIFY(cl->trackedState(2).fx.isEmpty());
+    QCOMPARE(cl->cueAt(1).fxReleases, QSet<FxKey>({ FxKey("dimmer", p1), FxKey("dimmer", p2) }));
+
+    // an FX the next cues track, on all four
+    FXScene::Layer wave;
+    wave.param = "dimmer";
+    wave.mode = 1;
+    wave.swing = 40;
+    wave.wave = -1;
+    wave.fixtures = pars;
+    QList<Cuelist::Cue> cues = cl->cues();
+    cues[0].fx = { wave };
+    cues[1].fxReleases.clear();
+    cl->setCues(cues);
+    const QList<Cuelist::State> before = { cl->trackedState(1), cl->trackedState(2) };
+    QCOMPARE(before.at(0).fx.count(), 1);
+
+    // changed on the first two only, cue only: the next cues show it as it was
+    prog->clear();
+    QVERIFY(editor->loadCue(id, 0));
+    prog->selectFixtures({ p1, p2 });
+    prog->setFx("dimmer", { { "swing", 80 } });
+    QVERIFY(editor->updateCue(id, 0, { { "cueOnly", true } }));
+    bool bigger = false;
+    for (const FXScene::Layer &layer : cl->trackedState(0).fx)
+        bigger = bigger || (layer.fixtures.contains(p1) && layer.shapeOf(p1).swing == 80);
+    QVERIFY(bigger);
+    for (int i = 1; i <= 2; i++)
+    {
+        const Cuelist::State now = cl->trackedState(i);
+        QCOMPARE(now.fx.count(), 1);
+        QVERIFY(now.fx.first() == wave);
+        QVERIFY(now.fx.first().spread.isEmpty() || now.fx.first().spread == pars);
+        QCOMPARE(now.values, before.at(i - 1).values);
+    }
+
+    QCOMPARE(cl->cueAt(1).fx.count(), 1);
+}
+
+void Backend_Test::fxSceneRemoveFixtureKeepsClocks()
+{
+    // a fixture deleted in the Patch that leaves a layer of a running FX
+    // scene without fixtures takes that layer's clock with it: the layers
+    // after it go on from where they are (each one took the clock of the
+    // layer before it). Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    quint32 a = 0, b = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->address() == 0 ? a : b) = f->id();
+    FXScene::Layer slow;
+    slow.param = "dimmer";
+    slow.bpm = 30;
+    slow.fixtures = { a };
+    FXScene::Layer fast;
+    fast.param = "red";
+    fast.mode = 16;
+    fast.swing = 200;
+    fast.bpm = 50;
+    fast.fixtures = { b };
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ a, b });
+    fx->setValue(a, 0, 128);
+    fx->setValue(b, 1, 0);
+    fx->setLayers({ slow, fast });
+    fx->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 37);
+    const QList<qreal> before = fx->layerPositions();
+    QCOMPARE(before.count(), 2);
+    const int red = renderedValue(m_doc, int(m_doc->fixture(b)->address() + 1));
+
+    QVERIFY(m_doc->deleteFixture(a));
+    renderFrames(m_doc);
+    const QList<qreal> after = fx->layerPositions();
+    QCOMPARE(fx->layers().count(), 1);
+    QCOMPARE(after.count(), 1);
+    const qreal frame = 50.0 / 60000.0 * MasterTimer::tick();
+    QVERIFY2(qAbs(after.first() - (before.at(1) + frame)) < 1e-6,
+             qPrintable(QString("%1, not %2").arg(after.first()).arg(before.at(1) + frame)));
+    const int now = renderedValue(m_doc, int(m_doc->fixture(b)->address() + 1));
+    QVERIFY2(qAbs(now - red) <= 6, qPrintable(QString("%1 after %2").arg(now).arg(red)));
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+/** DMX Total Control: the fixture whose first channel is $address of universe 1 */
+static quint32 fxFixtureAt(Doc *doc, int address)
+{
+    for (Fixture *f : doc->fixtures())
+        if (f->universe() == 0 && int(f->address()) == address)
+            return f->id();
+    return Fixture::invalidId();
+}
+
+void Backend_Test::fxFinePairs()
+{
+    // the fine channel of an FX is the one the mode pairs with its channel:
+    // the LSB right after it, or the only LSB of the only channel of its kind
+    // (Pan, Tilt, Pan fine, Tilt fine). Never the fine of another channel of
+    // the same group: a frost or a zoom with the focus fine, a gobo with the
+    // fine of the gobo position. Offline frames
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    const QDir library(QStringLiteral(DTC_SYSTEM_FIXTURES));
+    QVERIFY(cache->loadQXF(library.filePath("Martin/Martin-MAC-2000-Profile-II.qxf")));
+    QVERIFY(cache->loadQXF(library.filePath("Clay_Paky/Clay-Paky-Sharpy-Plus.qxf")));
+    QCOMPARE(m_patch->addFixtures("Martin", "MAC 2000 Profile II", "24 Channel - 16 Bit", "Mac", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Clay Paky", "Sharpy Plus", "Standard", "Sharpy", 0, 101, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 201, 1), 1);
+    const Fixture *mac = m_doc->fixture(fxFixtureAt(m_doc, 0));
+    const Fixture *sharpy = m_doc->fixture(fxFixtureAt(m_doc, 100));
+    const Fixture *spot = m_doc->fixture(fxFixtureAt(m_doc, 200));
+    QVERIFY(mac != nullptr && sharpy != nullptr && spot != nullptr);
+    auto fineOf = [](const Fixture *fxi, const QString &param) {
+        quint32 fine = QLCChannel::invalid();
+        const quint32 channel = FXScene::channelFor(fxi, param, &fine);
+        return QString("%1/%2").arg(int(channel)).arg(fine == QLCChannel::invalid() ? -1 : int(fine));
+    };
+
+    // the 16 bit profile: the gobo wheel (7) has no fine of its own (9 is the
+    // fine of the gobo position, 8); pan 18 with 19, tilt 20 with 21
+    QCOMPARE(fineOf(mac, "gobo"), QString("7/-1"));
+    QCOMPARE(fineOf(mac, "pan"), QString("18/19"));
+    QCOMPARE(fineOf(mac, "tilt"), QString("20/21"));
+    // the beam light: frost (19) and zoom (20) have none (22 is the focus fine)
+    QCOMPARE(fineOf(sharpy, "frost"), QString("19/-1"));
+    QCOMPARE(fineOf(sharpy, "zoom"), QString("20/-1"));
+    QCOMPARE(fineOf(sharpy, "focus"), QString("21/22"));
+    QCOMPARE(fineOf(sharpy, "dimmer"), QString("7/8"));
+    QCOMPARE(fineOf(sharpy, "pan"), QString("24/25"));
+    // a fine that is not right after its channel: Pan, Tilt, Pan fine, Tilt fine
+    QCOMPARE(fineOf(spot, "pan"), QString("0/2"));
+    QCOMPARE(fineOf(spot, "tilt"), QString("1/3"));
+    // the layer plays those channels, and no more
+    QCOMPARE(FXScene::layerChannels(sharpy, "zoom").count(), 1);
+    QCOMPARE(int(FXScene::layerChannels(sharpy, "zoom").first().second), int(QLCChannel::invalid()));
+
+    // a zoom FX on the beam light leaves the focus fine to the scene below
+    Scene *below = new Scene(m_doc);
+    below->setValue(sharpy->id(), 22, 77);
+    QVERIFY(m_doc->addFunction(below));
+    below->start(m_doc->masterTimer(), FunctionParent::master());
+    FXScene::Layer zoom;
+    zoom.param = "zoom";
+    zoom.mode = 1;
+    zoom.swing = 80;
+    zoom.bpm = 60;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ sharpy->id() });
+    fx->setValue(sharpy->id(), 20, 128);
+    fx->setLayers({ zoom });
+    fx->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    QSet<int> zooms;
+    for (int i = 0; i < 20; i++)
+    {
+        renderFrames(m_doc);
+        zooms.insert(renderedValue(m_doc, int(sharpy->address()) + 20));
+        QCOMPARE(renderedValue(m_doc, int(sharpy->address()) + 22), 77);
+    }
+    QVERIFY(zooms.count() > 5);
+    fx->stop(FunctionParent::master());
+    below->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxEveryHead()
+{
+    // a fixture with several heads and no channel of its own for the
+    // parameter: the FX goes on every head, all alike (the fixture is one
+    // place of the wave): both lamps of a twin blinder, every cell of a
+    // pixel bar. The bases of a macro go on every head. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Blinder 2 Lamps", "2ch Lamps", "Blinder", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED Bar RGB 8 Segments", "24ch Pixels", "Bar", 0, 11, 2), 2);
+    const quint32 blinder = fxFixtureAt(m_doc, 0);
+    const quint32 barA = fxFixtureAt(m_doc, 10);
+    const quint32 barB = fxFixtureAt(m_doc, 34);
+    QVERIFY(blinder != Fixture::invalidId() && barA != Fixture::invalidId() && barB != Fixture::invalidId());
+    auto channels = [this](quint32 fid, const QString &param) {
+        QStringList list;
+        for (quint32 c : FXScene::channelsFor(m_doc->fixture(fid), param))
+            list.append(QString::number(c));
+        return list.join(',');
+    };
+    QCOMPARE(channels(blinder, "dimmer"), QString("0,1"));
+    QCOMPARE(channels(barA, "red"), QString("0,3,6,9,12,15,18,21"));
+    QCOMPARE(FXScene::layerChannels(m_doc->fixture(blinder), "dimmer").count(), 2);
+    QCOMPARE(FXScene::layerChannels(m_doc->fixture(barA), "green").count(), 8);
+
+    // a dimmer FX on the blinder: both lamps, the same
+    FXScene::Layer pulse;
+    pulse.param = "dimmer";
+    pulse.mode = 3;
+    pulse.swing = 200;
+    pulse.bpm = 60;
+    FXScene *lamps = new FXScene(m_doc);
+    lamps->setFixtures({ blinder });
+    lamps->setValue(blinder, 0, 0);
+    lamps->setValue(blinder, 1, 0);
+    lamps->setLayers({ pulse });
+    lamps->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(lamps));
+    lamps->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 12);
+    const int lamp1 = renderedValue(m_doc, 0), lamp2 = renderedValue(m_doc, 1);
+    QVERIFY2(lamp1 > 60 && lamp1 == lamp2, qPrintable(QString("%1 and %2").arg(lamp1).arg(lamp2)));
+    lamps->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // a red wave over two bars: each bar one place, its eight cells alike
+    FXScene::Layer red = pulse;
+    red.param = "red";
+    red.wave = -1;
+    FXScene *bars = new FXScene(m_doc);
+    bars->setFixtures({ barA, barB });
+    bars->setLayers({ red });
+    bars->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(bars));
+    bars->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 6);
+    QList<int> cellsA, cellsB;
+    for (int cell = 0; cell < 8; cell++)
+    {
+        cellsA.append(renderedValue(m_doc, 10 + cell * 3));
+        cellsB.append(renderedValue(m_doc, 34 + cell * 3));
+    }
+    QVERIFY2(std::all_of(cellsA.cbegin(), cellsA.cend(), [&](int v) { return v == cellsA.first(); }), qPrintable(valuesText(cellsA)));
+    QVERIFY2(std::all_of(cellsB.cbegin(), cellsB.cend(), [&](int v) { return v == cellsB.first(); }), qPrintable(valuesText(cellsB)));
+    QVERIFY2(qAbs(cellsA.first() - cellsB.first()) > 40, qPrintable(valuesText(cellsA) + " / " + valuesText(cellsB)));
+    bars->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the programmer: a macro puts its base on both lamps, its FX moves both
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    FxMacros macros(&prog);
+    QTemporaryDir dir;
+    macros.setFilePath(dir.filePath("macros.json"));
+    prog.selectFixtures({ blinder });
+    QVERIFY(macros.apply("breathe"));
+    QVERIFY(prog.valueMap().contains(qMakePair(blinder, quint32(0))));
+    QVERIFY(prog.valueMap().contains(qMakePair(blinder, quint32(1))));
+    QSet<int> seen;
+    for (int i = 0; i < 40; i++)
+    {
+        renderFrames(m_doc, 5);
+        QCOMPARE(renderedValue(m_doc, 1), renderedValue(m_doc, 0));
+        seen.insert(renderedValue(m_doc, 1));
+    }
+    QVERIFY(seen.count() > 5);
+    prog.stopAllFx();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::programmerFxPanTiltOverlap()
+{
+    // a Pan or Tilt FX and a Pan / tilt FX on the same fixtures: they move
+    // the same channels, so the last one takes those fixtures from the other
+    // (the first one won, and the other went on in «FX en marcha» doing
+    // nothing)
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    FxMacros macros(&prog);
+    QTemporaryDir dir;
+    macros.setFilePath(dir.filePath("macros.json"));
+    auto running = [&prog]() {
+        QStringList list;
+        for (const FXScene::Layer &layer : prog.fxLayerList())
+            list.append(QString("%1 %2").arg(layer.param).arg(layer.fixtures.count()));
+        return list.join(", ");
+    };
+
+    // a Pan FX, then the circle: the circle takes them
+    prog.selectFixtures(idList(spots));
+    prog.setFx("pan", {});
+    QCOMPARE(running(), QString("pan 4"));
+    QVERIFY(macros.apply("circle"));
+    QCOMPARE(running(), QString("pantilt 4"));
+    // a Tilt FX on two of them takes those from the circle
+    prog.selectFixtures(idList(spots.mid(0, 2)));
+    prog.setFx("tilt", {});
+    QCOMPARE(running(), QString("pantilt 2, tilt 2"));
+    // the four join the Tilt FX: the circle has none left
+    prog.selectFixtures(idList(spots));
+    prog.setFx("tilt", { { "swing", 80 } });
+    QCOMPARE(running(), QString("tilt 4"));
+    // «Empezar FX» on Pan / tilt takes them back
+    prog.setFx("pantilt", {});
+    QCOMPARE(running(), QString("pantilt 4"));
+    // the same parameter or another one (the dimmer) stays
+    prog.setFx("dimmer", {});
+    QCOMPARE(running(), QString("pantilt 4, dimmer 4"));
+    prog.stopAllFx();
+}
+
+void Backend_Test::fxFollowsPatchChanges()
+{
+    // a running FX follows its fixtures in the Patch: moved to another
+    // universe it plays there (and leaves the old one), in another mode on
+    // the channels of that mode. An FX scene, the FX of the programmer and
+    // the FX player of a cuelist. Offline frames
+    QLCFixtureDefCache *cache = m_doc->fixtureDefCache();
+    QVERIFY(cache->loadQXF(QDir(QStringLiteral(DTC_SYSTEM_FIXTURES)).filePath("Martin/Martin-MAC-2000-Profile-II.qxf")));
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Martin", "MAC 2000 Profile II", "24 Channel - 16 Bit", "Mac", 0, 101, 1), 1);
+    const quint32 spot = fxFixtureAt(m_doc, 0);
+    const quint32 mac = fxFixtureAt(m_doc, 100);
+    QVERIFY(spot != Fixture::invalidId() && mac != Fixture::invalidId());
+    QVERIFY(m_doc->inputOutputMap()->universesCount() >= 2);
+    auto out = [this](int universe, int address) {
+        const QList<Universe *> universes = m_doc->inputOutputMap()->claimUniverses();
+        const int value = universes.at(universe)->preGMValue(address);
+        m_doc->inputOutputMap()->releaseUniverses(false);
+        return value;
+    };
+    // whether $address of $universe moves over the next frames
+    auto moves = [&](int universe, int address) {
+        QSet<int> seen;
+        for (int i = 0; i < 25; i++)
+        {
+            renderFrames(m_doc);
+            seen.insert(out(universe, address));
+        }
+        return seen.count() > 3;
+    };
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.figure = FXScene::Circle;
+    circle.swing = 60;
+    circle.swingTilt = 60;
+    circle.bpm = 90;
+
+    // an FX scene: the spot to universe 2 at the same address
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ spot });
+    fx->setValue(spot, 0, 128);
+    fx->setValue(spot, 1, 128);
+    fx->setLayers({ circle });
+    fx->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    QVERIFY(moves(0, 0));
+    QVERIFY(m_patch->setFixtureAddress(spot, 1, 1));
+    renderFrames(m_doc, 2);
+    QVERIFY(moves(1, 0));
+    QVERIFY(moves(0, 0) == false);
+    QCOMPARE(out(0, 0), 0);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the profile in its 8 bit mode: the circle on its new pan (16), not on the
+    // channel that was its pan (18, now the speed of pan and tilt)
+    FXScene *moved = new FXScene(m_doc);
+    moved->setFixtures({ mac });
+    moved->setLayers({ circle });
+    moved->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(moved));
+    moved->start(m_doc->masterTimer(), FunctionParent::master());
+    QVERIFY(moves(0, 118));
+    QCOMPARE(m_patch->updateFixture(mac, "", "20 Channel - 8 Bit", 0, 101), QString());
+    renderFrames(m_doc, 2);
+    QVERIFY(moves(0, 116));
+    QVERIFY(moves(0, 118) == false);
+    moved->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the FX of the programmer: the spot back to universe 1
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.selectFixtures({ spot });
+    prog.setFx("pantilt", { { "swing", 60 }, { "swingTilt", 60 }, { "bpm", 90 } });
+    QVERIFY(moves(1, 0));
+    QVERIFY(m_patch->setFixtureAddress(spot, 0, 1));
+    renderFrames(m_doc, 2);
+    QVERIFY(moves(0, 0));
+    QVERIFY(moves(1, 0) == false);
+    prog.stopAllFx();
+    renderFrames(m_doc, 3);
+
+    // the FX player of a cuelist: the spot to universe 2 again
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue cue = testCue(1000, { { Cuelist::Key(spot, 0), 128 }, { Cuelist::Key(spot, 1), 128 } });
+    FXScene::Layer cueCircle = circle;
+    cueCircle.fixtures = { spot };
+    cue.fx = { cueCircle };
+    QCOMPARE(cl->addCue(cue), 0);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    QVERIFY(moves(0, 0));
+    QVERIFY(m_patch->setFixtureAddress(spot, 1, 1));
+    renderFrames(m_doc, 2);
+    QVERIFY(moves(1, 0));
+    QVERIFY(moves(0, 0) == false);
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxBaselessAboveScenes()
+{
+    // an FX without a base moves around what the scenes below send: a static
+    // scene of the same priority started after it is below it too (it hid
+    // the FX until it was released). With a base, the scene started last
+    // takes the channel, as always. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    FXScene::Layer circle;
+    circle.param = "pantilt";
+    circle.figure = FXScene::Circle;
+    circle.swing = 30;
+    circle.swingTilt = 30;
+    circle.bpm = 60;
+    Scene *position = new Scene(m_doc);
+    position->setValue(spot, 0, 100);
+    position->setValue(spot, 1, 100);
+    QVERIFY(m_doc->addFunction(position));
+    // the lowest and the highest pan over a cycle
+    auto panRange = [this]() {
+        int low = 255, high = 0;
+        for (int i = 0; i < 50; i++)
+        {
+            renderFrames(m_doc);
+            low = qMin(low, renderedValue(m_doc, 0));
+            high = qMax(high, renderedValue(m_doc, 0));
+        }
+        return qMakePair(low, high);
+    };
+
+    FXScene *relative = new FXScene(m_doc);
+    relative->setFixtures({ spot });
+    relative->setLayers({ circle });
+    relative->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(relative));
+    QCOMPARE(relative->priority(), position->priority());
+    relative->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    position->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QPair<int, int> range = panRange();
+    QVERIFY2(range.first < 80 && range.second > 120, qPrintable(QString("%1-%2").arg(range.first).arg(range.second)));
+    relative->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QCOMPARE(renderedValue(m_doc, 0), 100);
+    position->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // with a base: the scene started after it wins
+    FXScene *based = new FXScene(m_doc);
+    based->setFixtures({ spot });
+    based->setValue(spot, 0, 50);
+    based->setValue(spot, 1, 50);
+    based->setLayers({ circle });
+    based->setFadeInSpeed(0);
+    QVERIFY(m_doc->addFunction(based));
+    based->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    position->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    range = panRange();
+    QVERIFY2(range.first == 100 && range.second == 100, qPrintable(QString("%1-%2").arg(range.first).arg(range.second)));
+    based->stop(FunctionParent::master());
+    position->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxColourMacrosClearWhite()
+{
+    // the colour macros set what they don't move to 0: the white, the amber
+    // and the UV of the RGB ones (a white below made them pastel), the
+    // yellow of cyan / magenta. A fixture without them is left alone
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBWA+UV", "6ch RGBWA+UV", "Par", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Rgb", 0, 11, 1), 1);
+    QVERIFY(m_doc->fixtureDefCache()->loadQXF(QDir(QStringLiteral(DTC_SYSTEM_FIXTURES)).filePath("Martin/Martin-MAC-2000-Profile-II.qxf")));
+    QCOMPARE(m_patch->addFixtures("Martin", "MAC 2000 Profile II", "24 Channel - 16 Bit", "Mac", 0, 21, 1), 1);
+    const quint32 par = fxFixtureAt(m_doc, 0), rgb = fxFixtureAt(m_doc, 10), mac = fxFixtureAt(m_doc, 20);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    FxMacros macros(&prog);
+    QTemporaryDir dir;
+    macros.setFilePath(dir.filePath("macros.json"));
+    auto value = [&prog](quint32 fid, quint32 channel) {
+        const QPair<quint32, quint32> key(fid, channel);
+        return prog.valueMap().contains(key) ? int(prog.valueMap().value(key)) : -1;
+    };
+
+    for (const char *id : { "rainbow", "red-blue", "fire" })
+    {
+        prog.clear();
+        prog.selectFixtures({ par, rgb });
+        // a white wash in the programmer
+        prog.setChannelValue("white", 255);
+        QCOMPARE(value(par, 3), 255);
+        QVERIFY(macros.apply(id));
+        QVERIFY2(value(par, 3) == 0 && value(par, 4) == 0 && value(par, 5) == 0,
+                 qPrintable(QString("%1: %2 %3 %4").arg(id).arg(value(par, 3)).arg(value(par, 4)).arg(value(par, 5))));
+        QCOMPARE(prog.valueMap().count(qMakePair(rgb, quint32(3))), 0);
+        prog.stopAllFx();
+    }
+
+    prog.clear();
+    prog.selectFixtures({ mac });
+    prog.setChannelValue("yellow", 200);
+    QCOMPARE(value(mac, 4), 200);
+    QVERIFY(macros.apply("cyan-magenta"));
+    QCOMPARE(value(mac, 2), 128);
+    QCOMPARE(value(mac, 3), 128);
+    QCOMPARE(value(mac, 4), 0);
+    prog.stopAllFx();
+}
+
+void Backend_Test::fxMacroSaveMergesSameParam()
+{
+    // two FX of one parameter (a circle on spots 1-3, an eight on spots 4-6)
+    // go into a macro as one: put back on the six, the first three do the
+    // circle and the last three the eight (the eight was lost). At other
+    // speeds it keeps the first one's, and says so
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 6), 6);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    FxMacros macros(&prog);
+    QTemporaryDir dir;
+    macros.setFilePath(dir.filePath("macros.json"));
+    auto two = [&](qreal secondBpm) {
+        prog.stopAllFx();
+        prog.selectFixtures(idList(spots.mid(0, 3)));
+        prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "swing", 30 }, { "swingTilt", 30 }, { "bpm", 30 } });
+        prog.selectFixtures(idList(spots.mid(3, 3)));
+        prog.setFx("pantilt", { { "figure", int(FXScene::Eight) }, { "swing", 40 }, { "swingTilt", 20 }, { "bpm", secondBpm } });
+        QCOMPARE(prog.fxLayerList().count(), 2);
+    };
+    auto figures = [&]() {
+        QStringList list;
+        const FXScene::Layer layer = prog.fxLayerList().first();
+        for (quint32 fid : spots)
+            list.append(QString::number(layer.shapeOf(fid).figure));
+        return list.join(',');
+    };
+    const QString expected = QString("%1,%1,%1,%2,%2,%2").arg(int(FXScene::Circle)).arg(int(FXScene::Eight));
+
+    two(30);
+    const QString id = macros.save("Both");
+    QVERIFY(id.isEmpty() == false);
+    QVERIFY(macros.saveNote().isEmpty());
+    prog.stopAllFx();
+    prog.selectFixtures(idList(spots));
+    QVERIFY(macros.apply(id));
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(figures(), expected);
+    QCOMPARE(prog.fxLayerList().first().shapeOf(spots.at(4)).swing, 40);
+    QCOMPARE(prog.fxLayerList().first().shapeOf(spots.at(0)).swing, 30);
+
+    // at another speed: the first one's, and a note
+    two(60);
+    const QString other = macros.save("Speeds");
+    QVERIFY(other.isEmpty() == false);
+    QVERIFY(macros.saveNote().isEmpty() == false);
+    prog.stopAllFx();
+    prog.selectFixtures(idList(spots));
+    QVERIFY(macros.apply(other));
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(figures(), expected);
+    QVERIFY(qFuzzyCompare(prog.fxLayerList().first().bpm, 30.0));
+    prog.stopAllFx();
+}
+
+void Backend_Test::convertToFxKeepsMovement()
+{
+    // «Convertir a FX» of a Move FX gives the same movement: the circle turns
+    // the same way, its rotation too, the eight stands up, a line is a
+    // diagonal, the square goes round from the same corner; a fixture
+    // Backward goes backwards, and «Simétrico» mirrors the pan of the second
+    // half. What it can't do the same is said before converting
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor editor(m_doc, &prog, &zones);
+    auto efxAt = [](const EFX *efx, int index, qreal t) {
+        const EFXFixture *ef = efx->fixtures().at(index);
+        float x = 0, y = 0;
+        efx->calculatePoint(ef->direction(), ef->startOffset(), float(2.0 * M_PI * t), &x, &y);
+        if (efx->fixtureMirrored(index))
+            x = 2.0f * float(efx->xOffset()) - x;
+        return QPointF(x, y);
+    };
+    auto fxAt = [](const FXScene *fx, const EFX *efx, quint32 fid, qreal t) {
+        const FXScene::Layer layer = fx->layers().first();
+        const FXScene::Shape shape = layer.shapeOf(fid);
+        const qreal pos = FXScene::positionOf(layer, shape, t, 0, 1, 120.0);
+        const QPointF p = FXScene::panTiltPoint(shape, pos);
+        return QPointF(efx->xOffset() + p.x() * shape.swing / 200.0 * 255.0,
+                       efx->yOffset() + p.y() * shape.swingTilt / 200.0 * 255.0);
+    };
+    // the largest distance between the two over a cycle, for each fixture
+    auto apart = [&](const EFX *efx) {
+        FXScene *fx = FxTools::convert(m_doc, efx);
+        if (fx == nullptr)
+            return QString("none");
+        QStringList list;
+        for (int i = 0; i < efx->fixtures().count(); i++)
+        {
+            qreal worst = 0;
+            for (int k = 0; k < 64; k++)
+            {
+                const qreal t = k / 64.0;
+                const QPointF d = efxAt(efx, i, t) - fxAt(fx, efx, efx->fixtures().at(i)->head().fxi, t);
+                worst = qMax(worst, qMax(qAbs(d.x()), qAbs(d.y())));
+            }
+            list.append(QString::number(worst, 'f', 1));
+        }
+        delete fx;
+        return list.join(' ');
+    };
+    auto close = [](const QString &distances) {
+        for (const QString &d : distances.split(' '))
+            if (d.toDouble() > 2.0)
+                return false;
+        return true;
+    };
+    auto makeEfx = [&](EFX::Algorithm algorithm) {
+        prog.selectFixtures(idList(spots));
+        const int id = editor.createMoveFx("Move");
+        EFX *efx = qobject_cast<EFX *>(m_doc->function(quint32(id)));
+        efx->setAlgorithm(algorithm);
+        efx->setPropagationMode(EFX::Parallel);
+        efx->setWidth(60);
+        efx->setHeight(60);
+        efx->setXOffset(127);
+        efx->setYOffset(127);
+        return efx;
+    };
+
+    // a circle, rotated, a start offset; the third fixture Backward, one
+    // with a start offset of its own, the second half mirrored
+    EFX *circle = makeEfx(EFX::Circle);
+    circle->setRotation(30);
+    circle->setStartOffset(20);
+    circle->setSymmetric(true);
+    circle->fixtures().at(2)->setDirection(Function::Backward);
+    circle->fixtures().at(1)->setStartOffset(45);
+    QString distances = apart(circle);
+    QVERIFY2(close(distances), qPrintable(distances));
+    FXScene *converted = FxTools::convert(m_doc, circle);
+    const FXScene::Layer layer = converted->layers().first();
+    QCOMPARE(layer.figure, int(FXScene::Circle));
+    QVERIFY(layer.shapeOf(spots.at(0)).panInvert == false && layer.shapeOf(spots.at(1)).panInvert == false);
+    QVERIFY(layer.shapeOf(spots.at(2)).panInvert && layer.shapeOf(spots.at(3)).panInvert);
+    QVERIFY(layer.shapeOf(spots.at(2)).reverse != layer.shapeOf(spots.at(3)).reverse);
+    QCOMPARE(layer.grouping, int(FXScene::Mirror));
+    delete converted;
+    // the whole Move FX Backward
+    circle->setDirection(Function::Backward);
+    distances = apart(circle);
+    QVERIFY2(close(distances), qPrintable(distances));
+    QVERIFY(editor.convertNotes(circle->id()).isEmpty());
+
+    // an eight, wider than high; a line; the squares
+    EFX *eight = makeEfx(EFX::Eight);
+    eight->setWidth(40);
+    eight->setHeight(90);
+    distances = apart(eight);
+    QVERIFY2(close(distances), qPrintable(distances));
+    EFX *line = makeEfx(EFX::Line);
+    line->fixtures().at(1)->setDirection(Function::Backward);
+    distances = apart(line);
+    QVERIFY2(close(distances), qPrintable(distances));
+    EFX *square = makeEfx(EFX::Square);
+    square->setStartOffset(90);
+    distances = apart(square);
+    QVERIFY2(close(distances), qPrintable(distances));
+    QVERIFY(editor.convertNotes(square->id()).isEmpty());
+    EFX *diamond = makeEfx(EFX::Diamond);
+    converted = FxTools::convert(m_doc, diamond);
+    QCOMPARE(converted->layers().first().figure, int(FXScene::Diamond));
+    delete converted;
+
+    // what changes is said: a leaf, a rotated eight wider than high, the
+    // fixtures in dimmer or RGB mode
+    EFX *leaf = makeEfx(EFX::Leaf);
+    QCOMPARE(editor.convertNotes(leaf->id()).count(), 1);
+    eight->setRotation(45);
+    QCOMPARE(editor.convertNotes(eight->id()).count(), 1);
+    EFX *lissajous = makeEfx(EFX::Lissajous);
+    QCOMPARE(editor.convertNotes(lissajous->id()).count(), 1);
+    circle->fixtures().at(3)->setMode(EFXFixture::RGB);
+    QCOMPARE(editor.convertNotes(circle->id()).count(), 1);
+    converted = FxTools::convert(m_doc, circle);
+    QCOMPARE(converted->fixtures().count(), 3);
+    QVERIFY(converted->fixtures().contains(spots.at(3)) == false);
+    delete converted;
+}
+
+void Backend_Test::convertCurveToFx()
+{
+    // «Convertir a FX» of a Curve FX: a sine and a triangle start from the
+    // low value as before (they started half way up), and what the FX can't
+    // do (a duty other than half, random levels) is said before converting
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor editor(m_doc, &prog, &zones);
+    prog.selectFixtures({ par });
+    auto makeCurve = [&](CurveFX::Waveform wave) {
+        const int id = editor.createCurveFx("Curve");
+        CurveFX *curve = qobject_cast<CurveFX *>(m_doc->function(quint32(id)));
+        curve->setWaveform(wave);
+        curve->setLow(20);
+        curve->setHigh(220);
+        curve->setDuration(1000);
+        return curve;
+    };
+    // the largest distance between the curve and the FX over a cycle
+    auto apart = [&](const CurveFX *curve) {
+        FXScene *fx = FxTools::convert(m_doc, curve);
+        if (fx == nullptr)
+            return -1.0;
+        const FXScene::Layer layer = fx->layers().first();
+        const int base = fx->values().value(qMakePair(par, quint32(0)), 0);
+        qreal worst = 0;
+        for (int k = 0; k < 64; k++)
+        {
+            const qreal t = k / 64.0;
+            const qreal pos = FXScene::positionOf(layer, t, 0, 1);
+            const qreal value = base + FXScene::modeValue(layer.mode, pos) * layer.swing / 200.0 * 255.0;
+            worst = qMax(worst, qAbs(value - curve->valueAt(t, 0, 1)));
+        }
+        delete fx;
+        return worst;
+    };
+    for (CurveFX::Waveform wave : { CurveFX::Sine, CurveFX::Triangle, CurveFX::RampUp, CurveFX::RampDown,
+                                    CurveFX::Square, CurveFX::Strobe })
+    {
+        CurveFX *curve = makeCurve(wave);
+        const qreal distance = apart(curve);
+        QVERIFY2(distance >= 0 && distance < 1.5, qPrintable(QString("%1: %2").arg(int(wave)).arg(distance)));
+        QVERIFY(editor.convertNotes(curve->id()).isEmpty());
+    }
+    CurveFX *strobe = makeCurve(CurveFX::Strobe);
+    strobe->setDuty(10);
+    QCOMPARE(editor.convertNotes(strobe->id()).count(), 1);
+    CurveFX *random = makeCurve(CurveFX::Random);
+    QCOMPARE(editor.convertNotes(random->id()).count(), 1);
+}
+
+void Backend_Test::fxModeDirections()
+{
+    // the modes that go from the last fixture to the first (an arrow in the
+    // picker): 14 is the snap up of 7 reversed (it was 8 again, the snap
+    // down reversed)
+    for (int mode = 1; mode <= FXScene::ModeCount; mode++)
+    {
+        const bool reversed = FXScene::modeReversed(mode);
+        QCOMPARE(reversed, QList<int>({ 2, 4, 6, 8, 10, 12, 14, 20 }).contains(mode));
+    }
+    QCOMPARE(FXScene::modeValue(14, 0.25), 1.0);
+    QCOMPARE(FXScene::modeValue(14, 0.75), -1.0);
+    QCOMPARE(FXScene::modeValue(8, 0.25), -1.0);
+    QCOMPARE(FXScene::modeValue(13, 0.25), -1.0);
+    QCOMPARE(FXScene::modeValue(7, 0.25), 1.0);
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    EffectEditor editor(m_doc, &prog, &zones);
+    QVERIFY(editor.fxModeReversed(14));
+    QVERIFY(editor.fxModeReversed(13) == false);
+}
+
+void Backend_Test::programmerSnapshotTellsFx()
+{
+    // Snapshot › «Guardar las ediciones en una escena» puts the values in a
+    // static scene, never the FX: with FX in the programmer it says so
+    // («Grabar…» records them)
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    Scene *scene = new Scene(m_doc);
+    QVERIFY(m_doc->addFunction(scene));
+    QSignalSpy said(&prog, &Programmer::message);
+    prog.selectFixtures({ spot });
+    prog.setChannelValue("dimmer", 200);
+    QVERIFY(prog.mergeIntoScene(scene->id()));
+    QCOMPARE(said.count(), 0);
+    prog.setFx("pantilt", {});
+    QVERIFY(prog.mergeIntoScene(scene->id()));
+    QCOMPARE(said.count(), 1);
+    QCOMPARE(scene->value(spot, 3), uchar(200));
+    prog.stopAllFx();
+}
+
+void Backend_Test::importScenesKeepsGroupOptions()
+{
+    // the scenes of another show come with their options in their group
+    // (the live size, phase and speed of an FX, the release, the flash, the
+    // dimmer), and a group made for them with its crossfade and master. A
+    // group of this show keeps its own crossfade and master
+    QTemporaryDir dir;
+    const QString path = dir.filePath("other.qxw");
+    {
+        DtcCore other;
+        other.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+        QCOMPARE(other.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+        const quint32 spot = other.doc()->fixtures().first()->id();
+        FXScene::Layer circle;
+        circle.param = "pantilt";
+        FXScene *fx = new FXScene(other.doc());
+        fx->setName("Circle");
+        fx->setFixtures({ spot });
+        fx->setLayers({ circle });
+        QVERIFY(other.doc()->addFunction(fx));
+        Scene *scene = new Scene(other.doc());
+        scene->setName("Open");
+        scene->setValue(spot, 3, 255);
+        QVERIFY(other.doc()->addFunction(scene));
+        Zone *moves = other.zones()->addZone("Moves");
+        moves->addFunction(fx->id());
+        moves->setOption(fx->id(), "size", 0.5);
+        moves->setOption(fx->id(), "phase", 90);
+        moves->setOption(fx->id(), "speed", 0.5);
+        moves->setOption(fx->id(), "flash", true);
+        moves->setOption(fx->id(), "release", int(Zone::ReleaseOthers));
+        moves->setFadeTime(2000);
+        moves->setMaster(0.8);
+        Zone *wash = other.zones()->addZone("Wash");
+        wash->addFunction(scene->id());
+        wash->setOption(scene->id(), "dimmer", 0.25);
+        wash->setFadeTime(3000);
+        wash->setMaster(0.5);
+        QVERIFY(other.saveShow(QUrl::fromLocalFile(path)));
+    }
+
+    DtcCore core;
+    core.doc()->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    // «Wash» is here already, with its own crossfade and master
+    Zone *wash = core.zones()->addZone("Wash");
+    wash->setFadeTime(500);
+    wash->setMaster(1.0);
+    QVERIFY(core.importFromShow(QUrl::fromLocalFile(path), false, true).isEmpty() == false);
+    Zone *moves = nullptr;
+    for (int i = 0; i < core.zones()->count(); i++)
+        if (core.zones()->zone(i)->name() == "Moves")
+            moves = core.zones()->zone(i);
+    QVERIFY(moves != nullptr);
+    QCOMPARE(moves->functionIDs().count(), 1);
+    const QVariantMap options = moves->options(moves->functionIDs().first());
+    QCOMPARE(options.value("size").toDouble(), 0.5);
+    QCOMPARE(options.value("phase").toInt(), 90);
+    QCOMPARE(options.value("speed").toDouble(), 0.5);
+    QVERIFY(options.value("flash").toBool());
+    QCOMPARE(options.value("release").toInt(), int(Zone::ReleaseOthers));
+    QCOMPARE(moves->fadeTime(), 2000);
+    QCOMPARE(moves->master(), 0.8);
+    QCOMPARE(wash->functionIDs().count(), 1);
+    QCOMPARE(wash->options(wash->functionIDs().first()).value("dimmer").toDouble(), 0.25);
+    QCOMPARE(wash->fadeTime(), 500);
+    QCOMPARE(wash->master(), 1.0);
 }
 
 void Backend_Test::cuelistStartCueAndPausedEdits()
@@ -15417,8 +17076,10 @@ void Backend_Test::programmerFxOwn()
     QVERIFY(prog.fxLayerList().first().tidyOwn().isEmpty());
     QCOMPARE(prog.fxOf("pantilt").value("ownSelected").toInt(), 0);
 
-    // two FX of a parameter selected together become one, on the clock of
-    // the first; the fixtures of the other keep what they did as their own
+    // two FX of a parameter selected together: a change goes to each one
+    // (DMX Total Control: they made one at once, and lost each its wave);
+    // «Merge into one FX» makes one, on the clock of the first; the fixtures
+    // of the other keep what they did as their own
     prog.selectFixtures({ all.at(0) });
     prog.setFx("dimmer", { { "mode", 1 }, { "bpm", 60 } });
     prog.selectFixtures({ all.at(3) });
@@ -15433,6 +17094,12 @@ void Backend_Test::programmerFxOwn()
     QCOMPARE(dimmerLayers().count(), 2);
     prog.selectFixtures({ all.at(0), all.at(3) });
     prog.setFx("dimmer", { { "multiplier", 2 } });
+    QCOMPARE(dimmerLayers().count(), 2);
+    QCOMPARE(prog.fxOf("dimmer").value("spans").toInt(), 2);
+    QCOMPARE(dimmerLayers().at(0).multiplier, 2.0);
+    QCOMPARE(dimmerLayers().at(1).multiplier, 2.0);
+    QCOMPARE(dimmerLayers().at(1).bpm, 120.0);
+    prog.mergeFx("dimmer");
     QCOMPARE(dimmerLayers().count(), 1);
     layer = dimmerLayers().first();
     QCOMPARE(layer.fixtures, QList<quint32>({ spots.at(0), spots.at(3) }));
@@ -15440,12 +17107,12 @@ void Backend_Test::programmerFxOwn()
     QCOMPARE(layer.multiplier, 2.0);
     QCOMPARE(layer.shapeOf(spots.at(0)).mode, 1);
     QCOMPARE(layer.shapeOf(spots.at(3)).mode, 5);
-    // a fixture with no FX joins one it is selected with
+    // a fixture with no FX joins one it is selected with, in its place by number
     prog.selectFixtures({ all.at(1), all.at(3) });
     prog.setFx("dimmer", { { "swing", 80 } });
     QCOMPARE(dimmerLayers().count(), 1);
     layer = dimmerLayers().first();
-    QCOMPARE(layer.fixtures, QList<quint32>({ spots.at(0), spots.at(3), spots.at(1) }));
+    QCOMPARE(layer.fixtures, QList<quint32>({ spots.at(0), spots.at(1), spots.at(3) }));
     QCOMPARE(layer.shapeOf(spots.at(1)).swing, 80);
     QCOMPARE(layer.shapeOf(spots.at(3)).swing, 80);
     QCOMPARE(layer.shapeOf(spots.at(0)).swing, layer.swing);
@@ -15493,7 +17160,7 @@ void Backend_Test::fxSceneLayerPositions()
              qPrintable(QString("%1 -> %2").arg(before).arg(renderedValue(m_doc, 0))));
 
     // linked: the new one starts where the other linked one is
-    quick.linked = true;
+    quick.link = 1;
     FXScene::Layer red = quick;
     red.param = "red";
     fx->setLayers({ quick, red });
@@ -15618,6 +17285,1143 @@ void Backend_Test::fxMirrorWave()
 
     prog.clear();
     renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxLinkGroups()
+{
+    // the links are groups: each «Link» and each macro its own. The linked
+    // macros were one link of the whole programmer: a speed change on one
+    // went to any other linked FX, and every edit put them all where the
+    // first linked one was (they jumped). Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 6), 6);
+    QList<quint32> pars;
+    for (Fixture *f : m_doc->fixtures())
+        pars.append(f->id());
+    std::sort(pars.begin(), pars.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    const QVariantList first = { pars.at(0), pars.at(1), pars.at(2) };
+    const QVariantList last = { pars.at(3), pars.at(4), pars.at(5) };
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    FxMacros macros(&prog);
+    macros.setFilePath(dir.filePath("macros.json"));
+    auto layerOf = [&](const QString &param, quint32 fixture) {
+        for (const FXScene::Layer &l : prog.fxLayerList())
+            if (l.param == param && l.fixtures.contains(fixture))
+                return l;
+        return FXScene::Layer();
+    };
+
+    prog.selectFixtures(first);
+    QVERIFY(macros.apply("red-blue"));
+    prog.selectFixtures(last);
+    QVERIFY(macros.apply("rainbow"));
+    QCOMPARE(prog.fxLayerList().count(), 5);
+    // each macro a link group of its own
+    const int redBlue = layerOf("red", pars.at(0)).link;
+    const int rainbow = layerOf("red", pars.at(3)).link;
+    QVERIFY(redBlue > 0 && rainbow > 0 && redBlue != rainbow);
+    QCOMPARE(layerOf("blue", pars.at(0)).link, redBlue);
+    QCOMPARE(layerOf("green", pars.at(3)).link, rainbow);
+    QCOMPARE(layerOf("blue", pars.at(3)).link, rainbow);
+    renderFrames(m_doc, 40);
+    // x2 on the rainbow: the rainbow only
+    prog.setFx("red", { { "bpm", 40 }, { "bpmScale", 2 } });
+    QCOMPARE(layerOf("red", pars.at(3)).bpm, 40.0);
+    QCOMPARE(layerOf("blue", pars.at(3)).bpm, 40.0);
+    QCOMPARE(layerOf("red", pars.at(0)).bpm, 60.0);
+    QCOMPARE(layerOf("blue", pars.at(0)).bpm, 60.0);
+    // an edit: each one goes on from where it is, none jumps to another link
+    renderFrames(m_doc, 23);
+    QList<qreal> before = prog.fxScene()->layerPositions();
+    prog.setFx("red", { { "swing", 150 } });
+    QList<qreal> after = prog.fxScene()->layerPositions();
+    QCOMPARE(after.count(), 5);
+    for (int i = 0; i < after.count(); i++)
+        QVERIFY2(qAbs(after.at(i) - before.at(i)) < 1e-9,
+                 qPrintable(QString("layer %1: %2 -> %3").arg(i).arg(before.at(i)).arg(after.at(i))));
+    prog.clear();
+
+    // a layer linked later joins the ones linked already: they go on, it
+    // takes their place (they jumped to it when it came first in the list)
+    FXScene *fx = new FXScene(m_doc);
+    FXScene::Layer a;
+    a.param = "dimmer";
+    a.mode = 1;
+    a.bpm = 30;
+    a.fixtures = { pars.at(0) };
+    FXScene::Layer b = a;
+    b.param = "red";
+    b.bpm = 50;
+    b.link = 1;
+    FXScene::Layer c = b;
+    c.param = "green";
+    fx->setLayers({ a, b, c });
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 30);
+    before = fx->layerPositions();
+    QVERIFY(qAbs(before.at(0) - before.at(1)) > 0.1);
+    a.link = 1;
+    a.bpm = 50;
+    fx->setLayers({ a, b, c });
+    after = fx->layerPositions();
+    QCOMPARE(after.at(1), before.at(1));
+    QCOMPARE(after.at(2), before.at(1));
+    QCOMPARE(after.at(0), before.at(1));
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // saved: Linked="1" (an older version links it) and the group past the first
+    {
+        FXScene::Layer two = a;
+        two.link = 2;
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QXmlStreamWriter writer(&buffer);
+        FXScene::saveLayerXML(&writer, two);
+        buffer.close();
+        QVERIFY(buffer.data().contains("Linked=\"1\"") && buffer.data().contains("LinkGroup=\"2\""));
+        QXmlStreamReader reader(buffer.data());
+        QVERIFY(reader.readNextStartElement());
+        QCOMPARE(FXScene::loadLayerXML(reader.attributes()).link, 2);
+        // a show of before: one link, the first group
+        QXmlStreamReader old(QByteArray("<Layer Param=\"red\" Linked=\"1\"/>"));
+        QVERIFY(old.readNextStartElement());
+        QCOMPARE(FXScene::loadLayerXML(old.attributes()).link, 1);
+        QXmlStreamReader none(QByteArray("<Layer Param=\"red\" LinkGroup=\"4\"/>"));
+        QVERIFY(none.readNextStartElement());
+        QCOMPARE(FXScene::loadLayerXML(none.attributes()).link, 0);
+    }
+
+    // the scene editor: the timing goes to the layers of the group only; a
+    // layer linked there joins the first group of the scene
+    EffectEditor effects(m_doc, &prog, &zones);
+    FXScene *scene = new FXScene(m_doc);
+    FXScene::Layer x = a;
+    x.param = "red";
+    x.link = 1;
+    FXScene::Layer y = x;
+    y.param = "green";
+    FXScene::Layer z = x;
+    z.param = "blue";
+    z.link = 2;
+    FXScene::Layer w = x;
+    w.param = "white";
+    w.link = 0;
+    w.bpm = 70;
+    scene->setLayers({ x, y, z, w });
+    QVERIFY(m_doc->addFunction(scene));
+    effects.setFxLayer(scene->id(), 0, { { "bpm", 90 } });
+    QCOMPARE(scene->layers().at(1).bpm, 90.0);
+    QCOMPARE(scene->layers().at(2).bpm, 50.0);
+    effects.setFxLayer(scene->id(), 3, { { "linked", true } });
+    QCOMPARE(scene->layers().at(3).link, 1);
+    QCOMPARE(scene->layers().at(3).bpm, 90.0);
+    effects.setFxLayer(scene->id(), 2, { { "bpm", 45 } });
+    QCOMPARE(scene->layers().at(0).bpm, 90.0);
+    QCOMPARE(scene->layers().at(3).bpm, 90.0);
+    effects.setFxLayer(scene->id(), 2, { { "linked", false } });
+    QCOMPARE(scene->layers().at(2).link, 0);
+}
+
+void Backend_Test::fxLinkedMotion()
+{
+    // the speed of the movement (the faders of the SHOW) goes to the whole
+    // link of a pan/tilt layer: a dimmer linked to it went on at x1, out of
+    // step for good. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    const quint32 spot = m_doc->fixtures().first()->id();
+    const int address = int(m_doc->fixture(spot)->address());
+    FXScene *fx = new FXScene(m_doc);
+    fx->setValue(spot, 0, 128);
+    fx->setValue(spot, 3, 128);
+    FXScene::Layer pan;
+    pan.param = "pan";
+    pan.mode = 1;
+    pan.swing = 100;
+    pan.bpm = 30;
+    pan.link = 1;
+    pan.fixtures = { spot };
+    FXScene::Layer dimmer = pan;
+    dimmer.param = "dimmer";
+    // (and one not linked, at x1)
+    FXScene::Layer shutter = pan;
+    shutter.param = "shutter";
+    shutter.link = 0;
+    fx->setLayers({ pan, dimmer, shutter });
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 5);
+    fx->setMotionSpeed(2.0);
+    renderFrames(m_doc, 40);
+    fx->setMotionSpeed(1.0);
+    renderFrames(m_doc, 10);
+    const QList<qreal> pos = fx->layerPositions();
+    QCOMPARE(pos.count(), 3);
+    QCOMPARE(pos.at(1), pos.at(0));
+    // (the unlinked one at its own speed)
+    QVERIFY2(pos.at(0) - pos.at(2) > 0.3, qPrintable(QString("%1 %2").arg(pos.at(0)).arg(pos.at(2))));
+    // the same values: they move together
+    for (int f = 0; f < 20; f++)
+    {
+        renderFrames(m_doc);
+        QCOMPARE(renderedValue(m_doc, address + 3), renderedValue(m_doc, address));
+    }
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::cuelistFxLinkGroupsPerCue()
+{
+    // the link groups of the FX of a cuelist are each cue's own: cue 1 a pan
+    // FX in group 1, cue 2 a red ramp in group 1 too (a macro after a Clear;
+    // every linked FX of an older show is group 1). The speed of the
+    // movement of the list slowed the red as well. A group merged into a cue
+    // that has one of that number gets a number of its own. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 1), 1);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 100, 1), 1);
+    quint32 spot = 0, par = 0;
+    for (Fixture *f : m_doc->fixtures())
+        (f->name().startsWith("Par") ? par : spot) = f->id();
+    const int red = int(m_doc->fixture(par)->address());
+    typedef Cuelist::Key Key;
+    FXScene::Layer pan;
+    pan.param = "pan";
+    pan.mode = 1;
+    pan.swing = 100;
+    pan.bpm = 30;
+    pan.link = 1;
+    pan.fixtures = { spot };
+    FXScene::Layer ramp;
+    ramp.param = "red";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.bpm = 60;
+    ramp.link = 1;
+    ramp.fixtures = { par };
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    Cuelist::Cue first = testCue(1000, { { Key(spot, 0), 128 } });
+    first.fx = { pan };
+    QCOMPARE(cl->addCue(first), 0);
+    Cuelist::Cue second = testCue(2000, { { Key(par, 1), 0 } });
+    second.fx = { ramp };
+    QCOMPARE(cl->addCue(second), 1);
+    auto travel = [&](int frames) {
+        const int from = renderedValue(m_doc, red);
+        renderFrames(m_doc, frames);
+        const int to = renderedValue(m_doc, red);
+        return to >= from ? to - from : to + 255 - from;
+    };
+    // at half the speed of the movement: the pan FX only (a ramp a second:
+    // 51 in 10 frames)
+    cl->setMotionSpeed(0.5);
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    cl->go();
+    renderFrames(m_doc, 3);
+    QCOMPARE(cl->status().current, 1);
+    QCOMPARE(cl->trackedState(1).fx.count(), 2);
+    const int moved = travel(10);
+    QVERIFY2(qAbs(moved - 51) <= 4, qPrintable(QString::number(moved)));
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // merged into cue 1 after a Clear: the red linked again (group 1 of the
+    // programmer), a group apart from the pan FX of the cue
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    CuelistEditor editor(m_doc, &prog, &zones, nullptr);
+    prog.clear();
+    prog.selectFixtures({ par });
+    prog.setFx("red", { { "bpm", 60 } });
+    prog.setFx("red", { { "linked", true } });
+    QCOMPARE(prog.fxLayerList().first().link, 1);
+    QVERIFY(editor.updateCue(cl->id(), 0));
+    const QList<FXScene::Layer> merged = cl->cueAt(0).fx;
+    QCOMPARE(merged.count(), 2);
+    QVERIFY(merged.at(0).link > 0 && merged.at(1).link > 0);
+    QVERIFY2(merged.at(0).link != merged.at(1).link, qPrintable(QString("%1 %2").arg(merged.at(0).link).arg(merged.at(1).link)));
+    prog.clear();
+
+    // two FX scenes with a group 1 each in one step (a rack), made a cue:
+    // two groups
+    FXScene *one = new FXScene(m_doc);
+    one->setFixtures({ spot });
+    one->setLayers({ pan });
+    QVERIFY(m_doc->addFunction(one));
+    FXScene *two = new FXScene(m_doc);
+    two->setFixtures({ par });
+    two->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(two));
+    Collection *rack = new Collection(m_doc);
+    QVERIFY(rack->addFunction(one->id()));
+    QVERIFY(rack->addFunction(two->id()));
+    QVERIFY(m_doc->addFunction(rack));
+    Chaser *chaser = new Chaser(m_doc);
+    ChaserStep step(rack->id(), 0, 1000, 0);
+    step.duration = 1000;
+    QVERIFY(chaser->addStep(step));
+    QVERIFY(m_doc->addFunction(chaser));
+    QCOMPARE(editor.convertFromSteps(chaser->id()), int(chaser->id()));
+    const Cuelist *converted = qobject_cast<Cuelist *>(m_doc->function(chaser->id()));
+    QVERIFY(converted != nullptr);
+    const QList<FXScene::Layer> both = converted->cueAt(0).fx;
+    QCOMPARE(both.count(), 2);
+    QVERIFY2(both.at(0).link > 0 && both.at(1).link > 0 && both.at(0).link != both.at(1).link,
+             qPrintable(QString("%1 %2").arg(both.value(0).link).arg(both.value(1).link)));
+}
+
+void Backend_Test::programmerFxLinkStop()
+{
+    // linked FX stop together, also on other fixtures, and the × of a running
+    // FX leaves the selection as it is. «Stop» takes the selected fixtures
+    // out of every FX of the link. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 3), 3);
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 100, 3), 3);
+    QVariantList pars, spots;
+    QList<quint32> parIds, spotIds;
+    for (Fixture *f : m_doc->fixtures())
+    {
+        (f->name().startsWith("Par") ? pars : spots) << f->id();
+        (f->name().startsWith("Par") ? parIds : spotIds) << f->id();
+    }
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    auto indexOf = [&](const QString &param, quint32 fixture) {
+        const QList<FXScene::Layer> layers = prog.fxLayerList();
+        for (int i = 0; i < layers.count(); i++)
+            if (layers.at(i).param == param && layers.at(i).fixtures.contains(fixture))
+                return i;
+        return -1;
+    };
+
+    // a circle on the spots and a dimmer FX on the PARs, each «Link»
+    prog.selectFixtures(spots);
+    prog.setFx("pantilt", { { "bpm", 45 } });
+    prog.setFx("pantilt", { { "linked", true } });
+    prog.selectFixtures(pars);
+    prog.setFx("dimmer", {});
+    prog.setFx("dimmer", { { "linked", true } });
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    QCOMPARE(prog.fxOf("dimmer").value("bpm").toDouble(), 45.0);
+    // (one link group: the second «Link» joins the first one)
+    QVERIFY(prog.fxLayerList().at(0).link > 0);
+    QCOMPARE(prog.fxLayerList().at(1).link, prog.fxLayerList().at(0).link);
+    renderFrames(m_doc, 5);
+    // the × of the circle, with the PARs and their dimmer selected: both
+    // stop, the selection and the parameter stay
+    prog.setLastParam("dimmer");
+    prog.stopFxAt(indexOf("pantilt", spotIds.at(0)));
+    QVERIFY(prog.fxLayerList().isEmpty());
+    QCOMPARE(prog.selectionIds(), parIds);
+    QCOMPARE(prog.lastParam(), QString("dimmer"));
+
+    // not linked: the × stops that one only
+    prog.selectFixtures(spots);
+    prog.setFx("pantilt", {});
+    prog.selectFixtures(pars);
+    prog.setFx("dimmer", {});
+    prog.stopFxAt(indexOf("pantilt", spotIds.at(0)));
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    QCOMPARE(prog.fxLayerList().first().param, QString("dimmer"));
+    prog.stopAllFx();
+
+    // «Stop» on part of a linked FX: those fixtures leave every FX of the
+    // link; an FX not linked on them goes on
+    prog.selectFixtures(spots);
+    prog.setFx("pantilt", { { "linked", true } });
+    prog.setFx("dimmer", {});
+    prog.selectFixtures(pars);
+    prog.setFx("dimmer", { { "linked", true } });
+    prog.setFx("red", {});
+    QCOMPARE(prog.fxLayerList().count(), 4);
+    prog.selectFixtures({ spots.at(0), pars.at(0) });
+    prog.stopFx("pantilt");
+    QCOMPARE(prog.fxLayerList().value(indexOf("pantilt", spotIds.at(1))).fixtures, QList<quint32>({ spotIds.at(1), spotIds.at(2) }));
+    QCOMPARE(prog.fxLayerList().value(indexOf("dimmer", parIds.at(1))).fixtures, QList<quint32>({ parIds.at(1), parIds.at(2) }));
+    // (the dimmer of the spots and the red of the PARs are not linked: all theirs)
+    QCOMPARE(prog.fxLayerList().value(indexOf("dimmer", spotIds.at(1))).fixtures, spotIds);
+    QCOMPARE(prog.fxLayerList().value(indexOf("red", parIds.at(1))).fixtures, parIds);
+
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::programmerFxSpansSeveral()
+{
+    // a selection over several FX of a parameter (one per row, as a show
+    // builds them: each row a mirror with its own wave). A change goes to
+    // each of them: it used to make one FX of them on the first click, with
+    // one wave over all and no mirror any more. «Merge into one FX» does
+    // that when asked. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 9), 9);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    QVariantList rows;
+    for (int i = 0; i < 8; i++)
+        rows << spots.at(i);
+    auto pan = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address())); };
+    auto tilt = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address()) + 1); };
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+
+    FXScene::Layer row = FxTools::defaultLayer("pantilt");
+    row.swing = 40;
+    row.swingTilt = 40;
+    row.bpm = 15;
+    row.wave = -1;
+    row.link = 1;
+    FXScene::Layer rowA = row;
+    rowA.fixtures = { spots.at(0), spots.at(1), spots.at(2), spots.at(3) };
+    rowA.own[spots.at(2)].reverse = true;
+    rowA.own[spots.at(3)].reverse = true;
+    FXScene::Layer rowB = row;
+    rowB.fixtures = { spots.at(4), spots.at(5), spots.at(6), spots.at(7) };
+    rowB.own[spots.at(6)].reverse = true;
+    rowB.own[spots.at(7)].reverse = true;
+    QMap<QPair<quint32, quint32>, uchar> values;
+    for (int i = 0; i < 8; i++)
+    {
+        values.insert(qMakePair(spots.at(i), quint32(0)), 128);
+        values.insert(qMakePair(spots.at(i), quint32(1)), 128);
+    }
+    prog.loadState(values, spots.mid(0, 8), { rowA, rowB }, {});
+    QCOMPARE(prog.selectionIds().count(), 8);
+    QVariantMap info = prog.fxOf("pantilt");
+    QCOMPARE(info.value("spans").toInt(), 2);
+    QVERIFY(info.value("mirror").toBool());
+    QVERIFY(info.value("linked").toBool());
+    // the preview: both rows, on their clock
+    QCOMPARE(prog.fxPreview("pantilt", 0.3).count(), 8);
+
+    // each row a mirror of its own: the 4th of the 1st, the 3rd of the 2nd
+    auto worstMirror = [&](int frames) {
+        int worst = 0;
+        bool moved = false;
+        for (int f = 0; f < frames; f++)
+        {
+            renderFrames(m_doc);
+            for (int r = 0; r < 8; r += 4)
+            {
+                worst = qMax(worst, qAbs((pan(r) - 128) + (pan(r + 3) - 128)));
+                worst = qMax(worst, qAbs((pan(r + 1) - 128) + (pan(r + 2) - 128)));
+                worst = qMax(worst, qAbs(tilt(r) - tilt(r + 3)));
+                // (the rows go together: they are linked)
+                worst = qMax(worst, qAbs(pan(r) - pan(0)));
+            }
+            moved = moved || qAbs(pan(0) - 128) > 20;
+        }
+        return moved ? worst : 999;
+    };
+
+    // x2: on each one, still two rows, each one a mirror
+    prog.setFx("pantilt", { { "bpm", 30 }, { "bpmScale", 2 } });
+    QList<FXScene::Layer> layers = prog.fxLayerList();
+    QCOMPARE(layers.count(), 2);
+    for (const FXScene::Layer &l : std::as_const(layers))
+    {
+        QCOMPARE(l.bpm, 30.0);
+        QCOMPARE(l.fixtures.count(), 4);
+        QCOMPARE(l.tidyOwn().count(), 2);
+        QVERIFY(FXScene::mirrorTwins(l, FXScene::orderedFixtures(l, l.fixtures)).contains(true));
+    }
+    int worst = worstMirror(80);
+    QVERIFY2(worst <= 1, qPrintable(QString::number(worst)));
+    // the size, all selected: of each FX itself, the direction stays theirs
+    prog.setFx("pantilt", { { "swing", 30 } });
+    layers = prog.fxLayerList();
+    QCOMPARE(layers.count(), 2);
+    QCOMPARE(layers.at(0).swing, 30);
+    QCOMPARE(layers.at(1).swing, 30);
+    QVERIFY(layers.at(0).shapeOf(spots.at(3)).reverse && layers.at(1).shapeOf(spots.at(7)).reverse);
+    worst = worstMirror(20);
+    QVERIFY2(worst <= 1, qPrintable(QString::number(worst)));
+    // part of a row: its own way, in that row
+    prog.selectFixtures({ rows.at(0), rows.at(1) });
+    prog.setFx("pantilt", { { "swing", 10 } });
+    layers = prog.fxLayerList();
+    QCOMPARE(layers.count(), 2);
+    QCOMPARE(layers.at(0).swing, 30);
+    QCOMPARE(layers.at(0).shapeOf(spots.at(0)).swing, 10);
+    QCOMPARE(layers.at(1).tidyOwn().count(), 2);
+    prog.selectFixtures(rows);
+    prog.resetFxOwn("pantilt");
+    QCOMPARE(prog.fxLayerList().at(0).tidyOwn().count(), 0);
+    QCOMPARE(prog.fxLayerList().at(1).tidyOwn().count(), 0);
+    prog.selectFixtures({ rows.at(2), rows.at(3), rows.at(6), rows.at(7) });
+    prog.setFx("pantilt", { { "reverse", true } });
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    QVERIFY(prog.fxOf("pantilt").value("mirror").toBool());
+
+    // unlinked and linked again: each row, one link
+    prog.selectFixtures(rows);
+    prog.setFx("pantilt", { { "linked", false } });
+    QVERIFY(prog.fxLayerList().at(0).link == 0 && prog.fxLayerList().at(1).link == 0);
+    QVERIFY(prog.fxOf("pantilt").value("linked").toBool() == false);
+    prog.setFx("pantilt", { { "linked", true } });
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    QVERIFY(prog.fxLayerList().at(0).link > 0 && prog.fxLayerList().at(1).link == prog.fxLayerList().at(0).link);
+
+    // a fixture in no FX of the parameter joins the first one
+    prog.selectFixtures({ spots.at(8) }, true);
+    prog.setFx("pantilt", { { "swing", 30 } });
+    layers = prog.fxLayerList();
+    QCOMPARE(layers.count(), 2);
+    QCOMPARE(layers.at(0).fixtures.count(), 5);
+    QVERIFY(layers.at(0).fixtures.contains(spots.at(8)));
+
+    // the timing the FX don't share shows as «mixed» (it showed the first
+    // one's: a step then set it on all of them, unseen); the one they share
+    // not. (Unlinked: linked FX share their timing)
+    prog.selectFixtures(rows);
+    prog.setFx("pantilt", { { "linked", false } });
+    QVariantMap mixed = prog.fxOf("pantilt").value("mixed").toMap();
+    QVERIFY(mixed.contains("wait") == false && mixed.contains("grouping") == false && mixed.contains("bpm") == false);
+    prog.selectFixtures({ rows.at(4), rows.at(5), rows.at(6), rows.at(7) });
+    prog.setFx("pantilt", { { "wait", 300 }, { "grouping", int(FXScene::Mirror) } });
+    prog.selectFixtures(rows);
+    QCOMPARE(prog.fxOf("pantilt").value("spans").toInt(), 2);
+    mixed = prog.fxOf("pantilt").value("mixed").toMap();
+    QVERIFY2(mixed.value("wait").toBool() && mixed.value("grouping").toBool(), qPrintable(QStringList(mixed.keys()).join(' ')));
+    QVERIFY(mixed.contains("bpm") == false && mixed.contains("multiplier") == false && mixed.contains("wave") == false);
+
+    // merged when asked: one FX, each fixture with what it did
+    prog.selectFixtures(rows);
+    prog.selectFixtures({ spots.at(8) }, true);
+    prog.mergeFx("pantilt");
+    layers = prog.fxLayerList();
+    QCOMPARE(layers.count(), 1);
+    QCOMPARE(layers.at(0).fixtures.count(), 9);
+    for (quint32 f : { spots.at(2), spots.at(3), spots.at(6), spots.at(7) })
+        QVERIFY(layers.at(0).shapeOf(f).reverse);
+    QCOMPARE(prog.fxOf("pantilt").value("spans").toInt(), 1);
+
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxNewLayerOnClock()
+{
+    // a new FX on fixtures taken from one that plays (part of it given another
+    // shape, a macro) goes on from where that one is; a new one on other
+    // fixtures of a parameter with an FX at the same speed goes on its
+    // clock. They started at 0: out of step. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 6), 6);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    FXScene *fx = new FXScene(m_doc);
+    FXScene::Layer circle = FxTools::defaultLayer("pantilt");
+    circle.fixtures = spots.mid(0, 4);
+    fx->setLayers({ circle });
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 37);
+    const qreal at = fx->layerPositions().first();
+    QVERIFY(at > 0.1);
+
+    // part of it with another figure and speed: from where it was
+    FXScene::Layer left = circle;
+    left.fixtures = spots.mid(0, 2);
+    FXScene::Layer right = circle;
+    right.figure = FXScene::Eight;
+    right.bpm = 24;
+    right.fixtures = spots.mid(2, 2);
+    fx->setLayers({ left, right });
+    QList<qreal> pos = fx->layerPositions();
+    QCOMPARE(pos.at(0), at);
+    QCOMPARE(pos.at(1), at);
+    renderFrames(m_doc, 11);
+
+    // other fixtures, the same speed as one of them: on its clock
+    FXScene::Layer other = circle;
+    other.fixtures = spots.mid(4, 2);
+    fx->setLayers({ left, right, other });
+    pos = fx->layerPositions();
+    QCOMPARE(pos.at(2), pos.at(0));
+    // another speed: from 0
+    fx->setLayers({ left, right });
+    FXScene::Layer slower = other;
+    slower.bpm = 10;
+    fx->setLayers({ left, right, slower });
+    QCOMPARE(fx->layerPositions().at(2), 0.0);
+    // with a delay: from 0 (it waits at its base first)
+    fx->setLayers({ left, right });
+    FXScene::Layer delayed = other;
+    delayed.own[spots.at(4)].delay = 500;
+    fx->setLayers({ left, right, delayed });
+    QCOMPARE(fx->layerPositions().at(2), 0.0);
+    // another parameter: from 0
+    fx->setLayers({ left, right });
+    FXScene::Layer dimmer = FxTools::defaultLayer("dimmer");
+    dimmer.fixtures = spots.mid(4, 2);
+    fx->setLayers({ left, right, dimmer });
+    QCOMPARE(fx->layerPositions().at(2), 0.0);
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // in the programmer: a macro on part of a circle wave, and a circle on
+    // the other group, mirrored («Invertir pan») with the first one
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    FxMacros macros(&prog);
+    macros.setFilePath(dir.filePath("macros.json"));
+    QVariantList all, firstHalf, secondHalf;
+    for (int i = 0; i < 6; i++)
+        (i < 3 ? firstHalf : secondHalf) << spots.at(i);
+    all << firstHalf << secondHalf;
+    prog.selectFixtures(all);
+    prog.setPosition(0.5, 0.5);
+    QVERIFY(macros.apply("circle-wave"));
+    renderFrames(m_doc, 29);
+    const qreal wave = prog.fxScene()->layerPositions().first();
+    prog.selectFixtures(secondHalf);
+    QVERIFY(macros.apply("circle"));
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    pos = prog.fxScene()->layerPositions();
+    QCOMPARE(pos.at(0), wave);
+    QCOMPARE(pos.at(1), wave);
+    prog.stopAllFx();
+    renderFrames(m_doc, 3);
+
+    prog.selectFixtures(firstHalf);
+    QVERIFY(macros.apply("circle"));
+    renderFrames(m_doc, 31);
+    prog.selectFixtures(secondHalf);
+    QVERIFY(macros.apply("circle"));
+    prog.setFx("pantilt", { { "panInvert", true } });
+    QCOMPARE(prog.fxLayerList().count(), 2);
+    pos = prog.fxScene()->layerPositions();
+    QCOMPARE(pos.at(1), pos.at(0));
+    auto pan = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address())); };
+    auto tilt = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address()) + 1); };
+    int worst = 0;
+    for (int f = 0; f < 40; f++)
+    {
+        renderFrames(m_doc);
+        worst = qMax(worst, qAbs((pan(0) - 128) + (pan(3) - 128)));
+        worst = qMax(worst, qAbs(tilt(0) - tilt(3)));
+    }
+    QVERIFY2(worst <= 1, qPrintable(QString::number(worst)));
+
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxGroupSetsByGroup()
+{
+    // «By group»: the groups that split the fixtures of the FX into sets that
+    // don't overlap; a group with all of them doesn't count. It took the first
+    // group (by ID) of each fixture, so a group of all the beams made before
+    // the rows (a festival rig) made one set. Here: all, three rows (the
+    // last beam in none), a centre across the rows, every other one
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Beam", 0, 1, 12), 12);
+    QList<quint32> beams;
+    for (Fixture *f : m_doc->fixtures())
+        beams.append(f->id());
+    std::sort(beams.begin(), beams.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    auto ids = [&](const QList<int> &places) {
+        QVariantList list;
+        for (int i : places)
+            list << beams.at(i);
+        return list;
+    };
+    const int all = m_patch->createGroup("All", ids({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 }));
+    const int row1 = m_patch->createGroup("Row 1", ids({ 0, 1, 2, 3 }));
+    const int row2 = m_patch->createGroup("Row 2", ids({ 4, 5, 6, 7 }));
+    const int row3 = m_patch->createGroup("Row 3", ids({ 8, 9, 10 }));
+    const int centre = m_patch->createGroup("Centre", ids({ 1, 2, 5, 6, 9, 10 }));
+    const int odd = m_patch->createGroup("Odd", ids({ 0, 2, 4, 6, 8, 10 }));
+    const int even = m_patch->createGroup("Even", ids({ 1, 3, 5, 7, 9, 11 }));
+    const int left = m_patch->createGroup("Left", ids({ 0, 1, 2, 3, 4, 5 }));
+    QVERIFY(all >= 0 && row1 >= 0 && row2 >= 0 && row3 >= 0 && centre >= 0 && odd >= 0 && even >= 0 && left >= 0);
+
+    // all of them: a set by row, the one in no row alone
+    int sets = 0;
+    QCOMPARE(FXScene::groupSets(m_doc, beams, FXScene::ByGroup, 2, &sets),
+             QList<int>({ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3 }));
+    QCOMPARE(sets, 4);
+    // two rows: the rows (smaller than the left half and the beams past it)
+    QCOMPARE(FXScene::groupSets(m_doc, beams.mid(0, 8), FXScene::ByGroup, 2, &sets),
+             QList<int>({ 0, 0, 0, 0, 1, 1, 1, 1 }));
+    QCOMPARE(sets, 2);
+    // one row: its row has them all, every other one splits it
+    QCOMPARE(FXScene::groupSets(m_doc, beams.mid(0, 4), FXScene::ByGroup, 2, &sets), QList<int>({ 0, 1, 0, 1 }));
+    QCOMPARE(sets, 2);
+    // in the order of the effect: the sets as they come
+    QList<quint32> back = beams.mid(0, 8);
+    std::reverse(back.begin(), back.end());
+    QCOMPARE(FXScene::groupSets(m_doc, back, FXScene::ByGroup, 2, &sets), QList<int>({ 0, 0, 0, 0, 1, 1, 1, 1 }));
+
+    // two groups with the same fixtures of the FX: the first in the order of the patch
+    const int copy = m_patch->createGroup("Row 2 copy", ids({ 4, 5, 6, 7 }));
+    QVERIFY(copy >= 0);
+    FXScene::Layer layer = FxTools::defaultLayer("dimmer");
+    layer.fixtures = beams.mid(0, 8);
+    layer.grouping = FXScene::ByGroup;
+    layer.wave = -1;
+    auto groupOf = [&](int place) {
+        const QVariantList rows = FxTools::fixtureRows(m_doc, layer, {}, {});
+        for (const QVariant &row : rows)
+            if (row.toMap().value("id").toUInt() == beams.at(place))
+                return row.toMap().value("group").toString();
+        return QString("?");
+    };
+    QCOMPARE(groupOf(0), QString("Row 1"));
+    QCOMPARE(groupOf(5), QString("Row 2"));
+    m_patch->moveGroup(int(m_patch->groups().count()) - 1, 0);
+    QCOMPARE(m_patch->groups().first().toMap().value("name").toString(), QString("Row 2 copy"));
+    QCOMPARE(groupOf(5), QString("Row 2 copy"));
+    // «Per fixture»: its group and its place in the wave
+    layer.fixtures = beams;
+    QCOMPARE(groupOf(11), QString());
+    const QVariantList rows = FxTools::fixtureRows(m_doc, layer, {}, {});
+    QCOMPARE(rows.count(), 12);
+    QCOMPARE(rows.at(0).toMap().value("place").toInt(), 0);
+    QCOMPARE(rows.at(4).toMap().value("place").toInt(), 90);
+    QCOMPARE(rows.at(8).toMap().value("place").toInt(), 180);
+    QCOMPARE(rows.at(11).toMap().value("place").toInt(), 270);
+
+    // on the output: a dimmer wave, each row on its place. Offline frames
+    FXScene *fx = new FXScene(m_doc);
+    layer.mode = 1;
+    layer.bpm = 31;
+    for (quint32 b : std::as_const(beams))
+        fx->setValue(b, 3, 128);
+    fx->setLayers({ layer });
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    auto dimmer = [&](int place) { return renderedValue(m_doc, int(m_doc->fixture(beams.at(place))->address()) + 3); };
+    int inRow = 0, rowToRow = 0;
+    for (int f = 0; f < 60; f++)
+    {
+        renderFrames(m_doc);
+        inRow = qMax(inRow, qAbs(dimmer(0) - dimmer(3)));
+        inRow = qMax(inRow, qAbs(dimmer(4) - dimmer(7)));
+        rowToRow = qMax(rowToRow, qAbs(dimmer(0) - dimmer(4)));
+    }
+    QVERIFY2(inRow <= 1, qPrintable(QString::number(inRow)));
+    QVERIFY2(rowToRow > 40, qPrintable(QString::number(rowToRow)));
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxDivideExactParts()
+{
+    // «Divide by X»: X parts (as many as there are fixtures, at most), their
+    // sizes one apart at most. 6 into 4 gave 3 parts; 10 into 4, 3+3+3+1
+    QList<quint32> fixtures;
+    for (quint32 i = 1; i <= 10; i++)
+        fixtures.append(i);
+    int sets = 0;
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 6), FXScene::Divide, 4, &sets), QList<int>({ 0, 0, 1, 2, 2, 3 }));
+    QCOMPARE(sets, 4);
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures, FXScene::Divide, 4, &sets), QList<int>({ 0, 0, 0, 1, 1, 2, 2, 2, 3, 3 }));
+    QCOMPARE(sets, 4);
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 8), FXScene::Divide, 2, &sets), QList<int>({ 0, 0, 0, 0, 1, 1, 1, 1 }));
+    QCOMPARE(sets, 2);
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 3), FXScene::Divide, 5, &sets), QList<int>({ 0, 1, 2 }));
+    QCOMPARE(sets, 3);
+    for (int n = 1; n <= 10; n++)
+    {
+        for (int x = 1; x <= 12; x++)
+        {
+            const QList<int> setOf = FXScene::groupSets(nullptr, fixtures.mid(0, n), FXScene::Divide, x, &sets);
+            QCOMPARE(sets, qMin(n, x));
+            QList<int> sizes(sets, 0);
+            for (int s : setOf)
+                sizes[s]++;
+            const int smallest = *std::min_element(sizes.begin(), sizes.end());
+            const int largest = *std::max_element(sizes.begin(), sizes.end());
+            QVERIFY2(smallest > 0 && largest - smallest <= 1, qPrintable(QString("%1 into %2").arg(n).arg(x)));
+        }
+    }
+    // «Outside in» (saved as «mirror») stays as it was
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 8), FXScene::Mirror, 2, &sets), QList<int>({ 0, 1, 2, 3, 3, 2, 1, 0 }));
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 6), FXScene::Mirror, 3, &sets), QList<int>({ 0, 1, 2, 2, 1, 0 }));
+    QCOMPARE(FXScene::groupSets(nullptr, fixtures.mid(0, 6), FXScene::Mirror, 4, &sets), QList<int>({ 0, 0, 1, 1, 0, 0 }));
+}
+
+void Backend_Test::fxOrderByNumber()
+{
+    // «By number» goes by the numbers of the patch, not by the IDs; a fixture
+    // that joins an FX goes to its place by number (it went last, so the wave
+    // and the mirror of a row changed with the history of the edits)
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    // numbered the other way round: the last spot is 1
+    QVERIFY(m_patch->renumberFixtures({ spots.at(3), spots.at(2), spots.at(1), spots.at(0) }, 1).isEmpty());
+    QCOMPARE(m_patch->fixtureNumber(spots.at(3)), 1);
+    // (the patch tells the FX)
+    QCOMPARE(FXScene::fixtureNumber(m_doc, spots.at(3)), 1);
+    QCOMPARE(FXScene::fixtureNumber(m_doc, spots.at(0)), 4);
+    QList<quint32> byNumber = spots;
+    std::reverse(byNumber.begin(), byNumber.end());
+
+    FXScene::Layer layer = FxTools::defaultLayer("dimmer");
+    layer.fixtures = spots;
+    layer.order = FXScene::Sorted;
+    layer.wave = -1;
+    QList<quint32> listed;
+    for (const QVariant &row : FxTools::fixtureRows(m_doc, layer, {}, {}))
+        listed.append(row.toMap().value("id").toUInt());
+    QCOMPARE(listed, byNumber);
+    // the scene plays them so: the wave starts on number 1
+    FXScene *fx = new FXScene(m_doc);
+    fx->setLayers({ layer });
+    QVERIFY(m_doc->addFunction(fx));
+    listed.clear();
+    for (const QVariant &v : fx->previewLayer(0, 0.0))
+        listed.append(v.toMap().value("fixture").toUInt());
+    QCOMPARE(listed, byNumber);
+
+    // joining: in its place by number, the way the FX goes
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    auto dimmerLayer = [&]() {
+        for (const FXScene::Layer &l : prog.fxLayerList())
+            if (l.param == "dimmer")
+                return l;
+        return FXScene::Layer();
+    };
+    // numbers 1 and 3, then 2 joins
+    prog.selectFixtures({ spots.at(3), spots.at(1) });
+    prog.setFx("dimmer", { { "mode", 1 } });
+    prog.selectFixtures({ spots.at(2), spots.at(1) });
+    prog.setFx("dimmer", { { "swing", 80 } });
+    QCOMPARE(dimmerLayer().fixtures, QList<quint32>({ spots.at(3), spots.at(2), spots.at(1) }));
+    // numbers 4 to 2 the other way round: 3 joins between them
+    prog.clear();
+    prog.selectFixtures({ spots.at(0), spots.at(3) });
+    prog.setFx("dimmer", { { "mode", 1 } });
+    prog.selectFixtures({ spots.at(1), spots.at(3) });
+    prog.setFx("dimmer", { { "swing", 80 } });
+    QCOMPARE(dimmerLayer().fixtures, QList<quint32>({ spots.at(0), spots.at(1), spots.at(3) }));
+    QCOMPARE(FXScene::placeByNumber(m_doc, { spots.at(3), spots.at(1) }, spots.at(2)), 1);
+    QCOMPARE(FXScene::placeByNumber(m_doc, { spots.at(3), spots.at(1) }, spots.at(0)), 2);
+    QCOMPARE(FXScene::placeByNumber(m_doc, {}, spots.at(0)), 0);
+
+    // «Reorder by number»: an FX in the order it was selected in (numbers 4, 2, 3)
+    prog.clear();
+    prog.selectFixtures({ spots.at(0), spots.at(2), spots.at(1) });
+    prog.setFx("dimmer", { { "mode", 1 } });
+    QCOMPARE(dimmerLayer().fixtures, QList<quint32>({ spots.at(0), spots.at(2), spots.at(1) }));
+    prog.sortFxByNumber("dimmer");
+    QCOMPARE(dimmerLayer().fixtures, QList<quint32>({ spots.at(2), spots.at(1), spots.at(0) }));
+    // in the scene editor too, while it plays: on its clock
+    FXScene::Layer unsorted = FxTools::defaultLayer("dimmer");
+    unsorted.fixtures = { spots.at(0), spots.at(2), spots.at(1), spots.at(3) };
+    unsorted.wave = -1;
+    fx->setLayers({ unsorted });
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 21);
+    const qreal at = fx->layerPositions().first();
+    EffectEditor editor(m_doc, &prog, &zones);
+    editor.sortFxByNumber(fx->id(), 0);
+    QCOMPARE(fx->layers().first().fixtures, byNumber);
+    QCOMPARE(fx->layerPositions().first(), at);
+    fx->stop(FunctionParent::master());
+    prog.clear();
+    renderFrames(m_doc, 3);
+
+    // «Convertir a pasos» records the wave in the order it plays, by number
+    // (it went by ID: the copy it renders in had no numbers)
+    FXScene *wave = new FXScene(m_doc);
+    wave->setFixtures(spots);
+    for (quint32 id : std::as_const(spots))
+        wave->setValue(id, 0, 0);
+    FXScene::Layer ramp = FxTools::defaultLayer("pan");
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.bpm = 60;
+    ramp.syncBpm = false;
+    ramp.wave = -1;
+    ramp.order = FXScene::Sorted;
+    ramp.fixtures = spots;
+    wave->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(wave));
+    wave->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc);
+    QList<int> live;
+    for (quint32 id : std::as_const(spots))
+        live.append(renderedValue(m_doc, int(m_doc->fixture(id)->address())));
+    wave->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QString error;
+    const quint32 stepsId = EffectExchange::renderToSteps(m_doc, wave->id(), 100, &error);
+    QVERIFY2(stepsId != Function::invalidId(), qPrintable(error));
+    Sequence *seq = qobject_cast<Sequence *>(m_doc->function(stepsId));
+    QVERIFY(seq != nullptr && seq->stepsCount() > 0);
+    QList<int> recorded;
+    for (quint32 id : std::as_const(spots))
+    {
+        int value = -1;
+        for (const SceneValue &scv : seq->steps().first().values)
+            if (scv.fxi == id && scv.channel == 0)
+                value = scv.value;
+        recorded.append(value);
+    }
+    for (int i = 0; i < spots.count(); i++)
+    {
+        const int d = qAbs(live.at(i) - recorded.at(i));
+        QVERIFY2(qMin(d, 255 - d) <= 8, qPrintable(QString("%1 / %2").arg(live.at(i)).arg(recorded.at(i))));
+    }
+}
+
+void Backend_Test::fxPanMirrorMacro()
+{
+    // the factory «Pan in mirror» is a mirror: the second half of the heads
+    // sweeps the other way (its own «Invert pan»), whatever their count. It
+    // inverted the whole FX: every head swept the same way. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 6), 6);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    QVariantList all;
+    for (quint32 id : std::as_const(spots))
+        all << id;
+    auto pan = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address())); };
+    auto tilt = [&](int i) { return renderedValue(m_doc, int(m_doc->fixture(spots.at(i))->address()) + 1); };
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    FxMacros macros(&prog);
+    macros.setFilePath(dir.filePath("macros.json"));
+    prog.selectFixtures(all);
+    prog.setPosition(0.5, 0.5);
+    QVERIFY(macros.apply("pan-mirror"));
+    QCOMPARE(prog.fxLayerList().count(), 1);
+    const FXScene::Layer layer = prog.fxLayerList().first();
+    QVERIFY(layer.panInvert == false);
+    for (int i = 0; i < 6; i++)
+        QCOMPARE(layer.shapeOf(spots.at(i)).panInvert, i >= 3);
+    QVERIFY(prog.fxOf("pantilt").value("mirror").toBool());
+    int worst = 0, swing = 0;
+    for (int f = 0; f < 60; f++)
+    {
+        renderFrames(m_doc);
+        for (int i = 0; i < 3; i++)
+        {
+            worst = qMax(worst, qAbs((pan(i) - 128) + (pan(5 - i) - 128)));
+            worst = qMax(worst, qAbs(tilt(i) - tilt(5 - i)));
+        }
+        swing = qMax(swing, qAbs(pan(0) - 128));
+    }
+    QVERIFY2(worst <= 1, qPrintable(QString::number(worst)));
+    QVERIFY2(swing > 20, qPrintable(QString::number(swing)));
+    // on 4 heads: 2 and 2
+    prog.clear();
+    prog.selectFixtures(all.mid(0, 4));
+    QVERIFY(macros.apply("pan-mirror"));
+    for (int i = 0; i < 4; i++)
+        QCOMPARE(prog.fxLayerList().first().shapeOf(spots.at(i)).panInvert, i >= 2);
+    // the panel shows it as a factory macro (not saved fixture by fixture)
+    for (const QVariant &m : macros.macros())
+        if (m.toMap().value("id").toString() == "pan-mirror")
+            QVERIFY(m.toMap().value("perFixture").toBool() == false);
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxMirrorNoticeFigures()
+{
+    // «Mirror: …» with «Backwards» on one half only where going backwards is
+    // the mirror in pan of the figure (a circle, a square, a pan line...). On
+    // an eight each head goes down while its twin goes up: no notice. «Invert
+    // pan» is a mirror with any figure
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 6), 6);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    QVariantList all, right;
+    for (int i = 0; i < 6; i++)
+    {
+        all << spots.at(i);
+        if (i >= 3)
+            right << spots.at(i);
+    }
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    auto noticeWith = [&](int figure, const char *key) {
+        prog.clear();
+        prog.selectFixtures(all);
+        prog.setFx("pantilt", { { "figure", figure }, { "wave", -1 } });
+        prog.selectFixtures(right);
+        prog.setFx("pantilt", { { key, true } });
+        return prog.fxOf("pantilt").value("mirror").toBool();
+    };
+    for (int figure : { int(FXScene::Circle), int(FXScene::Square), int(FXScene::Triangle), int(FXScene::Diamond),
+                        int(FXScene::PanLine), int(FXScene::Leaf) })
+        QVERIFY2(noticeWith(figure, "reverse"), qPrintable(QString::number(figure)));
+    for (int figure : { int(FXScene::Eight), int(FXScene::TiltLine), int(FXScene::Diagonal), int(FXScene::Lissajous),
+                        int(FXScene::Ballyhoo), int(FXScene::Cross) })
+    {
+        QVERIFY2(noticeWith(figure, "reverse") == false, qPrintable(QString::number(figure)));
+        QVERIFY2(noticeWith(figure, "panInvert"), qPrintable(QString::number(figure)));
+        QVERIFY(FXScene::reverseMirrorsPan(figure) == false);
+    }
+    for (int figure : { int(FXScene::Circle), int(FXScene::Square), int(FXScene::Triangle), int(FXScene::Diamond),
+                        int(FXScene::PanLine), int(FXScene::Leaf) })
+        QVERIFY(FXScene::reverseMirrorsPan(figure));
+    // a circle turned 90°: backwards is its mirror in tilt, no notice; at
+    // 180° a mirror in pan again. «Invert pan» goes after the turn: a mirror
+    for (int rotate : { 90, 180, 270 })
+    {
+        prog.clear();
+        prog.selectFixtures(all);
+        prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "wave", -1 }, { "rotate", rotate } });
+        prog.selectFixtures(right);
+        prog.setFx("pantilt", { { "reverse", true } });
+        QVERIFY2(prog.fxOf("pantilt").value("mirror").toBool() == (rotate == 180), qPrintable(QString::number(rotate)));
+        prog.setFx("pantilt", { { "reverse", false } });
+        prog.setFx("pantilt", { { "panInvert", true } });
+        QVERIFY2(prog.fxOf("pantilt").value("mirror").toBool(), qPrintable(QString::number(rotate)));
+    }
+    // the engine still pairs the twins of an eight: they follow their wave
+    prog.clear();
+    prog.selectFixtures(all);
+    prog.setFx("pantilt", { { "figure", int(FXScene::Eight) }, { "wave", -1 } });
+    prog.selectFixtures(right);
+    prog.setFx("pantilt", { { "reverse", true } });
+    const FXScene::Layer eight = prog.fxLayerList().first();
+    QVERIFY(FXScene::mirrorTwins(eight, eight.fixtures).contains(true));
+    prog.clear();
+}
+
+void Backend_Test::programmerFxMixedState()
+{
+    // a selection whose fixtures do the FX in different ways: the panel says
+    // which controls they don't share («mixed»), whatever the order they
+    // were selected in. It showed the first selected fixture: the same
+    // selection showed «Invert pan» on or off by its order
+    QCOMPARE(m_patch->addFixtures("Generic", "Moving Head Spot", "9ch Basic", "Spot", 0, 1, 4), 4);
+    QList<quint32> spots;
+    for (Fixture *f : m_doc->fixtures())
+        spots.append(f->id());
+    std::sort(spots.begin(), spots.end(), [this](quint32 a, quint32 b) {
+        return m_doc->fixture(a)->address() < m_doc->fixture(b)->address();
+    });
+    ZoneManager zones(m_doc);
+    Programmer prog(m_doc, &zones);
+    prog.selectFixtures({ spots.at(0), spots.at(1), spots.at(2), spots.at(3) });
+    prog.setFx("pantilt", { { "figure", int(FXScene::Circle) }, { "wave", -1 } });
+    prog.selectFixtures({ spots.at(2), spots.at(3) });
+    prog.setFx("pantilt", { { "panInvert", true }, { "swing", 35 } });
+    auto mixed = [&](const QVariantList &selection) {
+        prog.selectFixtures(selection);
+        return prog.fxOf("pantilt").value("mixed").toMap();
+    };
+    for (const QVariantList &selection : { QVariantList({ spots.at(0), spots.at(1), spots.at(2), spots.at(3) }),
+                                           QVariantList({ spots.at(3), spots.at(2), spots.at(1), spots.at(0) }),
+                                           QVariantList({ spots.at(1), spots.at(2) }) })
+    {
+        const QVariantMap m = mixed(selection);
+        QVERIFY(m.value("panInvert").toBool());
+        QVERIFY(m.value("swing").toBool());
+        QVERIFY(m.value("tiltInvert").toBool() == false);
+        QVERIFY(m.value("reverse").toBool() == false);
+        QVERIFY(m.value("figure").toBool() == false);
+    }
+    // all alike: nothing mixed
+    QVERIFY(mixed({ spots.at(2), spots.at(3) }).isEmpty());
+    QVERIFY(mixed({ spots.at(0) }).isEmpty());
+    // a click on a mixed one turns it on for all of them
+    prog.selectFixtures({ spots.at(1), spots.at(2) });
+    prog.setFx("pantilt", { { "panInvert", true } });
+    QVERIFY(prog.fxLayerList().first().shapeOf(spots.at(1)).panInvert);
+    QVERIFY(mixed({ spots.at(1), spots.at(2) }).value("panInvert").toBool() == false);
+
+    // the scene editor: its fixtures that do it their own way
+    const int id = prog.recordScene("Mixed");
+    QVERIFY(id >= 0);
+    EffectEditor editor(m_doc, &prog, &zones);
+    const QVariantMap layerInfo = editor.info(quint32(id)).value("layers").toList().first().toMap();
+    QVERIFY(layerInfo.value("mixed").toMap().value("panInvert").toBool());
+    QVERIFY(layerInfo.value("mixed").toMap().value("swing").toBool());
+    QVERIFY(layerInfo.value("mixed").toMap().value("reverse").toBool() == false);
+    prog.clear();
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxMacroRepeatsPattern()
+{
+    // a macro saved fixture by fixture: a pattern that repeats every 2 or 3
+    // fixtures repeats on any count; halves, fans and delays stretch. Every
+    // other one backwards on 6 gave N R R N R N N R on 8, and N N R R (a
+    // mirror) on 4
+    FxTools::FixtureLook normal, backwards;
+    backwards.own.reverse = true;
+    QList<FxTools::FixtureLook> alternate;
+    for (int i = 0; i < 6; i++)
+    {
+        FxTools::FixtureLook look = i % 2 ? backwards : normal;
+        look.own.delay = 100 * i;
+        look.bases.insert("pan", 40 + 20 * i);
+        look.bases.insert("gobo", i % 2 ? 90 : 10);
+        alternate.append(look);
+    }
+    for (int n : { 4, 6, 8, 11 })
+    {
+        FXScene::Layer layer = FxTools::defaultLayer("pantilt");
+        for (int i = 0; i < n; i++)
+        {
+            const FxTools::FixtureLook look = FxTools::lookAt(alternate, i, n);
+            QVERIFY2(look.own.reverse.value_or(false) == (i % 2 == 1), qPrintable(QString("%1 of %2").arg(i).arg(n)));
+            QCOMPARE(look.bases.value("gobo"), i % 2 ? 90 : 10);
+            // the fan of pan and the delays stretch
+            QCOMPARE(look.bases.value("pan"), qRound(40 + 100.0 * i / (n - 1)));
+            QCOMPARE(look.own.delay.value_or(0), qRound(500.0 * i / (n - 1)));
+            layer.fixtures.append(quint32(i + 1));
+            layer.own.insert(quint32(i + 1), look.own);
+        }
+        QVERIFY2(FXScene::mirrorTwins(layer, layer.fixtures).isEmpty(), qPrintable(QString::number(n)));
+    }
+    // every third: A B C A B C on 8 is A B C A B C A B
+    QList<FxTools::FixtureLook> three;
+    for (int i = 0; i < 6; i++)
+    {
+        FxTools::FixtureLook look;
+        look.own.swing = 10 * (i % 3 + 1);
+        three.append(look);
+    }
+    for (int i = 0; i < 8; i++)
+        QCOMPARE(FxTools::lookAt(three, i, 8).own.swing.value_or(0), 10 * (i % 3 + 1));
+    // halves stretch: the last half backwards on 6 is the last half on 8
+    QList<FxTools::FixtureLook> halves = { normal, normal, normal, backwards, backwards, backwards };
+    for (int i = 0; i < 8; i++)
+        QCOMPARE(FxTools::lookAt(halves, i, 8).own.reverse.value_or(false), i >= 4);
+    // two looks: halves too (not every other one)
+    for (int i = 0; i < 6; i++)
+        QCOMPARE(FxTools::lookAt({ normal, backwards }, i, 6).own.reverse.value_or(false), i >= 3);
 }
 
 void Backend_Test::programmerFxOnlyReleased()
@@ -21331,11 +24135,15 @@ void Backend_Test::limitsOfMixedSelection()
     QVERIFY(options.value("hasTilt").toBool());
     QCOMPARE(options.value("panMin").toInt(), 10);
     QCOMPARE(options.value("panMax").toInt(), 90);
-    QCOMPARE(options.value("invertTilt").toBool(), true);
-    // the values of the first one that has each
+    // (DMX Total Control: an inversion of only some is off, «(only some)»;
+    // it showed the first one's)
+    QCOMPARE(options.value("invertTilt").toBool(), false);
+    QVERIFY(options.value("invertTiltMixed").toBool());
+    // the values of the first one that has each; the inversions of all of them
     options = m_patch->selectionOptions({ dimmer, spot2, spot });
     QCOMPARE(options.value("panMin").toInt(), 0);
     QCOMPARE(options.value("invertTilt").toBool(), false);
+    QVERIFY(options.value("invertTiltMixed").toBool());
     // nothing to show that none of them has
     options = m_patch->selectionOptions({ dimmer });
     QVERIFY(options.value("hasDimmer").toBool());
@@ -21626,9 +24434,13 @@ bool refTracksIn(const FXScene::Layer &layer, const QList<FXScene::Layer> &fx)
 {
     if (layer.fixtures.isEmpty())
         return false;
+    // (the same places of the fixtures that left, when one keeps them)
+    auto places = [](const FXScene::Layer &l) { return l.spread.isEmpty() ? l.fixtures : l.spread; };
     for (const FXScene::Layer &held : fx)
     {
         if (refSameFx(held, layer) == false)
+            continue;
+        if ((held.spread.isEmpty() == false || layer.spread.isEmpty() == false) && places(held) != places(layer))
             continue;
         int next = 0;
         for (quint32 fixture : held.fixtures)
@@ -22641,6 +25453,15 @@ QString checkRecorded(const Cuelist *cl, int index, const QList<Cuelist::Cue> &o
     return error.isEmpty() ? QString() : "on the new cue: " + error;
 }
 
+/** $ids as text ("1,2,3"), for a failure */
+QString idsText(const QList<quint32> &ids)
+{
+    QStringList items;
+    for (quint32 id : ids)
+        items << QString::number(id);
+    return items.join(',');
+}
+
 /** Update merged the programmer into cue $index: tracked on to the next cues
  *  (where none of the cues on the way changes it), or not at all (cue only) */
 QString checkUpdated(const Cuelist *cl, int index, const QList<Cuelist::Cue> &old,
@@ -22756,6 +25577,31 @@ QString checkUpdated(const Cuelist *cl, int index, const QList<Cuelist::Cue> &ol
                 return "cue index " + QString::number(j) + ": " + keyText(key) + " shows " + QString::number(actual) +
                        " (palette " + QString::number(actualPalette) + "), not " + QString::number(expected) +
                        " (palette " + QString::number(expectedPalette) + ")" + (cueOnlyApplies ? " (cue only)" : "");
+        }
+        // cue only: each FX slot shows the FX it showed, in the same places
+        if (cueOnlyApplies == false)
+            continue;
+        QSet<MFxKey> fxSlots = refSlots(now.fx);
+        fxSlots.unite(refSlots(then.fx));
+        for (const MFxKey &key : std::as_const(fxSlots))
+        {
+            const FXScene::Layer *a = nullptr, *b = nullptr;
+            for (const FXScene::Layer &layer : now.fx)
+                if (layer.fixtures.contains(key.second) && refAxes(layer.param).contains(key.first))
+                    a = &layer;
+            for (const FXScene::Layer &layer : then.fx)
+                if (layer.fixtures.contains(key.second) && refAxes(layer.param).contains(key.first))
+                    b = &layer;
+            auto places = [](const FXScene::Layer &layer) {
+                return layer.spread.isEmpty() ? layer.fixtures : layer.spread;
+            };
+            if ((a == nullptr) != (b == nullptr) || (a != nullptr && (*a != *b || places(*a) != places(*b))))
+                return "cue index " + QString::number(j) + ": the FX slot " + slotText(key) + " shows [" +
+                       (a != nullptr ? layersText({ *a }) : QString()) + "], not [" +
+                       (b != nullptr ? layersText({ *b }) : QString()) + "] (cue only" +
+                       (a != nullptr && b != nullptr ? QString(", same FX %1, places %2 / %3").arg(int(*a == *b))
+                                                           .arg(idsText(places(*a)), idsText(places(*b)))
+                                                     : QString()) + ")";
         }
     }
     return QString();
@@ -27830,8 +30676,13 @@ void Backend_Test::tapRhythmFx()
     QVERIFY2(about(moved, 41, 2), text(moved, 41));
     m_doc->masterTimer()->requestBpmNumber(60);
 
-    // cleared: the BPM of the show again, from where it is (no new cycle)
+    // cleared: the BPM of the show again, on its beat (the beat clock by its
+    // multiplier: as any scene at that BPM), then at that BPM
     fx->setTapPeriod(0);
+    renderFrames(m_doc, 1);
+    const qreal onBeat = m_doc->masterTimer()->beatPosition() * 2;
+    const int onBeatLevel = qRound((onBeat - std::floor(onBeat)) * 255);
+    QVERIFY2(qMin(qAbs(dimmer() - onBeatLevel), 255 - qAbs(dimmer() - onBeatLevel)) <= 2, text(dimmer(), onBeatLevel));
     moved = travel(dimmer, 1);
     QVERIFY2(about(moved, 10, 2), text(moved, 10));
     renderFrames(m_doc, 2);
@@ -27896,14 +30747,14 @@ void Backend_Test::tapRhythmFx()
     fx->stop(FunctionParent::master());
     renderFrames(m_doc, 3);
 
-    // a cycle: the FX at the BPM of the show at its tapped rhythm (120 BPM
-    // without one)
+    // a cycle: the FX at the BPM of the show at its tapped rhythm, else at
+    // the BPM of the show (60: a second; it took 120 BPM)
     FXScene *alone = qobject_cast<FXScene *>(fx->createCopy(m_doc));
     QVERIFY(alone != nullptr);
     synced.multiplier = 1;
     alone->setLayers({ synced });
     alone->setTapPeriod(0);
-    QCOMPARE(alone->cycleDuration(), 500u);
+    QCOMPARE(alone->cycleDuration(), 1000u);
     alone->setTapPeriod(1000);
     QCOMPARE(alone->cycleDuration(), 1000u);
 
@@ -28155,6 +31006,27 @@ void Backend_Test::tapRhythmFxRow()
     QCOMPARE(lit(), QList<int>({ 0 }));
     QVERIFY2(about(dimmer(0), 10, 2), text(dimmer(0), 10).constData());
 
+    // a press of a row 2 beats after the one before (to put it in time on a
+    // later beat): a beat that times nothing, the rhythm stays (it was the
+    // average with it, 740 ms); the chase on the nearest beat of its clock,
+    // 2 sets further (it went to the next one of the first press: back).
+    // Two such presses that agree are a new rhythm
+    QCOMPARE(SceneTaps::press(fx, true, 30000), SceneTaps::Keep);
+    renderFrames(m_doc, 1);
+    QCOMPARE(lit(), QList<int>({ 0 }));
+    renderFrames(m_doc, 23);
+    QCOMPARE(SceneTaps::press(fx, true, 30500), SceneTaps::Keep);
+    renderFrames(m_doc, 1);
+    QCOMPARE(lit(), QList<int>({ 1 }));
+    QCOMPARE(fx->tapPeriodMs(), 500.0);
+    renderFrames(m_doc, 48);
+    QCOMPARE(SceneTaps::press(fx, true, 31480), SceneTaps::Keep);
+    renderFrames(m_doc, 1);
+    QCOMPARE(lit(), QList<int>({ 3 }));
+    QCOMPARE(fx->tapPeriodMs(), 500.0);
+    QCOMPARE(SceneTaps::press(fx, true, 32460), SceneTaps::Keep);
+    QCOMPARE(fx->tapPeriodMs(), 980.0);
+
     SceneTaps::setMode(SceneTaps::Toggle);
     fx->stop(FunctionParent::master());
     renderFrames(m_doc, 3);
@@ -28285,23 +31157,836 @@ void Backend_Test::fxSyncedWait()
     renderFrames(m_doc, 80);
     frames = rests();
     QVERIFY2(rested(frames, 0), text(frames).constData());
-    // a tapped rhythm of 1000 ms: a cycle of 50 frames, the same rest
+    // a tapped rhythm of 1000 ms: a cycle of 50 frames; the pass with its
+    // wait (1.5 beats) is a whole number of beats, 2: a rest of a beat, so
+    // each pass starts on a beat
     fx->setTapPeriod(1000);
     renderFrames(m_doc, 80);
     frames = rests();
-    QVERIFY2(rested(frames, 0), text(frames).constData());
+    QVERIFY2(frames.at(0) >= 50 && frames.at(0) <= 52, text(frames).constData());
 
     // the previews: a cycle, then a cycle at rest at 120 BPM; at 60 BPM
-    // (tapped), half a cycle at rest
+    // (tapped), a cycle at rest too (a pass of 2 beats)
     auto preview = [&](qreal cyclePos) { return fx->previewLayer(0, cyclePos).first().toMap().value("value").toDouble(); };
     QCOMPARE(preview(1.25), 0.0);
-    QVERIFY2(qAbs(preview(1.6) - 0.1) < 1e-6, qPrintable(QString::number(preview(1.6))));
+    QCOMPARE(preview(1.6), 0.0);
+    QVERIFY2(qAbs(preview(2.1) - 0.1) < 1e-6, qPrintable(QString::number(preview(2.1))));
     fx->setTapPeriod(0);
     m_doc->masterTimer()->requestBpmNumber(120);
     QVERIFY2(qAbs(preview(0.5) - 0.5) < 1e-6, qPrintable(QString::number(preview(0.5))));
     QCOMPARE(preview(1.5), 0.0);
     fx->stop(FunctionParent::master());
     renderFrames(m_doc, 3);
+}
+
+void Backend_Test::beatClockFractional()
+{
+    // the beat clock of the timer keeps the fractions of a beat: at 128 BPM
+    // a beat is 468.75 ms (it was 468 ms, 128.2 BPM), so a minute is 128
+    // beats. A Chase cuelist at the BPM of the show and an FX at that BPM go
+    // on it together, after 5 minutes too (they drifted a beat apart in that
+    // time). A beat now (the show TAP) puts the clock on its nearest whole
+    // beat. The BPM and a tapped rhythm keep their fractions, in the show
+    // file too. Offline frames of 20 ms
+    QCOMPARE(MasterTimer::tick(), 20u);
+    MasterTimer *timer = m_doc->masterTimer();
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(128);
+    QCOMPARE(timer->bpm(), 128.0);
+    QCOMPARE(timer->bpmNumber(), 128);
+    QCOMPARE(timer->beatDuration(), 468.75);
+    QSignalSpy beats(timer, SIGNAL(beat()));
+    const qreal start = timer->beatPosition();
+    renderFrames(m_doc, 3000);
+    QVERIFY2(qAbs(timer->beatPosition() - start - 128.0) < 1e-6, qPrintable(QString::number(timer->beatPosition() - start)));
+    QVERIFY2(qAbs(beats.count() - 128) <= 1, qPrintable(QString::number(beats.count())));
+
+    // a Chase at the BPM of the show, a cue a beat, and a ramp a beat at
+    // that BPM on another fixture, started later: each step comes as the
+    // ramp starts again
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 2), 2);
+    const quint32 par = m_doc->fixtures().at(0)->id();
+    const quint32 other = m_doc->fixtures().at(1)->id();
+    typedef Cuelist::Key Key;
+    Cuelist *chase = new Cuelist(m_doc);
+    chase->setFadeOutSpeed(0);
+    chase->setMode(Cuelist::ModeChase);
+    chase->setChaseShowTempo(true);
+    QVERIFY(m_doc->addFunction(chase));
+    QCOMPARE(chase->addCue(testCue(1000, { { Key(par, 0), 255 } })), 0);
+    QCOMPARE(chase->addCue(testCue(2000, { { Key(par, 0), 0 } })), 1);
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ other });
+    fx->setValue(other, 0, 0);
+    FXScene::Layer ramp;
+    ramp.param = "red";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.syncBpm = true;
+    ramp.fixtures = { other };
+    fx->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(fx));
+    chase->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 7);
+    fx->start(timer, FunctionParent::master());
+    int current = -1, steps = 0, worst = 0;
+    for (int frame = 0; frame < 15000; frame++)
+    {
+        renderFrames(m_doc);
+        if (chase->status().current == current)
+            continue;
+        current = chase->status().current;
+        if (frame < 100)
+            continue;
+        steps++;
+        // (just after the start of the ramp: a frame is 11 of it)
+        const int red = renderedValue(m_doc, 3);
+        worst = qMax(worst, qMin(red, 255 - red));
+    }
+    QVERIFY2(steps >= 630, qPrintable(QString::number(steps)));
+    QVERIFY2(worst <= 12, qPrintable(QString::number(worst)));
+
+    // a beat now at 0.7 of a beat: the clock on the next one, a beat, and
+    // the FX at the BPM of the show with it; at 0.3, back to the one before,
+    // no beat more
+    auto inBeat = [&]() { const qreal at = timer->beatPosition(); return at - std::floor(at); };
+    while (inBeat() < 0.65 || inBeat() > 0.75)
+        renderFrames(m_doc);
+    int before = beats.count();
+    const int anchors = timer->beatAnchors();
+    timer->anchorBeat();
+    renderFrames(m_doc);
+    QVERIFY2(inBeat() < 1e-6, qPrintable(QString::number(inBeat())));
+    QCOMPARE(beats.count(), before + 1);
+    QCOMPARE(timer->beatAnchors(), anchors + 1);
+    QVERIFY2(renderedValue(m_doc, 3) <= 1, qPrintable(QString::number(renderedValue(m_doc, 3))));
+    while (inBeat() < 0.25 || inBeat() > 0.35)
+        renderFrames(m_doc);
+    before = beats.count();
+    timer->anchorBeat();
+    renderFrames(m_doc);
+    QVERIFY2(inBeat() < 1e-6, qPrintable(QString::number(inBeat())));
+    QCOMPARE(beats.count(), before);
+    chase->stop(FunctionParent::master());
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // the fractions: 127.6 BPM is no 128 (the show file keeps them for us,
+    // QLC+ reads the whole number); a tapped rhythm of 468.75 ms too
+    m_doc->inputOutputMap()->setBpm(127.6);
+    QCOMPARE(timer->bpm(), 127.6);
+    QCOMPARE(timer->bpmNumber(), 128);
+    QCOMPARE(m_doc->inputOutputMap()->bpmNumber(), 128);
+    fx->setTapPeriodMs(468.75);
+    QCOMPARE(fx->tapPeriod(), 469u);
+    QCOMPARE(fx->tapPeriodMs(), 468.75);
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QXmlStreamWriter writer(&buffer);
+    writer.writeStartDocument();
+    QVERIFY(m_doc->saveXML(&writer));
+    writer.writeEndDocument();
+    buffer.close();
+    const QString text = QString::fromUtf8(buffer.data());
+    QVERIFY2(text.contains("BPM=\"128\"") && text.contains("ExactBPM=\"127.600\""), qPrintable(text.left(400)));
+    QVERIFY(text.contains("Tap=\"469\"") && text.contains("TapExact=\"468.750\""));
+    Doc loaded(this);
+    loaded.fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QXmlStreamReader reader(buffer.data());
+    QVERIFY(reader.readNextStartElement());
+    QVERIFY(loaded.loadXML(reader, true));
+    QVERIFY2(qAbs(loaded.inputOutputMap()->bpm() - 127.6) < 1e-9, qPrintable(QString::number(loaded.inputOutputMap()->bpm())));
+    QVERIFY(qAbs(loaded.masterTimer()->bpm() - 127.6) < 1e-9);
+    QCOMPARE(loaded.function(fx->id())->tapPeriodMs(), 468.75);
+}
+
+void Backend_Test::beatClockExternalSource()
+{
+    // with the beats of an external source (MIDI, audio, a show of QLC+) the
+    // beat clock runs at the BPM between them, also when none comes (a break
+    // with no kick, a MIDI clock that stopped): the FX at the BPM of the show
+    // and the chases on it stood still at the end of the beat. A beat of the
+    // source puts the clock on its nearest whole beat. Offline frames of 20 ms
+    MasterTimer *timer = m_doc->masterTimer();
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(120);
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Plugin);
+    QCOMPARE(timer->beatSourceType(), MasterTimer::External);
+    QCOMPARE(timer->bpm(), 120.0);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ par });
+    fx->setValue(par, 0, 0);
+    FXScene::Layer ramp;
+    ramp.param = "red";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.syncBpm = true;
+    ramp.fixtures = { par };
+    fx->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(fx));
+    fx->start(timer, FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // no beat for 2 s: 4 beats, and the ramp goes round 4 times
+    const qreal start = timer->beatPosition();
+    int changes = 0, last = renderedValue(m_doc, 0);
+    for (int frame = 0; frame < 100; frame++)
+    {
+        renderFrames(m_doc);
+        changes += renderedValue(m_doc, 0) != last ? 1 : 0;
+        last = renderedValue(m_doc, 0);
+    }
+    QVERIFY2(qAbs(timer->beatPosition() - start - 4.0) < 1e-6, qPrintable(QString::number(timer->beatPosition() - start)));
+    QVERIFY2(changes >= 95, qPrintable(QString::number(changes)));
+
+    // a beat of the source at 0.3 of a beat: back to that beat; at 0.7, on
+    // to the next one. The clock goes on from there
+    auto inBeat = [&]() { const qreal at = timer->beatPosition(); return at - std::floor(at + 1e-7); };
+    for (int frame = 0; frame < 50 && (inBeat() < 0.25 || inBeat() > 0.35); frame++)
+        renderFrames(m_doc);
+    qreal before = std::floor(timer->beatPosition());
+    timer->requestBeat();
+    renderFrames(m_doc);
+    QVERIFY2(inBeat() < 1e-6, qPrintable(QString::number(inBeat())));
+    QCOMPARE(std::floor(timer->beatPosition() + 1e-7), before);
+    for (int frame = 0; frame < 50 && (inBeat() < 0.65 || inBeat() > 0.75); frame++)
+        renderFrames(m_doc);
+    before = std::floor(timer->beatPosition());
+    timer->requestBeat();
+    renderFrames(m_doc);
+    QVERIFY2(inBeat() < 1e-6, qPrintable(QString::number(inBeat())));
+    QCOMPARE(std::floor(timer->beatPosition() + 1e-7), before + 1);
+    renderFrames(m_doc, 10);
+    QVERIFY2(qAbs(inBeat() - 0.4) < 1e-6, qPrintable(QString::number(inBeat())));
+
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+}
+
+void Backend_Test::beatStepsMixedLengths()
+{
+    // steps in beats of mixed lengths keep their rhythm: 1.5 + 0.5 b (a
+    // dotted rhythm; it played as 1 + 0.5 after the first pair), 1 + 0.5 b
+    // (it played as 0.5 + 0.5), 0.75 + 0.25 b. The first step after a start
+    // goes to the beats of its length, as before. Offline frames of 20 ms at
+    // 120 BPM: 25 a beat
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(120);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGB", "3ch RGB", "Par", 0, 1, 1), 1);
+    const quint32 par = m_doc->fixtures().first()->id();
+    Scene *bound = new Scene(m_doc);
+    bound->setVisible(false);
+    for (quint32 ch = 0; ch < 3; ch++)
+        bound->setValue(par, ch, 0);
+    QVERIFY(m_doc->addFunction(bound));
+
+    for (const QList<uint> &lengths : QList<QList<uint>>({ { 1500, 500 }, { 1000, 500 }, { 750, 250 } }))
+    {
+        Sequence *seq = new Sequence(m_doc);
+        seq->setBoundSceneID(bound->id());
+        seq->setFadeInMode(Chaser::PerStep);
+        seq->setFadeOutMode(Chaser::PerStep);
+        seq->setDurationMode(Chaser::PerStep);
+        seq->setTempoType(Function::Beats);
+        QVERIFY(m_doc->addFunction(seq));
+        for (int i = 0; i < lengths.count(); i++)
+        {
+            ChaserStep step(bound->id(), 0, lengths.at(i), 0);
+            step.duration = lengths.at(i);
+            step.values << SceneValue(par, 0, i == 0 ? 255 : 0) << SceneValue(par, 1, 0) << SceneValue(par, 2, 0);
+            QVERIFY(seq->addStep(step));
+        }
+        // a few frames after a beat
+        while (m_doc->masterTimer()->beatPosition() - std::floor(m_doc->masterTimer()->beatPosition()) > 0.1)
+            renderFrames(m_doc);
+        renderFrames(m_doc, 3);
+        seq->start(m_doc->masterTimer(), FunctionParent::master());
+        renderFrames(m_doc);
+        // the frames each step plays (the first one goes to the beat)
+        QList<QPair<int, int>> runs;
+        int current = seq->currentStepIndex(), since = 0;
+        for (int frame = 0; frame < 800 && runs.count() < 9; frame++)
+        {
+            renderFrames(m_doc);
+            since++;
+            if (seq->currentStepIndex() == current)
+                continue;
+            runs.append({ current, since });
+            current = seq->currentStepIndex();
+            since = 0;
+        }
+        QCOMPARE(runs.count(), 9);
+        QStringList text;
+        for (const QPair<int, int> &run : std::as_const(runs))
+            text << QString("%1:%2").arg(run.first).arg(run.second);
+        qreal nominal = 0;
+        int played = 0;
+        for (int r = 1; r < runs.count(); r++)
+        {
+            const qreal frames = lengths.at(runs.at(r).first) * 25.0 / 1000.0;
+            QVERIFY2(qAbs(runs.at(r).second - frames) <= 1.0, qPrintable(text.join(' ')));
+            nominal += frames;
+            played += runs.at(r).second;
+        }
+        QVERIFY2(qAbs(played - nominal) <= 1.0, qPrintable(text.join(' ')));
+        seq->stop(FunctionParent::master());
+        renderFrames(m_doc, 3);
+    }
+}
+
+void Backend_Test::fxOnShowBeat()
+{
+    // the FX at the BPM of the show of scenes with no tapped rhythm go on the
+    // beat of the show (the beat clock by their multiplier): two scenes
+    // started 0.3 s apart go together, on the beat. Each press of the show
+    // TAP is a beat: they go to it, at the same tempo too; its tempo keeps
+    // its fractions, and a press far off its rhythm (on the next bar) keeps
+    // it. A scene with a rhythm of its own keeps it; a press of a scene's
+    // button starts its FX there, off the beat of the show until a TAP.
+    // Offline frames of 20 ms
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 3), 3);
+    MasterTimer *timer = doc->masterTimer();
+    QList<quint32> pars;
+    for (Fixture *fixture : doc->fixtures())
+        pars.append(fixture->id());
+    auto dimmer = [&](int i) { return renderedValue(doc, i * 5); };
+    auto went = [](int from, int to) { return to >= from ? to - from : to + 255 - from; };
+    // (a ramp goes round: 0 and 255 are the same place)
+    auto apart = [](int x, int y) { const int d = qAbs(x - y); return qMin(d, 255 - d); };
+    auto inBeat = [&]() { const qreal at = timer->beatPosition(); return at - std::floor(at); };
+    auto text = [](int a, int b) { return QString("%1, %2").arg(a).arg(b).toUtf8(); };
+    // a ramp (mode 16) on a dimmer at the BPM of the show
+    auto rampOn = [&](quint32 par, uint tap) {
+        FXScene *fx = new FXScene(doc);
+        fx->setFixtures({ par });
+        fx->setValue(par, 0, 0);
+        FXScene::Layer ramp;
+        ramp.param = "dimmer";
+        ramp.mode = 16;
+        ramp.swing = 200;
+        ramp.syncBpm = true;
+        ramp.fixtures = { par };
+        fx->setLayers({ ramp });
+        doc->addFunction(fx);
+        fx->setTapPeriod(tap);
+        return fx;
+    };
+    FXScene *a = rampOn(pars.at(0), 0);
+    FXScene *b = rampOn(pars.at(1), 0);
+    FXScene *own = rampOn(pars.at(2), 400);
+    QVERIFY(a->followsShowBeat() && b->followsShowBeat() && own->followsShowBeat() == false);
+    QCOMPARE(timer->bpm(), 120.0);
+    QSignalSpy flashes(&core, SIGNAL(beat()));
+
+    a->start(timer, FunctionParent::master());
+    renderFrames(doc, 15);
+    b->start(timer, FunctionParent::master());
+    own->start(timer, FunctionParent::master());
+    renderFrames(doc, 2);
+    QVERIFY2(apart(dimmer(0), dimmer(1)) <= 2, text(dimmer(0), dimmer(1)).constData());
+    QVERIFY2(apart(dimmer(0), qRound(inBeat() * 255)) <= 2, text(dimmer(0), qRound(inBeat() * 255)).constData());
+    // (the one with its own rhythm: 150 BPM, 12.75 a frame)
+    int from = dimmer(2);
+    renderFrames(doc);
+    QVERIFY2(qAbs(went(from, dimmer(2)) - 13) <= 2, text(from, dimmer(2)).constData());
+    // the beat signal (the flash of the BPM): a beat each 25 frames
+    flashes.clear();
+    renderFrames(doc, 50);
+    QVERIFY2(flashes.count() == 2, qPrintable(QString::number(flashes.count())));
+
+    // the TAP at 0.6 of a beat, at the same tempo: a beat now; they go to it
+    while (inBeat() < 0.55 || inBeat() > 0.65)
+        renderFrames(doc);
+    from = dimmer(2);
+    core.tapTempo(10000);
+    renderFrames(doc);
+    QVERIFY2(dimmer(0) <= 2 && dimmer(1) <= 2, text(dimmer(0), dimmer(1)).constData());
+    QVERIFY2(qAbs(went(from, dimmer(2)) - 13) <= 2, text(from, dimmer(2)).constData());
+    QCOMPARE(core.exactBpm(), 120.0);
+    // a bounce of the pad 40 ms later (two frames): one press, the beat
+    // stays where the first one put it (it went to the bounce)
+    const int anchors = timer->beatAnchors();
+    renderFrames(doc, 2);
+    const qreal bounced = inBeat();
+    core.tapTempo(10040);
+    renderFrames(doc);
+    QCOMPARE(timer->beatAnchors(), anchors);
+    QVERIFY2(qAbs(inBeat() - bounced - 0.04) < 1e-6, qPrintable(QString::number(inBeat())));
+    // a row 469, 469 and 468 ms apart: 128.02 BPM, not a whole 128
+    core.tapTempo(10469);
+    core.tapTempo(10938);
+    core.tapTempo(11406);
+    const qreal tempo = 60000.0 / (1406.0 / 3.0);
+    QVERIFY2(qAbs(core.exactBpm() - tempo) < 1e-6, qPrintable(QString::number(core.exactBpm(), 'f', 4)));
+    QCOMPARE(core.bpm(), 128);
+    QVERIFY(qAbs(timer->bpm() - tempo) < 1e-6);
+    renderFrames(doc);
+    // a press on the next bar (4 beats later): a beat, the tempo stays (it
+    // was the average with it: 73 BPM)
+    core.tapTempo(11406 + 1875);
+    QVERIFY2(qAbs(core.exactBpm() - tempo) < 1e-6, qPrintable(QString::number(core.exactBpm(), 'f', 4)));
+    // two far off it that agree: a new tempo (half as fast)
+    core.tapTempo(11406 + 1875 + 938);
+    QVERIFY(qAbs(core.exactBpm() - tempo) < 1e-6);
+    core.tapTempo(11406 + 1875 + 1876);
+    QVERIFY2(qAbs(core.exactBpm() - 60000.0 / 938.0) < 1e-6, qPrintable(QString::number(core.exactBpm(), 'f', 4)));
+    renderFrames(doc);
+    QVERIFY2(apart(dimmer(0), dimmer(1)) <= 2, text(dimmer(0), dimmer(1)).constData());
+
+    // a press of the button of a scene (GO): its FX start their cycle there,
+    // off the beat of the show; the next TAP puts them back on it
+    core.setBpm(120);
+    QCOMPARE(core.exactBpm(), 120.0);
+    renderFrames(doc, 3);
+    while (inBeat() < 0.45 || inBeat() > 0.55)
+        renderFrames(doc);
+    QCOMPARE(core.pressMode(), QString("go"));
+    QCOMPARE(SceneTaps::press(a, true, 20000), SceneTaps::Keep);
+    renderFrames(doc);
+    QVERIFY2(dimmer(0) <= 12 && apart(dimmer(0), dimmer(1)) > 100, text(dimmer(0), dimmer(1)).constData());
+    renderFrames(doc, 10);
+    QVERIFY2(apart(dimmer(0), dimmer(1)) > 100, text(dimmer(0), dimmer(1)).constData());
+    core.tapTempo(30000);
+    renderFrames(doc);
+    QVERIFY2(apart(dimmer(0), dimmer(1)) <= 2, text(dimmer(0), dimmer(1)).constData());
+
+    a->stop(FunctionParent::master());
+    b->stop(FunctionParent::master());
+    own->stop(FunctionParent::master());
+    renderFrames(doc, 3);
+}
+
+void Backend_Test::fxWaitKeepsItsPlace()
+{
+    // an FX with a wait goes on from where it is in its pass when the length
+    // of the pass changes (its BPM, a tapped rhythm): it took its place from
+    // the cycles since the start, so after two minutes a BPM less made it
+    // jump (fixtures half way up fell to their base). Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 7), 7);
+    QList<quint32> pars;
+    for (Fixture *fixture : m_doc->fixtures())
+        pars.append(fixture->id());
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures(pars);
+    for (quint32 id : std::as_const(pars))
+        fx->setValue(id, 0, 0);
+    // a bump (mode 3) over the 7 one after the other, 200 ms at the base
+    FXScene::Layer bump;
+    bump.param = "dimmer";
+    bump.mode = 3;
+    bump.swing = 200;
+    bump.wave = -1;
+    bump.wait = 200;
+    bump.bpm = 128;
+    fx->setLayers({ bump });
+    QVERIFY(m_doc->addFunction(fx));
+    auto levels = [&]() {
+        QList<int> all;
+        for (int i = 0; i < 7; i++)
+            all.append(renderedValue(m_doc, i * 5));
+        return all;
+    };
+    // the largest change of a fixture from one frame to the next (a frame
+    // moves a bump 35 at most at 128 BPM)
+    auto jump = [](const QList<int> &x, const QList<int> &y) {
+        int worst = 0;
+        for (int i = 0; i < x.count(); i++)
+            worst = qMax(worst, qAbs(x.at(i) - y.at(i)));
+        return worst;
+    };
+    auto text = [](const QList<int> &x, const QList<int> &y) {
+        QStringList a, b;
+        for (int i = 0; i < x.count(); i++)
+        {
+            a << QString::number(x.at(i));
+            b << QString::number(y.at(i));
+        }
+        return (a.join(' ') + " / " + b.join(' ')).toUtf8();
+    };
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 6000);
+    // a BPM less after 2 minutes
+    QList<int> before = levels();
+    bump.bpm = 127;
+    fx->setLayers({ bump });
+    renderFrames(m_doc);
+    QList<int> after = levels();
+    QVERIFY2(jump(before, after) <= 40, text(before, after).constData());
+    // at the BPM of the show with a tapped rhythm, and a wait of 500 ms: a
+    // tap of 880 ms is a pass of 2 beats, one of 600 ms of 3
+    bump.syncBpm = true;
+    bump.wait = 500;
+    fx->setLayers({ bump });
+    fx->setTapPeriod(880);
+    renderFrames(m_doc, 6000);
+    before = levels();
+    fx->setTapPeriod(600);
+    renderFrames(m_doc);
+    after = levels();
+    QVERIFY2(jump(before, after) <= 40, text(before, after).constData());
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::fxWaitWholeBeats()
+{
+    // at the BPM of the show (or a tapped rhythm) a pass with a wait lasts a
+    // whole number of beats, the nearest one (at least the run): each pass
+    // starts on a beat. «FADE IN OUT» (a wave over 7, 200 ms at the base, a
+    // tap of 880 ms) was 2.08 beats a pass and left the beat; now 2. At a
+    // BPM of its own the wait stays a time
+    FXScene::Layer fade;
+    fade.param = "dimmer";
+    fade.mode = 3;
+    fade.wave = 7;
+    fade.wait = 200;
+    fade.syncBpm = true;
+    const qreal tapped = 60000.0 / 880.0;
+    QCOMPARE(FXScene::passCycles(fade, 7, tapped), 2.0);
+    // its passes start on beats 0, 2, 4...: the first set rises at 2, not before
+    const FXScene::Shape shape = fade.shape();
+    QCOMPARE(FXScene::positionOf(fade, shape, 1.99, 0, 7, tapped), -1.0);
+    QVERIFY(qAbs(FXScene::positionOf(fade, shape, 2.01, 0, 7, tapped) - 0.01) < 1e-9);
+    QVERIFY(qAbs(FXScene::positionOf(fade, shape, 4.5, 0, 7, tapped) - 0.5) < 1e-9);
+    // at a BPM of its own: the run of the wave and the wait
+    FXScene::Layer own = fade;
+    own.syncBpm = false;
+    QVERIFY(qAbs(FXScene::passCycles(own, 7, tapped) - (1.0 + 6.0 / 7.0 + 0.2 * tapped / 60.0)) < 1e-9);
+    // a step over 8 with a wait, at 128 BPM: 8 beats, not 8.43
+    FXScene::Layer chase;
+    chase.param = "dimmer";
+    chase.step = -1;
+    chase.wait = 200;
+    chase.syncBpm = true;
+    QCOMPARE(FXScene::passCycles(chase, 8, 128), 8.0);
+    // a long wait: the nearest beat (a cycle and 1.3 beats of wait: 2)
+    FXScene::Layer slow = fade;
+    slow.wave = 0;
+    slow.wait = 650;
+    QCOMPARE(FXScene::passCycles(slow, 1, 120), 2.0);
+    // at least the run: a wave of 0.93 beats at x2 and a short wait, a beat
+    // (2 cycles)
+    FXScene::Layer quick = fade;
+    quick.multiplier = 2;
+    quick.wait = 20;
+    QCOMPARE(FXScene::passCycles(quick, 7, 120), 2.0);
+    // no wait and no step: no pass, the wave goes round
+    FXScene::Layer plain = fade;
+    plain.wait = 0;
+    QCOMPARE(FXScene::passCycles(plain, 7, 120), 0.0);
+}
+
+void Backend_Test::fxStartsMidBlock()
+{
+    // an FX scene started in the middle (a super-scene block played from the
+    // cursor) is where it would be at that time: its wave that far, a
+    // fixture with a delay past it (it started at cycle 0, and the delayed
+    // fixture waited at its base again). Offline frames of 20 ms
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    const quint32 first = m_doc->fixtures().at(0)->id();
+    const quint32 second = m_doc->fixtures().at(1)->id();
+    FXScene *fx = new FXScene(m_doc);
+    fx->setFixtures({ first, second });
+    fx->setValue(first, 0, 0);
+    fx->setValue(second, 0, 0);
+    // a ramp a second (mode 16 at 60 BPM), the second fixture 1.5 s later
+    FXScene::Layer ramp;
+    ramp.param = "dimmer";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.bpm = 60;
+    FXScene::Own late;
+    late.delay = 1500;
+    ramp.own.insert(second, late);
+    fx->setLayers({ ramp });
+    QVERIFY(m_doc->addFunction(fx));
+    auto text = [](int a, int b) { return QString("%1, %2").arg(a).arg(b).toUtf8(); };
+
+    // played from the start: at 3.24 s
+    fx->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 162);
+    const int a = renderedValue(m_doc, 0), b = renderedValue(m_doc, 5);
+    QVERIFY2(qAbs(a - 61) <= 3 && qAbs(b - 189) <= 3, text(a, b).constData());
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+    // started at 3.24 s: the same, a frame on
+    fx->start(m_doc->masterTimer(), FunctionParent::master(), 162 * 20);
+    renderFrames(m_doc);
+    QVERIFY2(qAbs(renderedValue(m_doc, 0) - (a + 5)) <= 3 && qAbs(renderedValue(m_doc, 5) - (b + 5)) <= 3,
+             text(renderedValue(m_doc, 0), renderedValue(m_doc, 5)).constData());
+    fx->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::programmerFxLivePreview()
+{
+    // the preview of an FX shows it where it is as it goes out: the chase
+    // lights in the preview the fixture lit on stage, and a pan/tilt FX at the
+    // speed of the movement of the SHOW (x0.1) goes at it, not 10 times
+    // faster. Stopped, the preview is at the place asked (the scene editor).
+    // Offline frames of 20 ms
+    DtcCore core;
+    Doc *doc = core.doc();
+    doc->masterTimer()->stop();
+    doc->fixtureDefCache()->load(QDir(DTC_GENERIC_FIXTURES));
+    QCOMPARE(core.patch()->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 4), 4);
+    QCOMPARE(core.patch()->addFixtures("Generic", "Moving Head Spot", "11ch Standard", "Spot", 0, 30, 1), 1);
+    QList<quint32> pars;
+    quint32 spot = 0;
+    for (Fixture *fixture : doc->fixtures())
+    {
+        if (fixture->name().startsWith("Spot"))
+            spot = fixture->id();
+        else
+            pars.append(fixture->id());
+    }
+    Programmer *prog = core.programmer();
+    // a chase over the 4 (a snap a step), 50 BPM
+    prog->selectFixtures({ pars.at(0), pars.at(1), pars.at(2), pars.at(3) }, false);
+    prog->setFx("dimmer", { { "mode", 9 }, { "swing", 200 }, { "step", -1 }, { "bpm", 50 } });
+    QVERIFY(prog->fxScene() != nullptr);
+    auto lit = [&]() {
+        QList<int> on;
+        for (int i = 0; i < 4; i++)
+            if (renderedValue(doc, i * 5) > 0)
+                on.append(i);
+        return on;
+    };
+    auto shown = [&](const QVariantList &preview) {
+        QList<int> on;
+        for (int i = 0; i < preview.count(); i++)
+            if (preview.at(i).toMap().value("value").toDouble() > 0)
+                on.append(i);
+        return on;
+    };
+    for (int frames : { 37, 61, 23 })
+    {
+        renderFrames(doc, frames);
+        const QVariantList preview = prog->fxLivePreview("dimmer", 0.0);
+        QCOMPARE(preview.count(), 4);
+        QCOMPARE(shown(preview), lit());
+        // (whatever place the panel asks)
+        QCOMPARE(prog->fxLivePreview("dimmer", 0.77), preview);
+    }
+
+    // a circle on the spot at the speed of the movement x0.1
+    prog->selectFixtures({ spot }, false);
+    prog->setFx("pantilt", { { "bpm", 60 } });
+    FXScene *fx = prog->fxScene();
+    renderFrames(doc, 2);
+    fx->setMotionSpeed(0.1);
+    int circle = -1;
+    for (int i = 0; i < fx->layers().count(); i++)
+        if (fx->layers().at(i).param == "pantilt")
+            circle = i;
+    QVERIFY(circle >= 0);
+    const qreal from = fx->layerPositions().at(circle);
+    renderFrames(doc, 50);
+    const qreal moved = fx->layerPositions().at(circle) - from;
+    QVERIFY2(qAbs(moved - 0.1) < 0.01, qPrintable(QString::number(moved)));
+    QCOMPARE(fx->livePreviewLayer(circle, 0.3), fx->previewLayer(circle, fx->layerPositions().at(circle)));
+    // stopped (a copy, not played): at the place asked
+    std::unique_ptr<FXScene> still(qobject_cast<FXScene *>(fx->createCopy(doc, false)));
+    QVERIFY(still != nullptr && still->isRunning() == false);
+    QCOMPARE(still->livePreviewLayer(circle, 0.3), still->previewLayer(circle, 0.3));
+    prog->clear();
+    renderFrames(doc, 3);
+}
+
+void Backend_Test::cuelistTapFx()
+{
+    // the rhythm tapped on the button of a cuelist reaches the FX at the BPM
+    // of the show of its cues, as in an FX scene: tapped at 128 BPM with the
+    // show at 120, they go at 128 (they kept 120); a tapped beat starts their
+    // cycle again; cleared, the BPM of the show again. Offline frames
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 2), 2);
+    const quint32 par = m_doc->fixtures().first()->id();
+    const quint32 other = m_doc->fixtures().at(1)->id();
+    m_doc->masterTimer()->requestBpmNumber(120);
+    typedef Cuelist::Key Key;
+    FXScene::Layer ramp;
+    ramp.param = "dimmer";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.syncBpm = true;
+    ramp.fixtures = { par };
+    Cuelist *cl = new Cuelist(m_doc);
+    cl->setFadeOutSpeed(0);
+    QVERIFY(m_doc->addFunction(cl));
+    for (int c = 0; c < 4; c++)
+    {
+        Cuelist::Cue cue = testCue((c + 1) * 1000, { { Key(par, 0), 0 } });
+        cue.fx = { ramp };
+        QCOMPARE(cl->addCue(cue), c);
+    }
+    auto dimmer = [&]() { return renderedValue(m_doc, 0); };
+    auto travel = [&](int frames) {
+        const int from = dimmer();
+        renderFrames(m_doc, frames);
+        const int to = dimmer();
+        return to >= from ? to - from : to + 255 - from;
+    };
+    cl->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 5);
+    // 120 BPM: 10.2 a frame
+    int moved = travel(10);
+    QVERIFY2(qAbs(moved - 102) <= 3, qPrintable(QString::number(moved)));
+    // tapped at 128 BPM (468.75 ms): 10.9 a frame
+    cl->setTapPeriodMs(468.75);
+    renderFrames(m_doc);
+    moved = travel(10);
+    QVERIFY2(qAbs(moved - 109) <= 3, qPrintable(QString::number(moved)));
+    // a beat tapped: the next cue, and the FX from the start of its cycle
+    renderFrames(m_doc, 7);
+    cl->tapBeat();
+    renderFrames(m_doc);
+    QCOMPARE(cl->status().current, 1);
+    QVERIFY2(dimmer() <= 12, qPrintable(QString::number(dimmer())));
+    // cleared: the BPM of the show
+    cl->setTapPeriod(0);
+    renderFrames(m_doc);
+    moved = travel(10);
+    QVERIFY2(qAbs(moved - 102) <= 3, qPrintable(QString::number(moved)));
+
+    // with no rhythm of its own, a press of its button in GO mode is a GO
+    // (the next cue) and its FX stay on the beat of the show, as with the GO
+    // key, next to an FX scene at that BPM (they started their cycle at the
+    // press, off the beat until a TAP)
+    FXScene *scene = new FXScene(m_doc);
+    scene->setFixtures({ other });
+    scene->setValue(other, 0, 0);
+    FXScene::Layer beside = ramp;
+    beside.fixtures = { other };
+    scene->setLayers({ beside });
+    QVERIFY(m_doc->addFunction(scene));
+    scene->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    auto apart = [](int x, int y) { const int d = qAbs(x - y); return qMin(d, 255 - d); };
+    auto text = [](int a, int b) { return QString("%1, %2").arg(a).arg(b).toUtf8(); };
+    QVERIFY2(apart(dimmer(), renderedValue(m_doc, 5)) <= 3, text(dimmer(), renderedValue(m_doc, 5)).constData());
+    const SceneTaps::Mode mode = SceneTaps::mode();
+    SceneTaps::setMode(SceneTaps::Go);
+    for (int press = 0; press < 2; press++)
+    {
+        renderFrames(m_doc, 9);
+        const int before = cl->status().current;
+        QCOMPARE(SceneTaps::press(cl, true, 100000 + press * 5000), SceneTaps::Keep);
+        renderFrames(m_doc);
+        QCOMPARE(cl->status().current, before + 1);
+        QVERIFY2(apart(dimmer(), renderedValue(m_doc, 5)) <= 3, text(dimmer(), renderedValue(m_doc, 5)).constData());
+    }
+    renderFrames(m_doc, 10);
+    QVERIFY2(apart(dimmer(), renderedValue(m_doc, 5)) <= 3, text(dimmer(), renderedValue(m_doc, 5)).constData());
+    SceneTaps::setMode(mode);
+    SceneTaps::clear();
+    scene->stop(FunctionParent::master());
+    cl->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+}
+
+void Backend_Test::convertFxStepsShowBeat()
+{
+    // «Convertir a pasos» takes the cycle of an FX as it plays: at the BPM
+    // of the show for one that follows it (it took 120: half a cycle at 60),
+    // the whole pass of a wave with a wait, a step over the sets of its
+    // grouping (not its fixtures). An FX scene whose FX all follow the beat
+    // of the show gives steps in beats, which go on that beat at any BPM;
+    // one with a rhythm or a BPM of its own, steps in ms. Offline frames
+    m_doc->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
+    m_doc->inputOutputMap()->setBpmNumber(60);
+    QCOMPARE(m_patch->addFixtures("Generic", "LED PAR RGBW", "5ch DRGBW", "Par", 0, 1, 8), 8);
+    QList<quint32> pars;
+    for (Fixture *fixture : m_doc->fixtures())
+        pars.append(fixture->id());
+    auto sceneOf = [&](const FXScene::Layer &layer) {
+        FXScene *fx = new FXScene(m_doc);
+        fx->setFixtures(layer.fixtures);
+        for (quint32 id : layer.fixtures)
+            fx->setValue(id, 0, 0);
+        fx->setLayers({ layer });
+        m_doc->addFunction(fx);
+        return fx;
+    };
+    FXScene::Layer ramp;
+    ramp.param = "dimmer";
+    ramp.mode = 16;
+    ramp.swing = 200;
+    ramp.syncBpm = true;
+    ramp.fixtures = { pars.at(0) };
+    FXScene *beat = sceneOf(ramp);
+    QCOMPARE(beat->cycleDuration(), 1000u);
+    // a wave over 7 with a wait and a tapped rhythm (as FADE IN OUT): a pass
+    // of 2 beats of 880 ms (it took 1080 ms)
+    FXScene::Layer fade;
+    fade.param = "dimmer";
+    fade.mode = 3;
+    fade.wave = 7;
+    fade.wait = 200;
+    fade.syncBpm = true;
+    fade.fixtures = pars.mid(0, 7);
+    FXScene *tapped = sceneOf(fade);
+    tapped->setTapPeriod(880);
+    QCOMPARE(tapped->cycleDuration(), 1760u);
+    // at a BPM of its own: the run of the wave and the wait
+    fade.syncBpm = false;
+    fade.bpm = 60;
+    QCOMPARE(sceneOf(fade)->cycleDuration(), 2057u);
+    // a step over all of them grouped in mirror pairs: a cycle a set
+    FXScene::Layer pairs;
+    pairs.param = "dimmer";
+    pairs.mode = 9;
+    pairs.step = -1;
+    pairs.grouping = FXScene::Mirror;
+    pairs.bpm = 60;
+    pairs.fixtures = pars;
+    int sets = 0;
+    FXScene::groupSets(m_doc, pars, FXScene::Mirror, pairs.groupSize, &sets);
+    QVERIFY(sets > 1 && sets < 8);
+    QCOMPARE(sceneOf(pairs)->cycleDuration(), uint(sets) * 1000u);
+
+    // steps in beats: the ramp of a beat, 10 steps of 0.1 b, on the way up
+    QString error;
+    const quint32 stepsId = EffectExchange::renderToSteps(m_doc, beat->id(), 100, &error);
+    QVERIFY2(stepsId != Function::invalidId(), qPrintable(error));
+    Sequence *seq = qobject_cast<Sequence *>(m_doc->function(stepsId));
+    QVERIFY(seq != nullptr);
+    QCOMPARE(seq->tempoType(), Function::Beats);
+    QCOMPARE(seq->stepsCount(), 10);
+    int last = -1;
+    for (const ChaserStep &step : seq->steps())
+    {
+        QCOMPARE(step.duration, 100u);
+        int value = -1;
+        for (const SceneValue &scv : step.values)
+            if (scv.fxi == pars.at(0) && scv.channel == 0)
+                value = scv.value;
+        QVERIFY2(value > last, qPrintable(QString("%1 after %2").arg(value).arg(last)));
+        last = value;
+    }
+    // at 120 BPM they play a loop a beat: 25 frames, a step each 2.5
+    m_doc->inputOutputMap()->setBpmNumber(120);
+    seq->start(m_doc->masterTimer(), FunctionParent::master());
+    renderFrames(m_doc, 3);
+    QVERIFY(framesUntil(m_doc, [&]() { return seq->currentStepIndex() == 9; }, 60) >= 0);
+    QVERIFY(framesUntil(m_doc, [&]() { return seq->currentStepIndex() == 0; }, 10) >= 0);
+    const int lap = framesUntil(m_doc, [&]() { return seq->currentStepIndex() == 9; }, 60) +
+                    framesUntil(m_doc, [&]() { return seq->currentStepIndex() == 0; }, 10);
+    QVERIFY2(lap >= 24 && lap <= 26, qPrintable(QString::number(lap)));
+    seq->stop(FunctionParent::master());
+    renderFrames(m_doc, 3);
+
+    // a tapped rhythm of its own: steps in ms
+    m_doc->inputOutputMap()->setBpmNumber(60);
+    const quint32 msId = EffectExchange::renderToSteps(m_doc, tapped->id(), 100, &error);
+    QVERIFY2(msId != Function::invalidId(), qPrintable(error));
+    QCOMPARE(m_doc->function(msId)->tempoType(), Function::Time);
 }
 
 void Backend_Test::pressModeGoOrStop()
@@ -29103,6 +32788,41 @@ void Backend_Test::msFadesOnBeatSequences()
     QVERIFY2(around(frames, 1000), qPrintable(QString::number(frames)));
     show->stop(FunctionParent::master());
     renderFrames(m_doc, 2);
+
+    // an FX scene and a scene in beats (an effect in beats converted to FX
+    // keeps them) take the crossfade of the group in ms too, in and out
+    // (they took it as beats: half a second)
+    auto reachOn = [&](int address, int value) {
+        return framesUntil(m_doc, [&]() { return renderedValue(m_doc, address) == value; }, 200);
+    };
+    FXScene::Layer still;
+    still.param = "green";
+    still.bpm = 0;
+    still.swing = 0;
+    FXScene *fx = new FXScene(m_doc);
+    fx->setTempoType(Function::Beats);
+    fx->setFixtures({ par });
+    fx->setValue(par, 1, 255);
+    fx->setValue(par, 2, 255);
+    fx->setLayers({ still });
+    QVERIFY(m_doc->addFunction(fx));
+    Scene *beats = new Scene(m_doc);
+    beats->setTempoType(Function::Beats);
+    beats->setValue(par, 0, 255);
+    QVERIFY(m_doc->addFunction(beats));
+    zone->setFadeTime(1000);
+    for (Function *function : { static_cast<Function *>(fx), static_cast<Function *>(beats) })
+    {
+        const int address = function == fx ? 2 : 0;
+        zone->addFunction(function->id());
+        zone->trigger(function->id());
+        renderFrames(m_doc);
+        frames = reachOn(address, 255);
+        QVERIFY2(around(frames, 1000), qPrintable(function->name() + " in: " + QString::number(frames)));
+        zone->stop(function->id());
+        frames = reachOn(address, 0);
+        QVERIFY2(around(frames, 1000), qPrintable(function->name() + " out: " + QString::number(frames)));
+    }
 }
 
 void Backend_Test::cutStepFadesReachTheirValues()
@@ -46514,6 +50234,25 @@ void Backend_Test::cuelistChaseTimes()
     gaps.clear();
     QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
     QCOMPARE(gaps.mid(1), QList<int>({ 10, 10 }));
+    // a multiplier lowered while it plays, after a while: the steps go on at
+    // once at their new length (it stood still about as many beats as the
+    // clock had counted); raised, no step more at once
+    renderFrames(m_doc, 1500);
+    cl->setChaseMultiplier(1.0);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QVERIFY2(gaps.first() <= 20, qPrintable(QString::number(gaps.first())));
+    QCOMPARE(gaps.mid(1), QList<int>({ 20, 20 }));
+    cl->setChaseMultiplier(0.5);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QVERIFY2(gaps.first() <= 40, qPrintable(QString::number(gaps.first())));
+    QCOMPARE(gaps.mid(1), QList<int>({ 40, 40 }));
+    cl->setChaseMultiplier(2.0);
+    gaps.clear();
+    QCOMPARE(chaseSteps(m_doc, cl, 3, &gaps).count(), 3);
+    QVERIFY2(gaps.first() >= 9, qPrintable(QString::number(gaps.first())));
+    QCOMPARE(gaps.mid(1), QList<int>({ 10, 10 }));
     // its own BPM again (60 by the multiplier)
     cl->setChaseShowTempo(false);
     QCOMPARE(cl->effectiveChaseBpm(), 120.0);
@@ -52910,8 +56649,9 @@ void Backend_Test::effectGateFxFadeOutNoFire()
     }
     QVERIFY(finalOut(m_doc, 61) > 100);
 
-    // stopped: its channels fade out from their last FX value (which the
-    // CO2's FadeChannel holds too), as plain fades marked NoFire
+    // stopped: its channels stay FX as they fade out, moving (the CO2's
+    // FadeChannel too): an FX never fires a special effect. They were plain
+    // fades marked NoFire from their last FX value
     fx->stop(FunctionParent::master());
     renderFrames(m_doc);
     int marked = 0;
@@ -52923,28 +56663,32 @@ void Backend_Test::effectGateFxFadeOutNoFire()
         QVERIFY(fader->isFadingOut());
         for (const FadeChannel &fc : fader->channels())
         {
-            QVERIFY(fc.flags() & FadeChannel::NoFire);
-            QVERIFY((fc.flags() & FadeChannel::Modulated) == 0);
+            QVERIFY(fc.flags() & FadeChannel::Modulated);
+            QVERIFY(fc.modulationLeaving());
             marked++;
         }
     }
     QCOMPARE(marked, 2);
 
-    // the whole fade (1 s): the CO2 at 0, the PAR going down to 0
+    // the whole fade (1 s): the CO2 at 0, the PAR going down to 0 as its
+    // wave goes on (never above where it started, and lower at the end)
     int lit = 0;
-    int last = 255;
-    bool down = true;
+    const int first = finalOut(m_doc, 61);
+    int highest = 0;
+    QList<int> late;
     for (int frame = 0; frame < 60; frame++)
     {
         renderFrames(m_doc);
         QCOMPARE(finalOut(m_doc, 60), 0);
         const int value = finalOut(m_doc, 61);
         lit += value > 0 ? 1 : 0;
-        down = down && value <= last;
-        last = value;
+        highest = qMax(highest, value);
+        if (frame >= 35 && frame < 50)
+            late.append(value);
     }
     QVERIFY2(lit >= 40, qPrintable(QString::number(lit)));
-    QVERIFY(down);
+    QVERIFY2(highest <= first + 30, qPrintable(QString("%1 %2").arg(first).arg(highest)));
+    QVERIFY2(*std::max_element(late.cbegin(), late.cend()) < first / 2, qPrintable(QString::number(first)));
     QCOMPARE(finalOut(m_doc, 61), 0);
     QCOMPARE(sfxEvents(events), QStringList());
 }

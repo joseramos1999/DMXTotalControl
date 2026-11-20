@@ -1155,7 +1155,18 @@ public:
      *  none. An FX scene: a cycle of its layers at the BPM of the show (at
      *  x1) every $ms, instead of that BPM. Saved with the function */
     void setTapPeriod(uint ms);
+    /** Its whole ms (tapPeriodMs() has the fractions) */
     uint tapPeriod() const;
+    /** DMX Total Control: the same with the fractions of a ms (a tapped
+     *  rhythm is the average of the presses). $tell false: no change told
+     *  (a player that plays inside another function and takes its rhythm) */
+    void setTapPeriodMs(qreal ms, bool tell = true);
+    qreal tapPeriodMs() const;
+    /** DMX Total Control: the beat tapped since the last call (tapBeat), with
+     *  a rhythm of its own or not: for what goes to it in its cycle (FX
+     *  scenes) instead of taking a step */
+    enum TappedBeat { NoBeatTapped, FirstBeatTapped, NextBeatTapped };
+
     /** A beat of that rhythm: the next step now, the next beats from here
      *  (an FX scene: those layers start their cycle again). $inRow: the next
      *  beat of a row of presses (an FX scene: those layers where they are at
@@ -1187,12 +1198,10 @@ protected:
     /** Pending division jumps, cleared */
     int takeDivisionJumps();
     /** The steps due at this frame: the division jumps, and the beats of its
-     *  own rhythm (call after advanceFrameTick) */
-    int takeRhythmSteps();
-    /** DMX Total Control: the beat tapped since the last call (tapBeat), with
-     *  a rhythm of its own or not: for what goes to it in its cycle (FX
-     *  scenes) instead of taking a step */
-    enum TappedBeat { NoBeatTapped, FirstBeatTapped, NextBeatTapped };
+     *  own rhythm (call after advanceFrameTick). DMX Total Control: $tapped
+     *  tells the beat tapped it took (for what plays inside it) */
+    int takeRhythmSteps(TappedBeat *tapped = nullptr);
+    /** DMX Total Control: the beat tapped since the last call (TappedBeat) */
     TappedBeat takeTapBeat();
 
     bool saveXMLPlayback(QXmlStreamWriter *doc) const;
@@ -1213,10 +1222,11 @@ private:
     uint m_frameTick;
     int m_cyclesDone;
     QAtomicInt m_pendingJumps;
-    // its own rhythm: the period (ms), the time since its last beat, whether
-    // that one was a step of the rhythm (not tapped), a tap to come (TappedBeat)
+    // its own rhythm: the period (DMX Total Control: in microseconds), the
+    // time since its last beat (ms), whether that one was a step of the
+    // rhythm (not tapped), a tap to come (TappedBeat)
     QAtomicInt m_tapPeriod;
-    uint m_tapElapsed = 0;
+    qreal m_tapElapsed = 0;
     bool m_tapTimed = false;
     QAtomicInt m_tapRephase;
 };

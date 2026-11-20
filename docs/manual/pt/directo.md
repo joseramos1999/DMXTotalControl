@@ -59,6 +59,7 @@ A lista suspensa ao lado de “Exclusivo”/“Mistura” é o tempo de fade do 
 - **“Por cena”**: cada cena usa seus próprios fades de entrada e saída.
 - **“Corte”**: sem fade.
 - **0,5 s a 10 s**: esse tempo para todas as cenas do grupo, no lugar dos delas.
+- Uma cena FX que sai continua se movendo enquanto faz o fade para o que está abaixo, com o crossfade do grupo ou com o seu próprio fade de saída (também com “Parar tudo com fade”).
 
 ### Cena anterior e próxima
 
@@ -77,12 +78,12 @@ Uma cuelist em um grupo é mais um cartão: o clique a dispara (com **Stop**, a 
 As cenas com passos (sequências e chasers), as cuelists e as cenas FX com FX em “BPM do show” seguem o ritmo em que você toca o cartão delas:
 
 - Um clique a dispara (com **GO**, o modo em que o programa inicia; veja abaixo).
-- Com a cena rodando, toque o cartão dela **várias vezes seguidas** no ritmo da música, com menos de 2 segundos entre os toques. Cada toque passa para o próximo passo (em uma cuelist, dá um GO) e a cena continua sozinha nesse ritmo: um passo em cada batida, no lugar dos seus próprios tempos. O ritmo é a média dos últimos toques. Um toque que chega um pouco atrasado, logo depois do passo dessa batida (menos de meia batida), é esse mesmo passo: não dá outro, só acerta o ritmo.
+- Com a cena rodando, toque o cartão dela **várias vezes seguidas** no ritmo da música, com menos de 2 segundos entre os toques. Cada toque passa para o próximo passo (em uma cuelist, dá um GO) e a cena continua sozinha nesse ritmo: um passo em cada batida, no lugar dos seus próprios tempos. O ritmo é a média dos últimos toques. Um toque muito longe desse ritmo (no compasso seguinte, para voltar a acertá-la, ou depois de uma batida que você pulou) é uma batida que não o muda; dois seguidos assim que coincidem marcam um ritmo novo. Um toque que chega um pouco atrasado, logo depois do passo dessa batida (menos de meia batida), é esse mesmo passo: não dá outro, só acerta o ritmo.
 - Só contam os toques com a cena rodando: o toque que a dispara começa a contagem. Assim, mudar de cena em um grupo exclusivo e voltar não dá ritmo a nenhuma.
 - Depois de uma pausa de mais de 2 segundos, um clique dá um passo sem mudar o ritmo dela, e a cena continua tocando. Para pará-la, mude para **Stop** e pressione-a.
 - O ritmo que você marcou é reproduzido, também com uma **velocidade ao vivo** definida; se depois você mexe na velocidade, o ritmo acelera ou desacelera com ela. Em pausa, os toques não dão passos.
 - O ritmo é salvo com a cena e é dela: ela também o segue quando roda em uma super cena ou em um playback. Nas [propriedades](directo.md#propriedades-da-cena) dela (e em [Cenas](escenas.md#como-a-cena-é-reproduzida)) você pode digitá-lo ou pressionar **“Remover”** para que ela volte aos seus tempos.
-- Em uma **cena FX**, o ritmo é o dos FX dela em **“BPM do show”**: o primeiro toque de uma série recomeça o ciclo deles (como ao dispará-la), e cada um dos seguintes os leva à batida seguinte, um ciclo adiante vezes o multiplicador (uma sequência passa para o fixture seguinte; em ×¼, eles avançam um quarto de ciclo). Vários seguidos dão a eles um ciclo a cada batida (vezes o multiplicador), em vez do BPM do show. Os FX com uma velocidade própria não mudam. Sem ritmo marcado, ou depois de “Remover”, eles seguem o BPM do show. Se você desligar “BPM do show” em todos os FX dela, a cena perde o ritmo marcado.
+- Em uma **cena FX**, o ritmo é o dos FX dela em **“BPM do show”**: o primeiro toque de uma série recomeça o ciclo deles (como ao dispará-la), e cada um dos seguintes os leva à batida mais próxima do relógio deles (uma sequência passa para o fixture seguinte; em ×¼, eles avançam um quarto de ciclo; um toque um compasso depois, à batida em que eles estão). Vários seguidos dão a eles um ciclo a cada batida (vezes o multiplicador), em vez do BPM do show. Os FX com uma velocidade própria não mudam. Sem ritmo marcado, ou depois de “Remover”, eles seguem o BPM e a batida do show: o Tap do show os coloca de novo nela, e um toque no cartão os tira dela até lá. Se você desligar “BPM do show” em todos os FX dela, a cena perde o ritmo marcado.
 
 Funciona igual com os botões dela no [SHOW](show.md), com os mapeamentos de controladores e teclas no modo “Alternar” e com o [controle remoto](remoto.md).
 

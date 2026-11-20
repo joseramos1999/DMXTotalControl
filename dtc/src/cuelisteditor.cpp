@@ -88,14 +88,19 @@ bool sameFx(FXScene::Layer a, FXScene::Layer b)
 /** What $layer plays, $fx plays already: one of its layers is the same FX on
  *  all the fixtures of $layer, in the same order. A cue that takes some
  *  fixtures of a tracked layer leaves it on the others: loaded from the
- *  tracked state, the programmer holds that smaller copy */
+ *  tracked state, the programmer holds that smaller copy. DMX Total
+ *  Control: with the places of the fixtures that left (its spread) when
+ *  one of them keeps them: the same places, or the timing is not the same */
 bool tracksIn(const FXScene::Layer &layer, const QList<FXScene::Layer> &fx)
 {
     if (layer.fixtures.isEmpty())
         return false;
+    auto places = [](const FXScene::Layer &l) { return l.spread.isEmpty() ? l.fixtures : l.spread; };
     for (const FXScene::Layer &held : fx)
     {
         if (sameFx(held, layer) == false)
+            continue;
+        if ((held.spread.isEmpty() == false || layer.spread.isEmpty() == false) && places(held) != places(layer))
             continue;
         // the fixtures of $layer, one after the other among the held ones
         qsizetype next = 0;
@@ -993,7 +998,7 @@ bool CuelistEditor::updateCue(quint32 id, int index, const QVariantMap &opts)
 
     EditScope scope(this, id, tr("Update cue %1").arg(Cuelist::numberToString(cl->cueAt(index).number)));
     const QHash<Key, uchar> values = programmerValues();
-    const QList<FXScene::Layer> layers = m_programmer->fxLayerList();
+    QList<FXScene::Layer> layers = m_programmer->fxLayerList();
     if (values.isEmpty() && layers.isEmpty())
     {
         emit message(tr("The programmer is empty: there is nothing to update"));
@@ -1029,7 +1034,41 @@ bool CuelistEditor::updateCue(quint32 id, int index, const QVariantMap &opts)
             cue.palettes.remove(key);
     }
 
-    for (const FXScene::Layer &layer : layers)
+    // DMX Total Control: a link group of the programmer that the cue doesn't
+    // play (a macro after a Clear, group 1 again) gets a number past the
+    // groups of the cue: it made one group with the cue's group of that number
+    {
+        QSet<int> ours, continued;
+        int last = 0;
+        for (const FXScene::Layer &own : std::as_const(cue.fx))
+        {
+            if (own.link > 0)
+                ours.insert(own.link);
+            last = qMax(last, own.link);
+        }
+        for (const FXScene::Layer &layer : std::as_const(layers))
+        {
+            last = qMax(last, layer.link);
+            if (layer.link > 0 && tracksIn(layer, previous.fx))
+                continued.insert(layer.link);
+        }
+        QHash<int, int> renumbered;
+        for (FXScene::Layer &layer : layers)
+        {
+            auto again = renumbered.constFind(layer.link);
+            if (again != renumbered.cend())
+            {
+                layer.link = again.value();
+                continue;
+            }
+            if (layer.link <= 0 || ours.contains(layer.link) == false || continued.contains(layer.link))
+                continue;
+            renumbered.insert(layer.link, ++last);
+            layer.link = last;
+        }
+    }
+
+    for (const FXScene::Layer &layer : std::as_const(layers))
     {
         const QSet<FxKey> slotKeys = Cuelist::fxKeysOf(layer);
         for (const FxKey &key : slotKeys)
@@ -1090,6 +1129,67 @@ bool CuelistEditor::updateCue(quint32 id, int index, const QVariantMap &opts)
                 if (palette != previous.palettes.cend())
                     next.palettes.insert(key, palette.value());
             }
+            if (next.skip == false)
+                break;
+        }
+
+        // the FX slots too: the ones the cue plays another way now (the
+        // programmer's, and the ones of layers it trimmed) show in the next
+        // cues the FX they showed (the layer that played the slot, which
+        // takes it again), or none (a release)
+        const Cuelist::State edited = Cuelist::trackedStateOf(all, cl->tracking(), index);
+        auto places = [](const FXScene::Layer &l) { return l.spread.isEmpty() ? l.fixtures : l.spread; };
+        QSet<FxKey> slotKeys;
+        for (const FXScene::Layer &layer : std::as_const(edited.fx))
+            slotKeys.unite(Cuelist::fxKeysOf(layer));
+        for (const FXScene::Layer &layer : std::as_const(previous.fx))
+            slotKeys.unite(Cuelist::fxKeysOf(layer));
+        QSet<FxKey> changedSlots;
+        for (const FxKey &key : std::as_const(slotKeys))
+        {
+            const FXScene::Layer *was = layerOn(previous.fx, key);
+            const FXScene::Layer *now = layerOn(edited.fx, key);
+            if ((was == nullptr) != (now == nullptr) ||
+                (was != nullptr && (*was != *now || places(*was) != places(*now))))
+                changedSlots.insert(key);
+        }
+        for (int t = index + 1; t < all.count() && changedSlots.isEmpty() == false; t++)
+        {
+            Cuelist::Cue &next = all[t];
+            // the slots it holds or releases itself keep what it does
+            const QSet<FxKey> released = next.fxReleases;
+            QSet<FxKey> owned = released;
+            for (const FXScene::Layer &layer : std::as_const(next.fx))
+                owned.unite(Cuelist::fxKeysOf(layer));
+            QList<FXScene::Layer> back;
+            for (const FxKey &key : std::as_const(changedSlots))
+            {
+                if (owned.contains(key))
+                    continue;
+                const FXScene::Layer *was = layerOn(previous.fx, key);
+                if (was == nullptr)
+                {
+                    next.fxReleases.insert(key);
+                    continue;
+                }
+                bool listed = false;
+                for (const FXScene::Layer &layer : std::as_const(back))
+                    listed = listed || (layer == *was && layer.spread == was->spread);
+                if (listed == false)
+                    back.append(*was);
+            }
+            // before its own layers (they win their slots), not on the ones it releases
+            QList<FXScene::Layer> kept;
+            for (FXScene::Layer layer : std::as_const(back))
+            {
+                // (the ones it keeps in their places, as the tracked layer had them)
+                const QList<quint32> places = layer.spread.isEmpty() ? layer.fixtures : layer.spread;
+                if (trimLayer(layer, released))
+                    layer.spread = places;
+                if (layer.fixtures.isEmpty() == false)
+                    kept.append(layer);
+            }
+            next.fx = kept + next.fx;
             if (next.skip == false)
                 break;
         }

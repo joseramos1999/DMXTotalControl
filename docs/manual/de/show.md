@@ -81,7 +81,7 @@ Am schnellsten füllen Sie eine Tabelle, indem Sie **Szenen** aus der Liste unte
 | **Gruppe freigeben** | Eine Gruppe oder alle. |
 | **Blackout** | Schaltet den Blackout ein oder aus. |
 | **Alles stoppen** | Wie die Taste in der oberen Leiste. |
-| **Tap-Tempo** | Gibt das Tempo der Show vor (das der FX und der Szenen im BPM-Modus). |
+| **Tap-Tempo** | Gibt das Tempo der Show vor (das der FX und der Szenen im BPM-Modus), mit seinen Nachkommastellen: der Durchschnitt der letzten Drücke; ein Druck weit weg von diesem Rhythmus ändert es nicht, und zwei solche hintereinander, die übereinstimmen, geben ein neues Tempo vor. Jeder Druck ist ein Schlag: Die FX auf „BPM der Show“ und die Chases fallen wieder darauf, auch bei gleichem Tempo. |
 | **BeatGO (nächste Unterteilung)** | Wie die Taste BeatGO in der oberen Leiste. |
 | **Eine Palette** | Setzt die Palette auf die Fixtures, mit denen sie aufgenommen wurde („Eigene Fixtures“), oder auf eine Fixture-Gruppe, als Live-Änderung im Programmer: Sie liegt über den Szenen, bis Sie erneut drücken. |
 | **Cuelist-GO** / **Cuelist zurück** / **Cuelist freigeben** | Auf die Cuelist, die Sie unter **Cuelist** wählen. |
@@ -119,10 +119,10 @@ Ein Fader der SHOW kann **mehrere Dinge gleichzeitig** steuern. In seinen Eigens
 | **Master einer Gruppe** | Der Master dieser Live-Gruppe. |
 | **Grand Master** | Der GM der oberen Leiste. |
 | **Dimmer von Fixtures** | Der Mischer-Dimmer aller Fixtures oder einer Fixture-Gruppe. |
-| **Bewegungstempo der Moving Heads** | Das Tempo dessen, was die Moving Heads bewegt (alle oder die einer Gruppe): ihre Pan/Tilt-FX, die des Programmers und die Schritte, die sie bewegen. Unten ×0,1, in der Mitte das normale Tempo (×1), oben ×10; der Fader zeigt den Faktor, ein Doppelklick setzt ihn auf ×1 zurück. Ein FX mit Pan/Tilt und Farbe ändert nur das Tempo der Bewegung, eine Cuelist das ihrer FX. Der Geschwindigkeitskanal der Motoren bleibt unberührt. |
+| **Bewegungstempo der Moving Heads** | Das Tempo dessen, was die Moving Heads bewegt (alle oder die einer Gruppe): ihre Pan/Tilt-FX, die des Programmers und die Schritte, die sie bewegen. Unten ×0,1, in der Mitte das normale Tempo (×1), oben ×10; der Fader zeigt den Faktor, ein Doppelklick setzt ihn auf ×1 zurück. Ein FX mit Pan/Tilt und Farbe ändert nur das Tempo der Bewegung (und dessen, was damit verknüpft ist und auf ihrer Uhr läuft), eine Cuelist das ihrer FX. Der Geschwindigkeitskanal der Motoren bleibt unberührt. |
 | **Tempo einer Szene** | Das Live-Tempo dieser Szene (×0,1 bis ×10, wie das Bewegungstempo). |
 | **Szene abspielen (ihr Tempo)** | Wie „Szene abspielen (ihre Intensität)“, aber der Fader ist ihr Tempo: Ganz unten ist die Szene gestoppt; beim Hochziehen startet sie in ihrer Gruppe, und der Weg ist ihr Tempo, ×0,1 knapp über unten, ×1 in der Mitte und ×10 oben. Der Text zeigt „Gestoppt“, solange sie nicht läuft, und der Fader folgt der Szene, wenn sie anderswo gestoppt oder gestartet wird. Das Tempo gilt nur für diesen Durchlauf: Gestoppt kehrt die Szene zu ihrem vorherigen Tempo zurück (das Tempo in Live ändert sich nicht). Ein Doppelklick setzt sie auf ×1 (und startet sie, wenn sie gestoppt war). Wie der Intensitäts-Fader fügt er seine Szene ihrer Gruppe hinzu und hält sie: Mehrere gleichzeitig laufen zusammen (auch mehrere Szenen derselben exklusiven Gruppe auf einem Fader), und nur ganz Herunterziehen stoppt sie. |
-| **BPM** | Das Tempo der Show, von 20 bis 300. |
+| **BPM** | Das Tempo der Show, von 20 bis 300. Es ändert sich ohne Sprung: Der Schlag läuft dort weiter, wo er ist. |
 | **Cue-Tempo (alle Cuelists)** | Das [Tempo aller Cuelists](playbacks.md#cue-tempo): ihre Überblendungen (auch die laufenden), Verzögerungen, Folgen und Warten. Von ×0,1 bis ×10, wie das Bewegungstempo. Es wird nicht mit der Show gespeichert. |
 
 Der Unterschied zwischen den beiden Szenen-Elementen: **„Szene abspielen (ihre Intensität)“** ist die Szene selbst und startet und stoppt sie; **„Dimmer einer Szene (ohne sie abzuspielen)“** dimmt sie nur, auch wenn sie von woanders gestartet wird. Beide lassen sich zusammen verwenden: Mit dem Dimmer auf 50 % und dem startenden Fader auf 80 % läuft die Szene mit 40 %.

@@ -39,7 +39,7 @@ Appuyez sur **« Nouvelle »** :
 - **Le dossier** (icône de dossier) : déplacer la scène dans un dossier.
 - **« Essayer »** / **« Arrêter »** : la joue maintenant, hors des groupes. Les cuelists ont leur propre GO.
 - **« Ajouter au groupe… »** : l’ajoute à un groupe de Direct.
-- **Convertir en pas** (racks, FX, Colour FX, Move FX, Curve FX et chenillards) : enregistre un cycle dans une nouvelle scène à pas, seulement avec les canaux auxquels la scène donne une valeur : les autres, même s’ils ont une valeur par défaut (le pan ou le zoom au centre sur beaucoup de lyres), n’entrent pas dans les pas. Si un FX a des délais, il enregistre le cycle une fois que tous ses fixtures ont démarré.
+- **Convertir en pas** (racks, FX, Colour FX, Move FX, Curve FX et chenillards) : enregistre un cycle dans une nouvelle scène à pas, seulement avec les canaux auxquels la scène donne une valeur : les autres, même s’ils ont une valeur par défaut (le pan ou le zoom au centre sur beaucoup de lyres), n’entrent pas dans les pas. Si un FX a des délais, il enregistre le cycle une fois que tous ses fixtures ont démarré. Le cycle est celui qu’elle joue : en « BPM du show », au BPM du show ou à son rythme tapé, et avec une attente, le passage entier. Si tous ses FX suivent le BPM du show et que la scène n’a pas de rythme tapé, les pas sont en battements (mode BPM) et suivent le battement du show ; sinon, ils sont en secondes, au tempo du moment.
 - **Convertir en cuelist** (pas et chenillards) : voir [Cuelists](escenas.md#cuelists).
 - **« QLC+ »** (cuelists) : enregistre une copie du show pour QLC+ ; voir [Cuelists et QLC+](escenas.md#cuelists-et-qlc).
 - **Exporter**, **« Dupliquer »** et **« Supprimer »** (elle est aussi retirée de ses groupes et racks).
@@ -88,7 +88,7 @@ Une scène FX a des **valeurs de base** et une ou plusieurs **couches de FX**. E
 
 - À gauche, la liste des FX : paramètre, fixtures et vitesse (en « BPM du show », le rythme tapé de la scène si elle en a un). La corbeille retire une couche.
 - À droite, les contrôles de la couche choisie (les mêmes que dans Programmer) et son aperçu animé. Les changements se voient en direct pendant que la scène joue.
-- **« Lier »** : les couches liées partagent la vitesse et le timing.
+- **« Lier »** : les couches liées partagent la vitesse et le timing, et tournent sur la même horloge. Une couche que vous liez ici rejoint le premier groupe de liaison de la scène ; si la scène en a plusieurs (faits dans le programmeur), chaque couche liée montre le numéro du sien.
 - Si certains fixtures font le FX à leur façon, un avertissement le signale : si vous changez ici la forme, la taille, le sens ou la phase, tous feront la même chose.
 - **« Par fixture »** : le décalage et le délai de chaque fixture, en direct aussi. Ici, « Répartir… » et « Sans décalage ni délai » portent sur tous (voir [Décalage et délai par fixture](programar.md#décalage-et-délai-par-fixture)).
 - Pour ajouter des couches ou changer les valeurs de base : **« Modifier dans le programmeur »** puis **« Enregistrer le programmeur dans cette scène »**.
@@ -116,7 +116,7 @@ Les Colour FX, les mappings sur le plan 2D, les Curve FX, les Move FX, « Utili
 
 Ce sont des effets de l’ancien module : les **Move FX** bougent pan/tilt selon une forme et les **Curve FX** donnent une onde (sinus, triangle, rampes, carré, aléatoire, stroboscope…) à des canaux. Vous les trouverez dans d’anciens shows ou dans des shows QLC+ ; ils ne se créent plus depuis « Nouvelle ».
 
-Ils jouent toujours de la même façon et ont leur éditeur (forme, largeur, hauteur, rotation, position, phase, répartition entre fixtures, symétrique, relatif…). Un avertissement propose **« Convertir en FX »** : ils passent dans l’éditeur de FX, aussi dans le programmeur, et les groupes, les boutons du SHOW et les mappages les gardent. La phase d’un Move FX devient la « Phase » du FX, et le décalage de départ de chaque fixture, son « Décalage » ([Décalage et délai par fixture](programar.md#décalage-et-délai-par-fixture)).
+Ils jouent toujours de la même façon et ont leur éditeur (forme, largeur, hauteur, rotation, position, phase, répartition entre fixtures, symétrique, relatif…). Un avertissement propose **« Convertir en FX »** : ils passent dans l’éditeur de FX, aussi dans le programmeur, et les groupes, les boutons du SHOW et les mappages les gardent. La phase d’un Move FX devient la « Phase » du FX, et le décalage de départ de chaque fixture, son « Décalage » ([Décalage et délai par fixture](programar.md#décalage-et-délai-par-fixture)). Avant de convertir, une confirmation dit ce qui change, si quelque chose change (une feuille devient un cercle, un Curve FX avec un autre rapport cyclique est allumé la moitié du cycle…). Le reste ne change pas : la figure, sa rotation et l’endroit où elle commence, le sens de chaque fixture (son propre « À l’envers ») et « Symétrique » (la seconde moitié avec son pan inversé). C’est irréversible.
 
 ### Rack d’effets
 
@@ -137,7 +137,7 @@ Une **super scène** est une timeline avec des pistes de scènes et d’audio. E
 
 ### La barre d’outils
 
-- **« Lecture »** / **« Arrêter »** (**Espace**) : depuis le curseur. **⏮** revient au début. À côté s’affichent le temps (et la mesure).
+- **« Lecture »** / **« Arrêter »** (**Espace**) : depuis le curseur (une scène qui démarre au milieu de son bloc, un FX aussi, en est là où elle en serait). **⏮** revient au début. À côté s’affichent le temps (et la mesure).
 - Les flèches **Annuler** et **Rétablir** (**Ctrl+Z** / **Ctrl+Y**). Voir [Annuler](escenas.md#annuler).
 - **« Coller »** (**Ctrl+V**) : les blocs copiés, au curseur et à partir de la piste sélectionnée. Voir [Copier et coller](escenas.md#copier-et-coller).
 - **« Temps »** / **« Mesures »** : la grille. En mesures, le **BPM**, la signature (**4/4**, **3/4**, **2/4**) et **« Mesure 1 ici »** pour que la première mesure commence au curseur et tombe juste avec la musique.
@@ -259,7 +259,7 @@ En haut de l’éditeur :
 - **« Retour »** : les temps de BACK : **« Temps de la cue »** ou **« Temps fixe »**.
 - **« Priorité »**.
 - **« GO sur le temps »** : « Non », « BeatGO » ou « Pulsation » donnent un GO à chaque division.
-- **« Rythme tapé »** : le rythme tapé en appuyant plusieurs fois de suite sur son bouton, en BPM : un GO à chaque battement. Tant qu’elle en a un, ses déclenchements Suivre et Attendre ne comptent pas. **« Retirer »** revient à ses temps.
+- **« Rythme tapé »** : le rythme tapé en appuyant plusieurs fois de suite sur son bouton, en BPM : un GO à chaque battement. Tant qu’elle en a un, ses déclenchements Suivre et Attendre ne comptent pas. Ses FX en « BPM du show » vont aussi à ce rythme, et les appuis les déplacent comme dans une scène FX ; sans rythme tapé, un GO avec son bouton ne les sort pas du battement du show. **« Retirer »** revient à ses temps.
 - **« Déplacement au noir »** : quand une cue est terminée, les fixtures éteints que la cue suivante allume prennent déjà sa position, sa couleur et son faisceau. Au GO, ils ne font que monter en intensité. **« Après »** est l’attente après la fin de la cue (0 s par défaut). **« Durée »** est le temps que prennent ces mouvements (2 s par défaut).
   - Un fixture qu’un autre playback ou la cue elle-même éclaire ne bouge pas.
   - Sur un fixture sans dimmer, son RGB est sa lumière : seuls ses autres attributs sont préparés.
@@ -281,10 +281,10 @@ Une cuelist **« Submaster »** obéit au fader de son [playback](playbacks.md
 
 Une cuelist **« Chase »** parcourt ses cues toute seule, en boucle :
 
-- **« Vitesse »** : un pas à chaque battement, en BPM (de 10 à 600 ; 120 par défaut). Avec **« BPM du show »**, elle suit le tempo du show. **×¼**, **×½**, **×1**, **×2** et **×4** la multiplient.
+- **« Vitesse »** : un pas à chaque battement, en BPM (de 10 à 600 ; 120 par défaut). Avec **« BPM du show »**, elle suit le tempo et le battement du show : chaque pas tombe sur un battement, comme les FX en « BPM du show » (avec une vitesse en direct ou des cues autre que ×1, elle va à son rythme, hors du battement). **×¼**, **×½**, **×1**, **×2** et **×4** la multiplient.
 - **« Fondu »** : la part du pas que dure le changement, en %. Avec 0 (par défaut), c’est une coupure. Avec **« Temps de la cue »**, chaque cue prend son propre délai et son propre fondu.
 - **« Sens »** : **« En avant »**, **« À l’envers »**, **« Aller-retour »** (fait demi-tour à la première et à la dernière cue) ou **« Aléatoire »** (ne joue jamais un pas deux fois de suite).
-- GO passe tout de suite au pas suivant, et les suivants comptent à partir de là. Retour revient d’un pas dans l’autre sens. Pause la fige là où elle est.
+- GO passe tout de suite au pas suivant, et les suivants comptent à partir de là (avec « BPM du show », le suivant tombe sur le premier battement au moins un demi-pas plus tard). Retour revient d’un pas dans l’autre sens. Pause la fige là où elle est.
 - Un **« Rythme tapé »** l’emporte sur sa vitesse ; **« Retirer »** y revient. Avec BeatGO ou Pulsation, elle n’avance qu’à chaque division.
 - La [vitesse des cues](playbacks.md#vitesse-des-cues) et la vitesse en direct l’accélèrent ou la ralentissent aussi.
 - Le tracking reste valable : un pas peut ne changer que la couleur et garder le reste.
@@ -358,7 +358,7 @@ Pendant le fondu d’une cue, l’en-tête affiche aussi **« Temps en direct 
 ### Enregistrer et modifier des cues
 
 - **« Enregistrer la cue N »** : le programmeur devient une nouvelle cue après celle sélectionnée, seulement avec ce qui change par rapport à ce dont elle hérite.
-- **« Mettre à jour ▾ »** : fusionne le programmeur dans la cue sélectionnée : **« Mettre à jour la cue N (se propage aux suivantes) »** ou **« Cette cue seulement (les suivantes gardent leur aspect) »**.
+- **« Mettre à jour ▾ »** : fusionne le programmeur dans la cue sélectionnée : **« Mettre à jour la cue N (se propage aux suivantes) »** ou **« Cette cue seulement (les suivantes gardent leur aspect) »**. Avec « Cette cue seulement », les suivantes gardent aussi leurs FX : un nouveau FX est libéré dans la cue suivante, et un FX qui change y revient tel qu’il était.
 - **« Charger ▾ »** (ou double-clic sur une cue) : la met dans le programmeur : **« Ce qu’on voit sur scène à la cue N »** ou **« Seulement ce que change la cue N »**. Ensuite, mettez-la à jour depuis la barre « Modification de la cue… » de Programmer.
 - **« Retirer ▾ »** : avec les canaux du programmeur, **« Retirer de la cue N les canaux du programmeur (ils héritent à nouveau) »** ou **« [Libérer] les canaux du programmeur dans la cue N »** (à partir de cette cue, ils reviennent à ce qui est en dessous : d’autres scènes ou leur valeur de repos).
 - **Copier** à la fin : **« Copier ce que change la cue N »** ou **« Copier tout l’aspect de la cue N (cue bloc) »**.
@@ -369,7 +369,7 @@ Dans une liste étroite (ou dans une langue aux mots longs), « Mettre à jour�
 
 Le clic droit sur une cue propose **« Aller à la cue N »**, les deux façons de charger, **« Mettre à jour avec le programmeur »**, **« Temps… »**, **« Lien et actions… »**, **« Numéro… »** et **« Supprimer… »**.
 
-Les cues peuvent utiliser des **palettes par référence** et porter des **couches de FX**, qui se transmettent de cue en cue.
+Les cues peuvent utiliser des **palettes par référence** et porter des **couches de FX**, qui se transmettent de cue en cue. Quand une cue suivante retire quelques fixtures à une couche (avec un autre FX ou en les libérant), les autres restent à leur place : dans la vague, dans leurs groupes et dans leur miroir.
 
 ### La feuille de tracking
 
@@ -391,7 +391,7 @@ Dans une cue, chaque attribut et chaque fixture peuvent avoir leur propre délai
 - Les dimmers qui descendent prennent le fondu de leur fixture, s’il en a un. Sinon, la DESCENTE de la cue ; avec « = », le fondu d’Intensité.
 - Une cue dure autant que son temps le plus long : Suivre, la barre verte et la durée dans une super scène en tiennent compte. Le temps d’un attribut que la cue ne change pas compte aussi.
 - Un seul temps pour tout, comme avant : le fondu d’entrée d’un groupe ou d’un bloc de super scène sur la première cue, et un temps fixe de **« Retour »**. Avec **« Temps de la cue »**, BACK prend tous les temps de la cue vers laquelle il revient.
-- Les couches de FX entrent avec le fondu de la cue.
+- Les couches de FX entrent, changent et sortent avec les temps de la cue : une cue qui change un FX déjà en cours (son centre, sa taille, sa figure) ou qui en ajoute un autre le fait en fondu, chaque canal avec le délai et le fondu de son attribut (un dimmer qui descend, avec la DESCENTE). Un FX qui sort continue de bouger pendant qu’il fond vers ce qui est dessous.
 - Une nouvelle cue prend les temps d’attribut de la cue précédente, mais pas ceux de ses fixtures. Copier une cue copie tous ses temps.
 
 Exemple : la cue 2 change la couleur et la position avec un fondu de 0, et Position a un délai de 1 s et un fondu de 3 s. Au GO, la couleur change aussitôt ; une seconde plus tard, les lyres bougent pendant 3 s.

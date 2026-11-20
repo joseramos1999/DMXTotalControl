@@ -81,7 +81,7 @@ Il modo più rapido per riempire una tabella è **trascinare le scene** dall'ele
 | **Rilascia un gruppo** | Un gruppo, o tutti. |
 | **Blackout** | Attiva o toglie il blackout. |
 | **Ferma tutto** | Come il tasto della barra superiore. |
-| **Tap tempo** | Batte il tempo dello show (quello degli FX e delle scene in modalità BPM). |
+| **Tap tempo** | Batte il tempo dello show (quello degli FX e delle scene in modalità BPM), con i suoi decimali: la media delle ultime pressioni; una molto lontana da quel ritmo non lo cambia, e due di seguito così che coincidono segnano un tempo nuovo. Ogni pressione è un battito: gli FX in «BPM dello show» e i chase ci ricadono sopra, anche allo stesso tempo. |
 | **BeatGO (divisione successiva)** | Come il tasto BeatGO della barra superiore. |
 | **Una palette** | Mette la palette sulle fixture con cui è stata registrata («Le sue fixture») o su un gruppo di fixture, come una modifica dal vivo del programmatore: va sopra le scene finché non premi di nuovo. |
 | **GO della cuelist** / **Indietro della cuelist** / **Rilascia una cuelist** | Sulla cuelist che scegli in **Cuelist**. |
@@ -119,10 +119,10 @@ Un fader dello SHOW può controllare **più cose insieme**. Nelle sue proprietà
 | **Master di un gruppo** | Il master di quel gruppo di Live. |
 | **Grand master** | Il GM della barra superiore. |
 | **Dimmer di fixture** | Il dimmer del mixer di tutte le fixture o di un gruppo di fixture. |
-| **Velocità di movimento delle teste mobili** | La velocità di ciò che muove le teste mobili (tutte o quelle di un gruppo): i loro FX di pan/tilt, quelli del programmatore e i passi che le muovono. In basso ×0,1, al centro quella normale (×1), in alto ×10; il fader mostra il moltiplicatore e un doppio clic lo riporta a ×1. Un FX di pan/tilt e di colore cambia solo la velocità del movimento; una cuelist, quella dei suoi FX. Il canale di velocità dei motori non viene toccato. |
+| **Velocità di movimento delle teste mobili** | La velocità di ciò che muove le teste mobili (tutte o quelle di un gruppo): i loro FX di pan/tilt, quelli del programmatore e i passi che le muovono. In basso ×0,1, al centro quella normale (×1), in alto ×10; il fader mostra il moltiplicatore e un doppio clic lo riporta a ×1. Un FX di pan/tilt e di colore cambia solo la velocità del movimento (e di ciò che vi è collegato, che va sul suo orologio); una cuelist, quella dei suoi FX. Il canale di velocità dei motori non viene toccato. |
 | **Velocità di una scena** | La velocità dal vivo di quella scena (da ×0,1 a ×10, come quella del movimento). |
 | **Avvia una scena (la sua velocità)** | Come «Avvia una scena (la sua intensità)», ma il fader è la sua velocità: in fondo la scena è ferma; alzandolo, parte nel suo gruppo e la corsa è la sua velocità, ×0,1 appena sopra il fondo, ×1 a metà e ×10 in cima. Il testo dice «Ferma» finché non suona, e il fader segue la scena se la si ferma o la si avvia da un'altra parte. La velocità vale solo per quella volta: una volta ferma, la scena torna alla velocità che aveva (quella del Live non cambia). Un doppio clic la porta a ×1 (e la avvia se era ferma). Come quello di intensità, aggiunge la sua scena al suo gruppo e la trattiene: diversi insieme suonano insieme (anche più scene di uno stesso gruppo esclusivo su un fader), e solo abbassarlo fino in fondo la ferma. |
-| **BPM** | Il tempo dello show, da 20 a 300. |
+| **BPM** | Il tempo dello show, da 20 a 300. Cambia senza salti: il battito prosegue da dove si trova. |
 | **Velocità delle cue (tutte le cuelist)** | La [velocità di tutte le cuelist](playbacks.md#velocità-delle-cue): le loro dissolvenze (anche quelle in corso), ritardi, Segui e Attendi. Da ×0,1 a ×10, come quella del movimento. Non si salva con lo show. |
 
 La differenza tra i due di scena: **«Avvia una scena (la sua intensità)»** è la scena stessa, e la avvia e la ferma; **«Dimmer di una scena (senza avviarla)»** la attenua soltanto, anche quando viene avviata da un altro punto. Si possono usare insieme: con il dimmer al 50 % e il fader che la avvia all'80 %, la scena esce al 40 %.

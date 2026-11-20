@@ -165,7 +165,7 @@ For [Follow](programar.md#follow-aiming-at-a-point) to aim all the moving heads 
 Select fixtures and press **“Limits”**:
 
 - **Dimmer**, **Pan** and **Tilt**: the allowed range, from 0 to 100 %. For example, a dimmer that never goes above 80 % or a tilt that never points at the audience.
-- **“Invert pan”**, **“Invert tilt”** and **“Swap pan and tilt”** (for heads hung upside down or rotated).
+- **“Invert pan”**, **“Invert tilt”** and **“Swap pan and tilt”** (for heads hung upside down or rotated). It is a physical correction: it makes those heads move like the others, and the mirror of an FX does not take it into account (see [The mirror](programar.md#the-mirror)). With several fixtures of which only some are inverted, it shows off with “(only some)”, like the button of the toolbar, and turning it on inverts them all.
 - **“Reset”**: no limits and no inverted or swapped axes.
 - **“Protect from the grand master”**: the grand master lowers none of its channels, whether it acts only on the intensity or on all of them: the house lights, a media server, a hazer. The group masters, the scene dimmers, Blackout and the [fade to black](directo.md#fade-to-black) still lower it. With several fixtures of which only some are protected, it shows off with “(only some)”, and turning it on protects them all. It is also in the [fixture menu](patch.md#selecting), ticked when all the selected ones are protected. In the list, an **anchor** after the name (“Protected from the grand master: it doesn't go down with it”); on the 2D plan, of the Patch and of Program, an anchor at the bottom left (on a bar, at its right end). “Reset” doesn't remove the protection. It is saved with the show, in each fixture, and [importing the patch of another show](patch.md#importing-from-another-show) brings it. QLC+ doesn't read it: there the grand master lowers the fixture.
 
@@ -174,7 +174,7 @@ With a single fixture, the **Channels** list lets you decide for each channel:
 - **Fades**: whether it follows the fade times. Off, it jumps straight to its value (useful for colour wheels and gobos).
 - **Dimmer**: whether it is scaled by the grand master, the group masters and the scene dimmers. The grand master, besides, only scales the light (see [Masters](directo.md#masters)). If the fixture is protected from the grand master, only the group masters and the scene dimmers scale it.
 
-Limits act on the output: scenes, effects and live edits keep their values, but the output respects the limits. With several fixtures you see the values of the first one that has each control, and what you change is applied to all the ones that have it.
+Limits act on the output: scenes, effects and live edits keep their values, but the output respects the limits. On a 16-bit pan or tilt, the limit goes on both channels together, so a slow move stays smooth. With several fixtures you see the values of the first one that has each control, and what you change is applied to all the ones that have it.
 
 ## Protected special effects
 
@@ -239,7 +239,7 @@ One fixture is created for each line of pixels, plus a group for the colour effe
 **“Import”** brings part of another show (from DMX Total Control or from QLC+) into this one:
 
 - **“Patch of another show…”**: its fixtures. They go to the same addresses if those are free; if not, to the next ones. They bring their special-effect protection, their times, their safety channel and their plan icon (what the other show says never unprotects a CO2), but not their parked channels.
-- **“Scenes of another show…”**: its scenes, assigned to the fixtures of this show that match (by address and model, by name or by model). They go into groups with the same name.
+- **“Scenes of another show…”**: its scenes, assigned to the fixtures of this show that match (by address and model, by name or by model). They go into groups with the same name, with their options in the group (live size, phase and speed, release, flash, dimmer…). A new group also brings its crossfade and its master; one that already exists in this show keeps its own.
 - **“Patch and scenes of another show…”**: both.
 - **“Patch from a visualizer (CSV)…”**: the fixture table your visualizer exports; see [Importing a patch from a visualizer](patch.md#importing-a-patch-from-a-visualizer).
 

@@ -81,7 +81,7 @@ Le moyen le plus rapide de remplir un tableau est de **faire glisser des scènes
 | **Libérer un groupe** | Un groupe, ou tous. |
 | **Blackout** | Active ou retire le blackout. |
 | **Tout arrêter** | Comme le bouton de la barre du haut. |
-| **Tap tempo** | Marque le tempo du show (celui des FX et des scènes en mode BPM). |
+| **Tap tempo** | Marque le tempo du show (celui des FX et des scènes en mode BPM), avec ses décimales : la moyenne des derniers appuis ; un appui très loin de ce rythme ne le change pas, et deux appuis de ce genre à la suite qui concordent marquent un nouveau tempo. Chaque appui est un battement : les FX en « BPM du show » et les chenillards retombent dessus, au même tempo aussi. |
 | **BeatGO (division suivante)** | Comme le bouton BeatGO de la barre du haut. |
 | **Une palette** | Applique la palette aux fixtures avec lesquels elle a été enregistrée (« Ses propres fixtures ») ou à un groupe de fixtures, comme une modification en direct du programmeur : elle passe par-dessus les scènes jusqu’à ce que vous appuyiez à nouveau. |
 | **GO de cuelist** / **Retour de cuelist** / **Libérer une cuelist** | Sur la cuelist que vous choisissez dans **Cuelist**. |
@@ -119,10 +119,10 @@ Un fader du SHOW peut contrôler **plusieurs choses à la fois**. Dans ses propr
 | **Master d’un groupe** | Le master de ce groupe de Direct. |
 | **Grand master** | Le GM de la barre du haut. |
 | **Dimmer de fixtures** | Le dimmer du mixeur de tous les fixtures ou d’un groupe de fixtures. |
-| **Vitesse de mouvement des lyres** | La vitesse de ce qui fait bouger les lyres (toutes ou celles d’un groupe) : leurs FX de pan/tilt, ceux du programmeur et les pas qui les déplacent. En bas ×0,1, au milieu la vitesse normale (×1), en haut ×10 ; le fader affiche le multiplicateur et un double-clic le remet à ×1. Un FX de pan/tilt et de couleur ne change que la vitesse du mouvement ; une cuelist, celle de ses FX. Le canal de vitesse des moteurs n’est pas touché. |
+| **Vitesse de mouvement des lyres** | La vitesse de ce qui fait bouger les lyres (toutes ou celles d’un groupe) : leurs FX de pan/tilt, ceux du programmeur et les pas qui les déplacent. En bas ×0,1, au milieu la vitesse normale (×1), en haut ×10 ; le fader affiche le multiplicateur et un double-clic le remet à ×1. Un FX de pan/tilt et de couleur ne change que la vitesse du mouvement (et de ce qui lui est lié, qui tourne sur son horloge) ; une cuelist, celle de ses FX. Le canal de vitesse des moteurs n’est pas touché. |
 | **Vitesse d’une scène** | La vitesse en direct de cette scène (×0,1 à ×10, comme celle du mouvement). |
 | **Lancer une scène (sa vitesse)** | Comme « Lancer une scène (son intensité) », mais le fader est sa vitesse : tout en bas la scène est arrêtée ; en le montant, elle démarre dans son groupe et la course est sa vitesse, ×0,1 juste au-dessus du bas, ×1 au milieu et ×10 en haut. Le texte affiche « Arrêtée » tant qu’elle ne joue pas, et le fader suit la scène si on l’arrête ou la lance d’ailleurs. La vitesse ne vaut que pour cette fois : une fois arrêtée, la scène reprend la vitesse qu’elle avait (celle du Direct ne change pas). Un double-clic la met à ×1 (et la lance si elle était arrêtée). Comme celui d’intensité, il ajoute sa scène à son groupe et la retient : plusieurs à la fois jouent ensemble (y compris plusieurs scènes d’un même groupe exclusif sur un fader), et seul le descendre tout en bas l’arrête. |
-| **BPM** | Le tempo du show, de 20 à 300. |
+| **BPM** | Le tempo du show, de 20 à 300. Il change sans saut : le battement continue là où il en est. |
 | **Vitesse des cues (toutes les cuelists)** | La [vitesse de toutes les cuelists](playbacks.md#vitesse-des-cues) : leurs fondus (y compris ceux en cours), délais, Suivre et Attendre. De ×0,1 à ×10, comme celle du mouvement. Elle n’est pas enregistrée avec le show. |
 
 La différence entre les deux éléments de scène : **« Lancer une scène (son intensité) »** est la scène elle-même, et il la lance et l’arrête ; **« Dimmer d’une scène (sans la lancer) »** ne fait que l’atténuer, même quand elle est lancée d’ailleurs. Vous pouvez utiliser les deux en même temps : avec le dimmer à 50 % et le fader qui la lance à 80 %, la scène sort à 40 %.

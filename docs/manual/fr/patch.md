@@ -165,7 +165,7 @@ Pour que [Follow](programar.md#follow-viser-un-point) oriente correctement toute
 Sélectionnez des fixtures et appuyez sur **« Limites »** :
 
 - **Dimmer**, **Pan** et **Tilt** : la plage autorisée, de 0 à 100 %. Par exemple, un dimmer qui ne dépasse pas 80 % ou un tilt qui ne vise pas le public.
-- **« Inverser le pan »**, **« Inverser le tilt »** et **« Permuter pan et tilt »** (pour des lyres suspendues à l’envers ou tournées).
+- **« Inverser le pan »**, **« Inverser le tilt »** et **« Permuter pan et tilt »** (pour des lyres suspendues à l’envers ou tournées). C’est une correction physique : elle fait bouger ces lyres comme les autres, et le miroir d’un FX n’en tient pas compte (voir [Le miroir](programar.md#le-miroir)). Avec plusieurs fixtures dont seulement certains sont inversés, il s’affiche désactivé avec « (seulement certains) », comme le bouton de la barre, et l’activer les inverse tous.
 - **« Réinitialiser »** : aucune limite, aucun axe inversé ou permuté.
 - **« Protéger du grand master »** : le grand master ne baisse aucun de ses canaux, qu’il agisse seulement sur l’intensité ou sur tous : la lumière de salle, un serveur média, un hazer. Les masters de groupe, les dimmers de scène, le Blackout et le [fondu au noir](directo.md#fondu-au-noir) le baissent toujours. Avec plusieurs fixtures dont seuls certains sont protégés, il apparaît désactivé avec « (seulement certains) », et l’activer les protège tous. Il est aussi dans le [menu du fixture](patch.md#sélectionner), coché quand tous les fixtures sélectionnés sont protégés. Dans la liste, une **ancre** après le nom (« Protégé du grand master : il ne baisse pas avec lui ») ; sur le plan 2D, du Patch et de Programmer, une ancre en bas à gauche (sur une barre, à sa droite). « Réinitialiser » n’enlève pas la protection. Elle est enregistrée avec le show, dans chaque fixture, et [importer le patch d’un autre show](patch.md#importer-dun-autre-show) la reprend. QLC+ ne la lit pas : là-bas, le grand master baisse le fixture.
 
@@ -174,7 +174,7 @@ Avec un seul fixture, la liste **Canaux** permet de décider pour chaque canal 
 - **Fondus** : s’il suit les temps de fondu. Désactivé, il saute directement à sa valeur (utile pour les roues de couleur et de gobos).
 - **Dimmer** : s’il est proportionnel au grand master, aux masters de groupe et aux dimmers de scène. Le grand master, en outre, ne règle que la lumière (voir [Masters](directo.md#masters)). Si le fixture est protégé du grand master, seuls les masters de groupe et les dimmers de scène le règlent.
 
-Les limites agissent sur la sortie : les scènes, les effets et les modifications en direct gardent leurs valeurs, mais ce qui sort les respecte. Avec plusieurs fixtures, les valeurs affichées sont celles du premier qui a chaque contrôle, et ce que vous changez s’applique à tous ceux qui l’ont.
+Les limites agissent sur la sortie : les scènes, les effets et les modifications en direct gardent leurs valeurs, mais ce qui sort les respecte. Sur un pan ou un tilt 16 bits, la limite porte sur les deux canaux ensemble, donc un mouvement lent reste fluide. Avec plusieurs fixtures, les valeurs affichées sont celles du premier qui a chaque contrôle, et ce que vous changez s’applique à tous ceux qui l’ont.
 
 ## Effets spéciaux protégés
 
@@ -239,7 +239,7 @@ Un fixture est créé par ligne de pixels, avec un groupe pour les effets de cou
 **« Importer »** amène dans ce show une partie d’un autre show (de DMX Total Control ou de QLC+) :
 
 - **« Patch d’un autre show… »** : ses fixtures. Ils vont aux mêmes adresses si elles sont libres ; sinon, aux suivantes. Ils apportent leur protection d’effet spécial, leurs temps, leur canal de sécurité et leur icône du plan (ce que dit l’autre show ne déprotège jamais un CO2), mais pas leurs canaux parqués.
-- **« Scènes d’un autre show… »** : ses scènes, assignées aux fixtures de ce show qui correspondent (par adresse et modèle, par nom ou par modèle). Elles entrent dans des groupes du même nom.
+- **« Scènes d’un autre show… »** : ses scènes, assignées aux fixtures de ce show qui correspondent (par adresse et modèle, par nom ou par modèle). Elles entrent dans des groupes du même nom, avec leurs options dans le groupe (taille, phase et vitesse en direct, libération, flash, dimmer…). Un nouveau groupe apporte aussi son crossfade et son master ; un groupe qui existe déjà dans ce show garde les siens.
 - **« Patch et scènes d’un autre show… »** : les deux.
 - **« Patch d’un logiciel de visualisation (CSV)… »** : la table de fixtures qu’exporte votre logiciel de visualisation ; voir [Importer un patch d’un logiciel de visualisation](patch.md#importer-un-patch-dun-logiciel-de-visualisation).
 

@@ -38,7 +38,10 @@ Canvas {
     implicitHeight: 32
 
     readonly property var points: figure ? Core.effects.fxFigurePath(value, 64) : Core.effects.fxModeCurve(value, 64)
+    /** a mode that goes from the last fixture to the first: an arrow */
+    readonly property bool reversed: !figure && Core.effects.fxModeReversed(value)
     onPointsChanged: requestPaint()
+    onReversedChanged: requestPaint()
     onColorChanged: requestPaint()
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
@@ -90,6 +93,17 @@ Canvas {
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y)
             }
             ctx.stroke()
+            // from the last fixture to the first: an arrow to the left, at the top
+            if (reversed) {
+                let len = Math.min(14, w * 0.35)
+                let ax = pad + w, ay = pad + 1.5
+                ctx.strokeStyle = Theme.warning
+                ctx.lineWidth = 1.4
+                ctx.beginPath()
+                ctx.moveTo(ax, ay); ctx.lineTo(ax - len, ay)
+                ctx.moveTo(ax - len + 3.5, ay - 3); ctx.lineTo(ax - len, ay); ctx.lineTo(ax - len + 3.5, ay + 3)
+                ctx.stroke()
+            }
         }
     }
 }

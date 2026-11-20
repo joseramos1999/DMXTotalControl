@@ -32,7 +32,7 @@ ColumnLayout {
     id: offsets
 
     /** [{ id, name, selected, place (degrees, -1: none), step (1..., 0: none), shift, delay (ms),
-     *     virtual (no dimmer: a dimmer FX dims its colour) }] */
+     *     virtual (no dimmer: a dimmer FX dims its colour), group (with «By group»: of its set) }] */
     property var rows: []
     /** The programmer: the fan and the clearing go to the selected fixtures only */
     property bool selectionBased: false
@@ -43,6 +43,8 @@ ColumnLayout {
     readonly property bool narrow: width < 480
 
     signal setOffset(int fixtureId, string key, int value)
+    /** The fixtures of the FX in the order of their numbers */
+    signal sortByNumber()
     /** Spread $key from 0 on the first fixture to $last on the last one */
     signal fan(string key, int last)
     /** No shift or delay on the fixtures the buttons act on */
@@ -52,6 +54,8 @@ ColumnLayout {
     // the buttons act on the selected fixtures in the programmer, on all of them in a scene
     function acted(row) { return !selectionBased || !!row.selected }
     readonly property int withOffset: rows.filter(r => hasOffset(r)).length
+    // «By group»: the group of each one's set
+    readonly property bool hasGroups: rows.some(r => (r.group || "").length > 0)
     readonly property var actedRows: rows.filter(r => acted(r))
 
     function placeText(row) {
@@ -125,6 +129,14 @@ ColumnLayout {
             enabled: offsets.actedRows.some(r => offsets.hasOffset(r))
             onClicked: offsets.clearAll()
         }
+        AppButton {
+            text: qsTr("Reorder by number")
+            implicitHeight: 28
+            enabled: offsets.rows.length > 1
+            ToolTip.text: qsTr("The fixtures of the FX in the order of their numbers in the Patch: their places in the wave and in the mirror follow it")
+            ToolTip.visible: hovered
+            onClicked: offsets.sortByNumber()
+        }
     }
 
     // ------------------------------------------------------------ the fixtures
@@ -142,6 +154,7 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: 8
             Item { Layout.fillWidth: true }
+            Text { Layout.preferredWidth: 90; visible: offsets.hasGroups; text: qsTr("Group"); color: Theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight }
             Text { Layout.preferredWidth: 60; text: qsTr("In the wave"); color: Theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight }
         }
         RowLayout {
@@ -204,6 +217,15 @@ ColumnLayout {
                         color: Theme.textDim
                         font.pixelSize: 9
                         font.italic: true
+                    }
+                    // its set with «By group»: the group, or none (alone)
+                    Text {
+                        Layout.preferredWidth: 90
+                        visible: offsets.hasGroups
+                        text: row.entry.group || "—"
+                        color: Theme.textDim
+                        font.pixelSize: Theme.fontSmall
+                        elide: Text.ElideRight
                     }
                     Text {
                         Layout.preferredWidth: 60

@@ -110,8 +110,8 @@ Es gibt es auch auf den Fadern der [SHOW](show.md#fader) und in den [Zuordnungen
 
 Während ein Cue überblendet, zeigt der Bereich des ausgewählten Playbacks **„Live-Zeit“**: die Verzögerung plus die Überblendung dieses Cues (zum Beispiel „4,0 s“). Sie können sie ändern, während sie läuft:
 
-- Geben Sie eine andere Zeit ein, oder drücken Sie **„×½“** oder **„×2“**: Die Überblendung läuft von dort aus weiter, wo sie ist, und endet in der neuen Zeit.
-- **„Jetzt“** beendet die Überblendung sofort.
+- Geben Sie eine andere Zeit ein, oder drücken Sie **„×½“** oder **„×2“**: Die Überblendung läuft von dort aus weiter, wo sie ist, und endet in der neuen Zeit, auch die der FX des Cues.
+- **„Jetzt“** beendet die Überblendung sofort, auch die der FX des Cues.
 - Hat der nächste Cue **Folgen**, wartet er auf das neue Ende.
 
 Die Änderung gilt nur für diesen Durchlauf: Der nächste Cue nutzt seine eigenen Zeiten. „Live-Zeit“ wird orange, wenn die Zeit nicht die des Cues ist. **„Im Cue speichern“** speichert die geänderten Zeiten im Cue (auch die seiner Attribute und Fixtures). Das geht nicht, wenn der Cue mit einer BACK-Zeit oder mit der Einblendung einer Gruppe oder eines Blocks läuft: Das sind nicht seine Zeiten. Das lässt sich wie jede andere Bearbeitung der Cuelist rückgängig machen.

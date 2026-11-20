@@ -51,6 +51,7 @@
 #include "powerguard.h"
 #include "safetymanager.h"
 #include "liverecall.h"
+#include "scenetaps.h"
 
 class QXmlStreamReader;
 class QXmlStreamWriter;
@@ -82,6 +83,8 @@ class DtcCore : public QObject
     Q_PROPERTY(int grandMaster READ grandMaster WRITE setGrandMaster NOTIFY grandMasterChanged)
     Q_PROPERTY(int runningFunctions READ runningFunctions NOTIFY runningFunctionsChanged)
     Q_PROPERTY(int bpm READ bpm WRITE setBpm NOTIFY bpmChanged)
+    /** The BPM with its fractions (a tapped tempo); bpm is its whole number */
+    Q_PROPERTY(qreal exactBpm READ exactBpm NOTIFY bpmChanged)
     /** How the buttons of the scenes act: "go" or "stop" (always one of them) */
     Q_PROPERTY(QString pressMode READ pressMode WRITE setPressMode NOTIFY pressModeChanged)
     /** Changes when a scene with steps that plays moves to another step, or
@@ -193,8 +196,12 @@ public:
     /** Project tempo, used by the scenes that follow the BPM */
     int bpm() const;
     void setBpm(int bpm);
-    /** Tap tempo: the BPM follows the spacing of the taps */
-    Q_INVOKABLE void tapTempo();
+    qreal exactBpm() const;
+    /** Tap tempo: the BPM follows the spacing of the taps (TapRow), with its
+     *  fractions. Each press is a beat: the beat of the show goes to it, also
+     *  at the same tempo (MasterTimer::anchorBeat). $now: the time of the
+     *  press in ms (-1: the clock) */
+    Q_INVOKABLE void tapTempo(qint64 now = -1);
 
     /** The buttons of the scenes (Live, SHOW, mappings, the phone): "go" (a
      *  press starts it, the next ones mark its rhythm; it never stops it) or
@@ -523,7 +530,8 @@ private:
     /** See qlcCueListCount() */
     int m_qlcCueListCount = 0;
     QElapsedTimer m_tapTimer;
-    QList<qint64> m_tapIntervals;
+    qint64 m_tapLast = -1;
+    TapRow m_tapRow;
     /** Folders created by the user, so the empty ones are kept */
     QStringList m_folders;
 

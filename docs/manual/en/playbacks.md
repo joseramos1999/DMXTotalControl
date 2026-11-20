@@ -110,8 +110,8 @@ It is also on the faders of the [SHOW](show.md#faders) and in the [mappings](map
 
 While a cue is fading, the selected playback panel shows **“Live time”**: the delay plus the fade of that cue (for example, “4.0 s”). You can change it while it runs:
 
-- Type another time, or press **“×½”** or **“×2”**: the fade goes on from where it is and ends in the new time.
-- **“Now”** ends the fade at once.
+- Type another time, or press **“×½”** or **“×2”**: the fade goes on from where it is and ends in the new time, the fade of the cue’s FX too.
+- **“Now”** ends the fade at once, the fade of the cue’s FX too.
 - If the next cue has **Follow**, it waits for the new end.
 
 The change is for this run only: the next cue uses its own times. “Live time” turns orange when the time is not the one of the cue. **“Store in the cue”** stores the changed times in the cue (also those of its attributes and fixtures). It can’t when the cue runs with a BACK time or with the fade-in of a group or a block, which are not its own times. It is undone like any other edit of the cuelist.

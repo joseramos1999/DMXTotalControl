@@ -21,8 +21,32 @@
 #define SCENETAPS_H
 
 #include <QtGlobal>
+#include <QList>
 
 class Function;
+
+/**
+ * The spacing of a row of taps (of a scene's button or of the show TAP): the
+ * average of its last four beats, with the fractions of a ms. A press far off
+ * that spacing (on a later beat, to put the light back in time, or after a
+ * missed one) is a beat that times nothing: the tempo stays. Two such presses
+ * in a row that agree are a new tempo.
+ */
+class TapRow
+{
+public:
+    /** A press of the row $since ms after the last one. @return the new
+     *  spacing (ms), or 0 when it stays as it was */
+    qreal add(qreal since);
+    /** The spacing so far (ms), 0: none yet */
+    qreal period() const;
+    void clear();
+
+private:
+    QList<qreal> m_intervals;
+    /** the last press off the spacing (ms after the one before), 0: none */
+    qreal m_odd = 0;
+};
 
 /**
  * What a press of a scene's own button does (a tile of Live, a button of
@@ -41,7 +65,8 @@ class Function;
  * A beat plays its step (a cue) now; from two beats in a row it plays a
  * step a beat, the average of the last ones (Function::setTapPeriod, saved
  * with it); a beat of a row less than half a beat after a step of that
- * rhythm is that step, tapped late (Function::tapBeat). An FX scene with
+ * rhythm is that step, tapped late (Function::tapBeat); a press far off the
+ * rhythm (TapRow) keeps it. An FX scene with
  * FX at the BPM of the show takes a rhythm too: the first beat of a row
  * starts the cycle of those FX again, each next one puts them a cycle (at
  * x1) further (a chase on its next set), and from two in a row they do a

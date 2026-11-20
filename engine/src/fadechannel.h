@@ -244,6 +244,21 @@ public:
     void setModulatedOutput(quint32 value);
     quint32 modulatedOutput() const;
 
+    /** DMX Total Control: a Modulated channel that leaves its FX goes on
+     *  moving while it fades to what's below, over $ms after $delay ms (the
+     *  fader counts the time, $elapsed so far), then it leaves the fader */
+    void setModulationFade(uint ms, uint delay, uint elapsed = 0);
+    /** It stays: no fade to what's below any more */
+    void cancelModulationFade();
+    bool modulationLeaving() const;
+    uint modulationFadeTime() const;
+    uint modulationFadeDelay() const;
+    uint modulationFadeElapsed() const;
+    /** How much of its own value it sends: 1, down to 0 as it leaves */
+    qreal modulationLevel() const;
+    /** Its fade goes on by $ms: whether it is over */
+    bool advanceModulationFade(uint ms);
+
 private:
     quint32 m_start;
     quint32 m_target;
@@ -262,6 +277,11 @@ private:
     quint32 m_modFine;
     /** DMX Total Control: the virtual dimmer of an FX (setModulation) */
     qreal m_modScale;
+    /** DMX Total Control: its fade as it leaves its FX (setModulationFade) */
+    bool m_modLeaving;
+    uint m_modFadeTime;
+    uint m_modFadeDelay;
+    uint m_modFadeElapsed;
 };
 
 /** @} */

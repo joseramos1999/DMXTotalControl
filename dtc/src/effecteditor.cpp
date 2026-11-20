@@ -237,7 +237,7 @@ QVariantMap EffectEditor::info(quint32 id) const
             QVariantMap layer = FxTools::layerToMap(list.at(i));
             const QList<quint32> fixtures = list.at(i).fixtures.isEmpty() ? fx->fixtures() : list.at(i).fixtures;
             int sets = 1;
-            FXScene::groupSets(m_doc, FXScene::orderedFixtures(list.at(i), fixtures), list.at(i).grouping,
+            FXScene::groupSets(m_doc, FXScene::orderedFixtures(list.at(i), fixtures, m_doc), list.at(i).grouping,
                                list.at(i).groupSize, &sets);
             layer.insert("index", i);
             layer.insert("count", fixtures.count());
@@ -248,6 +248,11 @@ QVariantMap EffectEditor::info(quint32 id) const
             layer.insert("ownCount", FxTools::ownShapeCount(list.at(i)));
             layer.insert("offsetCount", FxTools::offsetCount(list.at(i)));
             layer.insert("rows", FxTools::fixtureRows(m_doc, list.at(i), fx->fixtures(), {}));
+            // DMX Total Control: the controls its fixtures don't share
+            QList<FXScene::Shape> shapes;
+            for (quint32 fid : fixtures)
+                shapes.append(list.at(i).shapeOf(fid));
+            layer.insert("mixed", FxTools::mixedKeys(shapes));
             // DMX Total Control: the fixtures without a dimmer it dims, and from what level
             layer.insert(FxTools::virtualDimmer(m_doc, list.at(i), fixtures, values));
             layers.append(layer);
@@ -1822,41 +1827,55 @@ void EffectEditor::setFxLayer(quint32 id, int index, const QVariantMap &props)
     if (index < 0 || index >= layers.count())
         return;
 
-    const bool wasLinked = layers.at(index).linked;
     QVariantMap changes = props;
     changes.remove("param");
     changes.remove("fixtures");
+    // DMX Total Control: the link apart (a group, below); ½ and ×2 send the BPM itself
+    const bool linking = changes.contains("linked");
+    const bool link = changes.take("linked").toBool();
+    changes.remove("link");
+    changes.remove("bpmScale");
     layers[index] = FxTools::layerFromMap(changes, layers.at(index));
     // for all its fixtures: the ones that did it their own way do it like the others
     FxTools::clearOwn(layers[index], changes.keys());
 
-    // linked layers share the speed and the timing
-    if (layers.at(index).linked)
+    // DMX Total Control: linked, it joins the first link group of the scene
+    // and takes its timing (or starts a group); unlinked, it leaves its group
+    if (linking && link && layers.at(index).link == 0)
     {
-        QVariantMap timing;
         int from = -1;
-        if (wasLinked == false)
+        for (int i = 0; i < layers.count() && from < 0; i++)
+            if (i != index && layers.at(i).link > 0)
+                from = i;
+        if (from >= 0)
         {
-            for (int i = 0; i < layers.count() && from < 0; i++)
-                if (i != index && layers.at(i).linked)
-                    from = i;
-            if (from >= 0)
-            {
-                QVariantMap theirs = FxTools::layerToMap(layers.at(from));
-                for (const QString &key : FxTools::timingKeys())
-                    timing.insert(key, theirs.value(key));
-                layers[index] = FxTools::layerFromMap(timing, layers.at(index));
-            }
+            QVariantMap timing;
+            const QVariantMap theirs = FxTools::layerToMap(layers.at(from));
+            for (const QString &key : FxTools::timingKeys())
+                timing.insert(key, theirs.value(key));
+            layers[index] = FxTools::layerFromMap(timing, layers.at(index));
+            layers[index].link = layers.at(from).link;
         }
         else
         {
-            for (const QString &key : FxTools::timingKeys())
-                if (changes.contains(key))
-                    timing.insert(key, changes.value(key));
-            for (int i = 0; i < layers.count(); i++)
-                if (i != index && layers.at(i).linked)
-                    layers[i] = FxTools::layerFromMap(timing, layers.at(i));
+            layers[index].link = FxTools::newLink(layers);
         }
+    }
+    else if (linking && link == false)
+    {
+        layers[index].link = 0;
+    }
+    // linked layers share the speed and the timing (DMX Total Control: the
+    // ones of its group)
+    else if (layers.at(index).link > 0)
+    {
+        QVariantMap timing;
+        for (const QString &key : FxTools::timingKeys())
+            if (changes.contains(key))
+                timing.insert(key, changes.value(key));
+        for (int i = 0; i < layers.count() && timing.isEmpty() == false; i++)
+            if (i != index && layers.at(i).link == layers.at(index).link)
+                layers[i] = FxTools::layerFromMap(timing, layers.at(i));
     }
 
     fx->setLayers(layers);
@@ -1873,6 +1892,26 @@ void EffectEditor::removeFxLayer(quint32 id, int index)
     if (index < 0 || index >= layers.count())
         return;
     layers.removeAt(index);
+    fx->setLayers(layers);
+    m_doc->setModified();
+    emit edited(id);
+}
+
+void EffectEditor::sortFxByNumber(quint32 id, int index)
+{
+    FXScene *fx = qobject_cast<FXScene *>(m_doc->function(id));
+    if (fx == nullptr)
+        return;
+    QList<FXScene::Layer> layers = fx->layers();
+    if (index < 0 || index >= layers.count())
+        return;
+    // (one with no fixtures of its own plays on the ones of the scene, in their order)
+    FXScene::Layer &layer = layers[index];
+    const QList<quint32> fixtures = layer.fixtures, spread = layer.spread;
+    FXScene::sortByNumber(m_doc, layer.fixtures);
+    FXScene::sortByNumber(m_doc, layer.spread);
+    if (layer.fixtures == fixtures && layer.spread == spread)
+        return;
     fx->setLayers(layers);
     m_doc->setModified();
     emit edited(id);
@@ -1904,7 +1943,7 @@ void EffectEditor::setFxOffset(quint32 id, int index, quint32 fixtureId, const Q
         return;
     QList<FXScene::Layer> layers = fx->layers();
     // a fixture of the layer (one with none of its own has the ones of the scene)
-    if (FXScene::orderedFixtures(layers.at(index), fx->fixtures()).contains(fixtureId) == false)
+    if (FXScene::orderedFixtures(layers.at(index), fx->fixtures(), m_doc).contains(fixtureId) == false)
         return;
     FxTools::setOffset(layers[index], { fixtureId }, key, value);
     if (storeFxLayers(fx, layers))
@@ -1921,7 +1960,7 @@ void EffectEditor::fanFxOffset(quint32 id, int index, const QString &key, int la
         return;
     // over all its fixtures, in the order of the effect
     QList<FXScene::Layer> layers = fx->layers();
-    FxTools::fanOffset(layers[index], FXScene::orderedFixtures(layers.at(index), fx->fixtures()), key, last);
+    FxTools::fanOffset(layers[index], FXScene::orderedFixtures(layers.at(index), fx->fixtures(), m_doc), key, last);
     if (storeFxLayers(fx, layers))
     {
         m_doc->setModified();
@@ -1949,6 +1988,12 @@ QVariantList EffectEditor::fxPreview(quint32 id, int index, qreal cyclePos) cons
     return fx != nullptr ? fx->previewLayer(index, cyclePos) : QVariantList();
 }
 
+QVariantList EffectEditor::fxLivePreview(quint32 id, int index, qreal cyclePos) const
+{
+    FXScene *fx = qobject_cast<FXScene *>(m_doc->function(id));
+    return fx != nullptr ? fx->livePreviewLayer(index, cyclePos) : QVariantList();
+}
+
 QVariantList EffectEditor::fxModeCurve(int mode, int samples) const
 {
     return FxTools::modeCurve(mode, samples);
@@ -1957,6 +2002,71 @@ QVariantList EffectEditor::fxModeCurve(int mode, int samples) const
 QVariantList EffectEditor::fxFigurePath(int figure, int samples) const
 {
     return FxTools::figurePath(figure, samples);
+}
+
+bool EffectEditor::fxModeReversed(int mode) const
+{
+    return FXScene::modeReversed(mode);
+}
+
+QStringList EffectEditor::convertNotes(quint32 id) const
+{
+    // DMX Total Control: what FxTools::convert can't make the same
+    QStringList notes;
+    const Function *f = m_doc->function(id);
+    if (const EFX *efx = qobject_cast<const EFX *>(f))
+    {
+        switch (efx->algorithm())
+        {
+            case EFX::Leaf:
+                notes.append(tr("The leaf becomes a circle: the FX have no figure like it"));
+                break;
+            case EFX::Lissajous:
+                notes.append(tr("The Lissajous figure of the FX goes 3 to 2 (this one %1 to %2), with phases of its own")
+                             .arg(efx->xFrequency()).arg(efx->yFrequency()));
+                break;
+            case EFX::Line2:
+                notes.append(tr("The ramp along the line becomes a back and forth on it"));
+                break;
+            case EFX::Diamond:
+                notes.append(tr("The sides of the diamond become straight"));
+                break;
+            case EFX::SquareChoppy:
+            case EFX::SquareTrue:
+                notes.append(tr("The square goes round smoothly, without jumps"));
+                break;
+            default:
+                break;
+        }
+        // (the Move FX stretches it after it turns it, the FX before)
+        if (efx->rotation() % 180 != 0 && efx->width() != efx->height())
+            notes.append(tr("Turned, with a width other than its height: the figure stretches another way"));
+        int others = 0;
+        for (const EFXFixture *ef : efx->fixtures())
+            others += ef->mode() != EFXFixture::PanTilt ? 1 : 0;
+        if (others > 0)
+            notes.append(tr("%n fixture(s) in dimmer or RGB mode stay out", "", others));
+    }
+    else if (const CurveFX *curve = qobject_cast<const CurveFX *>(f))
+    {
+        switch (curve->waveform())
+        {
+            case CurveFX::Square:
+            case CurveFX::Strobe:
+                if (curve->duty() != 50)
+                    notes.append(tr("On for %1 % of each cycle: the FX is on for half of it").arg(curve->duty()));
+                break;
+            case CurveFX::Random:
+                notes.append(tr("The random levels become a chase in random order"));
+                break;
+            case CurveFX::RandomStrobe:
+                notes.append(tr("The random flashes become a chase in random order"));
+                break;
+            default:
+                break;
+        }
+    }
+    return notes;
 }
 
 bool EffectEditor::convertToFx(quint32 id)

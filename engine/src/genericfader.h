@@ -198,6 +198,12 @@ public:
     void setMayFire(bool mayFire) { m_mayFire.store(mayFire, std::memory_order_relaxed); }
     bool mayFire() const { return m_mayFire.load(std::memory_order_relaxed); }
 
+    /** DMX Total Control: its FX scene keeps the FX moving as they fade out:
+     *  a fade out leaves its Modulated channels as they are, each one fading
+     *  to what's below on its own (FadeChannel::setModulationFade) */
+    void setKeepsModulated(bool keep) { m_keepsModulated.store(keep, std::memory_order_relaxed); }
+    bool keepsModulated() const { return m_keepsModulated.load(std::memory_order_relaxed); }
+
 signals:
     /** Signal emitted when monitoring is enabled.
      *  Data is preGM and includes the whole universe */
@@ -220,6 +226,7 @@ private:
     bool m_monitoring;
     QHash<quint32, QSharedPointer<FadeChannel>> m_channelCache;
     std::atomic<bool> m_mayFire { false };   // DMX Total Control
+    std::atomic<bool> m_keepsModulated { false };   // DMX Total Control
 
     FadeChannel &channelFaderLocked(const Doc *doc, Universe *universe, quint32 fixtureID, quint32 channel);
 

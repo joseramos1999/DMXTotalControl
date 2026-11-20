@@ -59,6 +59,7 @@ El desplegable junto a «Exclusiva»/«Mezcla» es el tiempo de fundido del grup
 - **«Por escena»**: cada escena usa sus propios fundidos de entrada y salida.
 - **«Corte»**: sin fundido.
 - **0,5 s a 10 s**: ese tiempo para todas las escenas del grupo, en lugar de los suyos.
+- Una escena FX que sale sigue moviéndose mientras funde hacia lo de debajo, con el crossfade del grupo o con su propio fundido de salida (también con «Parar todo con fundido»).
 
 ### Escena anterior y siguiente
 
@@ -77,12 +78,12 @@ Una cuelist en un grupo es una ficha más: el clic la lanza (con **Stop**, la pa
 Las escenas con pasos (secuencias y chasers), las cuelists y las escenas FX con FX en «BPM del show» siguen el ritmo al que pulsas su ficha:
 
 - Un clic la lanza (con **GO**, el modo en el que arranca el programa; ver más abajo).
-- Con la escena sonando, pulsa su ficha **varias veces seguidas** al ritmo de la música, con menos de 2 segundos entre pulsaciones. Cada pulsación pasa al paso siguiente (en una cuelist, da un GO) y la escena sigue sola a ese ritmo: un paso en cada pulso, en lugar de sus propios tiempos. El ritmo es la media de las últimas pulsaciones. Una pulsación que llega un poco tarde, justo después del paso de ese pulso (menos de medio pulso), es ese mismo paso: no da otro, solo pone el ritmo a tiempo.
+- Con la escena sonando, pulsa su ficha **varias veces seguidas** al ritmo de la música, con menos de 2 segundos entre pulsaciones. Cada pulsación pasa al paso siguiente (en una cuelist, da un GO) y la escena sigue sola a ese ritmo: un paso en cada pulso, en lugar de sus propios tiempos. El ritmo es la media de las últimas pulsaciones. Una pulsación muy lejos de ese ritmo (en el compás siguiente, para volver a cuadrarla, o tras un pulso que te saltaste) es un pulso que no lo cambia; dos seguidas así que coinciden marcan un ritmo nuevo. Una pulsación que llega un poco tarde, justo después del paso de ese pulso (menos de medio pulso), es ese mismo paso: no da otro, solo pone el ritmo a tiempo.
 - Solo cuentan las pulsaciones con la escena sonando: la que la lanza empieza la cuenta. Así, cambiar de escena en un grupo exclusivo y volver no le pone ritmo a ninguna.
 - Tras una pausa de más de 2 segundos, un clic da un paso sin cambiar su ritmo, y la escena sigue sonando. Para pararla, cambia a **Stop** y púlsala.
 - Se reproduce el ritmo que marcaste, también con una **velocidad en vivo** puesta; si luego mueves la velocidad, el ritmo se acelera o se frena con ella. En pausa, las pulsaciones no dan pasos.
 - El ritmo se guarda con la escena y es suyo: también lo sigue cuando suena en una super escena o en un playback. En sus [propiedades](directo.md#propiedades-de-la-escena) (y en [Escenas](escenas.md#cómo-suena-una-escena)) puedes escribirlo o pulsar **«Quitar»** para que vuelva a sus tiempos.
-- En una **escena FX**, el ritmo es el de sus FX en **«BPM del show»**: la primera pulsación de una serie vuelve a empezar su ciclo (como al lanzarla), y cada una de las siguientes los lleva al pulso siguiente, un ciclo más allá por su multiplicador (una persecución pasa al fixture siguiente; a ×¼, avanzan un cuarto de ciclo). Varias seguidas les dan un ciclo en cada pulso (por su multiplicador), en lugar del BPM del show. Los FX con una velocidad propia no cambian. Sin ritmo marcado, o tras «Quitar», siguen el BPM del show. Si quitas «BPM del show» a todos sus FX, la escena pierde su ritmo marcado.
+- En una **escena FX**, el ritmo es el de sus FX en **«BPM del show»**: la primera pulsación de una serie vuelve a empezar su ciclo (como al lanzarla), y cada una de las siguientes los lleva al pulso más cercano de su reloj (una persecución pasa al fixture siguiente; a ×¼, avanzan un cuarto de ciclo; una pulsación un compás después, al pulso por el que van). Varias seguidas les dan un ciclo en cada pulso (por su multiplicador), en lugar del BPM del show. Los FX con una velocidad propia no cambian. Sin ritmo marcado, o tras «Quitar», siguen el BPM y el pulso del show: el Tap del show los vuelve a poner en él, y una pulsación de su ficha los saca de él hasta entonces. Si quitas «BPM del show» a todos sus FX, la escena pierde su ritmo marcado.
 
 Funciona igual con sus botones del [SHOW](show.md), con sus mapeos de controladores y teclas en modo «Alternar» y con el [control remoto](remoto.md).
 

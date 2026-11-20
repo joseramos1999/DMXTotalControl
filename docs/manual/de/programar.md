@@ -193,14 +193,14 @@ Ein Verknüpfungssymbol auf der Palette zeigt an, dass Szenen sie verwenden; der
 
 ## FX
 
-Ein **FX** bewegt einen Parameter der Auswahl (den Dimmer, das Rot, den Zoom, Pan und Tilt zusammen…) um seinen Wert im Programmer oder, wenn er keinen Wert hat, um das, was die Szenen darunter senden. Er läuft sofort und wird mit der Szene aufgenommen.
+Ein **FX** bewegt einen Parameter der Auswahl (den Dimmer, das Rot, den Zoom, Pan und Tilt zusammen…) um seinen Wert im Programmer oder, wenn er keinen Wert hat, um das, was die Szenen darunter senden. Er läuft sofort und wird mit der Szene aufgenommen. Ein FX ohne Grundwert bleibt über den statischen Szenen derselben Priorität, auch wenn Sie diese später starten. Bei einem Fixture mit mehreren Köpfen (eine Pixelleiste, ein Blinder mit zwei Lampen) machen es, wenn der Parameter keinen Kanal des ganzen Fixtures hat, alle Köpfe zugleich, als ein einziger Platz der Welle.
 
 Unter **FX** gibt es drei Zonen: links die Parameter und die laufenden FX, in der Mitte die Regler des FX und rechts die Makros.
 
 ### Einen FX setzen
 
 1. Wählen Sie Fixtures aus.
-2. Wählen Sie unter **Parameter**, was bewegt werden soll. Standardmäßig ist der zuletzt berührte Parameter gewählt. Parameter, die in der Auswahl schon einen FX haben, tragen die Markierung „FX“.
+2. Wählen Sie unter **Parameter**, was bewegt werden soll. Standardmäßig ist der zuletzt berührte Parameter gewählt. Parameter, die in der Auswahl schon einen FX haben, tragen die Markierung „FX“. **Pan / tilt** und **Pan** oder **Tilt** bewegen dieselben Kanäle: Startet man einen, verlassen diese Fixtures den anderen.
 3. Drücken Sie **„FX starten“** oder klicken Sie auf ein **Makro**.
 4. Stellen Sie die Regler ein: Der FX ändert sich live.
 
@@ -210,9 +210,9 @@ Hat ein Fixture mehrere eigene Dimmer (ein Stroboskop mit Blitz und farbiger Aur
 
 ### Die Regler des FX
 
-- **Die Figur oder der Modus** (die Zeichnung links): Klicken Sie darauf, um eine andere zu wählen. Für Pan/Tilt gibt es **12 Figuren** (Kreis, Acht, Quadrat, Dreieck, Diamant, Pan-Linie, Tilt-Linie, Diagonale, Kleeblatt, Lissajous, Ballyhoo und Kreuz). Für alles andere **22 Modi**: Die gepunktete Linie ist der Grundwert, und die Welle geht darüber, darunter oder zu beiden Seiten; die Modi 9 bis 12 sind für Lauflichter, mit Schritt.
+- **Die Figur oder der Modus** (die Zeichnung links): Klicken Sie darauf, um eine andere zu wählen. Für Pan/Tilt gibt es **12 Figuren** (Kreis, Acht, Quadrat, Dreieck, Diamant, Pan-Linie, Tilt-Linie, Diagonale, Kleeblatt, Lissajous, Ballyhoo und Kreuz). Für alles andere **22 Modi**: Die gepunktete Linie ist der Grundwert, und die Welle geht darüber, darunter oder zu beiden Seiten; die Modi 9 bis 12 sind für Lauflichter, mit Schritt. Die Modi mit einem Pfeil (←) laufen vom letzten Fixture zum ersten: 2, 4, 6, 8, 10, 12, 14 und 20 (14 ist 7 rückwärts).
 - **Amplitude** (von 0 bis 250 %). Bei Pan/Tilt **„Pan-Amplitude“** und **„Tilt-Amplitude“** getrennt.
-- **Tempo**, in BPM. **½** und **×2** halbieren oder verdoppeln es. **„BPM der Show“** lässt es dem Tempo der Show folgen (ein BPM-Fader oder -Drehregler der SHOW oder eine BPM- oder Tap-Zuordnung). In einer FX-Szene aufgenommen, folgt es stattdessen dem Rhythmus, den Sie mit der Taste der Szene vorgeben, wenn sie einen hat ([Live](directo.md#rhythmus-einer-szene-mit-schritten)). **„Multiplikator“**: von ×¼ bis ×8.
+- **Tempo**, in BPM. **½** und **×2** halbieren oder verdoppeln es. **„BPM der Show“** lässt es dem Tempo und dem Schlag der Show folgen (ein BPM-Fader oder -Drehregler der SHOW oder eine BPM- oder Tap-Zuordnung): Die FX auf „BPM der Show“, egal wann gestartet, laufen auf demselben Schlag wie die Chases und die Szenen im BPM-Modus, und jeder Tap-Druck bringt sie wieder darauf. In einer FX-Szene aufgenommen, folgt es stattdessen dem Rhythmus, den Sie mit der Taste der Szene vorgeben, wenn sie einen hat ([Live](directo.md#rhythmus-einer-szene-mit-schritten)), und das Panel zeigt es an. **„Multiplikator“**: von ×⅛ bis ×8, mit ×⅓ und ×⅔; ein Wert, der nicht in der Liste steht (von einem umgewandelten Move FX), erscheint so, wie er ist.
 - Nur Pan/Tilt: **„Pan invertieren“**, **„Tilt invertieren“**, **„Rückwärts“** und **„Drehen“** (0–359°).
 - Nur bei einem Dimmer-FX mit Fixtures ohne Dimmer: **„Virtueller Dimmer“**, der Pegel, von dem aus ihre Farbe gedimmt wird (0–100 %). Mit **„Auto“** ist es der Pegel der Dimmer desselben FX oder, wenn es keine gibt, voll. Wenn Sie den Pegel bewegen, bleibt er fest; die Taste daneben stellt wieder „Auto“ ein. Die Farbe darunter (die des Programmers, die der Szene oder das, was die Szenen darunter senden) ist ihre Basis, und ein Farb-FX auf demselben Fixture addiert sich dazu.
 
@@ -222,20 +222,23 @@ Wie sich der FX auf die Fixtures verteilt:
 
 - **„Welle pro X“**: Die Form verteilt sich über X Fixtures (oder Sätze), jedes etwas später.
 - **„Schritt pro X“**: ein Fixture (oder Satz) nach dem anderen, jeweils X.
-- **„Gruppierung“**: „Aus“, „Jedes X-te“, „Blöcke zu X“, „In X teilen“, „Spiegeln“ oder „Nach Gruppe“ (Fixture-Gruppe).
-- **„Reihenfolge“**: „Auswahl“, „Umgekehrt“, „Zufällig“ (mit einer Taste für eine andere Zufallsfolge) oder „Nach Nummer“.
-- **„Wartezeit“**: Zeit auf dem Grundwert nach jedem Durchlauf.
+- **„Gruppierung“**: „Aus“, „Jedes X-te“, „Blöcke zu X“, „In X teilen“ (X Teile, höchstens ein Fixture Unterschied), „Von außen nach innen“ oder „Nach Gruppe“ (Fixture-Gruppe).
+  - **„Von außen nach innen“** nimmt das erste und das letzte Fixture zusammen, dann das zweite und das vorletzte und so weiter bis zur Mitte: Die Welle oder der Schritt läuft von außen nach innen. X ist, wie viele Fixtures jeder Satz hat, die Hälfte von jedem Ende (bei 2 das erste mit dem letzten). Es invertiert nichts; für einen Spiegel siehe [„Der Spiegel“](programar.md#der-spiegel). Es wird wie das frühere „Spiegeln“ gespeichert, ältere Shows laufen also gleich.
+  - **„Nach Gruppe“** nimmt die Gruppen des Patch, die die Fixtures des FX ohne Überschneidung aufteilen. Eine Gruppe, die alle enthält, zählt nicht (zum Beispiel eine mit allen Beams neben den Gruppen jeder Reihe). Lassen sie sich auf mehrere Arten aufteilen, gewinnt die mit den meisten Gruppen, dann die, die weniger Fixtures allein lässt, dann die mit den kleineren Gruppen und zuletzt die Reihenfolge der Gruppen im Patch. Ein Fixture, das in keiner dieser Gruppen ist, bildet einen Satz für sich. „Pro Fixture“ zeigt die Gruppe jedes einzelnen.
+- **„Reihenfolge“**: „Auswahl“, „Umgekehrt“, „Zufällig“ (mit einer Taste für eine andere Zufallsfolge) oder „Nach Nummer“ (nach den Fixture-Nummern des Patch).
+- **„Wartezeit“**: Zeit auf dem Grundwert nach jedem Durchlauf. Auf „BPM der Show“ dauert der Durchlauf mit seiner Wartezeit die nächste ganze Zahl von Schlägen (mindestens der Durchlauf ohne Wartezeit), so beginnt jeder Durchlauf auf einem Schlag. Außerhalb des Schlags der Show (eigenes Tempo oder Tap-Rhythmus) macht eine Änderung von Tempo, BPM oder Multiplikator dort weiter, wo der Durchlauf gerade ist; auf dem Schlag der Show setzt ein neuer Multiplikator ihn wieder auf den Schlag.
 - **„Phase“**.
 
 Für einen Versatz oder eine Verzögerung jedes einzelnen Fixtures siehe [„Pro Fixture“](programar.md#versatz-und-verzögerung-pro-fixture).
 
-Darunter zeichnet eine animierte Vorschau, wie sich jedes Fixture bewegt.
+Darunter zeichnet eine animierte Vorschau, wie sich jedes Fixture bewegt: Während der FX läuft, dort, wo er wirklich ist, mit der Bewegungsgeschwindigkeit der SHOW und seinen Verzögerungen.
 
 ### Laufende FX, verknüpfen und stoppen
 
-- **„Laufende FX (N)“** listet die FX des Programmers. Ein Klick wählt ihre Fixtures und ihren Parameter aus; das **×** stoppt den FX.
-- **„Verknüpfen“**: Verknüpfte FX teilen Tempo und Timing und stoppen gemeinsam.
-- **„Stopp“** stoppt den FX des gewählten Parameters; **„Alle FX stoppen“** stoppt alle.
+- **„Laufende FX (N)“** listet die FX des Programmers. Ein Klick wählt ihre Fixtures und ihren Parameter aus; das **×** stoppt den ganzen FX mit den damit verknüpften FX und lässt die Auswahl, wie sie ist.
+- **„Verknüpfen“**: Verknüpfte FX teilen Tempo und Timing, laufen auf derselben Uhr und stoppen gemeinsam. Ein FX, den Sie später verknüpfen, setzt sich dorthin, wo die bereits verknüpften gerade sind. „Verknüpfen“ fügt ihn der Verknüpfungsgruppe eines anderen FX der Auswahl hinzu oder, wenn es keinen gibt, der zuletzt verknüpften; ein Makro mit mehreren verknüpften FX bildet eine eigene Gruppe, getrennt von Ihren. Bei mehreren Gruppen zeigt „Laufende FX“ die Nummer jeder Gruppe. Das Bewegungstempo der SHOW gilt für die ganze Gruppe eines Pan/Tilt-FX.
+- **„Stopp“** nimmt die ausgewählten Fixtures aus dem FX (sind alle ausgewählt, den ganzen FX), auch aus den damit verknüpften FX; ein verknüpfter FX auf anderen Fixtures läuft weiter (das **×** in „Laufende FX“ stoppt alles); **„Alle FX stoppen“** stoppt alle.
+- Ein neuer FX startet auf der Uhr dessen, was schon läuft. Auf Fixtures, die aus einem laufenden FX desselben Parameters kommen (ein Makro auf einem Teil davon), macht er dort weiter, wo dieser FX war. Läuft auf anderen Fixtures ein anderer FX des Parameters mit demselben Tempo und demselben Multiplikator, setzt er sich dorthin, wo dieser ist: So ergibt „Pan invertieren“ auf einer zweiten Gruppe einen Spiegel in Phase. Ein FX mit Verzögerungen beginnt bei 0.
 
 „Alles zurücksetzen“ entfernt die FX ebenfalls aus dem Programmer. „Alles stoppen“ in der oberen Leiste entfernt sie nicht: Sie sind Live-Änderungen.
 
@@ -245,37 +248,43 @@ Ein FX bleibt **ein einziger**, auch wenn Sie einen Teil seiner Fixtures ändern
 
 - Der Bereich weist darauf hin: „Dieser FX läuft auch auf anderen Fixtures…“.
 - Sind alle seine Fixtures ausgewählt, gilt die Änderung für den ganzen FX.
-- Wählen Sie Fixtures aus, die nicht im FX waren, schließen sie sich ihm an. Zwei FX desselben Parameters, die zusammen ausgewählt sind, verschmelzen zu einem, und jedes Fixture behält, was es tat.
+- Machen die ausgewählten Fixtures nicht alle dasselbe, erscheinen **„Pan invertieren“**, **„Tilt invertieren“** und **„Rückwärts“** halb (mit einem halben Farbbalken unten), und ein Klick schaltet sie bei allen ein; Figur oder Modus, Amplitude, Drehung und Phase zeigen „gemischt“.
+- Wählen Sie Fixtures aus, die in keinem FX des Parameters waren, schließen sie sich dem FX an (dem ersten, wenn es mehrere gibt), jedes an seinem Platz nach seiner Fixture-Nummer. Umfasst die Auswahl mehrere FX desselben Parameters (zum Beispiel einen pro Reihe), sagt der Bereich es („Die Auswahl umfasst N FX“), und eine Änderung geht an jeden: Jeder FX behält seine Welle und seinen Spiegel. **„Zu einem FX zusammenführen“** macht einen daraus, auf der Uhr des ersten: Jedes Fixture behält seine Form, aber nicht seinen Platz in der Welle seines FX.
 - Unter „Laufende FX“ sehen Sie, wie viele etwas Eigenes haben („N eigene“).
 - **„Wie der Rest“** entfernt das Eigene der ausgewählten Fixtures: Sie tun wieder dasselbe wie der FX.
 
 ### Versatz und Verzögerung pro Fixture
 
-Unter den Reglern eines laufenden FX listet **„Pro Fixture“** (mit seinem Pfeil aufklappen) seine Fixtures in der Reihenfolge des FX: Nummer, Name, sein Platz in der Welle oder im Schritt und zwei Felder, die Sie von Hand ändern. Die ausgewählten Fixtures sind hervorgehoben. Eine Änderung wirkt sofort, auf derselben Uhr.
+Unter den Reglern eines laufenden FX listet **„Pro Fixture“** (mit seinem Pfeil aufklappen) seine Fixtures in der Reihenfolge des FX: Nummer, Name, sein Platz in der Welle oder im Schritt (mit „Gruppierung: Nach Gruppe“ auch die Gruppe seines Satzes) und zwei Felder, die Sie von Hand ändern. Die ausgewählten Fixtures sind hervorgehoben. Eine Änderung wirkt sofort, auf derselben Uhr.
 
 - **„Versatz“** (0–1440°): wie weit es in der Welle hinter den anderen läuft. 360° sind ein ganzer Zyklus, bei einem FX mit Schritten ein Platz. Der Versatz kommt zur Welle und zur Phase hinzu.
 - **„Verzögerung“** (bis 60 s): wie viel später es den FX macht. Beim Start des FX (seine Szene oder seine Cue startet, oder ein neuer FX im Programmer) wartet es so lange auf seinem Grundwert, sodass die Fixtures nacheinander starten. Danach bleibt es um diese Zeit zurück. Sie gilt in Sekunden, auch wenn der FX dem BPM der Show folgt; um dem Tempo zu folgen, nehmen Sie den Versatz.
 - **„Versatz verteilen…“** und **„Verzögerung verteilen…“** fragen nach dem Wert des letzten und verteilen ab 0 über die ausgewählten Fixtures, in der Reihenfolge des FX.
 - **„Ohne Versatz und Verzögerung“** entfernt beides bei den ausgewählten Fixtures.
+- **„Nach Nummer ordnen“** bringt die Fixtures des FX in die Reihenfolge ihrer Nummern im Patch, zum Beispiel wenn eines am Ende einer Reihe gelandet ist. Ihre Plätze in der Welle und ihre Gegenstücke im Spiegel folgen ihr.
 
 Phase oder Timing zu ändern behält sie bei, und „Wie der Rest“ lässt sie unverändert. Das ist nicht dasselbe wie die eigene Phase einiger Fixtures: Diese Phase ersetzt die des FX; der Versatz kommt zu ihr hinzu. Ist eine Verzögerung länger als die Zeit, die der FX schon läuft, wartet das Fixture auf seinem Grundwert, bis sie erreicht ist. Versatz und Verzögerung werden mit der Szene oder der Cue aufgenommen.
 
 ### Der Spiegel
 
-Liegen die Fixtures, die rückwärts laufen (oder mit eigenem invertiertem Pan oder Tilt), **alle in einer Hälfte** des FX, folgt jedes der Welle seines Gegenstücks auf der anderen Seite, sodass auch die Welle gespiegelt läuft. Der Bereich zeigt das mit „Spiegeln: …“ an.
+Liegen die Fixtures mit eigenem invertiertem Pan (oder die rückwärts laufen, oder mit eigenem invertiertem Tilt) **alle in einer Hälfte** des FX, folgt jedes der Welle seines Gegenstücks auf der anderen Seite, sodass auch die Welle gespiegelt läuft. Der Bereich zeigt das mit „Spiegeln: …“ an.
 
 Beispiel mit 6 Beams im Kreis mit Welle:
 
 1. Wählen Sie alle 6 aus, wählen Sie **Pan / Tilt**, drücken Sie **„FX starten“**, Figur **Kreis** und **„Welle pro X“** auf „Alle“.
-2. Wählen Sie nur die letzten 3 aus und aktivieren Sie **„Rückwärts“**.
+2. Wählen Sie nur die letzten 3 aus und aktivieren Sie **„Pan invertieren“**.
 
-Die letzten 3 drehen rückwärts und folgen der Welle des 3., des 2. und des 1.: ein synchroner Spiegel. Setzen Sie abwechselnde (2, 4 und 6) auf rückwärts, ist das kein Spiegel: Jedes behält seinen Platz in der Welle.
+Die letzten 3 bewegen sich spiegelbildlich zu den ersten 3 und folgen der Welle des 3., des 2. und des 1.: ein synchroner Spiegel, mit jeder Figur. **„Rückwärts“** ergibt nur bei den in Pan symmetrischen Figuren einen Spiegel (Kreis, Quadrat, Dreieck, Diamant, Kleeblatt und Pan-Linie); bei einer Acht, einer Diagonale, einer Lissajous-Figur, einer Tilt-Linie, einem Ballyhoo oder einem Kreuz geht jedes rückwärts laufende Fixture nach oben, wenn sein Gegenstück nach unten geht, und der Bereich zeigt kein „Spiegeln“. Invertieren Sie abwechselnde (2, 4 und 6), ist das kein Spiegel: Jedes behält seinen Platz in der Welle.
+
+Pan oder Tilt im Patch zu invertieren (unter [„Grenzen“](patch.md#grenzen)) ist eine physische Korrektur, für kopfüber hängende oder gedrehte Köpfe: Sie lässt sie sich wie die anderen bewegen und zählt daher nicht für den Spiegel des FX. Der Spiegel entsteht im FX.
+
+Ein FX hat nur einen Spiegel, zwischen seinen beiden Hälften. Für einen Spiegel innerhalb jeder Reihe, mit einer Welle in jeder Reihe, machen Sie einen FX pro Reihe und verknüpfen Sie sie (**„Verknüpfen“**): jeder mit seiner Welle und seiner invertierten Hälfte, alle auf derselben Uhr.
 
 ### FX-Makros
 
-Rechts die mitgelieferten **FX-Makros** nach Kategorien: **Position** (Kreis, Kreiswelle, Acht, Ballyhoo, Pan-Schwenk, Cancan, Pan gespiegelt, Quadrat, Dreieck, Kleeblatt), **Intensität** (Dimmer-Welle, Lauflicht, Zufällig, Puls, Atmen, Stroboskop, Von außen nach innen), **Farbe** (Regenbogen, Rot / Blau, Feuer, Cyan / Magenta) und **Beam** (Zoom, Iris, Fokus). Ein Klick wendet das Makro auf die Auswahl an.
+Rechts die mitgelieferten **FX-Makros** nach Kategorien: **Position** (Kreis, Kreiswelle, Acht, Ballyhoo, Pan-Schwenk, Cancan, Pan gespiegelt, Quadrat, Dreieck, Kleeblatt), **Intensität** (Dimmer-Welle, Lauflicht, Zufällig, Puls, Atmen, Stroboskop, Von außen nach innen), **Farbe** (Regenbogen, Rot / Blau, Feuer, Cyan / Magenta) und **Beam** (Zoom, Iris, Fokus). Ein Klick wendet das Makro auf die Auswahl an. „Pan gespiegelt“ invertiert den Pan der zweiten Hälfte der Auswahl: ein Spiegel mit jeder Anzahl von Köpfen. Die Farbmakros schalten aus, was sie nicht bewegen: Weiß, Amber und UV (und Gelb bei Cyan / Magenta), damit ein Weiß darunter sie nicht pastellig macht.
 
-**„Als Makro speichern…“** speichert die FX des Programmers als Ihr eigenes Makro, unter **„Meine“**, für alle Shows. Rechtsklick auf eines Ihrer Makros: **„Umbenennen“** oder **„Löschen“**.
+**„Als Makro speichern…“** speichert die FX des Programmers als Ihr eigenes Makro, unter **„Meine“**, für alle Shows. Rechtsklick auf eines Ihrer Makros: **„Umbenennen“** oder **„Löschen“**. Zwei FX desselben Parameters (ein Kreis auf einigen Fixtures und eine Acht auf anderen) gehen als einer hinein, jedes Fixture mit seinem; liefen sie nicht mit derselben Geschwindigkeit oder demselben Timing, behält das Makro die des ersten und sagt es.
 
 Ein eigenes Makro behält, was jedes Fixture des FX gemacht hat, nach seinem Platz im FX (der Reihenfolge, in der Sie sie ausgewählt haben):
 
@@ -283,7 +292,7 @@ Ein eigenes Makro behält, was jedes Fixture des FX gemacht hat, nach seinem Pla
 - was es auf eigene Weise gemacht hat: die Form, die Größe, die Richtung, die Umkehrungen (ein Spiegel);
 - seinen Versatz und seine Verzögerung.
 
-Beim Anwenden bekommt das erste ausgewählte Fixture, was das erste hatte, das zweite, was das zweite hatte, und so weiter. Mit mehr oder weniger Fixtures bekommen das erste und das letzte, was das erste und das letzte hatten, und die dazwischen werden verteilt: Fächer und Verzögerungen werden gestreckt, und der Spiegel bleibt ein Spiegel. Farb- und Goborad, Prisma und Shutter werden nicht verteilt: Jedes Fixture nimmt den Wert des nächstgelegenen Platzes. Hatten alle dieselben Werte und nichts auf eigene Weise, passt das Makro auf jede Auswahl, wie die mitgelieferten. Fixture für Fixture gespeicherte Makros tragen die Marke **1·2·3**; fahren Sie mit der Maus darüber, um zu sehen, wie viele Fixtures es waren.
+Beim Anwenden bekommt das erste ausgewählte Fixture, was das erste hatte, das zweite, was das zweite hatte, und so weiter. Mit mehr oder weniger Fixtures bekommen das erste und das letzte, was das erste und das letzte hatten, und die dazwischen werden verteilt: Fächer, Verzögerungen und Hälften werden gestreckt, und der Spiegel bleibt ein Spiegel. Was sich alle 2 oder 3 Fixtures wiederholt (jedes zweite rückwärts, zwei abwechselnde Farben), wiederholt sich genauso bei jeder Anzahl von Fixtures. Farb- und Goborad, Prisma und Shutter werden nicht verteilt: Jedes Fixture nimmt den Wert des nächstgelegenen Platzes. Hatten alle dieselben Werte und nichts auf eigene Weise, passt das Makro auf jede Auswahl, wie die mitgelieferten. Fixture für Fixture gespeicherte Makros tragen die Marke **1·2·3**; fahren Sie mit der Maus darüber, um zu sehen, wie viele Fixtures es waren.
 
 ## Befehlszeile
 
@@ -356,9 +365,9 @@ Ein Cue speichert nur, was der Programmer gegenüber dem ändert, was die vorher
 
 Das Menü **„Snapshot“** enthält:
 
-- **„Änderungen in einer Szene speichern“**: übernimmt die Werte des Programmers in eine bestehende statische Szene.
+- **„Änderungen in einer Szene speichern“**: übernimmt die Werte des Programmers in eine bestehende statische Szene. Die FX kommen nicht hinein (eine statische Szene hat keine), und ein Hinweis sagt es; um sie zu behalten, nehmen Sie **„Aufnehmen…“**.
 - **„Alles auf der Bühne in eine neue Szene…“**: Alles, was die Scheinwerfer jetzt zeigen (Szenen, Live-Änderungen und der Mischer, ohne Grand Master), wird zu einer neuen statischen Szene, auf jedem Fixture mit Licht. Ist „Hervorheben“ aktiv, müssen Sie es vorher ausschalten („Hervorheben aus“). Geschützte Spezialeffekte lässt es aus, auch während sie auslösen.
-- **„Nur die Änderungen in eine neue Szene…“**.
+- **„Nur die Änderungen in eine neue Szene…“**: auch mit FX (die neue Szene ist eine FX-Szene).
 
 ### Szenen und Cues bearbeiten
 

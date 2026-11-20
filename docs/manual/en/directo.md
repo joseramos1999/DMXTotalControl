@@ -59,6 +59,7 @@ The drop-down next to “Exclusive”/“Mix” is the fade time of the group:
 - **“By scene”**: each scene uses its own fade in and fade out.
 - **“Snap”**: no fade.
 - **0.5 s to 10 s**: that time for all the scenes of the group, instead of their own.
+- An FX scene that goes out keeps moving while it fades to what is below, with the crossfade of the group or with its own fade out (also with “Stop all with a fade”).
 
 ### Previous and next scene
 
@@ -77,12 +78,12 @@ A cuelist in a group is just another tile: a click plays it (with **Stop**, it s
 Scenes with steps (sequences and chasers), cuelists and FX scenes with FX at “BPM of the show” follow the rhythm at which you press their tile:
 
 - One click plays it (with **GO**, the mode the program starts in; see below).
-- With the scene playing, press its tile **several times in a row** to the beat of the music, with less than 2 seconds between presses. Each press goes to the next step (on a cuelist, it gives a GO) and the scene carries on by itself at that rhythm: one step on each beat, instead of its own times. The rhythm is the average of the last presses. A press that comes a little late, just after the step of that beat (less than half a beat), is that same step: it gives no other one, it only puts the rhythm back in time.
+- With the scene playing, press its tile **several times in a row** to the beat of the music, with less than 2 seconds between presses. Each press goes to the next step (on a cuelist, it gives a GO) and the scene carries on by itself at that rhythm: one step on each beat, instead of its own times. The rhythm is the average of the last presses. A press far off that rhythm (on the next bar, to put it back in time, or after a beat you missed) is a beat that does not change it; two such presses in a row that agree tap a new rhythm. A press that comes a little late, just after the step of that beat (less than half a beat), is that same step: it gives no other one, it only puts the rhythm back in time.
 - Only the presses made while the scene is playing count: the one that plays it starts the count. So switching scenes in an exclusive group and coming back does not give a rhythm to either of them.
 - After a pause of more than 2 seconds, a click gives one step without changing its rhythm, and the scene keeps playing. To stop it, switch to **Stop** and press it.
 - The rhythm you tapped is played, also with a **live speed** set; if you then move the speed, the rhythm speeds up or slows down with it. While paused, presses do not give steps.
 - The rhythm is stored with the scene and belongs to it: it also follows it when it plays in a super scene or on a playback. In its [properties](directo.md#scene-properties) (and in [Scenes](escenas.md#how-a-scene-plays)) you can type it or press **“Clear”** to go back to its own times.
-- In an **FX scene**, the rhythm is that of its FX at **“BPM of the show”**: the first press of a row starts their cycle again (as when it is played), and each next one takes them to the next beat, one cycle further times their multiplier (a chase goes on to the next fixture; at ×¼, they go a quarter of a cycle further). Several in a row give them one cycle on each beat (times their multiplier), instead of the BPM of the show. The FX with a speed of their own do not change. With no tapped rhythm, or after “Clear”, they follow the BPM of the show. If you turn off “BPM of the show” on all its FX, the scene loses its tapped rhythm.
+- In an **FX scene**, the rhythm is that of its FX at **“BPM of the show”**: the first press of a row starts their cycle again (as when it is played), and each next one takes them to the nearest beat of their clock (a chase goes on to the next fixture; at ×¼, they go a quarter of a cycle further; a press a bar later, to the beat they are on). Several in a row give them one cycle on each beat (times their multiplier), instead of the BPM of the show. The FX with a speed of their own do not change. With no tapped rhythm, or after “Clear”, they follow the BPM and the beat of the show: the Tap of the show puts them back on it, and a press of their tile takes them off it until then. If you turn off “BPM of the show” on all its FX, the scene loses its tapped rhythm.
 
 It works the same with its [SHOW](show.md) buttons, with its controller and key mappings in “Toggle” mode and with the [remote control](remoto.md).
 

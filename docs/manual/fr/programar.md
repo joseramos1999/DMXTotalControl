@@ -193,14 +193,14 @@ Une icône de lien sur la palette indique que des scènes l’utilisent ; l’i
 
 ## FX
 
-Un **FX** fait varier un paramètre de la sélection (le dimmer, le rouge, le zoom, pan et tilt ensemble…) autour de sa valeur dans le programmeur ou, s’il n’a pas de valeur, autour de ce qu’envoient les scènes en dessous. Il joue immédiatement et s’enregistre avec la scène.
+Un **FX** fait varier un paramètre de la sélection (le dimmer, le rouge, le zoom, pan et tilt ensemble…) autour de sa valeur dans le programmeur ou, s’il n’a pas de valeur, autour de ce qu’envoient les scènes en dessous. Il joue immédiatement et s’enregistre avec la scène. Un FX sans valeur de base reste au-dessus des scènes statiques de sa propre priorité, même si vous les lancez après. Sur un fixture à plusieurs têtes (une barre de pixels, un blinder à deux lampes), si le paramètre n’a pas de canal du fixture entier, toutes les têtes le font en même temps, comme une seule place de la vague.
 
 Dans **FX**, il y a trois zones : les paramètres et les FX en cours à gauche, les contrôles du FX au centre et les macros à droite.
 
 ### Lancer un FX
 
 1. Sélectionnez des fixtures.
-2. Dans **Paramètre**, choisissez ce qu’il faut faire varier. Par défaut, c’est le dernier paramètre que vous avez touché. Ceux qui ont déjà un FX dans la sélection portent la marque « FX ».
+2. Dans **Paramètre**, choisissez ce qu’il faut faire varier. Par défaut, c’est le dernier paramètre que vous avez touché. Ceux qui ont déjà un FX dans la sélection portent la marque « FX ». **Pan / tilt** et **Pan** ou **Tilt** font varier les mêmes canaux : en lancer un retire ces fixtures de l’autre.
 3. Appuyez sur **« Lancer le FX »**, ou cliquez sur une **macro**.
 4. Réglez les contrôles : le FX change en direct.
 
@@ -210,9 +210,9 @@ Si un fixture a plusieurs dimmers à lui (un stroboscope avec son flash et une a
 
 ### Les contrôles du FX
 
-- **La figure ou le mode** (le dessin de gauche) : cliquez dessus pour en choisir un autre. Pour pan/tilt, il y a **12 figures** (cercle, huit, carré, triangle, diamant, ligne de pan, ligne de tilt, diagonale, trèfle, lissajous, ballyhoo et croix). Pour le reste, **22 modes** : la ligne pointillée est la valeur de base et l’onde passe au-dessus, en dessous ou des deux côtés ; les modes 9 à 12 sont pour les chenillards, avec un pas.
+- **La figure ou le mode** (le dessin de gauche) : cliquez dessus pour en choisir un autre. Pour pan/tilt, il y a **12 figures** (cercle, huit, carré, triangle, diamant, ligne de pan, ligne de tilt, diagonale, trèfle, lissajous, ballyhoo et croix). Pour le reste, **22 modes** : la ligne pointillée est la valeur de base et l’onde passe au-dessus, en dessous ou des deux côtés ; les modes 9 à 12 sont pour les chenillards, avec un pas. Les modes avec une flèche (←) vont du dernier fixture au premier : 2, 4, 6, 8, 10, 12, 14 et 20 (le 14 est le 7 à l’envers).
 - **Amplitude** (de 0 à 250 %). Pour pan/tilt, **« Amplitude pan »** et **« Amplitude tilt »** séparément.
-- **Vitesse**, en BPM. **½** et **×2** la divisent ou la doublent. **« BPM du show »** lui fait suivre le tempo du show (un fader ou un rotatif de BPM du SHOW, ou un mappage de BPM ou de Tap). Enregistré dans une scène FX, il suit à la place le rythme que vous tapez en appuyant sur le bouton de la scène, si elle en a un ([Direct](directo.md#rythme-dune-scène-à-pas)). **« Multiplicateur »** : de ×¼ à ×8.
+- **Vitesse**, en BPM. **½** et **×2** la divisent ou la doublent. **« BPM du show »** lui fait suivre le tempo et le battement du show (un fader ou un rotatif de BPM du SHOW, ou un mappage de BPM ou de Tap) : les FX en « BPM du show », lancés à n’importe quel moment, vont sur le même battement que les chenillards et les scènes en mode BPM, et chaque appui sur Tap les y remet. Enregistré dans une scène FX, il suit à la place le rythme que vous tapez en appuyant sur le bouton de la scène, si elle en a un ([Direct](directo.md#rythme-dune-scène-à-pas)), et le panneau l’indique. **« Multiplicateur »** : de ×⅛ à ×8, avec ×⅓ et ×⅔ ; une valeur qui n’est pas dans la liste (d’un Move FX converti) s’affiche telle quelle.
 - Pan/tilt seulement : **« Inverser le pan »**, **« Inverser le tilt »**, **« À l’envers »** et **« Rotation »** (0–359°).
 - Seulement sur un FX de dimmer avec des fixtures sans dimmer : **« Dimmer virtuel »**, le niveau à partir duquel leur couleur est atténuée (0–100 %). Avec **« Auto »**, c’est celui des dimmers du même FX ou, s’il n’y en a pas, à fond. Déplacer le niveau le fixe ; le bouton d’à côté revient à « Auto ». La couleur du dessous (celle du programmeur, de la scène ou ce qu’envoient les scènes en dessous) est sa base, et un FX de couleur sur le même fixture s’y ajoute.
 
@@ -222,20 +222,23 @@ La façon dont le FX se répartit entre les fixtures :
 
 - **« Vague par X »** : la forme se répartit sur X fixtures (ou ensembles), chacun un peu plus tard.
 - **« Pas par X »** : un fixture (ou ensemble) après l’autre, X à la fois.
-- **« Regroupement »** : « Non », « Tous les X », « Blocs de X », « Diviser en X », « Miroir » ou « Par groupe » (de fixtures).
-- **« Ordre »** : « Sélection », « Inversé », « Aléatoire » (avec un bouton pour un autre ordre aléatoire) ou « Par numéro ».
-- **« Attente »** : temps à la base après chaque passage.
+- **« Regroupement »** : « Non », « Tous les X », « Blocs de X », « Diviser en X » (X parties, d’un fixture d’écart au plus), « Du bord au centre » ou « Par groupe » (de fixtures).
+  - **« Du bord au centre »** réunit le premier et le dernier fixture, puis le deuxième et l’avant-dernier, et ainsi jusqu’au centre : la vague ou le pas va du bord au centre. X est le nombre de fixtures de chaque ensemble, la moitié de chaque bout (avec 2, le premier avec le dernier). Il n’inverse rien ; pour un miroir, voir [« Le miroir »](programar.md#le-miroir). Il est enregistré comme l’ancien « Miroir », donc les shows d’avant sonnent pareil.
+  - **« Par groupe »** utilise les groupes du Patch qui répartissent les fixtures du FX sans se chevaucher. Un groupe qui les contient tous ne compte pas (par exemple, un avec tous les beams à côté des groupes de chaque rangée). S’ils peuvent se répartir de plusieurs façons, celle qui donne le plus de groupes l’emporte, puis celle qui laisse le moins de fixtures seuls, puis celle aux groupes les plus petits et, enfin, l’ordre des groupes dans le Patch. Un fixture qui n’est dans aucun de ces groupes forme un ensemble à lui seul. « Par fixture » montre le groupe de chacun.
+- **« Ordre »** : « Sélection », « Inversé », « Aléatoire » (avec un bouton pour un autre ordre aléatoire) ou « Par numéro » (par les numéros de fixture du Patch).
+- **« Attente »** : temps à la base après chaque passage. En « BPM du show », le passage avec son attente dure le nombre entier de battements le plus proche (au moins le passage sans attente), donc chaque passage commence sur un battement. Hors du battement du show (vitesse propre ou rythme tapé), un changement de vitesse, de BPM ou de multiplicateur continue là où il en est dans le passage ; sur le battement du show, un nouveau multiplicateur le remet sur le battement.
 - **« Phase »**.
 
 Pour un décalage ou un délai propre à chaque fixture, voir [« Par fixture »](programar.md#décalage-et-délai-par-fixture).
 
-En dessous, un aperçu animé dessine chaque fixture tel qu’il bouge.
+En dessous, un aperçu animé dessine chaque fixture tel qu’il bouge : pendant que le FX joue, là où il en est vraiment, avec la vitesse de mouvement du SHOW et ses délais.
 
 ### FX en cours, lier et arrêter
 
-- **« FX en cours (N) »** liste les FX du programmeur. Un clic sélectionne ses fixtures et son paramètre ; la **×** l’arrête.
-- **« Lier »** : les FX liés partagent la vitesse et le timing, et s’arrêtent ensemble.
-- **« Arrêter »** arrête le FX du paramètre choisi ; **« Arrêter tous les FX »**, tous.
+- **« FX en cours (N) »** liste les FX du programmeur. Un clic sélectionne ses fixtures et son paramètre ; la **×** arrête tout le FX, avec les FX liés à lui, sans changer la sélection.
+- **« Lier »** : les FX liés partagent la vitesse et le timing, tournent sur la même horloge et s’arrêtent ensemble. Un FX que vous liez plus tard se place là où en sont ceux déjà liés. « Lier » le joint au groupe de liaison d’un autre FX de la sélection ou, s’il n’y en a pas, au dernier que vous avez lié ; une macro avec plusieurs FX liés forme un groupe à elle, à part des vôtres. Avec plusieurs groupes, « FX en cours » montre le numéro de chacun. La vitesse de mouvement du SHOW s’applique à tout le groupe d’un FX de pan/tilt.
+- **« Arrêter »** retire les fixtures sélectionnés du FX (avec tous, le FX entier) et aussi des FX liés à lui ; un FX lié sur d’autres fixtures continue (la **×** de « FX en cours » arrête tout) ; **« Arrêter tous les FX »** les arrête tous.
+- Un nouveau FX démarre sur l’horloge de ce qui joue déjà. Sur des fixtures qui viennent d’un FX en cours du même paramètre (une macro sur une partie de celui-ci), il reprend là où en était ce FX. Sur d’autres fixtures, si un autre FX du paramètre tourne à la même vitesse et avec le même multiplicateur, il se place là où en est celui-ci : ainsi « Inverser le pan » sur un second groupe donne un miroir en phase. Un FX avec des délais part de 0.
 
 « Tout réinitialiser » retire aussi les FX du programmeur. « Tout arrêter » de la barre du haut ne les retire pas : ce sont des modifications en direct.
 
@@ -245,37 +248,43 @@ Un FX reste **un seul FX** même si vous changez une partie de ses fixtures. Si 
 
 - Le panneau prévient : « Ce FX est aussi sur d’autres fixtures… ».
 - Avec tous ses fixtures sélectionnés, le changement s’applique à tout le FX.
-- Si vous sélectionnez des fixtures qui n’étaient pas dans le FX, ils le rejoignent. Deux FX du même paramètre sélectionnés ensemble fusionnent en un seul, et chaque fixture garde ce qu’il faisait.
+- Si les fixtures sélectionnés ne font pas tous la même chose, **« Inverser le pan »**, **« Inverser le tilt »** et **« À l’envers »** s’affichent à moitié (avec une demi-barre de couleur en bas) et un clic les active sur tous ; la figure ou le mode, l’amplitude, la rotation et la phase indiquent « divers ».
+- Si vous sélectionnez des fixtures qui n’étaient dans aucun FX du paramètre, ils rejoignent le FX (le premier, s’il y en a plusieurs), chacun à sa place selon son numéro de fixture. Si la sélection couvre plusieurs FX du même paramètre (par exemple, un par rangée), le panneau le dit (« La sélection couvre N FX ») et un changement va à chacun : chaque FX garde sa vague et son miroir. **« Fusionner en un FX »** les réunit en un seul, sur l’horloge du premier : chaque fixture garde sa forme, mais pas sa place dans la vague de son FX.
 - Dans « FX en cours », vous voyez combien de fixtures ont quelque chose en propre (« N propres »).
 - **« Comme les autres »** retire ce qui est propre aux fixtures sélectionnés : ils refont la même chose que le FX.
 
 ### Décalage et délai par fixture
 
-Sous les contrôles d’un FX en cours, **« Par fixture »** (dépliez-le avec sa flèche) liste ses fixtures dans l’ordre du FX : numéro, nom, sa place dans la vague ou dans le pas, et deux champs que vous changez à la main. Les fixtures sélectionnés sont mis en évidence. Un changement s’applique tout de suite, sur la même horloge.
+Sous les contrôles d’un FX en cours, **« Par fixture »** (dépliez-le avec sa flèche) liste ses fixtures dans l’ordre du FX : numéro, nom, sa place dans la vague ou dans le pas (avec « Regroupement : Par groupe », aussi le groupe de son ensemble), et deux champs que vous changez à la main. Les fixtures sélectionnés sont mis en évidence. Un changement s’applique tout de suite, sur la même horloge.
 
 - **« Décalage »** (0–1440°) : de combien il va derrière les autres dans la vague. 360° est un cycle entier et, dans un FX avec pas, une place. Il s’ajoute à la vague et à la phase.
 - **« Délai »** (jusqu’à 60 s) : combien de temps plus tard il fait le FX. Quand le FX démarre (sa scène ou sa cue démarre, ou un nouveau FX dans le programmeur), il attend ce temps à la base, donc les fixtures démarrent l’un après l’autre. Ensuite il reste ce temps derrière. Il est en secondes même quand le FX suit le BPM du show ; pour suivre le tempo, utilisez le décalage.
 - **« Répartir le décalage… »** et **« Répartir le délai… »** demandent la valeur du dernier et répartissent à partir de 0 entre les fixtures sélectionnés, dans l’ordre du FX.
 - **« Sans décalage ni délai »** les retire des fixtures sélectionnés.
+- **« Réordonner par numéro »** met les fixtures du FX dans l’ordre de leurs numéros du Patch, par exemple si l’un s’est retrouvé à la fin d’une rangée. Leurs places dans la vague et leurs jumeaux du miroir suivent cet ordre.
 
 Changer la phase ou le timing les conserve, et « Comme les autres » n’y touche pas. Ce n’est pas la même chose que la phase propre de certains fixtures : cette phase remplace celle du FX ; le décalage s’y ajoute. Si vous mettez un délai plus long que le temps depuis lequel le FX tourne, ce fixture attend à la base jusqu’à l’atteindre. Le décalage et le délai sont enregistrés avec la scène ou la cue.
 
 ### Le miroir
 
-Si les fixtures qui vont à l’envers (ou avec leur propre pan ou tilt inversé) sont **tous dans une moitié** du FX, chacun suit la vague de son jumeau de l’autre côté, et la vague sort donc aussi en miroir. Le panneau l’indique par « Miroir : … ».
+Si les fixtures avec leur propre pan inversé (ou qui vont à l’envers, ou avec leur propre tilt inversé) sont **tous dans une moitié** du FX, chacun suit la vague de son jumeau de l’autre côté, et la vague sort donc aussi en miroir. Le panneau l’indique par « Miroir : … ».
 
 Exemple avec 6 beams en cercle avec vague :
 
 1. Sélectionnez les 6, choisissez **Pan / tilt**, appuyez sur **« Lancer le FX »**, figure **Cercle** et **« Vague par X »** sur « Tous ».
-2. Sélectionnez seulement les 3 derniers et activez **« À l’envers »**.
+2. Sélectionnez seulement les 3 derniers et activez **« Inverser le pan »**.
 
-Les 3 derniers tournent à l’envers et suivent la vague du 3e, du 2e et du 1er : un miroir synchronisé. Si vous mettez à l’envers un fixture sur deux (2, 4 et 6), ce n’est pas un miroir : chacun garde sa place dans la vague.
+Les 3 derniers bougent en miroir des 3 premiers et suivent la vague du 3e, du 2e et du 1er : un miroir synchronisé, avec n’importe quelle figure. **« À l’envers »** ne donne un miroir que sur les figures symétriques en pan (cercle, carré, triangle, diamant, trèfle et ligne de pan) ; sur un huit, une diagonale, un lissajous, une ligne de tilt, un ballyhoo ou une croix, chaque fixture à l’envers monte quand son jumeau descend, et le panneau n’indique pas « Miroir ». Si vous inversez un fixture sur deux (2, 4 et 6), ce n’est pas un miroir : chacun garde sa place dans la vague.
+
+L’inversion du pan ou du tilt du Patch (dans [« Limites »](patch.md#limites)) est une correction physique, pour des lyres suspendues à l’envers ou tournées : elle les fait bouger comme les autres, donc elle ne compte pas pour le miroir du FX. Le miroir se fait dans le FX.
+
+Un FX n’a qu’un miroir, entre ses deux moitiés. Pour un miroir dans chaque rangée, avec une vague dans chaque rangée, faites un FX par rangée et liez-les (**« Lier »**) : chacun avec sa vague et sa moitié inversée, tous sur la même horloge.
 
 ### Macros FX
 
-À droite, les **macros FX** d’usine par catégories : **Position** (cercle, cercle en vague, huit, ballyhoo, balayage pan, cancan, pan en miroir, carré, triangle, trèfle), **Intensité** (vague de dimmer, chenillard, aléatoire, pulsation, respiration, stroboscope, du bord au centre), **Couleur** (arc-en-ciel, rouge / bleu, feu, cyan / magenta) et **Faisceau** (zoom, iris, focus). Un clic applique la macro à la sélection.
+À droite, les **macros FX** d’usine par catégories : **Position** (cercle, cercle en vague, huit, ballyhoo, balayage pan, cancan, pan en miroir, carré, triangle, trèfle), **Intensité** (vague de dimmer, chenillard, aléatoire, pulsation, respiration, stroboscope, du bord au centre), **Couleur** (arc-en-ciel, rouge / bleu, feu, cyan / magenta) et **Faisceau** (zoom, iris, focus). Un clic applique la macro à la sélection. « Pan en miroir » inverse le pan de la seconde moitié de la sélection : un miroir avec n’importe quel nombre de têtes. Celles de couleur éteignent ce qu’elles ne font pas varier : le blanc, l’ambre et l’UV (et le jaune dans cyan / magenta), pour qu’un blanc en dessous ne les rende pas pastel.
 
-**« Enregistrer comme macro… »** enregistre les FX du programmeur comme une macro à vous, dans **« Les miennes »**, pour tous les shows. Clic droit sur une de vos macros : **« Renommer »** ou **« Supprimer »**.
+**« Enregistrer comme macro… »** enregistre les FX du programmeur comme une macro à vous, dans **« Les miennes »**, pour tous les shows. Clic droit sur une de vos macros : **« Renommer »** ou **« Supprimer »**. Deux FX du même paramètre (un cercle sur certains fixtures et un huit sur d’autres) entrent en un seul, chaque fixture avec le sien ; s’ils n’allaient pas à la même vitesse ou avec le même timing, la macro garde ceux du premier et l’indique.
 
 Une macro à vous garde ce que faisait chaque fixture du FX, selon sa place dans le FX (l’ordre dans lequel vous les avez sélectionnés) :
 
@@ -283,7 +292,7 @@ Une macro à vous garde ce que faisait chaque fixture du FX, selon sa place dans
 - ce qu’il faisait à sa façon : la forme, la taille, le sens, les inversions (un miroir) ;
 - son décalage et son délai.
 
-Quand vous l’appliquez, le premier fixture sélectionné reçoit ce qu’avait le premier, le deuxième ce qu’avait le deuxième, et ainsi de suite. Avec plus ou moins de fixtures, le premier et le dernier reçoivent ce qu’avaient le premier et le dernier, et ceux du milieu se répartissent : les éventails et les délais s’étirent, et le miroir reste un miroir. Les roues de couleurs et de gobos, le prisme et le shutter ne se répartissent pas : chaque fixture prend la valeur de la place la plus proche. Si tous avaient les mêmes valeurs et rien à leur façon, la macro sert pour n’importe quelle sélection, comme celles d’usine. Les macros enregistrées fixture par fixture portent la marque **1·2·3** ; passez la souris dessus pour voir combien de fixtures elles avaient.
+Quand vous l’appliquez, le premier fixture sélectionné reçoit ce qu’avait le premier, le deuxième ce qu’avait le deuxième, et ainsi de suite. Avec plus ou moins de fixtures, le premier et le dernier reçoivent ce qu’avaient le premier et le dernier, et ceux du milieu se répartissent : les éventails, les délais et les moitiés s’étirent, et le miroir reste un miroir. Ce qui se répète tous les 2 ou 3 fixtures (un sur deux à l’envers, deux couleurs alternées) se répète de même sur n’importe quel nombre de fixtures. Les roues de couleurs et de gobos, le prisme et le shutter ne se répartissent pas : chaque fixture prend la valeur de la place la plus proche. Si tous avaient les mêmes valeurs et rien à leur façon, la macro sert pour n’importe quelle sélection, comme celles d’usine. Les macros enregistrées fixture par fixture portent la marque **1·2·3** ; passez la souris dessus pour voir combien de fixtures elles avaient.
 
 ## Ligne de commande
 
@@ -356,9 +365,9 @@ Une cue ne garde que ce que le programmeur change par rapport à ce que les cues
 
 Le menu **« Snapshot »** contient :
 
-- **« Enregistrer les modifications dans une scène »** : met les valeurs du programmeur dans une scène statique existante.
+- **« Enregistrer les modifications dans une scène »** : met les valeurs du programmeur dans une scène statique existante. Les FX n’y entrent pas (une scène statique n’en a pas) et un avertissement l’indique ; pour les garder, utilisez **« Enregistrer… »**.
 - **« Tout ce qui sort, dans une nouvelle scène… »** : tout ce que montrent les projecteurs maintenant (scènes, modifications en direct et le mixeur, sans le grand master) devient une nouvelle scène statique, sur chaque fixture allumé. Si « Surbrillance » est active, il faut d’abord la désactiver (« Désactiver la surbrillance »). Les effets spéciaux protégés restent en dehors, même s’ils se déclenchent.
-- **« Seulement les modifications, dans une nouvelle scène… »**.
+- **« Seulement les modifications, dans une nouvelle scène… »** : aussi avec des FX (la nouvelle scène est une scène FX).
 
 ### Modifier des scènes et des cues
 

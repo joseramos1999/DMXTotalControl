@@ -35,6 +35,14 @@ RowLayout {
     property int current: 0
     readonly property var layers: info.layers || []
     readonly property var currentLayer: layers.length > 0 ? layers[Math.min(current, layers.length - 1)] : ({})
+    /** How many link groups its layers make: with more than one, each layer says its own */
+    readonly property int linkGroups: {
+        let groups = []
+        for (let l of layers)
+            if (l.link > 0 && groups.indexOf(l.link) < 0)
+                groups.push(l.link)
+        return groups.length
+    }
     /** The rhythm tapped on its button (BPM), 0: none: its FX at the BPM of
      *  the show go at it */
     readonly property real tappedBpm: (info.tap || 0) > 0 ? 60000 / info.tap : 0
@@ -108,6 +116,14 @@ RowLayout {
                             }
                         }
                         IconLabel { visible: !!row.modelData.linked; icon: Theme.iconLink; size: 11; color: Theme.warning }
+                        // its link group, when the scene has several
+                        Text {
+                            visible: !!row.modelData.linked && editor.linkGroups > 1
+                            text: row.modelData.link
+                            color: Theme.warning
+                            font.pixelSize: Theme.fontSmall
+                            font.weight: Font.Bold
+                        }
                         AppButton {
                             iconGlyph: Theme.iconTrash
                             flat: true
@@ -199,7 +215,7 @@ RowLayout {
                     implicitHeight: 28
                     checkable: true
                     checked: !!editor.currentLayer.linked
-                    ToolTip.text: qsTr("Linked FX share the speed and the timing"); ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Linked FX share the speed, the timing and the clock"); ToolTip.visible: hovered
                     onClicked: Core.effects.setFxLayer(editor.info.id, editor.current, { linked: checked })
                 }
             }
@@ -239,6 +255,7 @@ RowLayout {
                         onSetOffset: (fixtureId, key, value) => Core.effects.setFxOffset(editor.info.id, editor.current, fixtureId, key, value)
                         onFan: (key, last) => Core.effects.fanFxOffset(editor.info.id, editor.current, key, last)
                         onClearAll: Core.effects.clearFxOffsets(editor.info.id, editor.current)
+                        onSortByNumber: Core.effects.sortFxByNumber(editor.info.id, editor.current)
                     }
                 }
             }
@@ -247,8 +264,8 @@ RowLayout {
                 Layout.fillWidth: true
                 Layout.preferredHeight: editor.currentLayer.panTilt ? 130 : 80
                 fx: editor.currentLayer
-                showBpm: editor.tappedBpm > 0 ? editor.tappedBpm : Core.bpm
-                sample: (pos) => Core.effects.fxPreview(editor.info.id, editor.current, pos)
+                showBpm: editor.tappedBpm > 0 ? editor.tappedBpm : Core.exactBpm
+                sample: (pos) => Core.effects.fxLivePreview(editor.info.id, editor.current, pos)
             }
         }
     }

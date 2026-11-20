@@ -84,6 +84,8 @@ Universe::Universe(quint32 id, GrandMaster *gm, QObject *parent)
     m_modifiers.fill(NULL, UNIVERSE_SIZE);
     m_outputSource.fill(-1, UNIVERSE_SIZE);
     m_outputSourceCount = 0;
+    m_rangeFine.fill(-1, UNIVERSE_SIZE);
+    m_rangeCoarse.fill(-1, UNIVERSE_SIZE);
 
     connect(m_grandMaster, SIGNAL(valueChanged(uchar)),
             this, SLOT(slotGMValueChanged()));
@@ -565,6 +567,9 @@ void Universe::reset()
         m_postGMValues->fill(0);
 
     m_modifiers.fill(NULL, UNIVERSE_SIZE);
+    // DMX Total Control: no range pairs either
+    m_rangeFine.fill(-1, UNIVERSE_SIZE);
+    m_rangeCoarse.fill(-1, UNIVERSE_SIZE);
     m_passthrough = false; // not releasing m_passthroughValues, see comment in setPassthrough
 
     // DMX Total Control: the effects start again (Fresh: a source that
@@ -765,6 +770,15 @@ uchar Universe::applyPassthrough(int channel, uchar value)
 
 void Universe::updatePostGMValue(int channel)
 {
+    // DMX Total Control: a coarse channel with a range and its fine channel
+    // go out together, as one 16-bit value
+    if (channel >= 0 && channel < UNIVERSE_SIZE)
+    {
+        const int coarse = m_rangeFine.at(channel) >= 0 ? channel : m_rangeCoarse.at(channel);
+        if (coarse >= 0 && updatePostGMPair(coarse))
+            return;
+    }
+
     uchar value = preGMValue(channel);
 
     if (value != 0)
@@ -774,6 +788,39 @@ void Universe::updatePostGMValue(int channel)
     value = applyPassthrough(channel, value);
 
     (*m_postGMValues)[channel] = static_cast<char>(value);
+}
+
+int Universe::rangeOf16(const ChannelModifier *modifier, int value)
+{
+    // DMX Total Control: a range is a straight line from 0 to 255: from
+    // getValue(0) to getValue(255), over the 16 bits
+    if (modifier == NULL)
+        return -1;
+    const QList<QPair<uchar, uchar>> map = modifier->modifierMap();
+    if (map.count() != 2 || map.first().first != 0 || map.last().first != 255)
+        return -1;
+    const qint64 from = qint64(map.first().second) * 257;
+    const qint64 to = qint64(map.last().second) * 257;
+    const qint64 v = qBound(0, value, 65535);
+    return int(from + ((to - from) * v + (to >= from ? 32767 : -32767)) / 65535);
+}
+
+bool Universe::updatePostGMPair(int coarse)
+{
+    // (read once: a patch edit in another thread may drop the pair meanwhile,
+    // then each channel goes on its own)
+    const int fine = coarse >= 0 && coarse < UNIVERSE_SIZE ? m_rangeFine.at(coarse) : -1;
+    if (fine < 0 || fine >= UNIVERSE_SIZE)
+        return false;
+    uchar high = preGMValue(coarse), low = preGMValue(fine);
+    if (high != 0)
+        high = applyGM(coarse, high);
+    if (low != 0)
+        low = applyGM(fine, low);
+    const int out = qMax(0, rangeOf16(m_modifiers.at(coarse), (int(high) << 8) | int(low)));
+    (*m_postGMValues)[coarse] = static_cast<char>(applyPassthrough(coarse, uchar(out >> 8)));
+    (*m_postGMValues)[fine] = static_cast<char>(applyPassthrough(fine, uchar(out & 0xFF)));
+    return true;
 }
 
 /************************************************************************
@@ -1113,6 +1160,8 @@ void Universe::setChannelModifier(ushort channel, ChannelModifier *modifier)
     if (channel >= (ushort)m_modifiers.count())
         return;
 
+    // DMX Total Control: its range pair is set again after it (setChannelFine)
+    dropRangePair(channel);
     m_modifiers[channel] = modifier;
 
     if (modifier != NULL)
@@ -1173,6 +1222,48 @@ void Universe::setOutputSource(ushort channel, int source)
     m_outputSource[channel] = source;
     if (channel >= m_usedChannels)
         m_usedChannels = channel + 1;
+}
+
+void Universe::dropRangePair(int channel)
+{
+    if (channel < 0 || channel >= UNIVERSE_SIZE)
+        return;
+    const int coarse = m_rangeFine.at(channel) >= 0 ? channel : m_rangeCoarse.at(channel);
+    if (coarse < 0)
+        return;
+    const int fine = m_rangeFine.at(coarse);
+    // (the link back first: a frame that reads the fine channel then finds
+    // no pair, rather than a pair with no fine channel)
+    m_rangeCoarse[fine] = -1;
+    m_rangeFine[coarse] = -1;
+    // each one on its own again: its zero and its value through its own modifier
+    for (int ch : { coarse, fine })
+    {
+        (*m_modifiedZeroValues)[ch] = m_modifiers.at(ch) != NULL ? char(m_modifiers.at(ch)->getValue(0)) : char(0);
+        updatePostGMValue(ch);
+    }
+}
+
+void Universe::setChannelFine(ushort coarse, int fine)
+{
+    if (coarse >= UNIVERSE_SIZE)
+        return;
+    dropRangePair(coarse);
+    if (fine < 0 || fine >= UNIVERSE_SIZE || fine == int(coarse))
+        return;
+    dropRangePair(fine);
+    // only a range (an inverted one too); without one, each byte as it is
+    const ChannelModifier *modifier = m_modifiers.at(coarse);
+    const int zero = rangeOf16(modifier, 0);
+    if (zero < 0)
+        return;
+    m_rangeFine[coarse] = short(fine);
+    m_rangeCoarse[fine] = short(coarse);
+    (*m_modifiedZeroValues)[coarse] = char(zero >> 8);
+    (*m_modifiedZeroValues)[fine] = char(zero & 0xFF);
+    if (fine >= int(m_usedChannels))
+        m_usedChannels = ushort(fine + 1);
+    updatePostGMPair(coarse);
 }
 
 void Universe::resetChannelCapabilities()

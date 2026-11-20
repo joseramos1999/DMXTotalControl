@@ -381,19 +381,41 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
             const bool wide = fine != QLCChannel::invalid() && fine < UNIVERSE_SIZE;
             const bool below = fc.modulatesBelow();
             const qint64 maxValue = wide ? 0xFFFF : 0xFF;
+            // DMX Total Control: one that leaves its FX goes on moving as it
+            // fades to what's below, and leaves the fader at the end
+            qreal level = 1.0;
+            if (fc.modulationLeaving())
+            {
+                if (m_paused == false && fc.advanceModulationFade(elapsedMs))
+                {
+                    it.remove();
+                    continue;
+                }
+                level = fc.modulationLevel();
+            }
+            auto under = [&]() {
+                qint64 value = universe->valueBelow(address);
+                if (wide)
+                    value = (value << 8) + universe->valueBelow(fine);
+                return value;
+            };
             qint64 base = 0;
             qint64 offset = fc.modulationOffset();
             if (below)
             {
-                base = universe->valueBelow(address);
-                if (wide)
-                    base = (base << 8) + universe->valueBelow(fine);
+                base = under();
             }
             else
             {
+                // DMX Total Control: a base going to what's below (released
+                // under its FX), 16 bit too: those are values out of the
+                // faders, not to scale again
+                if (flags & FadeChannel::SetTarget)
+                    fc.setTarget(quint32(under()));
                 if (m_paused == false)
                     fc.nextStep(elapsedMs);
-                base = (flags & FadeChannel::Intensity) ? fc.current(compIntensity) : fc.current();
+                base = (flags & FadeChannel::Intensity) && (flags & FadeChannel::SetTarget) == 0
+                           ? fc.current(compIntensity) : fc.current();
             }
             // the fader of an intensity scales its effect too
             if (flags & FadeChannel::Intensity)
@@ -408,6 +430,12 @@ void GenericFader::write(Universe *universe, uint elapsedMs)
                 scale = 1.0 + (scale - 1.0) * compIntensity;
             if (scale != 1.0)
                 value = quint32(qBound(qint64(0), qRound64(qreal(value) * scale), maxValue));
+            // DMX Total Control: leaving, mixed with what's below
+            if (level < 1.0)
+            {
+                const qint64 from = below ? base : under();
+                value = quint32(qBound(qint64(0), from + qRound64(qreal(qint64(value) - from) * level), maxValue));
+            }
             fc.setModulatedOutput(value);
             const uchar coarse = uchar(wide ? value >> 8 : value);
             if (below)
@@ -553,6 +581,19 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
 {
     m_fadeOut = enable;
 
+    // DMX Total Control: the FX of a scene that keeps them moving fade out
+    // on their own (one already on its way keeps its fade)
+    const bool keep = enable && keepsModulated();
+    if (keep)
+    {
+        QWriteLocker l(&m_channelsLock);
+        for (FadeChannel &fc : m_channels)
+        {
+            if ((fc.flags() & FadeChannel::Modulated) && fc.modulationLeaving() == false)
+                fc.setModulationFade(fadeTime, delays.value(fc.fixture(), 0));
+        }
+    }
+
     if (fadeTime == 0 && delays.isEmpty())
         return;
 
@@ -565,10 +606,22 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
         // DMX Total Control: every channel fades to what the faders below
         // write (the write method sets the target), intensities too: from
         // the value it sends now, master included
+        if ((fc.flags() & FadeChannel::Modulated) && keep)
+            continue;
+        uint time = fadeTime;
+        uint delay = delays.value(fc.fixture(), 0);
         if (fc.flags() & FadeChannel::Modulated)
         {
             // an FX: from the last value it sent, wave and master included
-            // (its fine channel stays, then rests)
+            // (its fine channel stays, then rests). DMX Total Control: one
+            // already leaving its FX takes what is left of its fade
+            if (fc.modulationLeaving())
+            {
+                const qint64 end = qint64(fc.modulationFadeDelay()) + fc.modulationFadeTime();
+                time = uint(qMax(qint64(0), end - qint64(fc.modulationFadeElapsed())));
+                delay = 0;
+                fc.cancelModulationFade();
+            }
             quint32 output = fc.modulatedOutput();
             if (fc.modulationFine() != QLCChannel::invalid())
                 output >>= 8;
@@ -601,8 +654,8 @@ void GenericFader::setFadeOut(bool enable, uint fadeTime, const QHash<quint32, u
         fc.setTarget(0);
         fc.setElapsed(0);
         fc.setReady(false);
-        fc.setFadeTime(fc.canFade() ? fadeTime : 0);
-        fc.setDelay(delays.value(fc.fixture(), 0));
+        fc.setFadeTime(fc.canFade() ? time : 0);
+        fc.setDelay(delay);
         // DMX Total Control: a release is linear (not the curve of a cue)
         fc.setCurve(FadeChannel::CurveLinear);
         // if flashing, remove the flag and treat

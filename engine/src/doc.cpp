@@ -639,12 +639,18 @@ bool Doc::updateFixtureChannelCapabilities(quint32 id, QList<int> forcedHTP, QLi
 
     // get exclusive access to the universes list
     QList<Universe *> universes = inputOutputMap()->claimUniverses();
+    // DMX Total Control: and no frame runs meanwhile (the universe threads
+    // would send the channels half set, or read a range pair being dropped)
+    for (Universe *universe : universes)
+        universe->lockFrames();
 
     // Update the Fixture Universe with the current channel states
     // DMX Total Control: each channel in its universe (a fixture across two
     // universes wrote past the end of the first one)
     applyChannelCapabilities(fixture, universes, fixture->crossUniverse());
 
+    for (Universe *universe : universes)
+        universe->unlockFrames();
     inputOutputMap()->releaseUniverses(true);
 
     return true;
@@ -691,6 +697,32 @@ void Doc::applyChannelCapabilities(Fixture *fixture, const QList<Universe *> &un
             quint32 out = fixture->outputChannel(i);
             universe->setOutputSource(fxAddress + out, out != i ? int(fxAddress + i) : -1);
         }
+    }
+
+    // DMX Total Control: the fine channel of each coarse pan and tilt (of
+    // each head, else the first ones of the mode): a range of the Patch
+    // limits goes on the 16-bit value of the two (it scaled the coarse byte
+    // alone, and a slow move stepped back about every 5 steps)
+    const QLCFixtureMode *mode = fixture->fixtureMode();
+    if (mode == NULL)
+        return;
+    QList<quint32> paired;
+    auto pair = [&](quint32 coarse, quint32 fine) {
+        if (coarse == QLCChannel::invalid() || fine == QLCChannel::invalid() || coarse == fine ||
+            paired.contains(coarse) || paired.contains(fine))
+            return;
+        paired << coarse << fine;
+        quint32 uniCoarse, addrCoarse, uniFine, addrFine;
+        if (channelAddress(fixture, coarse, crossUniverse, universes.count(), uniCoarse, addrCoarse) == false ||
+            channelAddress(fixture, fine, crossUniverse, universes.count(), uniFine, addrFine) == false)
+            return;
+        universes.at(int(uniCoarse))->setChannelFine(ushort(addrCoarse), uniFine == uniCoarse ? int(addrFine) : -1);
+    };
+    for (QLCChannel::Group group : { QLCChannel::Pan, QLCChannel::Tilt })
+    {
+        for (int head = 0; head < fixture->heads(); head++)
+            pair(fixture->channelNumber(group, QLCChannel::MSB, head), fixture->channelNumber(group, QLCChannel::LSB, head));
+        pair(mode->channelNumber(group, QLCChannel::MSB), mode->channelNumber(group, QLCChannel::LSB));
     }
 }
 
@@ -740,9 +772,12 @@ void Doc::setFixturesProtectedFromGrandMaster(const QList<Fixture *> &fixtures, 
 
 void Doc::refreshChannelCapabilities()
 {
-    // DMX Total Control: in one go, the timer doesn't tick in the middle;
-    // the fixtures across two universes are set again too
+    // DMX Total Control: in one go, the timer doesn't tick in the middle
+    // and no frame runs (as in a patch edit); the fixtures across two
+    // universes are set again too
     QList<Universe *> universes = inputOutputMap()->claimUniverses();
+    for (Universe *universe : universes)
+        universe->lockFrames();
     for (Universe *universe : universes)
         universe->resetChannelCapabilities();
 
@@ -754,6 +789,8 @@ void Doc::refreshChannelCapabilities()
     for (Universe *universe : universes)
         universe->refreshFaderFixtures(this);
 
+    for (Universe *universe : universes)
+        universe->unlockFrames();
     inputOutputMap()->releaseUniverses(true);
 }
 

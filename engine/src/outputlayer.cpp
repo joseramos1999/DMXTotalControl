@@ -587,8 +587,21 @@ QByteArray Universe::composeFrame(bool blackout, const OutputLayer *layer, QByte
         for (int ch = 0; ch < m_usedChannels && ch < values.size(); ch++)
         {
             ChannelModifier *modifier = m_modifiers.at(ch);
-            if (modifier != NULL && (m_channelsMask->at(ch) & HTP) == 0)
+            if (modifier == NULL || (m_channelsMask->at(ch) & HTP))
+                continue;
+            // a coarse channel with a range and its fine one: on the 16-bit value
+            const int fine = m_rangeFine.at(ch);
+            if (fine >= 0 && fine < values.size())
+            {
+                const int out = qMax(0, rangeOf16(modifier, (int(uchar(m_blackoutValues->at(ch))) << 8) |
+                                                            int(uchar(m_blackoutValues->at(fine)))));
+                values[ch] = char(out >> 8);
+                values[fine] = char(out & 0xFF);
+            }
+            else if (m_rangeCoarse.at(ch) < 0)
+            {
                 values[ch] = char(modifier->getValue(uchar(m_blackoutValues->at(ch))));
+            }
         }
     }
     else

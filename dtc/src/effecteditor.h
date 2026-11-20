@@ -185,9 +185,12 @@ public:
     /*********************************************************************
      * FX
      *********************************************************************/
-    /** Change a layer of a scene with FX (the linked ones share the timing) */
+    /** Change a layer of a scene with FX (the ones of its link group share the timing) */
     Q_INVOKABLE void setFxLayer(quint32 id, int index, const QVariantMap &props);
     Q_INVOKABLE void removeFxLayer(quint32 id, int index);
+    /** DMX Total Control: the fixtures of the layer $index of the FX scene $id
+     *  go in the order of their numbers in the patch */
+    Q_INVOKABLE void sortFxByNumber(quint32 id, int index);
     /** DMX Total Control: the shift (degrees) or the delay (ms) of a fixture
      *  of a layer ($key: FxTools::offsetKeys), live while the scene plays */
     Q_INVOKABLE void setFxOffset(quint32 id, int index, quint32 fixtureId, const QString &key, int value);
@@ -198,12 +201,19 @@ public:
     Q_INVOKABLE void clearFxOffsets(quint32 id, int index);
     /** Each fixture of a layer at $cyclePos, for a preview */
     Q_INVOKABLE QVariantList fxPreview(quint32 id, int index, qreal cyclePos) const;
+    /** The same as it goes out while it plays (FXScene::livePreviewLayer) */
+    Q_INVOKABLE QVariantList fxLivePreview(quint32 id, int index, qreal cyclePos) const;
     /** The shapes, to draw them */
     Q_INVOKABLE QVariantList fxModeCurve(int mode, int samples = 48) const;
     Q_INVOKABLE QVariantList fxFigurePath(int figure, int samples = 64) const;
+    /** Whether $mode goes from the last fixture to the first (an arrow on its drawing) */
+    Q_INVOKABLE bool fxModeReversed(int mode) const;
     /** A Move FX or a Curve FX becomes a scene with FX, with the same ID
      *  (its groups, buttons and mappings follow) */
     Q_INVOKABLE bool convertToFx(quint32 id);
+    /** What changes when $id becomes an FX (convertToFx), for the user to
+     *  confirm it: what the FX can't do the same. Empty: it plays the same */
+    Q_INVOKABLE QStringList convertNotes(quint32 id) const;
 
 signals:
     /** A function was changed by the editor; QML refreshes its view */

@@ -258,7 +258,8 @@ Item {
                     }
                     MenuItem {
                         text: qsTr("Only the edits into a new scene…")
-                        enabled: Core.programmer.hasValues
+                        // (the FX too: they make an FX scene)
+                        enabled: page.hasContent
                         onTriggered: recordDialog.openFor(false, true)
                     }
                 }

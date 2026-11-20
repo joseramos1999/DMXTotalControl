@@ -980,6 +980,7 @@ QString PatchManager::importTableData(const QByteArray &data, const QVariantMap 
                 m_aims.insert(id, setup);
         }
     }
+    shareOrder();
 
     // the groups: per fixture type, per layer, the table's own; a group of
     // that name already there gets the ones it doesn't have

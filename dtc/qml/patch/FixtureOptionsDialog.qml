@@ -175,17 +175,32 @@ Popup {
             Layout.fillWidth: true
             spacing: 14
             visible: !!dialog.options.hasPan || !!dialog.options.hasTilt
+            // (several that differ: off, and said, as the protection below)
             Row {
                 spacing: 6
                 visible: !!dialog.options.hasPan
                 AppSwitch { checked: !!dialog.options.invertPan; onToggled: dialog.set({ invertPan: checked }) }
                 Text { text: qsTr("Invert pan"); color: Theme.text; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    visible: !!dialog.options.invertPanMixed
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("(only some)")
+                    color: Theme.readable(Theme.warning)
+                    font.pixelSize: Theme.fontSmall
+                }
             }
             Row {
                 spacing: 6
                 visible: !!dialog.options.hasTilt
                 AppSwitch { checked: !!dialog.options.invertTilt; onToggled: dialog.set({ invertTilt: checked }) }
                 Text { text: qsTr("Invert tilt"); color: Theme.text; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    visible: !!dialog.options.invertTiltMixed
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("(only some)")
+                    color: Theme.readable(Theme.warning)
+                    font.pixelSize: Theme.fontSmall
+                }
             }
             Row {
                 spacing: 6

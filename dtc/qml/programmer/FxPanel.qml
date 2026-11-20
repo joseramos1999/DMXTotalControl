@@ -37,6 +37,14 @@ RowLayout {
     readonly property var params: Core.programmer.fxParams
     readonly property bool hasSelection: Core.programmer.selection.length > 0
     property string status: ""
+    /** How many link groups the running FX make: with more than one, each FX says its own */
+    readonly property int linkGroups: {
+        let groups = []
+        for (let l of Core.programmer.fxLayers)
+            if (l.link > 0 && groups.indexOf(l.link) < 0)
+                groups.push(l.link)
+        return groups.length
+    }
 
     function refresh() {
         fx = param.length > 0 && hasSelection ? Core.programmer.fxOf(param) : ({})
@@ -205,12 +213,22 @@ RowLayout {
                         }
                     }
                     IconLabel { visible: !!runRow.modelData.linked; icon: Theme.iconLink; size: 10; color: Theme.warning }
+                    // its link group, when there are several
+                    Text {
+                        visible: !!runRow.modelData.linked && panel.linkGroups > 1
+                        text: runRow.modelData.link
+                        color: Theme.warning
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
+                    }
                     AppButton {
                         iconGlyph: Theme.iconClose
                         implicitHeight: 24
                         flat: true
-                        ToolTip.text: qsTr("Stop this FX"); ToolTip.visible: hovered
-                        onClicked: { Core.programmer.selectFx(runRow.modelData.index); Core.programmer.stopFx(runRow.modelData.param) }
+                        ToolTip.text: runRow.modelData.linked ? qsTr("Stop this FX and the ones linked to it") : qsTr("Stop this FX")
+                        ToolTip.visible: hovered
+                        // the whole FX and its link group; the selection stays
+                        onClicked: Core.programmer.stopFxAt(runRow.modelData.index)
                     }
                 }
                 MouseArea {
@@ -266,7 +284,7 @@ RowLayout {
                 checkable: true
                 enabled: !!panel.fx.active
                 checked: !!panel.fx.linked
-                ToolTip.text: qsTr("Linked FX share the speed and the timing (and stop together)"); ToolTip.visible: hovered
+                ToolTip.text: qsTr("Linked FX share the speed, the timing and the clock, and stop together"); ToolTip.visible: hovered
                 onClicked: panel.edit({ linked: checked })
             }
             AppButton {
@@ -296,6 +314,28 @@ RowLayout {
                                       : qsTr("This FX is also on other fixtures. The shape, size, direction and phase change only on the selected ones; the speed and the timing on the whole FX, so they all stay in sync.")
             color: Theme.textDim
             font.pixelSize: Theme.fontSmall
+        }
+        // the selection is on several FX of the parameter: each one stays as it is
+        RowLayout {
+            Layout.fillWidth: true
+            visible: panel.hasSelection && (panel.fx.spans || 0) > 1
+            spacing: 8
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: qsTr("The selection spans %n FX: a change goes to each one of them.", "", panel.fx.spans || 0)
+                color: Theme.accent
+                font.pixelSize: Theme.fontSmall
+            }
+            AppButton {
+                text: qsTr("Merge into one FX")
+                // (not the glyph of «Link»: merging makes one FX, for good)
+                iconGlyph: Theme.iconCompress
+                implicitHeight: 28
+                ToolTip.text: qsTr("One FX of them, on the clock of the first one: each fixture keeps its shape, not its place in the wave of its FX")
+                ToolTip.visible: hovered
+                onClicked: Core.programmer.mergeFx(panel.param)
+            }
         }
         // a dimmer FX on fixtures without a dimmer
         Text {
@@ -330,7 +370,7 @@ RowLayout {
             Layout.fillWidth: true
             visible: panel.hasSelection && !!panel.fx.mirror
             wrapMode: Text.WordWrap
-            text: qsTr("Mirror: the fixtures that go the other way round follow the wave of their twin on the other side.")
+            text: qsTr("Mirror: the inverted or backwards fixtures of one side follow the wave of their twin on the other side.")
             color: Theme.textDim
             font.pixelSize: Theme.fontSmall
         }
@@ -350,6 +390,7 @@ RowLayout {
                 FxControls {
                     id: fxControls
                     Layout.fillWidth: true
+                    selectionBased: true
                     fx: panel.fx
                     sets: panel.fx.sets || 1
                     partial: !!panel.fx.partial
@@ -364,6 +405,7 @@ RowLayout {
                     onSetOffset: (fixtureId, key, value) => Core.programmer.setFxOffset(panel.param, fixtureId, key, value)
                     onFan: (key, last) => Core.programmer.fanFxOffset(panel.param, key, last)
                     onClearAll: Core.programmer.clearFxOffsets(panel.param)
+                    onSortByNumber: Core.programmer.sortFxByNumber(panel.param)
                 }
             }
         }
@@ -373,7 +415,7 @@ RowLayout {
             Layout.preferredHeight: panel.fx.panTilt ? 110 : 70
             visible: !!panel.fx.active
             fx: panel.fx
-            sample: (pos) => Core.programmer.fxPreview(panel.param, pos)
+            sample: (pos) => Core.programmer.fxLivePreview(panel.param, pos)
         }
     }
 
@@ -503,8 +545,11 @@ RowLayout {
             implicitHeight: 28
             enabled: Core.programmer.fxLayers.length > 0
             onClicked: prompt.ask(qsTr("Name of the macro"), "", name => {
-                if (Core.fxMacros.save(name).length > 0)
-                    panel.say(qsTr("Saved in your macros"))
+                if (Core.fxMacros.save(name).length > 0) {
+                    // (FX of a parameter at other speeds: it says which one stayed)
+                    const note = Core.fxMacros.saveNote()
+                    panel.say(note.length > 0 ? qsTr("Saved in your macros") + "  ·  " + note : qsTr("Saved in your macros"))
+                }
             })
         }
     }

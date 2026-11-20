@@ -232,6 +232,9 @@ public:
         QList<FXScene::Layer> fx;
         /** the uid of the cue that holds each FX slot */
         QHash<FxKey, quint32> fxOwner;
+        /** DMX Total Control: the uid of the cue each layer of fx comes from
+         *  (its link group is that cue's; not compared) */
+        QList<quint32> fxCues;
 
         bool operator==(const State &other) const;
         bool operator!=(const State &other) const { return !(*this == other); }
@@ -345,6 +348,9 @@ public:
     State stateBefore(int index) const;
     /** What the stage shows on cue $index (empty for -1 or out of range) */
     State trackedState(int index) const;
+    /** DMX Total Control: what the stage would show on cue $index of $cues,
+     *  as trackedState() (an edit before it goes in) */
+    static State trackedStateOf(const QList<Cue> &cues, bool tracking, int index);
     /** trackedState() of every cue, in one pass; $cues gets the cues they
      *  are of (the list may change after the call) */
     QList<State> trackedStates(QList<Cue> *cues = nullptr) const;
@@ -648,8 +654,10 @@ private:
     /** One GO, BACK or jump; true when it applied a cue */
     bool processActionLocked(const Action &action, const QList<Universe *> &universes);
     /** DMX Total Control, Chase: the ms of a step of its own speed (cue ms):
-     *  of its BPM or the show tempo, by the multiplier; 20 at least */
+     *  of its BPM or the show tempo, by the multiplier; 20 at least. Its
+     *  whole ms; chasePeriodMsLocked() with the fractions */
     uint chasePeriodLocked() const;
+    qreal chasePeriodMsLocked() const;
     /** The same, or the tapped rhythm when it has one: the step that plays */
     uint chaseBeatLocked() const;
     /** The steps of a lap: the cues, there and back for a Bounce */
@@ -742,10 +750,15 @@ private:
      *  the other byte of a coarse/fine pair that the FX doesn't name */
     QHash<Key, int> fxChannelsOf(const QList<FXScene::Layer> &layers) const;
     /** Makes the FX player play $layers around $bases: started with $fadeMs,
-     *  updated at once while it runs, stopped with $fadeMs when none are left */
+     *  updated at once while it runs, stopped with $fadeMs when none are left.
+     *  DMX Total Control: what a GO changes in them fades with the cue, after
+     *  $delayMs on $curve, each channel of $times in its own (ms, delay): a
+     *  live edit snaps */
     void playFxLocked(const QList<Universe *> &universes, const QList<FXScene::Layer> &layers,
+                      const QList<quint32> &layerCues,
                       const QHash<Key, uchar> &bases, const QHash<Key, int> &channels,
-                      uint fadeMs, qreal level, ApplyMode mode);
+                      uint fadeMs, qreal level, ApplyMode mode, uint delayMs = 0, int curve = 0,
+                      const QHash<Key, QPair<uint, uint>> &times = QHash<Key, QPair<uint, uint>>());
     /** Publishes m_status (also from the setters, in any thread: it only reads
      *  members guarded by m_mutex) */
     void updateStatusLocked();
@@ -821,8 +834,13 @@ private:
     /** Move in black: the uid of the cue it prepared since the last GO (0: none) */
     quint32 m_mibUid;
     /** Chase: virtual ms since its step began (its own speed counts them),
-     *  the way a Bounce goes, and the uid of the step Random drew for next */
-    uint m_chaseElapsed;
+     *  the way a Bounce goes, and the uid of the step Random drew for next.
+     *  DMX Total Control: at the BPM of the show it goes on its beat: the
+     *  beat clock when its step began and at the last frame, in beats (the
+     *  multiplier of now takes them; -1: none) */
+    qreal m_chaseElapsed;
+    qreal m_chaseBeatAt;
+    qreal m_chaseBeatLast;
     int m_bounceDir;
     quint32 m_randomUid;
     QRandomGenerator m_random;
@@ -870,6 +888,9 @@ private:
     QHash<Key, uchar> m_fxBases;
     /** the channels the player sends, and their layer in m_fxPlaying (see fxChannelsOf) */
     QHash<Key, int> m_fxChannels;
+    /** DMX Total Control: the link group the player plays for each group of
+     *  each cue (cue uid, link) */
+    QHash<QPair<quint32, int>, int> m_fxLinkIds;
 
     Status m_status;
     mutable QMutex m_statusMutex;

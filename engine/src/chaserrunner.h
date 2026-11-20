@@ -54,6 +54,7 @@ typedef struct
     Universe::BlendMode m_blendMode;    //! The original Function blend mode
     int m_intensityOverrideId;          //! An ID to control the step intensity
     int m_pIntensityOverrideId;         //! An ID to control the step parent intensity
+    double m_beatStart;                 //! DMX Total Control: in beats, the beat it starts on (-1: none)
 } ChaserRunnerStep;
 
 class ChaserRunner final : public QObject
@@ -180,6 +181,7 @@ private:
     QVector<int> m_order;                   //! Array of step indices in a randomized order
     int m_stepsDone;                        //! DMX Total Control: steps ended, to count the loops
     bool m_held;                            //! DMX Total Control: the loops are over, the last step holds
+    double m_beatNext;                      //! DMX Total Control: in beats, where the step that ended ended (-1: none)
 
     /** DMX Total Control: a step ended, on its time or left for the next one:
      *  count it for the loops */

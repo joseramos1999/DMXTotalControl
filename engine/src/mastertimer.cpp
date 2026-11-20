@@ -22,6 +22,7 @@
 #include <QSettings>
 #include <QMutexLocker>
 #include <QThread>
+#include <cmath>
 
 #if defined(WIN32) || defined(Q_OS_WIN)
 #   include "mastertimer-win32.h"
@@ -71,13 +72,20 @@ MasterTimer::MasterTimer(Doc* doc)
     , m_currentBPM(120)
     , m_beatTimeDuration(500)
     , m_beatRequested(false)
-    , m_lastBeatOffset(0)
+    , m_bpm(120.0)
+    , m_beats(0.0)
+    , m_externalBeats(0)
+    , m_beatTickAt(-1)
+    , m_anchorAt(-1)
+    , m_anchors(0)
 {
     Q_ASSERT(doc != NULL);
     Q_ASSERT(d_ptr != NULL);
 
     // DMX Total Control: how old the last MIDI timecode is
     m_timecodeClock.start();
+    // DMX Total Control: the real time of the beat clock
+    m_beatClock.start();
 
     QSettings settings;
     QVariant var = settings.value(MASTERTIMER_FREQUENCY);
@@ -99,6 +107,8 @@ MasterTimer::~MasterTimer()
 void MasterTimer::start()
 {
     Q_ASSERT(d_ptr != NULL);
+    // DMX Total Control: the beat clock goes on from its first tick
+    m_beatTickAt = -1;
     d_ptr->start();
 }
 
@@ -125,36 +135,9 @@ void MasterTimer::timerTick(bool wakeUniverses)
     qDebug() << "[MasterTimer] *********** tick:" << ticksCount++ << "**********";
 #endif
 
-    switch (m_beatSourceType)
-    {
-        case Internal:
-        {
-            int elapsedTime = qRound((double)m_beatTimer.nsecsElapsed() / 1000000) + m_lastBeatOffset;
-            //qDebug() << "Elapsed beat:" << elapsedTime;
-            if (elapsedTime >= m_beatTimeDuration)
-            {
-                // it's time to fire a beat
-                m_beatRequested = true;
-
-                // restart the time for the next beat, starting at a delta
-                // milliseconds, otherwise it will generate an unpleasant drift
-                //qDebug() << "Elapsed:" << elapsedTime << ", delta:" << elapsedTime - m_beatTimeDuration;
-                m_lastBeatOffset = elapsedTime - m_beatTimeDuration;
-                m_beatTimer.restart();
-
-                // inform the listening classes that a beat is happening
-                emit beat();
-            }
-        }
-        break;
-        case External:
-        break;
-
-        case None:
-        default:
-            m_beatRequested = false;
-        break;
-    }
+    // DMX Total Control: the beats come from the beat clock (it kept whole ms
+    // a beat: 468 ms at 128 BPM, which the FX at that BPM left behind)
+    advanceBeatClock(wakeUniverses == false);
 
     QList<Universe *> universes = doc->inputOutputMap()->claimUniverses();
 
@@ -516,10 +499,9 @@ void MasterTimer::setBeatSourceType(MasterTimer::BeatsSourceType type)
     if (type == m_beatSourceType)
         return;
 
-    // alright, this causes a time drift of maximum 1ms per beat
-    // but at the moment I am not looking for a better solution
-    m_beatTimeDuration = 60000 / m_currentBPM;
-    m_beatTimer.restart();
+    // DMX Total Control: the beat clock goes on (the beats of an external
+    // source count from where it is)
+    m_externalBeats.store(0);
 
     m_beatSourceType = type;
 }
@@ -531,14 +513,11 @@ MasterTimer::BeatsSourceType MasterTimer::beatSourceType() const
 
 void MasterTimer::requestBpmNumber(int bpm)
 {
-    if (bpm == m_currentBPM)
+    if (bpm == m_currentBPM && qFuzzyCompare(m_bpm.load(), double(bpm)))
         return;
 
-    m_currentBPM = bpm;
-    m_beatTimeDuration = 60000 / m_currentBPM;
-    m_beatTimer.restart();
-
-    emit bpmNumberChanged(bpm);
+    // DMX Total Control: the exact BPM is that whole number
+    requestBpm(bpm);
 }
 
 int MasterTimer::bpmNumber() const
@@ -553,7 +532,9 @@ int MasterTimer::beatTimeDuration() const
 
 int MasterTimer::timeToNextBeat() const
 {
-    return m_beatTimeDuration - m_beatTimer.elapsed();
+    // DMX Total Control: from the beat clock
+    const double beats = m_beats.load();
+    return int(std::round((std::floor(beats) + 1.0 - beats) * beatDuration()));
 }
 
 int MasterTimer::nextBeatTimeOffset() const
@@ -582,8 +563,111 @@ bool MasterTimer::isBeat() const
 void MasterTimer::requestBeat()
 {
     // forceful request of a beat, processed at
-    // the next timerTick call
-    m_beatRequested = true;
+    // the next timerTick call. DMX Total Control: counted, so that one asked
+    // for while a tick runs is not lost (the tick clears m_beatRequested)
+    m_externalBeats.fetch_add(1);
+}
+
+/*****************************************************************************
+ * The beat clock (DMX Total Control)
+ *****************************************************************************/
+
+void MasterTimer::requestBpm(qreal bpm)
+{
+    // (no tempo is no clock: it stays where it was)
+    if (bpm <= 0 || qFuzzyCompare(m_bpm.load(), double(bpm)))
+        return;
+
+    m_bpm.store(bpm);
+    m_currentBPM = qMax(1, qRound(bpm));
+    m_beatTimeDuration = qMax(1, qRound(60000.0 / bpm));
+
+    emit bpmNumberChanged(m_currentBPM);
+}
+
+qreal MasterTimer::bpm() const
+{
+    return m_bpm.load();
+}
+
+qreal MasterTimer::beatDuration() const
+{
+    return 60000.0 / qMax(0.001, m_bpm.load());
+}
+
+qreal MasterTimer::beatPosition() const
+{
+    return m_beats.load();
+}
+
+void MasterTimer::anchorBeat()
+{
+    m_anchorAt.store(m_beatClock.nsecsElapsed());
+}
+
+int MasterTimer::beatAnchors() const
+{
+    return m_anchors.load();
+}
+
+/** (a whole number a little below it counts as it: sums of fractions) */
+static double wholeBeats(double beats)
+{
+    return std::floor(beats + 1e-7);
+}
+
+void MasterTimer::advanceBeatClock(bool offline)
+{
+    // the time since the last tick: real ms in the timer thread (a tick that
+    // came late goes as far), a tick offline
+    const qint64 now = m_beatClock.nsecsElapsed();
+    double ms = double(s_tick);
+    if (offline == false)
+        ms = m_beatTickAt < 0 ? 0.0 : double(now - m_beatTickAt) / 1e6;
+    m_beatTickAt = offline ? -1 : now;
+
+    const double bpm = m_bpm.load();
+    const double before = m_beats.load();
+    const double step = ms * bpm / 60000.0;
+    double beats = before + step;
+
+    // a beat now (the show TAP): the clock at that time goes to its nearest
+    // whole beat, and on from there
+    const qint64 at = m_anchorAt.exchange(-1);
+    if (at >= 0)
+    {
+        const double late = offline ? 0.0 : qBound(0.0, double(now - at) / 1e6 * bpm / 60000.0, step);
+        beats = std::round(beats - late) + late;
+        m_anchors.fetch_add(1);
+    }
+
+    const bool requested = m_externalBeats.exchange(0) > 0;
+    if (requested)
+        m_beatRequested = true;
+    switch (m_beatSourceType)
+    {
+        case Internal:
+            // a beat at each whole number it passes
+            if (wholeBeats(beats) > wholeBeats(before))
+            {
+                m_beatRequested = true;
+                emit beat();
+            }
+        break;
+        case External:
+            // the beats of the source are the whole numbers: on one, the
+            // clock goes to the nearest one. In between it runs at the BPM,
+            // also when none comes (a break with no kick, a MIDI clock that
+            // stopped: what goes on the beat stood still)
+            if (requested)
+                beats = std::round(beats);
+        break;
+        case None:
+        default:
+            m_beatRequested = false;
+        break;
+    }
+    m_beats.store(beats);
 }
 
 /*****************************************************************************

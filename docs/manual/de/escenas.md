@@ -39,7 +39,7 @@ Drücken Sie **„Neu“**:
 - **Der Ordner** (Ordnersymbol): die Szene in einen Ordner verschieben.
 - **„Testen“** / **„Stopp“**: spielt sie jetzt ab, außerhalb der Gruppen. Cuelists haben ihr eigenes GO.
 - **„In Gruppe…“**: fügt sie einer Live-Gruppe hinzu.
-- **In Schritte umwandeln** (Racks, FX, Colour FX, Move FX, Curve FX und Chaser): nimmt einen Zyklus in eine neue Schritte-Szene auf, nur mit den Kanälen, denen die Szene einen Wert gibt: Die anderen kommen nicht in die Schritte, auch wenn sie einen Standardwert haben (Pan oder Zoom in der Mitte bei vielen Moving Heads). Hat ein FX Verzögerungen, wird der Zyklus aufgenommen, wenn alle seine Fixtures gestartet sind.
+- **In Schritte umwandeln** (Racks, FX, Colour FX, Move FX, Curve FX und Chaser): nimmt einen Zyklus in eine neue Schritte-Szene auf, nur mit den Kanälen, denen die Szene einen Wert gibt: Die anderen kommen nicht in die Schritte, auch wenn sie einen Standardwert haben (Pan oder Zoom in der Mitte bei vielen Moving Heads). Hat ein FX Verzögerungen, wird der Zyklus aufgenommen, wenn alle seine Fixtures gestartet sind. Der Zyklus ist der, mit dem sie läuft: auf „BPM der Show“ mit den BPM der Show oder ihrem Tap-Rhythmus, und mit einer Wartezeit der ganze Durchlauf. Folgen alle ihre FX den BPM der Show und hat die Szene keinen Tap-Rhythmus, sind die Schritte in Schlägen (BPM-Modus) und folgen dem Schlag der Show; sonst sind sie in Sekunden, im Tempo von jetzt.
 - **In eine Cuelist umwandeln** (Schritte und Chaser): siehe [Cuelists](escenas.md#cuelists).
 - **„QLC+“** (Cuelists): speichert eine Kopie der Show für QLC+; siehe [Cuelists und QLC+](escenas.md#cuelists-und-qlc).
 - **Exportieren**, **„Duplizieren“** und **„Löschen“** (die Szene wird auch aus ihren Gruppen und Racks entfernt).
@@ -88,7 +88,7 @@ Eine FX-Szene hat **Grundwerte** und eine oder mehrere **FX-Ebenen**. Sie entste
 
 - Links die Liste der FX: Parameter, Fixtures und Tempo (auf „BPM der Show“ der Tap-Rhythmus der Szene, wenn sie einen hat). Der Papierkorb entfernt eine Ebene.
 - Rechts die Regler der gewählten Ebene (dieselben wie unter Programmieren) und ihre animierte Vorschau. Änderungen wirken live, während die Szene läuft.
-- **„Verknüpfen“**: Verknüpfte Ebenen teilen Tempo und Timing.
+- **„Verknüpfen“**: Verknüpfte Ebenen teilen Tempo und Timing und laufen auf derselben Uhr. Eine Ebene, die Sie hier verknüpfen, kommt in die erste Verknüpfungsgruppe der Szene; hat die Szene mehrere (im Programmer gemacht), zeigt jede verknüpfte Ebene die Nummer ihrer Gruppe.
 - Machen einige Fixtures den FX auf eigene Weise, erscheint ein Hinweis: Ändern Sie hier Form, Größe, Richtung oder Phase, tun danach alle dasselbe.
 - **„Pro Fixture“**: Versatz und Verzögerung jedes Fixtures, auch live. Hier gelten „… verteilen“ und „Ohne Versatz und Verzögerung“ für alle (siehe [Versatz und Verzögerung pro Fixture](programar.md#versatz-und-verzögerung-pro-fixture)).
 - Um Ebenen hinzuzufügen oder die Grundwerte zu ändern: **„Im Programmer bearbeiten“** und danach **„Programmer in dieser Szene speichern“**.
@@ -116,7 +116,7 @@ Colour FX, Mappings auf dem 2D-Plan, Curve FX, Move FX, „Auswahl des Programme
 
 Das sind Effekte aus dem früheren Modul: **Move FX** bewegen Pan/Tilt in einer Form, und **Curve FX** geben Kanälen eine Welle (Sinus, Dreieck, Rampen, Rechteck, Zufall, Stroboskop…). Sie finden sie in alten Shows oder in Shows von QLC+; über „Neu“ werden sie nicht mehr erstellt.
 
-Sie laufen weiter wie bisher und haben ihren Editor (Form, Breite, Höhe, Drehung, Position, Phase, Verteilung auf die Fixtures, symmetrisch, relativ…). Ein Hinweis bietet **„In FX umwandeln“** an: Sie wechseln zum FX-Editor, auch im Programmer, und Gruppen, SHOW-Tasten und Zuordnungen behalten sie. Die Phase eines Move FX wird zur „Phase“ des FX, und der Startversatz jedes Fixtures zu seinem „Versatz“ ([Versatz und Verzögerung pro Fixture](programar.md#versatz-und-verzögerung-pro-fixture)).
+Sie laufen weiter wie bisher und haben ihren Editor (Form, Breite, Höhe, Drehung, Position, Phase, Verteilung auf die Fixtures, symmetrisch, relativ…). Ein Hinweis bietet **„In FX umwandeln“** an: Sie wechseln zum FX-Editor, auch im Programmer, und Gruppen, SHOW-Tasten und Zuordnungen behalten sie. Die Phase eines Move FX wird zur „Phase“ des FX, und der Startversatz jedes Fixtures zu seinem „Versatz“ ([Versatz und Verzögerung pro Fixture](programar.md#versatz-und-verzögerung-pro-fixture)). Vor dem Umwandeln sagt eine Bestätigung, was sich ändert, falls sich etwas ändert (ein Blatt wird ein Kreis, ein Curve FX mit anderem Tastverhältnis ist den halben Zyklus an…). Der Rest bleibt gleich: die Figur, ihre Drehung und wo sie beginnt, die Richtung jedes Fixtures (sein eigenes „Rückwärts“) und „Symmetrisch“ (die zweite Hälfte mit invertiertem Pan). Es lässt sich nicht rückgängig machen.
 
 ### Effekt-Rack
 
@@ -137,7 +137,7 @@ Eine **Superszene** ist eine Zeitleiste mit Spuren für Szenen und Audio. Sie wi
 
 ### Die Werkzeugleiste
 
-- **„Abspielen“** / **„Stopp“** (**Leertaste**): ab dem Cursor. **⏮** geht zum Anfang zurück. Daneben sehen Sie die Zeit (und den Takt).
+- **„Abspielen“** / **„Stopp“** (**Leertaste**): ab dem Cursor (eine Szene, die mitten in ihrem Block beginnt, auch ein FX, ist dort, wo sie wäre). **⏮** geht zum Anfang zurück. Daneben sehen Sie die Zeit (und den Takt).
 - Die Pfeile **Rückgängig** und **Wiederherstellen** (**Strg+Z** / **Strg+Y**). Siehe [Rückgängig machen](escenas.md#rückgängig-machen).
 - **„Einfügen“** (**Strg+V**): die kopierten Blöcke, am Cursor und ab der ausgewählten Spur. Siehe [Kopieren und einfügen](escenas.md#kopieren-und-einfügen).
 - **„Zeit“** / **„Takte“**: das Raster. Bei Takten: die **BPM**, die Taktart (**4/4**, **3/4**, **2/4**) und **„Takt 1 hier“**, damit der erste Takt am Cursor beginnt und zur Musik passt.
@@ -259,7 +259,7 @@ Oben im Editor:
 - **„Zurück“**: die Zeiten von BACK: **„Cue-Zeiten“** oder **„Feste Zeit“**.
 - **„Priorität“**.
 - **„GO im Takt“**: „Aus“, „BeatGO“ oder „Puls“; mit BeatGO oder Puls kommt bei jeder Unterteilung ein GO.
-- **„Tap-Rhythmus“**: der Rhythmus, den Sie durch mehrmaliges Drücken ihrer Taste vorgegeben haben, in BPM: ein GO auf jeden Schlag. Solange sie ihn hat, zählen ihre Zeiten für Folgen und Warten nicht. **„Entfernen“** kehrt zu ihren Zeiten zurück.
+- **„Tap-Rhythmus“**: der Rhythmus, den Sie durch mehrmaliges Drücken ihrer Taste vorgegeben haben, in BPM: ein GO auf jeden Schlag. Solange sie ihn hat, zählen ihre Zeiten für Folgen und Warten nicht. Ihre FX auf „BPM der Show“ laufen auch in diesem Rhythmus, und die Drücke bewegen sie wie bei einer FX-Szene; ohne Tap-Rhythmus nimmt ein GO mit ihrer Taste sie nicht vom Schlag der Show. **„Entfernen“** kehrt zu ihren Zeiten zurück.
 - **„Im Dunkeln bewegen“**: Wenn ein Cue fertig ist, nehmen die dunklen Fixtures, die der nächste Cue einschaltet, schon seine Position, Farbe und seinen Strahl ein. Beim GO blenden sie nur noch auf. **„Nach“** ist die Wartezeit nach dem Ende des Cues (standardmäßig 0 s). **„Zeit“** ist die Dauer dieser Bewegungen (standardmäßig 2 s).
   - Ein Fixture, das ein anderes Playback oder der Cue selbst beleuchtet, wird nicht bewegt.
   - Bei einem Fixture ohne Dimmer ist sein RGB sein Licht: Nur seine anderen Attribute werden vorbereitet.
@@ -281,10 +281,10 @@ Eine **„Submaster“**-Cuelist bestimmt der Fader ihres [Playbacks](playbacks.
 
 Eine **„Chase“**-Cuelist spielt ihre Cues von selbst, in einer Schleife:
 
-- **„Tempo“**: ein Schritt auf jeden Schlag, in BPM (von 10 bis 600; Standard 120). Mit **„BPM der Show“** folgt sie dem Tempo der Show. **×¼**, **×½**, **×1**, **×2** und **×4** multiplizieren es.
+- **„Tempo“**: ein Schritt auf jeden Schlag, in BPM (von 10 bis 600; Standard 120). Mit **„BPM der Show“** folgt sie dem Tempo und dem Schlag der Show: Jeder Schritt fällt auf einen Schlag, wie bei den FX auf „BPM der Show“ (mit einem Live-Tempo oder einem Cue-Tempo außer ×1 läuft sie in ihrem Rhythmus, ohne den Schlag). **×¼**, **×½**, **×1**, **×2** und **×4** multiplizieren es.
 - **„Überblendung“**: der Teil des Schritts, den der Wechsel dauert, in %. Mit 0 (Standard) ist es ein harter Schnitt. Mit **„Cue-Zeiten“** nutzt jeder Cue seine eigene Verzögerung und Überblendung.
 - **„Richtung“**: **„Vorwärts“**, **„Rückwärts“**, **„Hin und zurück“** (wendet am ersten und am letzten Cue) oder **„Zufall“** (spielt nie einen Schritt zweimal hintereinander).
-- GO geht sofort zum nächsten Schritt, und die nächsten zählen von dort. Zurück geht einen Schritt in die andere Richtung. Pause hält sie an, wo sie ist.
+- GO geht sofort zum nächsten Schritt, und die nächsten zählen von dort (mit „BPM der Show“ fällt der nächste auf den ersten Schlag, der mindestens einen halben Schritt später kommt). Zurück geht einen Schritt in die andere Richtung. Pause hält sie an, wo sie ist.
 - Ein **„Tap-Rhythmus“** geht ihrem Tempo vor; **„Entfernen“** kehrt dazu zurück. Mit BeatGO oder Puls geht sie nur bei jeder Unterteilung weiter.
 - Das [Cue-Tempo](playbacks.md#cue-tempo) und das Live-Tempo machen sie auch schneller oder langsamer.
 - Tracking gilt weiter: Ein Schritt kann nur die Farbe ändern und den Rest behalten.
@@ -358,7 +358,7 @@ Während ein Cue überblendet, zeigt der Kopf auch **„Live-Zeit“**: die Zeit
 ### Cues aufnehmen und bearbeiten
 
 - **„Cue N aufnehmen“**: Der Programmer wird zu einem neuen Cue nach dem ausgewählten, nur mit dem, was sich gegenüber den übernommenen Werten ändert.
-- **„Aktualisieren ▾“**: führt den Programmer mit dem ausgewählten Cue zusammen: **„Cue N aktualisieren (auch für die folgenden Cues)“** oder **„Nur dieser Cue (die folgenden Cues behalten ihren Look)“**.
+- **„Aktualisieren ▾“**: führt den Programmer mit dem ausgewählten Cue zusammen: **„Cue N aktualisieren (auch für die folgenden Cues)“** oder **„Nur dieser Cue (die folgenden Cues behalten ihren Look)“**. Mit „Nur dieser Cue“ behalten die folgenden Cues auch ihre FX: Ein neuer FX wird im nächsten Cue freigegeben, und einer, der sich ändert, kommt dort so zurück, wie er war.
 - **„Laden ▾“** (oder Doppelklick auf einen Cue): lädt ihn in den Programmer: **„Was die Bühne bei Cue N zeigt“** oder **„Nur, was Cue N ändert“**. Aktualisieren Sie ihn danach über die Leiste „Cue … wird bearbeitet“ unter Programmieren.
 - **„Entfernen ▾“**: mit den Kanälen des Programmers **„Kanäle des Programmers aus Cue N entfernen (sie werden wieder übernommen)“** oder **„Kanäle des Programmers in Cue N [freigeben]“** (ab diesem Cue kehren sie zu dem zurück, was darunter liegt: andere Szenen oder ihr Ruhewert).
 - **Kopieren** ans Ende: **„Kopieren, was Cue N ändert“** oder **„Ganzen Look von Cue N kopieren (Block-Cue)“**.
@@ -369,7 +369,7 @@ In einer schmalen Liste (oder in einer Sprache mit langen Wörtern) zeigen „Ak
 
 Der Rechtsklick auf einen Cue bietet **„Zu Cue N gehen“**, die beiden Arten zu laden, **„Mit dem Programmer aktualisieren“**, **„Zeiten…“**, **„Verknüpfung und Aktionen…“**, **„Nummer…“** und **„Löschen…“**.
 
-Cues können **Paletten per Referenz** verwenden und **FX-Ebenen** enthalten, die von Cue zu Cue übernommen werden.
+Cues können **Paletten per Referenz** verwenden und **FX-Ebenen** enthalten, die von Cue zu Cue übernommen werden. Nimmt ein späterer Cue einer Ebene einige Fixtures weg (mit einem anderen FX oder indem er sie freigibt), bleiben die anderen an ihrem Platz: in der Welle, in ihren Gruppen und in ihrem Spiegel.
 
 ### Die Tracking-Tabelle
 
@@ -391,7 +391,7 @@ In einem Cue kann jedes Attribut und jedes Fixture eine eigene Verzögerung und 
 - Dimmer, die abwärts gehen, nehmen die Überblendung ihres Fixtures, wenn es eine hat. Sonst die AUSBL.-Zeit des Cues; mit „=“ die Überblendung von Intensität.
 - Ein Cue dauert so lange wie seine längste Zeit: Folgen, der grüne Balken und die Länge in einer Superszene zählen sie. Auch die Zeit eines Attributs, das der Cue nicht ändert, zählt.
 - Eine Zeit für alles, wie bisher: die Einblendung einer Gruppe oder eines Superszenen-Blocks beim ersten Cue und eine feste **„Zurück“**-Zeit. Mit **„Cue-Zeiten“** nimmt BACK alle Zeiten des Cues, zu dem es zurückgeht.
-- FX-Ebenen blenden mit der Überblendung des Cues ein.
+- FX-Ebenen kommen, ändern sich und gehen mit den Zeiten des Cues: Ein Cue, der einen schon laufenden FX ändert (seine Mitte, seine Größe, seine Figur) oder einen weiteren hinzufügt, blendet ihn über, jeden Kanal mit der Verzögerung und der Überblendung seines Attributs (ein Dimmer, der abwärts geht, mit der AUSBL.-Zeit). Ein FX, der geht, bewegt sich weiter, während er zu dem überblendet, was darunter liegt.
 - Ein neuer Cue übernimmt die Attributzeiten des vorherigen Cues, aber nicht dessen Fixture-Zeiten. Beim Kopieren eines Cues werden alle seine Zeiten kopiert.
 
 Beispiel: Cue 2 ändert Farbe und Position mit Überblendung 0, und Position hat 1 s Verzögerung und 3 s Überblendung. Bei GO wechselt die Farbe sofort; eine Sekunde später bewegen sich die Moving Heads 3 s lang.

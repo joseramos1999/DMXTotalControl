@@ -35,8 +35,9 @@ Canvas {
     property var fx: ({})
     /** The BPM an FX at the BPM of the show goes at (the rhythm tapped on
      *  the button of its scene, when it has one) */
-    property real showBpm: Core.bpm
-    /** function(cyclePos) -> [{ value } or { x, y }] */
+    property real showBpm: Core.exactBpm
+    /** function(cyclePos) -> [{ value } or { x, y }]; while the FX plays the
+     *  backends give where it is as it goes out, whatever cyclePos */
     property var sample: null
     property bool running: visible
 

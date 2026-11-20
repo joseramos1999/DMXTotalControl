@@ -558,32 +558,48 @@ int DtcCore::bpm() const
 void DtcCore::setBpm(int bpm)
 {
     bpm = qBound(20, bpm, 300);
-    if (bpm == this->bpm())
+    // (a tapped tempo with fractions is no whole number yet)
+    if (qFuzzyCompare(qreal(bpm), exactBpm()))
         return;
     m_doc->inputOutputMap()->setBpmNumber(bpm);
     m_doc->setModified();
 }
 
-void DtcCore::tapTempo()
+qreal DtcCore::exactBpm() const
 {
-    // a pause longer than 2 s starts a new tap sequence
-    qint64 elapsed = m_tapTimer.isValid() ? m_tapTimer.restart() : -1;
+    return m_doc->inputOutputMap()->bpm();
+}
+
+void DtcCore::tapTempo(qint64 now)
+{
     if (m_tapTimer.isValid() == false)
         m_tapTimer.start();
-    if (elapsed < 0 || elapsed > 2000)
+    if (now < 0)
+        now = m_tapTimer.elapsed();
+    const qint64 since = m_tapLast >= 0 ? now - m_tapLast : -1;
+    // (a double click, a bouncing pad: one press, for the tempo and the beat)
+    if (since >= 0 && since < 100)
+        return;
+    m_tapLast = now;
+    // each press is a beat of the show: its beat goes to it, at the same
+    // tempo too (the FX at the BPM of the show, the chases on it)
+    m_doc->masterTimer()->anchorBeat();
+    // a pause longer than 2 s starts a new tap sequence
+    if (since < 0 || since > 2000)
     {
-        m_tapIntervals.clear();
+        m_tapRow.clear();
         return;
     }
-
-    m_tapIntervals.append(elapsed);
-    while (m_tapIntervals.count() > 4)
-        m_tapIntervals.removeFirst();
-
-    qint64 sum = 0;
-    for (qint64 interval : std::as_const(m_tapIntervals))
-        sum += interval;
-    setBpm(qRound(60000.0 / (qreal(sum) / m_tapIntervals.count())));
+    // the tempo with its fractions (127.6 is no 128: that drifts from the
+    // music); a press far off it keeps it
+    const qreal period = m_tapRow.add(qreal(since));
+    if (period <= 0)
+        return;
+    const qreal bpm = qBound(20.0, 60000.0 / period, 300.0);
+    if (qFuzzyCompare(bpm, exactBpm()))
+        return;
+    m_doc->inputOutputMap()->setBpm(bpm);
+    m_doc->setModified();
 }
 
 QString DtcCore::pressMode() const
@@ -1370,9 +1386,25 @@ QString DtcCore::importFromShow(const QUrl &url, bool patch, bool scenes)
                 if (QColor(source.color).isValid())
                     zone->setColor(QColor(source.color));
                 zone->setExclusive(source.exclusive);
+                // DMX Total Control: a group made for them takes its crossfade
+                // and master too (one of this show keeps its own)
+                if (source.hasFade)
+                    zone->setFadeTime(source.fade);
+                if (source.hasMaster)
+                    zone->setMaster(source.master);
             }
-            for (quint32 id : std::as_const(ids))
+            for (quint32 fid : source.functions)
+            {
+                if (functionMap.contains(fid) == false)
+                    continue;
+                const quint32 id = functionMap.value(fid);
                 zone->addFunction(id);
+                // DMX Total Control: with its options there (the live size,
+                // phase and speed of an FX, the release, the flash...)
+                const QVariantMap options = source.options.value(fid);
+                for (auto it = options.cbegin(); it != options.cend(); ++it)
+                    zone->setOption(id, it.key(), it.value());
+            }
         }
 
         done.append(tr("%n scene(s)", "", imported));

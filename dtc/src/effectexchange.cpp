@@ -27,6 +27,7 @@
 #include <QSet>
 #include <QDir>
 #include <functional>
+#include <cmath>
 
 #include "effectexchange.h"
 #include "qlcexchange.h"
@@ -790,10 +791,35 @@ Doc *EffectExchange::loadShow(Doc *source, const QString &path, QList<ShowZone> 
                     zone.name = reader.attributes().value("Name").toString();
                     zone.color = reader.attributes().value("Color").toString();
                     zone.exclusive = reader.attributes().value("Exclusive").toString() != "0";
+                    // DMX Total Control: its crossfade and master (Zone::saveXML)
+                    zone.fade = reader.attributes().value("Fade").toInt(&zone.hasFade);
+                    zone.master = reader.attributes().value("Master").toDouble(&zone.hasMaster);
+                    zone.hasMaster = zone.hasMaster && qIsFinite(zone.master);
                     while (reader.readNextStartElement())
                     {
                         if (reader.name() == QLatin1String("Function"))
-                            zone.functions.append(reader.attributes().value("ID").toUInt());
+                        {
+                            const QXmlStreamAttributes attrs = reader.attributes();
+                            const quint32 fid = attrs.value("ID").toUInt();
+                            zone.functions.append(fid);
+                            // DMX Total Control: and the options of the scene
+                            // there (Zone::setOption bounds them)
+                            static const QList<QPair<QString, QString>> keys = {
+                                { "Release", "release" }, { "Protect", "protection" }, { "Flash", "flash" },
+                                { "Dimmer", "dimmer" }, { "Speed", "speed" }, { "Phase", "phase" },
+                                { "Size", "size" }, { "FadeSpeed", "fadeSpeed" } };
+                            QVariantMap options;
+                            for (const QPair<QString, QString> &key : keys)
+                            {
+                                bool ok = false;
+                                const qreal value = attrs.value(key.first).toDouble(&ok);
+                                if (ok && qIsFinite(value))
+                                    options.insert(key.second, key.second == QLatin1String("flash") ? QVariant(value != 0)
+                                                                                                    : QVariant(value));
+                            }
+                            if (options.isEmpty() == false)
+                                zone.options.insert(fid, options);
+                        }
                         reader.skipCurrentElement();
                     }
                     if (zones)
@@ -827,13 +853,15 @@ uint cycleOf(Doc *doc, quint32 id, QSet<quint32> &visiting)
     if (f == nullptr || visiting.contains(id))
         return 0;
 
-    uint bpmBeat = 60000 / uint(qMax(1, doc->masterTimer()->bpmNumber()));
+    // (DMX Total Control: the beat with its fractions)
+    const int bpmBeat = qMax(1, qRound(doc->masterTimer()->beatDuration()));
     auto inTime = [&](uint value) {
-        return f->tempoType() == Function::Beats ? Function::beatsToTime(value, int(bpmBeat)) : value;
+        return f->tempoType() == Function::Beats ? Function::beatsToTime(value, bpmBeat) : value;
     };
 
+    // DMX Total Control: until all its layers are back where they started
     if (FXScene *fx = qobject_cast<FXScene *>(f))
-        return fx->cycleDuration();
+        return fx->loopDuration(EffectExchange::MaxRenderCycle);
     if (Collection *rack = qobject_cast<Collection *>(f))
     {
         uint longest = 0;
@@ -909,15 +937,47 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
         stepMs = (stepMs + tick - 1) / tick * tick;
     }
     int stepCount = qBound(1, int(cycle / stepMs), int(MaxRenderSteps));
+    // (the time of each step, with its fractions)
+    qreal stepLength = stepMs;
+
+    // DMX Total Control: an FX scene whose FX all follow the beat of the show
+    // gives steps in beats, which follow that beat at any BPM: as many steps
+    // of the same length in thousandths of a beat as come nearest to $stepMs
+    const qreal beatMs = doc->masterTimer()->beatDuration();
+    uint stepBeats = 0;
+    FXScene *beatFx = qobject_cast<FXScene *>(doc->function(id));
+    if (beatFx != nullptr && beatFx->followsShowBeat())
+    {
+        const qreal loop = beatFx->loopBeats(qreal(MaxRenderCycle) / beatMs);
+        const int thousandths = int(std::round(loop * 1000.0));
+        if (thousandths > 0)
+        {
+            const qreal wanted = qMax(1.0, loop * beatMs / qreal(stepMs));
+            int best = 0;
+            for (int count = 1; count <= int(MaxRenderSteps); count++)
+            {
+                if (thousandths % count == 0 && (best == 0 || qAbs(count - wanted) < qAbs(best - wanted)))
+                    best = count;
+            }
+            stepCount = best;
+            stepBeats = uint(thousandths / best);
+            stepLength = qreal(stepBeats) / 1000.0 * beatMs;
+            cycle = uint(std::round(loop * beatMs));
+        }
+    }
 
     quint32 root = Function::invalidId();
     Doc *tmp = loadTemporary(exportXml(doc, id), doc, &root, error);
     if (tmp == nullptr)
         return Function::invalidId();
+    // DMX Total Control: «By number» and «By group» by the patch of the show,
+    // as it plays (the copy has its fixtures and groups under their IDs)
+    FXScene::copyPatchOrder(doc, tmp);
 
     // everything in time: the offline clock has no beats
     tmp->inputOutputMap()->setBeatGeneratorType(InputOutputMap::Internal);
-    tmp->inputOutputMap()->setBpmNumber(doc->masterTimer()->bpmNumber());
+    // (DMX Total Control: with its fractions)
+    tmp->inputOutputMap()->setBpm(doc->masterTimer()->bpm());
     for (Function *f : tmp->functions())
         f->setTempoType(Function::Time);
 
@@ -956,32 +1016,38 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
         rest.insert(qMakePair(scv.fxi, scv.channel), scv.value);
 
     Function *function = tmp->function(root);
+    // DMX Total Control: steps in beats start on a beat of the clock
+    if (stepBeats > 0)
+        tmp->masterTimer()->anchorBeat();
     function->start(tmp->masterTimer(), FunctionParent::master());
 
     // DMX Total Control: the fixtures with a delay start one after the other:
     // the steps record the cycle once they all go (they loop: else every cycle
-    // would play that start again)
+    // would play that start again). In beats, a whole number of loops
     QSet<quint32> visiting;
-    const uint delay = qMin(MaxRenderCycle, delayOf(tmp, root, visiting));
+    uint delay = qMin(MaxRenderCycle, delayOf(tmp, root, visiting));
+    if (stepBeats > 0 && delay > 0 && cycle > 0)
+        delay = (delay + cycle - 1) / cycle * cycle;
     for (uint rolled = 0; rolled < delay; rolled += MasterTimer::tick())
         renderFrame();
 
     QList<QList<SceneValue>> samples;
-    uint now = 0;
+    qreal now = 0;
     for (int s = 0; s < stepCount; s++)
     {
-        uint target = uint(s) * stepMs;
+        const qreal target = qreal(s) * stepLength;
         do
         {
             renderFrame();
             now += MasterTimer::tick();
         }
-        while (now <= target);
+        while (now <= target + 1e-6);
         samples.append(sampleOutput());
     }
 
     function->stop(FunctionParent::master());
     tmp->masterTimer()->renderTick();
+    FXScene::clearPatchOrder(tmp);
     delete tmp;
 
     // the channels the effect gives a value: somewhere in the cycle, other
@@ -1053,14 +1119,17 @@ quint32 EffectExchange::renderToSteps(Doc *doc, quint32 id, uint stepMs, QString
     for (const QList<SceneValue> &sample : std::as_const(samples))
         sequence->applyDumpValues(keep(sample), -1);
 
+    // DMX Total Control: in beats (thousandths), on the beat of the show
+    if (stepBeats > 0)
+        sequence->setTempoType(Function::Beats);
     QList<ChaserStep> steps = sequence->steps();
     for (int i = 0; i < steps.count(); i++)
     {
         ChaserStep step = steps.at(i);
         step.fadeIn = 0;
         step.fadeOut = 0;
-        step.hold = stepMs;
-        step.duration = stepMs;
+        step.hold = stepBeats > 0 ? stepBeats : stepMs;
+        step.duration = step.hold;
         sequence->replaceStep(step, i);
     }
     return sequence->id();

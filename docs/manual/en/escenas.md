@@ -39,7 +39,7 @@ Press **“New”**:
 - **The folder** (folder icon): moves the scene to a folder.
 - **“Try”** / **“Stop”**: plays it now, outside the groups. Cuelists have their own GO.
 - **“Add to group…”**: adds it to a Live group.
-- **Convert to steps** (racks, FX, Colour FX, Move FX, Curve FX and chasers): records one cycle into a new steps scene, with only the channels the scene gives a value to: the others, even if they have a default value (the pan or the zoom in the centre on many moving heads), do not go into the steps. If an FX has delays, it records the cycle once all its fixtures have started.
+- **Convert to steps** (racks, FX, Colour FX, Move FX, Curve FX and chasers): records one cycle into a new steps scene, with only the channels the scene gives a value to: the others, even if they have a default value (the pan or the zoom in the centre on many moving heads), do not go into the steps. If an FX has delays, it records the cycle once all its fixtures have started. The cycle is the one it plays: at “BPM of the show”, at the BPM of the show or its tapped rhythm, and with a wait, the whole run. If all its FX follow the BPM of the show and the scene has no tapped rhythm, the steps are in beats (BPM mode) and follow the beat of the show; if not, they are in seconds, at the current tempo.
 - **Convert to a cuelist** (steps and chasers): see [Cuelists](escenas.md#cuelists).
 - **“QLC+”** (cuelists): saves a copy of the show for QLC+; see [Cuelists and QLC+](escenas.md#cuelists-and-qlc).
 - **Export**, **“Duplicate”** and **“Delete”** (it is also removed from its groups and racks).
@@ -88,7 +88,7 @@ An FX scene has **base values** and one or more **FX layers**. It is created by 
 
 - On the left, the list of FX: parameter, fixtures and speed (at “BPM of the show”, the tapped rhythm of the scene if it has one). The bin removes a layer.
 - On the right, the controls of the chosen layer (the same as in Program) and its animated preview. You see the changes live while the scene plays.
-- **“Link”**: linked layers share speed and timing.
+- **“Link”**: linked layers share speed and timing, and go on the same clock. A layer you link here joins the first link group of the scene; if the scene has several (made in the programmer), each linked layer shows the number of its own.
 - If some fixtures do the FX their own way, you are warned: if you change the shape, the size, the direction or the phase here, all of them will do the same.
 - **“Per fixture”**: the shift and the delay of each fixture, live too. Here “Fan…” and “No shift or delay” go over all of them (see [Per-fixture shift and delay](programar.md#per-fixture-shift-and-delay)).
 - To add layers or change the base values: **“Edit in the programmer”** and then **“Save the programmer in this scene”**.
@@ -116,7 +116,7 @@ Colour FX, mappings on the 2D plan, Curve FX, Move FX, “Use the programmer sel
 
 They are effects from the previous module: **Move FX** move pan/tilt with a shape and **Curve FX** give a wave (sine, triangle, ramps, square, random, strobe…) to channels. You will find them in old shows or in QLC+ shows; they are no longer created from “New”.
 
-They still play the same and have their own editor (shape, width, height, rotation, position, phase, spread over the fixtures, symmetric, relative…). A notice offers **“Convert to FX”**: they move to the FX editor, also in the programmer, and the groups, SHOW buttons and mappings keep them. The phase of a Move FX becomes the “Phase” of the FX, and the start offset of each fixture becomes its “Shift” ([Per-fixture shift and delay](programar.md#per-fixture-shift-and-delay)).
+They still play the same and have their own editor (shape, width, height, rotation, position, phase, spread over the fixtures, symmetric, relative…). A notice offers **“Convert to FX”**: they move to the FX editor, also in the programmer, and the groups, SHOW buttons and mappings keep them. The phase of a Move FX becomes the “Phase” of the FX, and the start offset of each fixture becomes its “Shift” ([Per-fixture shift and delay](programar.md#per-fixture-shift-and-delay)). Before converting, a confirmation says what changes, if anything does (a leaf becomes a circle, a Curve FX with another duty is on for half the cycle…). The rest stays the same: the figure, its rotation and where it starts, the direction of each fixture (its own “Backwards”) and “Symmetric” (the second half with its pan inverted). It can't be undone.
 
 ### Effect rack
 
@@ -137,7 +137,7 @@ A **super scene** is a timeline with scene tracks and audio tracks. You play it 
 
 ### The toolbar
 
-- **“Play”** / **“Stop”** (**Space**): from the cursor. **⏮** goes back to the start. Next to it you see the time (and the bar).
+- **“Play”** / **“Stop”** (**Space**): from the cursor (a scene that starts in the middle of its block, an FX too, is where it would be). **⏮** goes back to the start. Next to it you see the time (and the bar).
 - The **Undo** and **Redo** arrows (**Ctrl+Z** / **Ctrl+Y**). See [Undo](escenas.md#undo).
 - **“Paste”** (**Ctrl+V**): the blocks copied, at the cursor and from the selected track. See [Copy and paste](escenas.md#copy-and-paste).
 - **“Time”** / **“Bars”**: the grid. In bars, the **BPM**, the time signature (**4/4**, **3/4**, **2/4**) and **“Bar 1 here”** so that the first bar starts at the cursor and lines up with the music.
@@ -259,7 +259,7 @@ At the top of the editor:
 - **“Back”**: the BACK times: **“Cue times”** or **“Fixed time”**.
 - **“Priority”**.
 - **“GO on the beat”**: “Off”, “BeatGO” or “Pulse” give a GO on each division.
-- **“Tapped rhythm”**: the rhythm tapped by pressing its button several times in a row, in BPM: a GO on each beat. While it has one, its Follow and Wait times do not count. **“Clear”** goes back to its own times.
+- **“Tapped rhythm”**: the rhythm tapped by pressing its button several times in a row, in BPM: a GO on each beat. While it has one, its Follow and Wait times do not count. Its FX at “BPM of the show” go at that rhythm too, and the presses move them as in an FX scene; without a tapped rhythm, a GO with its button leaves them on the beat of the show. **“Clear”** goes back to its own times.
 - **“Move in black”**: when a cue has finished, the dark fixtures that the next cue lights up already take its position, colour and beam. At GO they only fade up. **“After”** is the wait after the end of the cue (0 s by default). **“Time”** is how long those moves take (2 s by default).
   - A fixture that another playback or the cue itself lights up is not moved.
   - On a fixture without a dimmer, its RGB is its light: only its other attributes are prepared.
@@ -281,10 +281,10 @@ A **“Submaster”** cuelist is ruled by the fader of its [playback](playbacks.
 
 A **“Chase”** cuelist plays its cues by itself, in a loop:
 
-- **“Speed”**: a step on each beat, in BPM (from 10 to 600; 120 by default). With **“BPM of the show”**, it follows the tempo of the show. **×¼**, **×½**, **×1**, **×2** and **×4** multiply it.
+- **“Speed”**: a step on each beat, in BPM (from 10 to 600; 120 by default). With **“BPM of the show”**, it follows the tempo and the beat of the show: each step falls on a beat, as the FX at “BPM of the show” do (with a live speed or a cue speed other than ×1, it goes at its rhythm, off the beat). **×¼**, **×½**, **×1**, **×2** and **×4** multiply it.
 - **“Crossfade”**: the part of the step the change takes, in %. With 0 (the default), it is a cut. With **“Cue times”**, each cue uses its own delay and fade.
 - **“Direction”**: **“Forward”**, **“Backward”**, **“Bounce”** (it turns at the first and the last cue) or **“Random”** (it never plays a step twice in a row).
-- GO goes to the next step at once, and the next steps count from there. Back goes one step the other way. Pause holds it where it is.
+- GO goes to the next step at once, and the next steps count from there (with “BPM of the show”, the next one falls on the first beat at least half a step later). Back goes one step the other way. Pause holds it where it is.
 - A **“Tapped rhythm”** wins over its speed; **“Clear”** goes back to it. With BeatGO or Pulse, it only steps on each division.
 - The [cue speed](playbacks.md#cue-speed) and the live speed also make it faster or slower.
 - Tracking still applies: a step can change only the colour and keep the rest.
@@ -358,7 +358,7 @@ While a cue is fading, the header also shows **“Live time”**: the time of th
 ### Recording and editing cues
 
 - **“Record cue N”**: the programmer becomes a new cue after the selected one, with only what changes compared with what it tracks.
-- **“Update ▾”**: merges the programmer into the selected cue: **“Update cue N (the next cues follow)”** or **“Only this cue (the next cues keep their look)”**.
+- **“Update ▾”**: merges the programmer into the selected cue: **“Update cue N (the next cues follow)”** or **“Only this cue (the next cues keep their look)”**. With “Only this cue”, the next cues keep their FX too: a new FX is released in the next cue, and one that changes comes back there as it was.
 - **“Load ▾”** (or double click a cue): takes it to the programmer: **“What the stage shows on cue N”** or **“Only what cue N changes”**. Then update it from the “Editing cue…” bar in Program.
 - **“Take out ▾”**: with the channels of the programmer, **“Remove the programmer's channels from cue N (they track again)”** or **“[Release] the programmer's channels in cue N”** (from that cue on, they go back to what is underneath: other scenes or their rest value).
 - **Copy** to the end: **“Copy what cue N changes”** or **“Copy the whole look of cue N (block cue)”**.
@@ -369,7 +369,7 @@ In a narrow list (or in a language with long words), “Update”, “Load” an
 
 The right click menu on a cue has **“Go to cue N”**, the two ways to load, **“Update with the programmer”**, **“Times…”**, **“Link and actions…”**, **“Number…”** and **“Delete…”**.
 
-Cues can use **palettes by reference** and carry **FX layers**, which track from cue to cue.
+Cues can use **palettes by reference** and carry **FX layers**, which track from cue to cue. When a later cue takes some fixtures from a layer (with another FX or by releasing them), the others stay in their place: in the wave, in their groups and in their mirror.
 
 ### The tracking sheet
 
@@ -391,7 +391,7 @@ Inside a cue, each attribute and each fixture can have its own delay and its own
 - Dimmers going down take the fade of their fixture, if it has one. If not, the DOWN time of the cue; with “=”, the Intensity fade.
 - A cue lasts as long as its longest time: Follow, the green bar and the length in a super scene count it. The time of an attribute that the cue doesn't change counts too.
 - One time for everything, as before: the fade in of a group or of a super scene block on the first cue, and a fixed **“Back”** time. With **“Cue times”**, BACK uses all the times of the cue it goes back to.
-- FX layers fade in with the fade of the cue.
+- FX layers come in, change and go out with the times of the cue: a cue that changes an FX that is already playing (its centre, its size, its figure) or adds another one fades it, each channel with the delay and the fade of its attribute (a dimmer going down, with the DOWN time). An FX that goes out keeps moving while it fades to what is below.
 - A new cue takes the attribute times of the cue before it, but not its fixture times. Copying a cue copies all its times.
 
 Example: cue 2 changes colour and position with fade 0, and Position has delay 1 s and fade 3 s. On GO, the colour changes at once; a second later, the moving heads move for 3 s.

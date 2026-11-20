@@ -287,11 +287,36 @@ public:
      *  This is quite safe cause even 300bpm should happen every 200ms. */
     void requestBeat();
 
+    /** DMX Total Control: the exact BPM, with its fractions (a tapped tempo):
+     *  requestBpmNumber() and bpmNumber() are its whole number */
+    void requestBpm(qreal bpm);
+    qreal bpm() const;
+    /** DMX Total Control: the exact length of a beat, in ms */
+    qreal beatDuration() const;
+
+    /** DMX Total Control: the beat clock, in beats (with their fractions)
+     *  since the timer was made, at the exact BPM. Each tick moves it on, by
+     *  the real time in the timer thread and by a tick offline (renderTick);
+     *  a beat (isBeat, beat()) is each whole number it passes. A new BPM goes
+     *  on from where it is. The chasers in beats, the Chase cuelists, the FX
+     *  at the BPM of the show and the beat signal all go on it. Any thread */
+    qreal beatPosition() const;
+    /** DMX Total Control: a beat now (the show TAP): at the next tick the
+     *  clock goes to the whole beat nearest to the time of the call (a beat
+     *  when that is ahead). Any thread */
+    void anchorBeat();
+    /** DMX Total Control: how many times a beat moved the clock (anchorBeat):
+     *  what goes on it goes back on its beats */
+    int beatAnchors() const;
+
 signals:
     void bpmNumberChanged(int bpm);
     void beat();
 
 private:
+    /** DMX Total Control: moves the beat clock on at a tick */
+    void advanceBeatClock(bool offline);
+
     /** The current type of beat source */
     BeatsSourceType m_beatSourceType;
     /** The current number of beats per minute emitted by a generator */
@@ -300,10 +325,17 @@ private:
     int m_beatTimeDuration;
     /** Flag to request a beat generation at the next MasterTimer tick */
     bool m_beatRequested;
-    /** The reference of a platform dependent timer to measure precise elapsed time */
-    QElapsedTimer m_beatTimer;
-    /** Time offset in milliseconds when the last beat occurred */
-    int m_lastBeatOffset;
+    /** DMX Total Control: the exact BPM, the beat clock (beatPosition), the
+     *  beats of an external source not taken yet (requestBeat), the time of
+     *  the last tick and of a beat to come (ns of m_beatClock; -1: none) and
+     *  the beats taken */
+    std::atomic<double> m_bpm;
+    std::atomic<double> m_beats;
+    std::atomic<int> m_externalBeats;
+    QElapsedTimer m_beatClock;
+    qint64 m_beatTickAt;
+    std::atomic<qint64> m_anchorAt;
+    std::atomic<int> m_anchors;
 };
 
 /** @} */

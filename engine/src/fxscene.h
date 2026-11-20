@@ -29,6 +29,7 @@
 #include <optional>
 
 #include "function.h"
+#include "dmxsource.h"
 
 class GenericFader;
 class QLCChannel;
@@ -52,7 +53,7 @@ class Doc;
  * speed, a shape (mode) or, for pan and tilt, a figure, and a timing that
  * spreads it over the fixtures (wave or step per X, grouping, order, wait).
  */
-class FXScene final : public Function
+class FXScene final : public Function, public DMXSource
 {
     Q_OBJECT
     Q_DISABLE_COPY(FXScene)
@@ -163,10 +164,20 @@ public:
         bool panInvert = false;
         bool tiltInvert = false;
         bool reverse = false;
-        /** linked layers share the speed and the timing (the UI keeps them equal) */
-        bool linked = false;
+        /** DMX Total Control: its link group (0: none). The layers of a group
+         *  share the speed and the timing (the UI keeps them equal) and go on
+         *  one clock. Saved as Linked="1" (what older versions read: one link
+         *  for all) and LinkGroup, past the first */
+        int link = 0;
+        bool isLinked() const { return link > 0; }
         /** its fixtures in their order; empty: all the fixtures of the scene */
         QList<quint32> fixtures;
+        /** DMX Total Control: the fixtures its timing spreads over when some
+         *  of them left it (a later cue took them from a layer it tracks), in
+         *  their order: the ones it keeps stay in their place in the wave, the
+         *  sets and the mirror. Empty: its fixtures. Not part of the FX
+         *  (operator== leaves it out): it only keeps those places */
+        QList<quint32> spread;
         /** DMX Total Control: the fixtures that do something their own way */
         QMap<quint32, Own> own;
         /** DMX Total Control: a dimmer layer on fixtures without a dimmer dims
@@ -213,9 +224,15 @@ public:
     void setValue(quint32 fixture, quint32 channel, uchar value);
 
     /** The layers. DMX Total Control: with none that follows the BPM any
-     *  more, the scene has no tapped rhythm (setTapPeriod(0)) */
+     *  more, the scene has no tapped rhythm (setTapPeriod(0)). Each layer
+     *  goes on from where it was; a new one on the clock of what plays (the
+     *  layer its fixtures come from, or one of its parameter at the same
+     *  speed), and one that joins a link group on the clock of the group */
     void setLayers(const QList<Layer> &layers);
     QList<Layer> layers() const;
+    /** DMX Total Control: where each layer is, in cycles (since it started;
+     *  on the beat of the show, the beat clock by its multiplier) */
+    QList<qreal> layerPositions() const;
 
     /** DMX Total Control: whether a layer follows the BPM of the show. The
      *  scene then takes a rhythm tapped on its button, as steps do: those
@@ -225,10 +242,28 @@ public:
      *  cycle at x1 a beat from the first: a chase on its next set, x1/4 a
      *  quarter further) */
     bool hasSyncedLayer() const;
+    /** DMX Total Control: a layer that follows the BPM of a scene with no
+     *  tapped rhythm goes on the beat of the show: its place is the beat
+     *  clock (MasterTimer::beatPosition) by its multiplier, so any scene,
+     *  started at any time, is on the same beat; the show TAP puts it back on
+     *  it. A press of the scene's button, a pause or another speed (live or
+     *  of the movement) take it off it until then; a new multiplier puts it
+     *  back. Whether every layer does (and there is one) */
+    bool followsShowBeat() const;
 
-    /** The duration of one run of the slowest layer, in ms (the layers that
-     *  follow the BPM, at its tapped rhythm or else at 120 BPM) */
+    /** The duration of one run of the slowest layer, in ms. DMX Total
+     *  Control: as they play (the layers that follow the BPM at its tapped
+     *  rhythm or at the BPM of the show, the whole pass with a wait, a step
+     *  over the sets of its grouping) */
     uint cycleDuration() const;
+    /** DMX Total Control: how long until every layer is back where it
+     *  started (ms): the shortest common length of their runs, up to
+     *  $longest; else the one of the slowest */
+    uint loopDuration(uint longest) const;
+    /** DMX Total Control: the same in beats of the show, for a scene that
+     *  follows its beat (followsShowBeat): a whole number of thousandths of a
+     *  beat, up to $longest beats; 0 when there is none */
+    qreal loopBeats(qreal longest) const;
 
     /*********************************************************************
      * The shapes
@@ -253,6 +288,11 @@ public:
      *  the channel of the whole fixture (a master dimmer) comes before the ones of a head.
      *  Shows saved with channel names as parameters still find their channel */
     static quint32 channelFor(const Fixture *fixture, const QString &param, quint32 *fine = nullptr);
+    /** DMX Total Control: the channels an FX on $param moves on $fixture: the
+     *  one of channelFor, and on a fixture with several heads without one of
+     *  its own for it, the one of every head (each with its fine channel in
+     *  $fines, or QLCChannel::invalid()). All of them do the same */
+    static QList<quint32> channelsFor(const Fixture *fixture, const QString &param, QList<quint32> *fines = nullptr);
     /** The parameter an FX on channel $channel of $fixture modulates: its
      *  paramOf(), but a dimmer of the whole fixture that is not its master
      *  (the flash intensity of a strobe with a colour aura) is a parameter
@@ -291,10 +331,42 @@ public:
     static int autoVirtualBase(const Doc *doc, const QList<quint32> &order,
                                const QHash<QPair<quint32, quint32>, uchar> &values);
 
-    /** The set (0..sets-1) of each fixture of $order once grouped, and how many sets */
-    static QList<int> groupSets(const Doc *doc, const QList<quint32> &order, int grouping, int groupSize, int *sets);
-    /** The fixtures of a layer in the order of the effect */
-    static QList<quint32> orderedFixtures(const Layer &layer, const QList<quint32> &fixtures);
+    /** The set (0..sets-1) of each fixture of $order once grouped, and how many sets.
+     *  DMX Total Control: «Divide» makes min(X, fixtures) sets, one apart in size
+     *  at most. «By group» takes the fixture groups of the patch that split the
+     *  fixtures into sets that don't overlap, a group with all of them left
+     *  out: the finest split, then the one that leaves fewer alone, then the
+     *  smaller groups, then the order of the patch. A fixture in none of them
+     *  is a set of its own. $setGroups: the group of each set
+     *  (FixtureGroup::invalidId() for a fixture alone, or another grouping) */
+    static QList<int> groupSets(const Doc *doc, const QList<quint32> &order, int grouping, int groupSize, int *sets,
+                                QList<quint32> *setGroups = nullptr);
+    /** The fixtures of a layer in the order of the effect. DMX Total Control:
+     *  «By number» by the numbers of the patch of $doc (setPatchOrder; the
+     *  ones without a number after them, by ID) */
+    static QList<quint32> orderedFixtures(const Layer &layer, const QList<quint32> &fixtures, const Doc *doc = nullptr);
+    /** DMX Total Control: the fixtures the timing of a layer spreads over, in
+     *  the order of the effect: its spread (some of them left it), then its
+     *  fixtures that are not in it; else orderedFixtures() */
+    static QList<quint32> timingOrder(const Layer &layer, const QList<quint32> &fixtures, const Doc *doc = nullptr);
+
+    /** DMX Total Control: what the patch of $doc says that the FX go by: the
+     *  number of each fixture and the order of its groups. The app tells it
+     *  when they change; a copy, so the timer thread reads it too */
+    static void setPatchOrder(const Doc *doc, const QHash<quint32, int> &numbers, const QList<quint32> &groupOrder);
+    static void clearPatchOrder(const Doc *doc);
+    /** DMX Total Control: the patch order of $from for $to too (a copy of
+     *  its fixtures, under their IDs: an FX rendered offline) */
+    static void copyPatchOrder(const Doc *from, const Doc *to);
+    /** DMX Total Control: the number of $fixture in the patch of $doc (0: none) */
+    static int fixtureNumber(const Doc *doc, quint32 fixture);
+    /** DMX Total Control: $fixtures by their numbers in the patch of $doc (the
+     *  ones without one after them, by ID) */
+    static void sortByNumber(const Doc *doc, QList<quint32> &fixtures);
+    /** DMX Total Control: where $fixture goes in $order by its number: before
+     *  the first one with a higher number, or a lower one when $order goes
+     *  down; at the end when there is none */
+    static int placeByNumber(const Doc *doc, const QList<quint32> &order, quint32 fixture);
 
     /** Where in the wave (0..1) the set $set of $sets is at $cyclePos (cycles since the start),
      *  or -1 when it rests at its base (step, wait); at the BPM of the layer */
@@ -307,6 +379,12 @@ public:
      *  $bpm (x1), as its wait: when the FX starts, the fixture waits at its
      *  base until the layer has gone that far */
     static qreal delayCycles(const Layer &layer, const Shape &shape, qreal bpm);
+    /** DMX Total Control: the length of a pass of $layer (with $sets sets)
+     *  going at $bpm (x1), in cycles: a step over its sets, or a wave with a
+     *  wait, and the wait; 0 for a wave without a wait. One that follows the
+     *  BPM with a wait lasts a whole number of beats (at least the run), so
+     *  each pass starts on a beat */
+    static qreal passCycles(const Layer &layer, int sets, qreal bpm);
     /** DMX Total Control: the longest delay of a fixture of its layers, in ms */
     uint longestDelay() const;
     /** DMX Total Control: the BPM the layers that follow it go at: its tapped rhythm,
@@ -317,6 +395,9 @@ public:
     static QPointF panTiltPoint(const Shape &shape, qreal pos);
     /** Whether $shape draws its figure mirrored: backwards, or with one axis inverted */
     static bool isFlipped(const Shape &shape);
+    /** DMX Total Control: whether $figure going backwards is its mirror in pan
+     *  (a circle, a square, a pan line...: not an eight, a diagonal...) */
+    static bool reverseMirrorsPan(int figure);
     /** DMX Total Control: a pan/tilt layer whose fixtures that go the other way
      *  round (backwards, a pan or tilt inverted of their own) are all on one side
      *  of the effect $order is a mirror: each of them takes the place in the wave
@@ -328,9 +409,15 @@ public:
     /** For the previews: the value of each fixture of a layer (-1..1, or the x/y
      *  pairs of pan/tilt) at $cyclePos */
     QVariantList previewLayer(int index, qreal cyclePos) const;
+    /** DMX Total Control: the same while it plays where the layer is, as it
+     *  goes out (its speed, the speed of the movement, its delays); stopped,
+     *  at $cyclePos */
+    QVariantList livePreviewLayer(int index, qreal cyclePos) const;
 
 private slots:
     void slotFixtureRemoved(quint32 fxi_id) override;
+    /** DMX Total Control: a fixture of the FX moved or changed its mode */
+    void slotFixtureChanged(quint32 fxi_id);
 
 private:
     /** Take out what is on the fixtures $remove says (values, layers that
@@ -384,19 +471,43 @@ public:
      *  player of a cuelist) calls it itself */
     void setFadersPaused(bool paused);
 
+    /** DMX Total Control: the next change of what it plays (setFixtures,
+     *  setValues, setLayers before its next frame) fades instead of snapping
+     *  as a live edit does: a base goes to its new value, a layer grows in,
+     *  takes its new size and shape, or leaves, moving as it fades to what is
+     *  below, over $ms after $delayMs, on $curve (FadeChannel::Curve). The
+     *  channels (fixture, channel) in $times take their own (ms, delay).
+     *  Stopped, its start fades so. A cuelist gives its FX player the times of
+     *  each cue */
+    void setChangeFade(uint ms, uint delayMs, int curve = 0,
+                       const QHash<QPair<quint32, quint32>, QPair<uint, uint>> &times = {});
+    /** DMX Total Control: the fades that run (its fade in, a change, what
+     *  leaves or fades out) take $factor times as long from where they are;
+     *  0 or less ends them now (the Live Time of a cuelist) */
+    void scaleFades(qreal factor);
+    /** DMX Total Control: the base channel $channel (or its fine channel) of
+     *  $fixture holds now under its FX, where its fade is (8 bit); -1 when it
+     *  has none (an FX on what is below, or none) */
+    int heldBase(quint32 fixture, quint32 channel) const;
+
+    /** DMX Total Control: what its stops left fading out goes on moving
+     *  (a DMX source of the timer while they last) */
+    void writeDMX(MasterTimer *timer, QList<Universe *> universes) override;
+
     /** DMX Total Control: a pan/tilt layer ("pantilt", "pan" or "tilt") */
     static bool isMotion(const QString &param);
 
     /** DMX Total Control: the beats since it started: a cycle at x1 of the
-     *  layers that follow the BPM, at its tapped rhythm or at the BPM of the
-     *  show, and each tapped beat but the next one of a row less than half a
-     *  beat after a beat of that clock, which only times the next ones (the
+     *  layers that follow the BPM, at its tapped rhythm or else the beats of
+     *  the show, and each tapped beat but the next one of a row less than half
+     *  a beat after a beat of that clock, which only times the next ones (the
      *  rhythm bars of its buttons). Counts round past the largest int, never
      *  below 0 */
     int beats() const;
 
 protected:
-    /** The motion speed goes to the pan/tilt layers only */
+    /** The motion speed goes to the pan/tilt layers only (DMX Total Control:
+     *  and to the layers linked to one) */
     qreal frameMotion() const override;
 
 private:
@@ -422,6 +533,25 @@ private:
         quint32 base;
         /** DMX Total Control: the virtual dimmer that dims it (m_scalers), or -1 */
         int scaler = -1;
+        /** DMX Total Control: an FX without a base, on what is below: in the
+         *  faders after the ones of its priority (getFader) */
+        bool relative = false;
+    };
+
+    /** DMX Total Control: where a fixture of the FX is in the patch, when
+     *  its targets were found */
+    struct PatchStamp
+    {
+        quint32 universe = 0;
+        quint32 address = 0;
+        quint32 channels = 0;
+        const void *mode = nullptr;
+        static PatchStamp of(const Fixture *fixture);
+        bool operator!=(const PatchStamp &other) const
+        {
+            return universe != other.universe || address != other.address || channels != other.channels ||
+                   mode != other.mode;
+        }
     };
 
     /** DMX Total Control: the virtual dimmer of a fixture without a dimmer: a
@@ -438,19 +568,144 @@ private:
         int autoBase;
     };
 
+    typedef QPair<quint32, quint32> Key;
+
+    /** DMX Total Control: a change that fades (setChangeFade): the time and
+     *  the delay of each channel, ms */
+    struct Change
+    {
+        uint fade = 0;
+        uint delay = 0;
+        int curve = 0;
+        QHash<Key, QPair<uint, uint>> times;
+        QPair<uint, uint> timeOf(const Key &key) const { return times.value(key, qMakePair(fade, delay)); }
+    };
+
+    /** DMX Total Control: what the layers played, going on as it was: under
+     *  a change that fades until the new look is in (each channel mixes from
+     *  it to the new one), or what a stop leaves fading out */
+    struct Look
+    {
+        QList<Layer> layers;
+        QList<Target> targets;
+        QHash<Key, int> index;
+        QList<Scaler> scalers;
+        QList<QList<bool>> twins;
+        QList<qreal> pos;
+        QList<qreal> age;
+        /** the cycles each layer goes in a real ms */
+        QList<qreal> rate;
+        /** each layer: the layer of the next look it goes on as (its place), -1: none */
+        QList<int> next;
+        /** the change to the next look, and the real ms since it came */
+        Change change;
+        quint64 elapsed = 0;
+        /** how far (0..1) $key is on its way to the next look */
+        qreal progress(const Key &key) const;
+        /** whether every channel is there */
+        bool done() const;
+    };
+
+    /** DMX Total Control: what a stop with a fade out left: it goes on moving
+     *  in its faders while they fade out (writeDMX) */
+    struct Tail
+    {
+        QList<Look> looks;
+        QList<QSharedPointer<GenericFader>> faders;
+        qreal phaseShift = 0;
+        qreal size = 1;
+        qreal fadeFactor = 1;
+        qreal syncedBpm = 120;
+    };
+
+    /** DMX Total Control: what a target sends besides its base: its wave (a
+     *  fraction of its range, before the size) and its virtual dimmer */
+    struct Wave
+    {
+        qreal wave = 0.0;
+        qreal scale = 1.0;
+    };
+
     void buildTargets();
-    /** DMX Total Control: the scale (0..1) of each virtual dimmer at this
-     *  frame, as the dimmer layer would set a dimmer */
-    QList<qreal> scalerLevels(const QList<QList<bool>> &twins, qreal phaseShift, qreal syncedBpm,
-                              qreal size, qreal fadeFactor) const;
-    QSharedPointer<GenericFader> getFader(Universe *universe);
+    /** DMX Total Control: previewLayer, under the lock; $live: how far it went
+     *  since it started, -1: $cyclePos */
+    QVariantList previewLocked(int index, qreal cyclePos, qreal live) const;
+    /** DMX Total Control: the scale (0..1) of each virtual dimmer of $look at
+     *  this frame, as the dimmer layer would set a dimmer */
+    static QList<qreal> scalerLevels(const Look &look, qreal phaseShift, qreal syncedBpm,
+                                     qreal size, qreal fadeFactor);
+    /** DMX Total Control: the wave of target $index of $look */
+    static Wave waveIn(const Look &look, const QList<qreal> &scales, int index, qreal phaseShift, qreal syncedBpm);
+    /** DMX Total Control: the wave of $key through the looks of $chain up to
+     *  $upTo, each one on its way to the next one ($scales: of each look) */
+    static Wave chainWave(const QList<const Look *> &chain, const QList<QList<qreal>> &scales, const Key &key,
+                          int upTo, qreal phaseShift, qreal syncedBpm);
+    /** DMX Total Control: the waves of the channels of $chain that are not in
+     *  its last look, each one as the last look it is in has it */
+    static QHash<Key, Wave> leavingWaves(const QList<const Look *> &chain, const QList<QList<qreal>> &scales,
+                                         qreal phaseShift, qreal syncedBpm);
+    /** DMX Total Control: the looks of $looks go on for $ms real ms (the
+     *  layers that go on in the next one, or $last after the last one, at
+     *  its place) */
+    static void advanceLooks(QList<Look> &looks, const QList<qreal> &lastPos, const QList<qreal> &lastAge, uint ms);
+    /** DMX Total Control: the waves of $waves into the channels of $faders
+     *  that leave their FX */
+    static void writeLeaving(const QList<QSharedPointer<GenericFader>> &faders, const QHash<Key, Wave> &waves,
+                             qreal size, qreal fadeFactor);
+    /** DMX Total Control: what plays now, as a look */
+    Look currentLookLocked() const;
+    /** DMX Total Control: its fade in, ms (in beats when it was given in
+     *  beats), by the Live Time */
+    uint fadeInTime(MasterTimer *timer) const;
+    /** DMX Total Control: what plays now goes on under the change that comes
+     *  (once per change) */
+    void keepLookLocked();
+    /** DMX Total Control: its fader of $universe for the FX without a base
+     *  ($relative: after the faders of the same priority), or for the rest */
+    QSharedPointer<GenericFader> getFader(Universe *universe, bool relative = false);
+    /** DMX Total Control: the key of that fader in m_fadersMap: the ID of the
+     *  universe, past RelativeFaders for the FX without a base */
+    static quint32 faderKey(quint32 universe, bool relative);
+    static const quint32 RelativeFaders = 0x10000;
 
     QList<Target> m_targets;
+    /** DMX Total Control: the target of each channel (fixture, channel) */
+    QHash<Key, int> m_targetIndex;
+    /** DMX Total Control: where its fixtures were in the patch (buildTargets) */
+    QHash<quint32, PatchStamp> m_patchStamps;
+    /** DMX Total Control: the looks under a change that fades, oldest first */
+    QList<Look> m_looks;
+    /** DMX Total Control: the change the next frame fades (setChangeFade),
+     *  and whether what played went on under it already */
+    Change m_change;
+    bool m_changeSet = false;
+    bool m_lookKept = false;
+    /** DMX Total Control: what its stops with a fade out left, and whether
+     *  the timer runs it (a DMX source) */
+    QList<Tail> m_tails;
+    bool m_tailSource = false;
+    /** DMX Total Control: the cycles each layer goes in a real ms */
+    QList<qreal> m_layerRate;
+    /** DMX Total Control: the length of its fade in, by the Live Time */
+    qreal m_fadeScale = 1.0;
     /** DMX Total Control: the virtual dimmers of the targets */
     QList<Scaler> m_scalers;
     /** DMX Total Control: the fixtures of each layer in the order of the effect */
     QList<QList<quint32>> m_layerOrders;
     QList<qreal> m_layerPos;
+    /** DMX Total Control: for each layer, the cycles since it started (its
+     *  delays wait on them), the length of its pass at the last frame (cycles,
+     *  0: none: passCycles) and the multiplier it went at on the beat of the
+     *  show (-1: it didn't, it goes back to that beat) */
+    QList<qreal> m_layerAge;
+    QList<qreal> m_layerPass;
+    QList<qreal> m_layerOnBeat;
+    /** DMX Total Control: the sets of each layer, as its targets have them */
+    QList<int> m_layerSets;
+    /** DMX Total Control: the beat clock at the last frame (-1: none yet),
+     *  and the beats it was moved by (MasterTimer::beatAnchors) */
+    qreal m_lastBeat = -1.0;
+    int m_lastAnchors = 0;
     bool m_valuesStarted;
     /** DMX Total Control: real ms since the start (elapsed() counts at the
      *  live speed): the waves grow in with the fades of the bases, which
@@ -458,17 +713,12 @@ private:
     quint32 m_fadeElapsed;
     /** DMX Total Control: the pause the faders hold (setFadersPaused) */
     bool m_fadersPaused;
-    /** DMX Total Control: the faders of its last stops, while they fade out */
-    QList<QSharedPointer<GenericFader>> m_fadingOut;
     /** DMX Total Control: where in its beat it is (timer thread), whether
      *  its last beat was one of that clock (not tapped), and the beats so far
      *  (beats(), read by the UI) */
     qreal m_beatPos = 0.0;
     bool m_beatTimed = false;
     QAtomicInt m_beats;
-    /** DMX Total Control: the beats of a row of presses since its first one
-     *  (timer thread) */
-    int m_tapIndex = 0;
 };
 
 /** @} */

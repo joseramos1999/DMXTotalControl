@@ -47,12 +47,29 @@ SpinBox {
     readonly property real fitWidth: Math.ceil(widest.advanceWidth) + leftPadding + rightPadding
                                      + (contentItem ? (contentItem.leftPadding || 0) + (contentItem.rightPadding || 0) : 0) + 2
 
+    /** A text in place of the time until it is changed (several values: «mixed») */
+    property string otherText: ""
+
     signal edited(int engineValue)
 
     TextMetrics {
         id: widest
         font: control.font
         text: control.textFromValue(Math.max(control.value, 1000 * control.perSecond - 1), control.locale)
+    }
+    // (over the field: the spin box does not redo its text when only this
+    // changes. Typing in it shows the time)
+    Binding { target: control.contentItem; property: "color"; value: "transparent"; when: control.otherText.length > 0 && !control.activeFocus }
+    Text {
+        parent: control.contentItem
+        anchors.fill: parent
+        visible: control.otherText.length > 0 && !control.activeFocus
+        text: control.otherText
+        font: control.font
+        color: control.palette.text
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        elide: Text.ElideRight
     }
     Binding { target: control.up.indicator; property: "implicitWidth"; value: 30; when: control.compact }
     Binding { target: control.down.indicator; property: "implicitWidth"; value: 30; when: control.compact }

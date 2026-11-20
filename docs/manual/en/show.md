@@ -81,7 +81,7 @@ The fastest way to fill a table is to **drag scenes** from the list under the pr
 | **Release a group** | One group, or all of them. |
 | **Blackout** | Turns the blackout on or off. |
 | **Stop all** | Like the button in the top bar. |
-| **Tap tempo** | Taps the show tempo (the one of the FX and of the scenes in BPM mode). |
+| **Tap tempo** | Taps the show tempo (the one of the FX and of the scenes in BPM mode), with its decimals: the average of the last presses; one far off that rhythm does not change it, and two such presses in a row that agree set a new tempo. Each press is a beat: the FX at “BPM of the show” and the chases fall on it again, at the same tempo too. |
 | **BeatGO (next division)** | Like the BeatGO button in the top bar. |
 | **A palette** | Applies the palette to the fixtures it was recorded with (“Its own fixtures”) or to a fixture group, as a live edit of the programmer: it stays over the scenes until you press again. |
 | **Cuelist GO** / **Cuelist back** / **Release a cuelist** | On the cuelist you choose in **Cuelist**. |
@@ -119,10 +119,10 @@ A SHOW fader can control **several things at once**. In its properties, under **
 | **Master of a group** | The master of that Live group. |
 | **Grand master** | The GM in the top bar. |
 | **Dimmer of fixtures** | The mixer dimmer of all the fixtures or of a fixture group. |
-| **Movement speed of moving heads** | The speed of what moves the moving heads (all of them or those of a group): their pan/tilt FX, the programmer's, and the steps that move them. ×0.1 at the bottom, normal (×1) in the middle, ×10 at the top; the fader shows the multiplier and a double click puts it back to ×1. An FX of pan/tilt and colour only changes the speed of the movement; a cuelist, the speed of its FX. The speed channel of the motors is not touched. |
+| **Movement speed of moving heads** | The speed of what moves the moving heads (all of them or those of a group): their pan/tilt FX, the programmer's, and the steps that move them. ×0.1 at the bottom, normal (×1) in the middle, ×10 at the top; the fader shows the multiplier and a double click puts it back to ×1. An FX of pan/tilt and colour only changes the speed of the movement (and of what is linked to it, which goes on its clock); a cuelist, the speed of its FX. The speed channel of the motors is not touched. |
 | **Speed of a scene** | The live speed of that scene (×0.1 to ×10, like the movement speed). |
 | **Play a scene (its speed)** | Like “Play a scene (its intensity)”, but the fader is its speed: all the way down the scene is stopped; when you raise it, it starts in its group and the travel is its speed, ×0.1 just above the bottom, ×1 in the middle and ×10 at the top. The text says “Stopped” while it is not playing, and the fader follows the scene if it is stopped or played from somewhere else. The speed is for that run only: once stopped, the scene goes back to the speed it had (its Live speed does not change). A double click puts it at ×1 (and plays it if it was stopped). Like the intensity one, it adds its scene to its group and holds it: several at once play together (also several scenes of the same exclusive group on one fader), and only lowering it all the way stops it. |
-| **BPM** | The show tempo, from 20 to 300. |
+| **BPM** | The show tempo, from 20 to 300. It changes without a jump: the beat goes on from where it is. |
 | **Cue speed (all cuelists)** | The [speed of every cuelist](playbacks.md#cue-speed): its fades (also the ones that are running), delays, Follow and Wait. From ×0.1 to ×10, like the movement speed. It is not saved with the show. |
 
 The difference between the two scene elements: **“Play a scene (its intensity)”** is the scene itself, and it starts and stops it; **“Dimmer of a scene (does not play it)”** only dims it, also when it is played from somewhere else. You can use them together: with the dimmer at 50 % and the fader that plays it at 80 %, the scene comes out at 40 %.

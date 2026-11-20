@@ -110,8 +110,8 @@ Elle existe aussi sur les faders du [SHOW](show.md#faders) et dans les [mappings
 
 Pendant le fondu d’une cue, le panneau du playback sélectionné affiche **« Temps en direct »** : le délai plus le fondu de cette cue (par exemple, « 4,0 s »). Vous pouvez le changer pendant qu’il s’écoule :
 
-- Tapez un autre temps, ou appuyez sur **« ×½ »** ou **« ×2 »** : le fondu continue là où il en est et finit dans le nouveau temps.
-- **« Maintenant »** termine le fondu tout de suite.
+- Tapez un autre temps, ou appuyez sur **« ×½ »** ou **« ×2 »** : le fondu continue là où il en est et finit dans le nouveau temps, celui des FX de la cue aussi.
+- **« Maintenant »** termine le fondu tout de suite, celui des FX de la cue aussi.
 - Si la cue suivante est en **Suivre**, elle attend la nouvelle fin.
 
 Le changement ne vaut que pour cette fois : la cue suivante garde ses propres temps. « Temps en direct » passe en orange quand le temps n’est pas celui de la cue. **« Enregistrer dans la cue »** enregistre dans la cue les temps changés (aussi ceux de ses attributs et de ses fixtures). C’est impossible quand la cue passe avec un temps de BACK ou avec la montée d’un groupe ou d’un bloc, qui ne sont pas ses temps. Cela s’annule comme toute autre modification de la cuelist.

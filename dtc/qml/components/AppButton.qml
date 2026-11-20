@@ -32,6 +32,9 @@ Button {
     /** Background when highlighted/checked, or for "primary" buttons */
     property color accentColor: Theme.accent
     property bool primary: false
+    /** Some of what it stands for are on and some not (a selection that
+     *  doesn't share it): unlit, with a half bar of its colour */
+    property bool partial: false
 
     implicitHeight: 34
     leftPadding: text.length > 0 ? 12 : 8
@@ -93,7 +96,15 @@ Button {
             return control.down ? Theme.surface : (control.hovered ? Theme.surfaceHover : Theme.surfaceRaised)
         }
         border.width: control.flat || control.lit ? 0 : 1
-        border.color: Theme.border
+        border.color: control.partial ? control.litFill : Theme.border
         Behavior on color { ColorAnimation { duration: 90 } }
+        Rectangle {
+            visible: control.partial && !control.lit
+            anchors { left: parent.left; bottom: parent.bottom; leftMargin: 4; bottomMargin: 3 }
+            width: (parent.width - 8) / 2
+            height: 3
+            radius: 1.5
+            color: control.litFill
+        }
     }
 }

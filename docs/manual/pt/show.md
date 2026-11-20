@@ -81,7 +81,7 @@ A forma mais rápida de preencher uma tabela é **arrastar cenas** da lista que 
 | **Liberar um grupo** | Um grupo, ou todos. |
 | **Blackout** | Ativa ou desativa o blackout. |
 | **Parar tudo** | Como o botão da barra superior. |
-| **Tap tempo** | Marca o tempo do show (o dos FX e das cenas em modo BPM). |
+| **Tap tempo** | Marca o tempo do show (o dos FX e das cenas em modo BPM), com seus decimais: a média dos últimos toques; um muito longe desse ritmo não o muda, e dois seguidos assim que coincidem marcam um tempo novo. Cada toque é uma batida: os FX em “BPM do show” e os chases voltam a cair nela, também no mesmo tempo. |
 | **BeatGO (próxima divisão)** | Como o botão BeatGO da barra superior. |
 | **Uma paleta** | Aplica a paleta nos fixtures com os quais ela foi gravada (“Os próprios fixtures”) ou em um grupo de fixtures, como uma edição ao vivo do programador: fica por cima das cenas até você pressionar de novo. |
 | **GO de cuelist** / **Voltar de cuelist** / **Liberar uma cuelist** | Sobre a cuelist que você escolher em **Cuelist**. |
@@ -119,10 +119,10 @@ Um fader do SHOW pode controlar **várias coisas ao mesmo tempo**. Nas proprieda
 | **Master de um grupo** | O master desse grupo de Ao vivo. |
 | **Grand master** | O GM da barra superior. |
 | **Dimmer de fixtures** | O dimmer do mixer de todos os fixtures ou de um grupo de fixtures. |
-| **Velocidade de movimento dos moving heads** | A velocidade do que move os moving heads (todos ou os de um grupo): os FX de pan/tilt deles, os do programador e os passos que os movem. Embaixo ×0,1, no meio a normal (×1), em cima ×10; o fader mostra o multiplicador e um clique duplo o volta para ×1. Um FX de pan/tilt e de cor só muda a velocidade do movimento; uma cuelist, a dos FX dela. O canal de velocidade dos motores não é tocado. |
+| **Velocidade de movimento dos moving heads** | A velocidade do que move os moving heads (todos ou os de um grupo): os FX de pan/tilt deles, os do programador e os passos que os movem. Embaixo ×0,1, no meio a normal (×1), em cima ×10; o fader mostra o multiplicador e um clique duplo o volta para ×1. Um FX de pan/tilt e de cor só muda a velocidade do movimento (e do que está vinculado a ele, que anda no relógio dele); uma cuelist, a dos FX dela. O canal de velocidade dos motores não é tocado. |
 | **Velocidade de uma cena** | A velocidade ao vivo dessa cena (×0,1 a ×10, como a de movimento). |
 | **Disparar uma cena (sua velocidade)** | Como “Disparar uma cena (sua intensidade)”, mas o fader é a velocidade dela: embaixo de tudo a cena fica parada; ao subi-lo, ela inicia no grupo dela e o curso é a velocidade dela, ×0,1 logo acima de embaixo, ×1 no meio e ×10 em cima. O texto diz “Parada” enquanto ela não toca, e o fader acompanha a cena se ela for parada ou disparada de outro lugar. A velocidade é só daquela vez: ao parar, a cena volta à velocidade que tinha (a do Ao vivo não muda). Um clique duplo a põe em ×1 (e a dispara se ela estava parada). Como o de intensidade, soma a cena dele ao grupo e a segura: vários ao mesmo tempo tocam juntos (também várias cenas de um mesmo grupo exclusivo em um fader), e só descê-lo até o fim a para. |
-| **BPM** | O tempo do show, de 20 a 300. |
+| **BPM** | O tempo do show, de 20 a 300. Muda sem saltos: a batida continua de onde está. |
 | **Velocidade das cues (todas as cuelists)** | A [velocidade de todas as cuelists](playbacks.md#velocidade-das-cues): seus fades (também os que estão em andamento), atrasos, Seguir e Esperar. De ×0,1 a ×10, como a de movimento. Não é salva com o show. |
 
 A diferença entre os dois de cena: **“Disparar uma cena (sua intensidade)”** é a própria cena, e a inicia e a para; **“Dimmer de uma cena (sem dispará-la)”** só a atenua, também quando ela é disparada de outro lugar. Os dois podem ser usados ao mesmo tempo: com o dimmer em 50 % e o fader que a dispara em 80 %, a cena sai a 40 %.

@@ -36,6 +36,7 @@
 #include "curvefx.h"
 #include "qlcfile.h"
 #include "fixture.h"
+#include "fixturegroup.h"
 #include "efx.h"
 #include "doc.h"
 
@@ -71,7 +72,9 @@ QVariantMap FxTools::layerToMap(const FXScene::Layer &layer)
         { "panInvert", layer.panInvert },
         { "tiltInvert", layer.tiltInvert },
         { "reverse", layer.reverse },
-        { "linked", layer.linked },
+        // DMX Total Control: linked, and its link group
+        { "linked", layer.isLinked() },
+        { "link", layer.link },
         // DMX Total Control: the level of the virtual dimmer (-1: auto)
         { "virtualBase", layer.virtualBase },
         { "fixtures", fixtures }
@@ -101,7 +104,9 @@ FXScene::Layer FxTools::layerFromMap(const QVariantMap &map, const FXScene::Laye
     if (map.contains("panInvert")) layer.panInvert = map.value("panInvert").toBool();
     if (map.contains("tiltInvert")) layer.tiltInvert = map.value("tiltInvert").toBool();
     if (map.contains("reverse")) layer.reverse = map.value("reverse").toBool();
-    if (map.contains("linked")) layer.linked = map.value("linked").toBool();
+    // DMX Total Control: its link group; "linked" alone (older macros), the first one
+    if (map.contains("link")) layer.link = qMax(0, map.value("link").toInt());
+    else if (map.contains("linked")) layer.link = map.value("linked").toBool() ? qMax(1, layer.link) : 0;
     if (map.contains("virtualBase")) layer.virtualBase = qBound(-1, map.value("virtualBase").toInt(), 255);
     if (map.contains("fixtures"))
     {
@@ -129,6 +134,14 @@ FXScene::Layer FxTools::defaultLayer(const QString &param)
         layer.swing = 50;
     }
     return layer;
+}
+
+int FxTools::newLink(const QList<FXScene::Layer> &layers, int after)
+{
+    int last = after;
+    for (const FXScene::Layer &layer : layers)
+        last = qMax(last, layer.link);
+    return last + 1;
 }
 
 QStringList FxTools::timingKeys()
@@ -225,6 +238,23 @@ int FxTools::ownShapeCount(const FXScene::Layer &layer)
     return count;
 }
 
+FXScene::Own FxTools::shapeAsOwn(const FXScene::Shape &shape)
+{
+    FXScene::Own own;
+    own.mode = shape.mode;
+    own.figure = shape.figure;
+    own.swing = shape.swing;
+    own.swingTilt = shape.swingTilt;
+    own.phase = shape.phase;
+    own.rotate = shape.rotate;
+    own.panInvert = shape.panInvert;
+    own.tiltInvert = shape.tiltInvert;
+    own.reverse = shape.reverse;
+    own.shift = shape.shift;
+    own.delay = shape.delay;
+    return own;
+}
+
 int FxTools::offsetCount(const FXScene::Layer &layer)
 {
     const QMap<quint32, FXScene::Own> tidy = layer.tidyOwn();
@@ -234,13 +264,79 @@ int FxTools::offsetCount(const FXScene::Layer &layer)
     return count;
 }
 
+QVariantMap FxTools::mixedKeys(const QList<FXScene::Shape> &shapes)
+{
+    QVariantMap mixed;
+    for (const FXScene::Shape &s : shapes)
+    {
+        const FXScene::Shape &first = shapes.constFirst();
+        auto differs = [&mixed](const char *key, bool apart) { if (apart) mixed.insert(key, true); };
+        differs("mode", s.mode != first.mode);
+        differs("figure", s.figure != first.figure);
+        differs("swing", s.swing != first.swing);
+        differs("swingTilt", s.swingTilt != first.swingTilt);
+        differs("phase", s.phase != first.phase);
+        differs("rotate", s.rotate != first.rotate);
+        differs("panInvert", s.panInvert != first.panInvert);
+        differs("tiltInvert", s.tiltInvert != first.tiltInvert);
+        differs("reverse", s.reverse != first.reverse);
+    }
+    return mixed;
+}
+
+QVariantMap FxTools::mixedTiming(const QList<FXScene::Layer> &layers)
+{
+    QVariantMap mixed;
+    for (const FXScene::Layer &l : layers)
+    {
+        const FXScene::Layer &first = layers.constFirst();
+        auto differs = [&mixed](const char *key, bool apart) { if (apart) mixed.insert(key, true); };
+        differs("syncBpm", l.syncBpm != first.syncBpm);
+        differs("bpm", l.syncBpm != first.syncBpm || (l.syncBpm == false && qFuzzyCompare(l.bpm + 1, first.bpm + 1) == false));
+        differs("multiplier", qFuzzyCompare(l.multiplier, first.multiplier) == false);
+        differs("wave", l.wave != first.wave);
+        differs("step", l.step != first.step);
+        differs("grouping", l.grouping != first.grouping);
+        differs("groupSize", l.grouping != first.grouping ||
+                             (l.grouping != FXScene::NoGrouping && l.groupSize != first.groupSize));
+        differs("order", l.order != first.order);
+        differs("wait", l.wait != first.wait);
+    }
+    return mixed;
+}
+
+bool FxTools::showsMirror(const FXScene::Layer &layer, const QList<quint32> &order)
+{
+    const QList<bool> twins = FXScene::mirrorTwins(layer, order);
+    if (twins.contains(true) == false)
+        return false;
+    // backwards alone is the mirror of its twin only on some figures: on an
+    // eight it goes down while its twin goes up. And only unturned (or turned
+    // 180°): it goes backwards before the turn, so at 90° it is the mirror in
+    // tilt («Invert pan» goes after the turn)
+    const FXScene::Shape base = layer.shape();
+    auto turned = [](int degrees) { return degrees % 180 != 0; };
+    for (int i = 0; i < twins.count() && i < order.count(); i++)
+    {
+        if (twins.at(i) == false)
+            continue;
+        const FXScene::Shape s = layer.shapeOf(order.at(i));
+        if (s.reverse != base.reverse && s.panInvert == base.panInvert && s.tiltInvert == base.tiltInvert &&
+            (FXScene::reverseMirrorsPan(s.figure) == false || turned(s.rotate) || turned(base.rotate)))
+            return false;
+    }
+    return true;
+}
+
 QVariantList FxTools::fixtureRows(const Doc *doc, const FXScene::Layer &layer, const QList<quint32> &sceneFixtures,
                                   const QList<quint32> &selected)
 {
-    // the sets as FXScene::positionOf finds them
-    const QList<quint32> order = FXScene::orderedFixtures(layer, sceneFixtures);
+    // the sets as FXScene::positionOf finds them (DMX Total Control: «By
+    // number» by the numbers of the patch; «By group», with their groups)
+    const QList<quint32> order = FXScene::orderedFixtures(layer, sceneFixtures, doc);
     int sets = 1;
-    const QList<int> setOf = FXScene::groupSets(doc, order, layer.grouping, layer.groupSize, &sets);
+    QList<quint32> setGroups;
+    const QList<int> setOf = FXScene::groupSets(doc, order, layer.grouping, layer.groupSize, &sets, &setGroups);
     const QList<bool> twins = FXScene::mirrorTwins(layer, order);
     const int step = layer.step < 0 ? sets : layer.step;
     const int wave = layer.wave < 0 ? sets : layer.wave;
@@ -255,7 +351,10 @@ QVariantList FxTools::fixtureRows(const Doc *doc, const FXScene::Layer &layer, c
         if (FXScene::modeReversed(shape.mode) && layer.isPanTilt() == false)
             set = sets - 1 - set;
         const Fixture *fxi = doc != nullptr ? doc->fixture(fid) : nullptr;
+        const FixtureGroup *group = doc != nullptr && setOf.at(i) < setGroups.count()
+                                        ? doc->fixtureGroup(setGroups.at(setOf.at(i))) : nullptr;
         rows.append(QVariantMap({
+            { "group", group != nullptr ? group->name() : QString() },
             { "id", fid },
             { "name", fxi != nullptr ? fxi->name() : QString() },
             { "selected", selected.contains(fid) },
@@ -278,7 +377,7 @@ QVariantMap FxTools::virtualDimmer(const Doc *doc, const FXScene::Layer &layer, 
         return { { "virtualCount", 0 }, { "virtualBase", layer.virtualBase },
                  { "virtualLevel", layer.virtualBase >= 0 ? layer.virtualBase : 255 } };
 
-    const QList<quint32> order = FXScene::orderedFixtures(layer, fixtures);
+    const QList<quint32> order = FXScene::orderedFixtures(layer, fixtures, doc);
     int count = 0;
     if (doc != nullptr)
     {
@@ -358,14 +457,46 @@ int FxTools::nearestPlace(int i, int n, int m)
     return qBound(0, qRound(qreal(i) * (m - 1) / (n - 1)), m - 1);
 }
 
+/** DMX Total Control: the period (2 or 3) the $m places repeat with, two
+ *  times at least, as $same(a, b) compares them; 0: none (all alike too) */
+static int repeatPeriod(int m, const std::function<bool(int, int)> &same)
+{
+    for (int p = 2; p <= 3; p++)
+    {
+        if (m < 2 * p)
+            continue;
+        bool repeats = true;
+        for (int j = p; j < m && repeats; j++)
+            repeats = same(j, j % p);
+        bool alike = true;
+        for (int j = 1; j < p && alike; j++)
+            alike = same(j, 0);
+        if (repeats && alike == false)
+            return p;
+    }
+    return 0;
+}
+
 FxTools::FixtureLook FxTools::lookAt(const QList<FixtureLook> &looks, int i, int n)
 {
     const int m = int(looks.count());
     if (m == 0)
         return FixtureLook();
 
-    // the shape and the slots of its nearest place: a mirror stays a mirror
-    FixtureLook look = looks.at(nearestPlace(i, n, m));
+    // the shape and the slots of its nearest place: a mirror stays a mirror.
+    // DMX Total Control: what repeats every 2 or 3 places repeats (every
+    // other one backwards stretched into N R R N R N N R, or N N R R: a mirror)
+    const int nearest = nearestPlace(i, n, m);
+    auto shapeAt = [&looks](int j) {
+        FXScene::Own own = looks.at(j).own;
+        own.shift.reset();
+        own.delay.reset();
+        return own;
+    };
+    const int shapeRepeat = repeatPeriod(m, [&shapeAt](int a, int b) { return shapeAt(a) == shapeAt(b); });
+    FixtureLook look;
+    look.own = shapeAt(shapeRepeat > 0 ? i % shapeRepeat : nearest);
+
     // the numbers in between the two places around it: a fan stays a fan
     qreal t = 0;
     if (n == m)
@@ -375,18 +506,32 @@ FxTools::FixtureLook FxTools::lookAt(const QList<FixtureLook> &looks, int i, int
     const int low = int(std::floor(t));
     const int high = qMin(m - 1, int(std::ceil(t)));
     const qreal f = t - low;
-    const FixtureLook &a = looks.at(low);
-    const FixtureLook &b = looks.at(high);
     auto between = [f](int from, int to) { return qRound(from + (to - from) * f); };
-    for (auto it = a.bases.cbegin(); it != a.bases.cend(); ++it)
+    // each base: repeated, in between (a fan), or from its nearest place (a slot)
+    QSet<QString> params;
+    for (const FixtureLook &each : looks)
+        for (auto it = each.bases.cbegin(); it != each.bases.cend(); ++it)
+            params.insert(it.key());
+    for (const QString &param : std::as_const(params))
     {
-        if (interpolates(it.key()) && b.bases.contains(it.key()))
-            look.bases.insert(it.key(), between(it.value(), b.bases.value(it.key())));
+        auto value = [&looks, &param](int j) { return looks.at(j).bases.value(param, -1); };
+        const int repeat = repeatPeriod(m, [&value](int a, int b) { return value(a) == value(b); });
+        int v = value(nearest);
+        if (repeat > 0)
+            v = value(i % repeat);
+        else if (interpolates(param) && value(low) >= 0 && value(high) >= 0)
+            v = between(value(low), value(high));
+        if (v >= 0)
+            look.bases.insert(param, v);
     }
-    const int shift = between(a.own.shift.value_or(0), b.own.shift.value_or(0));
-    const int delay = between(a.own.delay.value_or(0), b.own.delay.value_or(0));
-    look.own.shift = shift > 0 ? std::optional<int>(shift) : std::nullopt;
-    look.own.delay = delay > 0 ? std::optional<int>(delay) : std::nullopt;
+    // the shift and the delay: repeated, or in between
+    auto offset = [&](const std::function<int(int)> &value) {
+        const int repeat = repeatPeriod(m, [&value](int a, int b) { return value(a) == value(b); });
+        const int v = repeat > 0 ? value(i % repeat) : between(value(low), value(high));
+        return v > 0 ? std::optional<int>(v) : std::nullopt;
+    };
+    look.own.shift = offset([&looks](int j) { return looks.at(j).own.shift.value_or(0); });
+    look.own.delay = offset([&looks](int j) { return looks.at(j).own.delay.value_or(0); });
     return look;
 }
 
@@ -438,6 +583,46 @@ static void setLayerSpeed(FXScene::Layer &layer, const Function *function)
     }
 }
 
+/** DMX Total Control: the FX figure that draws the one of a Move FX: the
+ *  FX figure at $sign times the cycle of the Move FX, $phase (cycles) on,
+ *  turned $rotate degrees (the FX turn counter-clockwise). $exact: the same
+ *  path */
+struct EfxFigure
+{
+    int figure;
+    int sign;
+    qreal phase;
+    int rotate;
+    bool exact;
+};
+
+static EfxFigure efxFigure(const EFX *efx)
+{
+    switch (efx->algorithm())
+    {
+        // (-sin 2a, cos a): an eight standing, the one of the FX turned
+        case EFX::Eight: return { FXScene::Eight, -1, 0.25, 90, true };
+        // (cos a, cos a): a diagonal
+        case EFX::Line: return { FXScene::Diagonal, 1, 0.25, 0, true };
+        // a ramp along the diagonal: a back and forth on it
+        case EFX::Line2: return { FXScene::Diagonal, 1, 0.75, 0, false };
+        // from the top, clockwise
+        case EFX::Diamond: return { FXScene::Diamond, -1, 0.5, 0, true };
+        // from the top left corner, clockwise
+        case EFX::Square: return { FXScene::Square, -1, 0.625, 0, true };
+        case EFX::SquareChoppy: return { FXScene::Square, 1, 0.25, 0, false };
+        case EFX::SquareTrue: return { FXScene::Square, -1, 0.375, 0, false };
+        // a thin leaf, like a circle squeezed
+        case EFX::Leaf: return { FXScene::Circle, -1, 0.0, 0, false };
+        case EFX::Lissajous:
+            return { FXScene::Lissajous, 1, 0.0, efx->xFrequency() < efx->yFrequency() ? 90 : 0, false };
+        // (-sin a, cos a): the circle of the FX the other way round
+        case EFX::Circle:
+        default:
+            return { FXScene::Circle, -1, 0.0, 0, true };
+    }
+}
+
 static void copyCommon(const Function *from, FXScene *to)
 {
     to->setName(from->name());
@@ -473,33 +658,28 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
         FXScene *fx = new FXScene(doc);
         copyCommon(efx, fx);
 
+        // (DMX Total Control: the fixtures in dimmer or RGB mode stay out: a
+        // pan/tilt FX would move them, or nothing. convertNotes says so)
         QList<quint32> fixtures;
         for (EFXFixture *ef : efx->fixtures())
         {
             if (excluded.contains(ef->head().fxi))
                 left.insert(ef->head().fxi);
-            else if (fixtures.contains(ef->head().fxi) == false)
+            else if (fixtures.contains(ef->head().fxi) == false && ef->mode() == EFXFixture::PanTilt)
                 fixtures.append(ef->head().fxi);
         }
         fx->setFixtures(fixtures);
 
+        // DMX Total Control: the figure that draws its path, the same way
+        // round (its circle turns the other way), from where it starts. It
+        // turns clockwise, the FX the other way
+        const EfxFigure figure = efxFigure(efx);
         FXScene::Layer layer = defaultLayer("pantilt");
-        switch (efx->algorithm())
-        {
-            case EFX::Eight: layer.figure = FXScene::Eight; break;
-            case EFX::Line: layer.figure = FXScene::PanLine; break;
-            case EFX::Line2: layer.figure = FXScene::Diagonal; break;
-            case EFX::Diamond: layer.figure = FXScene::Diamond; break;
-            case EFX::Square: case EFX::SquareChoppy: case EFX::SquareTrue: layer.figure = FXScene::Square; break;
-            case EFX::Leaf: layer.figure = FXScene::Leaf; break;
-            case EFX::Lissajous: layer.figure = FXScene::Lissajous; break;
-            default: layer.figure = FXScene::Circle; break;
-        }
+        layer.figure = figure.figure;
         // width and height are radiuses in 0-255
         layer.swing = qBound(0, int(std::round(efx->width() * 200.0 / 255.0)), 250);
         layer.swingTilt = qBound(0, int(std::round(efx->height() * 200.0 / 255.0)), 250);
-        layer.rotate = efx->rotation() % 360;
-        layer.reverse = efx->direction() == Function::Backward;
+        layer.rotate = ((figure.rotate - efx->rotation()) % 360 + 360) % 360;
         setLayerSpeed(layer, efx);
         if (efx->propagationMode() != EFX::Parallel)
             layer.wave = waveOfSpread(efx->phaseSpread(), fixtures.count());
@@ -508,19 +688,61 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
             layer.grouping = FXScene::Mirror;
             layer.groupSize = 2;
         }
-        // DMX Total Control: its start offset is the phase, and the one of each
-        // fixture its shift: the effect puts them ahead, a shift goes behind
-        layer.phase = efx->startOffset() % 360;
-        QList<quint32> offsetDone;
-        for (EFXFixture *ef : efx->fixtures())
+        // DMX Total Control: each fixture as the Move FX moves it. One whose
+        // direction is not the one of the Move FX goes backwards (on a line,
+        // half a cycle on, which is the same). Its start offset is the phase,
+        // and the one of each fixture its shift: the effect puts them ahead,
+        // a shift goes behind (both the other way round backwards). With
+        // «Symmetric», the second half inverts its pan
+        struct Placed
         {
+            quint32 fixture;
+            bool reverse;
+            int phase;
+            int shift;
+            bool mirrored;
+        };
+        QList<Placed> placed;
+        const bool line = efx->algorithm() == EFX::Line;
+        for (int i = 0; i < efx->fixtures().count(); i++)
+        {
+            const EFXFixture *ef = efx->fixtures().at(i);
             const quint32 fid = ef->head().fxi;
-            if (offsetDone.contains(fid) || fixtures.contains(fid) == false)
+            bool done = false;
+            for (const Placed &p : std::as_const(placed))
+                done = done || p.fixture == fid;
+            if (done || fixtures.contains(fid) == false)
                 continue;
-            offsetDone.append(fid);
-            if (ef->startOffset() % 360 != 0)
-                FxTools::setOffset(layer, { fid }, "shift", (360 - ef->startOffset() % 360) % 360);
+            const bool back = ef->direction() != efx->direction();
+            const int d = back && line == false ? -1 : 1;
+            const int r = figure.sign * d;
+            auto degrees = [](qreal cycles) { return ((int(std::lround(cycles * 360.0)) % 360) + 360) % 360; };
+            Placed p;
+            p.fixture = fid;
+            p.reverse = line ? back : r < 0;
+            p.phase = degrees(d * (efx->startOffset() % 360) / 360.0 + r * figure.phase);
+            p.shift = degrees(-d * (ef->startOffset() % 360) / 360.0);
+            p.mirrored = efx->fixtureMirrored(i);
+            placed.append(p);
         }
+        if (placed.isEmpty() == false)
+        {
+            layer.reverse = placed.first().reverse;
+            layer.phase = placed.first().phase;
+        }
+        for (const Placed &p : std::as_const(placed))
+        {
+            FXScene::Own &own = layer.own[p.fixture];
+            if (p.reverse != layer.reverse)
+                own.reverse = p.reverse;
+            if (p.phase != layer.phase)
+                own.phase = p.phase;
+            if (p.mirrored)
+                own.panInvert = true;
+            if (p.shift != 0)
+                own.shift = p.shift;
+        }
+        layer.own = layer.tidyOwn();
         QList<FXScene::Layer> layers = { layer };
 
         // "Control dimmer": the heads lit on the stroke, dark on the way back,
@@ -536,11 +758,14 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
             dimmer.wave = layer.wave;
             dimmer.grouping = layer.grouping;
             dimmer.groupSize = layer.groupSize;
-            dimmer.reverse = layer.reverse;
-            // (DMX Total Control: each dimmer with the start offset of its fixture)
-            dimmer.own = layer.own;
-            dimmer.linked = true;
-            layers.first().linked = true;
+            dimmer.reverse = efx->direction() == Function::Backward;
+            // (DMX Total Control: each dimmer with the start offset of its
+            // fixture: it follows the cycle, not the direction)
+            for (const EFXFixture *ef : efx->fixtures())
+                if (fixtures.contains(ef->head().fxi) && ef->startOffset() % 360 != 0)
+                    FxTools::setOffset(dimmer, { ef->head().fxi }, "shift", (360 - ef->startOffset() % 360) % 360);
+            dimmer.link = 1;
+            layers.first().link = 1;
             layers.append(dimmer);
             for (quint32 fid : fixtures)
             {
@@ -589,16 +814,21 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
         int mode = 1;
         bool fromLow = false;
         bool random = false;
+        // DMX Total Control: where the wave of the FX is when the curve starts
+        int phase = 0;
         switch (curve->waveform())
         {
-            case CurveFX::Triangle: mode = 19; break;
+            // (from the low value: a quarter before the middle going up)
+            case CurveFX::Triangle: mode = 19; phase = 270; break;
             case CurveFX::RampUp: mode = 16; fromLow = true; break;
             case CurveFX::RampDown: mode = 15; fromLow = true; break;
             case CurveFX::Square: mode = 7; break;
             case CurveFX::Strobe: mode = 9; fromLow = true; break;
             case CurveFX::RandomStrobe: mode = 9; fromLow = true; random = true; break;
             case CurveFX::Random: mode = 9; fromLow = true; random = true; break;
-            default: mode = 1; break;
+            // DMX Total Control: it rises from the low value, as the up and
+            // back of the FX (it went around the middle)
+            default: mode = 3; fromLow = true; break;
         }
 
         // a layer for each parameter its channels are
@@ -631,7 +861,7 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
             // symmetric waves swing around the middle, the others go up from the low value
             layer.swing = qBound(0, int(std::round(span * (fromLow ? 200.0 : 100.0) / 255.0)), 250);
             setLayerSpeed(layer, curve);
-            layer.phase = ((curve->phaseOffset() % 360) + 360) % 360;
+            layer.phase = ((curve->phaseOffset() % 360) + phase + 360) % 360;
             layer.wave = waveOfSpread(curve->spread(), fixtures.count());
             if (random)
             {
@@ -639,7 +869,7 @@ FXScene *FxTools::convert(Doc *doc, const Function *function, const QSet<quint32
                 layer.wave = 0;
                 layer.order = FXScene::Shuffled;
             }
-            layer.linked = params.count() > 1;
+            layer.link = params.count() > 1 ? 1 : 0;
             layers.append(layer);
         }
         fx->setLayers(layers);
@@ -739,11 +969,13 @@ void FxMacros::buildFactory()
     FXScene::Layer cancan = pantilt(FXScene::TiltLine, 0, 25, 40);
     cancan.wave = 2;
     add("can-can", tr("Can-can"), "position", { cancan });
+    // DMX Total Control: a mirror: the second half of the heads inverts its
+    // pan, whatever their count (the whole FX inverted swept them all alike)
     FXScene::Layer mirror = pantilt(FXScene::PanLine, 30, 0, 20);
-    mirror.grouping = FXScene::Mirror;
-    mirror.groupSize = 2;
-    mirror.panInvert = true;
     add("pan-mirror", tr("Pan in mirror"), "position", { mirror });
+    FxTools::FixtureLook inverted;
+    inverted.own.panInvert = true;
+    m_factory.last().looks = { { FxTools::FixtureLook(), inverted } };
     add("square", tr("Square"), "position", { pantilt(FXScene::Square, 20, 20, 20) });
     add("triangle", tr("Triangle"), "position", { pantilt(FXScene::Triangle, 20, 20, 20) });
     add("leaf", tr("Leaf"), "position", { pantilt(FXScene::Leaf, 25, 25, 15) });
@@ -778,28 +1010,35 @@ void FxMacros::buildFactory()
         FXScene::Layer l = wave(rgb.at(i), 3, 200, 20);
         l.phase = i * 120;
         l.wave = -1;
-        l.linked = true;
+        l.link = 1;
         rainbow.append(l);
     }
-    add("rainbow", tr("Rainbow"), "colour", rainbow, { { "red", 0 }, { "green", 0 }, { "blue", 0 } });
+    // DMX Total Control: the white, the amber and the UV out (a white below
+    // made the colours pastel); a fixture without them is left alone
+    const QMap<QString, int> rgbOnly = { { "red", 0 }, { "green", 0 }, { "blue", 0 },
+                                         { "white", 0 }, { "amber", 0 }, { "uv", 0 } };
+    add("rainbow", tr("Rainbow"), "colour", rainbow, rgbOnly);
     FXScene::Layer red = wave("red", 9, 200, 60);
-    red.linked = true;
+    red.link = 1;
     FXScene::Layer blue = wave("blue", 9, 200, 60);
     blue.phase = 180;
-    blue.linked = true;
-    add("red-blue", tr("Red / blue"), "colour", { red, blue }, { { "red", 0 }, { "green", 0 }, { "blue", 0 } });
+    blue.link = 1;
+    add("red-blue", tr("Red / blue"), "colour", { red, blue }, rgbOnly);
     FXScene::Layer fireRed = wave("red", 1, 20, 90);
     fireRed.order = FXScene::Shuffled;
     fireRed.wave = -1;
     FXScene::Layer fireGreen = wave("green", 1, 60, 70);
     fireGreen.order = FXScene::Shuffled;
     fireGreen.wave = -1;
-    add("fire", tr("Fire"), "colour", { fireRed, fireGreen }, { { "red", 230 }, { "green", 40 }, { "blue", 0 } });
+    add("fire", tr("Fire"), "colour", { fireRed, fireGreen },
+        { { "red", 230 }, { "green", 40 }, { "blue", 0 }, { "white", 0 }, { "amber", 0 }, { "uv", 0 } });
     FXScene::Layer cyan = wave("cyan", 13, 200, 60);
-    cyan.linked = true;
+    cyan.link = 1;
     FXScene::Layer magenta = wave("magenta", 7, 200, 60);
-    magenta.linked = true;
-    add("cyan-magenta", tr("Cyan / magenta"), "colour", { cyan, magenta }, { { "cyan", 128 }, { "magenta", 128 } });
+    magenta.link = 1;
+    // (DMX Total Control: and no yellow)
+    add("cyan-magenta", tr("Cyan / magenta"), "colour", { cyan, magenta },
+        { { "cyan", 128 }, { "magenta", 128 }, { "yellow", 0 } });
 
     // beam
     add("zoom", tr("Zoom"), "beam", { wave("zoom", 1, 80, 20) });
@@ -820,7 +1059,8 @@ QVariantList FxMacros::macros() const
             for (const QList<FxTools::FixtureLook> &looks : m.looks)
                 fixtureCount = qMax(fixtureCount, int(looks.count()));
             list.append(QVariantMap({
-                { "perFixture", fixtureCount > 0 },
+                // (a factory one with halves, «Pan in mirror», is for any selection)
+                { "perFixture", fixtureCount > 0 && m.factory == false },
                 { "fixtureCount", fixtureCount },
                 { "id", m.id },
                 { "name", m.name },
@@ -855,11 +1095,18 @@ bool FxMacros::apply(const QString &id)
 
 QString FxMacros::save(const QString &name)
 {
+    m_saveNote.clear();
     if (m_programmer == nullptr)
         return QString();
-    QList<FXScene::Layer> layers = m_programmer->fxLayerList();
+    // DMX Total Control: one FX by parameter: another FX of a parameter (a
+    // circle on some fixtures, an eight on others) joins the first one, each
+    // fixture with what it did (the second one was dropped)
+    bool otherTiming = false;
+    QList<FXScene::Layer> layers = m_programmer->fxLayersByParam(&otherTiming);
     if (layers.isEmpty())
         return QString();
+    if (otherTiming)
+        m_saveNote = tr("FX of the same parameter went in as one, with the speed and the timing of the first one");
 
     Macro m;
     m.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
@@ -870,11 +1117,6 @@ QString FxMacros::save(const QString &name)
     // delay); when they all did the same, nothing: it is for any selection
     for (FXScene::Layer layer : layers)
     {
-        bool known = false;
-        for (const FXScene::Layer &l : std::as_const(m.layers))
-            known = known || l.param == layer.param;
-        if (known)
-            continue;
         QList<FxTools::FixtureLook> looks = m_programmer->fxFixtureLooks(layer);
         // (the bases of the first fixture: what an older version gives them all)
         if (looks.isEmpty() == false)
@@ -893,6 +1135,11 @@ QString FxMacros::save(const QString &name)
     write();
     emit macrosChanged();
     return m.id;
+}
+
+QString FxMacros::saveNote() const
+{
+    return m_saveNote;
 }
 
 void FxMacros::rename(const QString &id, const QString &name)

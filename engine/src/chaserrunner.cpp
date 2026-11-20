@@ -24,6 +24,7 @@
 #include <QRandomGenerator>
 #endif
 #include <QDebug>
+#include <cmath>
 
 #include "chaserrunner.h"
 #include "mastertimer.h"
@@ -45,6 +46,7 @@ ChaserRunner::ChaserRunner(const Doc *doc, const Chaser *chaser, quint32 startTi
     , m_order()
     , m_stepsDone(0)
     , m_held(false)
+    , m_beatNext(-1.0)
 {
     Q_ASSERT(chaser != NULL);
 
@@ -567,6 +569,8 @@ void ChaserRunner::clearRunningList()
         delete step;
     }
     m_runnerSteps.clear();
+    // (DMX Total Control: a jump: the next step goes to the beat again)
+    m_beatNext = -1.0;
 }
 
 void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity, qreal sIntensity,
@@ -655,6 +659,24 @@ void ChaserRunner::startNewStep(int index, MasterTimer *timer, qreal mIntensity,
     else
         newStep->m_elapsed = MasterTimer::tick() + elapsed;
     newStep->m_elapsedBeats = 0; //(newStep->m_elapsed / timer->beatTimeDuration()) * 1000;
+    // DMX Total Control: steps in beats go on the beat clock. The first one
+    // after a start or a jump goes to the beats of its length (a whole beat
+    // ends on a beat, 0.25 b on a quarter); each next one starts where the
+    // one before ended: steps of mixed lengths (1.5 + 0.5 b) keep their rhythm
+    newStep->m_beatStart = -1.0;
+    if (timer != NULL && m_chaser->tempoType() == Function::Beats && newStep->m_duration > 0 &&
+        newStep->m_duration != Function::infiniteSpeed())
+    {
+        const double now = timer->beatPosition();
+        const double length = double(newStep->m_duration) / 1000.0;
+        if (m_beatNext >= 0 && m_beatNext + length > now + 1e-7)
+            newStep->m_beatStart = m_beatNext;
+        else if (newStep->m_duration % 1000 == 0)
+            newStep->m_beatStart = std::floor(now + 1e-7);
+        else
+            newStep->m_beatStart = std::ceil((now + length / 2.0) / length - 1e-7) * length - length;
+    }
+    m_beatNext = -1.0;
 
     m_startOffset = 0;
 
@@ -908,6 +930,17 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
             step->m_elapsedBeats += 1000;
             qDebug() << "[ChaserRunner] Function" << step->m_function->name() << "duration:" << step->m_duration << "beats:" << step->m_elapsedBeats;
         }
+        // DMX Total Control: a step in beats ends on the beat clock, its
+        // length after the beat it starts on
+        if (m_chaser->tempoType() == Function::Beats && step->m_beatStart >= 0 &&
+            step->m_duration != Function::infiniteSpeed() && step->m_duration > 0)
+        {
+            const double end = step->m_beatStart + double(step->m_duration) / 1000.0;
+            if (timer->beatPosition() + 1e-7 >= end)
+                step->m_elapsedBeats = qMax(step->m_elapsedBeats, quint32(step->m_duration));
+            else
+                step->m_elapsedBeats = qMin(step->m_elapsedBeats, quint32(step->m_duration - 1));
+        }
 
         // (with a rhythm of its own, its beats move the steps, not their times)
         if (step->m_duration != Function::infiniteSpeed() && m_chaser->tapPeriod() == 0 &&
@@ -926,6 +959,9 @@ bool ChaserRunner::write(MasterTimer *timer, QList<Universe *> universes)
 
             if (step->m_duration != 0)
                 prevStepRoundElapsed = step->m_elapsed % step->m_duration;
+            // DMX Total Control: the next step starts where this one ended
+            m_beatNext = m_chaser->tempoType() == Function::Beats && step->m_beatStart >= 0
+                         ? step->m_beatStart + double(step->m_duration) / 1000.0 : -1.0;
 
             m_lastFunctionID = step->m_function->type() == Function::SceneType ? step->m_function->id() : Function::invalidId();
             step->m_function->stop(functionParent(), m_chaser->type() == Function::SequenceType);

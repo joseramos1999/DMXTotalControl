@@ -133,11 +133,12 @@ uint timecodeLength(const QList<Cuelist::Cue> &cues, int index)
 uint chasePeriod(const Doc *doc, const Cuelist *cl, qreal *perMinute)
 {
     const MasterTimer *timer = doc->masterTimer();
-    const bool showTempo = cl->chaseShowTempo() && timer != nullptr && timer->beatTimeDuration() > 0;
-    const qreal beat = showTempo ? qreal(timer->beatTimeDuration()) : 60000.0 / qreal(cl->chaseBpm());
+    // (the beat of the show with its fractions)
+    const bool showTempo = cl->chaseShowTempo() && timer != nullptr && timer->bpm() > 0;
+    const qreal beat = showTempo ? timer->beatDuration() : 60000.0 / qreal(cl->chaseBpm());
     const qreal multiplier = cl->chaseMultiplier();
     if (perMinute != nullptr)
-        *perMinute = (showTempo ? qreal(timer->bpmNumber()) : qreal(cl->chaseBpm())) * multiplier;
+        *perMinute = (showTempo ? timer->bpm() : qreal(cl->chaseBpm())) * multiplier;
     return uint(qMax(20.0, std::round(beat / multiplier)));
 }
 
@@ -252,10 +253,17 @@ void addFxLook(const FXScene *fx, Look *look)
     const QHash<Key, uchar> values = fx->values();
     for (auto it = values.cbegin(); it != values.cend(); ++it)
         look->values.insert(it.key(), it.value());
+    // DMX Total Control: its link groups past the ones already in (two FX
+    // scenes with a group 1 each made one group in the cue)
+    int past = 0;
+    for (const FXScene::Layer &layer : std::as_const(look->fx))
+        past = qMax(past, layer.link);
     for (FXScene::Layer layer : fx->layers())
     {
         if (layer.fixtures.isEmpty())
             layer.fixtures = fx->fixtures();
+        if (layer.link > 0)
+            layer.link += past;
         if (layer.fixtures.isEmpty() == false)
             look->fx.append(layer);
     }

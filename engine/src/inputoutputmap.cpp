@@ -53,6 +53,7 @@ InputOutputMap::InputOutputMap(const Doc *doc, quint32 universes)
     // a garbage capture pointer (an intermittent segfault)
     , m_beatGeneratorType(Disabled)
     , m_currentBPM(0)
+    , m_bpm(0)
     , m_beatTime(new QElapsedTimer())
     , m_networkServerType(NativeServer)
     , m_networkServerAutoStart(false)
@@ -1076,7 +1077,8 @@ void InputOutputMap::setBeatGeneratorType(InputOutputMap::BeatGeneratorType type
         case Internal:
         {
             m_doc->masterTimer()->setBeatSourceType(MasterTimer::Internal);
-            setBpmNumber(m_doc->masterTimer()->bpmNumber());
+            // (DMX Total Control: with its fractions)
+            setBpm(m_doc->masterTimer()->bpm());
         }
         break;
         case Plugin:
@@ -1139,16 +1141,33 @@ InputOutputMap::BeatGeneratorType InputOutputMap::stringToBeatType(QString str)
 
 void InputOutputMap::setBpmNumber(int bpm)
 {
-    if (m_beatGeneratorType == Disabled || bpm == m_currentBPM)
+    if (m_beatGeneratorType == Disabled || (bpm == m_currentBPM && qFuzzyCompare(m_bpm + 1, qreal(bpm) + 1)))
+        return;
+
+    // DMX Total Control: the exact BPM is that whole number
+    setBpm(bpm);
+}
+
+void InputOutputMap::setBpm(qreal bpm)
+{
+    // DMX Total Control: the BPM with its fractions
+    bpm = qMax(0.0, bpm);
+    if (m_beatGeneratorType == Disabled || qFuzzyCompare(m_bpm + 1, bpm + 1))
         return;
 
     //qDebug() << "[InputOutputMap] set BPM to" << bpm;
-    m_currentBPM = bpm;
+    m_bpm = bpm;
+    m_currentBPM = qRound(bpm);
 
-    if (bpm != 0)
-        m_doc->masterTimer()->requestBpmNumber(bpm);
+    if (bpm > 0)
+        m_doc->masterTimer()->requestBpm(bpm);
 
     emit bpmNumberChanged(m_currentBPM);
+}
+
+qreal InputOutputMap::bpm() const
+{
+    return m_beatGeneratorType == Disabled ? 0.0 : m_bpm;
 }
 
 int InputOutputMap::bpmNumber() const
@@ -1490,6 +1509,12 @@ bool InputOutputMap::loadXML(QXmlStreamReader &root)
 
             if (attrs.hasAttribute(KXMLIOBeatsPerMinute))
                 setBpmNumber(attrs.value(KXMLIOBeatsPerMinute).toInt());
+            // DMX Total Control: with its fractions (near the whole number:
+            // not one that another program left)
+            bool exactOk = false;
+            const qreal exact = attrs.value(KXMLIOExactBPM).toDouble(&exactOk);
+            if (exactOk && qAbs(exact - qreal(m_currentBPM)) <= 0.5)
+                setBpm(exact);
 
             root.skipCurrentElement();
         }
@@ -1538,6 +1563,9 @@ bool InputOutputMap::saveXML(QXmlStreamWriter *doc) const
     doc->writeStartElement(KXMLIOBeatGenerator);
     doc->writeAttribute(KXMLIOBeatType, beatTypeToString(m_beatGeneratorType));
     doc->writeAttribute(KXMLIOBeatsPerMinute, QString::number(m_currentBPM));
+    // DMX Total Control: its fractions (QLC+ reads the whole number)
+    if (m_bpm > 0 && qFuzzyCompare(m_bpm + 1, qreal(m_currentBPM) + 1) == false)
+        doc->writeAttribute(KXMLIOExactBPM, QString::number(m_bpm, 'f', 3));
     doc->writeEndElement();
 
     doc->writeStartElement(KXMLIONetworkServer);

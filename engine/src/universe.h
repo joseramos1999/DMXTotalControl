@@ -217,6 +217,9 @@ protected:
 
     uchar applyModifiers(int channel, uchar value);
     void updatePostGMValue(int channel);
+    /** DMX Total Control: a coarse channel with a range (setChannelFine) and
+     *  its fine channel, as one 16-bit value */
+    bool updatePostGMPair(int coarse);
 
 signals:
     void nameChanged();
@@ -383,6 +386,17 @@ public:
      *  instead of its own (pan/tilt swap). -1: its own value */
     void setOutputSource(ushort channel, int source);
 
+    /** DMX Total Control: $fine is the fine channel of the coarse $coarse (a
+     *  pan or a tilt of 16 bit; -1: none). With a range of the Patch limits on
+     *  the coarse channel (a modifier of two points, 0 and 255), it goes on the
+     *  16-bit value of the two, so a slow move never steps back; the modifier
+     *  of the fine channel is not used then. Call it after setChannelModifier,
+     *  which forgets the pair */
+    void setChannelFine(ushort coarse, int fine);
+    /** DMX Total Control: $value (16 bit) through the range of $modifier, when
+     *  it is one of two points (0 and 255); else -1 */
+    static int rangeOf16(const ChannelModifier *modifier, int value);
+
     /** DMX Total Control: forget the capabilities, modifiers and swaps of
      *  every patched channel, before setting them again (after fixtures
      *  move or go away) */
@@ -392,6 +406,12 @@ protected:
     /** DMX Total Control: output channel -> source channel, -1 for none */
     QVector<int> m_outputSource;
     int m_outputSourceCount;
+    /** DMX Total Control: the fine channel of a coarse channel with a range,
+     *  and the coarse one of that fine channel (setChannelFine), -1: none */
+    QVector<short> m_rangeFine;
+    QVector<short> m_rangeCoarse;
+    /** DMX Total Control: forget the pair $channel is in */
+    void dropRangePair(int channel);
 
 protected:
     /** An array of each channel's capabilities. This helps to optimize HTP/LTP/Relative checks */

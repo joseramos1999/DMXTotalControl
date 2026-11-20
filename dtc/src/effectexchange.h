@@ -26,6 +26,7 @@
 #include <QHash>
 #include <QSet>
 #include <QXmlStreamAttributes>
+#include <QVariantMap>
 
 class Doc;
 
@@ -71,6 +72,15 @@ namespace EffectExchange
         QString color;
         bool exclusive = true;
         QList<quint32> functions;
+        /** DMX Total Control: its crossfade and master, when it has them */
+        bool hasFade = false;
+        int fade = -1;
+        bool hasMaster = false;
+        qreal master = 1.0;
+        /** DMX Total Control: the options of each scene in it (Zone::setOption
+         *  keys: release, protection, flash, dimmer, speed, phase, size,
+         *  fadeSpeed), only the ones it saved */
+        QHash<quint32, QVariantMap> options;
     };
 
     /**

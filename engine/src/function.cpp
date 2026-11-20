@@ -24,6 +24,7 @@
 #include <QString>
 #include <QDebug>
 #include <math.h>
+#include <cmath>
 
 #include "qlcmacros.h"
 #include "qlcfile.h"
@@ -221,7 +222,7 @@ bool Function::copyFrom(const Function* function)
     m_divisions = function->divisions();
     m_startMode = function->startMode();
     m_stagger = function->stagger();
-    m_tapPeriod.storeRelaxed(int(function->tapPeriod()));
+    m_tapPeriod.storeRelaxed(function->m_tapPeriod.loadRelaxed());
     m_uiState = function->uiStateMap();
 
     emit changed(m_id);
@@ -1695,7 +1696,9 @@ void Function::updateFadersPriority()
     InputOutputMap *io = doc()->inputOutputMap();
     for (auto it = m_fadersMap.cbegin(); it != m_fadersMap.cend(); ++it)
     {
-        Universe *universe = io->universe(it.key());
+        // (DMX Total Control: a key past 0xFFFF is another fader of the
+        // universe key & 0xFFFF: the FX without a base of an FX scene)
+        Universe *universe = io->universe(it.key() & 0xFFFF);
         if (universe != nullptr && it.value().isNull() == false)
             universe->setFaderFunctionPriority(it.value(), playbackPriority());
     }
@@ -1711,7 +1714,8 @@ void Function::raiseFaders()
     InputOutputMap *io = doc()->inputOutputMap();
     for (auto it = m_fadersMap.cbegin(); it != m_fadersMap.cend(); ++it)
     {
-        Universe *universe = io->universe(it.key());
+        // (DMX Total Control: as above)
+        Universe *universe = io->universe(it.key() & 0xFFFF);
         if (universe != nullptr && it.value().isNull() == false)
             universe->raiseFader(it.value());
     }
@@ -1729,6 +1733,7 @@ void Function::raiseFaders()
 #define KXMLDTCStart     QStringLiteral("StartMode")
 #define KXMLDTCStagger   QStringLiteral("Stagger")
 #define KXMLDTCTap       QStringLiteral("Tap")
+#define KXMLDTCTapExact  QStringLiteral("TapExact")
 
 void Function::setLoopCount(int count)
 {
@@ -1875,11 +1880,18 @@ int Function::takeDivisionJumps()
 
 void Function::setTapPeriod(uint ms)
 {
+    setTapPeriodMs(ms);
+}
+
+void Function::setTapPeriodMs(qreal ms, bool tell)
+{
     // (0: none; else as a tap can give it, and a little more by hand)
-    const int period = ms == 0 ? 0 : int(qBound(100u, ms, 10000u));
+    const int period = ms <= 0 ? 0 : int(std::round(qBound(100.0, ms, 10000.0) * 1000.0));
     if (m_tapPeriod.loadRelaxed() == period)
         return;
     m_tapPeriod.storeRelease(period);
+    if (tell == false)
+        return;
     // (not changed(): a chaser runner would read its steps again in this
     // thread while the timer plays them)
     if (doc() != nullptr)
@@ -1889,7 +1901,12 @@ void Function::setTapPeriod(uint ms)
 
 uint Function::tapPeriod() const
 {
-    return uint(m_tapPeriod.loadAcquire());
+    return uint(qRound(tapPeriodMs()));
+}
+
+qreal Function::tapPeriodMs() const
+{
+    return qreal(m_tapPeriod.loadAcquire()) / 1000.0;
 }
 
 void Function::tapBeat(bool inRow)
@@ -1906,17 +1923,21 @@ Function::TappedBeat Function::takeTapBeat()
     return TappedBeat(m_tapRephase.fetchAndStoreOrdered(NoBeatTapped));
 }
 
-int Function::takeRhythmSteps()
+int Function::takeRhythmSteps(TappedBeat *tapped)
 {
     int steps = takeDivisionJumps();
-    const uint period = tapPeriod();
-    if (period == 0)
+    const qreal period = tapPeriodMs();
+    // (DMX Total Control: the beat taken goes on to what plays inside it)
+    const TappedBeat beat = takeTapBeat();
+    if (tapped != nullptr)
+        *tapped = beat;
+    if (period <= 0)
     {
         // no rhythm of its own (yet): a press is still its step now (GO),
         // and its own times go on from there
         m_tapElapsed = 0;
         m_tapTimed = false;
-        if (takeTapBeat() != NoBeatTapped)
+        if (beat != NoBeatTapped)
             steps++;
         return steps;
     }
@@ -1924,10 +1945,9 @@ int Function::takeRhythmSteps()
     // less than half a beat after a step of the rhythm is that step, tapped
     // late: it only times the next ones (taps in time come a little before
     // or after the steps they time: a step more on each late one skipped one)
-    const TappedBeat tapped = takeTapBeat();
-    if (tapped != NoBeatTapped)
+    if (beat != NoBeatTapped)
     {
-        const bool late = tapped == NextBeatTapped && m_tapTimed && m_tapElapsed < period / 2;
+        const bool late = beat == NextBeatTapped && m_tapTimed && m_tapElapsed < period / 2;
         m_tapElapsed = 0;
         m_tapTimed = false;
         return late ? steps : steps + 1;
@@ -1938,7 +1958,7 @@ int Function::takeRhythmSteps()
     m_tapElapsed += frameTick();
     if (m_tapElapsed >= period)
     {
-        m_tapElapsed %= period;
+        m_tapElapsed = std::fmod(m_tapElapsed, period);
         m_tapTimed = true;
         steps++;
     }
@@ -1973,7 +1993,12 @@ bool Function::saveXMLPlayback(QXmlStreamWriter *doc) const
     if (m_stagger > 0)
         doc->writeAttribute(KXMLDTCStagger, QString::number(m_stagger));
     if (tapPeriod() > 0)
+    {
         doc->writeAttribute(KXMLDTCTap, QString::number(tapPeriod()));
+        // DMX Total Control: its fractions of a ms (older versions read Tap)
+        if (m_tapPeriod.loadRelaxed() % 1000 != 0)
+            doc->writeAttribute(KXMLDTCTapExact, QString::number(tapPeriodMs(), 'f', 3));
+    }
     return true;
 }
 
@@ -2001,5 +2026,10 @@ void Function::loadXMLPlayback(const QXmlStreamAttributes &attrs)
     // its own rhythm (no number: none)
     bool tapOk = false;
     const uint tap = attrs.value(KXMLDTCTap).toUInt(&tapOk);
-    m_tapPeriod.storeRelaxed(tapOk && tap > 0 ? int(qBound(100u, tap, 10000u)) : 0);
+    m_tapPeriod.storeRelaxed(tapOk && tap > 0 ? int(qBound(100u, tap, 10000u)) * 1000 : 0);
+    // DMX Total Control: with its fractions, near the whole ms
+    bool exactOk = false;
+    const qreal exact = attrs.value(KXMLDTCTapExact).toDouble(&exactOk);
+    if (tapOk && tap > 0 && exactOk && qAbs(exact - qreal(tap)) <= 1.0)
+        m_tapPeriod.storeRelaxed(int(std::round(qBound(100.0, exact, 10000.0) * 1000.0)));
 }

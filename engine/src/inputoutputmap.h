@@ -48,6 +48,8 @@ class Doc;
 #define KXMLIOBeatGenerator     QStringLiteral("BeatGenerator")
 #define KXMLIOBeatType          QStringLiteral("BeatType")
 #define KXMLIOBeatsPerMinute    QStringLiteral("BPM")
+/** DMX Total Control: the BPM with its fractions (a tapped tempo); BPM is its whole number */
+#define KXMLIOExactBPM          QStringLiteral("ExactBPM")
 #define KXMLIONetworkServer     QStringLiteral("NetworkServer")
 #define KXMLIONetworkType       QStringLiteral("Type")
 #define KXMLIONetworkAutoStart  QStringLiteral("AutoStart")
@@ -614,6 +616,10 @@ public:
 
     void setBpmNumber(int bpm);
     int bpmNumber() const;
+    /** DMX Total Control: the BPM with its fractions (a tapped tempo); the
+     *  ones above are its whole number. bpmNumberChanged tells it changed */
+    void setBpm(qreal bpm);
+    qreal bpm() const;
 
 protected slots:
     void slotMasterTimerBeat();
@@ -633,6 +639,8 @@ signals:
 private:
     BeatGeneratorType m_beatGeneratorType;
     int m_currentBPM;
+    /** DMX Total Control: see setBpm */
+    qreal m_bpm;
     QElapsedTimer *m_beatTime;
     QPointer<AudioCapture> m_inputCapture;
 

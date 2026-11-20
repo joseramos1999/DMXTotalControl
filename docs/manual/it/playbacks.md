@@ -110,8 +110,8 @@ Un clic su una riga la segna soltanto: non avvia niente per errore.
 
 Mentre una cue è in dissolvenza, il pannello del playback selezionato mostra **«Tempo dal vivo»**: il ritardo più la dissolvenza di quella cue (per esempio, «4,0 s»). Puoi cambiarlo mentre scorre:
 
-- Scrivi un altro tempo, o premi **«×½»** o **«×2»**: la dissolvenza continua da dove si trova e finisce nel nuovo tempo.
-- **«Adesso»** termina subito la dissolvenza.
+- Scrivi un altro tempo, o premi **«×½»** o **«×2»**: la dissolvenza continua da dove si trova e finisce nel nuovo tempo, anche quella degli FX della cue.
+- **«Adesso»** termina subito la dissolvenza, anche quella degli FX della cue.
 - Se la cue successiva ha **Segui**, aspetta la nuova fine.
 
 La modifica vale solo per questa volta: la cue successiva usa i propri tempi. «Tempo dal vivo» diventa arancione quando il tempo non è quello della cue. **«Salva nella cue»** salva nella cue i tempi cambiati (anche quelli dei suoi attributi e fixture). Non si può quando la cue va con un tempo di BACK o con la dissolvenza d'entrata di un gruppo o di un blocco, che non sono i suoi tempi. Si annulla come qualsiasi altra modifica della cuelist.

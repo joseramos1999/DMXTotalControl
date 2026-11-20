@@ -79,6 +79,8 @@ Cuelist::Cuelist(Doc *doc)
     , m_ownTimes(true)
     , m_mibUid(0)
     , m_chaseElapsed(0)
+    , m_chaseBeatAt(-1.0)
+    , m_chaseBeatLast(-1.0)
     , m_bounceDir(1)
     , m_randomUid(0)
     , m_random(QRandomGenerator::global()->generate())
@@ -967,8 +969,13 @@ struct Fold
             for (quint32 fixture : held.layer.fixtures)
                 if (held.owned.contains(fixture))
                     layer.fixtures.append(fixture);
+            // DMX Total Control: the ones it keeps stay in their places (the
+            // wave, the sets, the mirror), not spread over the ones left
+            if (layer.fixtures.count() < held.layer.fixtures.count() && held.layer.spread.isEmpty())
+                layer.spread = held.layer.fixtures;
             layer.own = layer.tidyOwn();
             state.fx.append(layer);
+            state.fxCues.append(origin.first);
         }
         for (auto it = holders.cbegin(); it != holders.cend(); ++it)
             state.fxOwner.insert(it.key(), it.value().first);
@@ -977,23 +984,36 @@ struct Fold
 };
 }
 
-Cuelist::State Cuelist::foldLocked(int index, bool withCue) const
+/** (DMX Total Control: of any cues) */
+static Cuelist::State foldOf(const QList<Cuelist::Cue> &cues, bool tracking, int index, bool withCue)
 {
     Fold fold;
-    const int count = m_cues.count();
+    const int count = cues.count();
     // a skip cue (cue only) doesn't track on
-    if (m_tracking)
+    if (tracking)
     {
         for (int i = 0; i < qMin(index, count); i++)
         {
-            if (m_cues.at(i).skip == false)
-                fold.apply(m_cues.at(i));
+            if (cues.at(i).skip == false)
+                fold.apply(cues.at(i));
         }
     }
     // a cue always shows itself, skip included
     if (withCue && index >= 0 && index < count)
-        fold.apply(m_cues.at(index));
+        fold.apply(cues.at(index));
     return fold.finish();
+}
+
+Cuelist::State Cuelist::foldLocked(int index, bool withCue) const
+{
+    return foldOf(m_cues, m_tracking, index, withCue);
+}
+
+Cuelist::State Cuelist::trackedStateOf(const QList<Cue> &cues, bool tracking, int index)
+{
+    if (index < 0 || index >= cues.count())
+        return State();
+    return foldOf(cues, tracking, index, true);
 }
 
 Cuelist::State Cuelist::stateBefore(int index) const
@@ -1167,6 +1187,7 @@ void Cuelist::setMode(Mode mode)
         m_mode = mode;
         // (a Chase counts its step from now)
         m_chaseElapsed = 0;
+        m_chaseBeatLast = -1.0;
         // DMX Total Control: a list that plays goes on from its cue as a
         // Timecode list: the clock runs from the time of that cue
         if (mode == ModeTimecode)
@@ -1405,13 +1426,14 @@ qreal Cuelist::effectiveChaseBpm() const
     QMutexLocker locker(&m_mutex);
     if (m_mode != ModeChase)
         return 0;
-    const uint tap = tapPeriod();
+    // (DMX Total Control: with their fractions)
+    const qreal tap = tapPeriodMs();
     if (tap > 0)
-        return 60000.0 / qreal(tap);
+        return 60000.0 / tap;
     qreal bpm = m_chaseBpm;
     const MasterTimer *timer = doc() != NULL ? doc()->masterTimer() : NULL;
-    if (m_chaseShowTempo && timer != NULL && timer->bpmNumber() > 0)
-        bpm = timer->bpmNumber();
+    if (m_chaseShowTempo && timer != NULL && timer->bpm() > 0)
+        bpm = timer->bpm();
     return bpm * m_chaseMultiplier;
 }
 
@@ -2235,6 +2257,7 @@ void Cuelist::preRun(MasterTimer *timer)
         m_fxPlaying.clear();
         m_fxBases.clear();
         m_fxChannels.clear();
+        m_fxLinkIds.clear();
         // (m_actions is kept: the GOs and jumps that came after start(), a
         // second press in the same tick. postRun dropped the older ones)
         m_preselectUid = 0;
@@ -2260,6 +2283,7 @@ void Cuelist::preRun(MasterTimer *timer)
         m_mibUid = 0;
         // DMX Total Control: a Chase starts its step, a Bounce on its way up
         m_chaseElapsed = 0;
+        m_chaseBeatLast = -1.0;
         m_bounceDir = 1;
         m_randomUid = 0;
         m_manual = false;
@@ -2723,6 +2747,8 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
     QList<quint32> started;
     QList<quint32> withActions;
     bool release = false;
+    // DMX Total Control: the beat tapped on its button, for its FX too
+    TappedBeat tapped = NoBeatTapped;
     {
         QMutexLocker locker(&m_mutex);
 
@@ -2737,7 +2763,7 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
         m_appliedFactor = factor;
 
         // BeatGO and pulses (a GO per division) and its own rhythm (a GO a beat)
-        for (int jumps = takeRhythmSteps(); jumps > 0; jumps--)
+        for (int jumps = takeRhythmSteps(&tapped); jumps > 0; jumps--)
             m_actions.append(Action());
 
         // the cues changed while playing: the new data shows at once, and the
@@ -2873,6 +2899,14 @@ void Cuelist::write(MasterTimer *timer, QList<Universe *> universes)
     {
         m_fxPlayer->setSpeedFactor(speedFactor());
         m_fxPlayer->setMotionSpeed(motionSpeed());
+        // DMX Total Control: the rhythm tapped on its button and its beats
+        // reach the FX at the BPM of the show of its cues, as in an FX scene.
+        // A press with no rhythm (a GO of its button) is no beat for them:
+        // they stay on the beat of the show, as with the GO key
+        const qreal tapMs = tapPeriodMs();
+        m_fxPlayer->setTapPeriodMs(tapMs, false);
+        if (tapped != NoBeatTapped && (tapMs > 0 || tapped == NextBeatTapped))
+            m_fxPlayer->tapBeat(tapped == NextBeatTapped);
         m_fxPlayer->applyPriorityChange();
         m_fxPlayer->write(timer, universes);
     }
@@ -3054,12 +3088,18 @@ bool Cuelist::processActionLocked(const Action &action, const QList<Universe *> 
 
 uint Cuelist::chasePeriodLocked() const
 {
-    // (the show tempo is a plain int of the timer, as the chasers read it)
+    return uint(std::round(chasePeriodMsLocked()));
+}
+
+qreal Cuelist::chasePeriodMsLocked() const
+{
+    // (DMX Total Control: the beat of the show with its fractions: in whole
+    // ms it drifted from the FX at that BPM)
     qreal beat = 60000.0 / qreal(m_chaseBpm);
     const MasterTimer *timer = doc() != NULL ? doc()->masterTimer() : NULL;
-    if (m_chaseShowTempo && timer != NULL && timer->beatTimeDuration() > 0)
-        beat = timer->beatTimeDuration();
-    return uint(qMax(20.0, std::round(beat / m_chaseMultiplier)));
+    if (m_chaseShowTempo && timer != NULL && timer->bpm() > 0)
+        beat = timer->beatDuration();
+    return qMax(20.0, beat / m_chaseMultiplier);
 }
 
 uint Cuelist::chaseBeatLocked() const
@@ -3128,15 +3168,42 @@ bool Cuelist::chaseTickLocked(const QList<Universe *> &universes)
 {
     // a tapped rhythm, BeatGO and Pulse give its steps as GOs (takeRhythmSteps)
     if (m_current < 0 || tapPeriod() != 0 || driveMode() != DriveOff)
+    {
+        m_chaseBeatLast = -1.0;
         return false;
+    }
+    // DMX Total Control: at the BPM of the show (and at x1: no live speed or
+    // cue speed) on the beat of the show, as the chasers and the FX at that
+    // BPM: a step each time its beats by the multiplier pass a whole number,
+    // at least half a step after the one before (a GO in between). The clock
+    // is kept in beats and taken by the multiplier of now: a new multiplier
+    // goes on from here (a lower one used to stop it for about as long as
+    // the show had run)
+    const MasterTimer *timer = doc() != NULL ? doc()->masterTimer() : NULL;
+    if (m_chaseShowTempo && timer != NULL && qAbs(timeFactor() - 1.0) < 1e-9)
+    {
+        const qreal beat = timer->beatPosition();
+        const qreal before = m_chaseBeatLast;
+        m_chaseBeatLast = beat;
+        const qreal at = beat * m_chaseMultiplier;
+        if (before < 0 || std::floor(at + 1e-7) <= std::floor(before * m_chaseMultiplier + 1e-7) ||
+            (beat - m_chaseBeatAt) * m_chaseMultiplier < 0.5)
+            return false;
+        // (a step of the grid counts from its line, not from the frame after it)
+        const bool stepped = processActionLocked(Action(), universes);
+        if (stepped)
+            m_chaseBeatAt = std::floor(at + 1e-7) / qMax(1e-6, m_chaseMultiplier);
+        return stepped;
+    }
+    m_chaseBeatLast = -1.0;
     // at the cue speed and its live speed, as its fades (frameTick). What is
     // left over a step counts in the next one: no burst of steps when the
     // step gets shorter or the speed goes up
-    const uint period = chasePeriodLocked();
+    const qreal period = chasePeriodMsLocked();
     m_chaseElapsed += frameTick();
     if (m_chaseElapsed < period)
         return false;
-    const uint rest = m_chaseElapsed % period;
+    const qreal rest = std::fmod(m_chaseElapsed, period);
     const bool applied = processActionLocked(Action(), universes);
     m_chaseElapsed = rest;
     return applied;
@@ -3351,6 +3418,9 @@ void Cuelist::liveTimeLocked(qreal factor)
                     fc.setReady(true);
             });
         }
+        // DMX Total Control: and the fades of its FX (their fade in, a
+        // change, what leaves them)
+        m_fxPlayer->scaleFades(0.0);
         m_cueElapsed = m_fadeLength;
         return;
     }
@@ -3407,6 +3477,10 @@ void Cuelist::scaleFadesLocked(qreal factor, bool manual)
             fc.setElapsed(uint(qMin(newElapsed, quint64(UINT_MAX))));
         });
     }
+    // DMX Total Control: the FX player runs its own (not by the hand: the FX
+    // of a hand crossfade come in in their own time)
+    if (manual == false)
+        m_fxPlayer->scaleFades(factor);
 }
 
 void Cuelist::manualTimeLocked(uint ms)
@@ -3677,7 +3751,41 @@ void Cuelist::applyCueLocked(const QList<Universe *> &universes, int index,
     // the tracked FX layers, each on the fixtures it still holds (DMX Total
     // Control: a hand crossfade starts them in their own time, at the cue speed)
     const uint fxFadeMs = manual ? (own != nullptr ? scaledTime(own->fade) : 0) : fadeMs;
-    playFxLocked(universes, state.fx, bases, fxChannels, fxFadeMs, level, mode);
+    // DMX Total Control: what a GO changes in them (a base, a size, a shape,
+    // an FX that comes or goes) takes the times of each channel, as its
+    // static values: the down fade for a dimmer that goes down
+    QHash<Key, QPair<uint, uint>> fxTimes;
+    if (live == false && manual == false)
+    {
+        auto timeOf = [&](const Key &key, bool leaving) {
+            const Fixture *fxi = doc()->fixture(key.first);
+            if (fxi == NULL || key.second >= fxi->channels())
+                return qMakePair(fadeMs, delayMs);
+            const Times t = timesOf(fxi, key.second);
+            const int before = m_fxBases.contains(key) ? int(m_fxBases.value(key)) : -1;
+            const int after = bases.contains(key) ? int(bases.value(key)) : -1;
+            const bool down = isDimmer(fxi, key.second) &&
+                              (leaving || (before >= 0 && (after < 0 || after < before)));
+            return qMakePair(down ? t.down : t.fade, t.delay);
+        };
+        for (auto it = fxChannels.cbegin(); it != fxChannels.cend(); ++it)
+            if (it.value() >= 0)
+                fxTimes.insert(it.key(), timeOf(it.key(), false));
+        for (auto it = m_fxChannels.cbegin(); it != m_fxChannels.cend(); ++it)
+        {
+            if (it.value() < 0 || fxChannels.contains(it.key()))
+                continue;
+            // one our fader takes from it without a base goes from what the
+            // stage shows, at once (it has no base to start from)
+            if (values.contains(it.key()) && m_fxBases.contains(it.key()) == false)
+                fxTimes.insert(it.key(), qMakePair(0u, 0u));
+            else
+                fxTimes.insert(it.key(), timeOf(it.key(), true));
+        }
+    }
+    // (linear, as the FX always are)
+    playFxLocked(universes, state.fx, state.fxCues, bases, fxChannels, fxFadeMs, level, mode, manual ? 0 : delayMs,
+                 int(FadeChannel::CurveLinear), fxTimes);
 
     if (live == false && index >= 0 && index < m_cues.count())
     {
@@ -3690,6 +3798,8 @@ void Cuelist::applyCueLocked(const QList<Universe *> &universes, int index,
         // DMX Total Control: a Chase counts its step from here (a GO, a
         // jump), and Random draws the step after it
         m_chaseElapsed = m_cueElapsed;
+        if (doc() != NULL)
+            m_chaseBeatAt = doc()->masterTimer()->beatPosition();
         if (m_mode == ModeChase && m_chaseDirection == ChaseRandom)
             m_randomUid = m_cues.at(drawChaseStepLocked(index)).uid;
         m_cueLength = cue.length();
@@ -3760,6 +3870,10 @@ void Cuelist::setTargetsLocked(const QList<Universe *> &universes, const QHash<K
         const bool retake = playing == m_playing.cend();
         const bool dimmer = isDimmer(fxi, key.second);
         const Times times = timesOf(fxi, key.second);
+        // DMX Total Control: the base of an FX of the player that leaves it:
+        // the value goes on from that base, as the FX fades out above it
+        const int held = retake && moved == false && m_fxChannels.value(key, -2) >= 0
+                             ? m_fxPlayer->heldBase(key.first, key.second) : -1;
         const quint32 paired = pairedChannel(fxi, key.second);
         const Key pairKey(key.first, paired);
         const bool pairHeld = paired != QLCChannel::invalid() && values.contains(pairKey);
@@ -3802,6 +3916,8 @@ void Cuelist::setTargetsLocked(const QList<Universe *> &universes, const QHash<K
             if ((retake || moved) && handedOver == false && fc.canFade() && (fc.flags() & FadeChannel::Intensity) &&
                 (fc.flags() & FadeChannel::MixBelow) == 0)
                 from = level > 0.004 ? qMin(255, qRound(qreal(from) / level)) : value;
+            if (held >= 0 && handedOver == false)
+                from = held;
             fc.setStart(uchar(from), i);
             fc.setCurrent(uchar(from), i);
             fc.setTarget(value, i);
@@ -3968,20 +4084,25 @@ QHash<Cuelist::Key, int> Cuelist::fxChannelsOf(const QList<FXScene::Layer> &laye
                 continue;
             for (const QString &axis : axes)
             {
-                // the channels FXScene finds for the axis; the first layer
-                // that finds a channel moves it, as in FXScene
-                quint32 fine = QLCChannel::invalid();
-                const quint32 channel = FXScene::channelFor(fxi, axis, &fine);
-                if (channel == QLCChannel::invalid() || channels.value(Key(fid, channel), -1) >= 0)
-                    continue;
-                channels.insert(Key(fid, channel), l);
-                if (fine != QLCChannel::invalid())
-                    channels.insert(Key(fid, fine), l);
-                // GenericFader keeps a coarse channel and the fine one after
-                // it in one FadeChannel: that byte can't stay in our faders
-                const quint32 paired = pairedChannel(fxi, channel);
-                if (paired != QLCChannel::invalid() && channels.contains(Key(fid, paired)) == false)
-                    channels.insert(Key(fid, paired), -1);
+                // the channels FXScene finds for the axis (DMX Total Control:
+                // on every head that has it); the first layer that finds a
+                // channel moves it, as in FXScene
+                QList<quint32> fines;
+                const QList<quint32> found = FXScene::channelsFor(fxi, axis, &fines);
+                for (int i = 0; i < found.count(); i++)
+                {
+                    const quint32 channel = found.at(i), fine = fines.at(i);
+                    if (channels.value(Key(fid, channel), -1) >= 0)
+                        continue;
+                    channels.insert(Key(fid, channel), l);
+                    if (fine != QLCChannel::invalid())
+                        channels.insert(Key(fid, fine), l);
+                    // GenericFader keeps a coarse channel and the fine one after
+                    // it in one FadeChannel: that byte can't stay in our faders
+                    const quint32 paired = pairedChannel(fxi, channel);
+                    if (paired != QLCChannel::invalid() && channels.contains(Key(fid, paired)) == false)
+                        channels.insert(Key(fid, paired), -1);
+                }
             }
         }
     }
@@ -4014,8 +4135,10 @@ QHash<Cuelist::Key, int> Cuelist::fxChannelsOf(const QList<FXScene::Layer> &laye
 }
 
 void Cuelist::playFxLocked(const QList<Universe *> &universes, const QList<FXScene::Layer> &layers,
+                           const QList<quint32> &layerCues,
                            const QHash<Key, uchar> &bases, const QHash<Key, int> &channels,
-                           uint fadeMs, qreal level, ApplyMode mode)
+                           uint fadeMs, qreal level, ApplyMode mode, uint delayMs, int curve,
+                           const QHash<Key, QPair<uint, uint>> &times)
 {
     // a GO changes the FX channels whose layer or base changes, and the ones
     // an FX starts or stops on: the programmer releases them too (live edit)
@@ -4029,7 +4152,8 @@ void Cuelist::playFxLocked(const QList<Universe *> &universes, const QList<FXSce
             const int now = channels.value(key, -2);
             if (before < 0 || now < 0)
                 return before != now;
-            if (m_fxPlaying.at(before) != layers.at(now) || bases.contains(key) != m_fxBases.contains(key))
+            if (m_fxPlaying.at(before) != layers.at(now) || m_fxPlaying.at(before).spread != layers.at(now).spread ||
+                bases.contains(key) != m_fxBases.contains(key))
                 return true;
             return bases.contains(key) && bases.value(key) != m_fxBases.value(key);
         };
@@ -4044,21 +4168,34 @@ void Cuelist::playFxLocked(const QList<Universe *> &universes, const QList<FXSce
         for (auto it = m_fxChannels.cbegin(); it != m_fxChannels.cend(); ++it)
         {
             if (channels.contains(it.key()) == false)
+            {
                 m_changed.insert(it.key());
+                // DMX Total Control: an FX that leaves is a change too: it
+                // fades out above what takes its channels
+                fxChanged = true;
+            }
         }
     }
+
+    // DMX Total Control: the places of the fixtures that left a layer too
+    // (layers leave them out)
+    bool sameSpread = layers.count() == m_fxPlaying.count();
+    for (int l = 0; sameSpread && l < layers.count(); l++)
+        sameSpread = layers.at(l).spread == m_fxPlaying.at(l).spread;
 
     if (layers.isEmpty())
     {
         // the FX fade out to what's below them: our values, or the playbacks
-        // under the list
+        // under the list. DMX Total Control: moving, above them
         if (m_fxPlayer->isRunning())
         {
+            if (fxChanged)
+                m_fxPlayer->raiseFaders();
             m_fxPlayer->setFadeOutSpeed(fadeMs);
             m_fxPlayer->postRun(doc()->masterTimer(), universes);
         }
     }
-    else if (m_fxPlayer->isRunning() == false || layers != m_fxPlaying || bases != m_fxBases)
+    else if (m_fxPlayer->isRunning() == false || layers != m_fxPlaying || sameSpread == false || bases != m_fxBases)
     {
         QList<quint32> fixtures;
         QSet<quint32> seen;
@@ -4073,17 +4210,37 @@ void Cuelist::playFxLocked(const QList<Universe *> &universes, const QList<FXSce
                 }
             }
         }
-        // running, it takes new layers and bases at once (FXScene snaps live
-        // edits), and each layer goes on from where its wave is
+        // each layer goes on from where its wave is. DMX Total Control: what
+        // a GO changes fades with the cue (a base, a size, a shape, a layer
+        // that comes or goes, moving as it fades out), from its delay; a live
+        // edit snaps. Stopped, it starts so
+        if (mode != ApplyLiveReapply)
+            m_fxPlayer->setChangeFade(fadeMs, delayMs, curve, times);
         m_fxPlayer->setFixtures(fixtures);
         m_fxPlayer->setValues(bases);
-        m_fxPlayer->setLayers(layers);
+        // DMX Total Control: the link groups are each cue's own, one number
+        // for each group of each cue while the list plays (group 1 of two
+        // cues was one group: the movement speed of a pan/tilt FX went to a
+        // colour FX of another cue, and they shared their clock)
+        QList<FXScene::Layer> played = layers;
+        for (int l = 0; l < played.count(); l++)
+        {
+            if (played.at(l).link <= 0)
+                continue;
+            const QPair<quint32, int> group(layerCues.value(l, 0), played.at(l).link);
+            auto id = m_fxLinkIds.constFind(group);
+            if (id == m_fxLinkIds.cend())
+                id = m_fxLinkIds.insert(group, int(m_fxLinkIds.count()) + 1);
+            played[l].link = id.value();
+        }
+        m_fxPlayer->setLayers(played);
         if (m_fxPlayer->isRunning() == false)
         {
             // it fades in with the cue, at our priority and level. write()
-            // runs it from the next frame on (this one included)
+            // runs it from the next frame on (this one included). DMX Total
+            // Control: the change fades it in, each channel in its time
             m_fxPlayer->setName(name() + QStringLiteral(" (FX)"));
-            m_fxPlayer->setFadeInSpeed(fadeMs);
+            m_fxPlayer->setFadeInSpeed(mode == ApplyLiveReapply ? fadeMs : 0);
             m_fxPlayer->setFadeOutSpeed(fadeMs);
             m_fxPlayer->setParentPriority(playbackPriority());
             m_fxPlayer->adjustAttribute(level, Function::Intensity);

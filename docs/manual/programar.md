@@ -193,14 +193,14 @@ Un icono de enlace en la paleta indica que hay escenas que la usan; el texto al 
 
 ## FX
 
-Un **FX** mueve un parámetro de la selección (el dimmer, el rojo, el zoom, pan y tilt juntos…) alrededor de su valor en el programador o, si no tiene valor, alrededor de lo que mandan las escenas de debajo. Suena al momento y se graba con la escena.
+Un **FX** mueve un parámetro de la selección (el dimmer, el rojo, el zoom, pan y tilt juntos…) alrededor de su valor en el programador o, si no tiene valor, alrededor de lo que mandan las escenas de debajo. Suena al momento y se graba con la escena. Un FX sin valor base queda por encima de las escenas estáticas de su misma prioridad, aunque las lances después. En un fixture con varias cabezas (una barra de píxeles, un blinder de dos lámparas), si el parámetro no tiene un canal del fixture entero, lo hacen todas las cabezas a la vez, como un solo sitio de la ola.
 
 En **FX** hay tres zonas: los parámetros y los FX en marcha a la izquierda, los controles del FX en el centro y las macros a la derecha.
 
 ### Poner un FX
 
 1. Selecciona fixtures.
-2. En **Parámetro**, elige qué mover. Por defecto se elige el último parámetro que has tocado. Los que ya tienen un FX en la selección llevan la marca «FX».
+2. En **Parámetro**, elige qué mover. Por defecto se elige el último parámetro que has tocado. Los que ya tienen un FX en la selección llevan la marca «FX». **Pan / tilt** y **Pan** o **Tilt** mueven los mismos canales: al empezar uno, esas luminarias salen del otro.
 3. Pulsa **«Empezar FX»**, o haz clic en una **macro**.
 4. Ajusta los controles: el FX cambia en directo.
 
@@ -210,9 +210,9 @@ Si un fixture tiene varios dimmers propios (un estrobo con su destello y un aura
 
 ### Los controles del FX
 
-- **La figura o el modo** (el dibujo de la izquierda): haz clic en él para elegir otro. Para pan/tilt hay **12 figuras** (círculo, ocho, cuadrado, triángulo, diamante, línea de pan, línea de tilt, diagonal, trébol, lissajous, ballyhoo y cruz). Para el resto, **22 modos**: la línea de puntos es el valor base y la onda va por encima, por debajo o a los dos lados; los modos 9 a 12 son para persecuciones, con paso.
+- **La figura o el modo** (el dibujo de la izquierda): haz clic en él para elegir otro. Para pan/tilt hay **12 figuras** (círculo, ocho, cuadrado, triángulo, diamante, línea de pan, línea de tilt, diagonal, trébol, lissajous, ballyhoo y cruz). Para el resto, **22 modos**: la línea de puntos es el valor base y la onda va por encima, por debajo o a los dos lados; los modos 9 a 12 son para persecuciones, con paso. Los modos con una flecha (←) van de la última luminaria a la primera: 2, 4, 6, 8, 10, 12, 14 y 20 (el 14 es el 7 al revés).
 - **Amplitud** (de 0 a 250 %). En pan/tilt, **«Amplitud pan»** y **«Amplitud tilt»** por separado.
-- **Velocidad**, en BPM. **½** y **×2** la dividen o la doblan. **«BPM del show»** hace que siga el tempo del show (un fader o dial de BPM del SHOW, o un mapeo de BPM o Tap). Grabado en una escena FX, sigue en su lugar el ritmo que marques pulsando el botón de la escena, si lo tiene ([Directo](directo.md#ritmo-de-una-escena-con-pasos)). **«Multiplicador»**: de ×¼ a ×8.
+- **Velocidad**, en BPM. **½** y **×2** la dividen o la doblan. **«BPM del show»** hace que siga el tempo y el pulso del show (un fader o dial de BPM del SHOW, o un mapeo de BPM o Tap): los FX en «BPM del show», lanzados cuando sea, van en el mismo pulso que los chases y las escenas en modo BPM, y cada pulsación del Tap los vuelve a poner en él. Grabado en una escena FX, sigue en su lugar el ritmo que marques pulsando el botón de la escena, si lo tiene ([Directo](directo.md#ritmo-de-una-escena-con-pasos)), y el panel lo avisa. **«Multiplicador»**: de ×⅛ a ×8, con ×⅓ y ×⅔; un valor que no está en la lista (de un Move FX convertido) sale tal cual.
 - Solo pan/tilt: **«Invertir pan»**, **«Invertir tilt»**, **«Al revés»** y **«Girar»** (0–359°).
 - Solo en un FX de dimmer con fixtures sin dimmer: **«Dimmer virtual»**, el nivel desde el que se atenúa su color (0–100 %). Con **«Auto»** es el de los dimmers del mismo FX o, si no hay, a tope. Al mover el nivel queda fijo; el botón de al lado vuelve a «Auto». El color de debajo (el del programador, el de la escena o lo que mandan las escenas de debajo) es su base, y un FX de color en el mismo fixture se suma.
 
@@ -222,20 +222,23 @@ Cómo se reparte el FX entre los fixtures:
 
 - **«Ola por X»**: la forma se reparte entre X fixtures (o conjuntos), cada uno un poco más tarde.
 - **«Paso por X»**: un fixture (o conjunto) detrás de otro, de X en X.
-- **«Agrupar»**: «No», «Cada X», «Bloques de X», «Dividir en X», «Espejo» o «Por grupo» (de fixtures).
-- **«Orden»**: «Selección», «Invertido», «Aleatorio» (con un botón para otro orden aleatorio) o «Por número».
-- **«Espera»**: tiempo en la base después de cada pasada.
+- **«Agrupar»**: «No», «Cada X», «Bloques de X», «Dividir en X» (X partes, que se diferencian como mucho en una luminaria), «De fuera a dentro» o «Por grupo» (de fixtures).
+  - **«De fuera a dentro»** junta la primera y la última luminaria, luego la segunda y la penúltima, y así hasta el centro: la ola o el paso van de fuera a dentro. X es cuántas luminarias tiene cada conjunto, la mitad de cada extremo (con 2, la primera con la última). No invierte nada; para un espejo, consulta [«El espejo»](programar.md#el-espejo). Se guarda como el antiguo «Espejo», así que los shows de antes suenan igual.
+  - **«Por grupo»** usa los grupos del Patch que reparten las luminarias del FX sin solaparse. No cuenta un grupo que las tiene todas (por ejemplo, uno con todas las beams junto a los grupos de cada fila). Si se pueden repartir de varias formas, gana la que da más grupos, después la que deja menos luminarias sueltas, después la de grupos más pequeños y, por último, el orden de los grupos en el Patch. Una luminaria que no está en ninguno de esos grupos forma un conjunto ella sola. «Por luminaria» muestra el grupo de cada una.
+- **«Orden»**: «Selección», «Invertido», «Aleatorio» (con un botón para otro orden aleatorio) o «Por número» (por los números de fixture del Patch).
+- **«Espera»**: tiempo en la base después de cada pasada. En «BPM del show», la pasada con su espera dura el número entero de pulsos más cercano (al menos la pasada sin espera), así que cada pasada empieza en un pulso. Fuera del pulso del show (velocidad propia o ritmo marcado), un cambio de velocidad, BPM o multiplicador sigue desde donde va en la pasada; en el pulso del show, un multiplicador nuevo lo vuelve a poner en el pulso.
 - **«Fase»**.
 
 Para un desfase o un retardo propio de cada luminaria, consulta [«Por luminaria»](programar.md#desfase-y-retardo-por-luminaria).
 
-Debajo, una vista previa animada dibuja cada fixture como se mueve.
+Debajo, una vista previa animada dibuja cada fixture como se mueve: mientras el FX suena, por donde va de verdad, con la velocidad de movimiento del SHOW y sus retardos.
 
 ### FX en marcha, enlazar y parar
 
-- **«FX en marcha (N)»** lista los FX del programador. Un clic selecciona sus fixtures y su parámetro; la **×** lo para.
-- **«Enlazar»**: los FX enlazados comparten la velocidad y el timing, y se paran juntos.
-- **«Parar»** para el FX del parámetro elegido; **«Parar todos los FX»**, todos.
+- **«FX en marcha (N)»** lista los FX del programador. Un clic selecciona sus fixtures y su parámetro; la **×** lo para entero, con los FX enlazados a él, y no cambia la selección.
+- **«Enlazar»**: los FX enlazados comparten la velocidad y el timing, van sobre el mismo reloj y se paran juntos. Un FX que enlazas después se pone donde van los que ya estaban enlazados. «Enlazar» lo une al grupo de enlace de otro FX de la selección o, si no hay, al último que enlazaste; una macro con varios FX enlazados forma un grupo propio, aparte de los tuyos. Con varios grupos, «FX en marcha» muestra el número de cada uno. La velocidad de movimiento del SHOW va a todo el grupo de un FX de pan/tilt.
+- **«Parar»** quita las luminarias seleccionadas del FX (con todas, el FX entero) y también de los FX enlazados a él; un FX enlazado en otras luminarias sigue (la **×** de «FX en marcha» lo para todo); **«Parar todos los FX»** los para todos.
+- Un FX nuevo arranca sobre el reloj de lo que ya suena. En luminarias que salen de un FX en marcha del mismo parámetro (una macro sobre parte de él), sigue desde donde iba ese FX. En otras luminarias, si otro FX del parámetro va a la misma velocidad y con el mismo multiplicador, se pone donde va ese: así «Invertir pan» en un segundo grupo da un espejo en fase. Un FX con retardos empieza desde 0.
 
 «Restablecer todo» también quita los FX del programador. «Parar todo» de la barra superior no los quita: son ediciones en vivo.
 
@@ -245,37 +248,43 @@ Un FX sigue siendo **uno solo** aunque cambies parte de sus luminarias. Si selec
 
 - El panel avisa: «Este FX también está en otras luminarias…».
 - Con todas sus luminarias seleccionadas, el cambio es del FX entero.
-- Si seleccionas luminarias que no estaban en el FX, se unen a él. Dos FX del mismo parámetro seleccionados juntos se funden en uno, y cada luminaria conserva lo que hacía.
+- Si las luminarias seleccionadas no hacen todas lo mismo, **«Invertir pan»**, **«Invertir tilt»** y **«Al revés»** salen a medias (con media barra de color abajo) y un clic los activa en todas; la figura o el modo, la amplitud, el giro y la fase dicen «varios».
+- Si seleccionas luminarias que no estaban en ningún FX del parámetro, se unen al FX (al primero, si hay varios), cada una en su sitio según su número de fixture. Si la selección abarca varios FX del mismo parámetro (por ejemplo, uno por fila), el panel lo dice («La selección abarca N FX») y un cambio va a cada uno: cada FX conserva su ola y su espejo. **«Unir en un FX»** los junta en uno, sobre el reloj del primero: cada luminaria conserva su forma, pero no su sitio en la ola de su FX.
 - En «FX en marcha» se ve cuántas tienen algo propio («N propias»).
 - **«Como el resto»** quita lo propio de las seleccionadas: vuelven a hacer lo mismo que el FX.
 
 ### Desfase y retardo por luminaria
 
-Debajo de los controles de un FX en marcha, **«Por luminaria»** (se despliega con su flecha) lista sus luminarias en el orden del FX: número, nombre, su sitio en la ola o en el paso, y dos casillas que cambias a mano. Las seleccionadas se ven resaltadas. Un cambio suena al momento, sobre el mismo reloj.
+Debajo de los controles de un FX en marcha, **«Por luminaria»** (se despliega con su flecha) lista sus luminarias en el orden del FX: número, nombre, su sitio en la ola o en el paso (con «Agrupar: Por grupo», también el grupo de su conjunto), y dos casillas que cambias a mano. Las seleccionadas se ven resaltadas. Un cambio suena al momento, sobre el mismo reloj.
 
 - **«Desfase»** (0–1440°): cuánto va por detrás de las demás en la ola. 360° es un ciclo entero y, en un FX con paso, un sitio. Se suma a la ola y a la fase.
 - **«Retardo»** (hasta 60 s): cuánto tiempo después hace el FX. Al empezar el FX (al lanzar su escena o su cue, o un FX nuevo en el programador) espera ese tiempo en su base, así que las luminarias arrancan una detrás de otra. Después sigue ese tiempo por detrás. Va en segundos aunque el FX siga el BPM del show; para seguir el tempo, usa el desfase.
 - **«Repartir el desfase…»** y **«Repartir el retardo…»** piden el valor de la última y reparten desde 0 entre las seleccionadas, en el orden del FX.
 - **«Sin desfase ni retardo»** los quita de las seleccionadas.
+- **«Reordenar por número»** pone las luminarias del FX en el orden de sus números del Patch, por ejemplo si una quedó al final de una fila. Sus sitios en la ola y sus parejas del espejo lo siguen.
 
 Cambiar la fase o el timing los conserva, y «Como el resto» no los toca. No es lo mismo que la fase propia de unas luminarias: esa fase sustituye a la del FX; el desfase se suma a ella. Si pones un retardo más largo que el tiempo que lleva el FX en marcha, esa luminaria espera en su base hasta llegar a él. El desfase y el retardo se graban con la escena o la cue.
 
 ### El espejo
 
-Si las luminarias que van al revés (o con el pan o el tilt invertido propio) están **todas en una mitad** del FX, cada una sigue la ola de su pareja del otro lado, así que la ola también sale en espejo. El panel lo indica con «Espejo: …».
+Si las luminarias con el pan invertido propio (o que van al revés, o con el tilt invertido propio) están **todas en una mitad** del FX, cada una sigue la ola de su pareja del otro lado, así que la ola también sale en espejo. El panel lo indica con «Espejo: …».
 
 Ejemplo con 6 beams en círculo con ola:
 
 1. Selecciona los 6, elige **Pan / tilt**, pulsa **«Empezar FX»**, figura **Círculo** y **«Ola por X»** en «Todas».
-2. Selecciona solo los 3 últimos y activa **«Al revés»**.
+2. Selecciona solo los 3 últimos y activa **«Invertir pan»**.
 
-Los 3 últimos giran al revés y siguen la ola del 3.º, el 2.º y el 1.º: un espejo sincronizado. Si pones al revés alternos (2, 4 y 6) no es un espejo: cada uno conserva su sitio en la ola.
+Los 3 últimos se mueven en espejo de los 3 primeros y siguen la ola del 3.º, el 2.º y el 1.º: un espejo sincronizado, con cualquier figura. **«Al revés»** solo da un espejo en las figuras simétricas en pan (círculo, cuadrado, triángulo, diamante, trébol y línea de pan); en un ocho, una diagonal, un lissajous, una línea de tilt, un ballyhoo o una cruz, cada luminaria al revés sube cuando su pareja baja, y el panel no dice «Espejo». Si inviertes alternas (2, 4 y 6) no es un espejo: cada una conserva su sitio en la ola.
+
+La inversión de pan o de tilt del Patch (en [«Límites»](patch.md#límites)) es una corrección física, para cabezas colgadas al revés o giradas: hace que se muevan como las demás, así que no cuenta para el espejo del FX. El espejo se hace en el FX.
+
+Un FX tiene un solo espejo, entre sus dos mitades. Para un espejo dentro de cada fila, con una ola en cada fila, haz un FX por fila y enlázalos (**«Enlazar»**): cada uno con su ola y su mitad invertida, todos sobre el mismo reloj.
 
 ### Macros FX
 
-A la derecha, las **macros FX** de fábrica por categorías: **Posición** (círculo, círculo en ola, ocho, ballyhoo, barrido de pan, can-can, pan en espejo, cuadrado, triángulo, trébol), **Intensidad** (ola de dimmer, persecución, aleatorio, pulso, respiración, estrobo, de fuera a dentro), **Color** (arcoíris, rojo / azul, fuego, cian / magenta) y **Haz** (zoom, iris, foco). Un clic aplica la macro a la selección.
+A la derecha, las **macros FX** de fábrica por categorías: **Posición** (círculo, círculo en ola, ocho, ballyhoo, barrido de pan, can-can, pan en espejo, cuadrado, triángulo, trébol), **Intensidad** (ola de dimmer, persecución, aleatorio, pulso, respiración, estrobo, de fuera a dentro), **Color** (arcoíris, rojo / azul, fuego, cian / magenta) y **Haz** (zoom, iris, foco). Un clic aplica la macro a la selección. «Pan en espejo» invierte el pan de la segunda mitad de la selección: un espejo con cualquier número de cabezas. Las de color apagan lo que no mueven: el blanco, el ámbar y el UV (y el amarillo en cian / magenta), para que un blanco de debajo no las vuelva pastel.
 
-**«Guardar como macro…»** guarda los FX del programador como una macro tuya, en **«Mías»**, para todos los shows. Clic derecho en una macro tuya: **«Renombrar»** o **«Eliminar»**.
+**«Guardar como macro…»** guarda los FX del programador como una macro tuya, en **«Mías»**, para todos los shows. Clic derecho en una macro tuya: **«Renombrar»** o **«Eliminar»**. Dos FX del mismo parámetro (un círculo en unas luminarias y un ocho en otras) entran como uno, cada luminaria con lo suyo; si no iban a la misma velocidad o con el mismo timing, la macro se queda con los del primero y lo dice.
 
 Una macro tuya guarda lo que hacía cada luminaria del FX, por su sitio en él (el orden en que las seleccionaste):
 
@@ -283,7 +292,7 @@ Una macro tuya guarda lo que hacía cada luminaria del FX, por su sitio en él (
 - lo que hacía a su manera: la forma, el tamaño, el sentido, las inversiones (un espejo);
 - su desfase y su retardo.
 
-Al aplicarla, la primera luminaria seleccionada recibe lo de la primera, la segunda lo de la segunda, y así. Con más o menos luminarias, la primera y la última reciben lo de la primera y la última, y las de en medio se reparten: los abanicos y los retardos se estiran, y el espejo se mantiene. Las ruedas de color y de gobos, el prisma y el shutter no se reparten: cada luminaria toma el valor de su sitio más cercano. Si todas tenían los mismos valores y nada a su manera, la macro sirve para cualquier selección, como las de fábrica. Las macros guardadas luminaria a luminaria llevan la marca **1·2·3**; pasa el ratón por encima para ver cuántas luminarias tenían.
+Al aplicarla, la primera luminaria seleccionada recibe lo de la primera, la segunda lo de la segunda, y así. Con más o menos luminarias, la primera y la última reciben lo de la primera y la última, y las de en medio se reparten: los abanicos, los retardos y las mitades se estiran, y el espejo se mantiene. Lo que se repite cada 2 o 3 luminarias (una sí y otra no al revés, dos colores alternos) se repite igual con cualquier número de luminarias. Las ruedas de color y de gobos, el prisma y el shutter no se reparten: cada luminaria toma el valor de su sitio más cercano. Si todas tenían los mismos valores y nada a su manera, la macro sirve para cualquier selección, como las de fábrica. Las macros guardadas luminaria a luminaria llevan la marca **1·2·3**; pasa el ratón por encima para ver cuántas luminarias tenían.
 
 ## Línea de comandos
 
@@ -356,9 +365,9 @@ Una cue guarda solo lo que el programador cambia respecto a lo que dejan en el e
 
 El menú **«Snapshot»** tiene:
 
-- **«Guardar las ediciones en una escena»**: mete los valores del programador en una escena estática que ya existe.
+- **«Guardar las ediciones en una escena»**: mete los valores del programador en una escena estática que ya existe. Los FX no entran (una escena estática no los tiene) y un aviso lo dice; para guardarlos, usa **«Grabar…»**.
 - **«Todo lo que sale, en una escena nueva…»**: todo lo que muestran ahora las luces (escenas, ediciones en vivo y el mezclador, sin el gran master) pasa a ser una escena estática nueva, en cada fixture con luz. Si «Resaltar» está activo, hay que quitarlo antes («Quitar resaltado»). Deja fuera los efectos especiales protegidos, aunque estén disparando.
-- **«Solo las ediciones, en una escena nueva…»**.
+- **«Solo las ediciones, en una escena nueva…»**: también con FX (la escena nueva es una escena FX).
 
 ### Editar escenas y cues
 

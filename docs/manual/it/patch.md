@@ -165,7 +165,7 @@ Perché [Follow](programar.md#follow-puntare-a-un-punto) punti bene tutte le tes
 Seleziona le fixture e premi **«Limiti»**:
 
 - **Dimmer**, **Pan** e **Tilt**: l'intervallo consentito, da 0 a 100 %. Per esempio, un dimmer che non superi l'80 % o un tilt che non punti sul pubblico.
-- **«Inverti pan»**, **«Inverti tilt»** e **«Scambia pan e tilt»** (per teste appese al contrario o ruotate).
+- **«Inverti pan»**, **«Inverti tilt»** e **«Scambia pan e tilt»** (per teste appese al contrario o ruotate). È una correzione fisica: fa muovere quelle teste come le altre, e lo specchio di un FX non ne tiene conto (vedi [Lo specchio](programar.md#lo-specchio)). Con più fixture di cui solo alcune sono invertite, appare spento con «(solo alcune)», come il tasto della barra, e attivarlo le inverte tutte.
 - **«Ripristina»**: nessun limite, nessun asse invertito o scambiato.
 - **«Proteggi dal grand master»**: il grand master non abbassa nessuno dei suoi canali, che agisca solo sull'intensità o su tutti: la luce di sala, un media server, un hazer. I master di gruppo, i dimmer di scena, il Blackout e la [dissolvenza al nero](directo.md#dissolvenza-al-nero) la abbassano ancora. Con più fixture di cui solo alcune sono protette, appare spento con «(solo alcune)», e attivarlo le protegge tutte. È anche nel [menu della fixture](patch.md#selezionare), spuntato quando tutte le selezionate sono protette. Nell'elenco, un'**ancora** dopo il nome («Protetta dal grand master: non si abbassa con esso»); nella pianta 2D, del Patch e di Programma, un'ancora in basso a sinistra (su una barra, alla sua destra). «Ripristina» non toglie la protezione. Si salva con lo show, in ogni fixture, e [importare il patch da un altro show](patch.md#importare-da-un-altro-show) la porta. QLC+ non la legge: lì il grand master abbassa la fixture.
 
@@ -174,7 +174,7 @@ Con una sola fixture, l'elenco **Canali** permette di decidere per ogni canale:
 - **Dissolvenze**: se segue i tempi di dissolvenza. Se è spento, salta direttamente al suo valore (utile per ruote colori e gobo).
 - **Dimmer**: se lo scalano il grand master, i master di gruppo e i dimmer di scena. Il grand master, inoltre, scala solo la luce (vedi [Master](directo.md#master)). Se la fixture è protetta dal grand master, la scalano solo i master di gruppo e i dimmer di scena.
 
-I limiti agiscono sull'uscita: scene, effetti e modifiche dal vivo conservano i loro valori, ma ciò che esce li rispetta. Con più fixture si vedono i valori della prima che ha ciascun controllo, e ciò che cambi si applica a tutte quelle che lo hanno.
+I limiti agiscono sull'uscita: scene, effetti e modifiche dal vivo conservano i loro valori, ma ciò che esce li rispetta. Su un pan o un tilt a 16 bit, il limite va sui due canali insieme, quindi un movimento lento resta fluido. Con più fixture si vedono i valori della prima che ha ciascun controllo, e ciò che cambi si applica a tutte quelle che lo hanno.
 
 ## Effetti speciali protetti
 
@@ -239,7 +239,7 @@ Si crea una fixture per ogni riga di pixel, un gruppo per gli effetti colore e l
 **«Importa»** porta in questo show una parte di un altro (di DMX Total Control o di QLC+):
 
 - **«Patch di un altro show…»**: le sue fixture. Vanno agli stessi indirizzi se sono liberi; altrimenti, ai successivi. Portano la loro protezione da effetto speciale, i loro tempi, il loro canale di sicurezza e la loro icona della pianta (ciò che dice l'altro show non toglie mai la protezione a un CO2), ma non i loro canali parcheggiati.
-- **«Scene di un altro show…»**: le sue scene, assegnate alle fixture di questo show che coincidono (per indirizzo e modello, per nome o per modello). Entrano in gruppi con lo stesso nome.
+- **«Scene di un altro show…»**: le sue scene, assegnate alle fixture di questo show che coincidono (per indirizzo e modello, per nome o per modello). Entrano in gruppi con lo stesso nome, con le loro opzioni nel gruppo (dimensione, fase e velocità live, rilascio, flash, dimmer…). Un gruppo nuovo porta anche il suo crossfade e il suo master; uno che esiste già in questo show mantiene i suoi.
 - **«Patch e scene di un altro show…»**: entrambe le cose.
 - **«Patch da un programma di visualizzazione (CSV)…»**: la tabella di fixture che esporta il tuo programma di visualizzazione; vedi [Importare un patch da un programma di visualizzazione](patch.md#importare-un-patch-da-un-programma-di-visualizzazione).
 

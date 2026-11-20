@@ -2525,6 +2525,49 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
 <context>
     <name>EffectEditor</name>
     <message>
+        <source>The random flashes become a chase in random order</source>
+        <translation>Los destellos aleatorios pasan a ser una persecución en orden aleatorio</translation>
+    </message>
+    <message>
+        <source>The random levels become a chase in random order</source>
+        <translation>Los niveles aleatorios pasan a ser una persecución en orden aleatorio</translation>
+    </message>
+    <message>
+        <source>On for %1 % of each cycle: the FX is on for half of it</source>
+        <translation>Encendido el %1 % de cada ciclo: el FX lo está la mitad</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n fixture(s) in dimmer or RGB mode stay out</source>
+        <translation>
+            <numerusform>%n luminaria en modo dimmer o RGB se queda fuera</numerusform>
+            <numerusform>%n luminarias en modo dimmer o RGB se quedan fuera</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Turned, with a width other than its height: the figure stretches another way</source>
+        <translation>Girada y con un ancho distinto de su alto: la figura se estira de otra forma</translation>
+    </message>
+    <message>
+        <source>The square goes round smoothly, without jumps</source>
+        <translation>El cuadrado se recorre de forma continua, sin saltos</translation>
+    </message>
+    <message>
+        <source>The sides of the diamond become straight</source>
+        <translation>Los lados del rombo pasan a ser rectos</translation>
+    </message>
+    <message>
+        <source>The ramp along the line becomes a back and forth on it</source>
+        <translation>La rampa por la línea pasa a ser un ir y venir por ella</translation>
+    </message>
+    <message>
+        <source>The Lissajous figure of the FX goes 3 to 2 (this one %1 to %2), with phases of its own</source>
+        <translation>La figura lissajous de los FX va 3 a 2 (esta, %1 a %2), con sus propias fases</translation>
+    </message>
+    <message>
+        <source>The leaf becomes a circle: the FX have no figure like it</source>
+        <translation>La hoja pasa a ser un círculo: los FX no tienen una figura como ella</translation>
+    </message>
+    <message>
         <source>The programmer released the channels of the effect, so you can see it</source>
         <translation>El programador ha liberado los canales del efecto para que puedas verlo</translation>
     </message>
@@ -3392,8 +3435,12 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>BPM del show</translation>
     </message>
     <message>
-        <source>The speed follows the BPM (tap, BeatGO), or the rhythm tapped on the button of its scene</source>
-        <translation>La velocidad sigue al BPM (tap, BeatGO), o al ritmo marcado en el botón de su escena</translation>
+        <source>The speed and the beat follow the show (tap, BPM fader or dial), or the rhythm tapped on the button of its scene</source>
+        <translation>La velocidad y el pulso siguen al show (tap, fader o dial de BPM), o al ritmo marcado en el botón de su escena</translation>
+    </message>
+    <message>
+        <source>Its own rhythm, tapped on its button (%1 BPM): not on the beat of the show</source>
+        <translation>Ritmo propio, marcado en su botón (%1 BPM): no va en el pulso del show</translation>
     </message>
     <message>
         <source>Multiplier</source>
@@ -3410,6 +3457,18 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
     <message>
         <source>Backwards</source>
         <translation>Al revés</translation>
+    </message>
+    <message>
+        <source>Only some of the selected fixtures. A click turns it on for all of them</source>
+        <translation>Solo algunas de las luminarias seleccionadas. Un clic lo activa en todas</translation>
+    </message>
+    <message>
+        <source>Only some fixtures of this FX. A click turns it on for all of them</source>
+        <translation>Solo algunas luminarias de este FX. Un clic lo activa en todas</translation>
+    </message>
+    <message>
+        <source>mixed</source>
+        <translation>varios</translation>
     </message>
     <message>
         <source>Rotate</source>
@@ -3464,8 +3523,20 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Dividir en X</translation>
     </message>
     <message>
-        <source>Mirror</source>
-        <translation>Espejo</translation>
+        <source>Outside in</source>
+        <translation>De fuera a dentro</translation>
+    </message>
+    <message>
+        <source>From the outside in: the first and the last fixture are one set, then the second and the one before the last… It inverts nothing</source>
+        <translation>De fuera a dentro: la primera y la última luminaria son un conjunto, luego la segunda y la penúltima… No invierte nada</translation>
+    </message>
+    <message>
+        <source>The groups of the Patch that split the fixtures of the FX without overlapping, not a group that has them all. «Per fixture» shows the group of each one</source>
+        <translation>Los grupos del Patch que reparten las luminarias del FX sin solaparse, no un grupo que las tiene todas. «Por luminaria» muestra el grupo de cada una</translation>
+    </message>
+    <message>
+        <source>Fixtures in each set, half from each end: with 2, the first goes with the last</source>
+        <translation>Luminarias de cada conjunto, la mitad de cada extremo: con 2, la primera va con la última</translation>
     </message>
     <message>
         <source>By group</source>
@@ -3562,6 +3633,18 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Sin desfase ni retardo</translation>
     </message>
     <message>
+        <source>Reorder by number</source>
+        <translation>Reordenar por número</translation>
+    </message>
+    <message>
+        <source>The fixtures of the FX in the order of their numbers in the Patch: their places in the wave and in the mirror follow it</source>
+        <translation>Las luminarias del FX en el orden de sus números del Patch: sus sitios en la ola y en el espejo lo siguen</translation>
+    </message>
+    <message>
+        <source>Group</source>
+        <translation>Grupo</translation>
+    </message>
+    <message>
         <source>In the wave</source>
         <translation>En la ola</translation>
     </message>
@@ -3588,6 +3671,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
 </context>
 <context>
     <name>FxMacros</name>
+    <message>
+        <source>FX of the same parameter went in as one, with the speed and the timing of the first one</source>
+        <translation>Los FX del mismo parámetro han entrado como uno, con la velocidad y el timing del primero</translation>
+    </message>
     <message>
         <source>Circle</source>
         <translation>Círculo</translation>
@@ -3715,6 +3802,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Parar este FX</translation>
     </message>
     <message>
+        <source>Stop this FX and the ones linked to it</source>
+        <translation>Parar este FX y los enlazados a él</translation>
+    </message>
+    <message>
         <source>Stop all the FX</source>
         <translation>Parar todos los FX</translation>
     </message>
@@ -3738,8 +3829,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Enlazar</translation>
     </message>
     <message>
-        <source>Linked FX share the speed and the timing (and stop together)</source>
-        <translation>Los FX enlazados comparten la velocidad y el timing (y se paran juntos)</translation>
+        <source>Linked FX share the speed, the timing and the clock, and stop together</source>
+        <translation>Los FX enlazados comparten la velocidad, el timing y el reloj, y se paran juntos</translation>
     </message>
     <message>
         <source>Start FX</source>
@@ -3768,13 +3859,28 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <source>Like the rest</source>
         <translation>Como el resto</translation>
     </message>
+    <message numerus="yes">
+        <source>The selection spans %n FX: a change goes to each one of them.</source>
+        <translation>
+            <numerusform>La selección abarca %n FX: un cambio va a cada uno.</numerusform>
+            <numerusform>La selección abarca %n FX: un cambio va a cada uno de ellos.</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Merge into one FX</source>
+        <translation>Unir en un FX</translation>
+    </message>
+    <message>
+        <source>One FX of them, on the clock of the first one: each fixture keeps its shape, not its place in the wave of its FX</source>
+        <translation>Un solo FX con ellos, sobre el reloj del primero: cada luminaria conserva su forma, no su sitio en la ola de su FX</translation>
+    </message>
     <message>
         <source>The selected fixtures follow the FX again</source>
         <translation>Las luminarias seleccionadas vuelven a hacer lo mismo que el FX</translation>
     </message>
     <message>
-        <source>Mirror: the fixtures that go the other way round follow the wave of their twin on the other side.</source>
-        <translation>Espejo: las luminarias que van al revés siguen la ola de su pareja del otro lado.</translation>
+        <source>Mirror: the inverted or backwards fixtures of one side follow the wave of their twin on the other side.</source>
+        <translation>Espejo: las luminarias invertidas o al revés de un lado siguen la ola de su pareja del otro lado.</translation>
     </message>
     <message>
         <source>FX macros</source>
@@ -3916,8 +4022,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Enlazar</translation>
     </message>
     <message>
-        <source>Linked FX share the speed and the timing</source>
-        <translation>Los FX enlazados comparten la velocidad y el timing</translation>
+        <source>Linked FX share the speed, the timing and the clock</source>
+        <translation>Los FX enlazados comparten la velocidad, el timing y el reloj</translation>
     </message>
     <message numerus="yes">
         <source>%n fixture(s) without a dimmer: the FX dims their colour (a virtual dimmer).</source>
@@ -3938,8 +4044,8 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <translation>Modo</translation>
     </message>
     <message>
-        <source>The dotted line is the base value: the wave goes above it, below it or both. Modes 9 to 12 are for chases, with a step.</source>
-        <translation>La línea de puntos es el valor base: la onda va por encima, por debajo o por los dos lados. Los modos 9 a 12 son para persecuciones, con paso.</translation>
+        <source>The dotted line is the base value: the wave goes above it, below it or both. With an arrow (←), it goes from the last fixture to the first. Modes 9 to 12 are for chases, with a step.</source>
+        <translation>La línea de puntos es el valor base: la onda va por encima, por debajo o por los dos lados. Con una flecha (←), va de la última luminaria a la primera. Los modos 9 a 12 son para persecuciones, con paso.</translation>
     </message>
 </context>
 <context>
@@ -8545,6 +8651,10 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
 <context>
     <name>Programmer</name>
     <message>
+        <source>The FX are not saved in a static scene: use Record… to keep them</source>
+        <translation>Los FX no se guardan en una escena estática: usa «Grabar…» para conservarlos</translation>
+    </message>
+    <message>
         <source>Programmer FX</source>
         <translation>FX del programador</translation>
     </message>
@@ -9929,6 +10039,18 @@ Añádelos en la página Patch.</translation>
 </context>
 <context>
     <name>ScenesPage</name>
+    <message>
+        <source>It becomes an FX scene with the same ID, and this can&apos;t be undone.</source>
+        <translation>Pasa a ser una escena FX con el mismo ID, y no se puede deshacer.</translation>
+    </message>
+    <message>
+        <source>It becomes an FX scene with the same ID, and this can&apos;t be undone. What changes:</source>
+        <translation>Pasa a ser una escena FX con el mismo ID, y no se puede deshacer. Lo que cambia:</translation>
+    </message>
+    <message>
+        <source>Convert “%1” to FX?</source>
+        <translation>¿Convertir «%1» a FX?</translation>
+    </message>
     <message>
         <source>Effect rack</source>
         <translation>Rack de efectos</translation>

@@ -309,10 +309,7 @@ Item {
                         iconGlyph: Theme.iconWand
                         primary: true
                         implicitHeight: 30
-                        onClicked: {
-                            if (Core.effects.convertToFx(page.currentId))
-                                page.refresh()
-                        }
+                        onClicked: fxConvertConfirm.ask()
                     }
                 }
             }
@@ -429,6 +426,66 @@ Item {
         title: qsTr("Import scenes and effects")
         nameFilters: [qsTr("DMX Total Control effects (*.dtcfx)")]
         onAccepted: page.created(Core.effects.importEffect(selectedFile))
+    }
+
+    // converted, the effect is gone (scenes have no undo): first what changes
+    Popup {
+        id: fxConvertConfirm
+        property var notes: []
+        function ask() {
+            notes = Core.effects.convertNotes(page.currentId)
+            open()
+        }
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: Math.min(540, parent.width - 32)
+        modal: true
+        padding: 18
+        background: Rectangle { radius: Theme.radius; color: Theme.surface; border.color: Theme.borderStrong }
+        contentItem: ColumnLayout {
+            spacing: 12
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: qsTr("Convert “%1” to FX?").arg(page.info.name || "")
+                color: Theme.text
+                font.pixelSize: Theme.fontLarge
+                font.weight: Font.Bold
+            }
+            Text {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: fxConvertConfirm.notes.length > 0
+                      ? qsTr("It becomes an FX scene with the same ID, and this can't be undone. What changes:")
+                      : qsTr("It becomes an FX scene with the same ID, and this can't be undone.")
+                color: Theme.textDim
+            }
+            Repeater {
+                model: fxConvertConfirm.notes
+                delegate: Text {
+                    required property string modelData
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                    text: "•  " + modelData
+                    color: Theme.warning
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                AppButton { text: qsTr("Cancel"); onClicked: fxConvertConfirm.close() }
+                AppButton {
+                    text: qsTr("Convert to FX")
+                    iconGlyph: Theme.iconWand
+                    primary: true
+                    onClicked: {
+                        fxConvertConfirm.close()
+                        if (Core.effects.convertToFx(page.currentId))
+                            page.refresh()
+                    }
+                }
+            }
+        }
     }
 
     Popup {

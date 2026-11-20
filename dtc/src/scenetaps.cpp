@@ -32,7 +32,7 @@ namespace
 struct Presses
 {
     qint64 last = -1;
-    QList<qint64> intervals;
+    TapRow row;
 };
 
 QHash<quint32, Presses> &presses()
@@ -67,7 +67,7 @@ bool beat(Function *f, qint64 now, bool always)
         return always;
     const bool inRow = since >= 100 && since <= SceneTaps::window();
     if (inRow == false)
-        p.intervals.clear();
+        p.row.clear();
     if (inRow == false && always == false)
         return false;
 
@@ -78,14 +78,11 @@ bool beat(Function *f, qint64 now, bool always)
     if (inRow == false)
         return true;
     // ...and the rhythm, the average of the last beats, in its own time:
-    // with a live speed it plays what was tapped
-    p.intervals.append(since);
-    while (p.intervals.count() > 4)
-        p.intervals.removeFirst();
-    qint64 sum = 0;
-    for (qint64 interval : std::as_const(p.intervals))
-        sum += interval;
-    f->setTapPeriod(uint(qRound64(qreal(sum) / p.intervals.count() * qMax(0.01, f->speedFactor()))));
+    // with a live speed it plays what was tapped. A press far off it (on
+    // the next bar, to put it in time) keeps it
+    const qreal period = p.row.add(qreal(since));
+    if (period > 0)
+        f->setTapPeriodMs(period * qMax(0.01, f->speedFactor()));
     return true;
 }
 
@@ -94,10 +91,49 @@ void restart(Function *f, qint64 now)
 {
     Presses &p = presses()[f->id()];
     p.last = now;
-    p.intervals.clear();
+    p.row.clear();
 }
 
 } // namespace
+
+qreal TapRow::add(qreal since)
+{
+    const qreal spacing = period();
+    if (spacing > 0 && (since < 0.6 * spacing || since > 1.6 * spacing))
+    {
+        // off the spacing: a beat that times nothing, unless the one before
+        // was off it the same way (a new tempo)
+        if (m_odd > 0 && qAbs(since - m_odd) <= 0.15 * m_odd)
+        {
+            m_intervals = { m_odd, since };
+            m_odd = 0;
+            return period();
+        }
+        m_odd = since;
+        return 0;
+    }
+    m_odd = 0;
+    m_intervals.append(since);
+    while (m_intervals.count() > 4)
+        m_intervals.removeFirst();
+    return period();
+}
+
+qreal TapRow::period() const
+{
+    if (m_intervals.isEmpty())
+        return 0;
+    qreal sum = 0;
+    for (qreal interval : m_intervals)
+        sum += interval;
+    return sum / qreal(m_intervals.count());
+}
+
+void TapRow::clear()
+{
+    m_intervals.clear();
+    m_odd = 0;
+}
 
 void SceneTaps::setMode(Mode mode)
 {
