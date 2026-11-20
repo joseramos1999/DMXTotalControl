@@ -8005,6 +8005,41 @@ También en español: HASTA, GRUPO, TODO, LLENO, HAZ, IR, ATRÁS, GRABAR, ACTUAL
         <source>Unpark</source>
         <translation>Desaparcar</translation>
     </message>
+    <message numerus="yes">
+        <source>%n blinking</source>
+        <translation>
+            <numerusform>%n parpadeando</numerusform>
+            <numerusform>%n parpadeando</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Ajustes</translation>
+    </message>
+    <message>
+        <source>One at a time</source>
+        <translation>De uno en uno</translation>
+    </message>
+    <message>
+        <source>Parking</source>
+        <translation>Aparcar</translation>
+    </message>
+    <message>
+        <source>The channels stay fixed at what goes out now, above the scenes, the programmer, the grand master and Stop all</source>
+        <translation>Los canales se quedan fijos en lo que sale ahora, por encima de las escenas, el programador, el gran master y Parar todo</translation>
+    </message>
+    <message>
+        <source>The intensities (dimmers and colours) at 0 and the other channels as they are now, fixed above everything</source>
+        <translation>Las intensidades (dimmers y colores) a 0 y los demás canales como están ahora, fijos por encima de todo</translation>
+    </message>
+    <message>
+        <source>On: in Blackout the parked intensities keep their value. Off: they go dark with it; pan, tilt and the rest always stay parked</source>
+        <translation>Encendido: con el Blackout, las intensidades aparcadas siguen con su valor. Apagado: se apagan con él; el pan, el tilt y lo demás siguen siempre aparcados</translation>
+    </message>
+    <message>
+        <source>Whole show</source>
+        <translation>Todo el show</translation>
+    </message>
 </context>
 <context>
     <name>PlaybackAssignDialog</name>

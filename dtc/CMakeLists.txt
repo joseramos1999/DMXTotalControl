@@ -52,6 +52,10 @@ set(QML_FILES
     qml/components/AppFileDialog.qml
     qml/components/AppMenu.qml
     qml/components/CheckMenuItem.qml
+    qml/components/ActionMenu.qml
+    qml/components/ActionMenuItem.qml
+    qml/components/MenuHeader.qml
+    qml/components/MenuSection.qml
     qml/components/AppSwitch.qml
     qml/components/HSlider.qml
     qml/components/TapRhythm.qml

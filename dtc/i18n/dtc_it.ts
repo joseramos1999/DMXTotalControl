@@ -8004,6 +8004,41 @@ Cuelist: GO · BACK · GO CUE 3 · CUE 3 · REC · REC CUE 2.5 · UPD · DELETE 
         <source>Unpark</source>
         <translation>Togli dal parcheggio</translation>
     </message>
+    <message numerus="yes">
+        <source>%n blinking</source>
+        <translation>
+            <numerusform>%n lampeggia</numerusform>
+            <numerusform>%n lampeggiano</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Impostazioni</translation>
+    </message>
+    <message>
+        <source>One at a time</source>
+        <translation>Una alla volta</translation>
+    </message>
+    <message>
+        <source>Parking</source>
+        <translation>Parcheggio</translation>
+    </message>
+    <message>
+        <source>The channels stay fixed at what goes out now, above the scenes, the programmer, the grand master and Stop all</source>
+        <translation>I canali restano fissi su ciò che esce ora, sopra le scene, il programmatore, il grand master e Ferma tutto</translation>
+    </message>
+    <message>
+        <source>The intensities (dimmers and colours) at 0 and the other channels as they are now, fixed above everything</source>
+        <translation>Le intensità (dimmer e colori) a 0 e gli altri canali come sono ora, fissi sopra tutto</translation>
+    </message>
+    <message>
+        <source>On: in Blackout the parked intensities keep their value. Off: they go dark with it; pan, tilt and the rest always stay parked</source>
+        <translation>Acceso: con il Blackout le intensità parcheggiate mantengono il loro valore. Spento: si spengono con esso; il pan, il tilt e il resto restano sempre parcheggiati</translation>
+    </message>
+    <message>
+        <source>Whole show</source>
+        <translation>Tutto lo show</translation>
+    </message>
 </context>
 <context>
     <name>PlaybackAssignDialog</name>

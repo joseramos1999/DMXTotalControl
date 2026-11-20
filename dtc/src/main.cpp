@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     parser.addOption(learnOption);
     QCommandLineOption mappingOption("mapping", "Developer: open the Mappings page with this mapping ID selected.", "id");
     parser.addOption(mappingOption);
-    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, limits-all: the limits of every fixture, menu: the menu of the fixtures protected from the grand master, effect: the special effect of the first protected fixture, matrix, add, share: the GDTF-Share browser of Add fixtures; import: the Import menu; look: the Look menu of the plan, on its Icon entry).", "view");
+    QCommandLineOption patchViewOption("patch-view", "Developer: open the Patch page on a view (list, grid, plan, live) or a dialog (limits, limits-all: the limits of every fixture, menu: the fixture menu on the fixtures protected from the grand master; menu-one, menu-free, menu-mixed, menu-effect, menu-identify, menu-plan, menu-edge, menu-unparked: its other states, effect: the special effect of the first protected fixture, matrix, add, share: the GDTF-Share browser of Add fixtures; import: the Import menu; look: the Look menu of the plan, on its Icon entry).", "view");
     parser.addOption(patchViewOption);
     QCommandLineOption patchImportOption("patch-import", "Developer: the preview of a patch import from this fixture table (CSV).", "file.csv");
     parser.addOption(patchImportOption);

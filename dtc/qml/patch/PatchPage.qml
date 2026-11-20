@@ -67,6 +67,17 @@ Item {
         Core.safety.parkedFixtures
         return Core.safety.parkInBlackout(selectedIds)
     }
+    /** What the fixture menu shows of the selection: its fixtures in the order of the list,
+     *  and how many are protected from the grand master, protected special effects, parked,
+     *  and parked in blackout too */
+    function menuSummary() {
+        const parkedNow = page.parked   // (parksChanged, setParkInBlackout too)
+        const sel = selectedFixtures().sort((a, b) => (a.universe - b.universe) || (a.address - b.address))
+        const parkedIds = sel.filter(f => parkedNow[f.id] !== undefined).map(f => f.id)
+        return { fixtures: sel, total: sel.length, gm: sel.filter(f => f.gmProtected).length,
+                 effects: sel.filter(f => f.protected).length, parked: parkedIds.length,
+                 blackout: parkedIds.filter(id => Core.safety.parkInBlackout([id])).length }
+    }
 
     /** The group isolated on the plan (-1: none): a click on a group in the
      *  plan view shows it alone, the other fixtures locked (faded, nothing
@@ -252,10 +263,17 @@ Item {
         options.columns = columnsSpin.value
         Core.patch.arrange(selectedIds, shape, options)
     }
-    /** Developer option --patch-view: list, grid, plan, live, limits, effect, matrix,
-     *  add (Add fixtures), share (its GDTF-Share browser), import (the Import
+    /** Developer option --patch-view: list, grid, plan, live, limits, limits-all, effect,
+     *  matrix, add (Add fixtures), share (its GDTF-Share browser), import (the Import
      *  menu), look (the plan with its Look menu open on the fixtures of the
-     *  last type, on its Icon entry: --keys "key:Right" opens it) */
+     *  last type, on its Icon entry: --keys "key:Right" opens it), and the
+     *  fixture menu: menu (on the fixtures protected from the grand master),
+     *  menu-one (one parked fixture), menu-free (one fixture neither parked
+     *  nor protected), menu-mixed (the protected ones and a parked one: half
+     *  switches), menu-effect (a protected special effect), menu-identify
+     *  (while they blink), menu-plan (from the plan, on the Spots), menu-edge
+     *  (at the bottom right corner), menu-unparked (after unparking
+     *  everything, only in that run) */
     function devOpen(what) {
         if (what === "import") {
             Qt.callLater(() => importMenu.popup(importButton, 0, importButton.height + 4))
@@ -283,10 +301,44 @@ Item {
             effectDialog.openFor(selectedIds)
             return
         }
-        // the menu of the fixtures protected from the grand master
-        if (what === "menu") {
-            selectedIds = fixtures.filter(f => f.gmProtected).map(f => f.id)
-            Qt.callLater(() => fixtureMenu.popup(page, page.width / 3, 160))
+        // the fixture menu, in its states (the comment above)
+        if (what.startsWith("menu")) {
+            // (only that run: the show is never saved)
+            if (what === "menu-unparked")
+                Core.safety.unparkAll()
+            // the fixtures protected from the grand master (else the first one)
+            let base = fixtures.filter(f => f.gmProtected).map(f => f.id)
+            if (base.length === 0 && fixtures.length > 0)
+                base = [fixtures[0].id]
+            const parkedOne = fixtures.find(f => parked[f.id] !== undefined && !f.protected)
+            const free = fixtures.find(f => parked[f.id] === undefined && !f.gmProtected && !f.protected)
+            const effects = fixtures.filter(f => f.protected)
+            const effect = effects.find(f => parked[f.id] !== undefined) || effects[0]
+            let ids = base
+            if (what === "menu-one")
+                ids = parkedOne ? [parkedOne.id] : []
+            else if (what === "menu-free")
+                ids = free ? [free.id] : []
+            else if (what === "menu-mixed")
+                ids = parkedOne && base.indexOf(parkedOne.id) < 0 ? base.concat([parkedOne.id]) : base
+            else if (what === "menu-effect")
+                ids = effect ? [effect.id] : []
+            if (what === "menu-plan") {
+                view = "plan"
+                // (a show without Spots: the base)
+                const spots = fixtures.filter(f => f.name.startsWith("Spot")).map(f => f.id)
+                if (spots.length > 0)
+                    ids = spots
+            }
+            selectedIds = ids
+            if (what === "menu-identify")
+                Core.patch.identify(selectedIds)
+            if (what === "menu-plan")
+                Qt.callLater(devPlanMenu)
+            else if (what === "menu-edge")
+                Qt.callLater(() => fixtureMenu.popupAt(page, page.width - 4, page.height - 4))
+            else
+                Qt.callLater(() => fixtureMenu.popupAt(page, page.width / 3, 160))
             return
         }
         if (what === "limits" || what === "limits-all" || what === "matrix") {
@@ -300,6 +352,19 @@ Item {
         stagePlan.live = what === "live"
         if (what === "plan" || what === "live")
             selectedIds = fixtures.filter(f => f.name.startsWith("Spot")).map(f => f.id)
+    }
+    /** --patch-view menu-plan: the fixture menu from the middle of the plan,
+     *  once it is laid out (else a little later) */
+    function devPlanMenu() {
+        if (stagePlan.visible && stagePlan.width > 0)
+            fixtureMenu.popupAt(stagePlan, stagePlan.width / 2, stagePlan.height / 2)
+        else
+            devPlanMenuTimer.start()
+    }
+    Timer {
+        id: devPlanMenuTimer
+        interval: 300
+        onTriggered: page.devPlanMenu()
     }
     /** Developer options --patch-import and --patch-import-pick: the preview of
      *  the import of a table, with the library picker of its first type */
@@ -1440,59 +1505,145 @@ Item {
             select([id], false)
             anchorId = id
         }
-        fixtureMenu.popup(item, x, y)
+        fixtureMenu.popupAt(item, x, y)
     }
-    AppMenu {
+    /** The menu of the fixtures: what it acts on at the top, Identify, their
+     *  settings, parking them, and unparking the whole show. The same glyphs
+     *  as the toolbar, the list and the plan; what is on or off, a switch */
+    ActionMenu {
         id: fixtureMenu
-        MenuItem {
-            text: qsTr("Special effect…")
-            onTriggered: effectDialog.openFor(page.selectedIds)
+
+        /** The selection (menuSummary), worked out only while it is open */
+        readonly property var s: visible ? page.menuSummary()
+                                         : ({ fixtures: [], total: 0, gm: 0, effects: 0, parked: 0, blackout: 0 })
+        /** A single fixture, or null */
+        readonly property var one: s.total === 1 ? s.fixtures[0] : null
+        /** All of the same kind (its glyph), and of the same type (its colour; -1: not) */
+        readonly property bool oneKind: s.total > 0 && s.fixtures.every(f => f.kind === s.fixtures[0].kind)
+        readonly property int oneType: s.total > 0 && s.fixtures.every(f => f.colorIndex === s.fixtures[0].colorIndex)
+                                       ? s.fixtures[0].colorIndex : -1
+
+        // what it acts on: the fixture (its number, name, address and type,
+        // as the list has them) or how many and which
+        MenuHeader {
+            glyph: fixtureMenu.oneKind ? Theme.kindIcon(fixtureMenu.s.fixtures[0].kind) : Theme.iconSelect
+            glyphColor: Theme.fixtureTypeColor(fixtureMenu.oneType)
+            ringColor: fixtureMenu.oneType >= 0 ? Theme.fixtureTypeColor(fixtureMenu.oneType) : Theme.border
+            number: fixtureMenu.one && fixtureMenu.one.number > 0 ? String(fixtureMenu.one.number) : ""
+            title: fixtureMenu.one ? fixtureMenu.one.name : qsTr("%n fixture(s)", "", fixtureMenu.s.total)
+            detail: fixtureMenu.one ? (fixtureMenu.one.universe + 1) + " . " + fixtureMenu.one.address : ""
+            subtitle: {
+                const one = fixtureMenu.one
+                if (one)
+                    return one.manufacturer.length ? one.manufacturer + " — " + one.model : one.type
+                const s = fixtureMenu.s
+                return s.fixtures.slice(0, 3).map(f => f.name).join(", ") + (s.total > 3 ? " +" + (s.total - 3) : "")
+            }
         }
-        MenuItem {
+        ActionMenuItem {
             text: page.identifying ? qsTr("Stop identifying") : qsTr("Identify")
+            glyph: Theme.iconLocate
+            glyphColor: page.identifying ? Theme.readable(Theme.warning) : Theme.textDim
+            hint: page.identifying ? qsTr("%n blinking", "", Core.patch.identified.length) : ""
+            hintColor: Theme.readable(Theme.warning)
+            tip: page.identifying ? "" : qsTr("Light up the selected fixtures in white, blinking, to find them on stage")
             onTriggered: page.identifySelection()
         }
-        MenuItem {
+
+        MenuSection { title: qsTr("Settings") }
+        ActionMenuItem {
             text: qsTr("Limits…")
+            glyph: Theme.iconRuler
+            tip: qsTr("Dimmer, pan and tilt limits, inverted or swapped axes, and the options of each channel")
             onTriggered: optionsDialog.openFor(page.selectedIds)
         }
-        // the grand master doesn't lower them (house lights, a media server):
-        // ticked when all of them are, a click sets them all
-        CheckMenuItem {
-            text: qsTr("Protect from the grand master")
-            selected: page.selectionGmProtected
-            onTriggered: Core.patch.setProtectedFromGrandMaster(page.selectedIds, !page.selectionGmProtected)
+        // CO2, flames: the shield of the list when some are protected
+        ActionMenuItem {
+            text: qsTr("Special effect…")
+            glyph: Theme.iconFire
+            mark: fixtureMenu.s.effects > 0 ? Theme.iconShield : ""
+            markColor: Core.safety.armed ? Theme.readable(Theme.danger) : Theme.textDim
+            hint: fixtureMenu.s.effects > 0 && fixtureMenu.s.effects < fixtureMenu.s.total
+                  ? fixtureMenu.s.effects + "/" + fixtureMenu.s.total : ""
+            tip: qsTr("Protected special effect: it only fires with the effects armed, each fire cut at its maximum time")
+            onTriggered: effectDialog.openFor(page.selectedIds)
         }
-        MenuItem {
+        // one at a time (with several, disabled: it says why)
+        ActionMenuItem {
             text: qsTr("Edit…")
+            glyph: Theme.iconPen
             enabled: page.selectedIds.length === 1
+            hint: enabled ? "" : qsTr("One at a time")
             onTriggered: editDialog.edit(page.selectedFixtures()[0])
         }
-        MenuSeparator {}
+        // the grand master doesn't lower them (house lights, a media server):
+        // on when all of them are, halfway when some are; a click sets them all
+        ActionMenuItem {
+            text: qsTr("Protect from the grand master")
+            glyph: Theme.iconAnchor
+            glyphColor: page.selectionGmProtected ? Theme.readable(Theme.accent) : Theme.textDim
+            toggle: true
+            toggleOn: page.selectionGmProtected
+            toggleMixed: fixtureMenu.s.gm > 0 && fixtureMenu.s.gm < fixtureMenu.s.total
+            hint: toggleMixed ? fixtureMenu.s.gm + "/" + fixtureMenu.s.total : ""
+            tip: qsTr("Protected from the grand master: it doesn't go down with it")
+            onTriggered: Core.patch.setProtectedFromGrandMaster(page.selectedIds, !page.selectionGmProtected)
+        }
+
         // parked channels: a fixed value at the output, above everything
         // (Stop all and Blackout never unpark them)
-        MenuItem {
+        MenuSection {
+            title: qsTr("Parking")
+            stateGlyph: Theme.iconLock
+            stateText: fixtureMenu.s.parked > 0 ? qsTr("%n parked", "", fixtureMenu.s.parked) : ""
+            stateColor: Theme.readable(Theme.warning)
+        }
+        ActionMenuItem {
             text: qsTr("Park as it is now")
+            glyph: Theme.iconLock
+            tip: qsTr("The channels stay fixed at what goes out now, above the scenes, the programmer, the grand master and Stop all")
             onTriggered: Core.safety.parkCurrent(page.selectedIds)
         }
-        MenuItem {
+        ActionMenuItem {
             text: qsTr("Park off")
+            glyph: Theme.iconMoon
+            tip: qsTr("The intensities (dimmers and colours) at 0 and the other channels as they are now, fixed above everything")
             onTriggered: Core.safety.parkOff(page.selectedIds)
         }
-        CheckMenuItem {
+        // (only with some parked: the glyph of the Blackout button)
+        ActionMenuItem {
             text: qsTr("Also in blackout")
-            enabled: page.selectionParked
-            selected: page.selectionParkedInBlackout
+            glyph: Theme.iconPower
+            shown: page.selectionParked
+            toggle: true
+            toggleOn: page.selectionParkedInBlackout
+            toggleMixed: fixtureMenu.s.blackout > 0 && fixtureMenu.s.blackout < fixtureMenu.s.parked
+            hint: toggleMixed ? fixtureMenu.s.blackout + "/" + fixtureMenu.s.parked : ""
+            tip: qsTr("On: in Blackout the parked intensities keep their value. Off: they go dark with it; pan, tilt and the rest always stay parked")
             onTriggered: Core.safety.setParkInBlackout(page.selectedIds, !page.selectionParkedInBlackout)
         }
-        MenuItem {
+        ActionMenuItem {
             text: qsTr("Unpark")
-            enabled: page.selectionParked
+            glyph: Theme.iconUnlock
+            glyphColor: Theme.readable(Theme.warning)
+            shown: page.selectionParked
             onTriggered: Core.safety.unpark(page.selectedIds)
         }
-        MenuItem {
+
+        // every parked fixture of the show, not only the selected ones
+        MenuSection {
+            title: qsTr("Whole show")
+            shown: Core.safety.parkedCount > 0
+        }
+        ActionMenuItem {
             text: qsTr("Unpark all")
-            enabled: Core.safety.parkedCount > 0
+            glyph: Theme.iconUnlock
+            glyphColor: Theme.readable(Theme.warning)
+            shown: Core.safety.parkedCount > 0
+            hint: qsTr("%n parked", "", Core.safety.parkedCount)
+            chipColor: Theme.warning
+            chipGlyph: Theme.iconLock
+            hoverColor: Qt.alpha(Theme.warning, 0.16)
             onTriggered: Core.safety.unparkAll()
         }
     }
